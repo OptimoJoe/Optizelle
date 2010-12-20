@@ -2,7 +2,7 @@
 #define PEOPT_HPP
 
 /** \file PEopt.hpp
-    \brief Optimization interface and algorithms for optimization
+    \brief Optimization interface and algorithms
 
     \note Modified this version to put everything into a PEopt namespace
 **/
@@ -13,7 +13,13 @@
 
 using std::list;
 
-/// PEopt namespace
+/// PEopt optimization interface and algorithms
+/** PEopt supports preconditioned conjugate gradient and a variety of
+    preconditioned Newton-type methods including quasi-Newton and
+    Gauss-Newton methods 
+
+    Copyright (c)2010 Sandia National Laboratories
+**/
 namespace PEopt {
 
 // Forward declarations
