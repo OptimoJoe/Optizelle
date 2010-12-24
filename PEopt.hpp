@@ -25,7 +25,7 @@ namespace PEopt {
 // Forward declarations
 
 /// Error reporting for PEopt
-void pe_error(char message[]);
+void pe_error(const char message[]);
 
 /// A simple operator specification 
 template <class Domain, class Codomain>
