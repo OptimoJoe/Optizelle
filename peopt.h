@@ -1,6 +1,10 @@
 #ifndef PEOPT_H
 #define PEOPT_H
 
+/** \file peopt.h
+    \brief Parameter Estimation Optimization interface and algorithms
+**/
+
 #include<list>
 #include<cmath>
 
@@ -9,48 +13,48 @@ using std::list;
 // Error reporting for all of these functions
 void pe_error(char message[]);
 
-// A simple operator specification 
+/// A simple operator specification 
 template <class Domain, class Codomain>
 class Operator {
 public:
-    // Basic application
+    /// Basic application
     virtual void operator () (const Domain& x,Codomain &y) const = 0;
 };
 
-// A simple functional interface
+/// A simple functional interface
 template <class Domain>
 class Functional {
 public:
-    // Basic application
+    /// Basic application
     virtual double operator () (const Domain& x) const = 0;
 };
 
-// Basic linear algebra operations 
+/// Basic linear algebra operations 
 namespace Operations{
-    // Scalar multiple
+    /// Scalar multiple
     template <class Domain>
     void scal(const double alpha,Domain& x);
 
-    // Copy
+    /// Copy
     template <class Domain>
     void copy(const Domain& from, Domain& to); 
 
-    // alpha*x+y
+    /// alpha*x+y
     template <class Domain>
     void axpy(const double alpha,const Domain& x,Domain& y);
 
-    // Takes some element and sets it to all zeros
+    /// Takes some element and sets it to all zeros
     template <class Domain>
     void zero(Domain& x);
 
-    // Inner product
+    /// Inner product
     template <class Domain>
     double innr(const Domain& x,const Domain& y);
 }
 
-/* Functions that act has Hessian approximations */
+/// Functions that act has Hessian approximations
 namespace Hessians{
-    // The identity Hessian approximation 
+    /// The identity Hessian approximation 
     template <class U>
     class Identity : public Operator <U,U> {
     public:
@@ -59,11 +63,11 @@ namespace Hessians{
 	}
     };
 
-    // The BFGS Hessian approximation.  Note, the formula we normally see for
-    // BFGS denotes the inverse Hessian approximation.  This is not the inverse,
-    // but the true Hessian approximation.
-    // The oldY and oldS lists have the same structure as the BFGS
-    // preconditioner. 
+    /// The BFGS Hessian approximation.  
+    /** Note, the formula we normally see for BFGS denotes the inverse
+        Hessian approximation.  This is not the inverse, but the true
+        Hessian approximation.  The oldY and oldS lists have the same
+        structure as the BFGS preconditioner. **/
     template <class U>
     class BFGS : public Operator <U,U> {
     private:
@@ -74,18 +78,20 @@ namespace Hessians{
     	BFGS(list <U>& oldY_,list <U>& oldS_,list <U>& work_)
 	    : oldY(oldY_) , oldS(oldS_), work(work_) {};
 	
-	// It's not entirely clear to me what the best implementation for this
-	// method really is.  In the following implementation, we require
-	// an additional k work elements where k is the number of stored
-	// gradient and position differences.  It's possible to reduce this
-	// to 1 or 2, but we need to compute redundant information.  It's
-	// also possible to implementation the compact representation, see
-	// "Representations of quasi-Newton matrices and their use in limited
-	// memory methods" from Byrd, Nocedal, and Schnabel.  The problem with
-	// that algorithm is that is requires machinery such as linear system
-	// solves that we don't current have.  It also works much better with
-	// matrices or multivectors of data and we don't require the user to
-	// provide these abstractions.
+        /// Operator interface
+        /** It's not entirely clear to me what the best implementation for
+            this method really is.  In the following implementation, we
+            require an additional k work elements where k is the number of
+            stored gradient and position differences.  It's possible to
+            reduce this to 1 or 2, but we need to compute redundant
+            information.  It's also possible to implementation the compact
+            representation, see "Representations of quasi-Newton matrices
+            and their use in limited memory methods" from Byrd, Nocedal,
+            and Schnabel.  The problem with that algorithm is that is
+            requires machinery such as linear system solves that we don't
+            current have.  It also works much better with matrices or
+            multivectors of data and we don't require the user to provide
+            these abstractions. **/
 	void operator () (const U& p,U& result) const{
 	    // Check that the number of stored gradient and trial step
 	    // differences is the same.
@@ -213,9 +219,9 @@ namespace Hessians{
 	}
     };
     
-    // The SR1 Hessian approximation.  
-    // The oldY and oldS lists have the same structure as the BFGS
-    // preconditioner. 
+    /// The SR1 Hessian approximation.  
+    /** The oldY and oldS lists have the same structure as the BFGS
+        preconditioner. **/
     template <class U>
     class SR1 : public Operator <U,U> {
     private:
@@ -223,9 +229,10 @@ namespace Hessians{
 	list <U>& oldS;
 	list <U>& work;
     public:
+        /// Constructor
     	SR1(list <U>& oldY_,list <U>& oldS_,list <U>& work_)
 	    : oldY(oldY_) , oldS(oldS_), work(work_) {};
-	
+        /// Operator interface
 	void operator () (const U& p,U& result) const{
 	    // Check that the number of stored gradient and trial step
 	    // differences is the same.
@@ -349,10 +356,10 @@ namespace Hessians{
 }
 
 
-/* Functions that precondition truncated CG */
+/// Functions that precondition truncated CG
 namespace Preconditioners{
     
-    // The identity preconditioner
+    /// The identity preconditioner
     template <class U>
     class Identity : public Operator <U,U> {
     public:
@@ -361,28 +368,28 @@ namespace Preconditioners{
 	}
     };
 
-    // The BFGS preconditioner
-    // The oldY list has the following structure
-    // oldY[0] = y_k = grad f(h(u_k)) - grad f(h(u_{k-1}))
-    // oldY[1] = y_{k-1} = grad f(h(u_{k-1})) - grad f(h(u_{k-2}))
-    // The oldS list has the following structure
-    // oldS[0] = s_k = u_k - u_k{-1}
-    // oldS[1] = s_{k-1} = u_{k-1} - u_k{k-2}
+    /// The BFGS preconditioner
+    /** The oldY list has the following structure
+        oldY[0] = y_k = grad f(h(u_k)) - grad f(h(u_{k-1}))
+        oldY[1] = y_{k-1} = grad f(h(u_{k-1})) - grad f(h(u_{k-2}))
+        The oldS list has the following structure
+        oldS[0] = s_k = u_k - u_k{-1}
+        oldS[1] = s_{k-1} = u_{k-1} - u_k{k-2} **/
     template <class U>
     class BFGS : public Operator <U,U> {
     private:
     	list <U>& oldY;
 	list <U>& oldS;
     public:
+        /// Constructor 
     	BFGS(list <U>& oldY_,list <U>& oldS_) : oldY(oldY_) , oldS(oldS_) {}
-
+        /// Operator interface
 	void operator () (const U& p,U& result) const{
 	    // Check that we have an even number of elements in the info space
 	    if(oldY.size() != oldS.size())
 	    	pe_error("In the BFGS preconditioner, the number"
 		" of stored gradients must equal the number of stored"
 		" trial steps.");
-
 #if 0
 	    // As a safety check, insure that the inner product between all
 	    // the (s,y) pairs is positive
@@ -444,10 +451,10 @@ namespace Preconditioners{
 	}
     };
     
-    // The SR1 preconditioner.  In this definition, we take a short cut
-    // and simply use the SR1 Hessian approximation where we swap Y and S.
-    // The oldY and oldS lists have the same structure as the BFGS
-    // preconditioner. 
+    /// The SR1 preconditioner.  
+    /** In this definition, we take a short cut and simply use the SR1
+        Hessian approximation where we swap Y and S.  The oldY and oldS lists
+        have the same structure as the BFGS preconditioner. **/
     template <class U>
     class SR1 : public Operator <U,U> {
     private:
@@ -462,10 +469,10 @@ namespace Preconditioners{
     };
 }
 
-/* Functions that support the trust region algorithm */
+/// Functions that support the trust region algorithm
 namespace TrustRegion{
     	
-    // Computes the Steihaug-Toint trial step
+    /// Computes the Steihaug-Toint trial step
     template <class U>
     void getStep(
 	Operator<U,U>& Minv,
@@ -582,7 +589,7 @@ namespace TrustRegion{
 	}
     }
 
-    // Checks whether we accept or reject a step
+    /// Checks whether we accept or reject a step
     template <class U>
     void checkStep(
 	const U& u,
@@ -655,16 +662,17 @@ namespace TrustRegion{
 	    delta /= 2.;
     }
 
-    // Reasons why we stop the algorithm
+    /// Reasons why we stop the algorithm
     enum StoppingCondition{
-    	NotConverged,
-	GradientSmall,
-	RelativeGradientSmall,
-	TrustRegionSmall,
-	RelativeTrustRegionSmall,
-	RelativeObjectiveSmall};
+      NotConverged,               ///< Algorithm did not converge
+      GradientSmall,              ///< Gradient was sufficiently small
+      RelativeGradientSmall,      ///< Relative gradient was sufficiently small
+      TrustRegionSmall,           ///< Trust region became sufficiently small
+      RelativeTrustRegionSmall,   ///< Relative small trust region
+      RelativeObjectiveSmall      ///< Relative value of objective is small
+    };
 
-    // Checks a set of stopping conditions
+    /// Checks a set of stopping conditions
     template <class U>
     StoppingCondition checkStop(
     	Operator <U,U>& Minv,
@@ -726,4 +734,4 @@ namespace TrustRegion{
     }
 }
 
-#endif
+#endif  // PEOPT_H
