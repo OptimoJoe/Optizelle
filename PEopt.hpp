@@ -2,9 +2,7 @@
 #define PEOPT_HPP
 
 /** \file PEopt.hpp
-    \brief Optimization interface and algorithms
-
-    \note Modified this version to put everything into a PEopt namespace
+    \brief Parameter Estimation Optimization interface and algorithms
 **/
 
 // system includes
@@ -14,9 +12,9 @@
 using std::list;
 
 /// PEopt optimization interface and algorithms
-/** PEopt supports preconditioned conjugate gradient and a variety of
-    preconditioned Newton-type methods including quasi-Newton and
-    Gauss-Newton methods 
+/** The Parameter Estimation Optimiation toolkit supports preconditioned
+    conjugate gradient and a variety of preconditioned Newton-type methods
+    including quasi-Newton and Gauss-Newton methods
 
     Copyright (c)2010 Sandia National Laboratories
 **/
