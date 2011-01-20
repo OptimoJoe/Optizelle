@@ -734,4 +734,70 @@ namespace TrustRegion{
     }
 }
 
+// Functions that support the linesearch algorithms
+namespace LineSearch{
+    /// Reasons why we stop the algorithm
+    enum StoppingCondition{
+      NotConverged,               ///< Algorithm did not converge
+      RelativeGradientSmall,      ///< Relative gradient was sufficiently small
+      RelativeObjectiveSmall,     ///< Relative value of objective is small
+      RelativeStepSmall,          ///< Relative change in the step is small
+      MaxItersExceeded,	          ///< Maximum number of iterations exceeded
+      MaxSubItersExceeded	  ///< Maximum number of subiterations exceeded
+    };
+
+    /// Checks a set of stopping conditions
+    template <class U>
+    StoppingCondition checkStop(
+	const U& g,
+	const U& g_typ,
+	const double eps_g,
+	const U& s, 
+	const U& s_typ,
+	const double eps_d,
+	const double obj_u,
+	const double obj_typ,
+	const double eps_f,
+	const double iter,
+	const double max_iter,
+	const double sub_iter,
+	const double max_sub_iter
+    ){
+	// Determine the norm of the gradient squared
+	double norm_g2 = Operations::innr(g,g);
+
+	// Determine the norm of a typical gradient squared
+	double norm_gtyp2 = Operations::innr(g_typ,g_typ);
+
+	// Check whether the norm is small relative to some typical gradient
+	if(norm_g2 < eps_g*eps_g*norm_gtyp2) return RelativeGradientSmall;
+
+	// Determine the norm of our current step squared
+	double norm_s2 = Operations::innr(s,s);
+
+	// Determine the norm of our typical step squared
+	double norm_styp2 = Operations::innr(s_typ,s_typ);
+
+	// Check whether the change in the step length has become too small
+	// relative to some typical step
+	if(norm_s2 < eps_d*eps_d*norm_styp2) return RelativeStepSmall;
+
+	// If the relative difference between the objective value becomes too
+	// small, terminate
+	if((obj_typ-obj_u)/(1+fabs(obj_typ)) < eps_f)
+	    return RelativeObjectiveSmall;
+
+	// Check if we've exceeded the number of iterations
+	if(iter>max_iter)
+	    return MaxItersExceeded;
+
+	// Check if we've exceeded the number of subiterations
+	if(sub_iter>max_sub_iter)
+	    return MaxSubItersExceeded;
+
+	// Otherwise, return that we're not converged 
+	return NotConverged;
+    }
+}
+
 #endif  // PEOPT_H
