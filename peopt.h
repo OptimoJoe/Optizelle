@@ -756,7 +756,7 @@ namespace LineSearch{
 	const U& s_typ,
 	const double eps_d,
 	const double obj_u,
-	const double obj_typ,
+	const double obj_ums,
 	const double eps_f,
 	const double iter,
 	const double max_iter,
@@ -782,9 +782,9 @@ namespace LineSearch{
 	// relative to some typical step
 	if(norm_s2 < eps_d*eps_d*norm_styp2) return RelativeStepSmall;
 
-	// If the relative difference between the objective value becomes too
+	// If the relative difference between objective values becomes too
 	// small, terminate
-	if((obj_typ-obj_u)/(1+fabs(obj_typ)) < eps_f)
+	if((obj_ums-obj_u)/(1.+fabs(obj_ums))<eps_f)
 	    return RelativeObjectiveSmall;
 
 	// Check if we've exceeded the number of iterations
