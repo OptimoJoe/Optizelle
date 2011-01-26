@@ -3,12 +3,13 @@
 
 /** \file peopt.h
     \brief Routines for constructing optimization algorithms for parameter
-	    estimation
+    estimation
 **/
 
-namespace peopt{
-    #include "core.h"
-    #include "diff_operator.h"
+/// Parameter Estimation Optimization toolkit
+namespace peopt {
+  #include "core.h"
+  #include "diff_operator.h"
 }
 
 #endif  // PEOPT_H
