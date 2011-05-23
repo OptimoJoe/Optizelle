@@ -1,7 +1,7 @@
 #ifndef DIFF_OPERATOR_H
 #define DIFF_OPERATOR_H
 
-#include "peopt.h"
+#include "core.h"
 
 // Operator possessing two derivatives and adjoints of those derivatives 
 template <class Domain, class Codomain>
@@ -113,7 +113,7 @@ namespace Hessians{
 	    // Check that we have enough work space
 	    if(workY.size() < 4)
 		pe_error("The full-Newton Hessian approximation requires "
-		    "at least three work elements in the state space.");
+		    "at least four work elements in the state space.");
 	    if(workU.size() < 1)
 		pe_error("The full-Newton Hessian approximation requires "
 		    "at least one work element in the control space.");

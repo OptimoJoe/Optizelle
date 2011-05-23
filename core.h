@@ -539,8 +539,8 @@ namespace TrustRegion{
 
 	    // If we have negative curvature or our trial point is outside the
 	    // trust region radius, terminate truncated-CG and find our final
-	    // step.
-	    if(kappa <= 0 || norm_skp1_M2 >= delta*delta){
+	    // step.  We have the kappa!=kappa check in order to trap NaNs.
+	    if(kappa <= 0 || norm_skp1_M2 >= delta*delta || kappa!=kappa){
 		// sigma = positive root of || s_k + sigma p_k ||_M = delta
 		sigma= (-inner_sk_M_pk + sqrt(inner_sk_M_pk*inner_sk_M_pk
 		    + norm_pk_M2*(delta*delta-norm_sk_M2)))/norm_pk_M2;

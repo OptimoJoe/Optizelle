@@ -1,5 +1,5 @@
 #include "mex.h"
-#include "peopt.h"
+#include "core.h"
 #include "simple_matching.h"
 
 // Wrapper function for calling the example objective function

@@ -272,6 +272,6 @@ void BasicOp::pps(
     Operations::axpy(1.,tmp3,result);	
 }
 
-void pe_error(char message[]){
+void pe_error(const char message[]){
     printf("%s\n",message);
 }

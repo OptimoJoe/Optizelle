@@ -20,4 +20,4 @@ mex -g -I/home/josyoun/usr/include -L/home/josyoun/usr/lib -llapack -lf77blas -l
 mex -g -I/home/josyoun/usr/include -L/home/josyoun/usr/lib -llapack -lf77blas -lcblas -latlas BFGS.cpp simple_matching.o
 mex -g -I/home/josyoun/usr/include -L/home/josyoun/usr/lib -llapack -lf77blas -lcblas -latlas SR1.cpp simple_matching.o
 mex -g -I/home/josyoun/usr/include -L/home/josyoun/usr/lib -llapack -lf77blas -lcblas -latlas getStep.cpp simple_matching.o
-mex -g -I/home/josyoun/usr/include -L/home/josyoun/usr/lib -llapack -lf77blas -lcblas -latlas pe_test.cpp simple_matching.o
+%mex -g -I/home/josyoun/usr/include -L/home/josyoun/usr/lib -llapack -lf77blas -lcblas -latlas pe_test.cpp simple_matching.o

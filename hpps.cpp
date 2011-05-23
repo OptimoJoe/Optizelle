@@ -1,6 +1,7 @@
 #include "mex.h"
-#include "peopt.h"
+#include "core.h"
 #include "simple_matching.h"
+#include<iostream>
 
 // Wrapper function for calling the example objective function
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]){
@@ -58,16 +59,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]){
     if(nu!=nA)
     	mexErrMsgTxt("The size of the control must match the number of linear "
 	    "operators.");
-    if(mi!=1 && ni!=1)
+    if(mi!=1 || ni!=1)
     	mexErrMsgTxt("The index must be a scalar.");
     if(mB!=nB)
     	mexErrMsgTxt("The linear operators must be square.");
-    if(neta!=nu && meta!=nu)
+    if(neta!=nu || meta!=mu)
     	mexErrMsgTxt("The size of the direction of differenetiation must match "
 	    "the control.");
-    if(nxi!=1 && mxi!=nB)
+    if(nxi!=1 || mxi!=nB)
     	mexErrMsgTxt("The size of the second direction of differenetiation "
-	    "must be a vector with size that matches the linear operators.");
+	    "must be a column vector with size that matches the linear "
+	    "operators.");
 
     // Extract the linear operators
     if(!mxIsCell(prhs[0]))

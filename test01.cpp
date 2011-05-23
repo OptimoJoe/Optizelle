@@ -2,7 +2,7 @@
 extern "C"{
     #include <clapack.h>
 }
-#include "peopt.h"
+#include "core.h"
 #include "simple_matching.h"
 
 using namespace std;
