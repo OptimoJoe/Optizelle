@@ -632,6 +632,9 @@ namespace TrustRegion{
 	// Determine alpha+<g,s>+.5*<H(u)s,s>
 	double model_s=obj_u+Operations::innr(g,s)+.5*Operations::innr(Hu_s,s);
 
+	// Determine the length of our trial step
+	double norm_s=sqrt(Operations::innr(s,s));
+
 	// As a safety check, insure that we receive reduction in the objective.
 	// Sometimes, we have some odd looking Hessian approximations due to
 	// the quasi-Newton methods.  Further, we don't exactly solve the TR
@@ -643,7 +646,7 @@ namespace TrustRegion{
 	// investigate.
 	if(obj_ups >= obj_u){
 	  accept=false;
-	  delta /= 2.;
+	  delta = norm_s/2.;
 	  return;
 	}
 
@@ -654,12 +657,15 @@ namespace TrustRegion{
 	accept = rho >= eta1 ? true : false;
 
 	// Update the trust region radius
-	if(rho >= eta2)
+	if(rho >= eta2){
+	  // Only increase the size of the trust region if we were close
+	  // to the boundary
+	  if(fabs(norm_s-delta)/(1+delta) < 1e-4)
 	    delta *= 2.;
-	else if(rho >= eta1 && rho < eta2)
+	} else if(rho >= eta1 && rho < eta2)
 	    delta = delta;
 	else
-	    delta /= 2.;
+	    delta = norm_s/2.;
     }
 
     /// Reasons why we stop the algorithm
