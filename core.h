@@ -483,7 +483,8 @@ namespace TrustRegion{
 	const int max_iter,
 	const double eps_cg,
 	list <U>& workU,
-	U& s){
+	U& s,
+	string& msg){
 
 	// Check that we have enough work space
 	if(workU.size() < 4)
@@ -503,7 +504,7 @@ namespace TrustRegion{
 	double sigma;
 	double alpha;
 	double beta;
-	double norm_sk_M2,norm_skp1_M2,norm_pk_M2,norm_g2;
+	double norm_sk_M2,norm_skp1_M2,norm_pk_M2,norm_g;
 	double inner_sk_M_pk,inner_gk_vk,inner_gkp1_vkp1;
 
 	// Initialize our variables
@@ -516,10 +517,14 @@ namespace TrustRegion{
 	norm_pk_M2=Operations::innr(g_k,v_k);	// || p_0 ||_M^2 = <g_0,v_0>	
 	inner_sk_M_pk=0.;			// <s_0,M p_0>=0
 	inner_gk_vk=norm_pk_M2;			// <g_0,v_0> = || p_0 ||_M^2
-	norm_g2=Operations::innr(g,g);		// || -g ||^2
+	norm_g=Operations::innr(g,g);		// || g ||
+
+	// Keep track of why we exit
+	string why_exit;
 
 	// Run truncated CG until we hit our max iteration or we converge
-	for(int i=0;i<max_iter;i++){
+	int i;
+	for(i=0;i<max_iter;i++){
 	    // H_pk=H p_k
 	    H(p_k,H_pk);
 
@@ -548,6 +553,15 @@ namespace TrustRegion{
 		// s_kp1=s_k+sigma p_k
 		Operations::axpy(sigma,p_k,s_k);
 
+		// Return a message as to why we exited
+		if(kappa<=0)
+		    why_exit = "kappa <= 0";
+		else
+		    why_exit = "|| s || > delta";
+
+		// Update the residual error for out output, g_k=g_k+sigma Hp_k
+		Operations::axpy(sigma,H_pk,g_k);
+
 		// Exit the loop
 		break;
 	    }
@@ -562,7 +576,7 @@ namespace TrustRegion{
 	    Operations::axpy(alpha,H_pk,g_k);
 
 	    // Test whether we've converged CG
-	    if(Operations::innr(g_k,g_k) / norm_g2 <= eps_cg*eps_cg)
+	    if(sqrt(Operations::innr(g_k,g_k)) / norm_g <= eps_cg)
 		break;
 
 	    // v_k = Minv g_k
@@ -587,6 +601,20 @@ namespace TrustRegion{
 	    // Update the norm of p_k
 	    norm_pk_M2=inner_gk_vk+beta*beta*norm_pk_M2; 
 	}
+
+	// Check if we've exceeded the maximum iteration
+	if(i==max_iter)
+	    why_exit="iter > max_iter";
+       
+       	// Grab the relative error in the CG solution
+	ostringstream emsg(ostringstream::out);
+	emsg << "Relative error in CG:\t\t\t\t" << setprecision(10)
+	    << scientific << sqrt(Operations::innr(g_k,g_k)) / norm_g << endl;
+	// Save our diagostic information
+	emsg << "Truncated CG exited at iteration "
+	    << i+1 << " due to:\t" << why_exit << endl;
+	// Export the message
+	msg = emsg.str();
     }
 
     /// Checks whether we accept or reject a step
