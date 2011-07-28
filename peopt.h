@@ -1,6 +1,12 @@
 #ifndef PEOPT_H
 #define PEOPT_H
 
+#include<list>
+#include<cmath>
+#include<sstream>
+#include<string>
+#include<iomanip>
+
 /** \file peopt.h
     \brief Routines for constructing optimization algorithms for parameter
     estimation

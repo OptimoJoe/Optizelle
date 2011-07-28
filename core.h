@@ -5,10 +5,20 @@
     \brief Various components that help construct a parameter estimation problem
 **/
 
+#if 0
 #include<list>
 #include<cmath>
+#include<sstream>
+#include<string>
+#include<iomanip>
+#endif
 
 using std::list;
+using std::ostringstream;
+using std::string;
+using std::setprecision;
+using std::scientific;
+using std::endl;
 
 // Error reporting for all of these functions
 void pe_error(const char message[]);
@@ -52,8 +62,109 @@ namespace Operations{
     double innr(const Domain& x,const Domain& y);
 }
 
+/// Functions that support all optimization algorithms 
+namespace General{
+    /// Which algorithm class do we use
+    enum AlgorithmClass{
+    	TrustRegion,		///< Trust-Region algorithms
+	LineSearch		///< Line-search algorithms
+    };
+
+    /// Reasons why we stop the algorithm
+    enum StoppingCondition{
+      NotConverged,               ///< Algorithm did not converge
+      RelativeGradientSmall,      ///< Relative gradient was sufficiently small
+      RelativeStepSmall,          ///< Relative change in the step is small
+      MaxItersExceeded,	          ///< Maximum number of iterations exceeded
+    };
+   
+    /// Reasons we stop the krylov method
+    enum KrylovStop{
+      NegativeCurvature,	///< Negative curvature detected
+      RelativeErrorSmall,	///< Relative error is small
+      MaxKrylovItersExceeded,	///< Maximum number of iterations exceeded
+      TrustRegionViolated,	///< Trust-region radius violated
+    };
+
+#if 0
+    /// Checks a set of stopping conditions
+    template <class U>
+    StoppingCondition checkStop(
+	const U& g,
+	const U& g_typ,
+	const double eps_g,
+	const U& s, 
+	const U& s_typ,
+	const double eps_d,
+	const double iter,
+	const double max_iter
+    ){
+	// Determine the norm of the gradient squared
+	double norm_g2 = Operations::innr(g,g);
+
+	// Determine the norm of a typical gradient squared
+	double norm_gtyp2 = Operations::innr(g_typ,g_typ);
+
+	// Check whether the norm is small relative to some typical gradient
+	if(norm_g2 < eps_g*eps_g*norm_gtyp2) return RelativeGradientSmall;
+
+	// Determine the norm of our current step squared
+	double norm_s2 = Operations::innr(s,s);
+
+	// Determine the norm of our typical step squared
+	double norm_styp2 = Operations::innr(s_typ,s_typ);
+
+	// Check whether the change in the step length has become too small
+	// relative to some typical step
+	if(norm_s2 < eps_d*eps_d*norm_styp2) return RelativeStepSmall;
+
+	// Check if we've exceeded the number of iterations
+	if(iter>max_iter)
+	    return MaxItersExceeded;
+
+	// Otherwise, return that we're not converged 
+	return NotConverged;
+    }
+#endif
+    
+    /// Checks a set of stopping conditions
+    template <class U>
+    StoppingCondition checkStop(
+    	const double norm_g,
+	const double norm_gtyp,
+	const double eps_g,
+	const double norm_s,
+	const double norm_styp,
+	const double eps_d,
+	const int iter,
+	const int max_iter
+    ){
+
+	// Check whether the norm is small relative to some typical gradient
+	if(norm_g < eps_g*norm_gtyp) return RelativeGradientSmall;
+
+	// Check whether the change in the step length has become too small
+	// relative to some typical step
+	if(norm_s < eps_d*norm_styp) return RelativeStepSmall;
+
+	// Check if we've exceeded the number of iterations
+	if(iter>max_iter) return MaxItersExceeded;
+
+	// Otherwise, return that we're not converged 
+	return NotConverged;
+    }
+}
+
 /// Functions that act has Hessian approximations
 namespace Hessians{
+    /// Type of Hessian approximations
+    enum Type{
+	Identity_t,    ///< Identity approximation
+	BFGS_t,        ///< BFGS approximation
+	SR1_t,         ///< SR1 approximation
+	GaussNewton_t  ///< Gauss Newton approximation
+    };
+
     /// The identity Hessian approximation 
     template <class U>
     class Identity : public Operator <U,U> {
@@ -358,6 +469,12 @@ namespace Hessians{
 
 /// Functions that precondition truncated CG
 namespace Preconditioners{
+    /// Type of preconditioner
+    enum Type{
+	Identity_t,    ///< Identity (no) preconditioner
+	BFGS_t,        ///< BFGS preconditioner
+        SR1_t          ///< SR1 preconditioner
+    }; 
     
     /// The identity preconditioner
     template <class U>
@@ -484,7 +601,9 @@ namespace TrustRegion{
 	const double eps_cg,
 	list <U>& workU,
 	U& s,
-	string& msg){
+	double &rel_err,
+	General::KrylovStop& why_stop,
+	int &iter){
 
 	// Check that we have enough work space
 	if(workU.size() < 4)
@@ -523,8 +642,7 @@ namespace TrustRegion{
 	string why_exit;
 
 	// Run truncated CG until we hit our max iteration or we converge
-	int i;
-	for(i=0;i<max_iter;i++){
+	for(iter=1;iter<=max_iter;iter++){
 	    // H_pk=H p_k
 	    H(p_k,H_pk);
 
@@ -555,9 +673,9 @@ namespace TrustRegion{
 
 		// Return a message as to why we exited
 		if(kappa<=0)
-		    why_exit = "kappa <= 0";
+		    why_stop = General::NegativeCurvature;
 		else
-		    why_exit = "|| s || > delta";
+		    why_stop = General::TrustRegionViolated;
 
 		// Update the residual error for out output, g_k=g_k+sigma Hp_k
 		Operations::axpy(sigma,H_pk,g_k);
@@ -576,8 +694,10 @@ namespace TrustRegion{
 	    Operations::axpy(alpha,H_pk,g_k);
 
 	    // Test whether we've converged CG
-	    if(sqrt(Operations::innr(g_k,g_k)) / norm_g <= eps_cg)
+	    if(sqrt(Operations::innr(g_k,g_k)) / norm_g <= eps_cg){
+	    	why_stop = General::RelativeErrorSmall;
 		break;
+	    }
 
 	    // v_k = Minv g_k
 	    Minv(g_k,v_k);
@@ -603,18 +723,13 @@ namespace TrustRegion{
 	}
 
 	// Check if we've exceeded the maximum iteration
-	if(i==max_iter)
-	    why_exit="iter > max_iter";
+	if(iter>max_iter){
+	  why_stop=General::MaxKrylovItersExceeded;
+	  iter--;
+	}
        
        	// Grab the relative error in the CG solution
-	ostringstream emsg(ostringstream::out);
-	emsg << "Relative error in CG:\t\t\t\t" << setprecision(10)
-	    << scientific << sqrt(Operations::innr(g_k,g_k)) / norm_g << endl;
-	// Save our diagostic information
-	emsg << "Truncated CG exited at iteration "
-	    << i+1 << " due to:\t" << why_exit << endl;
-	// Export the message
-	msg = emsg.str();
+	rel_err=sqrt(Operations::innr(g_k,g_k)) / norm_g;
     }
 
     /// Checks whether we accept or reject a step
@@ -832,6 +947,130 @@ namespace LineSearch{
 	// Otherwise, return that we're not converged 
 	return NotConverged;
     }
+    
+    /// Different kinds of search directions 
+    enum Directions{
+      SteepestDescent_t,	///< SteepestDescent 
+      FletcherReeves_t,		///< Fletcher-Reeves CG
+      PolakRibiere_t,		///< Polak-Ribiere CG
+      HestenesStiefel_t,	///< Polak-Ribiere CG
+      BFGS_t,			///< Limited-memory BFGS 
+    };
+
+    /// Steepest descent search direction
+    template <class U>
+    void SteepestDescent(
+    	const U& g,
+	U& s
+    ){
+    	// We take the steepest descent direction
+	Operations::copy(g,s);
+	Operations::scal(-1.,s);
+    }
+
+    /// Fletcher-Reeves CG search direction
+    template <class U>
+    void FletcherReeves(
+    	const U& g,
+	const U& g_old,
+	const U& s_old,
+	const bool first_iteration,
+	U& s
+    ){
+    	// If we're on the first iterations, we take the steepest descent
+	// direction
+    	if(first_iteration){
+	    Operations::copy(g,s);
+	    Operations::scal(-1.,s);
+
+	// On subsequent iterations, we take the FR direction
+	} else {
+	    // Find the momentum parameter
+	    double beta=Operations::innr(g,g)/Operations::innr(g_old,g_old);
+
+	    // Find -g+beta*s_old
+	    Operations::copy(g,s);
+	    Operations::scal(-1.,s);
+	    Operations::axpy(beta,s_old,s);
+	}
+    }
+    
+    /// Polak-Ribiere CG search direction
+    template <class U>
+    void PolakRibiere(
+    	const U& g,
+	const U& g_old,
+	const U& s_old,
+	const bool first_iteration,
+	U& s
+    ){
+    	// If we're on the first iterations, we take the steepest descent
+	// direction
+    	if(first_iteration){
+	    Operations::copy(g,s);
+	    Operations::scal(-1.,s);
+
+	// On subsequent iterations, we take the FR direction
+	} else {
+	    // Find the momentum parameter
+	    double beta=(Operations::innr(g,g)-Operations::innr(g,g_old))
+		/Operations::innr(g_old,g_old);
+
+	    // Find -g+beta*s_old
+	    Operations::copy(g,s);
+	    Operations::scal(-1.,s);
+	    Operations::axpy(beta,s_old,s);
+	}
+    }
+    
+    /// Hestenes-Stiefel search direction
+    template <class U>
+    void HestenesStiefel(
+    	const U& g,
+	const U& g_old,
+	const U& s_old,
+	const bool first_iteration,
+	U& s
+    ){
+    	// If we're on the first iterations, we take the steepest descent
+	// direction
+    	if(first_iteration){
+	    Operations::copy(g,s);
+	    Operations::scal(-1.,s);
+
+	// On subsequent iterations, we take the FR direction
+	} else {
+	    // Find the momentum parameter
+	    double beta=(Operations::innr(g,g)-Operations::innr(g,g_old))
+		/(Operations::innr(g,s_old)-Operations::innr(g_old,s_old));
+
+	    // Find -g+beta*s_old
+	    Operations::copy(g,s);
+	    Operations::scal(-1.,s);
+	    Operations::axpy(beta,s_old,s);
+	}
+    }
+
+    /// BFGS search direction
+    template <class U>
+    void BFGS(
+	Operator <U,U>& Hinv,
+    	const U& g,
+	U& s
+    ){
+    	// Apply the inverse Hessian to the gradient
+	Hinv(g,s);
+
+	// Negate the result
+	Operations::scal(-1.,s);
+    }
+    
+    /// Different kinds of line searches 
+    enum SearchKind{
+      Brents_t,		///< Brent's minimization
+      TwoPointA_t,	///< Barzilai and Borwein's method A
+      TwoPointB_t,	///< Barzilai and Borwein's method B
+    };
 }
 
 #endif 
