@@ -781,7 +781,7 @@ namespace TrustRegion{
 	// Add a safety check in case we don't actually minimize the TR
 	// subproblem correctly.
 	if(model_s > obj_u)
-	    perror("For some reason, we did not minimize the model problem.")
+	    perror("For some reason, we did not minimize the model problem.");
 
 	// Determine the ratio of reductions
 	rho = (obj_u - obj_ups) / (obj_u - model_s);
