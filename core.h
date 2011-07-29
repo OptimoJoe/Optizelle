@@ -778,20 +778,10 @@ namespace TrustRegion{
 	// Determine the length of our trial step
 	double norm_s=sqrt(Operations::innr(s,s));
 
-	// As a safety check, insure that we receive reduction in the objective.
-	// Sometimes, we have some odd looking Hessian approximations due to
-	// the quasi-Newton methods.  Further, we don't exactly solve the TR
-	// subproblem.  Hence, it's possible that the model minizer is greater
-	// than the current objective value and the objective value at the
-	// trial step is greater which makes it appear as though we have a
-	// reduction in value which we don't.
-	// This could also be a bug in our code.  It's worthwhile to
-	// investigate.
-	if(obj_ups >= obj_u){
-	  accept=false;
-	  delta = norm_s/2.;
-	  return;
-	}
+	// Add a safety check in case we don't actually minimize the TR
+	// subproblem correctly.
+	if(model_s > obj_u)
+	    perror("For some reason, we did not minimize the model problem.")
 
 	// Determine the ratio of reductions
 	rho = (obj_u - obj_ups) / (obj_u - model_s);
