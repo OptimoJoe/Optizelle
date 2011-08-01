@@ -638,9 +638,6 @@ namespace TrustRegion{
 	inner_gk_vk=norm_pk_M2;			// <g_0,v_0> = || p_0 ||_M^2
 	norm_g=Operations::innr(g,g);		// || g ||
 
-	// Keep track of why we exit
-	string why_exit;
-
 	// Run truncated CG until we hit our max iteration or we converge
 	for(iter=1;iter<=max_iter;iter++){
 	    // H_pk=H p_k
