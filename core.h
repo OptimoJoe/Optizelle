@@ -86,47 +86,6 @@ namespace General{
       TrustRegionViolated,	///< Trust-region radius violated
     };
 
-#if 0
-    /// Checks a set of stopping conditions
-    template <class U>
-    StoppingCondition checkStop(
-	const U& g,
-	const U& g_typ,
-	const double eps_g,
-	const U& s, 
-	const U& s_typ,
-	const double eps_d,
-	const double iter,
-	const double max_iter
-    ){
-	// Determine the norm of the gradient squared
-	double norm_g2 = Operations::innr(g,g);
-
-	// Determine the norm of a typical gradient squared
-	double norm_gtyp2 = Operations::innr(g_typ,g_typ);
-
-	// Check whether the norm is small relative to some typical gradient
-	if(norm_g2 < eps_g*eps_g*norm_gtyp2) return RelativeGradientSmall;
-
-	// Determine the norm of our current step squared
-	double norm_s2 = Operations::innr(s,s);
-
-	// Determine the norm of our typical step squared
-	double norm_styp2 = Operations::innr(s_typ,s_typ);
-
-	// Check whether the change in the step length has become too small
-	// relative to some typical step
-	if(norm_s2 < eps_d*eps_d*norm_styp2) return RelativeStepSmall;
-
-	// Check if we've exceeded the number of iterations
-	if(iter>max_iter)
-	    return MaxItersExceeded;
-
-	// Otherwise, return that we're not converged 
-	return NotConverged;
-    }
-#endif
-    
     /// Checks a set of stopping conditions
     template <class U>
     StoppingCondition checkStop(
@@ -589,7 +548,7 @@ namespace Preconditioners{
 /// Functions that support the trust region algorithm
 namespace TrustRegion{
     	
-    /// Computes the Steihaug-Toint trial step
+    /// Computes the truncated-CG (Steihaug-Toint) trial step
     template <class U>
     void getStep(
 	Operator<U,U>& Minv,
@@ -669,7 +628,7 @@ namespace TrustRegion{
 		Operations::axpy(sigma,p_k,s_k);
 
 		// Return a message as to why we exited
-		if(kappa<=0)
+		if(kappa<=0 || kappa!=kappa)
 		    why_stop = General::NegativeCurvature;
 		else
 		    why_stop = General::TrustRegionViolated;
@@ -776,9 +735,19 @@ namespace TrustRegion{
 	double norm_s=sqrt(Operations::innr(s,s));
 
 	// Add a safety check in case we don't actually minimize the TR
-	// subproblem correctly.
-	if(model_s > obj_u)
-	    perror("For some reason, we did not minimize the model problem.");
+	// subproblem correctly.  This could happen for a variety of reasons.
+	// Most notably, if we do not correctly calculate the Hessian
+	// approximation, we could have an approximation, which is nonsymmetric.
+	// In that case, truncated-CG will exit, but has an undefined
+	// result.  In the case that the actual reduction also increases,
+	// rho could have an extraneous positive value.  Hence, we require
+	// an extra check.
+	if(model_s > obj_u){
+	    accept=false;
+	    delta = norm_s/2.;
+	    rho = std::numeric_limits<double>::quiet_NaN(); 
+	    return;
+	}
 
 	// Determine the ratio of reductions
 	rho = (obj_u - obj_ups) / (obj_u - model_s);
@@ -887,7 +856,7 @@ namespace LineSearch{
       RelativeStepSmall,          ///< Relative change in the step is small
       MaxItersExceeded,	          ///< Maximum number of iterations exceeded
     };
-
+    
     /// Checks a set of stopping conditions
     template <class U>
     StoppingCondition checkStop(
@@ -942,6 +911,7 @@ namespace LineSearch{
       PolakRibiere_t,		///< Polak-Ribiere CG
       HestenesStiefel_t,	///< Polak-Ribiere CG
       BFGS_t,			///< Limited-memory BFGS 
+      NewtonCG_t		///< Newton-CG
     };
 
     /// Steepest descent search direction
@@ -1051,6 +1021,128 @@ namespace LineSearch{
 	// Negate the result
 	Operations::scal(-1.,s);
     }
+    
+    /** Computes the Newton-CG (truncated-CG) trial step.  Essentially, this is
+    the same as trust-region except that we do not have a restriction on the
+    size of the step (no trust-reigon radius).  In the case that we
+    encounter negative curvature, we use the last good step.  **/ 
+    template <class U>
+    void NewtonCG(
+	Operator<U,U>& Minv,
+	Operator<U,U>& H,
+	const U& u,
+	const U& g,
+	const int max_iter,
+	const double eps_cg,
+	list <U>& workU,
+	U& s,
+	double &rel_err,
+	General::KrylovStop& why_stop,
+	int &iter){
+
+	// Check that we have enough work space
+	if(workU.size() < 4)
+	    pe_error("In order to compute the truncated CG algorithm, we "
+		"require at least four work elements in the control space.");
+
+	// Create shortcuts for each of the elements that we need
+	typename list <U>::iterator u_iter=workU.begin();
+	U& s_k=s;
+	U& g_k=*u_iter;
+	U& v_k=*(++u_iter);
+	U& p_k=*(++u_iter);
+	U& H_pk=*(++u_iter);
+
+	// Allocate memory for a few constants that we need to track 
+	double kappa;
+	double sigma;
+	double alpha;
+	double beta;
+	double norm_g;
+	double inner_gk_vk,inner_gkp1_vkp1;
+
+	// Initialize our variables
+	Operations::zero(s_k);			// s_0=0
+	Operations::copy(g,g_k);		// g_0=g
+	Minv(g_k,v_k);				// v_0=inv(M)*g_0
+	Operations::copy(v_k,p_k);		// p_0=-v_0
+	Operations::scal(-1.,p_k);
+	inner_gk_vk=Operations::innr(g_k,v_k);	// <g_0,v_0>	
+	norm_g=Operations::innr(g,g);		// || g ||
+
+	// Run truncated CG until we hit our max iteration or we converge
+	for(iter=1;iter<=max_iter;iter++){
+	    // H_pk=H p_k
+	    H(p_k,H_pk);
+
+	    // Compute the curvature for this direction.  kappa=<p_k,H p_k>
+	    kappa=Operations::innr(p_k,H_pk);
+
+	    // If we have negative curvature, don't bother with the next 
+	    // step since we're going to exit and we don't need it. 
+	    if(kappa > 0){
+		// Determine a trial point
+		alpha = Operations::innr(g_k,v_k)/kappa;
+	    }
+
+	    // If we have negative curvature terminate truncated-CG and find
+	    // our final step.  We have the kappa!=kappa check in order to
+	    // trap NaNs.
+	    if(kappa <= 0 || kappa!=kappa){
+
+	    	// If we're on the first iteration and we already have
+		// negative curvature, use the steepest-descent direction.
+	    	if(iter==1){
+		    Operations::copy(g_k,s_k);
+		    Operations::scal(-1.,s_k);
+		}
+
+		// Return a message as to why we exited
+		why_stop = General::NegativeCurvature;
+
+		// Exit the loop
+		break;
+	    }
+
+	    // Take a step in the computed direction. s_k=s_k+alpha p_k
+	    Operations::axpy(alpha,p_k,s_k);
+
+	    // g_k=g_k+alpha H p_k
+	    Operations::axpy(alpha,H_pk,g_k);
+
+	    // Test whether we've converged CG
+	    if(sqrt(Operations::innr(g_k,g_k)) / norm_g <= eps_cg){
+	    	why_stop = General::RelativeErrorSmall;
+		break;
+	    }
+
+	    // v_k = Minv g_k
+	    Minv(g_k,v_k);
+
+	    // Compute the new <g_kp1,v_kp1>
+	    inner_gkp1_vkp1=Operations::innr(g_k,v_k);
+
+	    // beta = <g_kp1,v_kp1> / <g_k,v_k>
+	    beta= inner_gkp1_vkp1 / inner_gk_vk;
+
+	    // Store the new inner product between g_k and p_k
+	    inner_gk_vk=inner_gkp1_vkp1;
+	    
+	    // Find the new search direction.  p_k=-v_k + beta p_k
+	    Operations::scal(beta,p_k);
+	    Operations::axpy(-1.,v_k,p_k);
+	}
+
+	// Check if we've exceeded the maximum iteration
+	if(iter>max_iter){
+	  why_stop=General::MaxKrylovItersExceeded;
+	  iter--;
+	}
+       
+       	// Grab the relative error in the CG solution
+	rel_err=sqrt(Operations::innr(g_k,g_k)) / norm_g;
+    }
+
     
     /// Different kinds of line searches 
     enum SearchKind{
