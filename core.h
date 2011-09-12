@@ -118,10 +118,11 @@ namespace General{
 namespace Hessians{
     /// Type of Hessian approximations
     enum Type{
-	Identity_t,    ///< Identity approximation
-	BFGS_t,        ///< BFGS approximation
-	SR1_t,         ///< SR1 approximation
-	GaussNewton_t  ///< Gauss Newton approximation
+	Identity_t,        ///< Identity approximation
+	ScaledIdentity_t,  ///< Identity approximation
+	BFGS_t,            ///< BFGS approximation
+	SR1_t,             ///< SR1 approximation
+	GaussNewton_t      ///< Gauss Newton approximation
     };
 
     /// The identity Hessian approximation 
@@ -130,6 +131,23 @@ namespace Hessians{
     public:
 	void operator () (const U& p,U& result) const{
 	    Operations::copy(p,result);
+	}
+    };
+
+    /// The scaled identity Hessian approximation.  Specifically, use use
+    /// norm(g) / delta_max I.
+    template <class U>
+    class ScaledIdentity : public Operator <U,U> {
+    private:
+    	const U& g;
+	const double delta_max;
+    public:
+    	ScaledIdentity(U& g_,double& delta_max_)
+	    : g(g_), delta_max(delta_max_) {};
+	void operator () (const U& p,U& result) const{
+	    const double norm_g=sqrt(Operations::innr(g,g));
+	    Operations::copy(p,result);
+	    Operations::scal(norm_g/delta_max,result);
 	}
     };
 
@@ -699,6 +717,7 @@ namespace TrustRegion{
 	const double obj_u,
 	const double eta1,
 	const double eta2,
+	const double delta_max,
 	list <U>& workU,
 	double& delta,
 	bool& accept,
@@ -760,7 +779,7 @@ namespace TrustRegion{
 	  // Only increase the size of the trust region if we were close
 	  // to the boundary
 	  if(fabs(norm_s-delta)/(1+delta) < 1e-4)
-	    delta *= 2.;
+	    delta = std::min(delta*2.,delta_max);
 	} else if(rho >= eta1 && rho < eta2)
 	    delta = delta;
 	else
