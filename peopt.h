@@ -6,6 +6,7 @@
 #include<sstream>
 #include<string>
 #include<iomanip>
+#include<limits>
 
 /** \file peopt.h
     \brief Routines for constructing optimization algorithms for parameter
