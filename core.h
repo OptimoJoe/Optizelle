@@ -39,6 +39,15 @@ public:
     virtual double operator () (const Domain& x) const = 0;
 };
 
+/// A combination of the operator and functional functionalities
+template <class Domain,class Codomain>
+class OperatorFunctional : public Operator <Domain,Codomain> {
+public:
+    /// Basic application
+    virtual void operator () (const Domain& x,Codomain &y,double &obj_val)
+	const = 0;
+};
+
 /// Basic linear algebra operations 
 namespace Operations{
     /// Scalar multiple
