@@ -1,0 +1,320 @@
+\documentclass{article}
+
+\usepackage{listings}
+\usepackage{amssymb}
+
+\newcommand{\re}{\mathbb{R}}
+
+\title{The peopt Reference Manual}
+\author{Joseph Young}
+
+\begin{document}
+\lstset{language=C++}
+
+
+\maketitle
+
+\section{Introduction}
+
+	The peopt (Parameter Estimation Using Optimization) library provides a collection of routines to implement a general purpose, matrix free, unconstrained optimization code.  In addition, it provides a series of operators used to quickly build the necessary components for a parameter estimation code.
+
+\section{Basic API}
+
+	The following chapter describes the basic interface for the peopt code.  All routines may be accessed through {\texttt peopt.h}, which is itself split into {\texttt core.h} and {\texttt diff\_operator.h}.  The header file {\texttt core.h} contains the generic optimization routines and the header file {\texttt diff\_operator.h} contains building blocks for parameter estimation.  Both will be described below.
+
+\subsection{Operator Specifications}
+
+	The operator specifications provide an interface for a generic operator and functional.  We use these operators create a well-defined interface for operations such as the gradient or Hessian-vector products later.
+
+\subsubsection{Operator}
+
+\begin{flushleft}
+\begin{lstlisting}
+template <class Domain, class Codomain>
+class Operator {
+public:
+    virtual void operator () (const Domain& x,Codomain &y) const = 0;
+};
+\end{lstlisting}
+\end{flushleft}
+
+Defines a generic operator $A$ so that $y=A(x)$.
+
+\subsubsection{Functional}
+
+\begin{flushleft}
+\begin{lstlisting}
+template <class Domain>
+class Functional {
+public:
+    virtual double operator () (const Domain& x) const = 0;
+};
+\end{lstlisting}
+\end{flushleft}
+
+Defines a function $f$ so that $functional\leftarrow f(x)$.
+
+\subsubsection{Operator/Functional}
+
+\begin{flushleft}
+\begin{lstlisting}
+template <class Domain,class Codomain>
+class OperatorFunctional : public Operator <Domain,Codomain> {
+public:
+    virtual void operator () (const Domain& x,Codomain &y,double &obj_val)
+	const = 0;
+};
+\end{lstlisting}
+\end{flushleft}
+
+Defines both an operator $A$ and a function $f$ so that $y=A(x)$ and $functional\leftarrow f(x)$.  Most often, this is useful when two operations can be calculated simultaneously.  For example, in the context of parameter estimation, we can frequently calculate the objective function during the coarse of a gradient calculation.
+
+\subsection{Algebraic Operations}
+
+	The algebraic operations define the core set of routines required to implement an optimization algorithm.  The peopt library does not provide concrete implementations for these functions; they must be provided by the user.  Note, each of these functions lies in the namespace {\texttt Operations}.
+
+\subsubsection{Scalar Multiplication}
+
+\begin{flushleft}
+\begin{lstlisting}
+template <class Domain>
+void scal(const double alpha,Domain& x);
+\end{lstlisting}
+\end{flushleft}
+
+Defines the scalar multiplication operation $x\leftarrow \alpha x$. 
+
+\subsubsection{Copy}
+
+\begin{flushleft}
+\begin{lstlisting}
+template <class Domain>
+void copy(const Domain& from, Domain& to);
+\end{lstlisting}
+\end{flushleft}
+
+Defines the copy operation $to \leftarrow from$.  This assume that memory has already been allocated for both inputs and that $from$ and $to$ do not share memory for their storage.
+
+\subsubsection{Addition}
+
+\begin{flushleft}
+\begin{lstlisting}
+template <class Domain>
+void axpy(const double alpha,const Domain& x,Domain& y);
+\end{lstlisting}
+\end{flushleft}
+
+Defines the addition operation $y\leftarrow \alpha x+y$.
+
+\subsubsection{Zeroing}
+
+\begin{flushleft}
+\begin{lstlisting}
+template <class Domain>
+void zero(Domain& x);
+\end{lstlisting}
+\end{flushleft}
+
+Defines the zeroing operation $x\leftarrow 0$.  Most often, this can be accomplished by scaling an element by $0$.
+
+\subsubsection{Inner Product}
+
+\begin{flushleft}
+\begin{lstlisting}
+template <class Domain>
+double innr(const Domain& x,const Domain& y);
+\end{lstlisting}
+\end{flushleft}
+
+Defines the inner product operation $innr\leftarrow \langle x,y\rangle$.  This inner product can be anything appropriate for the problem.  For example, in $\re^m$, $\langle x,y\rangle=x^Ty$ suffices.  In $L^2(\Omega)$, $\langle x,y\rangle=\int_{\Omega} xy$.
+
+\subsection{General Information/Constructs}
+
+	The general information and constructs define a series of specification information in addition to a few routines generic to both line-search and trust-region methods, e.g. stopping criteria.  Each of these elements is defined in the namespace {\texttt General}. 
+
+\subsubsection{Algorithm Class}
+
+\begin{flushleft}
+\begin{lstlisting}
+enum AlgorithmClass{
+    TrustRegion, 
+    LineSearch
+};
+\end{lstlisting}
+\end{flushleft}
+
+Specifies whether or not we're working with a trust-region method or a line-search method.
+
+\subsubsection{Krylov Stopping Conditions}
+
+\begin{flushleft}
+\begin{lstlisting}
+enum KrylovStop{
+  NegativeCurvature,        
+  RelativeErrorSmall,      
+  MaxKrylovItersExceeded,  
+  TrustRegionViolated,    
+};
+\end{lstlisting}
+\end{flushleft}
+
+Specifies why the Krylov method terminated.  Typically, we use truncated conjugate gradient (truncated CG) as our underlying Krylov method for both line-search and trust-region methods.  In this context, we terminate the method when either we detect negative curvature, which can potentially occur when the Hessian is not positive, the relative error in current solution is small, we exceed a maximum number of Krylov iterations, or when we violate the trust-region radius.  Certainly, the last can not occur in the context of a line-search method.
+
+\subsubsection{Optimization Stopping Conditions}
+
+\begin{flushleft}
+\begin{lstlisting}
+enum StoppingCondition{
+  NotConverged,            
+  RelativeGradientSmall,    
+  RelativeStepSmall,         
+  MaxItersExceeded,           
+};
+
+template <class U>
+StoppingCondition checkStop(
+    const double norm_g,
+    const double norm_gtyp,
+    const double eps_g,
+    const double norm_s,
+    const double norm_styp,
+    const double eps_d,
+    const int iter,
+    const int max_iter
+);
+\end{lstlisting}
+\end{flushleft}
+
+This routine determines whether or not the optimization should be terminated.  At the moment, there are three different stopping criteria.  First, we stop when the relative size of the gradient is small relative to some typical gradient,
+$$
+	\|g\|\leq \epsilon_g \|g_{typ}\|.
+$$
+Second, we stop when the relative size of a step is small with respect to some typical step,
+$$
+	\|s\|\leq \epsilon_d \|s_{typ}\|.
+$$
+Finally, we stop when we have exceeded a fixed number of iterations.  One easy estimate for the typical gradient and step is the gradient and step from the first iteration.
+
+\subsection{Hessians and Approximations}
+
+The following sections details information about Hessians and Hessian approximations provided by the library.  Each of these operators is defined in the namespace {\texttt Hessians}.
+
+\subsubsection{Types of Hessians}
+
+\begin{flushleft}
+\begin{lstlisting}
+enum Type{
+    Identity_t,     
+    ScaledIdentity_t,
+    BFGS_t,          
+    SR1_t,            
+    GaussNewton_t      
+};
+\end{lstlisting}
+\end{flushleft}
+
+We implement five different kinds of Hessians and approximations: the identity, a scaled version of the identiy, BFGS, SR1, and Gauss-Newton.  We explain each of these operators below.
+
+\subsubsection{Identity}
+
+\begin{flushleft}
+\begin{lstlisting}
+template <class U>
+class Identity : public Operator <U,U>; 
+\end{lstlisting}
+\end{flushleft}
+
+This implements the operator $A:U\rightarrow U$ so that $A(u)=u$.
+
+\subsubsection{Scaled Identity}
+
+\begin{flushleft}
+\begin{lstlisting}
+template <class U>
+class ScaledIdentity : public Operator <U,U>;
+ScaledIdentity(U& g_,double& delta_max_);
+\end{lstlisting}
+\end{flushleft}
+
+This implements a scaled version of the identity.  Specifically, given $g$ and $\Delta_{max}$, this implements the operator $A:U\rightarrow U$ so that $A(u)=\|g\|/\Delta_{max} u$.  This operator is most useful when trying to implement steepest descent in trust-region methods.  If the gradient is very small, new iterates found by trust-region methods when using the identity operator are correspondingly small.  This means that very little progress is made toward optimality.  This occurs since truncated-CG exits premanturely since the error in the Krylov method appears to be small.  In order to prevent this behavior, we scale the identity operator.  In a line-search method, this is generally not required since the line-search takes care of the scaling issues.
+
+\subsubsection{BFGS}
+
+\begin{flushleft}
+\begin{lstlisting}
+template <class U>
+class BFGS : public Operator <U,U>; 
+BFGS(list <U>& oldY_,list <U>& oldS_,list <U>& work_);
+\end{lstlisting}
+\end{flushleft}
+
+This implements a reduced-memory version of the BFGS operator.  In order to construct it, it requires three inputs.  First, we require a list of gradient residuals, $y_i=g_i-g_{i-1}$.  Second, we require a list of iterate residuals, $s_i=u_i-u_{i-1}$.  Finally, we require a work space that contains as many elements as both $y$ and $s$.  In terms of the implementation, this implements the {\it forward} BFGS operator using a recursive formulation.
+
+\subsubsection{SR1}
+
+\begin{flushleft}
+\begin{lstlisting}
+template <class U>
+class SR1 : public Operator <U,U>; 
+SR1(list <U>& oldY_,list <U>& oldS_,list <U>& work_);
+\end{lstlisting}
+\end{flushleft}
+
+Similar to BFGS, this implements a reduced-memory version of the SR1 operator.  It has the same inputs as BFGS and also uses a recursively implementation.
+
+\subsection{Preconditioners}
+
+In the follow section, we discuss the preconditioners available in the package.  These preconditioners are used within truncated-CG, which is used in all trust-region methods and within Newton-CG.  All of these operators can be found in the namespace {\texttt Preconditioners}
+
+\subsubsection{Types of Preconditioners}
+
+\begin{flushleft}
+\begin{lstlisting}
+enum Type{      
+    Identity_t,  
+    BFGS_t,       
+    SR1_t          
+};
+\end{lstlisting}
+\end{flushleft}
+
+This enumerated type indicates that we can either use the identity, BFGS, or SR1 as preconditioners.
+
+\subsubsection{Identity}
+
+\begin{flushleft}
+\begin{lstlisting}
+template <class U>
+class Identity : public Operator <U,U> {
+\end{lstlisting}
+\end{flushleft}
+
+This implements the identity operator $A:U\rightarrow U$ where $A(u)=u$.  Essentially, with this option, we use no preconditioner.
+
+
+\subsubsection{BFGS}
+
+\begin{flushleft}
+\begin{lstlisting}
+template <class U>
+class BFGS : public Operator <U,U>;
+BFGS(list <U>& oldY_,list <U>& oldS_); 
+\end{lstlisting}
+\end{flushleft}
+
+This implements the inverse of the BFGS operator.  Like the forward operator, it implements a reduced-memory BFGS using a recursive formulation.  However, unlike the forward operator, it does not require a workspace.
+
+\subsubsection{SR1}
+
+\begin{flushleft}
+\begin{lstlisting}
+template <class U>
+class SR1 : public Operator <U,U>;
+SR1(list <U>& oldY_,list <U>& oldS_,list <U>& work_); 
+\end{lstlisting}
+\end{flushleft}
+
+This implements the inverse of the SR1 operator.  It uses the same signature as the forward operator.
+
+
+\end{document}
