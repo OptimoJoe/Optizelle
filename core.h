@@ -457,9 +457,10 @@ namespace Hessians{
 namespace Preconditioners{
     /// Type of preconditioner
     enum Type{
-	Identity_t,    ///< Identity (no) preconditioner
-	BFGS_t,        ///< BFGS preconditioner
-        SR1_t          ///< SR1 preconditioner
+	      Identity_t,    ///< Identity (no) preconditioner
+	      BFGS_t,        ///< BFGS preconditioner
+        SR1_t,         ///< SR1 preconditioner
+        External_t     ///< External preconditioner
     }; 
     
     /// The identity preconditioner
