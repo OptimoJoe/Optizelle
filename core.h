@@ -457,8 +457,8 @@ namespace Hessians{
 namespace Preconditioners{
     /// Type of preconditioner
     enum Type{
-	      Identity_t,    ///< Identity (no) preconditioner
-	      BFGS_t,        ///< BFGS preconditioner
+	Identity_t,    ///< Identity (no) preconditioner
+	BFGS_t,        ///< BFGS preconditioner
         SR1_t,         ///< SR1 preconditioner
         External_t     ///< External preconditioner
     }; 
@@ -678,7 +678,7 @@ namespace TrustRegion{
 	    Operations::axpy(alpha,H_pk,g_k);
 
 	    // Test whether we've converged CG
-	    if(sqrt(Operations::innr(g_k,g_k)) / norm_g <= eps_cg){
+	    if(sqrt(Operations::innr(g_k,g_k)) <= eps_cg*norm_g){
 	    	why_stop = General::RelativeErrorSmall;
 		break;
 	    }
