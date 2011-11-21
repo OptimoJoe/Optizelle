@@ -27,25 +27,31 @@ void pe_error(const char message[]);
 template <class Domain, class Codomain>
 class Operator {
 public:
-    /// Basic application
-    virtual void operator () (const Domain& x,Codomain &y) const = 0;
+  /// Destructor
+  virtual ~Operator() {}
+  /// Basic application
+  virtual void operator () (const Domain& x,Codomain &y) const = 0;
 };
 
 /// A simple functional interface
 template <class Domain>
 class Functional {
 public:
-    /// Basic application
-    virtual double operator () (const Domain& x) const = 0;
+  /// Destructor
+  virtual ~Functional() {}
+  /// Basic application
+  virtual double operator () (const Domain& x) const = 0;
 };
 
 /// A combination of the operator and functional functionalities
 template <class Domain,class Codomain>
 class OperatorFunctional : public Operator <Domain,Codomain> {
 public:
-    /// Basic application
-    virtual void operator () (const Domain& x,Codomain &y,double &obj_val)
-	const = 0;
+  /// Destructor
+  virtual ~OperatorFunctional() {}
+  /// Basic application
+  virtual void operator () (const Domain& x,Codomain &y,double &obj_val)
+    const = 0;
 };
 
 /// Basic linear algebra operations 
@@ -138,9 +144,10 @@ namespace Hessians{
     template <class U>
     class Identity : public Operator <U,U> {
     public:
-	void operator () (const U& p,U& result) const{
-	    Operations::copy(p,result);
-	}
+      ~Identity() {}
+      void operator () (const U& p,U& result) const{
+        Operations::copy(p,result);
+      }
     };
 
     /// The scaled identity Hessian approximation.  Specifically, use use
@@ -151,6 +158,7 @@ namespace Hessians{
     	const U& g;
 	const double delta_max;
     public:
+      ~ScaledIdentity() {}
     	ScaledIdentity(U& g_,double& delta_max_)
 	    : g(g_), delta_max(delta_max_) {};
 	void operator () (const U& p,U& result) const{
@@ -175,6 +183,8 @@ namespace Hessians{
     	BFGS(list <U>& oldY_,list <U>& oldS_,list <U>& work_)
 	    : oldY(oldY_) , oldS(oldS_), work(work_) {};
 	
+        ~BFGS() {}
+
         /// Operator interface
         /** It's not entirely clear to me what the best implementation for
             this method really is.  In the following implementation, we
@@ -329,6 +339,7 @@ namespace Hessians{
         /// Constructor
     	SR1(list <U>& oldY_,list <U>& oldS_,list <U>& work_)
 	    : oldY(oldY_) , oldS(oldS_), work(work_) {};
+        ~SR1() {}
         /// Operator interface
 	void operator () (const U& p,U& result) const{
 	    // Check that the number of stored gradient and trial step
@@ -467,9 +478,10 @@ namespace Preconditioners{
     template <class U>
     class Identity : public Operator <U,U> {
     public:
-	void operator () (const U& p,U& result) const{
-	    Operations::copy(p,result);
-	}
+      ~Identity() {}
+      void operator () (const U& p,U& result) const{
+        Operations::copy(p,result);
+      }
     };
 
     /// The BFGS preconditioner
@@ -487,6 +499,8 @@ namespace Preconditioners{
     public:
         /// Constructor 
     	BFGS(list <U>& oldY_,list <U>& oldS_) : oldY(oldY_) , oldS(oldS_) {}
+        /// Destructor
+        ~BFGS() {}
         /// Operator interface
 	void operator () (const U& p,U& result) const{
 	    // Check that we have an even number of elements in the info space
@@ -566,7 +580,7 @@ namespace Preconditioners{
     public:
     	SR1(list <U>& oldY_,list <U>& oldS_,list <U>& work_)
 	    : sr1(oldS_,oldY_,work_) {};
-	
+        ~SR1() {}
 	void operator () (const U& p,U& result) const{
 	    sr1(p,result);
 	}
