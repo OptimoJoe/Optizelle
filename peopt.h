@@ -9,8 +9,7 @@
 #include<limits>
 
 /** \file peopt.h
-    \brief Routines for constructing optimization algorithms for parameter
-    estimation
+    \brief Optimization algorithms for parameter estimation
 **/
 
 /// Parameter Estimation Optimization toolkit

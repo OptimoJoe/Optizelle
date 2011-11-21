@@ -608,9 +608,9 @@ namespace TrustRegion{
 	// Allocate memory for a few constants that we need to track 
 	double kappa;
 	double sigma;
-	double alpha;
+	double alpha(0);
 	double beta;
-	double norm_sk_M2,norm_skp1_M2,norm_pk_M2,norm_g;
+	double norm_sk_M2,norm_skp1_M2(0),norm_pk_M2,norm_g;
 	double inner_sk_M_pk,inner_gk_vk,inner_gkp1_vkp1;
 
 	// Initialize our variables
@@ -1084,8 +1084,8 @@ namespace LineSearch{
 
 	// Allocate memory for a few constants that we need to track 
 	double kappa;
-	double sigma;
-	double alpha;
+	//double sigma;
+	double alpha(0);
 	double beta;
 	double norm_g;
 	double inner_gk_vk,inner_gkp1_vkp1;
