@@ -63,11 +63,13 @@ for i=1:m
     Hinv(:,i)=SR1inv(Y,S,ei);
 end
 
-fprintf('In the sparse operators, H*Hinv=%e\n',norm(H*Hinv-eye(m),'fro'));
+fprintf('In the sparse operators, H*Hinv=%e\n',norm(H*Hinv-eye(m),'fro')/...
+    sqrt(m));
 
 % Compute the dense operators directly
 H2=build_dense_sr1(Y,S);
 Hinv2=build_dense_sr1_inv(Y,S);
 
 % Print out some error information about these operators
-fprintf('In the dense operators, H*Hinv=%e\n',norm(H2*Hinv2-eye(m),'fro'));
+fprintf('In the dense operators, H*Hinv=%e\n',norm(H2*Hinv2-eye(m),'fro')/...
+    sqrt(m));

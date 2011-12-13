@@ -4,11 +4,11 @@
 %randn('seed',1);
 
 % Set the size of the problem (number of variables)
-m=200;
+m=50;
 
 % Set the number of previous points stored  (BFGS uses 1 minus this for the
 % history)
-n=20;
+n=10;
 
 % Create a list of previous points
 %X=randn(m,n);
@@ -78,7 +78,8 @@ for i=1:m
     Hinv(:,i)=BFGSinv(Y,S,ei);
 end
 
-fprintf('In the sparse operators, H*Hinv=%e\n',norm(H*Hinv-eye(m),'fro'));
+fprintf('In the sparse operators, H*Hinv=%e\n',norm(H*Hinv-eye(m),'fro')/...
+    sqrt(m));
 
 % Assume that we have a history of two vectors.  Build the inverse Hessian
 % operator directly
@@ -95,11 +96,13 @@ H2=build_dense_bfgs(Y,S);
 Hinv2=build_dense_bfgs_inv(Y,S);
 
 % Print out some error information about these operators
-fprintf('In the dense operators, H*Hinv=%e\n',norm(H2*Hinv2-eye(m),'fro'));
+fprintf('In the dense operators, H*Hinv=%e\n',norm(H2*Hinv2-eye(m),'fro')/...
+    sqrt(m));
 
 % Compute the dense operators using the compact representation
 H3=build_compact_bfgs(Y,S);
 Hinv3=build_compact_bfgs_inv(Y,S);
 
 % Print out some error information about these operators
-fprintf('In the compact operators, H*Hinv=%e\n',norm(H3*Hinv3-eye(m),'fro'));
+fprintf('In the compact operators, H*Hinv=%e\n',norm(H3*Hinv3-eye(m),'fro')/...
+    sqrt(m));
