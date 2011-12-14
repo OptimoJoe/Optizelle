@@ -189,7 +189,7 @@ namespace Hessians{
     };
 }
 
-namespace TrustRegion{
+namespace General{
     // Finds the graident in the parameter estimation problem
     template <class Y,class U>
     class getGradient: public Operator <U,U> {

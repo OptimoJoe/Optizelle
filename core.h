@@ -5,20 +5,7 @@
     \brief Various components that help construct a parameter estimation problem
 **/
 
-#if 0
-#include<list>
-#include<cmath>
-#include<sstream>
-#include<string>
-#include<iomanip>
-#endif
-
 using std::list;
-using std::ostringstream;
-using std::string;
-using std::setprecision;
-using std::scientific;
-using std::endl;
 
 // Error reporting for all of these functions
 void pe_error(const char message[]);
@@ -27,31 +14,37 @@ void pe_error(const char message[]);
 template <class Domain, class Codomain>
 class Operator {
 public:
-  /// Destructor
-  virtual ~Operator() {}
   /// Basic application
   virtual void operator () (const Domain& x,Codomain &y) const = 0;
+  
+  /// Allow a derived class to deallocate memory when only given a generic
+  /// operator.
+  virtual ~Operator() {}
 };
 
 /// A simple functional interface
 template <class Domain>
 class Functional {
 public:
-  /// Destructor
-  virtual ~Functional() {}
   /// Basic application
   virtual double operator () (const Domain& x) const = 0;
+  
+  /// Allow a derived class to deallocate memory when only given a generic
+  /// functional.
+  virtual ~Functional() {}
 };
 
 /// A combination of the operator and functional functionalities
 template <class Domain,class Codomain>
 class OperatorFunctional : public Operator <Domain,Codomain> {
 public:
-  /// Destructor
-  virtual ~OperatorFunctional() {}
   /// Basic application
   virtual void operator () (const Domain& x,Codomain &y,double &obj_val)
     const = 0;
+  
+  /// Allow a derived class to deallocate memory when only given a generic
+  /// operator-functional.
+  virtual ~OperatorFunctional() {}
 };
 
 /// Basic linear algebra operations 
