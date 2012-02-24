@@ -7,6 +7,7 @@
 #include<cmath>
 #include<sstream>
 #include<iomanip>
+#include<memory>
 
 struct peopt{
 public:
@@ -371,29 +372,29 @@ public:
 	    Real eps_s;
 
 	    // Number of control objects to store in a quasi-Newton method
-	    int stored_history;
+	    unsigned int stored_history;
 
 	    // Number of failed iterations before we reset the history for
 	    // quasi-Newton methods
-	    int history_reset;
+	    unsigned int history_reset;
 
 	    // Current iteration
-	    int iter;
+	    unsigned int iter;
 
 	    // Maximum number of optimization iterations
-	    int iter_max;
+	    unsigned int iter_max;
 
 	    // Why we've stopped the optimization
 	    StoppingCondition opt_stop;
 
 	    // Current number of Krylov iterations taken
-	    int krylov_iter;
+	    unsigned int krylov_iter;
 
 	    // Maximum number of iterations in the Krylov method
-	    int krylov_iter_max;
+	    unsigned int krylov_iter_max;
 
 	    // Total number of Krylov iterations taken
-	    int krylov_iter_total;
+	    unsigned int krylov_iter_total;
 
 	    // Why the Krylov method was last stopped
 	    KrylovStop krylov_stop;
@@ -455,7 +456,7 @@ public:
 	    Real obj_ups;
 
 	    // Amount of verbosity
-	    int verbose;
+	    unsigned int verbose;
 	    
 	    // ------------- TRUST-REGION ------------- 
 
@@ -477,7 +478,7 @@ public:
 	    Real rho;
 
 	    // Number of rejected trust-region steps
-	    int rejected_trustregion;
+	    unsigned int rejected_trustregion;
 
 	    // ------------- LINE-SEARCH ------------- 
 
@@ -485,16 +486,16 @@ public:
 	    Real alpha;
 
 	    // Current number of iterations used in the line-search
-	    int linesearch_iter;
+	    unsigned int linesearch_iter;
 
 	    // Maximum number of iterations used in the line-search
-	    int linesearch_iter_max;
+	    unsigned int linesearch_iter_max;
 
 	    // Total number of line-search iterations computed
-	    int linesearch_iter_total;
+	    unsigned int linesearch_iter_total;
 
 	    // Stopping tolerance for the line-search
-	    double eps_ls;
+	    Real eps_ls;
 
 	    // Search direction type
 	    LineSearchDirection dir;
@@ -1014,10 +1015,10 @@ public:
 	    const Vector& g=*(state.g.begin());
 	    const Real& delta=state.delta;
 	    const Real& eps_cg=state.eps_krylov;
-	    const int& iter_max=state.krylov_iter_max;
+	    const unsigned int& iter_max=state.krylov_iter_max;
 	    Vector& s_k=*(state.s.begin());
-	    int& iter=state.krylov_iter;
-	    int& iter_total=state.krylov_iter_total;
+	    unsigned int& iter=state.krylov_iter;
+	    unsigned int& iter_total=state.krylov_iter_total;
 	    KrylovStop& krylov_stop=state.krylov_stop;
 	    Real& rel_err=state.krylov_rel_err;
 
@@ -1225,12 +1226,12 @@ public:
 	    const Functional<VS>& obj_fn
 	){
 	    // Create some shortcuts
-	    int& rejected_trustregion=state.rejected_trustregion;
+	    unsigned int& rejected_trustregion=state.rejected_trustregion;
 	    Vector& s=*(state.s.begin());
 	    Real& norm_s=state.norm_s;
 	    List& oldY=state.oldY;
 	    List& oldS=state.oldS;
-	    int& history_reset=state.history_reset;
+	    unsigned int& history_reset=state.history_reset;
 
 	    // Initialize the counter for the number of rejected steps
 	    rejected_trustregion=0;
@@ -1384,10 +1385,10 @@ public:
 	    const Vector& u=*(state.u.begin());
 	    const Vector& g=*(state.g.begin());
 	    const Real& eps_cg=state.eps_krylov;
-	    const int& iter_max=state.krylov_iter_max;
+	    const unsigned int& iter_max=state.krylov_iter_max;
 	    Vector& s_k=*(state.s.begin());
-	    int& iter=state.krylov_iter;
-	    int& iter_total=state.krylov_iter_total;
+	    unsigned int& iter=state.krylov_iter;
+	    unsigned int& iter_total=state.krylov_iter_total;
 	    KrylovStop& krylov_stop=state.krylov_stop;
 	    Real& rel_err=state.krylov_rel_err;
 
@@ -1495,11 +1496,11 @@ public:
 	) {
 	    // Create some shortcuts
 	    const Vector& u=*(state.u.begin());
-	    const int& iter_max=state.linesearch_iter_max;
+	    const unsigned int& iter_max=state.linesearch_iter_max;
 	    Real& alpha=state.alpha;
 	    Vector& s=*(state.s.begin());
-	    int& iter_total=state.linesearch_iter_total;
-	    int& iter=state.linesearch_iter;
+	    unsigned int& iter_total=state.linesearch_iter_total;
+	    unsigned int& iter=state.linesearch_iter;
 	    Real& obj_ups=state.obj_ups;
 
 	    // Create one work element
@@ -1587,8 +1588,8 @@ public:
 	    const LineSearchKind& kind=state.kind;
 	    Real& alpha=state.alpha;
 	    Vector& s=*(state.s.begin());
-	    int& iter_total=state.linesearch_iter_total;
-	    int& iter=state.linesearch_iter;
+	    unsigned int& iter_total=state.linesearch_iter_total;
+	    unsigned int& iter=state.linesearch_iter;
 	    Real& obj_ups=state.obj_ups;
 
 	    // Create elements for delta_u and delta_g as well as one work
@@ -1628,11 +1629,11 @@ public:
 	) {
 	    // Create some shortcuts
 	    const Vector& u=*(state.u.begin());
-	    const int& iter_max=state.linesearch_iter_max;
+	    const unsigned int& iter_max=state.linesearch_iter_max;
 	    Real& alpha=state.alpha;
 	    Vector& s=*(state.s.begin());
-	    int& iter_total=state.linesearch_iter_total;
-	    int& iter=state.linesearch_iter;
+	    unsigned int& iter_total=state.linesearch_iter_total;
+	    unsigned int& iter=state.linesearch_iter;
 	    Real& obj_ups=state.obj_ups;
 
 	    // Create one work element
@@ -1648,7 +1649,7 @@ public:
 	    // Evaluate the objective iter_max times at a distance of
 	    // 2*alpha, alpha, alpha/2, ....  Then, pick the best one.
 	    Real alpha0=alpha;
-	    for(int i=0;i<iter_max-1;i++){
+	    for(unsigned int i=0;i<iter_max-1;i++){
 	    	// Evaluate F(u+alpha*s)
 		VS::copy(u,work);
 		VS::axpy(alpha0,s,work);
@@ -1723,7 +1724,7 @@ public:
 		    // If we don't decrease, print out some diagnostic
 		    // information and reduce the size of alpha
 		    if(obj_ups > obj_u){
-			norm_s=sqrt(VS::innr(s,s));
+			norm_s=alpha*sqrt(VS::innr(s,s));
 		    	printState(state,true);
 			alpha /= Real(2.);
 		    }
@@ -1733,9 +1734,6 @@ public:
 		break;
 	    case BackTracking_t:
 	    	do{
-		    // Save the old line search parameter
-		    Real alpha_old=alpha;
-
 		    // Conduct a backtracking search
 		    backTracking(state,obj_fn);
 
@@ -1743,7 +1741,7 @@ public:
 		    // information and restart the search at the smallest
 		    // alpha we previously searched.
 		    if(obj_ups > obj_u){
-			norm_s=sqrt(VS::innr(s,s));
+			norm_s=alpha*sqrt(VS::innr(s,s));
 		    	printState(state,true);
 			alpha = alpha/pow(Real(2.),linesearch_iter_max+1);
 		    }
@@ -1755,6 +1753,9 @@ public:
 	    case TwoPointB_t:
 	    	if(iter>1) twoPoint(state,obj_fn);
 		else goldenSection(state,obj_fn);
+		break;
+	    case Brents_t:
+	    	VS::error("Brent's linesearch is not currently implemented.");	
 		break;
 	    }
 	
@@ -1853,7 +1854,7 @@ public:
 	    Real& norm_g=state.norm_g;
 	    Real& norm_gtyp=state.norm_gtyp;
 	    Real& norm_styp=state.norm_styp;
-	    int& iter=state.iter;
+	    unsigned int& iter=state.iter;
 	    StoppingCondition& opt_stop=state.opt_stop;
 	    AlgorithmClass& algorithm_class=state.algorithm_class;
 	    LineSearchDirection& dir=state.dir;

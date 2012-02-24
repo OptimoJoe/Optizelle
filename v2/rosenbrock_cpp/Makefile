@@ -1,5 +1,5 @@
 INCLUDE=-I ..
-CFLAGS=-g
+CFLAGS=-g -Wall
 
 all:
 	g++ ${INCLUDE} ${CFLAGS} run.cpp -o run

@@ -10,21 +10,21 @@ struct MyVS{
 
     // y <- x (Shallow.  No memory allocation.)
     static void copy(const Vector& x, Vector& y){
-        for(int i=0;i<x.size();i++){
+        for(unsigned int i=0;i<x.size();i++){
             y[i]=x[i];
         }
     }
 
     // x <- alpha * x
     static void scal(const Real& alpha, Vector& x){
-        for(int i=0;i<x.size();i++){
+        for(unsigned int i=0;i<x.size();i++){
             x[i]=alpha*x[i];
         }
     }
 
     // y <- alpha * x + y
     static void axpy(const Real& alpha, const Vector& x, Vector& y){
-        for(int i=0;i<x.size();i++){
+        for(unsigned int i=0;i<x.size();i++){
             y[i]=alpha*x[i]+y[i];
         }
     }
@@ -32,7 +32,7 @@ struct MyVS{
     // innr <- <x,y>
     static Real innr(const Vector& x,const Vector& y){
         Real z=0;
-        for(int i=0;i<x.size();i++){
+        for(unsigned int i=0;i<x.size();i++){
             z+=x[i]*y[i];
         }
         return z;
@@ -109,12 +109,23 @@ int main(){
     
     // Create a state and setup the problem
     peopt::core<MyVS>::State state(x);
-    state.H_type=peopt::External_t;
-    state.algorithm_class=peopt::TrustRegion;
+
+
+    // General problem setup
     state.eps_g=1e-10;
     state.eps_s=1e-10;
     state.iter_max=200;
     state.eps_krylov=1e-8;
+
+    // Newton's method
+    state.H_type=peopt::External_t;
+    state.algorithm_class=peopt::TrustRegion;
+
+    // BFGS
+    //state.dir=peopt::LimitedMemoryBFGS_t;
+    //state.kind=peopt::GoldenSection_t;
+    //state.algorithm_class=peopt::LineSearch;
+    //state.stored_history=10;
 
     // Create a function, gradient, and Hessian for this problem
     RosenObjective F;

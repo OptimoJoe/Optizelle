@@ -5,7 +5,7 @@ MEX=/opt/matlab/bin/mex
 MOBJS = pelab.mex64a gradientCheck.mex64a hessianCheck.mex64a getObjective.mex64a getGradient.mex64a fpCheck.mex64a getNewton.mex64a getGaussNewton.mex64a
 
 # Set the optimizations
-CFLAGS= -g #-O2
+CFLAGS= -Wall -g #-O2
 
 all: $(MOBJS)
 
