@@ -75,29 +75,31 @@ void mexFunction(
 	pelab::Gradient G(G_);
 
 	// Next, we minimize
-	if(state.H_type!=peopt::External_t) 
-	    if(!smanip_)
-		peopt::core<pelab::VS>::getMin(state,F,G);
-	    else {
-		pelab::StateManipulator smanip(smanip_);
-		peopt::core<pelab::VS>::getMin(state,smanip,F,G);
-	    }
-	else if(state.Minv_type!=peopt::External_t){
-	    pelab::Operator H(H_,*(state.u.begin()));
-	    if(!smanip_)
-		peopt::core<pelab::VS>::getMin(state,F,G,H);
-	    else {
-		pelab::StateManipulator smanip(smanip_);
-		peopt::core<pelab::VS>::getMin(state,smanip,F,G,H);
-	    }
-	} else {
-	    pelab::Operator H(H_,*(state.u.begin()));
-	    pelab::Operator Minv(Minv_,*(state.u.begin()));
-	    if(!smanip_) 
-		peopt::core<pelab::VS>::getMin(state,F,G,H,Minv);
-	    else {
-		pelab::StateManipulator smanip(smanip_);
-		peopt::core<pelab::VS>::getMin(state,smanip,F,G,H,Minv);
+	{using namespace peopt::Operators;
+	    if(state.H_type!=External) 
+		if(!smanip_)
+		    peopt::core<pelab::VS>::getMin(state,F,G);
+		else {
+		    pelab::StateManipulator smanip(smanip_);
+		    peopt::core<pelab::VS>::getMin(state,smanip,F,G);
+		}
+	    else if(state.Minv_type!=External){
+		pelab::Operator H(H_,*(state.u.begin()));
+		if(!smanip_)
+		    peopt::core<pelab::VS>::getMin(state,F,G,H);
+		else {
+		    pelab::StateManipulator smanip(smanip_);
+		    peopt::core<pelab::VS>::getMin(state,smanip,F,G,H);
+		}
+	    } else {
+		pelab::Operator H(H_,*(state.u.begin()));
+		pelab::Operator Minv(Minv_,*(state.u.begin()));
+		if(!smanip_) 
+		    peopt::core<pelab::VS>::getMin(state,F,G,H,Minv);
+		else {
+		    pelab::StateManipulator smanip(smanip_);
+		    peopt::core<pelab::VS>::getMin(state,smanip,F,G,H,Minv);
+		}
 	    }
 	}
 	
@@ -106,17 +108,18 @@ void mexFunction(
 
 	// If the user requests it, return why the optimization terminated
 	if(nOutput==2){
+	    using namespace peopt::StoppingCondition;
 	    switch(state.opt_stop){
-	    case peopt::NotConverged:
+	    case NotConverged:
 		pOutput[1]=mxCreateString("NotConverged");
 		break;
-	    case peopt::RelativeGradientSmall:
+	    case RelativeGradientSmall:
 		pOutput[1]=mxCreateString("RelativeGradientSmall");
 		break;
-	    case peopt::RelativeStepSmall:
+	    case RelativeStepSmall:
 		pOutput[1]=mxCreateString("RelativeStepSmall");
 		break;
-	    case peopt::MaxItersExceeded:
+	    case MaxItersExceeded:
 		pOutput[1]=mxCreateString("MaxItersExceeded");
 		break;
 	    }

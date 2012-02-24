@@ -118,13 +118,13 @@ int main(){
     state.eps_krylov=1e-8;
 
     // Newton's method
-    state.H_type=peopt::External_t;
-    state.algorithm_class=peopt::TrustRegion;
+    state.H_type=peopt::Operators::External;
+    state.algorithm_class=peopt::AlgorithmClass::TrustRegion;
 
     // BFGS
-    //state.dir=peopt::LimitedMemoryBFGS_t;
-    //state.kind=peopt::GoldenSection_t;
-    //state.algorithm_class=peopt::LineSearch;
+    //state.dir=peopt::LineSearchDirection::BFGS;
+    //state.kind=peopt::LineSearchKind::GoldenSection;
+    //state.algorithm_class=peopt::AlgorithmClass::LineSearch;
     //state.stored_history=10;
 
     // Create a function, gradient, and Hessian for this problem

@@ -2,6 +2,7 @@
 #define PEOPT_H
 
 #include<list>
+#include<vector>
 #include<map>
 #include<limits>
 #include<cmath>
@@ -9,8 +10,7 @@
 #include<iomanip>
 #include<memory>
 
-struct peopt{
-public:
+namespace peopt{
     template <typename VS>
     class DataStructures{
 
@@ -299,54 +299,66 @@ public:
     }
 
     // Which algorithm class do we use
-    enum AlgorithmClass{
-	TrustRegion,            // Trust-Region algorithms
-	LineSearch              // Line-search algorithms
+    namespace AlgorithmClass{
+	enum t{
+	    TrustRegion,            // Trust-Region algorithms
+	    LineSearch              // Line-search algorithms
+	};
     };
 
     // Reasons why we stop the algorithm
-    enum StoppingCondition{
-	NotConverged,            // Algorithm did not converge
-	RelativeGradientSmall,   // Relative gradient was sufficiently small
-	RelativeStepSmall,       // Relative change in the step is small
-	MaxItersExceeded,        // Maximum number of iterations exceeded
+    namespace StoppingCondition{
+    	enum t{
+	    NotConverged,            // Algorithm did not converge
+	    RelativeGradientSmall,   // Relative gradient was sufficiently small
+	    RelativeStepSmall,       // Relative change in the step is small
+	    MaxItersExceeded         // Maximum number of iterations exceeded
+	};
     };
 
     // Reasons we stop the Krylov method
-    enum KrylovStop{
-	NegativeCurvature,        // Negative curvature detected
-	RelativeErrorSmall,       // Relative error is small
-	MaxKrylovItersExceeded,   // Maximum number of iterations exceeded
-	TrustRegionViolated,      // Trust-region radius violated
+    namespace KrylovStop{
+    	enum t{
+	    NegativeCurvature,        // Negative curvature detected
+	    RelativeErrorSmall,       // Relative error is small
+	    MaxItersExceeded,         // Maximum number of iterations exceeded
+	    TrustRegionViolated       // Trust-region radius violated
+	};
     };
 
     // Various operators for both Hessian approximations and preconditioners
-    enum Operators{
-	Identity_t,        // Identity approximation
-	ScaledIdentity_t,  // Identity approximation
-	BFGS_t,            // BFGS approximation
-	InvBFGS_t,         // Inverse BFGS approximation
-	SR1_t,             // SR1 approximation
-	InvSR1_t,          // Inverse SR1 approximation
-	External_t,	   // An external operator provided by the user
+    namespace Operators{
+    	enum t{
+	    Identity,          // Identity approximation
+	    ScaledIdentity,    // Scaled identity approximation
+	    BFGS,              // BFGS approximation
+	    InvBFGS,           // Inverse BFGS approximation
+	    SR1,               // SR1 approximation
+	    InvSR1,            // Inverse SR1 approximation
+	    External  	       // An external operator provided by the user
+	};
     };
 
     // Different kinds of search directions 
-    enum LineSearchDirection{
-	SteepestDescent_t,        // SteepestDescent 
-	FletcherReeves_t,         // Fletcher-Reeves CG
-	PolakRibiere_t,           // Polak-Ribiere CG
-	HestenesStiefel_t,        // HestenesStiefel CG
-	LimitedMemoryBFGS_t,      // Limited-memory BFGS 
-	NewtonCG_t                // Newton-CG
+    namespace LineSearchDirection{
+    	enum t{
+	    SteepestDescent,          // SteepestDescent 
+	    FletcherReeves,           // Fletcher-Reeves CG
+	    PolakRibiere,             // Polak-Ribiere CG
+	    HestenesStiefel,          // HestenesStiefel CG
+	    BFGS,                     // Limited-memory BFGS 
+	    NewtonCG                  // Newton-CG
+	};
     };
 
-    enum LineSearchKind{
-	Brents_t,         // Brent's minimization
-	GoldenSection_t,  // Golden-section search 
-	BackTracking_t,   // BackTracking search 
-	TwoPointA_t,      // Barzilai and Borwein's method A
-	TwoPointB_t,      // Barzilai and Borwein's method B
+    namespace LineSearchKind{
+	enum t{
+	    Brents,           // Brent's minimization
+	    GoldenSection,    // Golden-section search 
+	    BackTracking,     // BackTracking search 
+	    TwoPointA,        // Barzilai and Borwein's method A
+	    TwoPointB         // Barzilai and Borwein's method B
+	};
     };
 
     // The core routines for peopt
@@ -385,7 +397,7 @@ public:
 	    unsigned int iter_max;
 
 	    // Why we've stopped the optimization
-	    StoppingCondition opt_stop;
+	    StoppingCondition::t opt_stop;
 
 	    // Current number of Krylov iterations taken
 	    unsigned int krylov_iter;
@@ -397,7 +409,7 @@ public:
 	    unsigned int krylov_iter_total;
 
 	    // Why the Krylov method was last stopped
-	    KrylovStop krylov_stop;
+	    KrylovStop::t krylov_stop;
 
 	    // Relative error in the Krylov method
 	    Real krylov_rel_err;
@@ -406,13 +418,13 @@ public:
 	    Real eps_krylov;
 
 	    // Algorithm class
-	    AlgorithmClass algorithm_class;
+	    AlgorithmClass::t algorithm_class;
 
 	    // Preconditioner
-	    Operators Minv_type;
+	    Operators::t Minv_type;
 
 	    // Hessian approximation
-	    Operators H_type;
+	    Operators::t H_type;
 
 	    // Norm of the gradient
 	    Real norm_g;
@@ -498,10 +510,10 @@ public:
 	    Real eps_ls;
 
 	    // Search direction type
-	    LineSearchDirection dir;
+	    LineSearchDirection::t dir;
 
 	    // Type of line-search 
-	    LineSearchKind kind;
+	    LineSearchKind::t kind;
 
 	    // Initialize the state without setting up any variables. 
 	    State(){ init(); };
@@ -524,16 +536,16 @@ public:
 		history_reset=5;
 		iter=1;
 		iter_max=10;
-		opt_stop=NotConverged;
+		opt_stop=StoppingCondition::NotConverged;
 		krylov_iter=0;
 		krylov_iter_max=10;
 		krylov_iter_total=0;
-		krylov_stop=RelativeErrorSmall;
+		krylov_stop=KrylovStop::RelativeErrorSmall;
 		krylov_rel_err=Real(std::numeric_limits<Real>::quiet_NaN());
 		eps_krylov=Real(1e-2);
-		algorithm_class=TrustRegion;
-		Minv_type=Identity_t;
-		H_type=Identity_t;
+		algorithm_class=AlgorithmClass::TrustRegion;
+		Minv_type=Operators::Identity;
+		H_type=Operators::Identity;
 		norm_g=Real(std::numeric_limits<Real>::quiet_NaN());
 		norm_gtyp=Real(std::numeric_limits<Real>::quiet_NaN());
 		norm_s=Real(std::numeric_limits<Real>::quiet_NaN());
@@ -552,8 +564,8 @@ public:
 		linesearch_iter_max=5;
 		linesearch_iter_total=0;
 		eps_ls=Real(1e-2);
-		dir=SteepestDescent_t;
-		kind=GoldenSection_t;
+		dir=LineSearchDirection::SteepestDescent;
+		kind=LineSearchKind::GoldenSection;
 	    }
 	};
     
@@ -912,8 +924,8 @@ public:
 		}
 
 		// Create two vectors to hold some intermediate calculations
-		Real alpha[oldY.size()];
-		Real rho[oldY.size()];
+		std::vector <Real> alpha(oldY.size());
+		std::vector <Real> rho(oldY.size());
 
 		// Before we begin computing, copy p to our result 
 		VS::copy(p,result);
@@ -974,7 +986,7 @@ public:
 	};
 
 	// Checks a set of stopping conditions
-	static StoppingCondition checkStop(const State& state){
+	static StoppingCondition::t checkStop(const State& state){
 	    // Create some shortcuts
 	    const Real& norm_g=state.norm_g;
 	    const Real& norm_gtyp=state.norm_gtyp;
@@ -987,19 +999,19 @@ public:
 
 	    // Check whether the norm is small relative to some typical gradient
 	    if(norm_g < eps_g*norm_gtyp)
-		return RelativeGradientSmall;
+		return StoppingCondition::RelativeGradientSmall;
 
 	    // Check whether the change in the step length has become too small
 	    // relative to some typical step
 	    if(norm_s < eps_s*norm_styp)
-		return RelativeStepSmall;
+		return StoppingCondition::RelativeStepSmall;
 
 	    // Check if we've exceeded the number of iterations
 	    if(iter>=iter_max)
-		return MaxItersExceeded;
+		return StoppingCondition::MaxItersExceeded;
 
 	    // Otherwise, return that we're not converged 
-	    return NotConverged;
+	    return StoppingCondition::NotConverged;
 	}
 	
 	// Computes the truncated-CG (Steihaug-Toint) trial step for
@@ -1019,7 +1031,7 @@ public:
 	    Vector& s_k=*(state.s.begin());
 	    unsigned int& iter=state.krylov_iter;
 	    unsigned int& iter_total=state.krylov_iter_total;
-	    KrylovStop& krylov_stop=state.krylov_stop;
+	    KrylovStop::t& krylov_stop=state.krylov_stop;
 	    Real& rel_err=state.krylov_rel_err;
 
 	    // Allocate memory for temporaries that we need
@@ -1082,9 +1094,9 @@ public:
 
 		    // Return a message as to why we exited
 		    if(kappa<=0 || kappa!=kappa)
-			krylov_stop = NegativeCurvature;
+			krylov_stop = KrylovStop::NegativeCurvature;
 		    else
-			krylov_stop = TrustRegionViolated;
+			krylov_stop = KrylovStop::TrustRegionViolated;
 
 		    // Update the residual error for out output,
 		    // g_k=g_k+sigma Hp_k
@@ -1106,7 +1118,7 @@ public:
 		// Test whether we've converged CG
 		rel_err=sqrt(VS::innr(g_k,g_k)) / (Real(1e-16)+norm_g);
 		if(rel_err <= eps_cg){
-		    krylov_stop = RelativeErrorSmall;
+		    krylov_stop = KrylovStop::RelativeErrorSmall;
 		    break;
 		}
 
@@ -1138,7 +1150,7 @@ public:
 
 	    // Check if we've exceeded the maximum iteration
 	    if(iter>iter_max){
-		krylov_stop=MaxKrylovItersExceeded;
+		krylov_stop=KrylovStop::MaxItersExceeded;
 		iter--; iter_total--;
 	    }
 	   
@@ -1389,7 +1401,7 @@ public:
 	    Vector& s_k=*(state.s.begin());
 	    unsigned int& iter=state.krylov_iter;
 	    unsigned int& iter_total=state.krylov_iter_total;
-	    KrylovStop& krylov_stop=state.krylov_stop;
+	    KrylovStop::t& krylov_stop=state.krylov_stop;
 	    Real& rel_err=state.krylov_rel_err;
 
 	    // Allocate memory for temporaries that we need
@@ -1443,7 +1455,7 @@ public:
 		    }
 
 		    // Return a message as to why we exited
-		    krylov_stop = NegativeCurvature;
+		    krylov_stop = KrylovStop::NegativeCurvature;
 
 		    // Exit the loop
 		    break;
@@ -1457,7 +1469,7 @@ public:
 
 		// Test whether we've converged CG
 		if(sqrt(VS::innr(g_k,g_k)) <= eps_cg*norm_g){
-		    krylov_stop = RelativeErrorSmall;
+		    krylov_stop = KrylovStop::RelativeErrorSmall;
 		    break;
 		}
 
@@ -1480,7 +1492,7 @@ public:
 
 	    // Check if we've exceeded the maximum iteration
 	    if(iter>iter_max){
-	      krylov_stop=MaxKrylovItersExceeded;
+	      krylov_stop=KrylovStop::MaxItersExceeded;
 	      iter--; iter_total--;
 	    }
 	   
@@ -1585,7 +1597,7 @@ public:
 	    const Vector& g=*(state.g.begin());
 	    const Vector& u_old=*(state.u_old.begin());
 	    const Vector& g_old=*(state.g_old.begin());
-	    const LineSearchKind& kind=state.kind;
+	    const LineSearchKind::t& kind=state.kind;
 	    Real& alpha=state.alpha;
 	    Vector& s=*(state.s.begin());
 	    unsigned int& iter_total=state.linesearch_iter_total;
@@ -1607,9 +1619,9 @@ public:
             VS::axpy(Real(-1.),g_old,delta_g);
 
             // Find alpha
-            if(kind==TwoPointA_t)
+            if(kind==LineSearchKind::TwoPointA)
                 alpha=VS::innr(delta_u,delta_g)/VS::innr(delta_g,delta_g);
-            else if(kind==TwoPointB_t)
+            else if(kind==LineSearchKind::TwoPointB)
                 alpha=VS::innr(delta_u,delta_u)/VS::innr(delta_u,delta_g);
 
 	    // Save the objective value at this step
@@ -1682,8 +1694,8 @@ public:
 	    const Functional<VS>& obj_fn
 	){
 	    // Create some shortcuts
-	    const LineSearchDirection& dir=state.dir;
-	    const LineSearchKind& kind=state.kind;
+	    const LineSearchDirection::t& dir=state.dir;
+	    const LineSearchKind::t& kind=state.kind;
 	    const int& iter=state.iter;
 	    const int& linesearch_iter_max=state.linesearch_iter_max;
 	    const Real& obj_u=state.obj_u;
@@ -1694,29 +1706,29 @@ public:
 
 	    // Find the line-search direction
 	    switch(dir){
-	    case SteepestDescent_t:
+	    case LineSearchDirection::SteepestDescent:
 		SteepestDescent(state);
 		break;
-	    case FletcherReeves_t:
+	    case LineSearchDirection::FletcherReeves:
 		FletcherReeves(state);
 		break;
-	    case PolakRibiere_t:
+	    case LineSearchDirection::PolakRibiere:
 		PolakRibiere(state);
 		break;
-	    case HestenesStiefel_t:
+	    case LineSearchDirection::HestenesStiefel:
 		HestenesStiefel(state);
 		break;
-	    case LimitedMemoryBFGS_t:
+	    case LineSearchDirection::BFGS:
 		BFGS_SD(state);
 		break;
-	    case NewtonCG_t:
+	    case LineSearchDirection::NewtonCG:
 		NewtonCG(state,Minv,H);
 		break;
 	    }
 
 	    // Do a line-search in the specified direction
 	    switch(kind){
-	    case GoldenSection_t:
+	    case LineSearchKind::GoldenSection:
 	    	do{
 		    // Conduct the golden section search
 		    goldenSection(state,obj_fn);
@@ -1732,7 +1744,7 @@ public:
 		// If we don't decrease the objective, try another linesearch
 		} while(obj_u < obj_ups || obj_ups!=obj_ups);
 		break;
-	    case BackTracking_t:
+	    case LineSearchKind::BackTracking:
 	    	do{
 		    // Conduct a backtracking search
 		    backTracking(state,obj_fn);
@@ -1749,12 +1761,12 @@ public:
 		// If we don't decrease the objective, try another linesearch
 		} while(obj_u < obj_ups || obj_ups!=obj_ups);
 		break;
-	    case TwoPointA_t:
-	    case TwoPointB_t:
+	    case LineSearchKind::TwoPointA:
+	    case LineSearchKind::TwoPointB:
 	    	if(iter>1) twoPoint(state,obj_fn);
 		else goldenSection(state,obj_fn);
 		break;
-	    case Brents_t:
+	    case LineSearchKind::Brents:
 	    	VS::error("Brent's linesearch is not currently implemented.");	
 		break;
 	    }
@@ -1774,14 +1786,14 @@ public:
 	    const Functional<VS>& obj_fn
 	){
 	    // Create some shortcuts
-	    const AlgorithmClass& algorithm_class=state.algorithm_class;
+	    const AlgorithmClass::t& algorithm_class=state.algorithm_class;
 
 	    // Choose whether we use a line-search or trust-region method
 	    switch(algorithm_class){
-	    case TrustRegion:
+	    case AlgorithmClass::TrustRegion:
 		getStepTR(state,Minv,H,obj_fn);
 		break;
-	    case LineSearch:
+	    case AlgorithmClass::LineSearch:
 		getStepLS(state,Minv,H,obj_fn);
 		break;
 	    }
@@ -1797,9 +1809,9 @@ public:
 	    const Vector& g=*(state.g.begin());
 	    const Vector& u_old=*(state.u_old.begin());
 	    const Vector& g_old=*(state.g_old.begin());
-	    const Operators& Minv_type=state.Minv_type;
-	    const Operators& H_type=state.H_type;
-	    const LineSearchDirection& dir=state.dir;
+	    const Operators::t& Minv_type=state.Minv_type;
+	    const Operators::t& H_type=state.H_type;
+	    const LineSearchDirection::t& dir=state.dir;
 	    List& oldY=state.oldY;
 	    List& oldS=state.oldS;
 	   
@@ -1816,8 +1828,8 @@ public:
 	    VS::axpy(Real(-1.),g_old,y);
 
 	    // If we're using BFGS, check that <y,x> > 0
-	    if((Minv_type==InvBFGS_t || H_type==BFGS_t
-		|| dir==LimitedMemoryBFGS_t)
+	    if((Minv_type==Operators::InvBFGS || H_type==Operators::BFGS
+		|| dir==LineSearchDirection::BFGS)
 		&& VS::innr(y,s) < 0)
 		return;
 
@@ -1855,9 +1867,9 @@ public:
 	    Real& norm_gtyp=state.norm_gtyp;
 	    Real& norm_styp=state.norm_styp;
 	    unsigned int& iter=state.iter;
-	    StoppingCondition& opt_stop=state.opt_stop;
-	    AlgorithmClass& algorithm_class=state.algorithm_class;
-	    LineSearchDirection& dir=state.dir;
+	    StoppingCondition::t& opt_stop=state.opt_stop;
+	    AlgorithmClass::t& algorithm_class=state.algorithm_class;
+	    LineSearchDirection::t& dir=state.dir;
 
 	    	
 	    // Evaluate the objective function and gradient
@@ -1868,7 +1880,8 @@ public:
 
 	    // Prints out the header for the diagonstic information
 	    printStateHeader(state);
-	    if(algorithm_class==TrustRegion || dir==NewtonCG_t)
+	    if(algorithm_class==AlgorithmClass::TrustRegion
+		|| dir==LineSearchDirection::NewtonCG)
 		printKrylovHeader(state);
 
 	    // Primary optimization loop
@@ -1904,7 +1917,8 @@ public:
 
 		// Increase the iteration
 		iter++;
-	    } while((opt_stop=checkStop(state))==NotConverged);
+	    } while((opt_stop=checkStop(state))
+		==StoppingCondition::NotConverged);
 	    	
 	    // Print a final diagnostic 
 	    printState(state);
@@ -1919,21 +1933,21 @@ public:
 	    Operator<VS,VS>& H
 	){
 	    // Create a few shortcuts
-	    Operators& Minv_type=state.Minv_type;
+	    const Operators::t& Minv_type=state.Minv_type;
 
 	    // Determine the preconditioner
 	    std::auto_ptr <Operator<VS,VS> > Minv;
 	    switch(Minv_type){
-		case Identity_t:
+		case Operators::Identity:
 		    Minv.reset(new Identity());
 		    break;
-		case InvBFGS_t:
+		case Operators::InvBFGS:
 		    Minv.reset(new InvBFGS(state));
 		    break;
-		case InvSR1_t:
+		case Operators::InvSR1:
 		    Minv.reset(new InvSR1(state));
 		    break;
-		case External_t:
+		case Operators::External:
 		    VS::error("An externally defined preconditioner must be "
 			"provided explicitely.");
 		    break;
@@ -1977,24 +1991,24 @@ public:
 	    Operator<VS,VS>& G
 	){
 	    // Create a few shortcuts
-	    Operators& H_type=state.H_type;
+	    const Operators::t& H_type=state.H_type;
 
 	    // Determine the Hessian approximation
 	    std::auto_ptr <Operator<VS,VS> > H;
 	    switch(H_type){
-	    	case Identity_t:
+	    	case Operators::Identity:
 		    H.reset(new Identity());
 		    break;
-	    	case ScaledIdentity_t:
+	    	case Operators::ScaledIdentity:
 		    H.reset(new ScaledIdentity(state));
 		    break;
-		case BFGS_t:
+		case Operators::BFGS:
 		    H.reset(new BFGS(state));
 		    break;
-		case SR1_t:
+		case Operators::SR1:
 		    H.reset(new SR1(state));
 		    break;
-		case External_t:
+		case Operators::External:
 		    VS::error("An externally defined Hessian must be provided "
 			"explicitely.");
 		    break;
@@ -2027,9 +2041,9 @@ public:
 	    const Real& norm_s=state.norm_s;
 	    const Real& krylov_rel_err=state.krylov_rel_err;
 	    const int& krylov_iter=state.krylov_iter;
-	    const KrylovStop& krylov_stop=state.krylov_stop; 
-	    const AlgorithmClass& algorithm_class=state.algorithm_class;
-	    const LineSearchDirection& dir=state.dir;
+	    const KrylovStop::t& krylov_stop=state.krylov_stop; 
+	    const AlgorithmClass::t& algorithm_class=state.algorithm_class;
+	    const LineSearchDirection::t& dir=state.dir;
 	    const int& linesearch_iter=state.linesearch_iter;
 	    const int& verbose=state.verbose;
 
@@ -2047,28 +2061,30 @@ public:
 	    else ss << std::setw(11) << norm_s << ' ';
 
 	    // Information for the Krylov method
-	    if(algorithm_class==TrustRegion || dir==NewtonCG_t){
+	    if(algorithm_class==AlgorithmClass::TrustRegion
+		|| dir==LineSearchDirection::NewtonCG
+	    ){
 		ss << std::setw(11) << krylov_rel_err << ' ' 
 		    << std::setw(6) << krylov_iter << ' ';
 
 		switch(krylov_stop){
-		case NegativeCurvature:
+		case KrylovStop::NegativeCurvature:
 		    ss << std::setw(10) << "Neg Curv" << ' '; 
 		    break;
-		case RelativeErrorSmall:
+		case KrylovStop::RelativeErrorSmall:
 		    ss << std::setw(10) << "Rel Err " << ' '; 
 		    break;
-		case MaxKrylovItersExceeded:
+		case KrylovStop::MaxItersExceeded:
 		    ss << std::setw(10) << "Max Iter" << ' '; 
 		    break;
-		case TrustRegionViolated:
+		case KrylovStop::TrustRegionViolated:
 		    ss << std::setw(10) << "Trst Reg" << ' '; 
 		    break;
 		}
 	    }
 
 	    // Information for the line search
-	    if(algorithm_class==LineSearch){
+	    if(algorithm_class==AlgorithmClass::LineSearch){
 		ss << std::setw(6) << linesearch_iter << ' ';
 	    }
 
@@ -2103,8 +2119,8 @@ public:
 	// Prints out a description for the state
 	static void printStateHeader(const State& state){
 	    // Create some shortcuts
-	    const AlgorithmClass& algorithm_class=state.algorithm_class;
-	    const LineSearchDirection& dir=state.dir;
+	    const AlgorithmClass::t& algorithm_class=state.algorithm_class;
+	    const LineSearchDirection::t& dir=state.dir;
 	    const int& verbose=state.verbose;
 
 	    // Check if we should print
@@ -2118,14 +2134,16 @@ public:
 	    	<< std::setw(11) << "norm(s)  " << ' ';
 
 	    // In case we're using a Krylov method
-	    if(algorithm_class==TrustRegion || dir==NewtonCG_t){
+	    if(algorithm_class==AlgorithmClass::TrustRegion
+		|| dir==LineSearchDirection::NewtonCG
+	    ){
 	    	ss << std::setw(11) << "Kry Error" << ' '
 	    	<< std::setw(6) << "KryIt" << ' ' 
 	    	<< std::setw(10) << "Kry Why " << ' ';
 	    }
 
 	    // Information for the line search
-	    if(algorithm_class==LineSearch){
+	    if(algorithm_class==AlgorithmClass::LineSearch){
 		ss << std::setw(6) << "LS It" << ' ';
 	    }
 

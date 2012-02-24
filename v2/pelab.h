@@ -306,64 +306,58 @@ struct pelab{
 	mxSetField(mstate,0,"eps_krylov",
 	    mxCreateDoubleScalar(state.eps_krylov)); 
 
+	{using namespace peopt::AlgorithmClass;
 	switch(state.algorithm_class){
-	    case peopt::TrustRegion:
+	    case TrustRegion:
 		mxSetField(mstate,0,"algorithm_class",
 		    mxCreateString("TrustRegion"));
 		break;
-	    case peopt::LineSearch:
+	    case LineSearch:
 		mxSetField(mstate,0,"algorithm_class",
 		    mxCreateString("LineSearch"));
 		break;
-	}
+	}}
 
+	{using namespace peopt::Operators;
 	switch(state.Minv_type){
-	    case peopt::Identity_t:
-		mxSetField(mstate,0,"Minv_type",
-		    mxCreateString("Identity"));
+	    case Identity:
+		mxSetField(mstate,0,"Minv_type",mxCreateString("Identity"));
 		break;
-	    case peopt::InvBFGS_t:
-		mxSetField(mstate,0,"Minv_type",
-		    mxCreateString("InvBFGS"));
+	    case InvBFGS:
+		mxSetField(mstate,0,"Minv_type",mxCreateString("InvBFGS"));
 		break;
-	    case peopt::InvSR1_t:
-		mxSetField(mstate,0,"Minv_type",
-		    mxCreateString("InvSR1"));
+	    case InvSR1:
+		mxSetField(mstate,0,"Minv_type",mxCreateString("InvSR1"));
 		break;
-	    case peopt::External_t:
-		mxSetField(mstate,0,"Minv_type",
-		    mxCreateString("External"));
+	    case External:
+		mxSetField(mstate,0,"Minv_type",mxCreateString("External"));
 		break;
 	    default:
 	    	pelab::VS::error("Invalid preconditioner type found in the "
 		    "defaults.");
-	}
+	}}
 
+	{using namespace peopt::Operators;
 	switch(state.H_type){
-	    case peopt::Identity_t:
-		mxSetField(mstate,0,"H_type",
-		    mxCreateString("Identity"));
+	    case Identity:
+		mxSetField(mstate,0,"H_type",mxCreateString("Identity"));
 		break;
-	    case peopt::ScaledIdentity_t:
-		mxSetField(mstate,0,"H_type",
-		    mxCreateString("ScaledIdentity"));
+	    case ScaledIdentity:
+		mxSetField(mstate,0,"H_type",mxCreateString("ScaledIdentity"));
 		break;
-	    case peopt::BFGS_t:
-		mxSetField(mstate,0,"H_type",
-		    mxCreateString("BFGS"));
+	    case BFGS:
+		mxSetField(mstate,0,"H_type",mxCreateString("BFGS"));
 		break;
-	    case peopt::SR1_t:
-		mxSetField(mstate,0,"H_type",
-		    mxCreateString("SR1"));
+	    case SR1:
+		mxSetField(mstate,0,"H_type",mxCreateString("SR1"));
 		break;
-	    case peopt::External_t:
-		mxSetField(mstate,0,"H_type",
-		    mxCreateString("External"));
+	    case External:
+		mxSetField(mstate,0,"H_type",mxCreateString("External"));
 		break;
 	    default:
 	    	pelab::VS::error("Invalid preconditioner type found in the "
 		    "defaults.");
-	}
+	}}
 
 	mxSetField(mstate,0,"verbose",
 	    mxCreateNumericMatrix(1,1,mxINT32_CLASS,mxREAL));
@@ -384,47 +378,46 @@ struct pelab{
 
 	mxSetField(mstate,0,"eps_ls",mxCreateDoubleScalar(state.eps_ls)); 
 
+	{using namespace peopt::LineSearchDirection;
 	switch(state.dir){
-	    case peopt::SteepestDescent_t:
-		mxSetField(mstate,0,"dir",
-		    mxCreateString("SteepestDescent"));
+	    case SteepestDescent:
+		mxSetField(mstate,0,"dir",mxCreateString("SteepestDescent"));
 		break;
-	    case peopt::FletcherReeves_t:
+	    case FletcherReeves:
 		mxSetField(mstate,0,"dir",mxCreateString("FletcherReeves"));
 		break;
-	    case peopt::PolakRibiere_t:
+	    case PolakRibiere:
 		mxSetField(mstate,0,"dir",mxCreateString("PolakRibiere"));
 		break;
-	    case peopt::HestenesStiefel_t:
-		mxSetField(mstate,0,"dir",
-		    mxCreateString("HestenesStiefel"));
+	    case HestenesStiefel:
+		mxSetField(mstate,0,"dir",mxCreateString("HestenesStiefel"));
 		break;
-	    case peopt::LimitedMemoryBFGS_t:
-		mxSetField(mstate,0,"dir",
-		    mxCreateString("LimitedMemoryBFGS"));
+	    case BFGS:
+		mxSetField(mstate,0,"dir",mxCreateString("BFGS"));
 		break;
-	    case peopt::NewtonCG_t:
+	    case NewtonCG:
 		mxSetField(mstate,0,"dir",mxCreateString("NewtonCG"));
 		break;
-	}
+	}}
 
+	{using namespace peopt::LineSearchKind;
 	switch(state.kind){
-	    case peopt::Brents_t:
+	    case Brents:
 		mxSetField(mstate,0,"kind",mxCreateString("Brents"));
 		break;
-	    case peopt::GoldenSection_t:
+	    case GoldenSection:
 		mxSetField(mstate,0,"kind",mxCreateString("GoldenSection"));
 		break;
-	    case peopt::BackTracking_t:
+	    case BackTracking:
 		mxSetField(mstate,0,"kind",mxCreateString("BackTracking"));
 		break;
-	    case peopt::TwoPointA_t:
+	    case TwoPointA:
 		mxSetField(mstate,0,"kind",mxCreateString("TwoPointA"));
 		break;
-	    case peopt::TwoPointB_t:
+	    case TwoPointB:
 		mxSetField(mstate,0,"kind",mxCreateString("TwoPointB"));
 		break;
-	}
+	}}
 
 	// In the case that we're just doing a problem setup, don't return
 	// all of the parameters.  
@@ -434,24 +427,24 @@ struct pelab{
 	    mxCreateNumericMatrix(1,1,mxINT32_CLASS,mxREAL));
 	((int*)mxGetPr(mxGetField(mstate,0,"iter")))[0]=state.iter;
 
+	{using namespace peopt::StoppingCondition;
 	switch(state.opt_stop){
-	    case peopt::NotConverged:
-		mxSetField(mstate,0,"opt_stop",
-		    mxCreateString("NotConverged"));
+	    case NotConverged:
+		mxSetField(mstate,0,"opt_stop",mxCreateString("NotConverged"));
 		break;
-	    case peopt::RelativeGradientSmall:
+	    case RelativeGradientSmall:
 		mxSetField(mstate,0,"opt_stop",
 		    mxCreateString("RelativeGradientSmall"));
 		break;
-	    case peopt::RelativeStepSmall:
+	    case RelativeStepSmall:
 		mxSetField(mstate,0,"opt_stop",
 		    mxCreateString("RelativeStepSmall"));
 		break;
-	    case peopt::MaxItersExceeded:
+	    case MaxItersExceeded:
 		mxSetField(mstate,0,"opt_stop",
 		    mxCreateString("MaxItersExceeded"));
 		break;
-	}
+	}}
 
 	mxSetField(mstate,0,"krylov_iter",
 	    mxCreateNumericMatrix(1,1,mxINT32_CLASS,mxREAL));
@@ -462,25 +455,26 @@ struct pelab{
 	    mxCreateNumericMatrix(1,1,mxINT32_CLASS,mxREAL));
 	((int*)mxGetPr(mxGetField(mstate,0,"krylov_iter_total")))[0]
 	    =state.krylov_iter_total;
-	
+
+	{using namespace peopt::KrylovStop;
 	switch(state.krylov_stop){
-	    case peopt::NotConverged:
+	    case NegativeCurvature:
 		mxSetField(mstate,0,"krylov_stop",
 		    mxCreateString("NegativeCurvature"));
 		break;
-	    case peopt::RelativeErrorSmall:
+	    case RelativeErrorSmall:
 		mxSetField(mstate,0,"krylov_stop",
 		    mxCreateString("RelativeErrorSmall"));
 		break;
-	    case peopt::MaxKrylovItersExceeded:
+	    case MaxItersExceeded:
 		mxSetField(mstate,0,"krylov_stop",
 		    mxCreateString("MaxKrylovItersExceeded"));
 		break;
-	    case peopt::TrustRegionViolated:
+	    case TrustRegionViolated:
 		mxSetField(mstate,0,"krylov_stop",
 		    mxCreateString("TrustRegionViolated"));
 		break;
-	}
+	}}
 
 	mxSetField(mstate,0,"krylov_rel_err",
 	    mxCreateDoubleScalar(state.krylov_rel_err)); 
@@ -564,56 +558,57 @@ struct pelab{
 	    else if(fname=="eps_krylov")
 	    	state.eps_krylov=mxGetScalar(mxGetFieldByNumber(mstate,0,i));
 	    else if(fname=="algorithm_class"){
+	    	using namespace peopt::AlgorithmClass;
 	    	mxArray* field=mxGetFieldByNumber(mstate,0,i);
 		if(field){
 		    int buflen = mxGetN(field);
 		    std::string value(buflen,'\0');
 		    mxGetString(field,&(value[0]),buflen+1);
 		    if(value=="TrustRegion")
-			state.algorithm_class=peopt::TrustRegion;
+			state.algorithm_class=TrustRegion;
 		    else if(value=="LineSearch")
-			state.algorithm_class=peopt::LineSearch;
+			state.algorithm_class=LineSearch;
 		    else
 			pelab::VS::error(
 			    "Invalid algorithm class: "+value+"\n");
 		}
 	    } else if(fname=="Minv_type"){
+	    	using namespace peopt::Operators;
 	    	mxArray* field=mxGetFieldByNumber(mstate,0,i);
 		if(field){
 		    int buflen = mxGetN(field);
 		    std::string value(buflen,'\0');
 		    mxGetString(field,&(value[0]),buflen+1);
 		    if(value=="Identity")
-			state.Minv_type=peopt::Identity_t;
+			state.Minv_type=Identity;
 		    else if(value=="InvBFGS")
-			state.Minv_type=peopt::InvBFGS_t;
+			state.Minv_type=InvBFGS;
 		    else if(value=="InvSR1")
-			state.Minv_type=peopt::InvSR1_t;
+			state.Minv_type=InvSR1;
 		    else if(value=="External")
-			state.Minv_type=peopt::External_t;
+			state.Minv_type=External;
 		    else
-			pelab::VS::error(
-			    "Invalid preconditioner: "+value+"\n");
+			pelab::VS::error("Invalid preconditioner: "+value+"\n");
 		}
 	    } else if(fname=="H_type"){
+	    	using namespace peopt::Operators;
 	    	mxArray* field=mxGetFieldByNumber(mstate,0,i);
 		if(field){
 		    int buflen = mxGetN(field);
 		    std::string value(buflen,'\0');
 		    mxGetString(field,&(value[0]),buflen+1);
 		    if(value=="Identity")
-			state.H_type=peopt::Identity_t;
+			state.H_type=Identity;
 		    else if(value=="ScaledIdentity")
-			state.H_type=peopt::ScaledIdentity_t;
+			state.H_type=ScaledIdentity;
 		    else if(value=="BFGS")
-			state.H_type=peopt::BFGS_t;
+			state.H_type=BFGS;
 		    else if(value=="SR1")
-			state.H_type=peopt::SR1_t;
+			state.H_type=SR1;
 		    else if(value=="External")
-			state.H_type=peopt::External_t;
+			state.H_type=External;
 		    else
-			pelab::VS::error(
-			    "Invalid Hessian: "+value+"\n");
+			pelab::VS::error("Invalid Hessian: "+value+"\n");
 		}
 	    }
 	    else if(fname=="verbose")
@@ -634,43 +629,45 @@ struct pelab{
 	    else if(fname=="eps_ls")
 	    	state.eps_ls=mxGetScalar(mxGetFieldByNumber(mstate,0,i));
 	    else if(fname=="dir"){
+	    	using namespace peopt::LineSearchDirection;
 	    	mxArray* field=mxGetFieldByNumber(mstate,0,i);
 		if(field){
 		    int buflen = mxGetN(field);
 		    std::string value(buflen,'\0');
 		    mxGetString(field,&(value[0]),buflen+1);
 		    if(value=="SteepestDescent")
-			state.dir=peopt::SteepestDescent_t;
+			state.dir=SteepestDescent;
 		    else if(value=="FletcherReeves")
-			state.dir=peopt::FletcherReeves_t;
+			state.dir=FletcherReeves;
 		    else if(value=="PolakRibiere")
-			state.dir=peopt::PolakRibiere_t;
+			state.dir=PolakRibiere;
 		    else if(value=="HestenesStiefel")
-			state.dir=peopt::HestenesStiefel_t;
-		    else if(value=="LimitedMemoryBFGS")
-			state.dir=peopt::LimitedMemoryBFGS_t;
+			state.dir=HestenesStiefel;
+		    else if(value=="BFGS")
+			state.dir=BFGS;
 		    else if(value=="NewtonCG")
-			state.dir=peopt::NewtonCG_t;
+			state.dir=NewtonCG;
 		    else
 			pelab::VS::error(
 			    "Invalid linesearch direction: "+value+"\n");
 		}
 	    } else if(fname=="kind"){
+	    	using namespace peopt::LineSearchKind;
 	    	mxArray* field=mxGetFieldByNumber(mstate,0,i);
 		if(field){
 		    int buflen = mxGetN(field);
 		    std::string value(buflen,'\0');
 		    mxGetString(field,&(value[0]),buflen+1);
 		    if(value=="Brents")
-			state.kind=peopt::Brents_t;
+			state.kind=Brents;
 		    else if(value=="GoldenSection")
-			state.kind=peopt::GoldenSection_t;
+			state.kind=GoldenSection;
 		    else if(value=="BackTracking")
-			state.kind=peopt::BackTracking_t;
+			state.kind=BackTracking;
 		    else if(value=="TwoPointA")
-			state.kind=peopt::TwoPointA_t;
+			state.kind=TwoPointA;
 		    else if(value=="TwoPointB")
-			state.kind=peopt::TwoPointB_t;
+			state.kind=TwoPointB;
 		    else
 			pelab::VS::error(
 			    "Invalid linesearch kind: "+value+"\n");
@@ -695,19 +692,20 @@ struct pelab{
 	    if(fname=="iter")
 	    	state.iter=(int)mxGetScalar(mxGetFieldByNumber(mstate,0,i));
 	    else if(fname=="opt_stop"){
+	    	using namespace peopt::StoppingCondition;
 	    	mxArray* field=mxGetFieldByNumber(mstate,0,i);
 		if(field){
 		    int buflen = mxGetN(field);
 		    std::string value(buflen,'\0');
 		    mxGetString(field,&(value[0]),buflen+1);
 		    if(value=="NotConverged")
-			state.opt_stop=peopt::NotConverged;
+			state.opt_stop=NotConverged;
 		    else if(value=="RelativeGradientSmall")
-			state.opt_stop=peopt::RelativeGradientSmall;
+			state.opt_stop=RelativeGradientSmall;
 		    else if(value=="RelativeStepSmall")
-			state.opt_stop=peopt::RelativeStepSmall;
+			state.opt_stop=RelativeStepSmall;
 		    else if(value=="MaxItersExceeded")
-			state.opt_stop=peopt::MaxItersExceeded;
+			state.opt_stop=MaxItersExceeded;
 		    else
 			pelab::VS::error(
 			    "Invalid optimization stopping condition: "+
@@ -720,19 +718,20 @@ struct pelab{
 	    	state.krylov_iter_total=
 		    (int)mxGetScalar(mxGetFieldByNumber(mstate,0,i));
 	    else if(fname=="krylov_stop"){
+	    	using namespace peopt::KrylovStop;
 	    	mxArray* field=mxGetFieldByNumber(mstate,0,i);
 		if(field){
 		    int buflen = mxGetN(field);
 		    std::string value(buflen,'\0');
 		    mxGetString(field,&(value[0]),buflen+1);
 		    if(value=="NegativeCurvature")
-			state.krylov_stop=peopt::NegativeCurvature;
+			state.krylov_stop=NegativeCurvature;
 		    else if(value=="RelativeErrorSmall")
-			state.krylov_stop=peopt::RelativeErrorSmall;
+			state.krylov_stop=RelativeErrorSmall;
 		    else if(value=="MaxKrylovItersExceeded")
-			state.krylov_stop=peopt::MaxKrylovItersExceeded;
+			state.krylov_stop=MaxItersExceeded;
 		    else if(value=="TrustRegionViolated")
-			state.krylov_stop=peopt::TrustRegionViolated;
+			state.krylov_stop=TrustRegionViolated;
 		    else
 			pelab::VS::error(
 			    "Invalid Krylov method stopping condition: "+
