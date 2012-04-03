@@ -231,7 +231,7 @@ namespace peopt{
 	Real dd_grad=Domain::innr(g,eta);
 
 	// Compute an ensemble of finite difference tests in a linear manner
-	Domain::print("Finite difference test of a gradient.\n");
+	Domain::print("Finite difference test of a gradient.");
 	for(int i=-2;i<=5;i++){
 	    typename Domain::Real epsilon=pow(Real(.1),i);
 	    typename Domain::Real dd=
@@ -241,7 +241,7 @@ namespace peopt{
 	    if(i<0) ss << "The relative difference (1e+" << -i <<  "): ";
 	    else ss << "The relative difference (1e-" << i << "): ";
 	    ss << std::scientific << std::setprecision(16)
-		<< fabs(dd_grad-dd)/(Real(1e-16)+fabs(dd_grad))<< std::endl;
+		<< fabs(dd_grad-dd)/(Real(1e-16)+fabs(dd_grad));
 	    Domain::print(ss.str());
 	}
 	Domain::print("\n");
@@ -256,7 +256,7 @@ namespace peopt{
 	Operator<Domain,Codomain>& G,
 	const typename Domain::Vector& u,
 	const typename Domain::Vector& eta,
-	const typename Domain::Vector& y
+	const typename Codomain::Vector& y
     ) {
 	// Create some type shortcuts
 	typedef typename Codomain::Real Codomain_Real;
@@ -273,7 +273,7 @@ namespace peopt{
 
 	// Compute an ensemble of finite difference tests in a linear manner
 	Domain::print("Finite difference test of an operator-vector "
-	    "product.\n");
+	    "product.");
 	for(int i=-2;i<=5;i++){
 
 	    // Calculate the directional derivative
@@ -291,8 +291,7 @@ namespace peopt{
 	    std::stringstream ss;
 	    if(i<0) ss << "The relative difference (1e+" << -i <<  "): ";
 	    else ss << "The relative difference (1e-" << i << "): ";
-	    ss << std::scientific << std::setprecision(16)
-		<< rel_err << std::endl;
+	    ss << std::scientific << std::setprecision(16) << rel_err; 
 	    Domain::print(ss.str());
 	}
 	Domain::print("\n");
@@ -304,7 +303,41 @@ namespace peopt{
 	    TrustRegion,            // Trust-Region algorithms
 	    LineSearch              // Line-search algorithms
 	};
-    };
+
+	// Converts the algorithm class to a string
+	std::string to_string(t algorithm_class){
+	    switch(algorithm_class){
+	    case TrustRegion:
+		return "TrustRegion";
+	    case LineSearch:
+		return "LineSearch";
+	    default:
+		throw;
+	    }
+	}
+	
+	// Converts a string to an algorithm class 
+	t from_string(std::string algorithm_class){
+	    if(algorithm_class=="TrustRegion")
+		return TrustRegion;
+	    else if(algorithm_class=="LineSearch")
+	    	return LineSearch;
+	    else
+		throw;
+	}
+
+	// Checks whether or not a string is valid
+	struct is_valid : public std::unary_function<std::string, bool> {
+	    bool operator () (const std::string& name) const {
+		if( name=="TrustRegion" ||
+		    name=="LineSearch"
+		)
+		    return true;
+		else
+		    return false;
+	    }
+	};
+    }
 
     // Reasons why we stop the algorithm
     namespace StoppingCondition{
@@ -312,9 +345,59 @@ namespace peopt{
 	    NotConverged,            // Algorithm did not converge
 	    RelativeGradientSmall,   // Relative gradient was sufficiently small
 	    RelativeStepSmall,       // Relative change in the step is small
-	    MaxItersExceeded         // Maximum number of iterations exceeded
+	    MaxItersExceeded,        // Maximum number of iterations exceeded
+	    External                 // Some external stopping condition 
 	};
-    };
+
+	// Converts the stopping condition to a string 
+	std::string to_string(t opt_stop){
+	    switch(opt_stop){
+	    case NotConverged:
+		return "NotConverged";
+	    case RelativeGradientSmall:
+		return "RelativeGradientSmall";
+	    case RelativeStepSmall:
+		return "RelativeStepSmall";
+	    case MaxItersExceeded:
+		return "MaxItersExceeded";
+	    case External:
+	    	return "External";
+	    default:
+	    	throw;
+	    }
+	}
+
+	// Converts a string to a stopping condition
+	t from_string(std::string opt_stop){
+	    if(opt_stop=="NotConverged")
+	    	return NotConverged;
+	    else if(opt_stop=="RelativeGradientSmall")
+	    	return RelativeGradientSmall;
+	    else if(opt_stop=="RelativeStepSmall")
+	    	return RelativeStepSmall;
+	    else if(opt_stop=="MaxItersExceeded")
+	    	return MaxItersExceeded;
+	    else if(opt_stop=="External")
+	    	return External;
+	    else
+	    	throw;
+	}
+
+	// Checks whether or not a string is valid
+	struct is_valid : public std::unary_function<std::string, bool> {
+	    bool operator () (const std::string& name) const {
+		if( name=="NotConverged" ||
+		    name=="RelativeGradientSmall" ||
+		    name=="RelativeStepSmall" ||
+		    name=="MaxItersExceeded" ||
+		    name=="External"
+		)
+		    return true;
+		else
+		    return false;
+	    }
+	};
+    }
 
     // Reasons we stop the Krylov method
     namespace KrylovStop{
@@ -324,7 +407,51 @@ namespace peopt{
 	    MaxItersExceeded,         // Maximum number of iterations exceeded
 	    TrustRegionViolated       // Trust-region radius violated
 	};
-    };
+
+	// Converts the Krylov stopping condition to a string 
+	std::string to_string(t krylov_stop){
+	    switch(krylov_stop){
+	    case NegativeCurvature:
+		return "NegativeCurvature";
+	    case RelativeErrorSmall:
+		return "RelativeErrorSmall";
+	    case MaxItersExceeded:
+		return "MaxItersExceeded";
+	    case TrustRegionViolated:
+		return "TrustRegionViolated";
+	    default:
+	    	throw;
+	    }
+	}
+	
+	// Converts a string to a Krylov stopping condition
+	t from_string(std::string krylov_stop){
+	    if(krylov_stop=="NegativeCurvature")
+	    	return NegativeCurvature;
+	    else if(krylov_stop=="RelativeErrorSmall")
+	    	return RelativeErrorSmall;
+	    else if(krylov_stop=="MaxItersExceeded")
+	    	return MaxItersExceeded;
+	    else if(krylov_stop=="TrustRegionViolated")
+	    	return TrustRegionViolated;
+	    else
+		throw;
+	}
+
+	// Checks whether or not a string is valid
+	struct is_valid : public std::unary_function<std::string, bool> {
+	    bool operator () (const std::string& name) const {
+		if( name=="NegativeCurvature" ||
+		    name=="RelativeErrorSmall" ||
+		    name=="MaxItersExceeded" ||
+		    name=="TrustRegionViolated" 
+		)
+		    return true;
+		else
+		    return false;
+	    }
+	};
+    }
 
     // Various operators for both Hessian approximations and preconditioners
     namespace Operators{
@@ -337,7 +464,66 @@ namespace peopt{
 	    InvSR1,            // Inverse SR1 approximation
 	    External  	       // An external operator provided by the user
 	};
-    };
+	
+	// Converts the operator type to a string 
+	std::string to_string(t op){
+	    switch(op){
+	    case Identity:
+	    	return "Identity";
+	    case ScaledIdentity:
+	    	return "ScaledIdentity";
+	    case BFGS:
+	    	return "BFGS";
+	    case InvBFGS:
+	    	return "InvBFGS";
+	    case SR1:
+	    	return "SR1";
+	    case InvSR1:
+	    	return "InvSR1";
+	    case External:
+	    	return "External";
+	    default:
+	    	throw;
+	    }
+	}
+	
+	// Converts a string to a operator 
+	t from_string(std::string op){
+	    if(op=="Identity")
+	    	return Identity; 
+	    else if(op=="ScaledIdentity")
+	    	return ScaledIdentity; 
+	    else if(op=="BFGS")
+	    	return BFGS; 
+	    else if(op=="InvBFGS")
+	    	return InvBFGS; 
+	    else if(op=="SR1")
+	    	return SR1; 
+	    else if(op=="InvSR1")
+	    	return InvSR1; 
+	    else if(op=="External")
+	    	return External; 
+	    else
+		throw;
+	}
+
+	// Checks whether or not a string is valid
+	struct is_valid : public std::unary_function<std::string, bool> {
+	    bool operator () (const std::string& name) const {
+		if( name=="Identity" ||
+		    name=="ScaledIdentity" ||
+		    name=="BFGS" ||
+		    name=="InvBFGS" ||
+		    name=="SR1" ||
+		    name=="InvSR1" ||
+		    name=="External" 
+		)
+		    return true;
+		else
+		    return false;
+	    }
+	};
+    }
 
     // Different kinds of search directions 
     namespace LineSearchDirection{
@@ -349,7 +535,61 @@ namespace peopt{
 	    BFGS,                     // Limited-memory BFGS 
 	    NewtonCG                  // Newton-CG
 	};
-    };
+	
+	// Converts the line-search direction to a string 
+	std::string to_string(t dir){
+	    switch(dir){
+	    case SteepestDescent:
+	    	return "SteepestDescent";
+	    case FletcherReeves:
+	    	return "FletcherReeves";
+	    case PolakRibiere:
+	    	return "PolakRibiere";
+	    case HestenesStiefel:
+	    	return "HestenesStiefel";
+	    case BFGS:
+	    	return "BFGS";
+	    case NewtonCG:
+	    	return "NewtonCG";
+	    default:
+		throw;
+	    }
+	}
+	
+	// Converts a string to a line-search direction 
+	t from_string(std::string dir){
+	    if(dir=="SteepestDescent")
+	    	return SteepestDescent; 
+	    else if(dir=="FletcherReeves")
+	    	return FletcherReeves; 
+	    else if(dir=="PolakRibiere")
+	    	return PolakRibiere; 
+	    else if(dir=="HestenesStiefel")
+	    	return HestenesStiefel; 
+	    else if(dir=="BFGS")
+	    	return BFGS; 
+	    else if(dir=="NewtonCG")
+	    	return NewtonCG; 
+	    else
+		throw;
+	}
+
+	// Checks whether or not a string is valid
+	struct is_valid : public std::unary_function<std::string, bool> {
+	    bool operator () (const std::string& name) const {
+		if( name=="SteepestDescent" ||
+		    name=="FletcherReeves" ||
+		    name=="PolakRibiere" ||
+		    name=="HestenesStiefel" ||
+		    name=="BFGS" ||
+		    name=="NewtonCG"
+		)
+		    return true;
+		else
+		    return false;
+	    }
+	};
+    }
 
     namespace LineSearchKind{
 	enum t{
@@ -359,7 +599,105 @@ namespace peopt{
 	    TwoPointA,        // Barzilai and Borwein's method A
 	    TwoPointB         // Barzilai and Borwein's method B
 	};
-    };
+    	
+	// Converts the line-search kind to a string 
+	std::string to_string(t kind){
+	    switch(kind){
+	    case Brents:
+	    	return "Brents";
+	    case GoldenSection:
+	    	return "GoldenSection";
+	    case BackTracking:
+	    	return "BackTracking";
+	    case TwoPointA:
+	    	return "TwoPointA";
+	    case TwoPointB:
+	    	return "TwoPointB";
+	    default:
+	    	throw;
+	    }
+	}
+	
+	// Converts a string to a line-search kind 
+	t from_string(std::string kind){
+	    if(kind=="Brents")
+	    	return Brents; 
+	    else if(kind=="GoldenSection")
+	    	return GoldenSection; 
+	    else if(kind=="BackTracking")
+	    	return BackTracking; 
+	    else if(kind=="TwoPointA")
+	    	return TwoPointA; 
+	    else if(kind=="TwoPointB")
+	    	return TwoPointB; 
+	    else
+		throw;
+	}
+
+	// Checks whether or not a string is valid
+	struct is_valid : public std::unary_function<std::string, bool> {
+	    bool operator () (const std::string& name) const {
+		if( name=="Brents" ||
+		    name=="GoldenSection" ||
+		    name=="BackTracking" ||
+		    name=="TwoPointA" ||
+		    name=="TwoPointB" 
+		)
+		    return true;
+		else
+		    return false;
+	    }
+	};
+    }
+    
+    namespace OptimizationLocation{
+	enum t{
+	    // Occurs after we take the optimization step u+s, but before
+	    // we calculate the gradient based on this new step.  In addition,
+	    // after this point we set the objective value, obj_u, to be
+	    // obj_ups.
+	    AfterStepBeforeGradient,
+
+	    // This occurs last in the optimization loop.  At this point,
+	    // we have already incremented our optimization iteration and
+	    // checked our stopping condition
+	    EndOfOptimizationIteration  
+	};
+    	
+	// Converts the line-search kind to a string 
+	std::string to_string(t loc){
+	    switch(loc){
+	    case AfterStepBeforeGradient:
+	    	return "AfterStepBeforeGradient";
+	    case EndOfOptimizationIteration:
+	    	return "EndOfOptimizationIteration";
+	    default:
+	    	throw;
+	    }
+	}
+	
+	// Converts a string to a line-search kind 
+	t from_string(std::string loc){
+	    if(loc=="AfterStepBeforeGradient")
+	    	return AfterStepBeforeGradient; 
+	    else if(loc=="EndOfOptimizationIteration")
+	    	return EndOfOptimizationIteration; 
+	    else
+		throw;
+	}
+
+	// Checks whether or not a string is valid
+	struct is_valid : public std::unary_function<std::string, bool> {
+	    bool operator () (const std::string& name) const {
+		if( name=="AfterStepBeforeGradient" ||
+		    name=="EndOfOptimizationIteration"
+		)
+		    return true;
+		else
+		    return false;
+	    }
+	};
+    }
 
     // The core routines for peopt
     template <typename VS>
@@ -528,7 +866,474 @@ namespace peopt{
 		g_old.push_back(x);
 		s_old.push_back(x);
 	    }
+
+	    // Create a series of types used for peering, capturing, and
+	    // releasing information in the state
+	    typedef std::pair < std::list <std::string>, List > Vars;
+	    typedef std::pair < std::list <std::string>,
+				std::list <Real> > Reals;
+	    typedef std::pair < std::list <std::string>,
+				std::list <unsigned int> > Nats;
+	    typedef std::pair < std::list <std::string>,
+				std::list <std::string> > Params; 
+
 	private:
+	    // Copy out all non-variables.  This includes reals, naturals,
+	    // and parameters
+	    void stateToScalars(
+	    	Reals& reals,
+		Nats& nats,
+		Params& params
+	    ) {
+		
+		// Copy in all the real numbers 
+		reals.first.push_back("eps_g");
+		reals.second.push_back(eps_g);
+		reals.first.push_back("eps_s");
+		reals.second.push_back(eps_s);
+		reals.first.push_back("krylov_rel_err");
+		reals.second.push_back(krylov_rel_err);
+		reals.first.push_back("eps_krylov");
+		reals.second.push_back(eps_krylov);
+		reals.first.push_back("norm_g");
+		reals.second.push_back(norm_g);
+		reals.first.push_back("norm_gtyp");
+		reals.second.push_back(norm_gtyp);
+		reals.first.push_back("norm_s");
+		reals.second.push_back(norm_s);
+		reals.first.push_back("norm_styp");
+		reals.second.push_back(norm_styp);
+		reals.first.push_back("obj_u");
+		reals.second.push_back(obj_u);
+		reals.first.push_back("obj_ups");
+		reals.second.push_back(obj_ups);
+		reals.first.push_back("delta");
+		reals.second.push_back(delta);
+		reals.first.push_back("delta_max");
+		reals.second.push_back(delta_max);
+		reals.first.push_back("eta1");
+		reals.second.push_back(eta1);
+		reals.first.push_back("eta2");
+		reals.second.push_back(eta2);
+		reals.first.push_back("rho");
+		reals.second.push_back(rho);
+		reals.first.push_back("alpha");
+		reals.second.push_back(alpha);
+		reals.first.push_back("eps_ls");
+		reals.second.push_back(eps_ls);
+
+		// Copy in all the natural numbers
+		nats.first.push_back("stored_history");
+		nats.second.push_back(stored_history);
+		nats.first.push_back("history_reset");
+		nats.second.push_back(history_reset);
+		nats.first.push_back("iter");
+		nats.second.push_back(iter);
+		nats.first.push_back("iter_max");
+		nats.second.push_back(iter_max);
+		nats.first.push_back("krylov_iter");
+		nats.second.push_back(krylov_iter);
+		nats.first.push_back("krylov_iter_max");
+		nats.second.push_back(krylov_iter_max);
+		nats.first.push_back("krylov_iter_total");
+		nats.second.push_back(krylov_iter_total);
+		nats.first.push_back("verbose");
+		nats.second.push_back(verbose);
+		nats.first.push_back("rejected_trustregion");
+		nats.second.push_back(rejected_trustregion);
+		nats.first.push_back("linesearch_iter");
+		nats.second.push_back(linesearch_iter);
+		nats.first.push_back("linesearch_iter_max");
+		nats.second.push_back(linesearch_iter_max);
+		nats.first.push_back("linesearch_iter_total");
+		nats.second.push_back(linesearch_iter_total);
+
+		// Copy in all the parameters
+		params.first.push_back("algorithm_class");
+		params.second.push_back(
+		    AlgorithmClass::to_string(algorithm_class));
+		params.first.push_back("opt_stop");
+		params.second.push_back(StoppingCondition::to_string(opt_stop));
+		params.first.push_back("krylov_stop");
+		params.second.push_back(KrylovStop::to_string(krylov_stop));
+		params.first.push_back("H_type");
+		params.second.push_back(Operators::to_string(H_type));
+		params.first.push_back("Minv_type");
+		params.second.push_back(Operators::to_string(Minv_type));
+		params.first.push_back("dir");
+		params.second.push_back(LineSearchDirection::to_string(dir));
+		params.first.push_back("kind");
+		params.second.push_back(LineSearchKind::to_string(kind));
+	    }
+
+	    // Copy in all non-variables.  This includes reals, naturals,
+	    // and parameters
+	    void scalarsToState(
+	    	Reals& reals,
+		Nats& nats,
+		Params& params
+	    ) {
+		// Copy in any reals 
+		typename std::list <Real>::iterator real=reals.second.begin();
+	    	for(std::list <std::string>::iterator name=reals.first.begin();
+		    name!=reals.first.end();
+		    name++,real++
+		){
+		    if(*name=="eps_g") eps_g=*real;
+		    else if(*name=="eps_s") eps_s=*real;
+		    else if(*name=="krylov_rel_err") krylov_rel_err=*real;
+		    else if(*name=="eps_krylov") eps_krylov=*real;
+		    else if(*name=="norm_g") norm_g=*real;
+		    else if(*name=="norm_gtyp") norm_gtyp=*real;
+		    else if(*name=="norm_s") norm_g=*real;
+		    else if(*name=="norm_styp") norm_gtyp=*real;
+		    else if(*name=="obj_u") obj_u=*real;
+		    else if(*name=="obj_ups") obj_ups=*real;
+		    else if(*name=="delta") delta=*real;
+		    else if(*name=="delta_max") delta_max=*real;
+		    else if(*name=="eta1") eta1=*real;
+		    else if(*name=="eta2") eta2=*real;
+		    else if(*name=="rho") rho=*real;
+		    else if(*name=="alpha") alpha=*real;
+		    else if(*name=="eps_ls") eps_ls=*real;
+		}
+	    
+	    	// Next, copy in any naturals
+		std::list <unsigned int>::iterator nat=nats.second.begin();
+	    	for(std::list <std::string>::iterator name=nats.first.begin();
+		    name!=nats.first.end();
+		    name++,nat++
+		){
+		    if(*name=="stored_history") stored_history=*nat;
+		    else if(*name=="history_reset") history_reset=*nat;
+		    else if(*name=="iter") iter=*nat;
+		    else if(*name=="iter_max") iter_max=*nat;
+		    else if(*name=="krylov_iter") krylov_iter=*nat;
+		    else if(*name=="krylov_iter_max") krylov_iter_max=*nat;
+		    else if(*name=="krylov_iter_total") krylov_iter_total=*nat;
+		    else if(*name=="verbose") verbose=*nat;
+		    else if(*name=="rejected_trustregion")
+			rejected_trustregion=*nat;
+		    else if(*name=="linesearch_iter") linesearch_iter=*nat;
+		    else if(*name=="linesearch_iter_max")
+			linesearch_iter_max=*nat;
+		    else if(*name=="linesearch_iter_total")
+			linesearch_iter_total=*nat;
+		}
+	    	
+		// Next, copy in any parameters 
+		std::list <std::string>::iterator param=params.second.begin();
+	    	for(std::list <std::string>::iterator name=params.first.begin();
+		    name!=params.first.end();
+		    name++,param++
+		){
+		    if(*name=="algorithm_class")
+			algorithm_class=AlgorithmClass::from_string(*param);
+		    else if(*name=="opt_stop")
+			opt_stop=StoppingCondition::from_string(*param);
+		    else if(*name=="krylov_stop")
+			krylov_stop=KrylovStop::from_string(*param);
+		    else if(*name=="H_type")
+			H_type=Operators::from_string(*param);
+		    else if(*name=="Minv_type")
+			Minv_type=Operators::from_string(*param);
+		    else if(*name=="dir")
+			dir=LineSearchDirection::from_string(*param);
+		    else if(*name=="kind")
+			kind=LineSearchKind::from_string(*param);
+		}
+	    }
+	public:
+	    
+	    // Release the data into structures controlled by the user 
+	    void release(
+	    	Vars& vars,
+	    	Reals& reals,
+		Nats& nats,
+		Params& params
+	    ) {
+	    
+		// Create references to the variables (all vectors)
+		vars.first.push_back("u");
+		vars.second.splice(vars.second.end(),u);
+		vars.first.push_back("g");
+		vars.second.splice(vars.second.end(),g);
+		vars.first.push_back("s");
+		vars.second.splice(vars.second.end(),s);
+		vars.first.push_back("u_old");
+		vars.second.splice(vars.second.end(),u_old);
+		vars.first.push_back("g_old");
+		vars.second.splice(vars.second.end(),g_old);
+		vars.first.push_back("s_old");
+		vars.second.splice(vars.second.end(),s_old);
+
+		{int i=1;
+		for(ListIterator y=oldY.begin();y!=oldY.end();y=oldY.begin()){
+		    std::stringstream ss;
+		    ss << "oldY_" << i;
+		    vars.first.push_back(ss.str());
+		    vars.second.splice(vars.second.end(),oldY,y);
+		}}
+
+		{int i=1;
+		for(ListIterator s=oldS.begin();s!=oldS.end();s=oldS.begin()){
+		    std::stringstream ss;
+		    ss << "oldS_" << i;
+		    vars.first.push_back(ss.str());
+		    vars.second.splice(vars.second.end(),oldS,s);
+		}}
+		
+		// Copy in all of the scalar information
+		stateToScalars(reals,nats,params);
+	    }
+	    
+	    // Capture data from structures controlled by the user.  Note,
+	    // we don't sort the oldY and oldS based on the prefix.  In fact,
+	    // we completely ignore this information.  Therefore, this routine
+	    // really depends on oldY and oldS to have their elements inserted
+	    // into vars in order.  In other words, oldY_1 must come before
+	    // oldY_2, etc.
+	    void capture(
+	    	Vars& vars,
+	    	Reals& reals,
+		Nats& nats,
+		Params& params
+	    ) {
+		
+		// Copy in the variables 
+	    	for(std::list <std::string>::iterator name=vars.first.begin();
+		    name!=vars.first.end();
+		    name++
+		) {
+		    ListIterator var=vars.second.begin();
+		    if(*name=="u") u.splice(u.end(),vars.second,var);
+		    else if(*name=="g") g.splice(g.end(),vars.second,var);
+		    else if(*name=="s") s.splice(s.end(),vars.second,var); 
+		    else if(*name=="u_old")
+			u_old.splice(u_old.end(),vars.second,var);
+		    else if(*name=="g_old")
+			g_old.splice(g_old.end(),vars.second,var);
+		    else if(*name=="s_old")
+			s_old.splice(s_old.end(),vars.second,var);
+		    else if(name->substr(0,5)=="oldY_")
+			oldY.splice(oldY.end(),vars.second,var);
+		    else if(name->substr(0,5)=="oldS_")
+			oldS.splice(oldS.end(),vars.second,var);
+		}
+		
+		// Copy in all of the scalar information
+		scalarsToState(reals,nats,params);
+	    }
+
+	private:
+	    struct is_var : public std::unary_function<std::string, bool> {
+	    	bool operator () (const std::string& name) const {
+		    if( name == "u" || 
+			name == "g" || 
+			name == "s" || 
+			name == "u_old" || 
+			name == "g_old" || 
+			name == "s_old" || 
+			name.substr(0,5)=="oldY_" || 
+			name.substr(0,5)=="oldS_" 
+		    ) 
+			return true;
+		    else
+		    	return false;
+		}
+	    };
+
+	    struct is_real : public std::unary_function<std::string, bool> {
+	    	bool operator () (const std::string& name) const {
+		    if( name == "eps_g" || 
+			name == "eps_s" || 
+			name == "krylov_rel_err" || 
+			name == "eps_krylov" || 
+			name == "norm_g" || 
+			name == "norm_gtyp" || 
+			name == "norm_s" ||
+			name == "norm_styp" || 
+			name == "obj_u" || 
+			name == "obj_ups" ||
+			name == "delta" || 
+			name == "delta_max" || 
+			name == "eta1" || 
+			name == "eta2" || 
+			name == "rho" || 
+			name == "alpha" || 
+			name == "eps_ls"
+		    ) 
+			return true;
+		    else
+		    	return false;
+		}
+	    };
+
+	    struct is_nat : public std::unary_function<std::string, bool> {
+	    	bool operator () (const std::string& name) const {
+		    if( name == "stored_history" ||
+			name == "history_reset" || 
+			name == "iter" || 
+			name == "iter_max" || 
+			name == "krylov_iter" || 
+			name == "krylov_iter_max" ||
+			name == "krylov_iter_total" || 
+			name == "verbose" || 
+			name == "rejected_trustregion" || 
+			name == "linesearch_iter" || 
+			name == "linesearch_iter_max" ||
+			name == "linesearch_iter_total" 
+		    ) 
+			return true;
+		    else
+		    	return false;
+		}
+	    };
+	    
+	    struct is_param : public std::unary_function<std::string, bool> {
+	    	bool operator () (const std::string& name) const {
+		    if( name == "algorithm_class" || 
+			name == "opt_stop" || 
+			name == "krylov_stop" ||
+			name == "H_type" || 
+			name == "Minv_type" ||
+			name == "dir" || 
+			name == "kind" 
+		    ) 
+			return true;
+		    else
+		    	return false;
+		}
+	    };
+		
+
+	public:
+	    static void checkNames(
+	    	Vars& vars,
+	    	Reals& reals,
+		Nats& nats,
+		Params& params
+	    ) {
+		// Create a base message
+		const std::string base=
+		    "During serialization, found an invalid ";
+
+	    	// Check the variable names
+	    	{
+		    std::list <std::string>::iterator name = find_if(
+			vars.first.begin(), vars.first.end(),
+			not1(is_var()));
+		    if(name!=vars.first.end()){
+			std::stringstream ss;
+			ss << base << "variable name: " << *name;
+			VS::error(ss.str());
+		    }
+		}
+	    	
+		// Check the real names
+	    	{
+		    std::list <std::string>::iterator name = find_if(
+			reals.first.begin(), reals.first.end(),
+			not1(is_real()));
+		    if(name!=reals.first.end()){
+			std::stringstream ss;
+			ss << base << "real name: " << *name;
+			VS::error(ss.str());
+		    }
+		}
+	    	
+		// Check the natural names
+	    	{
+		    std::list <std::string>::iterator name = find_if(
+			nats.first.begin(), nats.first.end(),
+			not1(is_nat()));
+		    if(name!=nats.first.end()){
+			std::stringstream ss;
+			ss << base << "natural name: " << *name;
+			VS::error(ss.str());
+		    }
+		}
+		
+		// Check the parameter names
+	    	{
+		    std::list <std::string>::iterator name = find_if(
+			params.first.begin(), params.first.end(),
+			not1(is_param()));
+		    if(name!=params.first.end()){
+			std::stringstream ss;
+			ss << base << "parameter name: " << *name;
+			VS::error(ss.str());
+		    }
+		}
+	
+		// Check that the actual parameters are valid
+		std::list <std::string>::iterator param=params.second.begin();
+	    	for(std::list <std::string>::iterator name=params.first.begin();
+		    name!=params.first.end();
+		    name++,param++
+		){
+		    // Check the algorithm class
+		    if(*name=="algorithm_class"){
+			if(!AlgorithmClass::is_valid()(*param)){
+			    std::stringstream ss;
+			    ss << base << "algorithm class: " << *param;
+			    VS::error(ss.str());
+			}
+
+		    // Check the optimization stopping conditions
+		    } else if(*name=="opt_stop"){
+			if(!StoppingCondition::is_valid()(*param)){
+			    std::stringstream ss;
+			    ss << base << "stopping condition: " << *param;
+			    VS::error(ss.str());
+			}
+
+		    // Check the Krylov stopping conditions
+		    } else if(*name=="krylov_stop"){
+			if(!KrylovStop::is_valid()(*param)) {
+			    std::stringstream ss;
+			    ss << base <<"Krylov stopping condition: "<<*param;
+			    VS::error(ss.str());
+			}
+
+		    // Check the Hessian type
+		    } else if(*name=="H_type"){
+			if(!Operators::is_valid()(*param)) {
+			    std::stringstream ss;
+			    ss << base<<"Hessian type: " << *param;
+			    VS::error(ss.str());
+			}
+
+		    // Check the type of the preconditioner
+		    } else if(*name=="Minv_type"){
+			if(!Operators::is_valid()(*param)){
+			    std::stringstream ss;
+			    ss << base << "preconditioner type: " << *param;
+			    VS::error(ss.str());
+			}
+
+		    // Check the line-search direction
+		    } else if(*name=="dir"){
+			if(!LineSearchDirection::is_valid()(*param)) {
+			    std::stringstream ss;
+			    ss << base << "line-search direction: " << *param;
+			    VS::error(ss.str());
+			}
+
+		    // Check the kind of line-search
+		    } else if(*name=="kind"){
+			if(!LineSearchKind::is_valid()(*param)) {
+			    std::stringstream ss;
+			    ss << base << "line-search kind: " << *param;
+			    VS::error(ss.str());
+			}
+		    }
+		}
+	    }
+
+	private:
+	    // This sets all of the parameters possible that don't require
+	    // special memory allocation such as variables.
 	    void init(){
 		eps_g=Real(1e-6);
 		eps_s=Real(1e-6);
@@ -537,7 +1342,7 @@ namespace peopt{
 		iter=1;
 		iter_max=10;
 		opt_stop=StoppingCondition::NotConverged;
-		krylov_iter=0;
+		krylov_iter=1;
 		krylov_iter_max=10;
 		krylov_iter_total=0;
 		krylov_stop=KrylovStop::RelativeErrorSmall;
@@ -557,7 +1362,7 @@ namespace peopt{
 		delta_max=Real(100.);
 		eta1=Real(.1);
 		eta2=Real(.9);
-		rho=Real(std::numeric_limits<Real>::quiet_NaN());
+		rho=Real(0.);
 		rejected_trustregion=0;
 		alpha=1.;
 		linesearch_iter=0;
@@ -566,6 +1371,291 @@ namespace peopt{
 		eps_ls=Real(1e-2);
 		dir=LineSearchDirection::SteepestDescent;
 		kind=LineSearchKind::GoldenSection;
+	    }
+
+	public:
+	    // Check that we have a valid set of parameters
+	    void check(){
+
+	    	// Check that the tolerance for the gradient stopping condition
+		// is positive
+	    	if(eps_g <= 0) {
+		    std::stringstream ss;
+		    ss << "The tolerance for the gradient stopping condition "
+			"must be positive: eps_g = " << eps_g;
+		    VS::error(ss.str());
+		}
+	    
+	    	// Check that the tolerance for the step length stopping
+		// condition is positive
+		if(eps_s <= 0) {
+		    std::stringstream ss;
+		    ss << "The tolerance for the step length stopping "
+			"condition must be positive: eps_s = " << eps_s; 
+		    VS::error(ss.str());
+		}
+	
+		// Check that the number of stored vectors for algorithms
+		// such as SR1 and BFGS is nonnegative
+		if(stored_history < 0) {
+		    std::stringstream ss;
+		    ss << "The number of stored vectors for quasi-Newton "
+			"methods must be nonnegative: stored_history = "
+			<< stored_history;
+		    VS::error(ss.str());
+		}
+
+		// Check that our fallback for reseting the stored vectors
+		// for quasi-Newton methods is nonnegative
+		if(history_reset < 0) {
+		    std::stringstream ss;
+		    ss << "The tolerance for resetting the quasi-Newton "
+			"approximation must be nonnegative: history_reset = "
+			<< history_reset;
+		    VS::error(ss.str());
+		}
+
+		// Check that the current iteration is positive
+		if(iter <= 0) {
+		    std::stringstream ss;
+		    ss << "The current optimization iteration must be "
+			"positive: iter = " << iter;
+		    VS::error(ss.str());
+		}
+
+		// Check that the maximum iteration is positive
+		if(iter_max <= 0) {
+		    std::stringstream ss;
+		    ss << "The maximum optimization iteration must be "
+			"positive: iter_max = " << iter_max;
+		    VS::error(ss.str());
+		}
+
+		// Check that the current Krylov iteration is positive
+		if(krylov_iter <= 0) {
+		    std::stringstream ss;
+		    ss << "The current Krlov iteration must be "
+			"positive: krylov_iter = " << krylov_iter;
+		    VS::error(ss.str());
+		}
+
+		// Check that the maximum Krylov iteration is positive
+		if(krylov_iter_max <= 0) {
+		    std::stringstream ss;
+		    ss << "The maximum Krylov iteration must be "
+			"positive: krylov_iter_max = " << krylov_iter_max;
+		    VS::error(ss.str());
+		}
+
+		// Check that the total number of Krylov iteration is 
+		// nonnegative
+		if(krylov_iter_total < 0) {
+		    std::stringstream ss;
+		    ss << "The total number of Krylov iterations must be "
+			"positive: krylov_iter_total = " << krylov_iter_total;
+		    VS::error(ss.str());
+		}
+
+		// Check that relative error in the Krylov method is nonnegative
+		if(krylov_rel_err < 0) {
+		    std::stringstream ss;
+		    ss << "The relative error in the Krylov method must be "
+			"nonnegative: krylov_rel_err = " << krylov_rel_err;
+		    VS::error(ss.str());
+		}
+		
+		// Check that the stopping tolerance for the Krylov method is
+		// positive
+		if(eps_krylov <= 0) {
+		    std::stringstream ss;
+		    ss << "The tolerance for the Krylov method stopping "
+			"condition must be positive: eps_krylov = "<<eps_krylov;
+		    VS::error(ss.str());
+		}
+
+		// Check that the norm of the gradient is nonnegative or
+		// if we're on the first iteration, we allow a NaN
+		if(norm_g < 0 || (iter!=1 && norm_g!=norm_g)) {
+		    std::stringstream ss;
+		    ss << "The norm of the gradient must be nonnegative: "
+			"norm_g = " << norm_g; 
+		    VS::error(ss.str());
+		}
+
+		// Check that the norm of a typical gradient is nonnegative or
+		// if we're on the first iteration, we allow a NaN
+		if(norm_gtyp < 0 || (iter!=1 && norm_gtyp!=norm_gtyp)) {
+		    std::stringstream ss;
+		    ss << "The norm of a typical gradient must be nonnegative: "
+			"norm_gtyp = " << norm_gtyp; 
+		    VS::error(ss.str());
+		}
+
+		// Check that the norm of the trial step is nonnegative or
+		// if we're on the first iteration, we allow a NaN
+		if(norm_s < 0 || (iter!=1 && norm_s!=norm_s)) {
+		    std::stringstream ss;
+		    ss << "The norm of the trial step must be nonnegative: "
+			"norm_s = " << norm_s; 
+		    VS::error(ss.str());
+		}
+
+		// Check that the norm of a typical trial step is nonnegative or
+		// if we're on the first iteration, we allow a NaN
+		if(norm_styp < 0 || (iter!=1 && norm_styp!=norm_styp)) {
+		    std::stringstream ss;
+		    ss << "The norm of a typical trial step must be "
+			"nonnegative: norm_styp = " << norm_styp; 
+		    VS::error(ss.str());
+		}
+
+		// Check that the objective value isn't a NaN past iteration 1
+		if(iter!=1 && obj_u!=obj_u) {
+		    std::stringstream ss;
+		    ss << "The objective value must be a number: obj_u = "
+			<< obj_u;
+		    VS::error(ss.str());
+		}
+
+		// Check that the objective at a trial step isn't a NaN past
+		// iteration 1
+		if(iter!=1 && obj_ups!=obj_ups) {
+		    std::stringstream ss;
+		    ss << "The objective value at the trial step must be a "
+			"number: obj_ups = " << obj_ups;
+		    VS::error(ss.str());
+		}
+
+		// Check that verbosity level is nonnegative
+		if(verbose<0){
+		    std::stringstream ss;
+		    ss << "The verbosity level must be nonnegative: verbose = "
+			<< verbose;
+		    VS::error(ss.str());
+		}
+		
+		// Check that the trust-region radius is positive
+		if(delta<=0){
+		    std::stringstream ss;
+		    ss << "The trust-region radius must be positive: delta = "
+			<< delta; 
+		    VS::error(ss.str());
+		}
+
+		// Check that the maximum trust-region radius is positive
+		if(delta_max<=0){
+		    std::stringstream ss;
+		    ss << "The maximum trust-region radius must be positive: "
+			"delta_max = " << delta_max; 
+		    VS::error(ss.str());
+		}
+
+		// Check that the current trust-region radius is less than
+		// or equal to the maximum trust-region radius
+		if(delta > delta_max){
+		    std::stringstream ss;
+		    ss << "The trust-region radius must be less than or equal "
+			"to the maximum trust-region radius: delta = "
+			<< delta << ", delta_max = " << delta_max;
+		    VS::error(ss.str());
+		}
+
+		// Check that the predicted vs. actual reduction tolerance
+		// is between 0 and 1
+		if(eta1 < 0 || eta1 > 1){
+		    std::stringstream ss;
+		    ss << "The tolerance for whether or not we accept a "
+			"trust-region step must be between 0 and 1: eta1 = "
+			<< eta1;
+		    VS::error(ss.str());
+		}
+		
+		// Check that the other predicted vs. actual reduction tolerance
+		// is between 0 and 1
+		if(eta2 < 0 || eta2 > 1){
+		    std::stringstream ss;
+		    ss << "The tolerance for whether or not we increase the "
+			"trust-region radius must be between 0 and 1: eta2 = "
+			<< eta2;
+		    VS::error(ss.str());
+		}
+
+		// Check that eta2 > eta1
+		if(eta1 >= eta2) {
+		    std::stringstream ss;
+		    ss << "The trust-region tolerances for accepting steps "
+			"must satisfy the relationship that eta1 < eta2: "
+			"eta1 = " << eta1 << ", eta2 = " << eta2;
+		    VS::error(ss.str());
+		}
+
+
+
+		// Check that the prediction versus actual reduction is
+		// nonnegative 
+		if(rho < 0) {
+		    std::stringstream ss;
+		    ss << "The predicted versus actual reduction must be "
+			"nonnegative: rho = " << rho;
+		    VS::error(ss.str());
+		}
+
+
+		// Check that the number of rejected trust-region steps is
+		// nonnegative
+		if(rejected_trustregion < 0) {
+		    std::stringstream ss;
+		    ss << "The number of rejected trust-region steps must be "
+			"nonnegative: rejected_trustregion = "
+			<< rejected_trustregion;
+		    VS::error(ss.str());
+		}
+
+		// Check that the line-search step length is positive 
+		if(alpha <= 0) {
+		    std::stringstream ss;
+		    ss << "The line-search step length must be positive: "
+			"alpha = " << alpha;
+		    VS::error(ss.str());
+		}
+
+		// Check that the number of line-search iterations
+		// is nonnegative
+		if(linesearch_iter < 0) {
+		    std::stringstream ss;
+		    ss << "The number of line-search iterations must be "
+			"nonnegative: linesearch_iter = " << linesearch_iter;
+		    VS::error(ss.str());
+		}
+
+		// Check that the maximum number of line-search iterations is
+		// nonnegative
+		if(linesearch_iter_max < 0) {
+		    std::stringstream ss;
+		    ss << "The maximum number of line-search iterations must "
+			"be nonnegative: linesearch_iter_max = "
+			<< linesearch_iter_max;
+		    VS::error(ss.str());
+		}
+
+		// Check that the total number of line-search iterations
+		// completed is nonnegative
+		if(linesearch_iter_total < 0) {
+		    std::stringstream ss;
+		    ss << "The total number of line-search iterations must "
+			"be nonnegative: linesearch_iter_total = "
+			<< linesearch_iter_total;
+		    VS::error(ss.str());
+		}
+		
+		// Check that the stopping tolerance for the line-search
+		// methods is positive
+		if(eps_ls <= 0) {
+		    std::stringstream ss;
+		    ss << "The tolerance for the line-search stopping "
+			"condition must be positive: eps_ls = " << eps_ls;
+		    VS::error(ss.str());
+		}
 	    }
 	};
     
@@ -1871,12 +2961,14 @@ namespace peopt{
 	    AlgorithmClass::t& algorithm_class=state.algorithm_class;
 	    LineSearchDirection::t& dir=state.dir;
 
-	    	
-	    // Evaluate the objective function and gradient
-	    obj_u=F(u);
-	    G(u,g);
-	    norm_g=sqrt(VS::innr(g,g));
-	    norm_gtyp=norm_g;
+	    // Evaluate the objective function and gradient if we've not done
+	    // so already
+	    if(obj_u != obj_u) {
+		obj_u=F(u);
+		G(u,g);
+		norm_g=sqrt(VS::innr(g,g));
+		norm_gtyp=norm_g;
+	    }
 
 	    // Prints out the header for the diagonstic information
 	    printStateHeader(state);
@@ -1892,8 +2984,8 @@ namespace peopt{
 		// Get a new optimization iterate.  
 		getStep(state,Minv,H,F);
 
-		// On the first iteration, save the size of the step
-		if(iter==1) norm_styp=norm_s;
+		// If we've not calculate it already, save the size of the step
+		if(norm_styp!=norm_styp) norm_styp=norm_s;
 
 		// Save the old variable, gradient, and trial step.  This
 		// is useful for both CG and quasi-Newton methods.
@@ -1917,8 +3009,10 @@ namespace peopt{
 
 		// Increase the iteration
 		iter++;
-	    } while((opt_stop=checkStop(state))
-		==StoppingCondition::NotConverged);
+
+		// Check the stopping condition
+		opt_stop=checkStop(state);
+	    } while(opt_stop==StoppingCondition::NotConverged);
 	    	
 	    // Print a final diagnostic 
 	    printState(state);
@@ -2089,7 +3183,6 @@ namespace peopt{
 	    }
 
 	    // Send the information to the screen
-	    ss << std::endl;
 	    VS::print(ss.str());
 	}
 	
@@ -2112,7 +3205,6 @@ namespace peopt{
 	    	<< std::setw(11) << krylov_rel_err; 
 
 	    // Send the information to the screen
-	    ss << std::endl;
 	    VS::print(ss.str());
 	}
 
@@ -2148,7 +3240,6 @@ namespace peopt{
 	    }
 
 	    // Send the information to the screen
-	    ss << std::endl;
 	    VS::print(ss.str());
 	}
 	
@@ -2167,7 +3258,6 @@ namespace peopt{
 	    	<< std::setw(11) << "Rel Err" << ' ';
 
 	    // Send the information to the screen
-	    ss << std::endl;
 	    VS::print(ss.str());
 	}
     };
@@ -2477,5 +3567,5 @@ namespace peopt{
 	    }
 	};
     };
-};
+}
 #endif
