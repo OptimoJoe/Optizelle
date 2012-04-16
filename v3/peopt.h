@@ -45,7 +45,7 @@ namespace peopt{
             return sqrt(innr(x,x));
         }
 
-        // Deallocates and memory required by the vector space
+        // Deallocates memory required by the vector space
         virtual ~Operations() {}
     };
 
@@ -965,35 +965,28 @@ namespace peopt{
         };
     }
 
-#if 0
     // Pieces of the state required for all optimization routines        
     template <typename Var,typename MultEq,typename MultIneq,typename Real>
     struct State{
+    public:
 
         // ------------- GENERIC, NON-RESTARTABLE ITEMS ------------- 
 
         // Operations on the variables, equality multipliers, and inequality
         // multipliers respectively.
-        std::auto_ptr <Operations <Var,Real> > v_ops;
+        std::auto_ptr <Operations <Var,Real> > ops;
         std::auto_ptr <Operations <MultEq,Real> > e_ops;
         std::auto_ptr <Operations <MultIneq,Real> > i_ops;
 
-        // Objective function and its derivatives
-        std::auto_ptr <Functional <Var,Real> > F;
-        std::auto_ptr <Operator <Var,Var> > Fp;
-        std::auto_ptr <OperatorWithBase <Var,Var> > Fpp;
-        
-        // Equality constraints and their derivatives 
-        std::auto_ptr <Functional <Var,MultEq> > G;
-        std::auto_ptr <Operator <Var,MultEq,MultEq> > Gp;
-        std::auto_ptr <Operator <Var,MultEq,MultEq> > Gps;
-        std::auto_ptr <OperatorWithBase <Var,Var> > Gpps;
-        
-        // Inequality constraints and their derivatives 
-        std::auto_ptr <Functional <Var,Real> > H;
-        std::auto_ptr <Operator <Var,Var> > Hp;
-        std::auto_ptr <Operator <Var,Var> > Hps;
+        // Objective function 
+        std::auto_ptr <ScalarValuedFunction <Var,Real> > F;
 
+        // Equality constraints
+        std::auto_ptr <VectorValuedFunction <Var,MultEq,Real> > G;
+
+        // Inequality Constraints
+        std::auto_ptr <VectorValuedFunction <Var,MultIneq,Real> > H;
+        
         // Messaging
         std::auto_ptr <Messaging> msg;
     
@@ -1092,6 +1085,12 @@ namespace peopt{
         // Amount of verbosity
         unsigned int verbose;
         
+        // ------- EQUALITY CONSTRAINED ------ 
+        std::list <MultEq> y;
+        
+        // ------ INEQUALITY CONSTRAINED ----- 
+        std::list <MultIneq> z;
+        
         // ------------- TRUST-REGION ------------- 
 
         // Trust region radius
@@ -1136,57 +1135,111 @@ namespace peopt{
 
         // Type of line-search 
         LineSearchKind::t kind;
+        
+        // ------------- CONSTRUCTORS ------------ 
+        // We must be somewhat careful with these constructors.  These
+        // constructors take over memory for any functions, operations, or
+        // messaging that is passed in.  It does not take over memory for
+        // any initial variable or lagrange multiplier guesses made to it.
 
-        // Initialize the state without setting up any variables
-        State(std::auto_ptr <Messaging> msg_ )
-            : msg(msg_)
-        {
-            init();
+        // Initialize the state without setting up any variables. 
+        State(std::auto_ptr <Messaging> msg_ ) : msg(msg_) {
+            init_params();
         };
 
-        // Initialize the state with the initial guess of the variables x_,
-        // as well as all operations and functions.
+        // Initialize the state for unconstrained optimization.  
         State(
             std::auto_ptr <Messaging> msg_, 
-            std::auto_ptr <Operations <Var,Real> > v_ops_,
+            std::auto_ptr <Operations <Var,Real> > ops_,
+            std::auto_ptr <ScalarValuedFunction <Var,Real> > F_,
+            const Var& x
+        ) : msg(msg_), ops(ops_), F(F_)
+        {
+            init_params();
+            init_uncon(x);
+        }
+        
+        // Initialize the state for inequality constrained optimization.
+        State(
+            std::auto_ptr <Messaging> msg_, 
+            std::auto_ptr <Operations <Var,Real> > ops_,
+            std::auto_ptr <Operations <MultIneq,Real> > i_ops_,
+            std::auto_ptr <ScalarValuedFunction <Var,Real> > F_,
+            std::auto_ptr <VectorValuedFunction <Var,MultIneq,Real> > H_,
+            const Var& x,
+            const MultIneq& z
+        ) : msg(msg_), ops(ops_), i_ops(i_ops_), F(F_), H(H_)
+        {
+            init_params();
+            init_uncon(x);
+            init_ineq(z);
+        }
+        
+        // Initialize the state for equality constrained optimization.
+        State(
+            std::auto_ptr <Messaging> msg_, 
+            std::auto_ptr <Operations <Var,Real> > ops_,
+            std::auto_ptr <Operations <MultEq,Real> > e_ops_,
+            std::auto_ptr <ScalarValuedFunction <Var,Real> > F_,
+            std::auto_ptr <VectorValuedFunction <Var,MultEq,Real> > G_,
+            const Var& x,
+            const MultEq& y
+        ) : msg(msg_), ops(ops_), e_ops(e_ops_), F(F_), G(G_)
+        {
+            init_params();
+            init_uncon(x);
+            init_equal(y);
+        }
+        
+        // Initialize the state for general constrained optimization.
+        State(
+            std::auto_ptr <Messaging> msg_, 
+            std::auto_ptr <Operations <Var,Real> > ops_,
             std::auto_ptr <Operations <MultEq,Real> > e_ops_,
             std::auto_ptr <Operations <MultIneq,Real> > i_ops_,
-            std::auto_ptr <Functional <Var,Real> > F_,
-            std::auto_ptr <Operator <Var,Var> > Fp_,
-            std::auto_ptr <Operator <Var,Var> > Fpp_,
-            Var& x_,
-        ) :
-            msg(msg_), v_ops(v_ops_), e_ops(e_ops_), i_ops(i_ops_),
-            F(F_), Fp(Fp_), Fpp(Fpp_)
+            std::auto_ptr <ScalarValuedFunction <Var,Real> > F_,
+            std::auto_ptr <VectorValuedFunction <Var,MultEq,Real> > G_,
+            std::auto_ptr <VectorValuedFunction <Var,MultIneq,Real> > H_,
+            const Var& x,
+            const MultEq& y,
+            const MultIneq& z
+        ) : msg(msg_), ops(ops_), e_ops(e_ops_), i_ops(i_ops_),
+            F(F_), G(G_), H(H_)
         {
-            init();
-            x.push_back(v_ops.create()); v_ops.init(x_,x); v_ops.copy(x_,x);
-            g.push_back(v_ops.create()); v_ops.init(x_,g); 
-            s.push_back(v_ops.create()); v_ops.init(x_,s); 
-            x_old.push_back(v_ops.create()); v_ops.init(x_,x_old); 
-            g_old.push_back(v_ops.create()); v_ops.init(x_,g_old); 
-            s_old.push_back(v_ops.create()); v_ops.init(x_,s_old); 
+            init_params();
+            init_uncon(x);
+            init_equal(y);
+            init_ineq(z);
         }
 
-        // Create a series of types used for peering, capturing, and
-        // releasing information in the state
-        typedef std::pair < std::list <std::string>,
-                            std::list <Var> > Vars;
-        typedef std::pair < std::list <std::string>,
-                            std::list <MultEq> > MultEqs;
-        typedef std::pair < std::list <std::string>,
-                            std::list <MultIneq> > MultIneqs;
-        typedef std::pair < std::list <std::string>,
-                            std::list <Real> > Reals;
-        typedef std::pair < std::list <std::string>,
-                            std::list <unsigned int> > Nats;
-        typedef std::pair < std::list <std::string>,
-                            std::list <std::string> > Params; 
-
     private:
+        // This initializes all the variables required for unconstrained
+        // optimization.  These variables are also require for constrained
+        // optimization
+        void init_uncon(const Var& x_) {
+            x.push_back(ops.create()); ops.init(x_,x); ops.copy(x_,x);
+            g.push_back(ops.create()); ops.init(x_,g);
+            s.push_back(ops.create()); ops.init(x_,s); 
+            x_old.push_back(ops.create()); ops.init(x_,x_old); 
+            g_old.push_back(ops.create()); ops.init(x_,g_old); 
+            s_old.push_back(ops.create()); ops.init(x_,s_old); 
+        }
+        
+        // This initializes all the variables required for equality constrained 
+        // optimization.  
+        void init_equal(const MultEq& y_) {
+            y.push_back(e_ops.create()); e_ops.init(y_,y); e_ops.copy(y_,y);
+        }
+        
+        // This initializes all the variables required for inequality
+        // constrained optimization.  
+        void init_ineq(const MultIneq& z_) {
+            z.push_back(i_ops.create()); i_ops.init(z_,z); i_ops.copy(z_,z);
+        }
+
         // This sets all of the parameters possible that don't require
         // special memory allocation such as variables.
-        void init(){
+        void init_params(){
             eps_g=Real(1e-6);
             eps_s=Real(1e-6);
             stored_history=0;
@@ -1207,8 +1260,8 @@ namespace peopt{
             norm_gtyp=Real(std::numeric_limits<Real>::quiet_NaN());
             norm_s=Real(std::numeric_limits<Real>::quiet_NaN());
             norm_styp=Real(std::numeric_limits<Real>::quiet_NaN());
-            obj_u=Real(std::numeric_limits<Real>::quiet_NaN());
-            obj_ups=Real(std::numeric_limits<Real>::quiet_NaN());
+            obj_x=Real(std::numeric_limits<Real>::quiet_NaN());
+            obj_xps=Real(std::numeric_limits<Real>::quiet_NaN());
             verbose=1;
             delta=Real(100.);
             delta_max=Real(100.);
@@ -1224,6 +1277,313 @@ namespace peopt{
             dir=LineSearchDirection::SteepestDescent;
             kind=LineSearchKind::GoldenSection;
         }
+
+    public:
+        
+        // --------- VERIFYING PARAMETERS -------- 
+
+        // Check that we have a valid set of parameters
+        void check(){
+
+            // Check that the tolerance for the gradient stopping condition
+            // is positive
+            if(eps_g <= 0) {
+                std::stringstream ss;
+                ss << "The tolerance for the gradient stopping condition "
+                    "must be positive: eps_g = " << eps_g;
+                msg->error(ss.str());
+            }
+        
+            // Check that the tolerance for the step length stopping
+            // condition is positive
+            if(eps_s <= 0) {
+                std::stringstream ss;
+                ss << "The tolerance for the step length stopping "
+                    "condition must be positive: eps_s = " << eps_s; 
+                msg->error(ss.str());
+            }
+    
+            // Check that the number of stored vectors for algorithms
+            // such as SR1 and BFGS is nonnegative
+            if(stored_history < 0) {
+                std::stringstream ss;
+                ss << "The number of stored vectors for quasi-Newton "
+                    "methods must be nonnegative: stored_history = "
+                    << stored_history;
+                msg->error(ss.str());
+            }
+
+            // Check that our fallback for reseting the stored vectors
+            // for quasi-Newton methods is nonnegative
+            if(history_reset < 0) {
+                std::stringstream ss;
+                ss << "The tolerance for resetting the quasi-Newton "
+                    "approximation must be nonnegative: history_reset = "
+                    << history_reset;
+                msg->error(ss.str());
+            }
+
+            // Check that the current iteration is positive
+            if(iter <= 0) {
+                std::stringstream ss;
+                ss << "The current optimization iteration must be "
+                    "positive: iter = " << iter;
+                msg->error(ss.str());
+            }
+
+            // Check that the maximum iteration is positive
+            if(iter_max <= 0) {
+                std::stringstream ss;
+                ss << "The maximum optimization iteration must be "
+                    "positive: iter_max = " << iter_max;
+                msg->error(ss.str());
+            }
+
+            // Check that the current Krylov iteration is positive
+            if(krylov_iter <= 0) {
+                std::stringstream ss;
+                ss << "The current Krlov iteration must be "
+                    "positive: krylov_iter = " << krylov_iter;
+                msg->error(ss.str());
+            }
+
+            // Check that the maximum Krylov iteration is positive
+            if(krylov_iter_max <= 0) {
+                std::stringstream ss;
+                ss << "The maximum Krylov iteration must be "
+                    "positive: krylov_iter_max = " << krylov_iter_max;
+                msg->error(ss.str());
+            }
+
+            // Check that the total number of Krylov iteration is 
+            // nonnegative
+            if(krylov_iter_total < 0) {
+                std::stringstream ss;
+                ss << "The total number of Krylov iterations must be "
+                    "positive: krylov_iter_total = " << krylov_iter_total;
+                msg->error(ss.str());
+            }
+
+            // Check that relative error in the Krylov method is nonnegative
+            if(krylov_rel_err < 0) {
+                std::stringstream ss;
+                ss << "The relative error in the Krylov method must be "
+                    "nonnegative: krylov_rel_err = " << krylov_rel_err;
+                msg->error(ss.str());
+            }
+            
+            // Check that the stopping tolerance for the Krylov method is
+            // positive
+            if(eps_krylov <= 0) {
+                std::stringstream ss;
+                ss << "The tolerance for the Krylov method stopping "
+                    "condition must be positive: eps_krylov = "<<eps_krylov;
+                msg->error(ss.str());
+            }
+
+            // Check that the norm of the gradient is nonnegative or
+            // if we're on the first iteration, we allow a NaN
+            if(norm_g < 0 || (iter!=1 && norm_g!=norm_g)) {
+                std::stringstream ss;
+                ss << "The norm of the gradient must be nonnegative: "
+                    "norm_g = " << norm_g; 
+                msg->error(ss.str());
+            }
+
+            // Check that the norm of a typical gradient is nonnegative or
+            // if we're on the first iteration, we allow a NaN
+            if(norm_gtyp < 0 || (iter!=1 && norm_gtyp!=norm_gtyp)) {
+                std::stringstream ss;
+                ss << "The norm of a typical gradient must be nonnegative: "
+                    "norm_gtyp = " << norm_gtyp; 
+                msg->error(ss.str());
+            }
+
+            // Check that the norm of the trial step is nonnegative or
+            // if we're on the first iteration, we allow a NaN
+            if(norm_s < 0 || (iter!=1 && norm_s!=norm_s)) {
+                std::stringstream ss;
+                ss << "The norm of the trial step must be nonnegative: "
+                    "norm_s = " << norm_s; 
+                msg->error(ss.str());
+            }
+
+            // Check that the norm of a typical trial step is nonnegative or
+            // if we're on the first iteration, we allow a NaN
+            if(norm_styp < 0 || (iter!=1 && norm_styp!=norm_styp)) {
+                std::stringstream ss;
+                ss << "The norm of a typical trial step must be "
+                    "nonnegative: norm_styp = " << norm_styp; 
+                msg->error(ss.str());
+            }
+
+            // Check that the objective value isn't a NaN past iteration 1
+            if(iter!=1 && obj_x!=obj_x) {
+                std::stringstream ss;
+                ss << "The objective value must be a number: obj_x = "
+                    << obj_x;
+                msg->error(ss.str());
+            }
+
+            // Check that the objective at a trial step isn't a NaN past
+            // iteration 1
+            if(iter!=1 && obj_xps!=obj_xps) {
+                std::stringstream ss;
+                ss << "The objective value at the trial step must be a "
+                    "number: obj_xps = " << obj_xps;
+                msg->error(ss.str());
+            }
+
+            // Check that verbosity level is nonnegative
+            if(verbose<0){
+                std::stringstream ss;
+                ss << "The verbosity level must be nonnegative: verbose = "
+                    << verbose;
+                msg->error(ss.str());
+            }
+            
+            // Check that the trust-region radius is positive
+            if(delta<=0){
+                std::stringstream ss;
+                ss << "The trust-region radius must be positive: delta = "
+                    << delta; 
+                msg->error(ss.str());
+            }
+
+            // Check that the maximum trust-region radius is positive
+            if(delta_max<=0){
+                std::stringstream ss;
+                ss << "The maximum trust-region radius must be positive: "
+                    "delta_max = " << delta_max; 
+                msg->error(ss.str());
+            }
+
+            // Check that the current trust-region radius is less than
+            // or equal to the maximum trust-region radius
+            if(delta > delta_max){
+                std::stringstream ss;
+                ss << "The trust-region radius must be less than or equal "
+                    "to the maximum trust-region radius: delta = "
+                    << delta << ", delta_max = " << delta_max;
+                msg->error(ss.str());
+            }
+
+            // Check that the predicted vs. actual reduction tolerance
+            // is between 0 and 1
+            if(eta1 < 0 || eta1 > 1){
+                std::stringstream ss;
+                ss << "The tolerance for whether or not we accept a "
+                    "trust-region step must be between 0 and 1: eta1 = "
+                    << eta1;
+                msg->error(ss.str());
+            }
+            
+            // Check that the other predicted vs. actual reduction tolerance
+            // is between 0 and 1
+            if(eta2 < 0 || eta2 > 1){
+                std::stringstream ss;
+                ss << "The tolerance for whether or not we increase the "
+                    "trust-region radius must be between 0 and 1: eta2 = "
+                    << eta2;
+                msg->error(ss.str());
+            }
+
+            // Check that eta2 > eta1
+            if(eta1 >= eta2) {
+                std::stringstream ss;
+                ss << "The trust-region tolerances for accepting steps "
+                    "must satisfy the relationship that eta1 < eta2: "
+                    "eta1 = " << eta1 << ", eta2 = " << eta2;
+                msg->error(ss.str());
+            }
+
+            // Check that the prediction versus actual reduction is
+            // nonnegative 
+            if(rho < 0) {
+                std::stringstream ss;
+                ss << "The predicted versus actual reduction must be "
+                    "nonnegative: rho = " << rho;
+                msg->error(ss.str());
+            }
+
+
+            // Check that the number of rejected trust-region steps is
+            // nonnegative
+            if(rejected_trustregion < 0) {
+                std::stringstream ss;
+                ss << "The number of rejected trust-region steps must be "
+                    "nonnegative: rejected_trustregion = "
+                    << rejected_trustregion;
+                msg->error(ss.str());
+            }
+
+            // Check that the line-search step length is positive 
+            if(alpha <= 0) {
+                std::stringstream ss;
+                ss << "The line-search step length must be positive: "
+                    "alpha = " << alpha;
+                msg->error(ss.str());
+            }
+
+            // Check that the number of line-search iterations
+            // is nonnegative
+            if(linesearch_iter < 0) {
+                std::stringstream ss;
+                ss << "The number of line-search iterations must be "
+                    "nonnegative: linesearch_iter = " << linesearch_iter;
+                msg->error(ss.str());
+            }
+
+            // Check that the maximum number of line-search iterations is
+            // nonnegative
+            if(linesearch_iter_max < 0) {
+                std::stringstream ss;
+                ss << "The maximum number of line-search iterations must "
+                    "be nonnegative: linesearch_iter_max = "
+                    << linesearch_iter_max;
+                msg->error(ss.str());
+            }
+
+            // Check that the total number of line-search iterations
+            // completed is nonnegative
+            if(linesearch_iter_total < 0) {
+                std::stringstream ss;
+                ss << "The total number of line-search iterations must "
+                    "be nonnegative: linesearch_iter_total = "
+                    << linesearch_iter_total;
+                msg->error(ss.str());
+            }
+            
+            // Check that the stopping tolerance for the line-search
+            // methods is positive
+            if(eps_ls <= 0) {
+                std::stringstream ss;
+                ss << "The tolerance for the line-search stopping "
+                    "condition must be positive: eps_ls = " << eps_ls;
+                msg->error(ss.str());
+            }
+        }
+
+        // -------------- RESTARTING ------------- 
+
+    public:
+        // Create a series of types used for peering, capturing, and
+        // releasing information in the state
+        typedef std::pair < std::list <std::string>,
+                            std::list <Var> > Vars;
+        typedef std::pair < std::list <std::string>,
+                            std::list <MultEq> > MultEqs;
+        typedef std::pair < std::list <std::string>,
+                            std::list <MultIneq> > MultIneqs;
+        typedef std::pair < std::list <std::string>,
+                            std::list <Real> > Reals;
+        typedef std::pair < std::list <std::string>,
+                            std::list <unsigned int> > Nats;
+        typedef std::pair < std::list <std::string>,
+                            std::list <std::string> > Params; 
+
+    private:
+        // ----- COPYING TO AND FROM STATE ------- 
 
         // Copy out all variables.
         void stateToVars(Vars& vars) {
@@ -1242,7 +1602,9 @@ namespace peopt{
             vars.second.splice(vars.second.end(),s_old);
 
             {int i=1;
-            for(ListIterator y=oldY.begin();y!=oldY.end();y=oldY.begin()){
+            for(typename std::list <Var>::iterator y=oldY.begin();y!=oldY.end();
+                y=oldY.begin()
+            ){
                 std::stringstream ss;
                 ss << "oldY_" << i;
                 vars.first.push_back(ss.str());
@@ -1250,7 +1612,9 @@ namespace peopt{
             }}
 
             {int i=1;
-            for(ListIterator s=oldS.begin();s!=oldS.end();s=oldS.begin()){
+            for(typename std::list <Var>::iterator s=oldS.begin();s!=oldS.end();
+                s=oldS.begin()
+            ){
                 std::stringstream ss;
                 ss << "oldS_" << i;
                 vars.first.push_back(ss.str());
@@ -1260,10 +1624,14 @@ namespace peopt{
         
         // Copy out all equality multipliers 
         void stateToVars(MultEqs& eqs) {
+            eqs.first.push_back("y");
+            eqs.second.splice(eqs.second.end(),y);
         }
         
         // Copy out all inequality multipliers 
         void stateToVars(MultIneqs& ineqs) {
+            ineqs.first.push_back("z");
+            ineqs.second.splice(ineqs.second.end(),z);
         }
 
         // Copy out all non-variables.  This includes reals, naturals,
@@ -1291,10 +1659,10 @@ namespace peopt{
             reals.second.push_back(norm_s);
             reals.first.push_back("norm_styp");
             reals.second.push_back(norm_styp);
-            reals.first.push_back("obj_u");
-            reals.second.push_back(obj_u);
-            reals.first.push_back("obj_ups");
-            reals.second.push_back(obj_ups);
+            reals.first.push_back("obj_x");
+            reals.second.push_back(obj_x);
+            reals.first.push_back("obj_xps");
+            reals.second.push_back(obj_xps);
             reals.first.push_back("delta");
             reals.second.push_back(delta);
             reals.first.push_back("delta_max");
@@ -1357,12 +1725,17 @@ namespace peopt{
         // information is being read in order.
         void varsToState(Vars& vars) {
 
-            // Copy in the variables
             for(std::list <std::string>::iterator name=vars.first.begin();
                 name!=vars.first.end();
                 name++
             ) {
-                ListIterator var=vars.second.begin();
+                // Since we're using a splice operation, we slowly empty
+                // the variable list.  Hence, we always take the first
+                // element.
+                typename std::list <Var>::iterator var=vars.second.begin();
+
+                // Determine which variable we're reading in and then splice
+                // it in the correct location
                 if(*name=="x") x.splice(x.end(),vars.second,var);
                 else if(*name=="g") g.splice(g.end(),vars.second,var);
                 else if(*name=="s") s.splice(s.end(),vars.second,var); 
@@ -1380,10 +1753,39 @@ namespace peopt{
         }
         
         // Copy in all equality multipliers 
-        void eqsToState(MultEqs& eqs) { }
+        void eqsToState(MultEqs& eqs) { 
+            for(std::list <std::string>::iterator name=eqs.first.begin();
+                name!=eqs.first.end();
+                name++
+            ) {
+                // Since we're using a splice operation, we slowly empty
+                // the multiplier list.  Hence, we always take the first
+                // element.
+                typename std::list <MultEq>::iterator eq=eqs.second.begin();
+
+                // Determine which variable we're reading in and then splice
+                // it in the correct location
+                if(*name=="y") y.splice(y.end(),eqs.second,eq);
+            }
+        }
         
         // Copy in all inequality multipliers 
-        void ineqsToState(MultIneqs& ineqs) { }
+        void ineqsToState(MultIneqs& ineqs) { 
+            for(std::list <std::string>::iterator name=ineqs.first.begin();
+                name!=ineqs.first.end();
+                name++
+            ) {
+                // Since we're using a splice operation, we slowly empty
+                // the multiplier list.  Hence, we always take the first
+                // element.
+                typename std::list <MultIneq>::iterator ineq
+                    =ineqs.second.begin();
+
+                // Determine which variable we're reading in and then splice
+                // it in the correct location
+                if(*name=="z") y.splice(z.end(),ineqs.second,ineq);
+            }
+        }
 
         // Copy in all non-variables.  This includes reals, naturals,
         // and parameters
@@ -1406,8 +1808,8 @@ namespace peopt{
                 else if(*name=="norm_gtyp") norm_gtyp=*real;
                 else if(*name=="norm_s") norm_g=*real;
                 else if(*name=="norm_styp") norm_gtyp=*real;
-                else if(*name=="obj_u") obj_u=*real;
-                else if(*name=="obj_ups") obj_ups=*real;
+                else if(*name=="obj_x") obj_x=*real;
+                else if(*name=="obj_xps") obj_xps=*real;
                 else if(*name=="delta") delta=*real;
                 else if(*name=="delta_max") delta_max=*real;
                 else if(*name=="eta1") eta1=*real;
@@ -1458,6 +1860,8 @@ namespace peopt{
                 else if(*name=="kind") kind=LineSearchKind::from_string(*param);
             }
         }
+        
+        // ---------- VERIFYING LABELS ----------- 
        
         // Checks whether we have a valid variable label
         struct is_var : public std::unary_function<std::string, bool> {
@@ -1480,14 +1884,20 @@ namespace peopt{
         // Checks whether we have a valid equality multiplier label
         struct is_eq : public std::unary_function<std::string, bool> {
             bool operator () (const std::string& name) const {
-                return false;
+                if( name == "y") 
+                    return true;
+                else
+                    return false;
             }
         };
        
         // Checks whether we have a valid inequality multiplier label
         struct is_ineq : public std::unary_function<std::string, bool> {
             bool operator () (const std::string& name) const {
-                return false;
+                if( name == "z") 
+                    return true;
+                else
+                    return false;
             }
         };
 
@@ -1558,7 +1968,7 @@ namespace peopt{
         };
             
         // Checks that the labels used during serialization are correct
-        static void checkLabels(
+        void checkLabels(
             Vars& vars,
             MultEqs& eqs,
             MultIneqs& ineqs,
@@ -1713,292 +2123,7 @@ namespace peopt{
             }
         }
 
-    public:
-        
-        // Check that we have a valid set of parameters
-        void check(){
-
-            // Check that the tolerance for the gradient stopping condition
-            // is positive
-            if(eps_g <= 0) {
-                std::stringstream ss;
-                ss << "The tolerance for the gradient stopping condition "
-                    "must be positive: eps_g = " << eps_g;
-                msg->error(ss.str());
-            }
-        
-            // Check that the tolerance for the step length stopping
-            // condition is positive
-            if(eps_s <= 0) {
-                std::stringstream ss;
-                ss << "The tolerance for the step length stopping "
-                    "condition must be positive: eps_s = " << eps_s; 
-                msg->error(ss.str());
-            }
-    
-            // Check that the number of stored vectors for algorithms
-            // such as SR1 and BFGS is nonnegative
-            if(stored_history < 0) {
-                std::stringstream ss;
-                ss << "The number of stored vectors for quasi-Newton "
-                    "methods must be nonnegative: stored_history = "
-                    << stored_history;
-                msg->error(ss.str());
-            }
-
-            // Check that our fallback for reseting the stored vectors
-            // for quasi-Newton methods is nonnegative
-            if(history_reset < 0) {
-                std::stringstream ss;
-                ss << "The tolerance for resetting the quasi-Newton "
-                    "approximation must be nonnegative: history_reset = "
-                    << history_reset;
-                msg->error(ss.str());
-            }
-
-            // Check that the current iteration is positive
-            if(iter <= 0) {
-                std::stringstream ss;
-                ss << "The current optimization iteration must be "
-                    "positive: iter = " << iter;
-                msg->error(ss.str());
-            }
-
-            // Check that the maximum iteration is positive
-            if(iter_max <= 0) {
-                std::stringstream ss;
-                ss << "The maximum optimization iteration must be "
-                    "positive: iter_max = " << iter_max;
-                msg->error(ss.str());
-            }
-
-            // Check that the current Krylov iteration is positive
-            if(krylov_iter <= 0) {
-                std::stringstream ss;
-                ss << "The current Krlov iteration must be "
-                    "positive: krylov_iter = " << krylov_iter;
-                msg->error(ss.str());
-            }
-
-            // Check that the maximum Krylov iteration is positive
-            if(krylov_iter_max <= 0) {
-                std::stringstream ss;
-                ss << "The maximum Krylov iteration must be "
-                    "positive: krylov_iter_max = " << krylov_iter_max;
-                msg->error(ss.str());
-            }
-
-            // Check that the total number of Krylov iteration is 
-            // nonnegative
-            if(krylov_iter_total < 0) {
-                std::stringstream ss;
-                ss << "The total number of Krylov iterations must be "
-                    "positive: krylov_iter_total = " << krylov_iter_total;
-                msg->error(ss.str());
-            }
-
-            // Check that relative error in the Krylov method is nonnegative
-            if(krylov_rel_err < 0) {
-                std::stringstream ss;
-                ss << "The relative error in the Krylov method must be "
-                    "nonnegative: krylov_rel_err = " << krylov_rel_err;
-                msg->error(ss.str());
-            }
-            
-            // Check that the stopping tolerance for the Krylov method is
-            // positive
-            if(eps_krylov <= 0) {
-                std::stringstream ss;
-                ss << "The tolerance for the Krylov method stopping "
-                    "condition must be positive: eps_krylov = "<<eps_krylov;
-                msg->error(ss.str());
-            }
-
-            // Check that the norm of the gradient is nonnegative or
-            // if we're on the first iteration, we allow a NaN
-            if(norm_g < 0 || (iter!=1 && norm_g!=norm_g)) {
-                std::stringstream ss;
-                ss << "The norm of the gradient must be nonnegative: "
-                    "norm_g = " << norm_g; 
-                msg->error(ss.str());
-            }
-
-            // Check that the norm of a typical gradient is nonnegative or
-            // if we're on the first iteration, we allow a NaN
-            if(norm_gtyp < 0 || (iter!=1 && norm_gtyp!=norm_gtyp)) {
-                std::stringstream ss;
-                ss << "The norm of a typical gradient must be nonnegative: "
-                    "norm_gtyp = " << norm_gtyp; 
-                msg->error(ss.str());
-            }
-
-            // Check that the norm of the trial step is nonnegative or
-            // if we're on the first iteration, we allow a NaN
-            if(norm_s < 0 || (iter!=1 && norm_s!=norm_s)) {
-                std::stringstream ss;
-                ss << "The norm of the trial step must be nonnegative: "
-                    "norm_s = " << norm_s; 
-                msg->error(ss.str());
-            }
-
-            // Check that the norm of a typical trial step is nonnegative or
-            // if we're on the first iteration, we allow a NaN
-            if(norm_styp < 0 || (iter!=1 && norm_styp!=norm_styp)) {
-                std::stringstream ss;
-                ss << "The norm of a typical trial step must be "
-                    "nonnegative: norm_styp = " << norm_styp; 
-                msg->error(ss.str());
-            }
-
-            // Check that the objective value isn't a NaN past iteration 1
-            if(iter!=1 && obj_u!=obj_u) {
-                std::stringstream ss;
-                ss << "The objective value must be a number: obj_u = "
-                    << obj_u;
-                msg->error(ss.str());
-            }
-
-            // Check that the objective at a trial step isn't a NaN past
-            // iteration 1
-            if(iter!=1 && obj_ups!=obj_ups) {
-                std::stringstream ss;
-                ss << "The objective value at the trial step must be a "
-                    "number: obj_ups = " << obj_ups;
-                msg->error(ss.str());
-            }
-
-            // Check that verbosity level is nonnegative
-            if(verbose<0){
-                std::stringstream ss;
-                ss << "The verbosity level must be nonnegative: verbose = "
-                    << verbose;
-                msg->error(ss.str());
-            }
-            
-            // Check that the trust-region radius is positive
-            if(delta<=0){
-                std::stringstream ss;
-                ss << "The trust-region radius must be positive: delta = "
-                    << delta; 
-                msg->error(ss.str());
-            }
-
-            // Check that the maximum trust-region radius is positive
-            if(delta_max<=0){
-                std::stringstream ss;
-                ss << "The maximum trust-region radius must be positive: "
-                    "delta_max = " << delta_max; 
-                msg->error(ss.str());
-            }
-
-            // Check that the current trust-region radius is less than
-            // or equal to the maximum trust-region radius
-            if(delta > delta_max){
-                std::stringstream ss;
-                ss << "The trust-region radius must be less than or equal "
-                    "to the maximum trust-region radius: delta = "
-                    << delta << ", delta_max = " << delta_max;
-                msg->error(ss.str());
-            }
-
-            // Check that the predicted vs. actual reduction tolerance
-            // is between 0 and 1
-            if(eta1 < 0 || eta1 > 1){
-                std::stringstream ss;
-                ss << "The tolerance for whether or not we accept a "
-                    "trust-region step must be between 0 and 1: eta1 = "
-                    << eta1;
-                msg->error(ss.str());
-            }
-            
-            // Check that the other predicted vs. actual reduction tolerance
-            // is between 0 and 1
-            if(eta2 < 0 || eta2 > 1){
-                std::stringstream ss;
-                ss << "The tolerance for whether or not we increase the "
-                    "trust-region radius must be between 0 and 1: eta2 = "
-                    << eta2;
-                msg->error(ss.str());
-            }
-
-            // Check that eta2 > eta1
-            if(eta1 >= eta2) {
-                std::stringstream ss;
-                ss << "The trust-region tolerances for accepting steps "
-                    "must satisfy the relationship that eta1 < eta2: "
-                    "eta1 = " << eta1 << ", eta2 = " << eta2;
-                msg->error(ss.str());
-            }
-
-
-
-            // Check that the prediction versus actual reduction is
-            // nonnegative 
-            if(rho < 0) {
-                std::stringstream ss;
-                ss << "The predicted versus actual reduction must be "
-                    "nonnegative: rho = " << rho;
-                msg->error(ss.str());
-            }
-
-
-            // Check that the number of rejected trust-region steps is
-            // nonnegative
-            if(rejected_trustregion < 0) {
-                std::stringstream ss;
-                ss << "The number of rejected trust-region steps must be "
-                    "nonnegative: rejected_trustregion = "
-                    << rejected_trustregion;
-                msg->error(ss.str());
-            }
-
-            // Check that the line-search step length is positive 
-            if(alpha <= 0) {
-                std::stringstream ss;
-                ss << "The line-search step length must be positive: "
-                    "alpha = " << alpha;
-                msg->error(ss.str());
-            }
-
-            // Check that the number of line-search iterations
-            // is nonnegative
-            if(linesearch_iter < 0) {
-                std::stringstream ss;
-                ss << "The number of line-search iterations must be "
-                    "nonnegative: linesearch_iter = " << linesearch_iter;
-                msg->error(ss.str());
-            }
-
-            // Check that the maximum number of line-search iterations is
-            // nonnegative
-            if(linesearch_iter_max < 0) {
-                std::stringstream ss;
-                ss << "The maximum number of line-search iterations must "
-                    "be nonnegative: linesearch_iter_max = "
-                    << linesearch_iter_max;
-                msg->error(ss.str());
-            }
-
-            // Check that the total number of line-search iterations
-            // completed is nonnegative
-            if(linesearch_iter_total < 0) {
-                std::stringstream ss;
-                ss << "The total number of line-search iterations must "
-                    "be nonnegative: linesearch_iter_total = "
-                    << linesearch_iter_total;
-                msg->error(ss.str());
-            }
-            
-            // Check that the stopping tolerance for the line-search
-            // methods is positive
-            if(eps_ls <= 0) {
-                std::stringstream ss;
-                ss << "The tolerance for the line-search stopping "
-                    "condition must be positive: eps_ls = " << eps_ls;
-                msg->error(ss.str());
-            }
-        }
-        
+    public: 
         // Release the data into structures controlled by the user 
         void release(
             Vars& vars,
@@ -2057,9 +2182,9 @@ namespace peopt{
             // Check that we have a valid state 
             check();
         }
-    
-    private:
     };
+
+#if 0
     
 
     // The core routines for peopt
