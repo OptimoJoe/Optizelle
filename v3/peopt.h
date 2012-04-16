@@ -28,6 +28,12 @@ namespace peopt{
         // x <- alpha * x
         virtual void scal(const Real& alpha,Vector& x) const = 0;
 
+        // x <- 0.  Part of the reason we have this function and not just
+        // use scal is that if the elements of x become NaN, then the
+        // scaling operation may be undefined.  This is a hard set, which
+        // should always be safe.
+        virtual void zero(Vector& x) const = 0;
+
         // y <- alpha * x + y
         virtual void axpy(const Real& alpha,const Vector& x,Vector& y) const= 0;
 
@@ -179,7 +185,7 @@ namespace peopt{
     ){
 
         // Zero out the directional derivative
-        ops.scal(Real(0.),dd);
+        ops.zero(dd);
 
         // Create two work elements 
         Vector work; ops.init(x,work);
@@ -228,7 +234,7 @@ namespace peopt{
     ){
 
         // Zero out the directional derivative
-        Codomain::scal(Real(0.),dd);
+        c_ops.zero(dd);
 
         // Create two work elements 
         Domain work; d_ops.init(x,work);
@@ -280,7 +286,7 @@ namespace peopt{
     ){
 
         // Zero out the directional derivative
-        Codomain::scal(Real(0.),dd);
+        c_ops.zero(dd);
 
         // Create two work elements 
         Domain work; d_ops.init(x,work);
@@ -387,6 +393,45 @@ namespace peopt{
             msg.print(ss.str(),1);
         }
     }
+    
+    // This tests the symmetry of the Hessian.  We accomplish this by
+    // comparing <H(x)dx,dxx> to <dx,H(x)dxx>.
+    template <typename Vector,typename Real>
+    void hessianSymmetryCheck(
+        const Messaging& msg,
+        const Operations <Vector,Real>& ops,
+        const ScalarValuedFunction<Vector,Real>& f,
+        const Vector& x,
+        const Vector& dx,
+        const Vector& dxx
+    ) {
+
+        // Calculate hess f in the direction dx.  
+        Vector H_x_dx; ops.init(x,H_x_dx);
+        f.hessvec(x,dx,H_x_dx);
+        
+        // Calculate hess f in the direction dxx.  
+        Vector H_x_dxx; ops.init(x,H_x_dxx);
+        f.hessvec(x,dxx,H_x_dxx);
+        
+        // Calculate <H(x)dx,dxx>
+        Real innr_Hxdx_dxx = ops.innr(H_x_dx,dxx);
+        
+        // Calculate <dx,H(x)dxx>
+        Real innr_dx_Hxdxx = ops.innr(dx,H_x_dxx);
+
+        // Determine the absolute difference between the two.  This really
+        // should be zero.
+        Real diff=fabs(innr_Hxdx_dxx-innr_dx_Hxdxx);
+
+        // Send a message with the result
+        msg.print("Symmetry test on the Hessian of a scalar valued "
+            "function.",1);
+        std::stringstream ss;
+        ss << "The absolute err. between <H(x)dx,dxx> and <dx,H(x)dxx>: "
+            << std::scientific << std::setprecision(16) << diff;
+        msg.print(ss.str(),1);
+    }
 
     // Performs a finite difference test on the derivative of a vector-valued
     // function f.  Specifically, we check f'(x)dx using f.
@@ -432,6 +477,46 @@ namespace peopt{
         }
     }
 
+    // Performs an adjoint check on the first-order derivative of a vector
+    // valued function.  In other words, we check that
+    // <f'(x)dx,dy> = <dx,f'(x)*dy>
+    template <typename Domain,typename Codomain,typename Real>
+    void derivativeAdjointCheck(
+        const Messaging& msg,
+        const Operations <Domain,Real>& d_ops,
+        const Operations <Codomain,Real>& c_ops,
+        const VectorValuedFunction<Domain,Codomain,Real>& f,
+        const Domain& x,
+        const Domain& dx,
+        const Codomain& dy
+    ) {
+        // Calculate f'(x)dx 
+        Codomain fp_x_dx; c_ops.init(dy,fp_x_dx);
+        f.p(x,dx,fp_x_dx);
+        
+        // Calculate f'(x)*dy 
+        Codomain fps_x_dy; d_ops.init(dx,fps_x_dy);
+        f.ps(x,dy,fps_x_dy);
+
+        // Calculate <f'(x)dx,dy>
+        Real innr_fpxdx_dy = c_ops.innr(fp_x_dx,dy);
+
+        // Calculate <dx,f'(x)*dy>
+        Real innr_dx_fpsxdy = d_ops.innr(dx,fps_x_dy);
+
+        // Determine the absolute difference between the two.  This really
+        // should be zero.
+        Real diff=fabs(innr_fpxdx_dy-innr_dx_fpsxdy);
+
+        // Send a message with the result
+        msg.print("Adjoint test on the first derivative of a vector valued "
+            "function.",1);
+        std::stringstream ss;
+        ss << "The absolute err. between <f'(x)dx,dy> and <dx,f'(x)*dy>: "
+            << std::scientific << std::setprecision(16) << diff;
+        msg.print(ss.str(),1);
+    }
+
     // Performs a finite difference test on the second-derivative-adjoint of a
     // vector-valued function f.  Specifically, we check (f''(x)dx)*dy using
     // f'(x)*dy.
@@ -449,12 +534,12 @@ namespace peopt{
         // Create a single work element
         Codomain work; c_ops.init(dy,work);
 
-        // Calculate f'(x)*dy
-        Domain fps_x_dy; d_ops.init(dy,fps_x_dy);
-        f.ps(x,dy,fps_x_dy);
+        // Calculate (f''(x)dx)*dy
+        Domain fpps_x_dx_dy; d_ops.init(dy,fpps_x_dx_dy);
+        f.pps(x,dx,dy,fpps_x_dx_dy);
 
         // Compute an ensemble of finite difference tests in a linear manner
-        msg.print("Finite difference test on the second-derivative adjoint "
+        msg.print("Finite difference test on the 2nd-derivative adj. "
             "of a vector-valued function.",1);
         for(int i=-2;i<=5;i++){
 
@@ -463,10 +548,11 @@ namespace peopt{
             directionalDerivative <> (d_ops,c_ops,f,x,dx,dy,epsilon,work);
 
             // Determine the residual.  Store in work.
-            c_ops.axpy(Real(-1.),fps_x_dy,work);
+            c_ops.axpy(Real(-1.),fpps_x_dx_dy,work);
 
             // Determine the relative error
-            Real rel_err=c_ops.norm(work)/(Real(1e-16)+c_ops.norm(fps_x_dy));
+            Real rel_err=
+                c_ops.norm(work)/(Real(1e-16)+c_ops.norm(fpps_x_dx_dy));
 
             // Print out the differences
             std::stringstream ss;
@@ -477,7 +563,6 @@ namespace peopt{
         }
     }
 
-#if 0
     // Which algorithm class do we use
     namespace AlgorithmClass{
         enum t{
@@ -880,6 +965,7 @@ namespace peopt{
         };
     }
 
+#if 0
     // Pieces of the state required for all optimization routines        
     template <typename Var,typename MultEq,typename MultIneq,typename Real>
     struct State{
