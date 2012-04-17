@@ -49,6 +49,20 @@ namespace peopt{
         virtual ~Operations() {}
     };
 
+    // Augment the operations with a Euclidan-Jordan algebra
+    template <typename Vector,typename Real>
+    struct EuclideanJordan : public Operations <Vector,Real> {
+
+        // Jordan product, z <- x o y
+        virtual void prod(const Vector& x,const Vector& y,Vector& z) const = 0;
+
+        // Identity element, x <- e such that x o e = x
+        virtual void id(Vector& x) const = 0;
+
+        // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y
+        virtual void linv(const Vector& x,const Vector& y,Vector& z) const = 0;
+    };
+
     // Defines how we output messages to the user
     struct Messaging {
         // Defines the current print level
@@ -124,6 +138,11 @@ namespace peopt{
          // z=(f''(x)dx)*dy
          virtual void pps(const Domain& x,const Domain& dx,
              const Codomain& dy,Domain& z) const = 0;
+
+         // Line-search, srch <- alpha where max(alpha >=0 : h(x+alpha dx) >=0)
+         virtual Real srch(const Domain& x,const Domain& dx) const {
+            return Real(std::numeric_limits<Real>::quiet_NaN());
+         }
          
          // Allow a derived class to deallocate memory
          virtual ~VectorValuedFunction() {}
@@ -976,7 +995,7 @@ namespace peopt{
         // multipliers respectively.
         std::auto_ptr <Operations <Var,Real> > ops;
         std::auto_ptr <Operations <MultEq,Real> > e_ops;
-        std::auto_ptr <Operations <MultIneq,Real> > i_ops;
+        std::auto_ptr <EuclideanJordan <MultIneq,Real> > i_ops;
 
         // Objective function 
         std::auto_ptr <ScalarValuedFunction <Var,Real> > F;
@@ -1163,7 +1182,7 @@ namespace peopt{
         State(
             std::auto_ptr <Messaging> msg_, 
             std::auto_ptr <Operations <Var,Real> > ops_,
-            std::auto_ptr <Operations <MultIneq,Real> > i_ops_,
+            std::auto_ptr <EuclideanJordan <MultIneq,Real> > i_ops_,
             std::auto_ptr <ScalarValuedFunction <Var,Real> > F_,
             std::auto_ptr <VectorValuedFunction <Var,MultIneq,Real> > H_,
             const Var& x,
@@ -1196,7 +1215,7 @@ namespace peopt{
             std::auto_ptr <Messaging> msg_, 
             std::auto_ptr <Operations <Var,Real> > ops_,
             std::auto_ptr <Operations <MultEq,Real> > e_ops_,
-            std::auto_ptr <Operations <MultIneq,Real> > i_ops_,
+            std::auto_ptr <EuclideanJordan <MultIneq,Real> > i_ops_,
             std::auto_ptr <ScalarValuedFunction <Var,Real> > F_,
             std::auto_ptr <VectorValuedFunction <Var,MultEq,Real> > G_,
             std::auto_ptr <VectorValuedFunction <Var,MultIneq,Real> > H_,
