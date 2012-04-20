@@ -4,55 +4,60 @@
 #include "peopt.h"
 
 // Defines the vector space used for optimization.
-struct MyOps : public peopt::Operations <std::vector <double>, double> {
+struct MyHS {
     typedef std::vector <double> Vector;
     typedef double Real;
 
     // Create an empty, uninitialized vector
-    Vector create() const {
+    static Vector create() {
         return std::vector <double> ();
     }
     
     // Memory allocation and size setting
-    void init(const Vector& x, Vector& y) const {
+    static void init(const Vector& x, Vector& y) {
         y.resize(x.size());
     }
 
     // y <- x (Shallow.  No memory allocation.)
-    void copy(const Vector& x, Vector& y) const {
+    static void copy(const Vector& x, Vector& y) {
         for(unsigned int i=0;i<x.size();i++){
             y[i]=x[i];
         }
     }
 
     // x <- alpha * x
-    void scal(const Real& alpha, Vector& x) const {
+    static void scal(const Real& alpha, Vector& x) {
         for(unsigned int i=0;i<x.size();i++){
             x[i]=alpha*x[i];
         }
     }
 
     // x <- 0 
-    void zero(Vector& x) const {
+    static void zero(Vector& x) {
         for(unsigned int i=0;i<x.size();i++){
             x[i]=0.;
         }
     }
 
     // y <- alpha * x + y
-    void axpy(const Real& alpha, const Vector& x, Vector& y) const {
+    static void axpy(const Real& alpha, const Vector& x, Vector& y) {
         for(unsigned int i=0;i<x.size();i++){
             y[i]=alpha*x[i]+y[i];
         }
     }
 
     // innr <- <x,y>
-    Real innr(const Vector& x,const Vector& y) const {
+    static Real innr(const Vector& x,const Vector& y) {
         Real z=0;
         for(unsigned int i=0;i<x.size();i++){
             z+=x[i]*y[i];
         }
         return z;
+    }
+
+    // norm <- ||x||
+    static Real norm(const Vector& x) {
+        return sqrt(innr(x,x));
     }
 };
 
@@ -80,23 +85,28 @@ double quint(double x){
 // 
 // f(x,y)=(1-x)^2+100(y-x^2)^2
 //
-struct Rosen : public peopt::ScalarValuedFunction <std::vector<double>,double> {
+struct Rosen : public peopt::ScalarValuedFunction <MyHS,double> {
+    typedef MyHS X;
+
     // Evaluation of the Rosenbrock function
-    double operator () (const std::vector<double>& x) const {
+    double operator () (const X::Vector& x) const {
         return sq(1.-x[0])+100.*sq(x[1]-sq(x[0]));
     }
 
     // Gradient
-    void grad(const std::vector<double>& x,std::vector<double>& g) const {
+    void grad(
+        const X::Vector& x,
+        X::Vector& g
+    ) const {
         g[0]=-400*x[0]*(x[1]-sq(x[0]))-2*(1-x[0]);
         g[1]=200*(x[1]-sq(x[0]));
     }
 
     // Hessian-vector product
     void hessvec(
-        const std::vector<double>& x,
-        const std::vector<double>& dx,
-        std::vector<double>& H_dx 
+        const X::Vector& x,
+        const X::Vector& dx,
+        X::Vector& H_dx
     ) const {
     	H_dx[0]= (1200*sq(x[0])-400*x[1]+2)*dx[0]-400*x[0]*dx[1];
         H_dx[1]= -400*x[0]*dx[0] + 200*dx[1];
@@ -109,50 +119,62 @@ struct Rosen : public peopt::ScalarValuedFunction <std::vector<double>,double> {
 //         [ 3 x^2 y + y^3]
 //         [ log(x) + 3y^5]
 //
-struct Utility  : public peopt::VectorValuedFunction
-    <std::vector<double>,std::vector<double>,double> {
-    typedef std::vector<double> Domain;
-    typedef std::vector<double> Codomain;
-    typedef double Real;
+struct Utility  : public peopt::VectorValuedFunction <MyHS,MyHS> {
+    typedef MyHS X;
+    typedef MyHS Y;
 
     // y=f(x) 
-    void operator () (const Domain& x,Codomain& y) const {
+    void operator () (
+        const X::Vector& x,
+        Y::Vector& y
+    ) const {
         y[0]=cos(x[0])*sin(x[1]);
-        y[1]=Real(3)*sq(x[0])*x[1]+cub(x[1]);
-        y[2]=log(x[0])+Real(3.)*quint(x[1]);
+        y[1]=3.*sq(x[0])*x[1]+cub(x[1]);
+        y[2]=log(x[0])+3.*quint(x[1]);
     }
 
     // y=f'(x)dx
-    void p(const Domain& x,const Domain& dx,Codomain& y) const {
+    void p(
+        const X::Vector& x,
+        const X::Vector& dx,
+        Y::Vector& y
+    ) const {
         y[0]= -sin(x[0])*sin(x[1])*dx[0]
               +cos(x[0])*cos(x[1])*dx[1];
-        y[1]= Real(6.)*x[0]*x[1]*dx[0]
-              +(Real(3.)*sq(x[0])+Real(3.)*sq(x[1]))*dx[1];
-        y[2]= Real(1.)/x[0]*dx[0]
-              +Real(15.)*quad(x[1])*dx[1];
+        y[1]= 6.*x[0]*x[1]*dx[0]
+              +(3.*sq(x[0])+3.*sq(x[1]))*dx[1];
+        y[2]= 1./x[0]*dx[0]
+              +15.*quad(x[1])*dx[1];
     }
 
     // z=f'(x)*dy
-    void ps(const Domain& x,const Codomain& dy,Domain& z) const {
+    void ps(
+        const X::Vector& x,
+        const Y::Vector& dy,
+        X::Vector& z
+    ) const {
         z[0]= -sin(x[0])*sin(x[1])*dy[0]
-              +Real(6.)*x[0]*x[1]*dy[1]
-              +Real(1.)/x[0]*dy[2];
+              +6.*x[0]*x[1]*dy[1]
+              +1./x[0]*dy[2];
         z[1]= cos(x[0])*cos(x[1])*dy[0]
-              +(Real(3.)*sq(x[0])+Real(3.)*sq(x[1]))*dy[1]
-              +Real(15.)*quad(x[1])*dy[2];
+              +(3.*sq(x[0])+3.*sq(x[1]))*dy[1]
+              +15.*quad(x[1])*dy[2];
     }
     // z=(f''(x)dx)*dy
-    void pps(const Domain& x,const Domain& dx,
-        const Codomain& dy,Domain& z) const {
+    void pps(
+        const X::Vector& x,
+        const X::Vector& dx,
+        const Y::Vector& dy,
+        X::Vector& z
+    ) const {
         z[0] = (-cos(x[0])*dx[0]*sin(x[1])-sin(x[0])*cos(x[1])*dx[1])*dy[0]
-               +(Real(6.)*dx[0]*x[1] + Real(6.)*x[0]*dx[1])*dy[1]
-               +(Real(-1.)/sq(x[0])*dx[0])*dy[2];
+               +(6.*dx[0]*x[1] + 6.*x[0]*dx[1])*dy[1]
+               +(-1./sq(x[0])*dx[0])*dy[2];
         z[1] = (-sin(x[0])*dx[0]*cos(x[1])-cos(x[0])*sin(x[1])*dx[1])*dy[0]
-               +(Real(6.)*x[0]*dx[0]+Real(6.)*x[1]*dx[1])*dy[1]
-               +(Real(60.)*cub(x[1])*dx[1])*dy[2];
+               +(6.*x[0]*dx[0]+6.*x[1]*dx[1])*dy[1]
+               +(60.*cub(x[1])*dx[1])*dy[2];
     }
 };
-
 
 int main(){
 
@@ -176,20 +198,31 @@ int main(){
     Rosen f;
 
     // Do some finite difference tests on the Rosenbrock function
-    peopt::gradientCheck <> (peopt::Messaging(),MyOps(),f,x,dx);
-    peopt::hessianCheck <> (peopt::Messaging(),MyOps(),f,x,dx);
-    peopt::hessianSymmetryCheck <> (peopt::Messaging(),MyOps(),f,x,dx,dxx);
+    peopt::gradientCheck <> (peopt::Messaging(),f,x,dx);
+    peopt::hessianCheck <> (peopt::Messaging(),f,x,dx);
+    peopt::hessianSymmetryCheck <> (peopt::Messaging(),f,x,dx,dxx);
     
     // Construct the utility function
     Utility g;
 
     // Do some finite difference tests on the utility function
-    peopt::derivativeCheck <> (peopt::Messaging(),MyOps(),MyOps(),g,x,dx,dy);
-    peopt::derivativeAdjointCheck <> (peopt::Messaging(),MyOps(),MyOps(),
-        g,x,dx,dy);
-    peopt::secondDerivativeCheck <> (peopt::Messaging(),MyOps(),MyOps(),
-        g,x,dx,dy);
+    peopt::derivativeCheck <> (peopt::Messaging(),g,x,dx,dy);
+    peopt::derivativeAdjointCheck <> (peopt::Messaging(),g,x,dx,dy);
+    peopt::secondDerivativeCheck <> (peopt::Messaging(),g,x,dx,dy);
 
+    // Create an optimization state
+    peopt::State::Unconstrained <MyHS> ustate(x);
+    peopt::State::EqualityConstrained <MyHS,MyHS> estate(x,x);
+    peopt::State::InequalityConstrained <MyHS,MyHS> istate(x,x);
+
+#if 0
+    // Create the optimization functions
+    MyHS myhs;
+    peopt::Spaces::Unconstrained <MyHS,double> spc(myhs);
+    peopt::Spaces::Unconstrained <MyHS,double> spc2(MyHS());
+    peopt::State <peopt::Spaces::Unconstrained<MyHS,double> > state(spc,x);
+    peopt::State <peopt::Spaces::Unconstrained<MyHS,double> > state2(spc2,x);
+#endif
   
 #if 0
     // Create a state and setup the problem
