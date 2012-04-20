@@ -1134,7 +1134,7 @@ namespace peopt{
         //
         // where f : X -> R
         template <typename X> 
-        struct Unconstrained : public virtual State <X> {
+        struct Unconstrained {
         public:
             // Create some short-cuts for some type names
             typedef typename X::Vector X_Vector;
@@ -1655,7 +1655,7 @@ namespace peopt{
             typedef std::pair < std::list <std::string>,
                                 std::list <std::string> > Params; 
 
-        private:
+        protected:
             // ----- COPYING TO AND FROM STATE ------- 
 
             // Copy out all variables.
@@ -2182,6 +2182,12 @@ namespace peopt{
             // constraints
             std::list <Y_Vector> y;
             
+            // Initialize the state without setting up any variables. 
+            EqualityConstrained() {
+                Unconstrained <X>::init_params();
+                EqualityConstrained <X,Y>::init_params();
+            };
+            
             // Initialize the state for equality constrained optimization.
             EqualityConstrained(
                 const X_Vector& x,
@@ -2189,19 +2195,20 @@ namespace peopt{
             ) {
                 Unconstrained <X>::init_params();
                 Unconstrained <X>::init_vectors(x);
-                init(y);
+                EqualityConstrained <X,Y>::init_params();
+                EqualityConstrained <X,Y>::init_vectors(y);
             }
 
         protected: 
+            // This initializes all the parameters required for equality
+            // constrained optimization.  
+            void init_params() { }
+
             // This initializes all the variables required for equality
             // constrained optimization.  
-            void init(const Y_Vector& y_) {
+            void init_vectors(const Y_Vector& y_) {
                 y.push_back(Y::create()); Y::init(y_,y.back());
                     Y::copy(y_,y.back());
-                #if 0
-                x.push_back(X::create()); X::init(x_,x.back());
-                    X::copy(x_,x.back());
-                #endif
             }
 
         public:
@@ -2370,6 +2377,12 @@ namespace peopt{
             // inequality constraints 
             std::list <Z_Vector> z;
             
+            // Initialize the state without setting up any variables. 
+            InequalityConstrained() {
+                Unconstrained <X>::init_params();
+                InequalityConstrained <X,Z>::init_params();
+            };
+            
             // Initialize the state for inequality constrained optimization.
             InequalityConstrained(
                 const X_Vector& x,
@@ -2377,10 +2390,15 @@ namespace peopt{
             ) {
                 Unconstrained <X>::init_params();
                 Unconstrained <X>::init_vectors(x);
-                init_vectors(z);
+                InequalityConstrained <X,Z>::init_params();
+                InequalityConstrained <X,Z>::init_vectors(z);
             }
 
         protected:
+            // This initializes all the parameters required for inequality
+            // constrained optimization.  
+            void init_params() { }
+
             // This initializes all the variables required for inequality
             // constrained optimization.  
             void init_vectors(const Z_Vector& z_) {
@@ -2556,7 +2574,14 @@ namespace peopt{
             typedef typename Y::Real Y_Real;
             typedef typename Z::Vector Z_Vector;
             typedef typename Z::Real Z_Real;
-
+            
+            // Initialize the state without setting up any variables. 
+            Constrained() {
+                Unconstrained <X>::init_params();
+                EqualityConstrained <X,Y>::init_params();
+                InequalityConstrained <X,Z>::init_params();
+            };
+            
             // Initialize the state for general constrained optimization.
             Constrained(
                 const X_Vector& x,
@@ -2565,7 +2590,9 @@ namespace peopt{
             ) {
                 Unconstrained <X>::init_params();
                 Unconstrained <X>::init_vectors(x);
+                EqualityConstrained <X,Y>::init_params();
                 EqualityConstrained <X,Y>::init_vectors(y);
+                InequalityConstrained <X,Z>::init_params();
                 InequalityConstrained <X,Z>::init_vectors(z);
             }
             
@@ -2615,9 +2642,15 @@ namespace peopt{
 
                 // Check the labels on the user input
                 Unconstrained <X>::checkLabels(msg,xs,reals,nats,params);
+                EqualityConstrained <X,Y>::checkLabels(
+                    msg,ys,reals,nats,params);
+                InequalityConstrained <X,Z>::checkLabels(
+                    msg,zs,reals,nats,params);
 
                 // Check the strings used to represent parameters
                 Unconstrained <X>::checkParams(msg,params);
+                EqualityConstrained <X,Y>::checkParams(msg,params);
+                InequalityConstrained <X,Z>::checkParams(msg,params);
 
                 // Copy in the variables 
                 Unconstrained <X>::vectorsToState(xs);
@@ -2626,9 +2659,13 @@ namespace peopt{
                 
                 // Copy in all of the scalar information
                 Unconstrained <X>::scalarsToState(reals,nats,params);
+                EqualityConstrained <X,Y>::scalarsToState(reals,nats,params);
+                InequalityConstrained <X,Z>::scalarsToState(reals,nats,params);
 
                 // Check that we have a valid state 
                 Unconstrained <X>::check(msg);
+                EqualityConstrained <X,Y>::check(msg);
+                InequalityConstrained <X,Z>::check(msg);
             }
         };
     }

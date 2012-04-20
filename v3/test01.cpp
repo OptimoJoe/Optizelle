@@ -214,6 +214,21 @@ int main(){
     peopt::State::Unconstrained <MyHS> ustate(x);
     peopt::State::EqualityConstrained <MyHS,MyHS> estate(x,x);
     peopt::State::InequalityConstrained <MyHS,MyHS> istate(x,x);
+    peopt::State::Constrained <MyHS,MyHS,MyHS> cstate(x,x,x);
+
+    // Do a capture and release of the state
+    peopt::State::Constrained <MyHS,MyHS,MyHS>::X_Vectors xs;
+    peopt::State::Constrained <MyHS,MyHS,MyHS>::Y_Vectors ys;
+    peopt::State::Constrained <MyHS,MyHS,MyHS>::Z_Vectors zs;
+    peopt::State::Constrained <MyHS,MyHS,MyHS>::Reals reals;
+    peopt::State::Constrained <MyHS,MyHS,MyHS>::Nats nats;
+    peopt::State::Constrained <MyHS,MyHS,MyHS>::Params params;
+
+    cstate.release(xs,ys,zs,reals,nats,params);
+    cstate.capture(peopt::Messaging(),xs,ys,zs,reals,nats,params);
+
+    // Create a place for us to add a breakpoint
+    int junk=0;
 
 #if 0
     // Create the optimization functions
