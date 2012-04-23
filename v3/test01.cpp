@@ -103,7 +103,7 @@ struct Rosen : public peopt::ScalarValuedFunction <MyHS,double> {
     }
 
     // Hessian-vector product
-    void hess(
+    void hessvec(
         const X::Vector& x,
         const X::Vector& dx,
         X::Vector& H_dx

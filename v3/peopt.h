@@ -2572,7 +2572,7 @@ namespace peopt{
          ) const = 0;
 
          // H_dx = hess f(x) dx 
-         virtual void hess(
+         virtual void hessvec(
              const typename X::Vector& x,
              const typename X::Vector& dx,
              typename X::Vector& H_dx 
@@ -2584,7 +2584,7 @@ namespace peopt{
          // we may want to use a Hessian approximation provided by the
          // optimization routines.  The following routine selects whether or
          // not we use the hessvec provided by the user.
-         void hessvec(
+         void hess(
              const typename X::Vector& x,
              const typename X::Vector& dx,
              typename X::Vector& H_dx 
@@ -2592,7 +2592,7 @@ namespace peopt{
              if(H.get()!=NULL) 
                 (*H)(dx,H_dx);
              else
-                hess(x,dx,H_dx);
+                hessvec(x,dx,H_dx);
          }
 
          // The constructor determines whether we really need to build
@@ -3014,7 +3014,7 @@ namespace peopt{
 
         // Calculate hess f in the direction dx.  
         X_Vector hess_f_dx; X::init(x,hess_f_dx);
-        f.hessvec(x,dx,hess_f_dx);
+        f.hess(x,dx,hess_f_dx);
 
         // Compute an ensemble of finite difference tests in a linear manner
         msg.print("Finite difference test on the Hessian.",1);
@@ -3055,11 +3055,11 @@ namespace peopt{
 
         // Calculate hess f in the direction dx.  
         X_Vector H_x_dx; X::init(x,H_x_dx);
-        f.hessvec(x,dx,H_x_dx);
+        f.hess(x,dx,H_x_dx);
         
         // Calculate hess f in the direction dxx.  
         X_Vector H_x_dxx; X::init(x,H_x_dxx);
-        f.hessvec(x,dxx,H_x_dxx);
+        f.hess(x,dxx,H_x_dxx);
         
         // Calculate <H(x)dx,dxx>
         X_Real innr_Hxdx_dxx = X::innr(H_x_dx,dxx);
