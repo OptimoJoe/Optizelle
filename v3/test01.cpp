@@ -103,7 +103,7 @@ struct Rosen : public peopt::ScalarValuedFunction <MyHS,double> {
     }
 
     // Hessian-vector product
-    void hessvec(
+    void hess(
         const X::Vector& x,
         const X::Vector& dx,
         X::Vector& H_dx
@@ -111,6 +111,12 @@ struct Rosen : public peopt::ScalarValuedFunction <MyHS,double> {
     	H_dx[0]= (1200*sq(x[0])-400*x[1]+2)*dx[0]-400*x[0]*dx[1];
         H_dx[1]= -400*x[0]*dx[0] + 200*dx[1];
     }
+
+    Rosen(
+        const peopt::Messaging& msg,
+        const peopt::State::Unconstrained <MyHS>& state
+    ) : peopt::ScalarValuedFunction <MyHS,double> (msg,state) {}
+
 };
 
 // Define some utility function where
@@ -194,8 +200,15 @@ int main(){
     std::vector <double> dy(3);
     dy[0]=.3; dy[1]=-.12; dy[2]=1.2;
 
+    // Create an optimization state
+    peopt::State::Unconstrained <MyHS> ustate(x);
+    peopt::State::EqualityConstrained <MyHS,MyHS> estate(x,x);
+    peopt::State::InequalityConstrained <MyHS,MyHS> istate(x,x);
+    peopt::State::Constrained <MyHS,MyHS,MyHS> cstate(x,x,x);
+
     // Construct the Rosenbrock fucntion
-    Rosen f;
+    cstate.H_type=peopt::Operators::External;
+    Rosen f(peopt::Messaging(),cstate);
 
     // Do some finite difference tests on the Rosenbrock function
     peopt::gradientCheck <> (peopt::Messaging(),f,x,dx);
@@ -210,12 +223,6 @@ int main(){
     peopt::derivativeAdjointCheck <> (peopt::Messaging(),g,x,dx,dy);
     peopt::secondDerivativeCheck <> (peopt::Messaging(),g,x,dx,dy);
 
-    // Create an optimization state
-    peopt::State::Unconstrained <MyHS> ustate(x);
-    peopt::State::EqualityConstrained <MyHS,MyHS> estate(x,x);
-    peopt::State::InequalityConstrained <MyHS,MyHS> istate(x,x);
-    peopt::State::Constrained <MyHS,MyHS,MyHS> cstate(x,x,x);
-
     // Do a capture and release of the state
     peopt::State::Constrained <MyHS,MyHS,MyHS>::X_Vectors xs;
     peopt::State::Constrained <MyHS,MyHS,MyHS>::Y_Vectors ys;
@@ -226,6 +233,16 @@ int main(){
 
     cstate.release(xs,ys,zs,reals,nats,params);
     cstate.capture(peopt::Messaging(),xs,ys,zs,reals,nats,params);
+
+    // Create some quasi-Newton operators
+    peopt::Operators::Unconstrained <MyHS>::BFGS
+        bfgs(peopt::Messaging(),cstate);
+    peopt::Operators::Unconstrained <MyHS>::SR1
+        sr1(peopt::Messaging(),cstate);
+    peopt::Operators::Unconstrained <MyHS>::InvBFGS
+        inv_bfgs(peopt::Messaging(),cstate);
+    peopt::Operators::Unconstrained <MyHS>::InvSR1
+        inv_sr1(peopt::Messaging(),cstate);
 
     // Create a place for us to add a breakpoint
     int junk=0;

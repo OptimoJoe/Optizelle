@@ -91,583 +91,6 @@ namespace peopt{
         virtual ~Messaging() {}
     };
 
-    // A simple operator specification 
-    template <typename Domain, typename Codomain>
-    struct Operator {
-        // Basic application
-        virtual void operator () (
-            const typename Domain::Vector& x,
-            typename Codomain::Vector &y
-        ) const = 0;
-
-        // Allow a derived class to deallocate memory 
-        virtual ~Operator() {}
-    };
-
-    // A simple scalar valued function interface, f:X->R
-    template <typename X, typename Real>
-    struct ScalarValuedFunction {
-         // <- f(x) 
-         virtual Real operator () (const typename X::Vector& x) const = 0;
-
-         // g = grad f(x) 
-         virtual void grad(
-             const typename X::Vector& x,
-             typename X::Vector& g
-         ) const = 0;
-
-         // H_dx = hess f(x) dx 
-         virtual void hessvec(
-             const typename X::Vector& x,
-             const typename X::Vector& dx,
-             typename X::Vector& H_dx 
-         ) const = 0;
-
-         // Allow a derived class to deallocate memory
-         virtual ~ScalarValuedFunction() {}
-    };
-
-    // A simple vector valued function interface, f:X->Y
-    template <typename X,typename Y>
-    struct VectorValuedFunction {
-         // y=f(x)
-         virtual void operator () (
-             const typename X::Vector& x,
-             typename Y::Vector& y
-         ) const = 0;
-
-         // y=f'(x)dx 
-         virtual void p(
-             const typename X::Vector& x,
-             const typename X::Vector& dx,
-             typename Y::Vector& y
-         ) const = 0;
-
-         // z=f'(x)*dy
-         virtual void ps(
-             const typename X::Vector& x,
-             const typename Y::Vector& dy,
-             typename X::Vector& z
-         ) const= 0;
-         
-         // z=(f''(x)dx)*dy
-         virtual void pps(
-             const typename X::Vector& x,
-             const typename X::Vector& dx,
-             const typename Y::Vector& dy,
-             typename X::Vector& z
-         ) const = 0;
-         
-         // Allow a derived class to deallocate memory
-         virtual ~VectorValuedFunction() {}
-    };
-
-    template <typename Domain>
-    struct Cone {
-        // Jordan product, z <- x o y
-        virtual void prod(
-            const typename Domain::Vector& x,
-            const typename Domain::Vector& y,
-            typename Domain::Vector& z
-        ) const = 0;
-
-        // Identity element, x <- e such that x o e = x
-        virtual void id(typename Domain::Vector& x) const = 0;
-
-        // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y
-        virtual void linv(
-            const typename Domain::Vector& x,
-            const typename Domain::Vector& y,
-            typename Domain::Vector& z
-        ) const = 0;
-        
-        // Line-search, srch <- alpha where max(alpha >=0 : h(x+alpha dx) >=0).
-        // In the case where this number is infinite, set alpha=Real(-1.).
-        virtual typename Domain::Real srch(
-            const typename Domain::Vector& x,
-            const typename Domain::Vector& dx
-        ) const = 0;
-    };
-
-
-    // Performs a 4-point finite difference directional derivative on
-    // a scalar valued function f : X->R.  In other words, <- f'(x)dx.  We
-    // accomplish this by doing a finite difference calculation on f.
-    template <typename X,typename Real>
-    Real directionalDerivative(
-        const ScalarValuedFunction<X,Real>& f,
-        const typename X::Vector& x,
-        const typename X::Vector& dx,
-        const typename X::Real& epsilon
-    ){
-        // Create some type shortcuts
-        typedef typename X::Vector X_Vector;
-        typedef typename X::Real X_Real;
-
-        // Create an element for x+eps dx, x-eps dx, etc. 
-        X_Vector x_op_dx; X::init(x,x_op_dx);
-
-        // f(x+eps dx)
-        X::copy(x,x_op_dx);
-        X::axpy(epsilon,dx,x_op_dx);
-        Real obj_xpes=f(x_op_dx);
-
-        // f(x-eps dx)
-        X::copy(x,x_op_dx);
-        X::axpy(-epsilon,dx,x_op_dx);
-        Real obj_xmes=f(x_op_dx);
-
-        // f(x+2 eps dx)
-        X::copy(x,x_op_dx);
-        X::axpy(X_Real(2.*epsilon),dx,x_op_dx);
-        Real obj_xp2es=f(x_op_dx);
-
-        // f(x-2 eps dx)
-        X::copy(x,x_op_dx);
-        X::axpy(X_Real(-2.*epsilon),dx,x_op_dx);
-        Real obj_xm2es=f(x_op_dx);
-
-        // Calculate the directional derivative and return it
-        Real dd=(obj_xm2es-Real(8.)*obj_xmes+Real(8.)*obj_xpes-obj_xp2es)
-            /(Real(12.)*epsilon);
-        return dd;
-    }
-    
-    // Performs a 4-point finite difference directional derivative on
-    // the gradient of a scalar valued function f : X->R.  In other words,
-    // dd ~= hess f(x) dx.  We accomplish this by doing a finite difference
-    // calculation on G where G(x)=grad f(x).
-    template <typename X,typename Real>
-    void directionalDerivative(
-        const ScalarValuedFunction<X,Real>& f,
-        const typename X::Vector& x,
-        const typename X::Vector& dx,
-        const typename X::Real& epsilon,
-        typename X::Vector& dd
-    ){
-        // Create some type shortcuts
-        typedef typename X::Vector X_Vector;
-        typedef typename X::Real X_Real;
-
-        // Create an element for x+eps dx, x-eps dx, etc. 
-        X_Vector x_op_dx; X::init(x,x_op_dx);
-
-        // Create an element to store the gradient at this point 
-        X_Vector fgrad_x_op_dx; X::init(x,fgrad_x_op_dx);
-
-        // Zero out the directional derivative
-        X::zero(dd);
-
-        // grad f(x+eps dx)
-        X::copy(x,x_op_dx);
-        X::axpy(epsilon,dx,x_op_dx);
-        f.grad(x_op_dx,fgrad_x_op_dx);
-        X::axpy(X_Real(8.),fgrad_x_op_dx,dd);
-
-        // grad f(x-eps dx)
-        X::copy(x,x_op_dx);
-        X::axpy(-epsilon,dx,x_op_dx);
-        f.grad(x_op_dx,fgrad_x_op_dx);
-        X::axpy(X_Real(-8.),fgrad_x_op_dx,dd);
-
-        // grad f(x+2 eps dx)
-        X::copy(x,x_op_dx);
-        X::axpy(X_Real(2.)*epsilon,dx,x_op_dx);
-        f.grad(x_op_dx,fgrad_x_op_dx);
-        X::axpy(X_Real(-1.),fgrad_x_op_dx,dd);
-
-        // grad f(x-2 eps dx)
-        X::copy(x,x_op_dx);
-        X::axpy(X_Real(-2.)*epsilon,dx,x_op_dx);
-        f.grad(x_op_dx,fgrad_x_op_dx);
-        X::axpy(X_Real(1.),fgrad_x_op_dx,dd);
-
-        // Finish the finite difference calculation 
-        X::scal(X_Real(1.)/(X_Real(12.)*epsilon),dd);
-    }
-
-    // Performs a 4-point finite difference directional derivative on
-    // a vector valued function f : X->Y. In other words, dd ~= f'(x)dx.
-    // We accomplish this by doing a finite difference calculation on f.
-    template <class X,class Y>
-    void directionalDerivative(
-        const VectorValuedFunction<X,Y>& f,
-        const typename X::Vector& x,
-        const typename X::Vector& dx,
-        const typename X::Real& epsilon,
-        typename Y::Vector& dd
-    ){
-        // Create some type shortcuts
-        typedef typename X::Vector X_Vector;
-        typedef typename X::Real X_Real;
-        typedef typename Y::Vector Y_Vector;
-        typedef typename Y::Real Y_Real;
-
-        // Create an element for x+eps dx, x-eps dx, etc. 
-        X_Vector x_op_dx; X::init(x,x_op_dx);
-
-        // Create an element for f(x+eps dx), etc.
-        Y_Vector f_x_op_dx; Y::init(dd,f_x_op_dx);
-        
-        // Zero out the directional derivative
-        Y::zero(dd);
-
-        // f(x+eps dx)
-        X::copy(x,x_op_dx);
-        X::axpy(epsilon,dx,x_op_dx);
-        f(x_op_dx,f_x_op_dx);
-        Y::axpy(Y_Real(8.),f_x_op_dx,dd);
-
-        // f(x-eps dx)
-        X::copy(x,x_op_dx);
-        X::axpy(-epsilon,dx,x_op_dx);
-        f(x_op_dx,f_x_op_dx);
-        Y::axpy(Y_Real(-8.),f_x_op_dx,dd);
-
-        // f(x+2 eps dx)
-        X::copy(x,x_op_dx);
-        X::axpy(X_Real(2.)*epsilon,dx,x_op_dx);
-        f(x_op_dx,f_x_op_dx);
-        Y::axpy(Y_Real(-1.),f_x_op_dx,dd);
-
-        // f(x-2 eps dx)
-        X::copy(x,x_op_dx);
-        X::axpy(X_Real(-2.)*epsilon,dx,x_op_dx);
-        f(x_op_dx,f_x_op_dx);
-        Y::axpy(Y_Real(1.),f_x_op_dx,dd);
-
-        // Finish the finite difference calculation 
-        Y::scal(Y_Real(1.)/(Y_Real(12.)*epsilon),dd);
-    }
-    
-    // Performs a 4-point finite difference directional derivative on
-    // the second derivative-adjoint of a vector valued function. In other
-    // words, dd ~= (f''(x)dx)*dy.  In order to calculate this, we do a
-    // finite difference approximation using g(x)=f'(x)*dy.  Therefore,
-    // the error in the approximation should be in the dx piece.
-    template <class X,class Y>
-    void directionalDerivative(
-        const VectorValuedFunction<X,Y>& f,
-        const typename X::Vector& x,
-        const typename X::Vector& dx,
-        const typename Y::Vector& dy,
-        const typename X::Real& epsilon,
-        typename Y::Vector& dd
-    ){
-        // Create some type shortcuts
-        typedef typename X::Vector X_Vector;
-        typedef typename X::Real X_Real;
-        typedef typename Y::Vector Y_Vector;
-        typedef typename Y::Real Y_Real;
-
-        // Create an element for x+eps dx, x-eps dx, etc. 
-        X_Vector x_op_dx; X::init(x,x_op_dx);
-
-        // Create an element for f'(x+eps dx)*dy, etc.
-        Y_Vector fps_xopdx_dy; Y::init(dd,fps_xopdx_dy);
-
-        // Zero out the directional derivative
-        Y::zero(dd);
-
-        // f'(x+eps dx)*dy
-        X::copy(x,x_op_dx);
-        X::axpy(epsilon,dx,x_op_dx);
-        f.ps(x_op_dx,dy,fps_xopdx_dy);
-        Y::axpy(Y_Real(8.),fps_xopdx_dy,dd);
-
-        // f'(x-eps dx)*dy
-        X::copy(x,x_op_dx);
-        X::axpy(-epsilon,dx,x_op_dx);
-        f.ps(x_op_dx,dy,fps_xopdx_dy);
-        Y::axpy(Y_Real(-8.),fps_xopdx_dy,dd);
-
-        // f'(x+2 eps dx)*dy
-        X::copy(x,x_op_dx);
-        X::axpy(X_Real(2.)*epsilon,dx,x_op_dx);
-        f.ps(x_op_dx,dy,fps_xopdx_dy);
-        Y::axpy(Y_Real(-1.),fps_xopdx_dy,dd);
-
-        // f'(x-2 eps dx)*dy
-        X::copy(x,x_op_dx);
-        X::axpy(X_Real(-2.)*epsilon,dx,x_op_dx);
-        f.ps(x_op_dx,dy,fps_xopdx_dy);
-        Y::axpy(Y_Real(1.),fps_xopdx_dy,dd);
-
-        // Finish the finite difference calculation 
-        Y::scal(Y_Real(1.)/(Y_Real(12.)*epsilon),dd);
-    }
-
-    // Performs a finite difference test on the gradient of f where  
-    // f : X->R is scalar valued.  In other words, we check grad f using f.
-    template <typename X,typename Real>
-    void gradientCheck(
-        const Messaging& msg,
-        const ScalarValuedFunction<X,Real>& f,
-        const typename X::Vector& x,
-        const typename X::Vector& dx
-    ) {
-        // Create some type shortcuts
-        typedef typename X::Vector X_Vector;
-        typedef typename X::Real X_Real;
-
-        // Calculate the gradient at the point x
-        X_Vector f_grad; X::init(x,f_grad);
-        f.grad(x,f_grad);
-
-        // Begin by calculating the directional derivative via the gradient
-        Real dd_grad=X::innr(f_grad,dx);
-
-        // Compute an ensemble of finite difference tests in a linear manner
-        msg.print("Finite difference test on the gradient.",1);
-        for(int i=-2;i<=5;i++){
-            X_Real epsilon=pow(X_Real(.1),i);
-            Real dd=directionalDerivative <> (f,x,dx,epsilon);
-
-            std::stringstream ss;
-            if(i<0) ss << "The relative difference (1e+" << -i <<  "): ";
-            else ss << "The relative difference (1e-" << i << "): ";
-            ss << std::scientific << std::setprecision(16)
-                << fabs(dd_grad-dd)/(Real(1e-16)+fabs(dd_grad));
-            msg.print(ss.str(),1);
-        }
-    }
-    
-    // Performs a finite difference test on the hessian of f where f : X->R
-    // is scalar valued.  In other words, we check hess f dx using grad f.
-    template <typename X,typename Real>
-    void hessianCheck(
-        const Messaging& msg,
-        const ScalarValuedFunction<X,Real>& f,
-        const typename X::Vector& x,
-        const typename X::Vector& dx
-    ) {
-        // Create some type shortcuts
-        typedef typename X::Vector X_Vector;
-        typedef typename X::Real X_Real;
-
-        // Create an element for the residual between the directional derivative
-        // computed Hessian-vector product and the true Hessian-vector product.
-        X_Vector res; X::init(x,res);
-
-        // Calculate hess f in the direction dx.  
-        X_Vector hess_f_dx; X::init(x,hess_f_dx);
-        f.hessvec(x,dx,hess_f_dx);
-
-        // Compute an ensemble of finite difference tests in a linear manner
-        msg.print("Finite difference test on the Hessian.",1);
-        for(int i=-2;i<=5;i++){
-
-            // Calculate the directional derivative
-            X_Real epsilon=pow(X_Real(.1),i);
-            directionalDerivative <> (f,x,dx,epsilon,res);
-
-            // Determine the residual.  Store in res.
-            X::axpy(X_Real(-1.),hess_f_dx,res);
-
-            // Determine the relative error
-            Real rel_err=X::norm(res)/(X_Real(1e-16)+X::norm(hess_f_dx));
-
-            // Print out the differences
-            std::stringstream ss;
-            if(i<0) ss << "The relative difference (1e+" << -i <<  "): ";
-            else ss << "The relative difference (1e-" << i << "): ";
-            ss << std::scientific << std::setprecision(16) << rel_err; 
-            msg.print(ss.str(),1);
-        }
-    }
-    
-    // This tests the symmetry of the Hessian.  We accomplish this by
-    // comparing <H(x)dx,dxx> to <dx,H(x)dxx>.
-    template <typename X,typename Real>
-    void hessianSymmetryCheck(
-        const Messaging& msg,
-        const ScalarValuedFunction<X,Real>& f,
-        const typename X::Vector& x,
-        const typename X::Vector& dx,
-        const typename X::Vector& dxx
-    ) {
-        // Create some type shortcuts
-        typedef typename X::Vector X_Vector;
-        typedef typename X::Real X_Real;
-
-        // Calculate hess f in the direction dx.  
-        X_Vector H_x_dx; X::init(x,H_x_dx);
-        f.hessvec(x,dx,H_x_dx);
-        
-        // Calculate hess f in the direction dxx.  
-        X_Vector H_x_dxx; X::init(x,H_x_dxx);
-        f.hessvec(x,dxx,H_x_dxx);
-        
-        // Calculate <H(x)dx,dxx>
-        X_Real innr_Hxdx_dxx = X::innr(H_x_dx,dxx);
-        
-        // Calculate <dx,H(x)dxx>
-        X_Real innr_dx_Hxdxx = X::innr(dx,H_x_dxx);
-
-        // Determine the absolute difference between the two.  This really
-        // should be zero.
-        Real diff=fabs(innr_Hxdx_dxx-innr_dx_Hxdxx);
-
-        // Send a message with the result
-        msg.print("Symmetry test on the Hessian of a scalar valued "
-            "function.",1);
-        std::stringstream ss;
-        ss << "The absolute err. between <H(x)dx,dxx> and <dx,H(x)dxx>: "
-            << std::scientific << std::setprecision(16) << diff;
-        msg.print(ss.str(),1);
-    }
-
-    // Performs a finite difference test on the derivative of a vector-valued
-    // function f.  Specifically, we check f'(x)dx using f.
-    template <typename X,typename Y>
-    void derivativeCheck(
-        const Messaging& msg,
-        const VectorValuedFunction<X,Y>& f,
-        const typename X::Vector& x,
-        const typename X::Vector& dx,
-        const typename Y::Vector& y
-    ) {
-        // Create some type shortcuts
-        typedef typename X::Vector X_Vector;
-        typedef typename X::Real X_Real;
-        typedef typename Y::Vector Y_Vector;
-        typedef typename Y::Real Y_Real;
-
-        // Create an element for the residual between the directional derivative
-        // and the true derivative.
-        Y_Vector res; Y::init(y,res);
-
-        // Calculate f'(x)dx 
-        Y_Vector fp_x_dx; Y::init(y,fp_x_dx);
-        f.p(x,dx,fp_x_dx);
-
-        // Compute an ensemble of finite difference tests in a linear manner
-        msg.print("Finite difference test on the derivative of a vector-valued "
-            "function.",1);
-        for(int i=-2;i<=5;i++){
-
-            // Calculate the directional derivative
-            X_Real epsilon=pow(X_Real(.1),i);
-            directionalDerivative <> (f,x,dx,epsilon,res);
-
-            // Determine the residual.  Store in res.
-            Y::axpy(Y_Real(-1.),fp_x_dx,res);
-
-            // Determine the relative error
-            Y_Real rel_err=Y::norm(res)/(Y_Real(1e-16)+Y::norm(fp_x_dx));
-
-            // Print out the differences
-            std::stringstream ss;
-            if(i<0) ss << "The relative difference (1e+" << -i <<  "): ";
-            else ss << "The relative difference (1e-" << i << "): ";
-            ss << std::scientific << std::setprecision(16) << rel_err; 
-            msg.print(ss.str(),1);
-        }
-    }
-
-    // Performs an adjoint check on the first-order derivative of a vector
-    // valued function.  In other words, we check that
-    // <f'(x)dx,dy> = <dx,f'(x)*dy>
-    template <typename X,typename Y>
-    void derivativeAdjointCheck(
-        const Messaging& msg,
-        const VectorValuedFunction<X,Y>& f,
-        const typename X::Vector& x,
-        const typename X::Vector& dx,
-        const typename Y::Vector& dy
-    ) {
-        // Create some type shortcuts
-        typedef typename X::Vector X_Vector;
-        typedef typename X::Real X_Real;
-        typedef typename Y::Vector Y_Vector;
-        typedef typename Y::Real Y_Real;
-
-        // Check that both X and Y use the same real time.  Mostly, we
-        // need to compare two different inner products and insuring
-        // that they're the same is the simplest way to guarantee compatibility.
-        if(!is_same<X_Real,Y_Real>::eval())
-            msg.error("The real type for the spaces X and Y in "
-                "derivativeAdjointCheck must be the same.");
-
-        // At this point, since X_Real and Y_Real are the same, just use Real
-        typedef X_Real Real;
-
-        // Calculate f'(x)dx 
-        Y_Vector fp_x_dx; Y::init(dy,fp_x_dx);
-        f.p(x,dx,fp_x_dx);
-        
-        // Calculate f'(x)*dy 
-        X_Vector fps_x_dy; X::init(dx,fps_x_dy);
-        f.ps(x,dy,fps_x_dy);
-
-        // Calculate <f'(x)dx,dy>
-        Real innr_fpxdx_dy = Y::innr(fp_x_dx,dy);
-
-        // Calculate <dx,f'(x)*dy>
-        Real innr_dx_fpsxdy = X::innr(dx,fps_x_dy);
-
-        // Determine the absolute difference between the two.  This really
-        // should be zero.
-        Real diff=fabs(innr_fpxdx_dy-innr_dx_fpsxdy);
-
-        // Send a message with the result
-        msg.print("Adjoint test on the first derivative of a vector valued "
-            "function.",1);
-        std::stringstream ss;
-        ss << "The absolute err. between <f'(x)dx,dy> and <dx,f'(x)*dy>: "
-            << std::scientific << std::setprecision(16) << diff;
-        msg.print(ss.str(),1);
-    }
-
-    // Performs a finite difference test on the second-derivative-adjoint of a
-    // vector-valued function f.  Specifically, we check (f''(x)dx)*dy using
-    // f'(x)*dy.
-    template <typename X,typename Y>
-    void secondDerivativeCheck(
-        const Messaging& msg,
-        const VectorValuedFunction<X,Y>& f,
-        const typename X::Vector& x,
-        const typename X::Vector& dx,
-        const typename Y::Vector& dy
-    ) {
-        // Create some type shortcuts
-        typedef typename X::Vector X_Vector;
-        typedef typename X::Real X_Real;
-        typedef typename Y::Vector Y_Vector;
-        typedef typename Y::Real Y_Real;
-
-        // Create an element for the residual between the directional derivative
-        // and the true derivative.
-        X_Vector res; X::init(x,res);
-
-        // Calculate (f''(x)dx)*dy
-        X_Vector fpps_x_dx_dy; X::init(dy,fpps_x_dx_dy);
-        f.pps(x,dx,dy,fpps_x_dx_dy);
-
-        // Compute an ensemble of finite difference tests in a linear manner
-        msg.print("Finite difference test on the 2nd-derivative adj. "
-            "of a vector-valued function.",1);
-        for(int i=-2;i<=5;i++){
-
-            // Calculate the directional derivative
-            X_Real epsilon=pow(X_Real(.1),i);
-            directionalDerivative <> (f,x,dx,dy,epsilon,res);
-
-            // Determine the residual.  Store in res.
-            X::axpy(X_Real(-1.),fpps_x_dx_dy,res);
-
-            // Determine the relative error
-            X_Real rel_err=X::norm(res)/(X_Real(1e-16)+X::norm(fpps_x_dx_dy));
-
-            // Print out the differences
-            std::stringstream ss;
-            if(i<0) ss << "The relative difference (1e+" << -i <<  "): ";
-            else ss << "The relative difference (1e-" << i << "): ";
-            ss << std::scientific << std::setprecision(16) << rel_err; 
-            msg.print(ss.str(),1);
-        }
-    }
-
     // Which algorithm class do we use
     namespace AlgorithmClass{
         enum t{
@@ -1070,63 +493,10 @@ namespace peopt{
         };
     }
  
+
     // The structures in this namespace represent the internal state of the
     // optimization algorithm.
     namespace State {
-        template <typename W>
-        struct State {
-        protected:
-            // Create some short-cuts for some type names
-            typedef typename W::Vector W_Vector;
-            typedef typename W::Real W_Real;
-            typedef typename W::Real Real;
-            typedef std::pair < std::list <std::string>,
-                                std::list <W_Vector> > W_Vectors;
-            typedef std::pair < std::list <std::string>,
-                                std::list <Real> > Reals;
-            typedef std::pair < std::list <std::string>,
-                                std::list <unsigned int> > Nats;
-            typedef std::pair < std::list <std::string>,
-                                std::list <std::string> > Params; 
-
-            // Copy in the vectors 
-            virtual void vectorsToState(W_Vectors& ws) = 0; 
-
-            // Copy out the vectors 
-            virtual void stateToVectors(W_Vectors& ws) = 0;
-            
-            // Copy in the scalar information
-            virtual void scalarsToState(
-                Reals& reals,
-                Nats& nats,
-                Params& params
-            ) = 0;
-            
-            // Copy out the scalar information
-            virtual void stateToScalars(
-                Reals& reals,
-                Nats& nats,
-                Params& params
-            ) = 0; 
-        
-            // Check the labels on the user input
-            virtual void checkLabels(
-                const Messaging& msg,
-                const W_Vectors& ws,
-                const Reals& reals,
-                const Nats& nats,
-                const Params& params
-            ) = 0; 
-
-            // Check the strings used to represent parameters
-            virtual void checkParams(const Messaging& msg,Params& params) = 0; 
-
-            // Check that we have a valid state 
-            virtual void check(const Messaging& msg) = 0;
-
-            // Insure that we can free memory
-            virtual ~State(){}
-        };
 
         // State of an unconstrained optimization problem of the form
         // 
@@ -1136,7 +506,7 @@ namespace peopt{
         template <typename X> 
         struct Unconstrained {
         public:
-            // Create some short-cuts for some type names
+            // Create some shortcuts for some type names
             typedef typename X::Vector X_Vector;
             typedef typename X::Real X_Real;
 
@@ -2171,7 +1541,7 @@ namespace peopt{
         template <typename X,typename Y> 
         struct EqualityConstrained: public virtual Unconstrained <X> {
         public:
-            // Create some short-cuts for some type names
+            // Create some shortcuts for some type names
             typedef typename X::Vector X_Vector;
             typedef typename X::Real X_Real;
             typedef typename X::Real Real;
@@ -2366,7 +1736,7 @@ namespace peopt{
         template <typename X,typename Z> 
         struct InequalityConstrained : public virtual Unconstrained <X> {
         public:
-            // Create some short-cuts for some type names
+            // Create some shortcuts for some type names
             typedef typename X::Vector X_Vector;
             typedef typename X::Real X_Real;
             typedef typename X::Real Real;
@@ -2566,7 +1936,7 @@ namespace peopt{
             public InequalityConstrained <X,Z>
         {
         public:
-            // Create some short-cuts for some type names
+            // Create some shortcuts for some type names
             typedef typename X::Vector X_Vector;
             typedef typename X::Real X_Real;
             typedef typename X::Real Real;
@@ -2669,6 +2039,1391 @@ namespace peopt{
             }
         };
     }
+
+    // A function that has free reign to manipulate or analyze the state.
+    // This should be used cautiously.
+    template <typename State>
+    class StateManipulator {
+    public:
+        // Application
+        virtual void operator () (State& state) {};
+
+        // Allow the derived class to deallocate memory
+        virtual ~StateManipulator() {}
+    };
+
+    // A simple operator specification 
+    template <typename Domain, typename Codomain>
+    struct Operator {
+        // Basic application
+        virtual void operator () (
+            const typename Domain::Vector& x,
+            typename Codomain::Vector &y
+        ) const = 0;
+
+        // Allow a derived class to deallocate memory 
+        virtual ~Operator() {}
+    };
+
+    // This contains the different operators required for each class of 
+    // optimization methods.
+    namespace Operators {
+
+        // Unconstrained optimization 
+        template <typename X>
+        struct Unconstrained {
+
+            // The identity operator 
+            class Identity : public Operator <X,X> {
+            public:
+                void operator () (
+                    const typename X::Vector& dx,
+                    typename X::Vector& result
+                ) const{
+                    X::copy(dx,result);
+                }
+            };
+
+            // The scaled identity Hessian approximation.  Specifically, use use
+            // norm(g) / delta_max I.
+            class ScaledIdentity : public Operator <X,X> {
+            private:
+                const typename X::Real& norm_g;
+                const typename X::Real& delta_max;
+            public:
+                ScaledIdentity(const State::Unconstrained <X>& state)
+                    : norm_g(state.norm_g), delta_max(state.delta_max) {};
+
+                void operator () (
+                    const typename X::Vector& dx,
+                    typename X::Vector& result
+                ) const{
+                    X::copy(dx,result);
+                    X::scal(norm_g/delta_max,result);
+                }
+            };
+
+            // The BFGS Hessian approximation.  
+            /* Note, the formula we normally see for BFGS denotes the inverse
+                Hessian approximation.  This is not the inverse, but the true
+                Hessian approximation. */ 
+            class BFGS : public Operator <X,X> {
+            private:
+                // Create some type shortcuts
+                typedef typename X::Vector Vector;
+                typedef typename X::Real Real;
+
+                // Stored quasi-Newton information
+                const std::list<Vector>& oldY;
+                const std::list<Vector>& oldS;
+
+                // Messaging device in case the qusi-Newton information is bad
+                const Messaging& msg;
+            public:
+                BFGS(
+                    const Messaging& msg_,
+                    const State::Unconstrained <X>& state
+                ) : oldY(state.oldY), oldS(state.oldS), msg(msg_) {};
+
+                // Operator interface
+                /* It's not entirely clear to me what the best implementation
+                for this method really is.  In the following implementation, we
+                require an additional k work elements where k is the number of
+                stored gradient and position differences.  It's possible to
+                reduce this to 1 or 2, but we need to compute redundant
+                information.  It's also possible to implementation the compact
+                representation, see "Representations of quasi-Newton matrices
+                and their use in limited memory methods" from Byrd, Nocedal,
+                and Schnabel.  The problem with that algorithm is that is
+                requires machinery such as linear system solves that we don't
+                current have.  It also works much better with matrices or
+                multivectors of data and we don't require the user to provide
+                these abstractions. */
+                void operator () (const Vector& p, Vector& result) const{
+
+                    // Check that the number of stored gradient and trial step
+                    // differences is the same.
+                    if(oldY.size() != oldS.size())
+                        msg.error("In the BFGS Hessian approximation, the "
+                            "number of stored gradient differences must equal "
+                            "the number of stored trial step differences.");
+
+                    // Allocate memory for work
+                    std::list <Vector> work(oldY.size(),p);
+                    for(typename std::list <Vector>::iterator w=work.begin();
+                        w!=work.end();
+                        w++
+                    ) X::init(p,*w);
+
+                    // If we have no vectors in our history, we return the
+                    // direction
+                    X::copy(p,result);
+                    if(oldY.size() == 0) return;
+
+                    // As a safety check, insure that the inner product
+                    // between all the (s,y) pairs is positive
+                    typename std::list <Vector>::const_iterator y0=oldY.begin();
+                    typename std::list <Vector>::const_iterator s0=oldS.begin();
+                    while(y0!=oldY.end()){
+                        Real inner_y_s=X::innr(*y0++,*s0++);
+                        if(inner_y_s<0)
+                            msg.error("Detected a (s,y) pair in BFGS that "
+                                "possesed a nonpositive inner product");
+                    }
+
+                    // Othwerwise, we copy all of the trial step differences
+                    // into the work space
+                    typename std::list <Vector>::iterator Bisj_iter
+                        =work.begin();
+                    typename std::list <Vector>::const_iterator sk_iter
+                        =oldS.begin();
+                    while(Bisj_iter!=work.end())
+                        X::copy((*sk_iter++),(*Bisj_iter++));
+
+                    // Keep track of the element Bisi
+                    typename std::list <Vector>::const_iterator Bisi_iter
+                        =work.end(); Bisi_iter--;
+
+                    // Keep iterating until Bisi equals the first element in the
+                    // work list. This means we have computed B1s1, B2s2, ...,
+                    // Bksk.
+                    Bisj_iter=work.begin();
+                    typename std::list <Vector>::const_iterator si_iter
+                        =oldS.end(); si_iter--;
+                    typename std::list <Vector>::const_iterator yi_iter
+                        =oldY.end(); yi_iter--;
+                    typename std::list <Vector>::const_iterator sj_iter
+                        =oldS.begin();
+                    while(1){
+
+                        // Create some reference to our iterators that are
+                        // easier to work with
+                        const Vector& si=*si_iter;
+                        const Vector& yi=*yi_iter;
+                        const Vector& Bisi=*Bisi_iter;
+
+                        // Determine <Bisi,si>
+                        Real inner_Bisi_si=X::innr(Bisi,si);
+
+                        // Determine <yi,si>
+                        Real inner_yi_si=X::innr(yi,si);
+
+                        // Determine <si,Bip>
+                        Real inner_si_Bip=X::innr(si,result);
+
+                        // Determine <yi,p>
+                        Real inner_yi_p=X::innr(yi,p);
+
+                        // Determine -<si,Bip>/<Bisi,si> Bisi + Bip.  Store in
+                        // Bip.  This will become B_{i+1}p.
+                        X::axpy(-inner_si_Bip/inner_Bisi_si,Bisi,result);
+
+                        // Determine <yi,p>/<yi,si> yi + w where we calculated w
+                        // in the line above.  This completes the calculation of
+                        // B_{i+1}p
+                        X::axpy(inner_yi_p/inner_yi_si,yi,result);
+
+                        // Check whether or not we've calculated B_{i+1}p for
+                        // the last time
+                        if(Bisi_iter==work.begin()) break;
+
+                        // Begin the calculation of B_{i+1}sj
+                        while(si_iter!=sj_iter){
+                            // Add some additional references to the iterators 
+                            const Vector& sj=*sj_iter;
+                            Vector& Bisj=*Bisj_iter;
+
+                            // Determine <si,Bisj>
+                            Real inner_si_Bisj=X::innr(si,Bisj);
+
+                            // Determine <yi,sj>
+                            Real inner_yi_sj=X::innr(yi,sj);
+
+                            // Determine -<si,Bisj>/<Bisi,si> Bisi + Bisj
+                            // Store in Bisj.  This will become B_{i+1}sj.
+                            X::axpy(-inner_si_Bisj/inner_Bisi_si,Bisi,Bisj);
+
+                            // Determine <yi,sj>/<yi,si> yi + w where we 
+                            // calculated w in the line above.  This completes 
+                            // the computation of B_{i+1}sj.
+                            X::axpy(inner_yi_sj/inner_yi_si,yi,Bisj);
+
+                            // Change j to be j-1 and adjust Bisj and sj 
+                            // accordingly
+                            sj_iter++;
+                            Bisj_iter++;
+                        }
+
+                        // At this point, we've computed all Bisj entries on the
+                        // current row.  As a result, we increment i and set j 
+                        // to be k.  This requires us to modify si, yi, sj, 
+                        // Bisj, and Bisi accordingly.
+                        
+                        // Increment i and adjust si
+                        si_iter--;
+
+                        // Increment i and adjust yi
+                        yi_iter--;
+
+                        // Set j=k and adjust sj
+                        sj_iter=oldS.begin();
+
+                        // Set j=k, increment i, and adjust Bisj
+                        Bisj_iter=work.begin();
+
+                        // Increment i and adjust Bisi
+                        Bisi_iter--;
+                    }
+                }
+            };
+
+            // The SR1 Hessian approximation.  
+            /* The oldY and oldS lists have the same structure as the BFGS
+            preconditioner. */
+            class SR1 : public Operator <X,X> {
+            private:
+                // Create some type shortcuts
+                typedef typename X::Vector Vector;
+                typedef typename X::Real Real;
+
+                // Stored quasi-Newton information
+                const std::list<Vector>& oldY;
+                const std::list<Vector>& oldS;
+
+                // Messaging device in case the qusi-Newton information is bad
+                const Messaging& msg;
+            public:
+                SR1(
+                    const Messaging& msg_,
+                    const State::Unconstrained <X>& state
+                ) : oldY(state.oldY), oldS(state.oldS), msg(msg_) {};
+                
+                // Operator interface
+                void operator () (const Vector& p,Vector& result) const{
+
+                    // Check that the number of stored gradient and trial step
+                    // differences is the same.
+                    if(oldY.size() != oldS.size())
+                        msg.error("In the SR1 Hessian approximation, the "
+                            "number of stored gradient differences must equal "
+                            "the number of stored trial step differences.");
+
+                    // Allocate memory for work
+                    std::list <Vector> work(oldY.size(),p);
+                    for(typename std::list <Vector>::iterator w=work.begin();
+                        w!=work.end();
+                        w++
+                    ) X::init(p,*w);
+
+                    // If we have no vectors in our history, we return the 
+                    // direction
+                    X::copy(p,result);
+                    if(oldY.size() == 0) return;
+
+                    // Othwerwise, we copy all of the trial step differences 
+                    // into the work space
+                    typename std::list <Vector>::iterator Bisj_iter
+                        =work.begin();
+                    typename std::list <Vector>::const_iterator sk_iter
+                        =oldS.begin();
+                    while(Bisj_iter!=work.end())
+                        X::copy((*sk_iter++),(*Bisj_iter++));
+
+                    // Keep track of the element Bisi
+                    typename std::list <Vector>::const_iterator Bisi_iter
+                        =work.end(); Bisi_iter--;
+
+                    // Keep iterating until Bisi equals the first element in the
+                    // work list. This means we have computed B1s1, B2s2, ...,
+                    // Bksk.
+                    Bisj_iter=work.begin();
+                    typename std::list <Vector>::const_iterator si_iter
+                        =oldS.end(); si_iter--;
+                    typename std::list <Vector>::const_iterator yi_iter
+                        =oldY.end(); yi_iter--;
+                    typename std::list <Vector>::const_iterator sj_iter
+                        =oldS.begin();
+                    while(1){
+
+                        // Create some reference to our iterators that are 
+                        // easier to work with
+                        const Vector& si=*si_iter;
+                        const Vector& yi=*yi_iter;
+                        const Vector& Bisi=*Bisi_iter;
+
+                        // Determine <yi,p>
+                        Real inner_yi_p=X::innr(yi,p);
+
+                        // Determine <Bisi,p>
+                        Real inner_Bisi_p=X::innr(Bisi,p);
+
+                        // Determine <yi,si>
+                        Real inner_yi_si=X::innr(yi,si);
+
+                        // Determine <Bisi,si>
+                        Real inner_Bisi_si=X::innr(Bisi,si);
+
+                        // Determine (<yi,p>-<Bisi,p>) / (<y_i,s_i>-<Bisi,si>).
+                        // Store in alpha
+                        Real alpha=(inner_yi_p-inner_Bisi_p)
+                            / (inner_yi_si-inner_Bisi_si);
+
+                        // Determine alpha y_i + Bip.  Store in result (which
+                        // accumulate Bip).
+                        X::axpy(alpha,yi,result);
+
+                        // Then, add -alpha*Bisi to this result
+                        X::axpy(-alpha,Bisi,result);
+
+                        // Check whether or not we've calculated B_{i+1}p for 
+                        // the last time
+                        if(Bisi_iter==work.begin()) break;
+
+                        // Begin the calculation of B_{i+1}sj
+                        while(si_iter!=sj_iter){
+                            // Add some additional references to the iterators 
+                            const Vector& sj=*sj_iter;
+                            Vector& Bisj=*Bisj_iter;
+
+                            // Determine <yi,sj>
+                            Real inner_yi_sj=X::innr(yi,sj);
+
+                            // Determine <Bisi,sj>
+                            Real inner_Bisi_sj=X::innr(Bisi,sj);
+
+                            // Determine (<yi,p>-<Bisi,p>)/(<y_i,s_i>-<Bisi,si>)
+                            // Store in beta 
+                            Real beta= (inner_yi_sj-inner_Bisi_sj) /
+                                (inner_yi_si-inner_Bisi_si);
+                        
+                            // Determine beta y_i + Bisj.  Store in Bisj. 
+                            X::axpy(beta,yi,Bisj);
+
+                            // Add -beta*Bisi to this result
+                            X::axpy(-beta,Bisi,Bisj);
+
+                            // Change j to be j-1 and adjust Bisj and sj 
+                            // accordingly
+                            sj_iter++;
+                            Bisj_iter++;
+                        }
+
+                        // At this point, we've computed all Bisj entries on the
+                        // current row.  As a result, we increment i and set j 
+                        // to be k.  This requires us to modify si, yi, sj, 
+                        // Bisj, and Bisi accordingly.
+                        
+                        // Increment i and adjust si
+                        si_iter--;
+
+                        // Increment i and adjust yi
+                        yi_iter--;
+
+                        // Set j=k and adjust sj
+                        sj_iter=oldS.begin();
+
+                        // Set j=k, increment i, and adjust Bisj
+                        Bisj_iter=work.begin();
+
+                        // Increment i and adjust Bisi
+                        Bisi_iter--;
+                    }
+                }
+            };
+
+            // The inverse BFGS operator 
+            /* The oldY list has the following structure
+                oldY[0] = y_k = grad J(u_k) - grad J(u_{k-1})
+                oldY[1] = y_{k-1} = grad J(u_{k-1}) - grad J(u_{k-2})
+                The oldS list has the following structure
+                oldS[0] = s_k = u_k - u_k{-1}
+                oldS[1] = s_{k-1} = u_{k-1} - u_k{k-2} */
+            class InvBFGS : public Operator <X,X> {
+            private:
+                // Create some type shortcuts
+                typedef typename X::Vector Vector;
+                typedef typename X::Real Real;
+
+                // Stored quasi-Newton information
+                const std::list<Vector>& oldY;
+                const std::list<Vector>& oldS;
+
+                // Messaging device in case the qusi-Newton information is bad
+                const Messaging& msg;
+            public:
+                InvBFGS(
+                    const Messaging& msg_,
+                    const State::Unconstrained <X>& state
+                ) : oldY(state.oldY), oldS(state.oldS), msg(msg_) {};
+                
+                // Operator interface
+                void operator () (const Vector& p,Vector& result) const{
+
+                    // Check that the number of stored gradient and trial step
+                    // differences is the same.
+                    if(oldY.size() != oldS.size())
+                        msg.error("In the inverse BFGS operator, the number "
+                            "of stored gradient differences must equal the "
+                            "number of stored trial step differences.");
+                    
+                    // As a safety check, insure that the inner product between
+                    // all the (s,y) pairs is positive
+                    typename std::list <Vector>::const_iterator y0=oldY.begin();
+                    typename std::list <Vector>::const_iterator s0=oldS.begin();
+                    while(y0!=oldY.end()){
+                        Real inner_y_s=X::innr(*y0++,*s0++);
+                        if(inner_y_s<0)
+                            msg.error("Detected a (s,y) pair in the inverse "
+                                "BFGS operator that possesed a nonpositive "
+                                "inner product");
+                    }
+
+                    // Create two vectors to hold some intermediate calculations
+                    std::vector <Real> alpha(oldY.size());
+                    std::vector <Real> rho(oldY.size());
+
+                    // Before we begin computing, copy p to our result 
+                    X::copy(p,result);
+
+                    // In order to compute, we first iterate over all the stored
+                    // element in the forward direction.  Then, we iterate over
+                    // them backward.
+                    typename std::list <Vector>::const_iterator y_iter
+                        =oldY.begin();
+                    typename std::list <Vector>::const_iterator s_iter
+                        =oldS.begin();
+                    int i=0;
+                    while(y_iter != oldY.end()){
+                        // Find y_k, s_k, and their inner product
+                        const Vector& y_k=*(y_iter++);
+                        const Vector& s_k=*(s_iter++);
+                        rho[i]=Real(1.)/X::innr(y_k,s_k);
+
+                        // Find rho_i <s_i,result>.  Store in alpha_i
+                        alpha[i]=rho[i]*X::innr(s_k,result);
+
+                        // result = - alpha_i y_i + result 
+                        X::axpy(-alpha[i],y_k,result);
+
+                        // Make sure we don't overwrite alpha and rho
+                        i++;
+                    }
+
+                    // Assume that H_0 is the identity operator (which may or 
+                    // may not work in Hilbert space)
+
+                    // Now, let us iterate backward over our elements to 
+                    // complete the computation
+                    while(y_iter != oldY.begin()){
+                        // Find y_k and s_k
+                        const Vector& s_k=*(--s_iter);
+                        const Vector& y_k=*(--y_iter);
+
+                        // beta=rho_i <y_i,result>
+                        Real beta= rho[--i] * X::innr(y_k,result);
+
+                        // result=  (alpha_i-beta) s_i + result
+                        X::axpy(alpha[i]-beta,s_k,result);
+                    }
+                }
+            };
+            
+            // The inverse SR1 operator.  
+            /* In this definition, we take a shortcut and simply use the SR1
+                Hessian approximation where we swap Y and S.  The oldY and oldS
+                lists have the same structure as the BFGS operator. */
+            class InvSR1 : public Operator <X,X> {
+            private:
+                // Create some type shortcuts
+                typedef typename X::Vector Vector;
+
+                // Store the SR1 operator
+                SR1 sr1;
+            public:
+                InvSR1(
+                    const Messaging& msg,
+                    const State::Unconstrained <X>& state
+                ) : sr1(msg,state) {};
+                void operator () (const Vector& p,Vector& result) const{
+                    sr1(p,result);
+                }
+            };
+        };
+    }
+
+    // A simple scalar valued function interface, f:X->R
+    template <typename X, typename Real>
+    struct ScalarValuedFunction {
+    private:
+        // Hessian approximation
+        std::auto_ptr <Operator <X,X> > H;
+
+        // This forces derived classes to call the constructor that depends
+        // on the state
+        ScalarValuedFunction() {}
+    public:
+         // <- f(x) 
+         virtual Real operator () (const typename X::Vector& x) const = 0;
+
+         // g = grad f(x) 
+         virtual void grad(
+             const typename X::Vector& x,
+             typename X::Vector& g
+         ) const = 0;
+
+         // H_dx = hess f(x) dx 
+         virtual void hess(
+             const typename X::Vector& x,
+             const typename X::Vector& dx,
+             typename X::Vector& H_dx 
+         ) const {
+                X::copy(dx,H_dx); 
+         }
+
+         // This actually computes the Hessian-vector product.  In essence,
+         // we may want to use a Hessian approximation provided by the
+         // optimization routines.  The following routine selects whether or
+         // not we use the hessvec provided by the user.
+         void hessvec(
+             const typename X::Vector& x,
+             const typename X::Vector& dx,
+             typename X::Vector& H_dx 
+         ) const {
+             if(H.get()!=NULL) 
+                (*H)(dx,H_dx);
+             else
+                hess(x,dx,H_dx);
+         }
+
+         // The constructor determines whether we really need to build
+         // a Hessian-vector product or if we use an internal approximation
+         ScalarValuedFunction(
+             const Messaging& msg,
+             const State::Unconstrained <X>& state
+         ) {
+            
+            // Determine the Hessian approximation
+            switch(state.H_type){
+                case Operators::Identity:
+                    H.reset(new typename Operators::Unconstrained <X>
+                        ::Identity());
+                    break;
+                case Operators::ScaledIdentity:
+                    H.reset(new typename Operators::Unconstrained <X>
+                        ::ScaledIdentity (state));
+                    break;
+                case Operators::BFGS:
+                    H.reset(new typename Operators::Unconstrained <X>
+                        ::BFGS(msg,state));
+                    break;
+                case Operators::SR1:
+                    H.reset(new typename Operators::Unconstrained <X>
+                        ::SR1(msg,state));
+                    break;
+                case Operators::External:
+                    break;
+                default:
+                    msg.error("Not a valid Hessian approximation.");
+                    break;
+            }
+        }
+
+        // Allow a derived class to deallocate memory
+        virtual ~ScalarValuedFunction() {}
+    };
+
+    // A simple vector valued function interface, f:X->Y
+    template <typename X,typename Y>
+    struct VectorValuedFunction {
+         // y=f(x)
+         virtual void operator () (
+             const typename X::Vector& x,
+             typename Y::Vector& y
+         ) const = 0;
+
+         // y=f'(x)dx 
+         virtual void p(
+             const typename X::Vector& x,
+             const typename X::Vector& dx,
+             typename Y::Vector& y
+         ) const = 0;
+
+         // z=f'(x)*dy
+         virtual void ps(
+             const typename X::Vector& x,
+             const typename Y::Vector& dy,
+             typename X::Vector& z
+         ) const= 0;
+         
+         // z=(f''(x)dx)*dy
+         virtual void pps(
+             const typename X::Vector& x,
+             const typename X::Vector& dx,
+             const typename Y::Vector& dy,
+             typename X::Vector& z
+         ) const = 0;
+         
+         // Allow a derived class to deallocate memory
+         virtual ~VectorValuedFunction() {}
+    };
+
+    template <typename Domain>
+    struct Cone {
+        // Jordan product, z <- x o y
+        virtual void prod(
+            const typename Domain::Vector& x,
+            const typename Domain::Vector& y,
+            typename Domain::Vector& z
+        ) const = 0;
+
+        // Identity element, x <- e such that x o e = x
+        virtual void id(typename Domain::Vector& x) const = 0;
+
+        // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y
+        virtual void linv(
+            const typename Domain::Vector& x,
+            const typename Domain::Vector& y,
+            typename Domain::Vector& z
+        ) const = 0;
+        
+        // Line-search, srch <- alpha where max(alpha >=0 : h(x+alpha dx) >=0).
+        // In the case where this number is infinite, set alpha=Real(-1.).
+        virtual typename Domain::Real srch(
+            const typename Domain::Vector& x,
+            const typename Domain::Vector& dx
+        ) const = 0;
+    };
+
+#if 0
+    // All the functions required by an optimization algorithm.  Note, this
+    // routine owns the memory for these operations.  
+    namespace Functions {
+        // Functions pertinent to an unconstrained optimization problem 
+        // 
+        // min_{x \in X} f(x)
+        //
+        // where f : X -> R
+        template <typename X,typename Real> 
+        struct Unconstrained {
+            // Objective function
+            std::auto_ptr <ScalarValuedFunction <X,Real> > f;
+
+            // Preconditioner for the Hessian of the objective
+            std::auto_ptr <Operator <X,X> > Minv;
+
+            // Setup the functions.  We include the state in case we need 
+            // to build the preconditioner by hand.
+            Unconstrained(
+                const Messaging& msg,
+                const State::Unconstrained <X>& state,
+                std::auto_ptr <ScalarValuedFunction <X,Real> > f_,
+                std::auto_ptr <Operator <X,X> > Minv_
+                    =std::auto_ptr <Operator <X,X> >()
+            ) {
+                // Determine the preconditioner
+                std::auto_ptr <Operator<VS,VS> > Minv;
+                switch(Minv_type){
+                    case Operators::Identity:
+                        Minv.reset(new Identity());
+                        break;
+                    case Operators::InvBFGS:
+                        Minv.reset(new InvBFGS(state));
+                        break;
+                    case Operators::InvSR1:
+                        Minv.reset(new InvSR1(state));
+                        break;
+                    case Operators::External:
+                        if(Minv_.get()==NULL)
+                            msg.error("An externally defined preconditioner "
+                                "must be provided explicitely.");
+                        Minv=Minv_;
+                        break;
+                    default:
+                        VS::error("Not a valid Hessian approximation.");
+                        break;
+                }
+
+                // Grab the objective function
+                if(f_.get()==NULL)
+                    msg.error("All optimization problems require an objective "
+                        "function.")
+                f=f_;
+            }
+        };
+    }
+    #endif
+
+    // Performs a 4-point finite difference directional derivative on
+    // a scalar valued function f : X->R.  In other words, <- f'(x)dx.  We
+    // accomplish this by doing a finite difference calculation on f.
+    template <typename X,typename Real>
+    Real directionalDerivative(
+        const ScalarValuedFunction<X,Real>& f,
+        const typename X::Vector& x,
+        const typename X::Vector& dx,
+        const typename X::Real& epsilon
+    ){
+        // Create some type shortcuts
+        typedef typename X::Vector X_Vector;
+        typedef typename X::Real X_Real;
+
+        // Create an element for x+eps dx, x-eps dx, etc. 
+        X_Vector x_op_dx; X::init(x,x_op_dx);
+
+        // f(x+eps dx)
+        X::copy(x,x_op_dx);
+        X::axpy(epsilon,dx,x_op_dx);
+        Real obj_xpes=f(x_op_dx);
+
+        // f(x-eps dx)
+        X::copy(x,x_op_dx);
+        X::axpy(-epsilon,dx,x_op_dx);
+        Real obj_xmes=f(x_op_dx);
+
+        // f(x+2 eps dx)
+        X::copy(x,x_op_dx);
+        X::axpy(X_Real(2.*epsilon),dx,x_op_dx);
+        Real obj_xp2es=f(x_op_dx);
+
+        // f(x-2 eps dx)
+        X::copy(x,x_op_dx);
+        X::axpy(X_Real(-2.*epsilon),dx,x_op_dx);
+        Real obj_xm2es=f(x_op_dx);
+
+        // Calculate the directional derivative and return it
+        Real dd=(obj_xm2es-Real(8.)*obj_xmes+Real(8.)*obj_xpes-obj_xp2es)
+            /(Real(12.)*epsilon);
+        return dd;
+    }
+    
+    // Performs a 4-point finite difference directional derivative on
+    // the gradient of a scalar valued function f : X->R.  In other words,
+    // dd ~= hess f(x) dx.  We accomplish this by doing a finite difference
+    // calculation on G where G(x)=grad f(x).
+    template <typename X,typename Real>
+    void directionalDerivative(
+        const ScalarValuedFunction<X,Real>& f,
+        const typename X::Vector& x,
+        const typename X::Vector& dx,
+        const typename X::Real& epsilon,
+        typename X::Vector& dd
+    ){
+        // Create some type shortcuts
+        typedef typename X::Vector X_Vector;
+        typedef typename X::Real X_Real;
+
+        // Create an element for x+eps dx, x-eps dx, etc. 
+        X_Vector x_op_dx; X::init(x,x_op_dx);
+
+        // Create an element to store the gradient at this point 
+        X_Vector fgrad_x_op_dx; X::init(x,fgrad_x_op_dx);
+
+        // Zero out the directional derivative
+        X::zero(dd);
+
+        // grad f(x+eps dx)
+        X::copy(x,x_op_dx);
+        X::axpy(epsilon,dx,x_op_dx);
+        f.grad(x_op_dx,fgrad_x_op_dx);
+        X::axpy(X_Real(8.),fgrad_x_op_dx,dd);
+
+        // grad f(x-eps dx)
+        X::copy(x,x_op_dx);
+        X::axpy(-epsilon,dx,x_op_dx);
+        f.grad(x_op_dx,fgrad_x_op_dx);
+        X::axpy(X_Real(-8.),fgrad_x_op_dx,dd);
+
+        // grad f(x+2 eps dx)
+        X::copy(x,x_op_dx);
+        X::axpy(X_Real(2.)*epsilon,dx,x_op_dx);
+        f.grad(x_op_dx,fgrad_x_op_dx);
+        X::axpy(X_Real(-1.),fgrad_x_op_dx,dd);
+
+        // grad f(x-2 eps dx)
+        X::copy(x,x_op_dx);
+        X::axpy(X_Real(-2.)*epsilon,dx,x_op_dx);
+        f.grad(x_op_dx,fgrad_x_op_dx);
+        X::axpy(X_Real(1.),fgrad_x_op_dx,dd);
+
+        // Finish the finite difference calculation 
+        X::scal(X_Real(1.)/(X_Real(12.)*epsilon),dd);
+    }
+
+    // Performs a 4-point finite difference directional derivative on
+    // a vector valued function f : X->Y. In other words, dd ~= f'(x)dx.
+    // We accomplish this by doing a finite difference calculation on f.
+    template <class X,class Y>
+    void directionalDerivative(
+        const VectorValuedFunction<X,Y>& f,
+        const typename X::Vector& x,
+        const typename X::Vector& dx,
+        const typename X::Real& epsilon,
+        typename Y::Vector& dd
+    ){
+        // Create some type shortcuts
+        typedef typename X::Vector X_Vector;
+        typedef typename X::Real X_Real;
+        typedef typename Y::Vector Y_Vector;
+        typedef typename Y::Real Y_Real;
+
+        // Create an element for x+eps dx, x-eps dx, etc. 
+        X_Vector x_op_dx; X::init(x,x_op_dx);
+
+        // Create an element for f(x+eps dx), etc.
+        Y_Vector f_x_op_dx; Y::init(dd,f_x_op_dx);
+        
+        // Zero out the directional derivative
+        Y::zero(dd);
+
+        // f(x+eps dx)
+        X::copy(x,x_op_dx);
+        X::axpy(epsilon,dx,x_op_dx);
+        f(x_op_dx,f_x_op_dx);
+        Y::axpy(Y_Real(8.),f_x_op_dx,dd);
+
+        // f(x-eps dx)
+        X::copy(x,x_op_dx);
+        X::axpy(-epsilon,dx,x_op_dx);
+        f(x_op_dx,f_x_op_dx);
+        Y::axpy(Y_Real(-8.),f_x_op_dx,dd);
+
+        // f(x+2 eps dx)
+        X::copy(x,x_op_dx);
+        X::axpy(X_Real(2.)*epsilon,dx,x_op_dx);
+        f(x_op_dx,f_x_op_dx);
+        Y::axpy(Y_Real(-1.),f_x_op_dx,dd);
+
+        // f(x-2 eps dx)
+        X::copy(x,x_op_dx);
+        X::axpy(X_Real(-2.)*epsilon,dx,x_op_dx);
+        f(x_op_dx,f_x_op_dx);
+        Y::axpy(Y_Real(1.),f_x_op_dx,dd);
+
+        // Finish the finite difference calculation 
+        Y::scal(Y_Real(1.)/(Y_Real(12.)*epsilon),dd);
+    }
+    
+    // Performs a 4-point finite difference directional derivative on
+    // the second derivative-adjoint of a vector valued function. In other
+    // words, dd ~= (f''(x)dx)*dy.  In order to calculate this, we do a
+    // finite difference approximation using g(x)=f'(x)*dy.  Therefore,
+    // the error in the approximation should be in the dx piece.
+    template <class X,class Y>
+    void directionalDerivative(
+        const VectorValuedFunction<X,Y>& f,
+        const typename X::Vector& x,
+        const typename X::Vector& dx,
+        const typename Y::Vector& dy,
+        const typename X::Real& epsilon,
+        typename Y::Vector& dd
+    ){
+        // Create some type shortcuts
+        typedef typename X::Vector X_Vector;
+        typedef typename X::Real X_Real;
+        typedef typename Y::Vector Y_Vector;
+        typedef typename Y::Real Y_Real;
+
+        // Create an element for x+eps dx, x-eps dx, etc. 
+        X_Vector x_op_dx; X::init(x,x_op_dx);
+
+        // Create an element for f'(x+eps dx)*dy, etc.
+        Y_Vector fps_xopdx_dy; Y::init(dd,fps_xopdx_dy);
+
+        // Zero out the directional derivative
+        Y::zero(dd);
+
+        // f'(x+eps dx)*dy
+        X::copy(x,x_op_dx);
+        X::axpy(epsilon,dx,x_op_dx);
+        f.ps(x_op_dx,dy,fps_xopdx_dy);
+        Y::axpy(Y_Real(8.),fps_xopdx_dy,dd);
+
+        // f'(x-eps dx)*dy
+        X::copy(x,x_op_dx);
+        X::axpy(-epsilon,dx,x_op_dx);
+        f.ps(x_op_dx,dy,fps_xopdx_dy);
+        Y::axpy(Y_Real(-8.),fps_xopdx_dy,dd);
+
+        // f'(x+2 eps dx)*dy
+        X::copy(x,x_op_dx);
+        X::axpy(X_Real(2.)*epsilon,dx,x_op_dx);
+        f.ps(x_op_dx,dy,fps_xopdx_dy);
+        Y::axpy(Y_Real(-1.),fps_xopdx_dy,dd);
+
+        // f'(x-2 eps dx)*dy
+        X::copy(x,x_op_dx);
+        X::axpy(X_Real(-2.)*epsilon,dx,x_op_dx);
+        f.ps(x_op_dx,dy,fps_xopdx_dy);
+        Y::axpy(Y_Real(1.),fps_xopdx_dy,dd);
+
+        // Finish the finite difference calculation 
+        Y::scal(Y_Real(1.)/(Y_Real(12.)*epsilon),dd);
+    }
+
+    // Performs a finite difference test on the gradient of f where  
+    // f : X->R is scalar valued.  In other words, we check grad f using f.
+    template <typename X,typename Real>
+    void gradientCheck(
+        const Messaging& msg,
+        const ScalarValuedFunction<X,Real>& f,
+        const typename X::Vector& x,
+        const typename X::Vector& dx
+    ) {
+        // Create some type shortcuts
+        typedef typename X::Vector X_Vector;
+        typedef typename X::Real X_Real;
+
+        // Calculate the gradient at the point x
+        X_Vector f_grad; X::init(x,f_grad);
+        f.grad(x,f_grad);
+
+        // Begin by calculating the directional derivative via the gradient
+        Real dd_grad=X::innr(f_grad,dx);
+
+        // Compute an ensemble of finite difference tests in a linear manner
+        msg.print("Finite difference test on the gradient.",1);
+        for(int i=-2;i<=5;i++){
+            X_Real epsilon=pow(X_Real(.1),i);
+            Real dd=directionalDerivative <> (f,x,dx,epsilon);
+
+            std::stringstream ss;
+            if(i<0) ss << "The relative difference (1e+" << -i <<  "): ";
+            else ss << "The relative difference (1e-" << i << "): ";
+            ss << std::scientific << std::setprecision(16)
+                << fabs(dd_grad-dd)/(Real(1e-16)+fabs(dd_grad));
+            msg.print(ss.str(),1);
+        }
+    }
+    
+    // Performs a finite difference test on the hessian of f where f : X->R
+    // is scalar valued.  In other words, we check hess f dx using grad f.
+    template <typename X,typename Real>
+    void hessianCheck(
+        const Messaging& msg,
+        const ScalarValuedFunction<X,Real>& f,
+        const typename X::Vector& x,
+        const typename X::Vector& dx
+    ) {
+        // Create some type shortcuts
+        typedef typename X::Vector X_Vector;
+        typedef typename X::Real X_Real;
+
+        // Create an element for the residual between the directional derivative
+        // computed Hessian-vector product and the true Hessian-vector product.
+        X_Vector res; X::init(x,res);
+
+        // Calculate hess f in the direction dx.  
+        X_Vector hess_f_dx; X::init(x,hess_f_dx);
+        f.hessvec(x,dx,hess_f_dx);
+
+        // Compute an ensemble of finite difference tests in a linear manner
+        msg.print("Finite difference test on the Hessian.",1);
+        for(int i=-2;i<=5;i++){
+
+            // Calculate the directional derivative
+            X_Real epsilon=pow(X_Real(.1),i);
+            directionalDerivative <> (f,x,dx,epsilon,res);
+
+            // Determine the residual.  Store in res.
+            X::axpy(X_Real(-1.),hess_f_dx,res);
+
+            // Determine the relative error
+            Real rel_err=X::norm(res)/(X_Real(1e-16)+X::norm(hess_f_dx));
+
+            // Print out the differences
+            std::stringstream ss;
+            if(i<0) ss << "The relative difference (1e+" << -i <<  "): ";
+            else ss << "The relative difference (1e-" << i << "): ";
+            ss << std::scientific << std::setprecision(16) << rel_err; 
+            msg.print(ss.str(),1);
+        }
+    }
+    
+    // This tests the symmetry of the Hessian.  We accomplish this by
+    // comparing <H(x)dx,dxx> to <dx,H(x)dxx>.
+    template <typename X,typename Real>
+    void hessianSymmetryCheck(
+        const Messaging& msg,
+        const ScalarValuedFunction<X,Real>& f,
+        const typename X::Vector& x,
+        const typename X::Vector& dx,
+        const typename X::Vector& dxx
+    ) {
+        // Create some type shortcuts
+        typedef typename X::Vector X_Vector;
+        typedef typename X::Real X_Real;
+
+        // Calculate hess f in the direction dx.  
+        X_Vector H_x_dx; X::init(x,H_x_dx);
+        f.hessvec(x,dx,H_x_dx);
+        
+        // Calculate hess f in the direction dxx.  
+        X_Vector H_x_dxx; X::init(x,H_x_dxx);
+        f.hessvec(x,dxx,H_x_dxx);
+        
+        // Calculate <H(x)dx,dxx>
+        X_Real innr_Hxdx_dxx = X::innr(H_x_dx,dxx);
+        
+        // Calculate <dx,H(x)dxx>
+        X_Real innr_dx_Hxdxx = X::innr(dx,H_x_dxx);
+
+        // Determine the absolute difference between the two.  This really
+        // should be zero.
+        Real diff=fabs(innr_Hxdx_dxx-innr_dx_Hxdxx);
+
+        // Send a message with the result
+        msg.print("Symmetry test on the Hessian of a scalar valued "
+            "function.",1);
+        std::stringstream ss;
+        ss << "The absolute err. between <H(x)dx,dxx> and <dx,H(x)dxx>: "
+            << std::scientific << std::setprecision(16) << diff;
+        msg.print(ss.str(),1);
+    }
+
+    // Performs a finite difference test on the derivative of a vector-valued
+    // function f.  Specifically, we check f'(x)dx using f.
+    template <typename X,typename Y>
+    void derivativeCheck(
+        const Messaging& msg,
+        const VectorValuedFunction<X,Y>& f,
+        const typename X::Vector& x,
+        const typename X::Vector& dx,
+        const typename Y::Vector& y
+    ) {
+        // Create some type shortcuts
+        typedef typename X::Vector X_Vector;
+        typedef typename X::Real X_Real;
+        typedef typename Y::Vector Y_Vector;
+        typedef typename Y::Real Y_Real;
+
+        // Create an element for the residual between the directional derivative
+        // and the true derivative.
+        Y_Vector res; Y::init(y,res);
+
+        // Calculate f'(x)dx 
+        Y_Vector fp_x_dx; Y::init(y,fp_x_dx);
+        f.p(x,dx,fp_x_dx);
+
+        // Compute an ensemble of finite difference tests in a linear manner
+        msg.print("Finite difference test on the derivative of a vector-valued "
+            "function.",1);
+        for(int i=-2;i<=5;i++){
+
+            // Calculate the directional derivative
+            X_Real epsilon=pow(X_Real(.1),i);
+            directionalDerivative <> (f,x,dx,epsilon,res);
+
+            // Determine the residual.  Store in res.
+            Y::axpy(Y_Real(-1.),fp_x_dx,res);
+
+            // Determine the relative error
+            Y_Real rel_err=Y::norm(res)/(Y_Real(1e-16)+Y::norm(fp_x_dx));
+
+            // Print out the differences
+            std::stringstream ss;
+            if(i<0) ss << "The relative difference (1e+" << -i <<  "): ";
+            else ss << "The relative difference (1e-" << i << "): ";
+            ss << std::scientific << std::setprecision(16) << rel_err; 
+            msg.print(ss.str(),1);
+        }
+    }
+
+    // Performs an adjoint check on the first-order derivative of a vector
+    // valued function.  In other words, we check that
+    // <f'(x)dx,dy> = <dx,f'(x)*dy>
+    template <typename X,typename Y>
+    void derivativeAdjointCheck(
+        const Messaging& msg,
+        const VectorValuedFunction<X,Y>& f,
+        const typename X::Vector& x,
+        const typename X::Vector& dx,
+        const typename Y::Vector& dy
+    ) {
+        // Create some type shortcuts
+        typedef typename X::Vector X_Vector;
+        typedef typename X::Real X_Real;
+        typedef typename Y::Vector Y_Vector;
+        typedef typename Y::Real Y_Real;
+
+        // Check that both X and Y use the same real time.  Mostly, we
+        // need to compare two different inner products and insuring
+        // that they're the same is the simplest way to guarantee compatibility.
+        if(!is_same<X_Real,Y_Real>::eval())
+            msg.error("The real type for the spaces X and Y in "
+                "derivativeAdjointCheck must be the same.");
+
+        // At this point, since X_Real and Y_Real are the same, just use Real
+        typedef X_Real Real;
+
+        // Calculate f'(x)dx 
+        Y_Vector fp_x_dx; Y::init(dy,fp_x_dx);
+        f.p(x,dx,fp_x_dx);
+        
+        // Calculate f'(x)*dy 
+        X_Vector fps_x_dy; X::init(dx,fps_x_dy);
+        f.ps(x,dy,fps_x_dy);
+
+        // Calculate <f'(x)dx,dy>
+        Real innr_fpxdx_dy = Y::innr(fp_x_dx,dy);
+
+        // Calculate <dx,f'(x)*dy>
+        Real innr_dx_fpsxdy = X::innr(dx,fps_x_dy);
+
+        // Determine the absolute difference between the two.  This really
+        // should be zero.
+        Real diff=fabs(innr_fpxdx_dy-innr_dx_fpsxdy);
+
+        // Send a message with the result
+        msg.print("Adjoint test on the first derivative of a vector valued "
+            "function.",1);
+        std::stringstream ss;
+        ss << "The absolute err. between <f'(x)dx,dy> and <dx,f'(x)*dy>: "
+            << std::scientific << std::setprecision(16) << diff;
+        msg.print(ss.str(),1);
+    }
+
+    // Performs a finite difference test on the second-derivative-adjoint of a
+    // vector-valued function f.  Specifically, we check (f''(x)dx)*dy using
+    // f'(x)*dy.
+    template <typename X,typename Y>
+    void secondDerivativeCheck(
+        const Messaging& msg,
+        const VectorValuedFunction<X,Y>& f,
+        const typename X::Vector& x,
+        const typename X::Vector& dx,
+        const typename Y::Vector& dy
+    ) {
+        // Create some type shortcuts
+        typedef typename X::Vector X_Vector;
+        typedef typename X::Real X_Real;
+        typedef typename Y::Vector Y_Vector;
+        typedef typename Y::Real Y_Real;
+
+        // Create an element for the residual between the directional derivative
+        // and the true derivative.
+        X_Vector res; X::init(x,res);
+
+        // Calculate (f''(x)dx)*dy
+        X_Vector fpps_x_dx_dy; X::init(dy,fpps_x_dx_dy);
+        f.pps(x,dx,dy,fpps_x_dx_dy);
+
+        // Compute an ensemble of finite difference tests in a linear manner
+        msg.print("Finite difference test on the 2nd-derivative adj. "
+            "of a vector-valued function.",1);
+        for(int i=-2;i<=5;i++){
+
+            // Calculate the directional derivative
+            X_Real epsilon=pow(X_Real(.1),i);
+            directionalDerivative <> (f,x,dx,dy,epsilon,res);
+
+            // Determine the residual.  Store in res.
+            X::axpy(X_Real(-1.),fpps_x_dx_dy,res);
+
+            // Determine the relative error
+            X_Real rel_err=X::norm(res)/(X_Real(1e-16)+X::norm(fpps_x_dx_dy));
+
+            // Print out the differences
+            std::stringstream ss;
+            if(i<0) ss << "The relative difference (1e+" << -i <<  "): ";
+            else ss << "The relative difference (1e-" << i << "): ";
+            ss << std::scientific << std::setprecision(16) << rel_err; 
+            msg.print(ss.str(),1);
+        }
+    }
+
+#if 0
+    // This contains the different algorithms used for optimization 
+    namespace Algorithms {
+
+        // Unconstrained optimization 
+        template <typename X>
+        struct Unconstrained {
+
+            // Checks a set of stopping conditions
+            static StoppingCondition::t checkStop(
+                const State::Unconstrained <X>& state
+            ){
+                // Create some type shortcuts
+                typedef typename X::Real Real;
+
+                // Create some shortcuts
+                const Real& norm_g=state.norm_g;
+                const Real& norm_gtyp=state.norm_gtyp;
+                const Real& norm_s=state.norm_s;
+                const Real& norm_styp=state.norm_styp;
+                const int& iter=state.iter;
+                const int& iter_max=state.iter_max;
+                const Real& eps_g=state.eps_g;
+                const Real& eps_s=state.eps_s;
+
+                // Check whether the norm is small relative to some typical
+                // gradient
+                if(norm_g < eps_g*norm_gtyp)
+                    return StoppingCondition::RelativeGradientSmall;
+
+                // Check whether the change in the step length has become too
+                // small relative to some typical step
+                if(norm_s < eps_s*norm_styp)
+                    return StoppingCondition::RelativeStepSmall;
+
+                // Check if we've exceeded the number of iterations
+                if(iter>=iter_max)
+                    return StoppingCondition::MaxItersExceeded;
+
+                // Otherwise, return that we're not converged 
+                return StoppingCondition::NotConverged;
+            }
+        
+            // Computes the truncated-CG (Steihaug-Toint) trial step for
+            // trust-region algorithms
+            static void truncatedCG(
+                const State::Unconstrained <X>& state
+                const Operator<X,X>& Minv,
+                const Operator<X,X>& H
+            ){
+
+                // Create shortcuts to some elements in the state
+                const Vector& u=*(state.u.begin());
+                const Vector& g=*(state.g.begin());
+                const Real& delta=state.delta;
+                const Real& eps_cg=state.eps_krylov;
+                const unsigned int& iter_max=state.krylov_iter_max;
+                Vector& s_k=*(state.s.begin());
+                unsigned int& iter=state.krylov_iter;
+                unsigned int& iter_total=state.krylov_iter_total;
+                KrylovStop::t& krylov_stop=state.krylov_stop;
+                Real& rel_err=state.krylov_rel_err;
+
+                // Allocate memory for temporaries that we need
+                Vector g_k; X::init(u,g_k);
+                Vector v_k; X::init(u,v_k);
+                Vector p_k; X::init(u,p_k);
+                Vector H_pk; X::init(u,H_pk);
+
+                // Allocate memory for a few constants that we need to track 
+                Real kappa;
+                Real sigma;
+                Real alpha(0.);
+                Real beta;
+                Real norm_sk_M2,norm_skp1_M2(0.),norm_pk_M2,norm_g;
+                Real inner_sk_M_pk,inner_gk_vk,inner_gkp1_vkp1;
+
+                // Initialize our variables
+                X::scal(Real(0.),s_k);                // s_0=0
+                X::copy(g,g_k);                        // g_0=g
+                Minv(g_k,v_k);                        // v_0=inv(M)*g_0
+                X::copy(v_k,p_k);                        // p_0=-v_0
+                X::scal(Real(-1.),p_k);
+                norm_sk_M2=Real(0.);                // || s_0 ||_M^2 = 0
+                norm_pk_M2=X::innr(g_k,v_k);        // || p_0 ||_M^2 = <g_0,v_0>        
+                inner_sk_M_pk=Real(0.);                // <s_0,M p_0>=0
+                inner_gk_vk=norm_pk_M2;                // <g_0,v_0> = || p_0 ||_M^2
+                norm_g=X::innr(g,g);                // || g ||
+
+                // Run truncated CG until we hit our max iteration or we converge
+                iter_total++;
+                for(iter=1;iter<=iter_max;iter++,iter_total++){
+                    // H_pk=H p_k
+                    H(p_k,H_pk);
+
+                    // Compute the curvature for this direction.  kappa=<p_k,H p_k>
+                    kappa=X::innr(p_k,H_pk);
+
+                    // If we have negative curvature, don't bother with the next two
+                    // steps since we're going to exit and we won't need them.  
+                    if(kappa > 0){
+                        // Determine a trial point
+                        alpha = X::innr(g_k,v_k)/kappa;
+
+                        // || s_k+alpha_k p_k ||
+                        norm_skp1_M2=norm_sk_M2+Real(2.)*alpha*inner_sk_M_pk
+                            +alpha*alpha*norm_pk_M2;
+                    }
+
+                    // If we have negative curvature or our trial point is outside
+                    // the trust region radius, terminate truncated-CG and find our
+                    // final step.  We have the kappa!=kappa check in order to trap
+                    // NaNs.
+                    if(kappa <= 0 || norm_skp1_M2 >= delta*delta || kappa!=kappa){
+                        // sigma = positive root of || s_k + sigma p_k ||_M = delta
+                        sigma= (-inner_sk_M_pk + sqrt(inner_sk_M_pk*inner_sk_M_pk
+                            + norm_pk_M2*(delta*delta-norm_sk_M2)))/norm_pk_M2;
+
+                        // s_kp1=s_k+sigma p_k
+                        X::axpy(sigma,p_k,s_k);
+
+                        // Return a message as to why we exited
+                        if(kappa<=0 || kappa!=kappa)
+                            krylov_stop = KrylovStop::NegativeCurvature;
+                        else
+                            krylov_stop = KrylovStop::TrustRegionViolated;
+
+                        // Update the residual error for out output,
+                        // g_k=g_k+sigma Hp_k
+                        X::axpy(sigma,H_pk,g_k);
+
+                        // Exit the loop
+                        break;
+                    }
+
+                    // Take a step in the computed direction. s_k=s_k+alpha p_k
+                    X::axpy(alpha,p_k,s_k);
+
+                    // Update the norm of sk
+                    norm_sk_M2=norm_skp1_M2;
+                    
+                    // g_k=g_k+alpha H p_k
+                    X::axpy(alpha,H_pk,g_k);
+
+                    // Test whether we've converged CG
+                    rel_err=sqrt(X::innr(g_k,g_k)) / (Real(1e-16)+norm_g);
+                    if(rel_err <= eps_cg){
+                        krylov_stop = KrylovStop::RelativeErrorSmall;
+                        break;
+                    }
+
+                    // v_k = Minv g_k
+                    Minv(g_k,v_k);
+
+                    // Compute the new <g_kp1,v_kp1>
+                    inner_gkp1_vkp1=X::innr(g_k,v_k);
+
+                    // beta = <g_kp1,v_kp1> / <g_k,v_k>
+                    beta= inner_gkp1_vkp1 / inner_gk_vk;
+
+                    // Store the new inner product between g_k and p_k
+                    inner_gk_vk=inner_gkp1_vkp1;
+                    
+                    // Find the new search direction.  p_k=-v_k + beta p_k
+                    X::scal(beta,p_k);
+                    X::axpy(Real(-1.),v_k,p_k);
+
+                    // Update the inner product between s_k and M p_k
+                    inner_sk_M_pk=beta*(inner_sk_M_pk+alpha*norm_pk_M2);
+
+                    // Update the norm of p_k
+                    norm_pk_M2=inner_gk_vk+beta*beta*norm_pk_M2; 
+
+                    // Print out diagnostics
+                    printKrylov(state);
+                }
+
+                // Check if we've exceeded the maximum iteration
+                if(iter>iter_max){
+                    krylov_stop=KrylovStop::MaxItersExceeded;
+                    iter--; iter_total--;
+                }
+               
+                // Grab the relative error in the CG solution
+                rel_err=sqrt(X::innr(g_k,g_k)) / (Real(1e-16)+norm_g);
+                    
+                // Print out diagnostics
+                if(iter!=iter_max) printKrylov(state);
+            }
+        };
+    }
+#endif
+
 #if 0 
 
     // The core routines for peopt
@@ -2681,598 +3436,7 @@ namespace peopt{
         typedef typename Spaces::MultIneq MultIneq;
         typedef typename State <Spaces> State;
         typedef typename Functions Functions; 
-
-
-        // A function that has free reign to manipulate or analyze the state.
-        // This should be used cautiously.
-        class StateManipulator {
-        public:
-            // Application
-            virtual void operator () (State& state) {};
-
-            // Allow the derived class to deallocate memory
-            virtual ~StateManipulator() {}
-        };
-
-        // The identity operator 
-        class Identity : public Operator <Var,Var> {
-        public:
-            void operator () (const Var& dx, Var& result) const{
-                VS::copy(dx,result);
-            }
-        };
-
-        // The scaled identity Hessian approximation.  Specifically, use use
-        // norm(g) / delta_max I.
-        class ScaledIdentity : public Operator <Var,Var> {
-        private:
-            const Real& norm_g;
-            const Real& delta_max;
-        public:
-            ScaledIdentity(State& state)
-                : norm_g(state.norm_g), delta_max(state.delta_max) {};
-
-            void operator () (const Var& dx, Var& result) const{
-                VS::copy(dx,result);
-                VS::scal(norm_g/delta_max,result);
-            }
-        };
-
-        // The BFGS Hessian approximation.  
-        /* Note, the formula we normally see for BFGS denotes the inverse
-            Hessian approximation.  This is not the inverse, but the true
-            Hessian approximation. */ 
-        class BFGS : public Operator <VS,VS> {
-        private:
-            const List& oldY;
-            const List& oldS;
-        public:
-            BFGS(const State& state) : oldY(state.oldY), oldS(state.oldS) {};
-
-            // Operator interface
-            /* It's not entirely clear to me what the best implementation for
-                this method really is.  In the following implementation, we
-                require an additional k work elements where k is the number of
-                stored gradient and position differences.  It's possible to
-                reduce this to 1 or 2, but we need to compute redundant
-                information.  It's also possible to implementation the compact
-                representation, see "Representations of quasi-Newton matrices
-                and their use in limited memory methods" from Byrd, Nocedal,
-                and Schnabel.  The problem with that algorithm is that is
-                requires machinery such as linear system solves that we don't
-                current have.  It also works much better with matrices or
-                multivectors of data and we don't require the user to provide
-                these abstractions. */
-            void operator () (const Vector& p, Vector& result) const{
-
-                // Check that the number of stored gradient and trial step
-                // differences is the same.
-                if(oldY.size() != oldS.size())
-                    VS::error("In the BFGS Hessian approximation, the number "
-                        "of stored gradient differences must equal the number "
-                        "of stored trial step differences.");
-
-                // Allocate memory for work
-                List work(oldY.size(),p);
-
-                // If we have no vectors in our history, we return the direction
-                VS::copy(p,result);
-                if(oldY.size() == 0) return;
-
-                // As a safety check, insure that the inner product between all
-                // the (s,y) pairs is positive
-                ListConstIterator y0=oldY.begin();
-                ListConstIterator s0=oldS.begin();
-                while(y0!=oldY.end()){
-                    Real inner_y_s=VS::innr(*y0++,*s0++);
-                    if(inner_y_s<0)
-                        VS::error("Detected a (s,y) pair in BFGS that possesed "
-                        "a nonpositive inner product");
-                }
-
-                // Othwerwise, we copy all of the trial step differences into
-                // the work space
-                ListIterator Bisj_iter=work.begin();
-                ListConstIterator sk_iter=oldS.begin();
-                while(Bisj_iter!=work.end())
-                    VS::copy((*sk_iter++),(*Bisj_iter++));
-
-                // Keep track of the element Bisi
-                ListConstIterator Bisi_iter=work.end(); Bisi_iter--;
-
-                // Keep iterating until Bisi equals the first element in the
-                // work list. This means we have computed B1s1, B2s2, ..., Bksk.
-                Bisj_iter=work.begin();
-                ListConstIterator si_iter=oldS.end(); si_iter--;
-                ListConstIterator yi_iter=oldY.end(); yi_iter--;
-                ListConstIterator sj_iter=oldS.begin();
-                while(1){
-
-                    // Create some reference to our iterators that are easier to
-                    // work with
-                    const Vector& si=*si_iter;
-                    const Vector& yi=*yi_iter;
-                    const Vector& Bisi=*Bisi_iter;
-
-                    // Determine <Bisi,si>
-                    Real inner_Bisi_si=VS::innr(Bisi,si);
-
-                    // Determine <yi,si>
-                    Real inner_yi_si=VS::innr(yi,si);
-
-                    // Determine <si,Bip>
-                    Real inner_si_Bip=VS::innr(si,result);
-
-                    // Determine <yi,p>
-                    Real inner_yi_p=VS::innr(yi,p);
-
-                    // Determine -<si,Bip>/<Bisi,si> Bisi + Bip.  Store in Bip.
-                    // This will become B_{i+1}p.
-                    VS::axpy(-inner_si_Bip/inner_Bisi_si,Bisi,result);
-
-                    // Determine <yi,p>/<yi,si> yi + w where we calculated w
-                    // in the line above.  This completes the calculation of
-                    // B_{i+1}p
-                    VS::axpy(inner_yi_p/inner_yi_si,yi,result);
-
-                    // Check whether or not we've calculated B_{i+1}p for the
-                    // last time
-                    if(Bisi_iter==work.begin()) break;
-
-                    // Begin the calculation of B_{i+1}sj
-                    while(si_iter!=sj_iter){
-                        // Add some additional references to the iterators 
-                        const Vector& sj=*sj_iter;
-                        Vector& Bisj=*Bisj_iter;
-
-                        // Determine <si,Bisj>
-                        Real inner_si_Bisj=VS::innr(si,Bisj);
-
-                        // Determine <yi,sj>
-                        Real inner_yi_sj=VS::innr(yi,sj);
-
-                        // Determine -<si,Bisj>/<Bisi,si> Bisi + Bisj
-                        // Store in Bisj.  This will become B_{i+1}sj.
-                        VS::axpy(-inner_si_Bisj/inner_Bisi_si,Bisi,Bisj);
-
-                        // Determine <yi,sj>/<yi,si> yi + w where we calculated 
-                        // w in the line above.  This completes the
-                        // computation of B_{i+1}sj.
-                        VS::axpy(inner_yi_sj/inner_yi_si,yi,Bisj);
-
-                        // Change j to be j-1 and adjust Bisj and sj accordingly
-                        sj_iter++;
-                        Bisj_iter++;
-                    }
-
-                    // At this point, we've computed all Bisj entries on the
-                    // current row.  As a result, we increment i and set j to
-                    // be k.  This requires us to modify si, yi, sj, Bisj, and
-                    // Bisi accordingly.
-                    
-                    // Increment i and adjust si
-                    si_iter--;
-
-                    // Increment i and adjust yi
-                    yi_iter--;
-
-                    // Set j=k and adjust sj
-                    sj_iter=oldS.begin();
-
-                    // Set j=k, increment i, and adjust Bisj
-                    Bisj_iter=work.begin();
-
-                    // Increment i and adjust Bisi
-                    Bisi_iter--;
-                }
-            }
-        };
-
-        // The SR1 Hessian approximation.  
-        /* The oldY and oldS lists have the same structure as the BFGS
-            preconditioner. */
-        class SR1 : public Operator <VS,VS> {
-        private:
-            const List& oldY;
-            const List& oldS;
-        public:
-            SR1 (const State& state) : oldY(state.oldY), oldS(state.oldS) {};
-            SR1 (const typename DataStructures <VS>::List& oldY_,
-                 const typename DataStructures <VS>::List& oldS_)
-                 : oldY(oldY_), oldS(oldS_) {};
-            
-            // Operator interface
-            void operator () (const Vector& p,Vector& result) const{
-
-                // Check that the number of stored gradient and trial step
-                // differences is the same.
-                if(oldY.size() != oldS.size())
-                    VS::error("In the SR1 Hessian approximation, the number "
-                        "of stored gradient differences must equal the number "
-                        "of stored trial step differences.");
-
-                // Allocate memory for work
-                List work(oldY.size(),p);
-
-                // If we have no vectors in our history, we return the direction
-                VS::copy(p,result);
-                if(oldY.size() == 0) return;
-
-                // Othwerwise, we copy all of the trial step differences into
-                // the work space
-                ListIterator Bisj_iter=work.begin();
-                ListConstIterator sk_iter=oldS.begin();
-                while(Bisj_iter!=work.end())
-                    VS::copy((*sk_iter++),(*Bisj_iter++));
-
-                // Keep track of the element Bisi
-                ListConstIterator Bisi_iter=work.end(); Bisi_iter--;
-
-                // Keep iterating until Bisi equals the first element in the
-                // work list. This means we have computed B1s1, B2s2, ..., Bksk.
-                Bisj_iter=work.begin();
-                ListConstIterator si_iter=oldS.end(); si_iter--;
-                ListConstIterator yi_iter=oldY.end(); yi_iter--;
-                ListConstIterator sj_iter=oldS.begin();
-                while(1){
-
-                    // Create some reference to our iterators that are easier to
-                    // work with
-                    const Vector& si=*si_iter;
-                    const Vector& yi=*yi_iter;
-                    const Vector& Bisi=*Bisi_iter;
-
-                    // Determine <yi,p>
-                    Real inner_yi_p=VS::innr(yi,p);
-
-                    // Determine <Bisi,p>
-                    Real inner_Bisi_p=VS::innr(Bisi,p);
-
-                    // Determine <yi,si>
-                    Real inner_yi_si=VS::innr(yi,si);
-
-                    // Determine <Bisi,si>
-                    Real inner_Bisi_si=VS::innr(Bisi,si);
-
-                    // Determine (<yi,p>-<Bisi,p>) / (<y_i,s_i>-<Bisi,si>).
-                    // Store in alpha
-                    Real alpha=
-                        (inner_yi_p-inner_Bisi_p)/(inner_yi_si-inner_Bisi_si);
-
-                    // Determine alpha y_i + Bip.  Store in result (which
-                    // accumulate Bip).
-                    VS::axpy(alpha,yi,result);
-
-                    // Then, add -alpha*Bisi to this result
-                    VS::axpy(-alpha,Bisi,result);
-
-                    // Check whether or not we've calculated B_{i+1}p for the
-                    // last time
-                    if(Bisi_iter==work.begin()) break;
-
-                    // Begin the calculation of B_{i+1}sj
-                    while(si_iter!=sj_iter){
-                        // Add some additional references to the iterators 
-                        const Vector& sj=*sj_iter;
-                        Vector& Bisj=*Bisj_iter;
-
-                        // Determine <yi,sj>
-                        Real inner_yi_sj=VS::innr(yi,sj);
-
-                        // Determine <Bisi,sj>
-                        Real inner_Bisi_sj=VS::innr(Bisi,sj);
-
-                        // Determine (<yi,p>-<Bisi,p>) / (<y_i,s_i>-<Bisi,si>).
-                        // Store in beta 
-                        Real beta= (inner_yi_sj-inner_Bisi_sj) /
-                            (inner_yi_si-inner_Bisi_si);
-                    
-                        // Determine beta y_i + Bisj.  Store in Bisj. 
-                        VS::axpy(beta,yi,Bisj);
-
-                        // Add -beta*Bisi to this result
-                        VS::axpy(-beta,Bisi,Bisj);
-
-                        // Change j to be j-1 and adjust Bisj and sj accordingly
-                        sj_iter++;
-                        Bisj_iter++;
-                    }
-
-                    // At this point, we've computed all Bisj entries on the
-                    // current row.  As a result, we increment i and set j to
-                    // be k.  This requires us to modify si, yi, sj, Bisj, and
-                    // Bisi accordingly.
-                    
-                    // Increment i and adjust si
-                    si_iter--;
-
-                    // Increment i and adjust yi
-                    yi_iter--;
-
-                    // Set j=k and adjust sj
-                    sj_iter=oldS.begin();
-
-                    // Set j=k, increment i, and adjust Bisj
-                    Bisj_iter=work.begin();
-
-                    // Increment i and adjust Bisi
-                    Bisi_iter--;
-                }
-            }
-        };
-
-        // The inverse BFGS operator 
-        /* The oldY list has the following structure
-            oldY[0] = y_k = grad J(u_k) - grad J(u_{k-1})
-            oldY[1] = y_{k-1} = grad J(u_{k-1}) - grad J(u_{k-2})
-            The oldS list has the following structure
-            oldS[0] = s_k = u_k - u_k{-1}
-            oldS[1] = s_{k-1} = u_{k-1} - u_k{k-2} */
-        class InvBFGS : public Operator <VS,VS> {
-        private:
-            const List& oldY;
-            const List& oldS;
-        public:
-            InvBFGS(const State& state) : oldY(state.oldY), oldS(state.oldS) {};
-            
-            // Operator interface
-            void operator () (const Vector& p,Vector& result) const{
-
-                // Check that the number of stored gradient and trial step
-                // differences is the same.
-                if(oldY.size() != oldS.size())
-                    VS::error("In the inverse BFGS operator, the number "
-                        "of stored gradient differences must equal the number "
-                        "of stored trial step differences.");
-                
-                // As a safety check, insure that the inner product between all
-                // the (s,y) pairs is positive
-                ListConstIterator y0=oldY.begin();
-                ListConstIterator s0=oldS.begin();
-                while(y0!=oldY.end()){
-                    Real inner_y_s=VS::innr(*y0++,*s0++);
-                    if(inner_y_s<0)
-                        VS::error("Detected a (s,y) pair in the inverse BFGS"
-                        "operator that possesed a nonpositive inner product");
-                }
-
-                // Create two vectors to hold some intermediate calculations
-                std::vector <Real> alpha(oldY.size());
-                std::vector <Real> rho(oldY.size());
-
-                // Before we begin computing, copy p to our result 
-                VS::copy(p,result);
-
-                // In order to compute, we first iterate over all the stored
-                // element in the forward direction.  Then, we iterate over them
-                // backward.
-                ListConstIterator y_iter=oldY.begin();
-                ListConstIterator s_iter=oldS.begin();
-                int i=0;
-                while(y_iter != oldY.end()){
-                    // Find y_k, s_k, and their inner product
-                    const Vector& y_k=*(y_iter++);
-                    const Vector& s_k=*(s_iter++);
-                    rho[i]=Real(1.)/VS::innr(y_k,s_k);
-
-                    // Find rho_i <s_i,result>.  Store in alpha_i
-                    alpha[i]=rho[i]*VS::innr(s_k,result);
-
-                    // result = - alpha_i y_i + result 
-                    VS::axpy(-alpha[i],y_k,result);
-
-                    // Make sure we don't overwrite alpha and rho
-                    i++;
-                }
-
-                // Assume that H_0 is the identity operator (which may or may
-                // not work in Hilbert space)
-
-                // Now, let us iterate backward over our elements to complete
-                // the computation
-                while(y_iter != oldY.begin()){
-                    // Find y_k and s_k
-                    const Vector& s_k=*(--s_iter);
-                    const Vector& y_k=*(--y_iter);
-
-                    // beta=rho_i <y_i,result>
-                    Real beta= rho[--i] * VS::innr(y_k,result);
-
-                    // result=  (alpha_i-beta) s_i + result
-                    VS::axpy(alpha[i]-beta,s_k,result);
-                }
-            }
-        };
         
-        // The inverse SR1 operator.  
-        /* In this definition, we take a shortcut and simply use the SR1
-            Hessian approximation where we swap Y and S.  The oldY and oldS
-            lists have the same structure as the BFGS operator. */
-        class InvSR1 : public Operator <VS,VS> {
-        private:
-            SR1 sr1;
-        public:
-            InvSR1(State& state) : sr1(state.oldS,state.oldY) {};
-            void operator () (const Vector& p,Vector& result) const{
-                sr1(p,result);
-            }
-        };
-
-        // Checks a set of stopping conditions
-        static StoppingCondition::t checkStop(const State& state){
-            // Create some shortcuts
-            const Real& norm_g=state.norm_g;
-            const Real& norm_gtyp=state.norm_gtyp;
-            const Real& norm_s=state.norm_s;
-            const Real& norm_styp=state.norm_styp;
-            const int& iter=state.iter;
-            const int& iter_max=state.iter_max;
-            const Real& eps_g=state.eps_g;
-            const Real& eps_s=state.eps_s;
-
-            // Check whether the norm is small relative to some typical gradient
-            if(norm_g < eps_g*norm_gtyp)
-                return StoppingCondition::RelativeGradientSmall;
-
-            // Check whether the change in the step length has become too small
-            // relative to some typical step
-            if(norm_s < eps_s*norm_styp)
-                return StoppingCondition::RelativeStepSmall;
-
-            // Check if we've exceeded the number of iterations
-            if(iter>=iter_max)
-                return StoppingCondition::MaxItersExceeded;
-
-            // Otherwise, return that we're not converged 
-            return StoppingCondition::NotConverged;
-        }
-        
-        // Computes the truncated-CG (Steihaug-Toint) trial step for
-        // trust-region algorithms
-        static void truncatedCG(
-            State& state,
-            const Operator<VS,VS>& Minv,
-            const Operator<VS,VS>& H
-        ){
-
-            // Create shortcuts to some elements in the state
-            const Vector& u=*(state.u.begin());
-            const Vector& g=*(state.g.begin());
-            const Real& delta=state.delta;
-            const Real& eps_cg=state.eps_krylov;
-            const unsigned int& iter_max=state.krylov_iter_max;
-            Vector& s_k=*(state.s.begin());
-            unsigned int& iter=state.krylov_iter;
-            unsigned int& iter_total=state.krylov_iter_total;
-            KrylovStop::t& krylov_stop=state.krylov_stop;
-            Real& rel_err=state.krylov_rel_err;
-
-            // Allocate memory for temporaries that we need
-            Vector g_k; VS::init(u,g_k);
-            Vector v_k; VS::init(u,v_k);
-            Vector p_k; VS::init(u,p_k);
-            Vector H_pk; VS::init(u,H_pk);
-
-            // Allocate memory for a few constants that we need to track 
-            Real kappa;
-            Real sigma;
-            Real alpha(0.);
-            Real beta;
-            Real norm_sk_M2,norm_skp1_M2(0.),norm_pk_M2,norm_g;
-            Real inner_sk_M_pk,inner_gk_vk,inner_gkp1_vkp1;
-
-            // Initialize our variables
-            VS::scal(Real(0.),s_k);                // s_0=0
-            VS::copy(g,g_k);                        // g_0=g
-            Minv(g_k,v_k);                        // v_0=inv(M)*g_0
-            VS::copy(v_k,p_k);                        // p_0=-v_0
-            VS::scal(Real(-1.),p_k);
-            norm_sk_M2=Real(0.);                // || s_0 ||_M^2 = 0
-            norm_pk_M2=VS::innr(g_k,v_k);        // || p_0 ||_M^2 = <g_0,v_0>        
-            inner_sk_M_pk=Real(0.);                // <s_0,M p_0>=0
-            inner_gk_vk=norm_pk_M2;                // <g_0,v_0> = || p_0 ||_M^2
-            norm_g=VS::innr(g,g);                // || g ||
-
-            // Run truncated CG until we hit our max iteration or we converge
-            iter_total++;
-            for(iter=1;iter<=iter_max;iter++,iter_total++){
-                // H_pk=H p_k
-                H(p_k,H_pk);
-
-                // Compute the curvature for this direction.  kappa=<p_k,H p_k>
-                kappa=VS::innr(p_k,H_pk);
-
-                // If we have negative curvature, don't bother with the next two
-                // steps since we're going to exit and we won't need them.  
-                if(kappa > 0){
-                    // Determine a trial point
-                    alpha = VS::innr(g_k,v_k)/kappa;
-
-                    // || s_k+alpha_k p_k ||
-                    norm_skp1_M2=norm_sk_M2+Real(2.)*alpha*inner_sk_M_pk
-                        +alpha*alpha*norm_pk_M2;
-                }
-
-                // If we have negative curvature or our trial point is outside
-                // the trust region radius, terminate truncated-CG and find our
-                // final step.  We have the kappa!=kappa check in order to trap
-                // NaNs.
-                if(kappa <= 0 || norm_skp1_M2 >= delta*delta || kappa!=kappa){
-                    // sigma = positive root of || s_k + sigma p_k ||_M = delta
-                    sigma= (-inner_sk_M_pk + sqrt(inner_sk_M_pk*inner_sk_M_pk
-                        + norm_pk_M2*(delta*delta-norm_sk_M2)))/norm_pk_M2;
-
-                    // s_kp1=s_k+sigma p_k
-                    VS::axpy(sigma,p_k,s_k);
-
-                    // Return a message as to why we exited
-                    if(kappa<=0 || kappa!=kappa)
-                        krylov_stop = KrylovStop::NegativeCurvature;
-                    else
-                        krylov_stop = KrylovStop::TrustRegionViolated;
-
-                    // Update the residual error for out output,
-                    // g_k=g_k+sigma Hp_k
-                    VS::axpy(sigma,H_pk,g_k);
-
-                    // Exit the loop
-                    break;
-                }
-
-                // Take a step in the computed direction. s_k=s_k+alpha p_k
-                VS::axpy(alpha,p_k,s_k);
-
-                // Update the norm of sk
-                norm_sk_M2=norm_skp1_M2;
-                
-                // g_k=g_k+alpha H p_k
-                VS::axpy(alpha,H_pk,g_k);
-
-                // Test whether we've converged CG
-                rel_err=sqrt(VS::innr(g_k,g_k)) / (Real(1e-16)+norm_g);
-                if(rel_err <= eps_cg){
-                    krylov_stop = KrylovStop::RelativeErrorSmall;
-                    break;
-                }
-
-                // v_k = Minv g_k
-                Minv(g_k,v_k);
-
-                // Compute the new <g_kp1,v_kp1>
-                inner_gkp1_vkp1=VS::innr(g_k,v_k);
-
-                // beta = <g_kp1,v_kp1> / <g_k,v_k>
-                beta= inner_gkp1_vkp1 / inner_gk_vk;
-
-                // Store the new inner product between g_k and p_k
-                inner_gk_vk=inner_gkp1_vkp1;
-                
-                // Find the new search direction.  p_k=-v_k + beta p_k
-                VS::scal(beta,p_k);
-                VS::axpy(Real(-1.),v_k,p_k);
-
-                // Update the inner product between s_k and M p_k
-                inner_sk_M_pk=beta*(inner_sk_M_pk+alpha*norm_pk_M2);
-
-                // Update the norm of p_k
-                norm_pk_M2=inner_gk_vk+beta*beta*norm_pk_M2; 
-
-                // Print out diagnostics
-                printKrylov(state);
-            }
-
-            // Check if we've exceeded the maximum iteration
-            if(iter>iter_max){
-                krylov_stop=KrylovStop::MaxItersExceeded;
-                iter--; iter_total--;
-            }
-           
-            // Grab the relative error in the CG solution
-            rel_err=sqrt(VS::innr(g_k,g_k)) / (Real(1e-16)+norm_g);
-                
-            // Print out diagnostics
-            if(iter!=iter_max) printKrylov(state);
-        }
 
         // Checks whether we accept or reject a step
         static bool checkStep(
