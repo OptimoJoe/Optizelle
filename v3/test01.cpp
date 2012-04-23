@@ -211,17 +211,17 @@ int main(){
     Rosen f(peopt::Messaging(),cstate);
 
     // Do some finite difference tests on the Rosenbrock function
-    peopt::gradientCheck <> (peopt::Messaging(),f,x,dx);
-    peopt::hessianCheck <> (peopt::Messaging(),f,x,dx);
-    peopt::hessianSymmetryCheck <> (peopt::Messaging(),f,x,dx,dxx);
+    peopt::Diagnostics::gradientCheck <> (peopt::Messaging(),f,x,dx);
+    peopt::Diagnostics::hessianCheck <> (peopt::Messaging(),f,x,dx);
+    peopt::Diagnostics::hessianSymmetryCheck <> (peopt::Messaging(),f,x,dx,dxx);
     
     // Construct the utility function
     Utility g;
 
     // Do some finite difference tests on the utility function
-    peopt::derivativeCheck <> (peopt::Messaging(),g,x,dx,dy);
-    peopt::derivativeAdjointCheck <> (peopt::Messaging(),g,x,dx,dy);
-    peopt::secondDerivativeCheck <> (peopt::Messaging(),g,x,dx,dy);
+    peopt::Diagnostics::derivativeCheck <> (peopt::Messaging(),g,x,dx,dy);
+    peopt::Diagnostics::derivativeAdjointCheck <>(peopt::Messaging(),g,x,dx,dy);
+    peopt::Diagnostics::secondDerivativeCheck <> (peopt::Messaging(),g,x,dx,dy);
 
     // Do a capture and release of the state
     peopt::State::Constrained <MyHS,MyHS,MyHS>::X_Vectors xs;

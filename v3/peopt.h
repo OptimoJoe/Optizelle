@@ -2753,481 +2753,487 @@ namespace peopt{
     }
     #endif
 
-    // Performs a 4-point finite difference directional derivative on
-    // a scalar valued function f : X->R.  In other words, <- f'(x)dx.  We
-    // accomplish this by doing a finite difference calculation on f.
-    template <typename X,typename Real>
-    Real directionalDerivative(
-        const ScalarValuedFunction<X,Real>& f,
-        const typename X::Vector& x,
-        const typename X::Vector& dx,
-        const typename X::Real& epsilon
-    ){
-        // Create some type shortcuts
-        typedef typename X::Vector X_Vector;
-        typedef typename X::Real X_Real;
+    // A collection of miscellaneous diagnostics that help determine errors.
+    namespace Diagnostics {
+        // Performs a 4-point finite difference directional derivative on
+        // a scalar valued function f : X->R.  In other words, <- f'(x)dx.  We
+        // accomplish this by doing a finite difference calculation on f.
+        template <typename X,typename Real>
+        Real directionalDerivative(
+            const ScalarValuedFunction<X,Real>& f,
+            const typename X::Vector& x,
+            const typename X::Vector& dx,
+            const typename X::Real& epsilon
+        ){
+            // Create some type shortcuts
+            typedef typename X::Vector X_Vector;
+            typedef typename X::Real X_Real;
 
-        // Create an element for x+eps dx, x-eps dx, etc. 
-        X_Vector x_op_dx; X::init(x,x_op_dx);
+            // Create an element for x+eps dx, x-eps dx, etc. 
+            X_Vector x_op_dx; X::init(x,x_op_dx);
 
-        // f(x+eps dx)
-        X::copy(x,x_op_dx);
-        X::axpy(epsilon,dx,x_op_dx);
-        Real obj_xpes=f(x_op_dx);
+            // f(x+eps dx)
+            X::copy(x,x_op_dx);
+            X::axpy(epsilon,dx,x_op_dx);
+            Real obj_xpes=f(x_op_dx);
 
-        // f(x-eps dx)
-        X::copy(x,x_op_dx);
-        X::axpy(-epsilon,dx,x_op_dx);
-        Real obj_xmes=f(x_op_dx);
+            // f(x-eps dx)
+            X::copy(x,x_op_dx);
+            X::axpy(-epsilon,dx,x_op_dx);
+            Real obj_xmes=f(x_op_dx);
 
-        // f(x+2 eps dx)
-        X::copy(x,x_op_dx);
-        X::axpy(X_Real(2.*epsilon),dx,x_op_dx);
-        Real obj_xp2es=f(x_op_dx);
+            // f(x+2 eps dx)
+            X::copy(x,x_op_dx);
+            X::axpy(X_Real(2.*epsilon),dx,x_op_dx);
+            Real obj_xp2es=f(x_op_dx);
 
-        // f(x-2 eps dx)
-        X::copy(x,x_op_dx);
-        X::axpy(X_Real(-2.*epsilon),dx,x_op_dx);
-        Real obj_xm2es=f(x_op_dx);
+            // f(x-2 eps dx)
+            X::copy(x,x_op_dx);
+            X::axpy(X_Real(-2.*epsilon),dx,x_op_dx);
+            Real obj_xm2es=f(x_op_dx);
 
-        // Calculate the directional derivative and return it
-        Real dd=(obj_xm2es-Real(8.)*obj_xmes+Real(8.)*obj_xpes-obj_xp2es)
-            /(Real(12.)*epsilon);
-        return dd;
-    }
-    
-    // Performs a 4-point finite difference directional derivative on
-    // the gradient of a scalar valued function f : X->R.  In other words,
-    // dd ~= hess f(x) dx.  We accomplish this by doing a finite difference
-    // calculation on G where G(x)=grad f(x).
-    template <typename X,typename Real>
-    void directionalDerivative(
-        const ScalarValuedFunction<X,Real>& f,
-        const typename X::Vector& x,
-        const typename X::Vector& dx,
-        const typename X::Real& epsilon,
-        typename X::Vector& dd
-    ){
-        // Create some type shortcuts
-        typedef typename X::Vector X_Vector;
-        typedef typename X::Real X_Real;
-
-        // Create an element for x+eps dx, x-eps dx, etc. 
-        X_Vector x_op_dx; X::init(x,x_op_dx);
-
-        // Create an element to store the gradient at this point 
-        X_Vector fgrad_x_op_dx; X::init(x,fgrad_x_op_dx);
-
-        // Zero out the directional derivative
-        X::zero(dd);
-
-        // grad f(x+eps dx)
-        X::copy(x,x_op_dx);
-        X::axpy(epsilon,dx,x_op_dx);
-        f.grad(x_op_dx,fgrad_x_op_dx);
-        X::axpy(X_Real(8.),fgrad_x_op_dx,dd);
-
-        // grad f(x-eps dx)
-        X::copy(x,x_op_dx);
-        X::axpy(-epsilon,dx,x_op_dx);
-        f.grad(x_op_dx,fgrad_x_op_dx);
-        X::axpy(X_Real(-8.),fgrad_x_op_dx,dd);
-
-        // grad f(x+2 eps dx)
-        X::copy(x,x_op_dx);
-        X::axpy(X_Real(2.)*epsilon,dx,x_op_dx);
-        f.grad(x_op_dx,fgrad_x_op_dx);
-        X::axpy(X_Real(-1.),fgrad_x_op_dx,dd);
-
-        // grad f(x-2 eps dx)
-        X::copy(x,x_op_dx);
-        X::axpy(X_Real(-2.)*epsilon,dx,x_op_dx);
-        f.grad(x_op_dx,fgrad_x_op_dx);
-        X::axpy(X_Real(1.),fgrad_x_op_dx,dd);
-
-        // Finish the finite difference calculation 
-        X::scal(X_Real(1.)/(X_Real(12.)*epsilon),dd);
-    }
-
-    // Performs a 4-point finite difference directional derivative on
-    // a vector valued function f : X->Y. In other words, dd ~= f'(x)dx.
-    // We accomplish this by doing a finite difference calculation on f.
-    template <class X,class Y>
-    void directionalDerivative(
-        const VectorValuedFunction<X,Y>& f,
-        const typename X::Vector& x,
-        const typename X::Vector& dx,
-        const typename X::Real& epsilon,
-        typename Y::Vector& dd
-    ){
-        // Create some type shortcuts
-        typedef typename X::Vector X_Vector;
-        typedef typename X::Real X_Real;
-        typedef typename Y::Vector Y_Vector;
-        typedef typename Y::Real Y_Real;
-
-        // Create an element for x+eps dx, x-eps dx, etc. 
-        X_Vector x_op_dx; X::init(x,x_op_dx);
-
-        // Create an element for f(x+eps dx), etc.
-        Y_Vector f_x_op_dx; Y::init(dd,f_x_op_dx);
+            // Calculate the directional derivative and return it
+            Real dd=(obj_xm2es-Real(8.)*obj_xmes+Real(8.)*obj_xpes-obj_xp2es)
+                /(Real(12.)*epsilon);
+            return dd;
+        }
         
-        // Zero out the directional derivative
-        Y::zero(dd);
+        // Performs a 4-point finite difference directional derivative on
+        // the gradient of a scalar valued function f : X->R.  In other words,
+        // dd ~= hess f(x) dx.  We accomplish this by doing a finite difference
+        // calculation on G where G(x)=grad f(x).
+        template <typename X,typename Real>
+        void directionalDerivative(
+            const ScalarValuedFunction<X,Real>& f,
+            const typename X::Vector& x,
+            const typename X::Vector& dx,
+            const typename X::Real& epsilon,
+            typename X::Vector& dd
+        ){
+            // Create some type shortcuts
+            typedef typename X::Vector X_Vector;
+            typedef typename X::Real X_Real;
 
-        // f(x+eps dx)
-        X::copy(x,x_op_dx);
-        X::axpy(epsilon,dx,x_op_dx);
-        f(x_op_dx,f_x_op_dx);
-        Y::axpy(Y_Real(8.),f_x_op_dx,dd);
+            // Create an element for x+eps dx, x-eps dx, etc. 
+            X_Vector x_op_dx; X::init(x,x_op_dx);
 
-        // f(x-eps dx)
-        X::copy(x,x_op_dx);
-        X::axpy(-epsilon,dx,x_op_dx);
-        f(x_op_dx,f_x_op_dx);
-        Y::axpy(Y_Real(-8.),f_x_op_dx,dd);
+            // Create an element to store the gradient at this point 
+            X_Vector fgrad_x_op_dx; X::init(x,fgrad_x_op_dx);
 
-        // f(x+2 eps dx)
-        X::copy(x,x_op_dx);
-        X::axpy(X_Real(2.)*epsilon,dx,x_op_dx);
-        f(x_op_dx,f_x_op_dx);
-        Y::axpy(Y_Real(-1.),f_x_op_dx,dd);
+            // Zero out the directional derivative
+            X::zero(dd);
 
-        // f(x-2 eps dx)
-        X::copy(x,x_op_dx);
-        X::axpy(X_Real(-2.)*epsilon,dx,x_op_dx);
-        f(x_op_dx,f_x_op_dx);
-        Y::axpy(Y_Real(1.),f_x_op_dx,dd);
+            // grad f(x+eps dx)
+            X::copy(x,x_op_dx);
+            X::axpy(epsilon,dx,x_op_dx);
+            f.grad(x_op_dx,fgrad_x_op_dx);
+            X::axpy(X_Real(8.),fgrad_x_op_dx,dd);
 
-        // Finish the finite difference calculation 
-        Y::scal(Y_Real(1.)/(Y_Real(12.)*epsilon),dd);
-    }
-    
-    // Performs a 4-point finite difference directional derivative on
-    // the second derivative-adjoint of a vector valued function. In other
-    // words, dd ~= (f''(x)dx)*dy.  In order to calculate this, we do a
-    // finite difference approximation using g(x)=f'(x)*dy.  Therefore,
-    // the error in the approximation should be in the dx piece.
-    template <class X,class Y>
-    void directionalDerivative(
-        const VectorValuedFunction<X,Y>& f,
-        const typename X::Vector& x,
-        const typename X::Vector& dx,
-        const typename Y::Vector& dy,
-        const typename X::Real& epsilon,
-        typename Y::Vector& dd
-    ){
-        // Create some type shortcuts
-        typedef typename X::Vector X_Vector;
-        typedef typename X::Real X_Real;
-        typedef typename Y::Vector Y_Vector;
-        typedef typename Y::Real Y_Real;
+            // grad f(x-eps dx)
+            X::copy(x,x_op_dx);
+            X::axpy(-epsilon,dx,x_op_dx);
+            f.grad(x_op_dx,fgrad_x_op_dx);
+            X::axpy(X_Real(-8.),fgrad_x_op_dx,dd);
 
-        // Create an element for x+eps dx, x-eps dx, etc. 
-        X_Vector x_op_dx; X::init(x,x_op_dx);
+            // grad f(x+2 eps dx)
+            X::copy(x,x_op_dx);
+            X::axpy(X_Real(2.)*epsilon,dx,x_op_dx);
+            f.grad(x_op_dx,fgrad_x_op_dx);
+            X::axpy(X_Real(-1.),fgrad_x_op_dx,dd);
 
-        // Create an element for f'(x+eps dx)*dy, etc.
-        Y_Vector fps_xopdx_dy; Y::init(dd,fps_xopdx_dy);
+            // grad f(x-2 eps dx)
+            X::copy(x,x_op_dx);
+            X::axpy(X_Real(-2.)*epsilon,dx,x_op_dx);
+            f.grad(x_op_dx,fgrad_x_op_dx);
+            X::axpy(X_Real(1.),fgrad_x_op_dx,dd);
 
-        // Zero out the directional derivative
-        Y::zero(dd);
+            // Finish the finite difference calculation 
+            X::scal(X_Real(1.)/(X_Real(12.)*epsilon),dd);
+        }
 
-        // f'(x+eps dx)*dy
-        X::copy(x,x_op_dx);
-        X::axpy(epsilon,dx,x_op_dx);
-        f.ps(x_op_dx,dy,fps_xopdx_dy);
-        Y::axpy(Y_Real(8.),fps_xopdx_dy,dd);
+        // Performs a 4-point finite difference directional derivative on
+        // a vector valued function f : X->Y. In other words, dd ~= f'(x)dx.
+        // We accomplish this by doing a finite difference calculation on f.
+        template <class X,class Y>
+        void directionalDerivative(
+            const VectorValuedFunction<X,Y>& f,
+            const typename X::Vector& x,
+            const typename X::Vector& dx,
+            const typename X::Real& epsilon,
+            typename Y::Vector& dd
+        ){
+            // Create some type shortcuts
+            typedef typename X::Vector X_Vector;
+            typedef typename X::Real X_Real;
+            typedef typename Y::Vector Y_Vector;
+            typedef typename Y::Real Y_Real;
 
-        // f'(x-eps dx)*dy
-        X::copy(x,x_op_dx);
-        X::axpy(-epsilon,dx,x_op_dx);
-        f.ps(x_op_dx,dy,fps_xopdx_dy);
-        Y::axpy(Y_Real(-8.),fps_xopdx_dy,dd);
+            // Create an element for x+eps dx, x-eps dx, etc. 
+            X_Vector x_op_dx; X::init(x,x_op_dx);
 
-        // f'(x+2 eps dx)*dy
-        X::copy(x,x_op_dx);
-        X::axpy(X_Real(2.)*epsilon,dx,x_op_dx);
-        f.ps(x_op_dx,dy,fps_xopdx_dy);
-        Y::axpy(Y_Real(-1.),fps_xopdx_dy,dd);
+            // Create an element for f(x+eps dx), etc.
+            Y_Vector f_x_op_dx; Y::init(dd,f_x_op_dx);
+            
+            // Zero out the directional derivative
+            Y::zero(dd);
 
-        // f'(x-2 eps dx)*dy
-        X::copy(x,x_op_dx);
-        X::axpy(X_Real(-2.)*epsilon,dx,x_op_dx);
-        f.ps(x_op_dx,dy,fps_xopdx_dy);
-        Y::axpy(Y_Real(1.),fps_xopdx_dy,dd);
+            // f(x+eps dx)
+            X::copy(x,x_op_dx);
+            X::axpy(epsilon,dx,x_op_dx);
+            f(x_op_dx,f_x_op_dx);
+            Y::axpy(Y_Real(8.),f_x_op_dx,dd);
 
-        // Finish the finite difference calculation 
-        Y::scal(Y_Real(1.)/(Y_Real(12.)*epsilon),dd);
-    }
+            // f(x-eps dx)
+            X::copy(x,x_op_dx);
+            X::axpy(-epsilon,dx,x_op_dx);
+            f(x_op_dx,f_x_op_dx);
+            Y::axpy(Y_Real(-8.),f_x_op_dx,dd);
 
-    // Performs a finite difference test on the gradient of f where  
-    // f : X->R is scalar valued.  In other words, we check grad f using f.
-    template <typename X,typename Real>
-    void gradientCheck(
-        const Messaging& msg,
-        const ScalarValuedFunction<X,Real>& f,
-        const typename X::Vector& x,
-        const typename X::Vector& dx
-    ) {
-        // Create some type shortcuts
-        typedef typename X::Vector X_Vector;
-        typedef typename X::Real X_Real;
+            // f(x+2 eps dx)
+            X::copy(x,x_op_dx);
+            X::axpy(X_Real(2.)*epsilon,dx,x_op_dx);
+            f(x_op_dx,f_x_op_dx);
+            Y::axpy(Y_Real(-1.),f_x_op_dx,dd);
 
-        // Calculate the gradient at the point x
-        X_Vector f_grad; X::init(x,f_grad);
-        f.grad(x,f_grad);
+            // f(x-2 eps dx)
+            X::copy(x,x_op_dx);
+            X::axpy(X_Real(-2.)*epsilon,dx,x_op_dx);
+            f(x_op_dx,f_x_op_dx);
+            Y::axpy(Y_Real(1.),f_x_op_dx,dd);
 
-        // Begin by calculating the directional derivative via the gradient
-        Real dd_grad=X::innr(f_grad,dx);
+            // Finish the finite difference calculation 
+            Y::scal(Y_Real(1.)/(Y_Real(12.)*epsilon),dd);
+        }
+        
+        // Performs a 4-point finite difference directional derivative on
+        // the second derivative-adjoint of a vector valued function. In other
+        // words, dd ~= (f''(x)dx)*dy.  In order to calculate this, we do a
+        // finite difference approximation using g(x)=f'(x)*dy.  Therefore,
+        // the error in the approximation should be in the dx piece.
+        template <class X,class Y>
+        void directionalDerivative(
+            const VectorValuedFunction<X,Y>& f,
+            const typename X::Vector& x,
+            const typename X::Vector& dx,
+            const typename Y::Vector& dy,
+            const typename X::Real& epsilon,
+            typename Y::Vector& dd
+        ){
+            // Create some type shortcuts
+            typedef typename X::Vector X_Vector;
+            typedef typename X::Real X_Real;
+            typedef typename Y::Vector Y_Vector;
+            typedef typename Y::Real Y_Real;
 
-        // Compute an ensemble of finite difference tests in a linear manner
-        msg.print("Finite difference test on the gradient.",1);
-        for(int i=-2;i<=5;i++){
-            X_Real epsilon=pow(X_Real(.1),i);
-            Real dd=directionalDerivative <> (f,x,dx,epsilon);
+            // Create an element for x+eps dx, x-eps dx, etc. 
+            X_Vector x_op_dx; X::init(x,x_op_dx);
 
+            // Create an element for f'(x+eps dx)*dy, etc.
+            Y_Vector fps_xopdx_dy; Y::init(dd,fps_xopdx_dy);
+
+            // Zero out the directional derivative
+            Y::zero(dd);
+
+            // f'(x+eps dx)*dy
+            X::copy(x,x_op_dx);
+            X::axpy(epsilon,dx,x_op_dx);
+            f.ps(x_op_dx,dy,fps_xopdx_dy);
+            Y::axpy(Y_Real(8.),fps_xopdx_dy,dd);
+
+            // f'(x-eps dx)*dy
+            X::copy(x,x_op_dx);
+            X::axpy(-epsilon,dx,x_op_dx);
+            f.ps(x_op_dx,dy,fps_xopdx_dy);
+            Y::axpy(Y_Real(-8.),fps_xopdx_dy,dd);
+
+            // f'(x+2 eps dx)*dy
+            X::copy(x,x_op_dx);
+            X::axpy(X_Real(2.)*epsilon,dx,x_op_dx);
+            f.ps(x_op_dx,dy,fps_xopdx_dy);
+            Y::axpy(Y_Real(-1.),fps_xopdx_dy,dd);
+
+            // f'(x-2 eps dx)*dy
+            X::copy(x,x_op_dx);
+            X::axpy(X_Real(-2.)*epsilon,dx,x_op_dx);
+            f.ps(x_op_dx,dy,fps_xopdx_dy);
+            Y::axpy(Y_Real(1.),fps_xopdx_dy,dd);
+
+            // Finish the finite difference calculation 
+            Y::scal(Y_Real(1.)/(Y_Real(12.)*epsilon),dd);
+        }
+
+        // Performs a finite difference test on the gradient of f where  
+        // f : X->R is scalar valued.  In other words, we check grad f using f.
+        template <typename X,typename Real>
+        void gradientCheck(
+            const Messaging& msg,
+            const ScalarValuedFunction<X,Real>& f,
+            const typename X::Vector& x,
+            const typename X::Vector& dx
+        ) {
+            // Create some type shortcuts
+            typedef typename X::Vector X_Vector;
+            typedef typename X::Real X_Real;
+
+            // Calculate the gradient at the point x
+            X_Vector f_grad; X::init(x,f_grad);
+            f.grad(x,f_grad);
+
+            // Begin by calculating the directional derivative via the gradient
+            Real dd_grad=X::innr(f_grad,dx);
+
+            // Compute an ensemble of finite difference tests in a linear manner
+            msg.print("Finite difference test on the gradient.",1);
+            for(int i=-2;i<=5;i++){
+                X_Real epsilon=pow(X_Real(.1),i);
+                Real dd=directionalDerivative <> (f,x,dx,epsilon);
+
+                std::stringstream ss;
+                if(i<0) ss << "The relative difference (1e+" << -i <<  "): ";
+                else ss << "The relative difference (1e-" << i << "): ";
+                ss << std::scientific << std::setprecision(16)
+                    << fabs(dd_grad-dd)/(Real(1e-16)+fabs(dd_grad));
+                msg.print(ss.str(),1);
+            }
+        }
+        
+        // Performs a finite difference test on the hessian of f where f : X->R
+        // is scalar valued.  In other words, we check hess f dx using grad f.
+        template <typename X,typename Real>
+        void hessianCheck(
+            const Messaging& msg,
+            const ScalarValuedFunction<X,Real>& f,
+            const typename X::Vector& x,
+            const typename X::Vector& dx
+        ) {
+            // Create some type shortcuts
+            typedef typename X::Vector X_Vector;
+            typedef typename X::Real X_Real;
+
+            // Create an element for the residual between the directional 
+            // derivative computed Hessian-vector product and the true 
+            // Hessian-vector product.
+            X_Vector res; X::init(x,res);
+
+            // Calculate hess f in the direction dx.  
+            X_Vector hess_f_dx; X::init(x,hess_f_dx);
+            f.hess(x,dx,hess_f_dx);
+
+            // Compute an ensemble of finite difference tests in a linear manner
+            msg.print("Finite difference test on the Hessian.",1);
+            for(int i=-2;i<=5;i++){
+
+                // Calculate the directional derivative
+                X_Real epsilon=pow(X_Real(.1),i);
+                directionalDerivative <> (f,x,dx,epsilon,res);
+
+                // Determine the residual.  Store in res.
+                X::axpy(X_Real(-1.),hess_f_dx,res);
+
+                // Determine the relative error
+                Real rel_err=X::norm(res)/(X_Real(1e-16)+X::norm(hess_f_dx));
+
+                // Print out the differences
+                std::stringstream ss;
+                if(i<0) ss << "The relative difference (1e+" << -i <<  "): ";
+                else ss << "The relative difference (1e-" << i << "): ";
+                ss << std::scientific << std::setprecision(16) << rel_err; 
+                msg.print(ss.str(),1);
+            }
+        }
+        
+        // This tests the symmetry of the Hessian.  We accomplish this by
+        // comparing <H(x)dx,dxx> to <dx,H(x)dxx>.
+        template <typename X,typename Real>
+        void hessianSymmetryCheck(
+            const Messaging& msg,
+            const ScalarValuedFunction<X,Real>& f,
+            const typename X::Vector& x,
+            const typename X::Vector& dx,
+            const typename X::Vector& dxx
+        ) {
+            // Create some type shortcuts
+            typedef typename X::Vector X_Vector;
+            typedef typename X::Real X_Real;
+
+            // Calculate hess f in the direction dx.  
+            X_Vector H_x_dx; X::init(x,H_x_dx);
+            f.hess(x,dx,H_x_dx);
+            
+            // Calculate hess f in the direction dxx.  
+            X_Vector H_x_dxx; X::init(x,H_x_dxx);
+            f.hess(x,dxx,H_x_dxx);
+            
+            // Calculate <H(x)dx,dxx>
+            X_Real innr_Hxdx_dxx = X::innr(H_x_dx,dxx);
+            
+            // Calculate <dx,H(x)dxx>
+            X_Real innr_dx_Hxdxx = X::innr(dx,H_x_dxx);
+
+            // Determine the absolute difference between the two.  This really
+            // should be zero.
+            Real diff=fabs(innr_Hxdx_dxx-innr_dx_Hxdxx);
+
+            // Send a message with the result
+            msg.print("Symmetry test on the Hessian of a scalar valued "
+                "function.",1);
             std::stringstream ss;
-            if(i<0) ss << "The relative difference (1e+" << -i <<  "): ";
-            else ss << "The relative difference (1e-" << i << "): ";
-            ss << std::scientific << std::setprecision(16)
-                << fabs(dd_grad-dd)/(Real(1e-16)+fabs(dd_grad));
+            ss << "The absolute err. between <H(x)dx,dxx> and <dx,H(x)dxx>: "
+                << std::scientific << std::setprecision(16) << diff;
             msg.print(ss.str(),1);
         }
-    }
-    
-    // Performs a finite difference test on the hessian of f where f : X->R
-    // is scalar valued.  In other words, we check hess f dx using grad f.
-    template <typename X,typename Real>
-    void hessianCheck(
-        const Messaging& msg,
-        const ScalarValuedFunction<X,Real>& f,
-        const typename X::Vector& x,
-        const typename X::Vector& dx
-    ) {
-        // Create some type shortcuts
-        typedef typename X::Vector X_Vector;
-        typedef typename X::Real X_Real;
 
-        // Create an element for the residual between the directional derivative
-        // computed Hessian-vector product and the true Hessian-vector product.
-        X_Vector res; X::init(x,res);
+        // Performs a finite difference test on the derivative of a
+        // vector-valued function f.  Specifically, we check f'(x)dx using f.
+        template <typename X,typename Y>
+        void derivativeCheck(
+            const Messaging& msg,
+            const VectorValuedFunction<X,Y>& f,
+            const typename X::Vector& x,
+            const typename X::Vector& dx,
+            const typename Y::Vector& y
+        ) {
+            // Create some type shortcuts
+            typedef typename X::Vector X_Vector;
+            typedef typename X::Real X_Real;
+            typedef typename Y::Vector Y_Vector;
+            typedef typename Y::Real Y_Real;
 
-        // Calculate hess f in the direction dx.  
-        X_Vector hess_f_dx; X::init(x,hess_f_dx);
-        f.hess(x,dx,hess_f_dx);
+            // Create an element for the residual between the directional 
+            // derivative and the true derivative.
+            Y_Vector res; Y::init(y,res);
 
-        // Compute an ensemble of finite difference tests in a linear manner
-        msg.print("Finite difference test on the Hessian.",1);
-        for(int i=-2;i<=5;i++){
+            // Calculate f'(x)dx 
+            Y_Vector fp_x_dx; Y::init(y,fp_x_dx);
+            f.p(x,dx,fp_x_dx);
 
-            // Calculate the directional derivative
-            X_Real epsilon=pow(X_Real(.1),i);
-            directionalDerivative <> (f,x,dx,epsilon,res);
+            // Compute an ensemble of finite difference tests in a linear manner
+            msg.print("Finite difference test on the derivative of a "
+                "vector-valued function.",1);
+            for(int i=-2;i<=5;i++){
 
-            // Determine the residual.  Store in res.
-            X::axpy(X_Real(-1.),hess_f_dx,res);
+                // Calculate the directional derivative
+                X_Real epsilon=pow(X_Real(.1),i);
+                directionalDerivative <> (f,x,dx,epsilon,res);
 
-            // Determine the relative error
-            Real rel_err=X::norm(res)/(X_Real(1e-16)+X::norm(hess_f_dx));
+                // Determine the residual.  Store in res.
+                Y::axpy(Y_Real(-1.),fp_x_dx,res);
 
-            // Print out the differences
+                // Determine the relative error
+                Y_Real rel_err=Y::norm(res)/(Y_Real(1e-16)+Y::norm(fp_x_dx));
+
+                // Print out the differences
+                std::stringstream ss;
+                if(i<0) ss << "The relative difference (1e+" << -i <<  "): ";
+                else ss << "The relative difference (1e-" << i << "): ";
+                ss << std::scientific << std::setprecision(16) << rel_err; 
+                msg.print(ss.str(),1);
+            }
+        }
+
+        // Performs an adjoint check on the first-order derivative of a vector
+        // valued function.  In other words, we check that
+        // <f'(x)dx,dy> = <dx,f'(x)*dy>
+        template <typename X,typename Y>
+        void derivativeAdjointCheck(
+            const Messaging& msg,
+            const VectorValuedFunction<X,Y>& f,
+            const typename X::Vector& x,
+            const typename X::Vector& dx,
+            const typename Y::Vector& dy
+        ) {
+            // Create some type shortcuts
+            typedef typename X::Vector X_Vector;
+            typedef typename X::Real X_Real;
+            typedef typename Y::Vector Y_Vector;
+            typedef typename Y::Real Y_Real;
+
+            // Check that both X and Y use the same real time.  Mostly, we
+            // need to compare two different inner products and insuring
+            // that they're the same is the simplest way to guarantee
+            // compatibility.
+            if(!is_same<X_Real,Y_Real>::eval())
+                msg.error("The real type for the spaces X and Y in "
+                    "derivativeAdjointCheck must be the same.");
+
+            // At this point, since X_Real and Y_Real are the same, just use
+            // Real
+            typedef X_Real Real;
+
+            // Calculate f'(x)dx 
+            Y_Vector fp_x_dx; Y::init(dy,fp_x_dx);
+            f.p(x,dx,fp_x_dx);
+            
+            // Calculate f'(x)*dy 
+            X_Vector fps_x_dy; X::init(dx,fps_x_dy);
+            f.ps(x,dy,fps_x_dy);
+
+            // Calculate <f'(x)dx,dy>
+            Real innr_fpxdx_dy = Y::innr(fp_x_dx,dy);
+
+            // Calculate <dx,f'(x)*dy>
+            Real innr_dx_fpsxdy = X::innr(dx,fps_x_dy);
+
+            // Determine the absolute difference between the two.  This really
+            // should be zero.
+            Real diff=fabs(innr_fpxdx_dy-innr_dx_fpsxdy);
+
+            // Send a message with the result
+            msg.print("Adjoint test on the first derivative of a vector valued "
+                "function.",1);
             std::stringstream ss;
-            if(i<0) ss << "The relative difference (1e+" << -i <<  "): ";
-            else ss << "The relative difference (1e-" << i << "): ";
-            ss << std::scientific << std::setprecision(16) << rel_err; 
+            ss << "The absolute err. between <f'(x)dx,dy> and <dx,f'(x)*dy>: "
+                << std::scientific << std::setprecision(16) << diff;
             msg.print(ss.str(),1);
         }
-    }
-    
-    // This tests the symmetry of the Hessian.  We accomplish this by
-    // comparing <H(x)dx,dxx> to <dx,H(x)dxx>.
-    template <typename X,typename Real>
-    void hessianSymmetryCheck(
-        const Messaging& msg,
-        const ScalarValuedFunction<X,Real>& f,
-        const typename X::Vector& x,
-        const typename X::Vector& dx,
-        const typename X::Vector& dxx
-    ) {
-        // Create some type shortcuts
-        typedef typename X::Vector X_Vector;
-        typedef typename X::Real X_Real;
 
-        // Calculate hess f in the direction dx.  
-        X_Vector H_x_dx; X::init(x,H_x_dx);
-        f.hess(x,dx,H_x_dx);
-        
-        // Calculate hess f in the direction dxx.  
-        X_Vector H_x_dxx; X::init(x,H_x_dxx);
-        f.hess(x,dxx,H_x_dxx);
-        
-        // Calculate <H(x)dx,dxx>
-        X_Real innr_Hxdx_dxx = X::innr(H_x_dx,dxx);
-        
-        // Calculate <dx,H(x)dxx>
-        X_Real innr_dx_Hxdxx = X::innr(dx,H_x_dxx);
+        // Performs a finite difference test on the second-derivative-adjoint 
+        // of a vector-valued function f.  Specifically, we check
+        // (f''(x)dx)*dy using f'(x)*dy.
+        template <typename X,typename Y>
+        void secondDerivativeCheck(
+            const Messaging& msg,
+            const VectorValuedFunction<X,Y>& f,
+            const typename X::Vector& x,
+            const typename X::Vector& dx,
+            const typename Y::Vector& dy
+        ) {
+            // Create some type shortcuts
+            typedef typename X::Vector X_Vector;
+            typedef typename X::Real X_Real;
+            typedef typename Y::Vector Y_Vector;
+            typedef typename Y::Real Y_Real;
 
-        // Determine the absolute difference between the two.  This really
-        // should be zero.
-        Real diff=fabs(innr_Hxdx_dxx-innr_dx_Hxdxx);
+            // Create an element for the residual between the directional 
+            // derivative and the true derivative.
+            X_Vector res; X::init(x,res);
 
-        // Send a message with the result
-        msg.print("Symmetry test on the Hessian of a scalar valued "
-            "function.",1);
-        std::stringstream ss;
-        ss << "The absolute err. between <H(x)dx,dxx> and <dx,H(x)dxx>: "
-            << std::scientific << std::setprecision(16) << diff;
-        msg.print(ss.str(),1);
-    }
+            // Calculate (f''(x)dx)*dy
+            X_Vector fpps_x_dx_dy; X::init(dy,fpps_x_dx_dy);
+            f.pps(x,dx,dy,fpps_x_dx_dy);
 
-    // Performs a finite difference test on the derivative of a vector-valued
-    // function f.  Specifically, we check f'(x)dx using f.
-    template <typename X,typename Y>
-    void derivativeCheck(
-        const Messaging& msg,
-        const VectorValuedFunction<X,Y>& f,
-        const typename X::Vector& x,
-        const typename X::Vector& dx,
-        const typename Y::Vector& y
-    ) {
-        // Create some type shortcuts
-        typedef typename X::Vector X_Vector;
-        typedef typename X::Real X_Real;
-        typedef typename Y::Vector Y_Vector;
-        typedef typename Y::Real Y_Real;
+            // Compute an ensemble of finite difference tests in a linear manner
+            msg.print("Finite difference test on the 2nd-derivative adj. "
+                "of a vector-valued function.",1);
+            for(int i=-2;i<=5;i++){
 
-        // Create an element for the residual between the directional derivative
-        // and the true derivative.
-        Y_Vector res; Y::init(y,res);
+                // Calculate the directional derivative
+                X_Real epsilon=pow(X_Real(.1),i);
+                directionalDerivative <> (f,x,dx,dy,epsilon,res);
 
-        // Calculate f'(x)dx 
-        Y_Vector fp_x_dx; Y::init(y,fp_x_dx);
-        f.p(x,dx,fp_x_dx);
+                // Determine the residual.  Store in res.
+                X::axpy(X_Real(-1.),fpps_x_dx_dy,res);
 
-        // Compute an ensemble of finite difference tests in a linear manner
-        msg.print("Finite difference test on the derivative of a vector-valued "
-            "function.",1);
-        for(int i=-2;i<=5;i++){
+                // Determine the relative error
+                X_Real rel_err=X::norm(res)/(X_Real(1e-16)+X::norm(fpps_x_dx_dy));
 
-            // Calculate the directional derivative
-            X_Real epsilon=pow(X_Real(.1),i);
-            directionalDerivative <> (f,x,dx,epsilon,res);
-
-            // Determine the residual.  Store in res.
-            Y::axpy(Y_Real(-1.),fp_x_dx,res);
-
-            // Determine the relative error
-            Y_Real rel_err=Y::norm(res)/(Y_Real(1e-16)+Y::norm(fp_x_dx));
-
-            // Print out the differences
-            std::stringstream ss;
-            if(i<0) ss << "The relative difference (1e+" << -i <<  "): ";
-            else ss << "The relative difference (1e-" << i << "): ";
-            ss << std::scientific << std::setprecision(16) << rel_err; 
-            msg.print(ss.str(),1);
-        }
-    }
-
-    // Performs an adjoint check on the first-order derivative of a vector
-    // valued function.  In other words, we check that
-    // <f'(x)dx,dy> = <dx,f'(x)*dy>
-    template <typename X,typename Y>
-    void derivativeAdjointCheck(
-        const Messaging& msg,
-        const VectorValuedFunction<X,Y>& f,
-        const typename X::Vector& x,
-        const typename X::Vector& dx,
-        const typename Y::Vector& dy
-    ) {
-        // Create some type shortcuts
-        typedef typename X::Vector X_Vector;
-        typedef typename X::Real X_Real;
-        typedef typename Y::Vector Y_Vector;
-        typedef typename Y::Real Y_Real;
-
-        // Check that both X and Y use the same real time.  Mostly, we
-        // need to compare two different inner products and insuring
-        // that they're the same is the simplest way to guarantee compatibility.
-        if(!is_same<X_Real,Y_Real>::eval())
-            msg.error("The real type for the spaces X and Y in "
-                "derivativeAdjointCheck must be the same.");
-
-        // At this point, since X_Real and Y_Real are the same, just use Real
-        typedef X_Real Real;
-
-        // Calculate f'(x)dx 
-        Y_Vector fp_x_dx; Y::init(dy,fp_x_dx);
-        f.p(x,dx,fp_x_dx);
-        
-        // Calculate f'(x)*dy 
-        X_Vector fps_x_dy; X::init(dx,fps_x_dy);
-        f.ps(x,dy,fps_x_dy);
-
-        // Calculate <f'(x)dx,dy>
-        Real innr_fpxdx_dy = Y::innr(fp_x_dx,dy);
-
-        // Calculate <dx,f'(x)*dy>
-        Real innr_dx_fpsxdy = X::innr(dx,fps_x_dy);
-
-        // Determine the absolute difference between the two.  This really
-        // should be zero.
-        Real diff=fabs(innr_fpxdx_dy-innr_dx_fpsxdy);
-
-        // Send a message with the result
-        msg.print("Adjoint test on the first derivative of a vector valued "
-            "function.",1);
-        std::stringstream ss;
-        ss << "The absolute err. between <f'(x)dx,dy> and <dx,f'(x)*dy>: "
-            << std::scientific << std::setprecision(16) << diff;
-        msg.print(ss.str(),1);
-    }
-
-    // Performs a finite difference test on the second-derivative-adjoint of a
-    // vector-valued function f.  Specifically, we check (f''(x)dx)*dy using
-    // f'(x)*dy.
-    template <typename X,typename Y>
-    void secondDerivativeCheck(
-        const Messaging& msg,
-        const VectorValuedFunction<X,Y>& f,
-        const typename X::Vector& x,
-        const typename X::Vector& dx,
-        const typename Y::Vector& dy
-    ) {
-        // Create some type shortcuts
-        typedef typename X::Vector X_Vector;
-        typedef typename X::Real X_Real;
-        typedef typename Y::Vector Y_Vector;
-        typedef typename Y::Real Y_Real;
-
-        // Create an element for the residual between the directional derivative
-        // and the true derivative.
-        X_Vector res; X::init(x,res);
-
-        // Calculate (f''(x)dx)*dy
-        X_Vector fpps_x_dx_dy; X::init(dy,fpps_x_dx_dy);
-        f.pps(x,dx,dy,fpps_x_dx_dy);
-
-        // Compute an ensemble of finite difference tests in a linear manner
-        msg.print("Finite difference test on the 2nd-derivative adj. "
-            "of a vector-valued function.",1);
-        for(int i=-2;i<=5;i++){
-
-            // Calculate the directional derivative
-            X_Real epsilon=pow(X_Real(.1),i);
-            directionalDerivative <> (f,x,dx,dy,epsilon,res);
-
-            // Determine the residual.  Store in res.
-            X::axpy(X_Real(-1.),fpps_x_dx_dy,res);
-
-            // Determine the relative error
-            X_Real rel_err=X::norm(res)/(X_Real(1e-16)+X::norm(fpps_x_dx_dy));
-
-            // Print out the differences
-            std::stringstream ss;
-            if(i<0) ss << "The relative difference (1e+" << -i <<  "): ";
-            else ss << "The relative difference (1e-" << i << "): ";
-            ss << std::scientific << std::setprecision(16) << rel_err; 
-            msg.print(ss.str(),1);
+                // Print out the differences
+                std::stringstream ss;
+                if(i<0) ss << "The relative difference (1e+" << -i <<  "): ";
+                else ss << "The relative difference (1e-" << i << "): ";
+                ss << std::scientific << std::setprecision(16) << rel_err; 
+                msg.print(ss.str(),1);
+            }
         }
     }
 
