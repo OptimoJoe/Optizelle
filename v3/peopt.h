@@ -67,6 +67,32 @@ namespace peopt{
         // Deallocates memory required by the vector space
         virtual ~HilbertSpace() {}
     };
+    
+    // Augments a Hilbert space with a Euclidean-Jordean algebra that defines
+    // a cone
+    template <typename Vector_,typename Real_>
+    struct Cone : public HilbertSpace <Vector_,Real_> {
+        // Define the vector space and the field
+        typedef Vector_ Vector;
+        typedef Real_ Real;
+
+        // Jordan product, z <- x o y
+        virtual void prod(
+            const Vector& x,
+            const Vector& y,
+            Vector& z
+        ) const = 0;
+
+        // Identity element, x <- e such that x o e = x
+        virtual void id(Vector& x) const = 0;
+
+        // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y
+        virtual void linv(
+            const Vector& x,
+            const Vector& y,
+            Vector& z
+        ) const = 0;
+    };
 
     // Defines how we output messages to the user
     struct Messaging {
@@ -2632,7 +2658,7 @@ namespace peopt{
         virtual ~ScalarValuedFunction() {}
     };
 
-    // A simple vector valued function interface, f:X->Y
+    // A simple vector valued function interface, f : X -> Y
     template <typename X,typename Y>
     struct VectorValuedFunction {
          // y=f(x)
@@ -2667,34 +2693,18 @@ namespace peopt{
          virtual ~VectorValuedFunction() {}
     };
 
-    template <typename Domain>
-    struct Cone {
-        // Jordan product, z <- x o y
-        virtual void prod(
-            const typename Domain::Vector& x,
-            const typename Domain::Vector& y,
-            typename Domain::Vector& z
-        ) const = 0;
-
-        // Identity element, x <- e such that x o e = x
-        virtual void id(typename Domain::Vector& x) const = 0;
-
-        // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y
-        virtual void linv(
-            const typename Domain::Vector& x,
-            const typename Domain::Vector& y,
-            typename Domain::Vector& z
-        ) const = 0;
-        
+    // An inequality constraint.  Basically, this is a vector valued function,
+    // but it also adds a line-search component.
+    template <typename X,typename Y>
+    struct InequalityConstraint : public VectorValuedFunction <X,Y> {
         // Line-search, srch <- alpha where max(alpha >=0 : h(x+alpha dx) >=0).
         // In the case where this number is infinite, set alpha=Real(-1.).
-        virtual typename Domain::Real srch(
-            const typename Domain::Vector& x,
-            const typename Domain::Vector& dx
+        virtual typename X::Real srch(
+            const typename X::Vector& x,
+            const typename X::Vector& dx
         ) const = 0;
     };
 
-#if 0
     // All the functions required by an optimization algorithm.  Note, this
     // routine owns the memory for these operations.  
     namespace Functions {
@@ -2705,53 +2715,191 @@ namespace peopt{
         // where f : X -> R
         template <typename X,typename Real> 
         struct Unconstrained {
+        public:
             // Objective function
             std::auto_ptr <ScalarValuedFunction <X,Real> > f;
 
             // Preconditioner for the Hessian of the objective
             std::auto_ptr <Operator <X,X> > Minv;
 
-            // Setup the functions.  We include the state in case we need 
-            // to build the preconditioner by hand.
-            Unconstrained(
+        protected:
+            // Check that all the functions are defined
+            void check(const Messaging& msg) {
+                // Check that objective function exists 
+                if(f.get()==NULL)
+                    msg.error("Missing an objective function definition.");
+                
+                // Check that a preconditioner exists 
+                if(Minv.get()==NULL)
+                    msg.error("Missing a preconditioner definition.");
+            }
+
+            // Create a preconditioner if requested
+            void create(
                 const Messaging& msg,
-                const State::Unconstrained <X>& state,
-                std::auto_ptr <ScalarValuedFunction <X,Real> > f_,
-                std::auto_ptr <Operator <X,X> > Minv_
-                    =std::auto_ptr <Operator <X,X> >()
+                const State::Unconstrained <X>& state
             ) {
                 // Determine the preconditioner
-                std::auto_ptr <Operator<VS,VS> > Minv;
-                switch(Minv_type){
+                switch(state.Minv_type){
                     case Operators::Identity:
-                        Minv.reset(new Identity());
+                        Minv.reset(new typename
+                            Operators::Unconstrained<X>::Identity());
                         break;
                     case Operators::InvBFGS:
-                        Minv.reset(new InvBFGS(state));
+                        Minv.reset(new typename
+                            Operators::Unconstrained<X>::InvBFGS(msg,state));
                         break;
                     case Operators::InvSR1:
-                        Minv.reset(new InvSR1(state));
+                        Minv.reset(new typename
+                            Operators::Unconstrained<X>::InvSR1(msg,state));
                         break;
                     case Operators::External:
-                        if(Minv_.get()==NULL)
+                        if(Minv.get()==NULL)
                             msg.error("An externally defined preconditioner "
                                 "must be provided explicitely.");
-                        Minv=Minv_;
                         break;
                     default:
-                        VS::error("Not a valid Hessian approximation.");
+                        msg.error("Not a valid Hessian approximation.");
                         break;
                 }
+            }
 
-                // Grab the objective function
-                if(f_.get()==NULL)
-                    msg.error("All optimization problems require an objective "
-                        "function.")
-                f=f_;
+        public:
+            // Finalize the construction of the functions by creating
+            // any missing pieces and then checking the result.
+            void finalize(
+                const Messaging& msg,
+                const State::Unconstrained <X>& state
+            ) {
+
+                // Create the missing pieces
+                Unconstrained <X,Real>::create(msg,state);
+
+                // Check the results
+                Unconstrained <X,Real>::check(msg);
+            }
+        };
+        
+        // Functions pertinent to an equality constrained optimization problem 
+        // 
+        // min_{x \in X} f(x) st g(x)=0
+        //
+        // where f : X -> R, g : X -> Y
+        template <typename X,typename Y,typename Real> 
+        struct EqualityConstrained : public virtual Unconstrained <X,Real> {
+        public:
+            // Equality constraints 
+            std::auto_ptr <VectorValuedFunction <X,Y> > g;
+           
+        protected:
+            // Check that all the functions are defined
+            void check(const Messaging& msg) {
+                // Check that the constraints exist 
+                if(g.get()==NULL)
+                    msg.error("Missing the equality constraint definition.");
+            }
+
+            // At the moment, we don't create any preconditioners for
+            // equality constrained optimization
+            void create(
+                const Messaging& msg,
+                const State::EqualityConstrained <X,Y>& state
+            ) { }
+
+        public:
+            // Finalize the construction of the functions by creating
+            // any missing pieces and then checking the result.
+            void finalize(
+                const Messaging& msg,
+                const State::EqualityConstrained <X,Y>& state
+            ) {
+
+                // Create the missing pieces
+                Unconstrained <X,Real>::create(msg,state);
+                EqualityConstrained <X,Y,Real>::create(msg,state);
+
+                // Check the results
+                Unconstrained <X,Real>::check(msg);
+                EqualityConstrained <X,Y,Real>::check(msg);
+            }
+        };
+        
+        // Functions pertinent to an inequality constrained optimization problem
+        // 
+        // min_{x \in X} f(x) st h(x) >=_K 0
+        //
+        // where f : X -> R, h : X -> Z
+        template <typename X,typename Z,typename Real> 
+        struct InequalityConstrained : public virtual Unconstrained <X,Real> {
+        public:
+            // Inequality constraints 
+            std::auto_ptr <InequalityConstraint <X,Z> > h;
+
+            // Cone for the inequality constraints
+            std::auto_ptr <Cone <X,Z> > K;
+           
+        protected:
+            // Check that all the functions are defined
+            void check(const Messaging& msg) {
+                // Check that the constraints exist 
+                if(h.get()==NULL)
+                    msg.error("Missing the inequality constraint definition.");
+            }
+
+            // At the moment, we don't create any preconditioners for
+            // inequality constrained optimization
+            void create(
+                const Messaging& msg,
+                const State::InequalityConstrained <X,Z>& state
+            ) { }
+
+        public:
+            // Finalize the construction of the functions by creating
+            // any missing pieces and then checking the result.
+            void finalize(
+                const Messaging& msg,
+                const State::InequalityConstrained <X,Z>& state
+            ) {
+
+                // Create the missing pieces
+                Unconstrained <X,Real>::create(msg,state);
+                InequalityConstrained <X,Z,Real>::create(msg,state);
+
+                // Check the results
+                Unconstrained <X,Real>::check(msg);
+                InequalityConstrained <X,Z,Real>::check(msg);
+            }
+        };
+        
+        // Functions pertinent to a general constrained optimization problem
+        // 
+        // min_{x \in X} f(x) st g(x)=0, h(x) >=_K 0
+        //
+        // where f : X -> R, g : X -> Y, h : X -> Z
+        template <typename X,typename Y,typename Z,typename Real> 
+        struct Constrained:
+            public EqualityConstrained <X,Y,Real>,
+            public InequalityConstrained <X,Z,Real>
+        {
+            // Finalize the construction of the functions by creating
+            // any missing pieces and then checking the result.
+            void finalize(
+                const Messaging& msg,
+                const State::Constrained <X,Y,Z>& state
+            ) {
+
+                // Create the missing pieces
+                Unconstrained <X,Real>::create(msg,state);
+                EqualityConstrained <X,Y,Real>::create(msg,state);
+                InequalityConstrained <X,Z,Real>::create(msg,state);
+
+                // Check the results
+                Unconstrained <X,Real>::check(msg);
+                EqualityConstrained <X,Y,Real>::check(msg);
+                InequalityConstrained <X,Z,Real>::check(msg);
             }
         };
     }
-    #endif
 
     // A collection of miscellaneous diagnostics that help determine errors.
     namespace Diagnostics {

@@ -125,7 +125,7 @@ struct Rosen : public peopt::ScalarValuedFunction <MyHS,double> {
 //         [ 3 x^2 y + y^3]
 //         [ log(x) + 3y^5]
 //
-struct Utility  : public peopt::VectorValuedFunction <MyHS,MyHS> {
+struct Utility  : public peopt::InequalityConstraint <MyHS,MyHS> {
     typedef MyHS X;
     typedef MyHS Y;
 
@@ -179,6 +179,14 @@ struct Utility  : public peopt::VectorValuedFunction <MyHS,MyHS> {
         z[1] = (-sin(x[0])*dx[0]*cos(x[1])-cos(x[0])*sin(x[1])*dx[1])*dy[0]
                +(6.*x[0]*dx[0]+6.*x[1]*dx[1])*dy[1]
                +(60.*cub(x[1])*dx[1])*dy[2];
+    }
+
+    // linsearch
+    X::Real srch(
+        const X::Vector& x,
+        const X::Vector& dx
+    ) const {
+        return X::Real(0.);
     }
 };
 
@@ -243,6 +251,27 @@ int main(){
         inv_bfgs(peopt::Messaging(),cstate);
     peopt::Operators::Unconstrained <MyHS>::InvSR1
         inv_sr1(peopt::Messaging(),cstate);
+
+    // Create a package of functions
+    peopt::Functions::Unconstrained <MyHS,double> ufns;
+    ufns.f.reset(new Rosen(peopt::Messaging(),cstate));
+    ufns.finalize(peopt::Messaging(),cstate);
+    
+    peopt::Functions::EqualityConstrained <MyHS,MyHS,double> efns;
+    efns.f.reset(new Rosen(peopt::Messaging(),cstate));
+    efns.g.reset(new Utility());
+    efns.finalize(peopt::Messaging(),cstate);
+    
+    peopt::Functions::InequalityConstrained <MyHS,MyHS,double> ifns;
+    ifns.f.reset(new Rosen(peopt::Messaging(),cstate));
+    ifns.h.reset(new Utility());
+    ifns.finalize(peopt::Messaging(),cstate);
+    
+    peopt::Functions::Constrained <MyHS,MyHS,MyHS,double> cfns;
+    cfns.f.reset(new Rosen(peopt::Messaging(),cstate));
+    cfns.g.reset(new Utility());
+    cfns.h.reset(new Utility());
+    cfns.finalize(peopt::Messaging(),cstate);
 
     // Create a place for us to add a breakpoint
     int junk=0;
