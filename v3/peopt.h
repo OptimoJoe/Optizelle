@@ -529,20 +529,13 @@ namespace peopt{
         // min_{x \in X} f(x)
         //
         // where f : X -> R
-        template <typename X> 
+        template <typename Real,template <typename Real> class XX> 
         struct Unconstrained {
         public:
             // Create some shortcuts for some type names
+            typedef XX <Real> X;
             typedef typename X::Vector X_Vector;
-            typedef typename X::Real X_Real;
 
-            // This one seems a little funny or redundant.  Basically, we
-            // need a number of real numbers for things like the trust-region
-            // radius.  In this case, we have a condition such as ||s|| <= delta
-            // which mean that delta needs to be a real number compatible
-            // with the field used in the Hilbert space X.
-            typedef typename X::Real Real;
-        
             // ------------- GENERIC ------------- 
 
             // Tolerance for the gradient stopping condition
@@ -1522,10 +1515,10 @@ namespace peopt{
                 Params& params
             ) {
                 // Copy out all of the variable information
-                Unconstrained <X>::stateToVectors(xs);
+                Unconstrained <Real,XX>::stateToVectors(xs);
 
                 // Copy out all of the scalar information
-                Unconstrained <X>::stateToScalars(reals,nats,params);
+                Unconstrained <Real,XX>::stateToScalars(reals,nats,params);
             }
             
             // Capture data from structures controlled by the user.  Note,
@@ -1543,19 +1536,19 @@ namespace peopt{
             ) {
 
                 // Check the labels on the user input
-                Unconstrained <X>::checkLabels(msg,xs,reals,nats,params);
+                Unconstrained <Real,XX>::checkLabels(msg,xs,reals,nats,params);
 
                 // Check the strings used to represent parameters
-                Unconstrained <X>::checkParams(msg,params);
+                Unconstrained <Real,XX>::checkParams(msg,params);
 
                 // Copy in the variables 
-                Unconstrained <X>::vectorsToState(xs);
+                Unconstrained <Real,XX>::vectorsToState(xs);
                 
                 // Copy in all of the scalar information
-                Unconstrained <X>::scalarsToState(reals,nats,params);
+                Unconstrained <Real,XX>::scalarsToState(reals,nats,params);
 
                 // Check that we have a valid state 
-                Unconstrained <X>::check(msg);
+                Unconstrained <Real,XX>::check(msg);
             }
         };
         
@@ -1564,15 +1557,18 @@ namespace peopt{
         // min_{x \in X} f(x) st g(x) = 0
         //
         // where f : X -> R and g : X -> Y
-        template <typename X,typename Y> 
-        struct EqualityConstrained: public virtual Unconstrained <X> {
+        template <
+            typename Real,
+            template <typename Real> class XX,
+            template <typename Real> class YY
+        > 
+        struct EqualityConstrained: public virtual Unconstrained <Real,XX> {
         public:
             // Create some shortcuts for some type names
+            typedef XX <Real> X;
             typedef typename X::Vector X_Vector;
-            typedef typename X::Real X_Real;
-            typedef typename X::Real Real;
+            typedef YY <Real> Y;
             typedef typename Y::Vector Y_Vector;
-            typedef typename Y::Real Y_Real;
             
             // The Lagrange multiplier (dual variable) for the equality
             // constraints
@@ -1580,8 +1576,9 @@ namespace peopt{
             
             // Initialize the state without setting up any variables. 
             EqualityConstrained() {
-                Unconstrained <X>::init_params();
-                EqualityConstrained <X,Y>::init_params();
+                // Initialize 
+                Unconstrained <Real,XX>::init_params();
+                EqualityConstrained <Real,XX,YY>::init_params();
             };
             
             // Initialize the state for equality constrained optimization.
@@ -1589,10 +1586,10 @@ namespace peopt{
                 const X_Vector& x,
                 const Y_Vector& y
             ) {
-                Unconstrained <X>::init_params();
-                Unconstrained <X>::init_vectors(x);
-                EqualityConstrained <X,Y>::init_params();
-                EqualityConstrained <X,Y>::init_vectors(y);
+                Unconstrained <Real,XX>::init_params();
+                Unconstrained <Real,XX>::init_vectors(x);
+                EqualityConstrained <Real,XX,YY>::init_params();
+                EqualityConstrained <Real,XX,YY>::init_vectors(y);
             }
 
         protected: 
@@ -1713,12 +1710,13 @@ namespace peopt{
                 Params& params
             ) {
                 // Copy out all of the variable information
-                Unconstrained <X>::stateToVectors(xs);
-                EqualityConstrained <X,Y>::stateToVectors(ys);
+                Unconstrained <Real,XX>::stateToVectors(xs);
+                EqualityConstrained <Real,XX,YY>::stateToVectors(ys);
             
                 // Copy out all of the scalar information
-                Unconstrained <X>::stateToScalars(reals,nats,params);
-                EqualityConstrained <X,Y>::stateToScalars(reals,nats,params);
+                Unconstrained <Real,XX>::stateToScalars(reals,nats,params);
+                EqualityConstrained <Real,XX,YY>
+                    ::stateToScalars(reals,nats,params);
             }
 
             // Capture data from structures controlled by the user.  
@@ -1732,25 +1730,26 @@ namespace peopt{
             ) {
 
                 // Check the labels on the user input
-                Unconstrained <X>::checkLabels(msg,xs,reals,nats,params);
-                EqualityConstrained <X,Y>::checkLabels(
-                    msg,ys,reals,nats,params);
+                Unconstrained <Real,XX>::checkLabels(msg,xs,reals,nats,params);
+                EqualityConstrained <Real,XX,YY>
+                    ::checkLabels(msg,ys,reals,nats,params);
 
                 // Check the strings used to represent parameters
-                Unconstrained <X>::checkParams(msg,params);
-                EqualityConstrained <X,Y>::checkParams(msg,params);
+                Unconstrained <Real,XX>::checkParams(msg,params);
+                EqualityConstrained <Real,XX,YY>::checkParams(msg,params);
 
                 // Copy in the variables 
-                Unconstrained <X>::vectorsToState(xs);
-                EqualityConstrained <X,Y>::vectorsToState(ys);
+                Unconstrained <Real,XX>::vectorsToState(xs);
+                EqualityConstrained <Real,XX,YY>::vectorsToState(ys);
                 
                 // Copy in all of the scalar information
-                Unconstrained <X>::scalarsToState(reals,nats,params);
-                EqualityConstrained <X,Y>::scalarsToState(reals,nats,params);
+                Unconstrained <Real,XX>::scalarsToState(reals,nats,params);
+                EqualityConstrained <Real,XX,YY>
+                    ::scalarsToState(reals,nats,params);
 
                 // Check that we have a valid state 
-                Unconstrained <X>::check(msg);
-                EqualityConstrained <X,Y>::check(msg);
+                Unconstrained <Real,XX>::check(msg);
+                EqualityConstrained <Real,XX,YY>::check(msg);
             }
         };
         
@@ -1759,15 +1758,18 @@ namespace peopt{
         // min_{x \in X} f(x) st h(x) >=_K 0
         //
         // where f : X -> R and h : X -> Z
-        template <typename X,typename Z> 
-        struct InequalityConstrained : public virtual Unconstrained <X> {
+        template <
+            typename Real,
+            template <typename Real> class XX,
+            template <typename Real> class ZZ
+        > 
+        struct InequalityConstrained : public virtual Unconstrained <Real,XX> {
         public:
             // Create some shortcuts for some type names
+            typedef XX <Real> X;
             typedef typename X::Vector X_Vector;
-            typedef typename X::Real X_Real;
-            typedef typename X::Real Real;
+            typedef ZZ <Real> Z;
             typedef typename Z::Vector Z_Vector;
-            typedef typename Z::Real Z_Real;
             
             // The Lagrange multiplier (dual variable) for the
             // inequality constraints 
@@ -1775,8 +1777,8 @@ namespace peopt{
             
             // Initialize the state without setting up any variables. 
             InequalityConstrained() {
-                Unconstrained <X>::init_params();
-                InequalityConstrained <X,Z>::init_params();
+                Unconstrained <Real,XX>::init_params();
+                InequalityConstrained <Real,XX,ZZ>::init_params();
             };
             
             // Initialize the state for inequality constrained optimization.
@@ -1784,10 +1786,10 @@ namespace peopt{
                 const X_Vector& x,
                 const Z_Vector& z
             ) {
-                Unconstrained <X>::init_params();
-                Unconstrained <X>::init_vectors(x);
-                InequalityConstrained <X,Z>::init_params();
-                InequalityConstrained <X,Z>::init_vectors(z);
+                Unconstrained <Real,XX>::init_params();
+                Unconstrained <Real,XX>::init_vectors(x);
+                InequalityConstrained <Real,XX,ZZ>::init_params();
+                InequalityConstrained <Real,XX,ZZ>::init_vectors(z);
             }
 
         protected:
@@ -1909,12 +1911,13 @@ namespace peopt{
                 Params& params
             ) {
                 // Copy out all of the variable information
-                Unconstrained <X>::stateToVectors(xs);
-                InequalityConstrained <X,Z>::stateToVectors(zs);
+                Unconstrained <Real,XX>::stateToVectors(xs);
+                InequalityConstrained <Real,XX,ZZ>::stateToVectors(zs);
             
                 // Copy out all of the scalar information
-                Unconstrained <X>::stateToScalars(reals,nats,params);
-                InequalityConstrained <X,Z>::stateToScalars(reals,nats,params);
+                Unconstrained <Real,XX>::stateToScalars(reals,nats,params);
+                InequalityConstrained <Real,XX,ZZ>
+                    ::stateToScalars(reals,nats,params);
             }
             
             // Capture data from structures controlled by the user.  
@@ -1928,25 +1931,26 @@ namespace peopt{
             ) {
 
                 // Check the labels on the user input
-                Unconstrained <X>::checkLabels(msg,xs,reals,nats,params);
-                InequalityConstrained <X,Z>::checkLabels(
+                Unconstrained <Real,XX>::checkLabels(msg,xs,reals,nats,params);
+                InequalityConstrained <Real,XX,ZZ>::checkLabels(
                     msg,zs,reals,nats,params);
 
                 // Check the strings used to represent parameters
-                Unconstrained <X>::checkParams(msg,params);
-                InequalityConstrained <X,Z>::checkParams(msg,params);
+                Unconstrained <Real,XX>::checkParams(msg,params);
+                InequalityConstrained <Real,XX,ZZ>::checkParams(msg,params);
 
                 // Copy in the variables 
-                Unconstrained <X>::vectorsToState(xs);
-                InequalityConstrained <X,Z>::vectorsToState(zs);
+                Unconstrained <Real,XX>::vectorsToState(xs);
+                InequalityConstrained <Real,XX,ZZ>::vectorsToState(zs);
                 
                 // Copy in all of the scalar information
-                Unconstrained <X>::scalarsToState(reals,nats,params);
-                InequalityConstrained <X,Z>::scalarsToState(reals,nats,params);
+                Unconstrained <Real,XX>::scalarsToState(reals,nats,params);
+                InequalityConstrained <Real,XX,ZZ>
+                    ::scalarsToState(reals,nats,params);
 
                 // Check that we have a valid state 
-                Unconstrained <X>::check(msg);
-                InequalityConstrained <X,Z>::check(msg);
+                Unconstrained <Real,XX>::check(msg);
+                InequalityConstrained <Real,XX,ZZ>::check(msg);
             }
         };
 
@@ -1956,26 +1960,27 @@ namespace peopt{
         // min_{x \in X} f(x) st g(x) = 0, h(x) >=_K 0
         //
         // where f : X -> R, g : X -> Y, and h : X -> Z
-        template <typename X,typename Y,typename Z> 
+        template <
+            typename Real,
+            template <typename Real> class X,
+            template <typename Real> class Y,
+            template <typename Real> class Z
+        > 
         struct Constrained:
-            public EqualityConstrained <X,Y>,
-            public InequalityConstrained <X,Z>
+            public EqualityConstrained <Real,X,Y>,
+            public InequalityConstrained <Real,X,Z>
         {
         public:
             // Create some shortcuts for some type names
-            typedef typename X::Vector X_Vector;
-            typedef typename X::Real X_Real;
-            typedef typename X::Real Real;
-            typedef typename Y::Vector Y_Vector;
-            typedef typename Y::Real Y_Real;
-            typedef typename Z::Vector Z_Vector;
-            typedef typename Z::Real Z_Real;
+            typedef typename X <Real>::Vector X_Vector;
+            typedef typename Y <Real>::Vector Y_Vector;
+            typedef typename Z <Real>::Vector Z_Vector;
             
             // Initialize the state without setting up any variables. 
             Constrained() {
-                Unconstrained <X>::init_params();
-                EqualityConstrained <X,Y>::init_params();
-                InequalityConstrained <X,Z>::init_params();
+                Unconstrained <Real,X>::init_params();
+                EqualityConstrained <Real,X,Y>::init_params();
+                InequalityConstrained <Real,X,Z>::init_params();
             };
             
             // Initialize the state for general constrained optimization.
@@ -1984,12 +1989,12 @@ namespace peopt{
                 const Y_Vector& y,
                 const Z_Vector& z
             ) {
-                Unconstrained <X>::init_params();
-                Unconstrained <X>::init_vectors(x);
-                EqualityConstrained <X,Y>::init_params();
-                EqualityConstrained <X,Y>::init_vectors(y);
-                InequalityConstrained <X,Z>::init_params();
-                InequalityConstrained <X,Z>::init_vectors(z);
+                Unconstrained <Real,X>::init_params();
+                Unconstrained <Real,X>::init_vectors(x);
+                EqualityConstrained <Real,X,Y>::init_params();
+                EqualityConstrained <Real,X,Y>::init_vectors(y);
+                InequalityConstrained <Real,X,Z>::init_params();
+                InequalityConstrained <Real,X,Z>::init_vectors(z);
             }
             
             // Types for holding information for vectors for restarts
@@ -2017,12 +2022,16 @@ namespace peopt{
                 Params& params
             ) {
                 // Copy out all of the variable information
-                Unconstrained <X>::stateToVectors(xs);
-                EqualityConstrained <X,Y>::stateToVectors(ys);
-                InequalityConstrained <X,Z>::stateToVectors(zs);
+                Unconstrained <Real,X>::stateToVectors(xs);
+                EqualityConstrained <Real,X,Y>::stateToVectors(ys);
+                InequalityConstrained <Real,X,Z>::stateToVectors(zs);
             
                 // Copy out all of the scalar information
-                Unconstrained <X>::stateToScalars(reals,nats,params);
+                Unconstrained <Real,X>::stateToScalars(reals,nats,params);
+                EqualityConstrained <Real,X,Y>
+                    ::stateToScalars(reals,nats,params);
+                InequalityConstrained <Real,X,Z>
+                    ::stateToScalars(reals,nats,params);
             }
             
             // Capture data from structures controlled by the user.  
@@ -2037,31 +2046,33 @@ namespace peopt{
             ) {
 
                 // Check the labels on the user input
-                Unconstrained <X>::checkLabels(msg,xs,reals,nats,params);
-                EqualityConstrained <X,Y>::checkLabels(
+                Unconstrained <Real,X>::checkLabels(msg,xs,reals,nats,params);
+                EqualityConstrained <Real,X,Y>::checkLabels(
                     msg,ys,reals,nats,params);
-                InequalityConstrained <X,Z>::checkLabels(
+                InequalityConstrained <Real,X,Z>::checkLabels(
                     msg,zs,reals,nats,params);
 
                 // Check the strings used to represent parameters
-                Unconstrained <X>::checkParams(msg,params);
-                EqualityConstrained <X,Y>::checkParams(msg,params);
-                InequalityConstrained <X,Z>::checkParams(msg,params);
+                Unconstrained <Real,X>::checkParams(msg,params);
+                EqualityConstrained <Real,X,Y>::checkParams(msg,params);
+                InequalityConstrained <Real,X,Z>::checkParams(msg,params);
 
                 // Copy in the variables 
-                Unconstrained <X>::vectorsToState(xs);
-                EqualityConstrained <X,Y>::vectorsToState(ys);
-                InequalityConstrained <X,Z>::vectorsToState(zs);
+                Unconstrained <Real,X>::vectorsToState(xs);
+                EqualityConstrained <Real,X,Y>::vectorsToState(ys);
+                InequalityConstrained <Real,X,Z>::vectorsToState(zs);
                 
                 // Copy in all of the scalar information
-                Unconstrained <X>::scalarsToState(reals,nats,params);
-                EqualityConstrained <X,Y>::scalarsToState(reals,nats,params);
-                InequalityConstrained <X,Z>::scalarsToState(reals,nats,params);
+                Unconstrained <Real,X>::scalarsToState(reals,nats,params);
+                EqualityConstrained <Real,X,Y>
+                    ::scalarsToState(reals,nats,params);
+                InequalityConstrained <Real,X,Z>
+                    ::scalarsToState(reals,nats,params);
 
                 // Check that we have a valid state 
-                Unconstrained <X>::check(msg);
-                EqualityConstrained <X,Y>::check(msg);
-                InequalityConstrained <X,Z>::check(msg);
+                Unconstrained <Real,X>::check(msg);
+                EqualityConstrained <Real,X,Y>::check(msg);
+                InequalityConstrained <Real,X,Z>::check(msg);
             }
         };
     }
@@ -2078,14 +2089,20 @@ namespace peopt{
         virtual ~StateManipulator() {}
     };
 
-    // A simple operator specification 
-    template <typename Domain, typename Codomain>
+    // A simple operator specification, A : X->Y
+    template <
+        typename Real,
+        template <typename Real> class X,
+        template <typename Real> class Y
+    >
     struct Operator {
+    private:
+        // Create some type shortcuts
+        typedef typename X <Real>::Vector X_Vector;
+        typedef typename Y <Real>::Vector Y_Vector;
+    public:
         // Basic application
-        virtual void operator () (
-            const typename Domain::Vector& x,
-            typename Codomain::Vector &y
-        ) const = 0;
+        virtual void operator () (const X_Vector& x,Y_Vector &y) const = 0;
 
         // Allow a derived class to deallocate memory 
         virtual ~Operator() {}
@@ -2096,34 +2113,36 @@ namespace peopt{
     namespace Operators {
 
         // Unconstrained optimization 
-        template <typename X>
+        template <typename Real,template <typename Real> class XX>
         struct Unconstrained {
+        private:
+            // Create some type shortcuts
+            typedef XX <Real> X;
+            typedef typename X::Vector Vector;
+
+        public:
 
             // The identity operator 
-            class Identity : public Operator <X,X> {
-            public:
-                void operator () (
-                    const typename X::Vector& dx,
-                    typename X::Vector& result
-                ) const{
+            struct Identity : public Operator <Real,XX,XX> {
+                void operator () (const Vector& dx,Vector& result) const{
                     X::copy(dx,result);
                 }
             };
 
             // The scaled identity Hessian approximation.  Specifically, use use
             // norm(g) / delta_max I.
-            class ScaledIdentity : public Operator <X,X> {
+            class ScaledIdentity : public Operator <Real,XX,XX> {
             private:
-                const typename X::Real& norm_g;
-                const typename X::Real& delta_max;
+                // Norm of the gradient
+                const Real& norm_g;
+
+                // Maximum size of the trust-region radius
+                const Real& delta_max;
             public:
-                ScaledIdentity(const State::Unconstrained <X>& state)
+                ScaledIdentity(const State::Unconstrained <Real,XX>& state)
                     : norm_g(state.norm_g), delta_max(state.delta_max) {};
 
-                void operator () (
-                    const typename X::Vector& dx,
-                    typename X::Vector& result
-                ) const{
+                void operator () (const Vector& dx,Vector& result) const{
                     X::copy(dx,result);
                     X::scal(norm_g/delta_max,result);
                 }
@@ -2133,12 +2152,8 @@ namespace peopt{
             /* Note, the formula we normally see for BFGS denotes the inverse
                 Hessian approximation.  This is not the inverse, but the true
                 Hessian approximation. */ 
-            class BFGS : public Operator <X,X> {
+            class BFGS : public Operator <Real,XX,XX> {
             private:
-                // Create some type shortcuts
-                typedef typename X::Vector Vector;
-                typedef typename X::Real Real;
-
                 // Stored quasi-Newton information
                 const std::list<Vector>& oldY;
                 const std::list<Vector>& oldS;
@@ -2148,7 +2163,7 @@ namespace peopt{
             public:
                 BFGS(
                     const Messaging& msg_,
-                    const State::Unconstrained <X>& state
+                    const State::Unconstrained <Real,XX>& state
                 ) : oldY(state.oldY), oldS(state.oldS), msg(msg_) {};
 
                 // Operator interface
@@ -2306,11 +2321,11 @@ namespace peopt{
             // The SR1 Hessian approximation.  
             /* The oldY and oldS lists have the same structure as the BFGS
             preconditioner. */
-            class SR1 : public Operator <X,X> {
+            class SR1 : public Operator <Real,XX,XX> {
             private:
                 // Create some type shortcuts
+                typedef XX <Real> X;
                 typedef typename X::Vector Vector;
-                typedef typename X::Real Real;
 
                 // Stored quasi-Newton information
                 const std::list<Vector>& oldY;
@@ -2321,7 +2336,7 @@ namespace peopt{
             public:
                 SR1(
                     const Messaging& msg_,
-                    const State::Unconstrained <X>& state
+                    const State::Unconstrained <Real,XX>& state
                 ) : oldY(state.oldY), oldS(state.oldS), msg(msg_) {};
                 
                 // Operator interface
@@ -2464,12 +2479,8 @@ namespace peopt{
                 The oldS list has the following structure
                 oldS[0] = s_k = u_k - u_k{-1}
                 oldS[1] = s_{k-1} = u_{k-1} - u_k{k-2} */
-            class InvBFGS : public Operator <X,X> {
+            class InvBFGS : public Operator <Real,XX,XX> {
             private:
-                // Create some type shortcuts
-                typedef typename X::Vector Vector;
-                typedef typename X::Real Real;
-
                 // Stored quasi-Newton information
                 const std::list<Vector>& oldY;
                 const std::list<Vector>& oldS;
@@ -2479,7 +2490,7 @@ namespace peopt{
             public:
                 InvBFGS(
                     const Messaging& msg_,
-                    const State::Unconstrained <X>& state
+                    const State::Unconstrained <Real,XX>& state
                 ) : oldY(state.oldY), oldS(state.oldS), msg(msg_) {};
                 
                 // Operator interface
@@ -2558,17 +2569,14 @@ namespace peopt{
             /* In this definition, we take a shortcut and simply use the SR1
                 Hessian approximation where we swap Y and S.  The oldY and oldS
                 lists have the same structure as the BFGS operator. */
-            class InvSR1 : public Operator <X,X> {
+            class InvSR1 : public Operator <Real,XX,XX> {
             private:
-                // Create some type shortcuts
-                typedef typename X::Vector Vector;
-
                 // Store the SR1 operator
                 SR1 sr1;
             public:
                 InvSR1(
                     const Messaging& msg,
-                    const State::Unconstrained <X>& state
+                    const State::Unconstrained <Real,XX>& state
                 ) : sr1(msg,state) {};
                 void operator () (const Vector& p,Vector& result) const{
                     sr1(p,result);
@@ -2578,30 +2586,28 @@ namespace peopt{
     }
 
     // A simple scalar valued function interface, f:X->R
-    template <typename X, typename Real>
+    template <typename Real,template <typename Real> class XX>
     struct ScalarValuedFunction {
     private:
+        // Create some type shortcuts
+        typedef XX <Real> X;
+        typedef typename X::Vector Vector;
+
         // Hessian approximation
-        std::auto_ptr <Operator <X,X> > H;
+        std::auto_ptr <Operator <Real,XX,XX> > H;
 
         // This forces derived classes to call the constructor that depends
         // on the state
         ScalarValuedFunction() {}
     public:
          // <- f(x) 
-         virtual Real operator () (const typename X::Vector& x) const = 0;
+         virtual Real operator () (const Vector& x) const = 0;
 
          // g = grad f(x) 
-         virtual void grad(
-             const typename X::Vector& x,
-             typename X::Vector& g
-         ) const = 0;
+         virtual void grad(const Vector& x,Vector& g) const = 0;
 
          // H_dx = hess f(x) dx 
-         virtual void hessvec(
-             const typename X::Vector& x,
-             const typename X::Vector& dx,
-             typename X::Vector& H_dx 
+         virtual void hessvec(const Vector& x,const Vector& dx,Vector& H_dx 
          ) const {
                 X::copy(dx,H_dx); 
          }
@@ -2610,11 +2616,7 @@ namespace peopt{
          // we may want to use a Hessian approximation provided by the
          // optimization routines.  The following routine selects whether or
          // not we use the hessvec provided by the user.
-         void hess(
-             const typename X::Vector& x,
-             const typename X::Vector& dx,
-             typename X::Vector& H_dx 
-         ) const {
+         void hv(const Vector& x,const Vector& dx,Vector& H_dx) const {
              if(H.get()!=NULL) 
                 (*H)(dx,H_dx);
              else
@@ -2625,25 +2627,25 @@ namespace peopt{
          // a Hessian-vector product or if we use an internal approximation
          ScalarValuedFunction(
              const Messaging& msg,
-             const State::Unconstrained <X>& state
+             const State::Unconstrained <Real,XX>& state
          ) {
             
             // Determine the Hessian approximation
             switch(state.H_type){
                 case Operators::Identity:
-                    H.reset(new typename Operators::Unconstrained <X>
+                    H.reset(new typename Operators::Unconstrained <Real,XX>
                         ::Identity());
                     break;
                 case Operators::ScaledIdentity:
-                    H.reset(new typename Operators::Unconstrained <X>
+                    H.reset(new typename Operators::Unconstrained <Real,XX>
                         ::ScaledIdentity (state));
                     break;
                 case Operators::BFGS:
-                    H.reset(new typename Operators::Unconstrained <X>
+                    H.reset(new typename Operators::Unconstrained <Real,XX>
                         ::BFGS(msg,state));
                     break;
                 case Operators::SR1:
-                    H.reset(new typename Operators::Unconstrained <X>
+                    H.reset(new typename Operators::Unconstrained <Real,XX>
                         ::SR1(msg,state));
                     break;
                 case Operators::External:
@@ -2659,34 +2661,41 @@ namespace peopt{
     };
 
     // A simple vector valued function interface, f : X -> Y
-    template <typename X,typename Y>
+    template <
+        typename Real,
+        template <typename Real> class XX,
+        template <typename Real> class YY 
+    >
     struct VectorValuedFunction {
-         // y=f(x)
-         virtual void operator () (
-             const typename X::Vector& x,
-             typename Y::Vector& y
-         ) const = 0;
+        // Create some type shortcuts
+        typedef XX <Real> X;
+        typedef typename X::Vector X_Vector; 
+        typedef YY <Real> Y;
+        typedef typename Y::Vector Y_Vector; 
+
+        // y=f(x)
+        virtual void operator () (const X_Vector& x,Y_Vector& y) const = 0;
 
          // y=f'(x)dx 
          virtual void p(
-             const typename X::Vector& x,
-             const typename X::Vector& dx,
-             typename Y::Vector& y
+             const X_Vector& x,
+             const X_Vector& dx,
+             Y_Vector& y
          ) const = 0;
 
          // z=f'(x)*dy
          virtual void ps(
-             const typename X::Vector& x,
-             const typename Y::Vector& dy,
-             typename X::Vector& z
+             const X_Vector& x,
+             const Y_Vector& dy,
+             X_Vector& z
          ) const= 0;
          
          // z=(f''(x)dx)*dy
          virtual void pps(
-             const typename X::Vector& x,
-             const typename X::Vector& dx,
-             const typename Y::Vector& dy,
-             typename X::Vector& z
+             const X_Vector& x,
+             const X_Vector& dx,
+             const Y_Vector& dy,
+             X_Vector& z
          ) const = 0;
          
          // Allow a derived class to deallocate memory
@@ -2695,14 +2704,32 @@ namespace peopt{
 
     // An inequality constraint.  Basically, this is a vector valued function,
     // but it also adds a line-search component.
-    template <typename X,typename Y>
-    struct InequalityConstraint : public VectorValuedFunction <X,Y> {
+    template <
+        typename Real,
+        template <typename Real> class XX,
+        template <typename Real> class YY 
+    >
+    struct InequalityConstraint : public VectorValuedFunction <Real,XX,YY> {
+        // Create some type shortcuts
+        typedef XX <Real> X;
+        typedef typename X::Vector X_Vector; 
+        typedef YY <Real> Y;
+        typedef typename Y::Vector Y_Vector; 
+
         // Line-search, srch <- alpha where max(alpha >=0 : h(x+alpha dx) >=0).
         // In the case where this number is infinite, set alpha=Real(-1.).
-        virtual typename X::Real srch(
-            const typename X::Vector& x,
-            const typename X::Vector& dx
-        ) const = 0;
+        virtual Real srch(const X_Vector& x,const X_Vector& dx) const = 0;
+
+        // We only allow affine functions in inequality constraints.  Hence,
+        // the second derivative is zero.
+        void pps(
+             const X_Vector& x,
+             const X_Vector& dx,
+             const Y_Vector& dy,
+             X_Vector& z
+         ) const {
+                X::zero(z);
+         }
     };
 
     // All the functions required by an optimization algorithm.  Note, this
@@ -2713,14 +2740,14 @@ namespace peopt{
         // min_{x \in X} f(x)
         //
         // where f : X -> R
-        template <typename X,typename Real> 
+        template <typename Real,template <typename Real> class XX> 
         struct Unconstrained {
         public:
             // Objective function
-            std::auto_ptr <ScalarValuedFunction <X,Real> > f;
+            std::auto_ptr <ScalarValuedFunction <Real,XX> > f;
 
             // Preconditioner for the Hessian of the objective
-            std::auto_ptr <Operator <X,X> > Minv;
+            std::auto_ptr <Operator <Real,XX,XX> > Minv;
 
         protected:
             // Check that all the functions are defined
@@ -2737,21 +2764,23 @@ namespace peopt{
             // Create a preconditioner if requested
             void create(
                 const Messaging& msg,
-                const State::Unconstrained <X>& state
+                const State::Unconstrained <Real,XX>& state
             ) {
                 // Determine the preconditioner
                 switch(state.Minv_type){
                     case Operators::Identity:
                         Minv.reset(new typename
-                            Operators::Unconstrained<X>::Identity());
+                            Operators::Unconstrained<Real,XX>::Identity());
                         break;
                     case Operators::InvBFGS:
                         Minv.reset(new typename
-                            Operators::Unconstrained<X>::InvBFGS(msg,state));
+                            Operators::Unconstrained<Real,XX>
+                                ::InvBFGS(msg,state));
                         break;
                     case Operators::InvSR1:
                         Minv.reset(new typename
-                            Operators::Unconstrained<X>::InvSR1(msg,state));
+                            Operators::Unconstrained<Real,XX>
+                                ::InvSR1(msg,state));
                         break;
                     case Operators::External:
                         if(Minv.get()==NULL)
@@ -2769,14 +2798,14 @@ namespace peopt{
             // any missing pieces and then checking the result.
             void finalize(
                 const Messaging& msg,
-                const State::Unconstrained <X>& state
+                const State::Unconstrained <Real,XX>& state
             ) {
 
                 // Create the missing pieces
-                Unconstrained <X,Real>::create(msg,state);
+                Unconstrained <Real,XX>::create(msg,state);
 
                 // Check the results
-                Unconstrained <X,Real>::check(msg);
+                Unconstrained <Real,XX>::check(msg);
             }
         };
         
@@ -2785,11 +2814,15 @@ namespace peopt{
         // min_{x \in X} f(x) st g(x)=0
         //
         // where f : X -> R, g : X -> Y
-        template <typename X,typename Y,typename Real> 
-        struct EqualityConstrained : public virtual Unconstrained <X,Real> {
+        template <
+            typename Real,
+            template <typename Real> class XX,
+            template <typename Real> class YY
+        > 
+        struct EqualityConstrained: public virtual Unconstrained <Real,XX> {
         public:
             // Equality constraints 
-            std::auto_ptr <VectorValuedFunction <X,Y> > g;
+            std::auto_ptr <VectorValuedFunction <Real,XX,YY> > g;
            
         protected:
             // Check that all the functions are defined
@@ -2803,7 +2836,7 @@ namespace peopt{
             // equality constrained optimization
             void create(
                 const Messaging& msg,
-                const State::EqualityConstrained <X,Y>& state
+                const State::EqualityConstrained <Real,XX,YY>& state
             ) { }
 
         public:
@@ -2811,16 +2844,16 @@ namespace peopt{
             // any missing pieces and then checking the result.
             void finalize(
                 const Messaging& msg,
-                const State::EqualityConstrained <X,Y>& state
+                const State::EqualityConstrained <Real,XX,YY>& state
             ) {
 
                 // Create the missing pieces
-                Unconstrained <X,Real>::create(msg,state);
-                EqualityConstrained <X,Y,Real>::create(msg,state);
+                Unconstrained <Real,XX>::create(msg,state);
+                EqualityConstrained <Real,XX,YY>::create(msg,state);
 
                 // Check the results
-                Unconstrained <X,Real>::check(msg);
-                EqualityConstrained <X,Y,Real>::check(msg);
+                Unconstrained <Real,XX>::check(msg);
+                EqualityConstrained <Real,XX,YY>::check(msg);
             }
         };
         
@@ -2829,15 +2862,16 @@ namespace peopt{
         // min_{x \in X} f(x) st h(x) >=_K 0
         //
         // where f : X -> R, h : X -> Z
-        template <typename X,typename Z,typename Real> 
-        struct InequalityConstrained : public virtual Unconstrained <X,Real> {
+        template <
+            typename Real,
+            template <typename Real> class XX,
+            template <typename Real> class ZZ 
+        > 
+        struct InequalityConstrained : public virtual Unconstrained <Real,XX> {
         public:
             // Inequality constraints 
-            std::auto_ptr <InequalityConstraint <X,Z> > h;
+            std::auto_ptr <InequalityConstraint <Real,XX,ZZ> > h;
 
-            // Cone for the inequality constraints
-            std::auto_ptr <Cone <X,Z> > K;
-           
         protected:
             // Check that all the functions are defined
             void check(const Messaging& msg) {
@@ -2850,7 +2884,7 @@ namespace peopt{
             // inequality constrained optimization
             void create(
                 const Messaging& msg,
-                const State::InequalityConstrained <X,Z>& state
+                const State::InequalityConstrained <Real,XX,ZZ>& state
             ) { }
 
         public:
@@ -2858,16 +2892,16 @@ namespace peopt{
             // any missing pieces and then checking the result.
             void finalize(
                 const Messaging& msg,
-                const State::InequalityConstrained <X,Z>& state
+                const State::InequalityConstrained <Real,XX,ZZ>& state
             ) {
 
                 // Create the missing pieces
-                Unconstrained <X,Real>::create(msg,state);
-                InequalityConstrained <X,Z,Real>::create(msg,state);
+                Unconstrained <Real,XX>::create(msg,state);
+                InequalityConstrained <Real,XX,ZZ>::create(msg,state);
 
                 // Check the results
-                Unconstrained <X,Real>::check(msg);
-                InequalityConstrained <X,Z,Real>::check(msg);
+                Unconstrained <Real,XX>::check(msg);
+                InequalityConstrained <Real,XX,ZZ>::check(msg);
             }
         };
         
@@ -2876,27 +2910,32 @@ namespace peopt{
         // min_{x \in X} f(x) st g(x)=0, h(x) >=_K 0
         //
         // where f : X -> R, g : X -> Y, h : X -> Z
-        template <typename X,typename Y,typename Z,typename Real> 
+        template <
+            typename Real,
+            template <typename Real> class XX,
+            template <typename Real> class YY,
+            template <typename Real> class ZZ 
+        > 
         struct Constrained:
-            public EqualityConstrained <X,Y,Real>,
-            public InequalityConstrained <X,Z,Real>
+            public EqualityConstrained <Real,XX,YY>,
+            public InequalityConstrained <Real,XX,ZZ>
         {
             // Finalize the construction of the functions by creating
             // any missing pieces and then checking the result.
             void finalize(
                 const Messaging& msg,
-                const State::Constrained <X,Y,Z>& state
+                const State::Constrained <Real,XX,YY,ZZ>& state
             ) {
 
                 // Create the missing pieces
-                Unconstrained <X,Real>::create(msg,state);
-                EqualityConstrained <X,Y,Real>::create(msg,state);
-                InequalityConstrained <X,Z,Real>::create(msg,state);
+                Unconstrained <Real,XX>::create(msg,state);
+                EqualityConstrained <Real,XX,YY>::create(msg,state);
+                InequalityConstrained <Real,XX,ZZ>::create(msg,state);
 
                 // Check the results
-                Unconstrained <X,Real>::check(msg);
-                EqualityConstrained <X,Y,Real>::check(msg);
-                InequalityConstrained <X,Z,Real>::check(msg);
+                Unconstrained <Real,XX>::check(msg);
+                EqualityConstrained <Real,XX,YY>::check(msg);
+                InequalityConstrained <Real,XX,ZZ>::check(msg);
             }
         };
     }
@@ -2906,16 +2945,19 @@ namespace peopt{
         // Performs a 4-point finite difference directional derivative on
         // a scalar valued function f : X->R.  In other words, <- f'(x)dx.  We
         // accomplish this by doing a finite difference calculation on f.
-        template <typename X,typename Real>
+        template <
+            typename Real,
+            template <typename Real> class XX
+        >
         Real directionalDerivative(
-            const ScalarValuedFunction<X,Real>& f,
-            const typename X::Vector& x,
-            const typename X::Vector& dx,
-            const typename X::Real& epsilon
+            const ScalarValuedFunction<Real,XX>& f,
+            const typename XX <Real>::Vector& x,
+            const typename XX <Real>::Vector& dx,
+            const Real& epsilon
         ){
             // Create some type shortcuts
+            typedef XX <Real> X;
             typedef typename X::Vector X_Vector;
-            typedef typename X::Real X_Real;
 
             // Create an element for x+eps dx, x-eps dx, etc. 
             X_Vector x_op_dx; X::init(x,x_op_dx);
@@ -2932,12 +2974,12 @@ namespace peopt{
 
             // f(x+2 eps dx)
             X::copy(x,x_op_dx);
-            X::axpy(X_Real(2.*epsilon),dx,x_op_dx);
+            X::axpy(Real(2.*epsilon),dx,x_op_dx);
             Real obj_xp2es=f(x_op_dx);
 
             // f(x-2 eps dx)
             X::copy(x,x_op_dx);
-            X::axpy(X_Real(-2.*epsilon),dx,x_op_dx);
+            X::axpy(Real(-2.*epsilon),dx,x_op_dx);
             Real obj_xm2es=f(x_op_dx);
 
             // Calculate the directional derivative and return it
@@ -2950,17 +2992,20 @@ namespace peopt{
         // the gradient of a scalar valued function f : X->R.  In other words,
         // dd ~= hess f(x) dx.  We accomplish this by doing a finite difference
         // calculation on G where G(x)=grad f(x).
-        template <typename X,typename Real>
+        template <
+            typename Real,
+            template <typename Real> class XX
+        >
         void directionalDerivative(
-            const ScalarValuedFunction<X,Real>& f,
-            const typename X::Vector& x,
-            const typename X::Vector& dx,
-            const typename X::Real& epsilon,
-            typename X::Vector& dd
+            const ScalarValuedFunction<Real,XX>& f,
+            const typename XX <Real>::Vector& x,
+            const typename XX <Real>::Vector& dx,
+            const Real& epsilon,
+            typename XX <Real>::Vector& dd
         ){
             // Create some type shortcuts
+            typedef XX <Real> X;
             typedef typename X::Vector X_Vector;
-            typedef typename X::Real X_Real;
 
             // Create an element for x+eps dx, x-eps dx, etc. 
             X_Vector x_op_dx; X::init(x,x_op_dx);
@@ -2975,46 +3020,50 @@ namespace peopt{
             X::copy(x,x_op_dx);
             X::axpy(epsilon,dx,x_op_dx);
             f.grad(x_op_dx,fgrad_x_op_dx);
-            X::axpy(X_Real(8.),fgrad_x_op_dx,dd);
+            X::axpy(Real(8.),fgrad_x_op_dx,dd);
 
             // grad f(x-eps dx)
             X::copy(x,x_op_dx);
             X::axpy(-epsilon,dx,x_op_dx);
             f.grad(x_op_dx,fgrad_x_op_dx);
-            X::axpy(X_Real(-8.),fgrad_x_op_dx,dd);
+            X::axpy(Real(-8.),fgrad_x_op_dx,dd);
 
             // grad f(x+2 eps dx)
             X::copy(x,x_op_dx);
-            X::axpy(X_Real(2.)*epsilon,dx,x_op_dx);
+            X::axpy(Real(2.)*epsilon,dx,x_op_dx);
             f.grad(x_op_dx,fgrad_x_op_dx);
-            X::axpy(X_Real(-1.),fgrad_x_op_dx,dd);
+            X::axpy(Real(-1.),fgrad_x_op_dx,dd);
 
             // grad f(x-2 eps dx)
             X::copy(x,x_op_dx);
-            X::axpy(X_Real(-2.)*epsilon,dx,x_op_dx);
+            X::axpy(Real(-2.)*epsilon,dx,x_op_dx);
             f.grad(x_op_dx,fgrad_x_op_dx);
-            X::axpy(X_Real(1.),fgrad_x_op_dx,dd);
+            X::axpy(Real(1.),fgrad_x_op_dx,dd);
 
             // Finish the finite difference calculation 
-            X::scal(X_Real(1.)/(X_Real(12.)*epsilon),dd);
+            X::scal(Real(1.)/(Real(12.)*epsilon),dd);
         }
 
         // Performs a 4-point finite difference directional derivative on
         // a vector valued function f : X->Y. In other words, dd ~= f'(x)dx.
         // We accomplish this by doing a finite difference calculation on f.
-        template <class X,class Y>
+        template <
+            typename Real,
+            template <typename Real> class XX,
+            template <typename Real> class YY 
+        >
         void directionalDerivative(
-            const VectorValuedFunction<X,Y>& f,
-            const typename X::Vector& x,
-            const typename X::Vector& dx,
-            const typename X::Real& epsilon,
-            typename Y::Vector& dd
+            const VectorValuedFunction<Real,XX,YY>& f,
+            const typename XX <Real>::Vector& x,
+            const typename XX <Real>::Vector& dx,
+            const Real& epsilon,
+            typename YY <Real>::Vector& dd
         ){
             // Create some type shortcuts
+            typedef XX <Real> X;
             typedef typename X::Vector X_Vector;
-            typedef typename X::Real X_Real;
+            typedef YY <Real> Y;
             typedef typename Y::Vector Y_Vector;
-            typedef typename Y::Real Y_Real;
 
             // Create an element for x+eps dx, x-eps dx, etc. 
             X_Vector x_op_dx; X::init(x,x_op_dx);
@@ -3029,28 +3078,28 @@ namespace peopt{
             X::copy(x,x_op_dx);
             X::axpy(epsilon,dx,x_op_dx);
             f(x_op_dx,f_x_op_dx);
-            Y::axpy(Y_Real(8.),f_x_op_dx,dd);
+            Y::axpy(Real(8.),f_x_op_dx,dd);
 
             // f(x-eps dx)
             X::copy(x,x_op_dx);
             X::axpy(-epsilon,dx,x_op_dx);
             f(x_op_dx,f_x_op_dx);
-            Y::axpy(Y_Real(-8.),f_x_op_dx,dd);
+            Y::axpy(Real(-8.),f_x_op_dx,dd);
 
             // f(x+2 eps dx)
             X::copy(x,x_op_dx);
-            X::axpy(X_Real(2.)*epsilon,dx,x_op_dx);
+            X::axpy(Real(2.)*epsilon,dx,x_op_dx);
             f(x_op_dx,f_x_op_dx);
-            Y::axpy(Y_Real(-1.),f_x_op_dx,dd);
+            Y::axpy(Real(-1.),f_x_op_dx,dd);
 
             // f(x-2 eps dx)
             X::copy(x,x_op_dx);
-            X::axpy(X_Real(-2.)*epsilon,dx,x_op_dx);
+            X::axpy(Real(-2.)*epsilon,dx,x_op_dx);
             f(x_op_dx,f_x_op_dx);
-            Y::axpy(Y_Real(1.),f_x_op_dx,dd);
+            Y::axpy(Real(1.),f_x_op_dx,dd);
 
             // Finish the finite difference calculation 
-            Y::scal(Y_Real(1.)/(Y_Real(12.)*epsilon),dd);
+            Y::scal(Real(1.)/(Real(12.)*epsilon),dd);
         }
         
         // Performs a 4-point finite difference directional derivative on
@@ -3058,20 +3107,24 @@ namespace peopt{
         // words, dd ~= (f''(x)dx)*dy.  In order to calculate this, we do a
         // finite difference approximation using g(x)=f'(x)*dy.  Therefore,
         // the error in the approximation should be in the dx piece.
-        template <class X,class Y>
+        template <
+            typename Real,
+            template <typename Real> class XX,
+            template <typename Real> class YY 
+        >
         void directionalDerivative(
-            const VectorValuedFunction<X,Y>& f,
-            const typename X::Vector& x,
-            const typename X::Vector& dx,
-            const typename Y::Vector& dy,
-            const typename X::Real& epsilon,
-            typename Y::Vector& dd
+            const VectorValuedFunction<Real,XX,YY>& f,
+            const typename XX <Real>::Vector& x,
+            const typename XX <Real>::Vector& dx,
+            const typename YY <Real>::Vector& dy,
+            const Real& epsilon,
+            typename YY <Real>::Vector& dd
         ){
             // Create some type shortcuts
+            typedef XX <Real> X;
             typedef typename X::Vector X_Vector;
-            typedef typename X::Real X_Real;
+            typedef YY <Real> Y;
             typedef typename Y::Vector Y_Vector;
-            typedef typename Y::Real Y_Real;
 
             // Create an element for x+eps dx, x-eps dx, etc. 
             X_Vector x_op_dx; X::init(x,x_op_dx);
@@ -3086,42 +3139,45 @@ namespace peopt{
             X::copy(x,x_op_dx);
             X::axpy(epsilon,dx,x_op_dx);
             f.ps(x_op_dx,dy,fps_xopdx_dy);
-            Y::axpy(Y_Real(8.),fps_xopdx_dy,dd);
+            Y::axpy(Real(8.),fps_xopdx_dy,dd);
 
             // f'(x-eps dx)*dy
             X::copy(x,x_op_dx);
             X::axpy(-epsilon,dx,x_op_dx);
             f.ps(x_op_dx,dy,fps_xopdx_dy);
-            Y::axpy(Y_Real(-8.),fps_xopdx_dy,dd);
+            Y::axpy(Real(-8.),fps_xopdx_dy,dd);
 
             // f'(x+2 eps dx)*dy
             X::copy(x,x_op_dx);
-            X::axpy(X_Real(2.)*epsilon,dx,x_op_dx);
+            X::axpy(Real(2.)*epsilon,dx,x_op_dx);
             f.ps(x_op_dx,dy,fps_xopdx_dy);
-            Y::axpy(Y_Real(-1.),fps_xopdx_dy,dd);
+            Y::axpy(Real(-1.),fps_xopdx_dy,dd);
 
             // f'(x-2 eps dx)*dy
             X::copy(x,x_op_dx);
-            X::axpy(X_Real(-2.)*epsilon,dx,x_op_dx);
+            X::axpy(Real(-2.)*epsilon,dx,x_op_dx);
             f.ps(x_op_dx,dy,fps_xopdx_dy);
-            Y::axpy(Y_Real(1.),fps_xopdx_dy,dd);
+            Y::axpy(Real(1.),fps_xopdx_dy,dd);
 
             // Finish the finite difference calculation 
-            Y::scal(Y_Real(1.)/(Y_Real(12.)*epsilon),dd);
+            Y::scal(Real(1.)/(Real(12.)*epsilon),dd);
         }
 
         // Performs a finite difference test on the gradient of f where  
         // f : X->R is scalar valued.  In other words, we check grad f using f.
-        template <typename X,typename Real>
+        template <
+            typename Real,
+            template <typename Real> class XX
+        >
         void gradientCheck(
             const Messaging& msg,
-            const ScalarValuedFunction<X,Real>& f,
-            const typename X::Vector& x,
-            const typename X::Vector& dx
+            const ScalarValuedFunction<Real,XX>& f,
+            const typename XX <Real>::Vector& x,
+            const typename XX <Real>::Vector& dx
         ) {
             // Create some type shortcuts
+            typedef XX <Real> X;
             typedef typename X::Vector X_Vector;
-            typedef typename X::Real X_Real;
 
             // Calculate the gradient at the point x
             X_Vector f_grad; X::init(x,f_grad);
@@ -3133,7 +3189,7 @@ namespace peopt{
             // Compute an ensemble of finite difference tests in a linear manner
             msg.print("Finite difference test on the gradient.",1);
             for(int i=-2;i<=5;i++){
-                X_Real epsilon=pow(X_Real(.1),i);
+                Real epsilon=pow(Real(.1),i);
                 Real dd=directionalDerivative <> (f,x,dx,epsilon);
 
                 std::stringstream ss;
@@ -3147,16 +3203,19 @@ namespace peopt{
         
         // Performs a finite difference test on the hessian of f where f : X->R
         // is scalar valued.  In other words, we check hess f dx using grad f.
-        template <typename X,typename Real>
+        template <
+            typename Real,
+            template <typename Real> class XX
+        >
         void hessianCheck(
             const Messaging& msg,
-            const ScalarValuedFunction<X,Real>& f,
-            const typename X::Vector& x,
-            const typename X::Vector& dx
+            const ScalarValuedFunction<Real,XX>& f,
+            const typename XX <Real>::Vector& x,
+            const typename XX <Real>::Vector& dx
         ) {
             // Create some type shortcuts
+            typedef XX <Real> X;
             typedef typename X::Vector X_Vector;
-            typedef typename X::Real X_Real;
 
             // Create an element for the residual between the directional 
             // derivative computed Hessian-vector product and the true 
@@ -3165,21 +3224,21 @@ namespace peopt{
 
             // Calculate hess f in the direction dx.  
             X_Vector hess_f_dx; X::init(x,hess_f_dx);
-            f.hess(x,dx,hess_f_dx);
+            f.hv(x,dx,hess_f_dx);
 
             // Compute an ensemble of finite difference tests in a linear manner
             msg.print("Finite difference test on the Hessian.",1);
             for(int i=-2;i<=5;i++){
 
                 // Calculate the directional derivative
-                X_Real epsilon=pow(X_Real(.1),i);
+                Real epsilon=pow(Real(.1),i);
                 directionalDerivative <> (f,x,dx,epsilon,res);
 
                 // Determine the residual.  Store in res.
-                X::axpy(X_Real(-1.),hess_f_dx,res);
+                X::axpy(Real(-1.),hess_f_dx,res);
 
                 // Determine the relative error
-                Real rel_err=X::norm(res)/(X_Real(1e-16)+X::norm(hess_f_dx));
+                Real rel_err=X::norm(res)/(Real(1e-16)+X::norm(hess_f_dx));
 
                 // Print out the differences
                 std::stringstream ss;
@@ -3192,31 +3251,34 @@ namespace peopt{
         
         // This tests the symmetry of the Hessian.  We accomplish this by
         // comparing <H(x)dx,dxx> to <dx,H(x)dxx>.
-        template <typename X,typename Real>
+        template <
+            typename Real,
+            template <typename Real> class XX
+        >
         void hessianSymmetryCheck(
             const Messaging& msg,
-            const ScalarValuedFunction<X,Real>& f,
-            const typename X::Vector& x,
-            const typename X::Vector& dx,
-            const typename X::Vector& dxx
+            const ScalarValuedFunction<Real,XX>& f,
+            const typename XX <Real>::Vector& x,
+            const typename XX <Real>::Vector& dx,
+            const typename XX <Real>::Vector& dxx
         ) {
             // Create some type shortcuts
+            typedef XX <Real> X;
             typedef typename X::Vector X_Vector;
-            typedef typename X::Real X_Real;
 
             // Calculate hess f in the direction dx.  
             X_Vector H_x_dx; X::init(x,H_x_dx);
-            f.hess(x,dx,H_x_dx);
+            f.hv(x,dx,H_x_dx);
             
             // Calculate hess f in the direction dxx.  
             X_Vector H_x_dxx; X::init(x,H_x_dxx);
-            f.hess(x,dxx,H_x_dxx);
+            f.hv(x,dxx,H_x_dxx);
             
             // Calculate <H(x)dx,dxx>
-            X_Real innr_Hxdx_dxx = X::innr(H_x_dx,dxx);
+            Real innr_Hxdx_dxx = X::innr(H_x_dx,dxx);
             
             // Calculate <dx,H(x)dxx>
-            X_Real innr_dx_Hxdxx = X::innr(dx,H_x_dxx);
+            Real innr_dx_Hxdxx = X::innr(dx,H_x_dxx);
 
             // Determine the absolute difference between the two.  This really
             // should be zero.
@@ -3233,19 +3295,23 @@ namespace peopt{
 
         // Performs a finite difference test on the derivative of a
         // vector-valued function f.  Specifically, we check f'(x)dx using f.
-        template <typename X,typename Y>
+        template <
+            typename Real,
+            template <typename Real> class XX,
+            template <typename Real> class YY 
+        >
         void derivativeCheck(
             const Messaging& msg,
-            const VectorValuedFunction<X,Y>& f,
-            const typename X::Vector& x,
-            const typename X::Vector& dx,
-            const typename Y::Vector& y
+            const VectorValuedFunction<Real,XX,YY>& f,
+            const typename XX <Real>::Vector& x,
+            const typename XX <Real>::Vector& dx,
+            const typename YY <Real>::Vector& y
         ) {
             // Create some type shortcuts
+            typedef XX <Real> X;
             typedef typename X::Vector X_Vector;
-            typedef typename X::Real X_Real;
+            typedef YY <Real> Y;
             typedef typename Y::Vector Y_Vector;
-            typedef typename Y::Real Y_Real;
 
             // Create an element for the residual between the directional 
             // derivative and the true derivative.
@@ -3261,14 +3327,14 @@ namespace peopt{
             for(int i=-2;i<=5;i++){
 
                 // Calculate the directional derivative
-                X_Real epsilon=pow(X_Real(.1),i);
+                Real epsilon=pow(Real(.1),i);
                 directionalDerivative <> (f,x,dx,epsilon,res);
 
                 // Determine the residual.  Store in res.
-                Y::axpy(Y_Real(-1.),fp_x_dx,res);
+                Y::axpy(Real(-1.),fp_x_dx,res);
 
                 // Determine the relative error
-                Y_Real rel_err=Y::norm(res)/(Y_Real(1e-16)+Y::norm(fp_x_dx));
+                Real rel_err=Y::norm(res)/(Real(1e-16)+Y::norm(fp_x_dx));
 
                 // Print out the differences
                 std::stringstream ss;
@@ -3282,31 +3348,23 @@ namespace peopt{
         // Performs an adjoint check on the first-order derivative of a vector
         // valued function.  In other words, we check that
         // <f'(x)dx,dy> = <dx,f'(x)*dy>
-        template <typename X,typename Y>
+        template <
+            typename Real,
+            template <typename Real> class XX,
+            template <typename Real> class YY 
+        >
         void derivativeAdjointCheck(
             const Messaging& msg,
-            const VectorValuedFunction<X,Y>& f,
-            const typename X::Vector& x,
-            const typename X::Vector& dx,
-            const typename Y::Vector& dy
+            const VectorValuedFunction<Real,XX,YY>& f,
+            const typename XX <Real>::Vector& x,
+            const typename XX <Real>::Vector& dx,
+            const typename YY <Real>::Vector& dy
         ) {
             // Create some type shortcuts
+            typedef XX <Real> X;
             typedef typename X::Vector X_Vector;
-            typedef typename X::Real X_Real;
+            typedef YY <Real> Y;
             typedef typename Y::Vector Y_Vector;
-            typedef typename Y::Real Y_Real;
-
-            // Check that both X and Y use the same real time.  Mostly, we
-            // need to compare two different inner products and insuring
-            // that they're the same is the simplest way to guarantee
-            // compatibility.
-            if(!is_same<X_Real,Y_Real>::eval())
-                msg.error("The real type for the spaces X and Y in "
-                    "derivativeAdjointCheck must be the same.");
-
-            // At this point, since X_Real and Y_Real are the same, just use
-            // Real
-            typedef X_Real Real;
 
             // Calculate f'(x)dx 
             Y_Vector fp_x_dx; Y::init(dy,fp_x_dx);
@@ -3338,19 +3396,23 @@ namespace peopt{
         // Performs a finite difference test on the second-derivative-adjoint 
         // of a vector-valued function f.  Specifically, we check
         // (f''(x)dx)*dy using f'(x)*dy.
-        template <typename X,typename Y>
+        template <
+            typename Real,
+            template <typename Real> class XX,
+            template <typename Real> class YY 
+        >
         void secondDerivativeCheck(
             const Messaging& msg,
-            const VectorValuedFunction<X,Y>& f,
-            const typename X::Vector& x,
-            const typename X::Vector& dx,
-            const typename Y::Vector& dy
+            const VectorValuedFunction<Real,XX,YY>& f,
+            const typename XX <Real>::Vector& x,
+            const typename XX <Real>::Vector& dx,
+            const typename YY <Real>::Vector& dy
         ) {
             // Create some type shortcuts
+            typedef XX <Real> X;
             typedef typename X::Vector X_Vector;
-            typedef typename X::Real X_Real;
+            typedef YY <Real> Y;
             typedef typename Y::Vector Y_Vector;
-            typedef typename Y::Real Y_Real;
 
             // Create an element for the residual between the directional 
             // derivative and the true derivative.
@@ -3366,14 +3428,14 @@ namespace peopt{
             for(int i=-2;i<=5;i++){
 
                 // Calculate the directional derivative
-                X_Real epsilon=pow(X_Real(.1),i);
+                Real epsilon=pow(Real(.1),i);
                 directionalDerivative <> (f,x,dx,dy,epsilon,res);
 
                 // Determine the residual.  Store in res.
-                X::axpy(X_Real(-1.),fpps_x_dx_dy,res);
+                X::axpy(Real(-1.),fpps_x_dx_dy,res);
 
                 // Determine the relative error
-                X_Real rel_err=X::norm(res)/(X_Real(1e-16)+X::norm(fpps_x_dx_dy));
+                Real rel_err=X::norm(res)/(Real(1e-16)+X::norm(fpps_x_dx_dy));
 
                 // Print out the differences
                 std::stringstream ss;
@@ -3385,21 +3447,24 @@ namespace peopt{
         }
     }
 
-#if 0
     // This contains the different algorithms used for optimization 
     namespace Algorithms {
 
         // Unconstrained optimization 
-        template <typename X>
+        template <
+            typename Real,
+            template <typename Real> class XX
+        >
         struct Unconstrained {
+
+            // Create some type shortcuts
+            typedef XX <Real> X;
+            typedef typename X::Vector Vector;
 
             // Checks a set of stopping conditions
             static StoppingCondition::t checkStop(
-                const State::Unconstrained <X>& state
+                const State::Unconstrained <Real,XX>& state
             ){
-                // Create some type shortcuts
-                typedef typename X::Real Real;
-
                 // Create some shortcuts
                 const Real& norm_g=state.norm_g;
                 const Real& norm_gtyp=state.norm_gtyp;
@@ -3431,13 +3496,13 @@ namespace peopt{
             // Computes the truncated-CG (Steihaug-Toint) trial step for
             // trust-region algorithms
             static void truncatedCG(
-                const State::Unconstrained <X>& state
-                const Operator<X,X>& Minv,
-                const Operator<X,X>& H
+                const Messaging& msg,
+                const Functions::Unconstrained <Real,XX>& fns,
+                State::Unconstrained <Real,XX>& state
             ){
 
                 // Create shortcuts to some elements in the state
-                const Vector& u=*(state.u.begin());
+                const Vector& x=*(state.x.begin());
                 const Vector& g=*(state.g.begin());
                 const Real& delta=state.delta;
                 const Real& eps_cg=state.eps_krylov;
@@ -3448,11 +3513,15 @@ namespace peopt{
                 KrylovStop::t& krylov_stop=state.krylov_stop;
                 Real& rel_err=state.krylov_rel_err;
 
+                // Create shortcuts to the functions that we need
+                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
+                const Operator <Real,XX,XX>& Minv=*(fns.Minv);
+
                 // Allocate memory for temporaries that we need
-                Vector g_k; X::init(u,g_k);
-                Vector v_k; X::init(u,v_k);
-                Vector p_k; X::init(u,p_k);
-                Vector H_pk; X::init(u,H_pk);
+                Vector g_k; X::init(x,g_k);
+                Vector v_k; X::init(x,v_k);
+                Vector p_k; X::init(x,p_k);
+                Vector H_pk; X::init(x,H_pk);
 
                 // Allocate memory for a few constants that we need to track 
                 Real kappa;
@@ -3463,28 +3532,31 @@ namespace peopt{
                 Real inner_sk_M_pk,inner_gk_vk,inner_gkp1_vkp1;
 
                 // Initialize our variables
-                X::scal(Real(0.),s_k);                // s_0=0
-                X::copy(g,g_k);                        // g_0=g
-                Minv(g_k,v_k);                        // v_0=inv(M)*g_0
-                X::copy(v_k,p_k);                        // p_0=-v_0
+                X::scal(Real(0.),s_k);       // s_0=0
+                X::copy(g,g_k);              // g_0=g
+                Minv(g_k,v_k);               // v_0=inv(M)*g_0
+                X::copy(v_k,p_k);            // p_0=-v_0
                 X::scal(Real(-1.),p_k);
-                norm_sk_M2=Real(0.);                // || s_0 ||_M^2 = 0
-                norm_pk_M2=X::innr(g_k,v_k);        // || p_0 ||_M^2 = <g_0,v_0>        
-                inner_sk_M_pk=Real(0.);                // <s_0,M p_0>=0
-                inner_gk_vk=norm_pk_M2;                // <g_0,v_0> = || p_0 ||_M^2
-                norm_g=X::innr(g,g);                // || g ||
+                norm_sk_M2=Real(0.);         // || s_0 ||_M^2 = 0
+                norm_pk_M2=X::innr(g_k,v_k); // || p_0 ||_M^2 = <g_0,v_0>
+                inner_sk_M_pk=Real(0.);      // <s_0,M p_0>=0
+                inner_gk_vk=norm_pk_M2;      // <g_0,v_0> = || p_0 ||_M^2
+                norm_g=X::innr(g,g);         // || g ||
 
-                // Run truncated CG until we hit our max iteration or we converge
+                // Run truncated CG until we hit our max iteration or we
+                // converge
                 iter_total++;
                 for(iter=1;iter<=iter_max;iter++,iter_total++){
                     // H_pk=H p_k
-                    H(p_k,H_pk);
+                    f.hv(x,p_k,H_pk);
 
-                    // Compute the curvature for this direction.  kappa=<p_k,H p_k>
+                    // Compute the curvature for this direction.
+                    // kappa=<p_k,H p_k>
                     kappa=X::innr(p_k,H_pk);
 
-                    // If we have negative curvature, don't bother with the next two
-                    // steps since we're going to exit and we won't need them.  
+                    // If we have negative curvature, don't bother with the
+                    // next two steps since we're going to exit and we won't
+                    // need them.  
                     if(kappa > 0){
                         // Determine a trial point
                         alpha = X::innr(g_k,v_k)/kappa;
@@ -3494,13 +3566,16 @@ namespace peopt{
                             +alpha*alpha*norm_pk_M2;
                     }
 
-                    // If we have negative curvature or our trial point is outside
-                    // the trust region radius, terminate truncated-CG and find our
-                    // final step.  We have the kappa!=kappa check in order to trap
-                    // NaNs.
-                    if(kappa <= 0 || norm_skp1_M2 >= delta*delta || kappa!=kappa){
-                        // sigma = positive root of || s_k + sigma p_k ||_M = delta
-                        sigma= (-inner_sk_M_pk + sqrt(inner_sk_M_pk*inner_sk_M_pk
+                    // If we have negative curvature or our trial point is
+                    // outside the trust region radius, terminate truncated-CG
+                    // and find our final step.  We have the kappa!=kappa check
+                    // in order to trap NaNs.
+                    if( kappa <= 0 ||
+                        norm_skp1_M2 >= delta*delta ||
+                        kappa!=kappa
+                    ){
+                        // sigma=positive root of || s_k + sigma p_k ||_M=delta
+                        sigma=(-inner_sk_M_pk + sqrt(inner_sk_M_pk*inner_sk_M_pk
                             + norm_pk_M2*(delta*delta-norm_sk_M2)))/norm_pk_M2;
 
                         // s_kp1=s_k+sigma p_k
@@ -3574,9 +3649,81 @@ namespace peopt{
                 // Print out diagnostics
                 if(iter!=iter_max) printKrylov(state);
             }
+
+            // Checks whether we accept or reject a step
+            static bool checkStep(
+                const Messaging& msg,
+                const Functions::Unconstrained <Real,XX>& fns,
+                State::Unconstrained <Real,XX>& state
+            ){
+                // Create shortcuts to some elements in the state
+                const Vector& s=*(state.s.begin());
+                const Vector& x=*(state.x.begin());
+                const Vector& g=*(state.g.begin());
+                const Real& eta1=state.eta1;
+                const Real& eta2=state.eta2;
+                const Real& delta_max=state.delta_max;
+                const Real& obj_x=state.obj_x;
+                const Real& norm_s=state.norm_s;
+                Real& delta=state.delta;
+                Real& rho=state.rho;
+                Real& obj_xps=state.obj_xps;
+                
+                // Create shortcuts to the functions that we need
+                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
+                const Operator <Real,XX,XX>& Minv=*(fns.Minv);
+
+                // Allocate memory for temporaries that we need
+                Vector xps; X::init(x,xps);
+                Vector Hx_s; X::init(x,Hx_s);
+
+                // Determine x+s 
+                X::copy(s,xps);
+                X::axpy(Real(1.),x,xps);
+
+                // Determine the objective function evaluated at u+s
+                obj_xps=f(xps);
+                
+                // Determine H(x)s
+                f.hvH(x,s,Hx_s);
+
+                // Determine alpha+<g,s>+.5*<H(u)s,s>
+                Real model_s=obj_x+X::innr(g,s)+Real(.5)*X::innr(Hx_s,s);
+
+                // Add a safety check in case we don't actually minimize the TR
+                // subproblem correctly. This could happen for a variety of
+                // reasons.  Most notably, if we do not correctly calculate the
+                // Hessian approximation, we could have a nonsymmetric 
+                // approximation.  In that case, truncated-CG will exit, but 
+                // has an undefined result.  In the case that the actual 
+                // reduction also increases, rho could have an extraneous 
+                // positive value.  Hence, we require an extra check.
+                if(model_s > obj_x){
+                    delta = norm_s/Real(2.);
+                    rho = Real(std::numeric_limits<Real>::quiet_NaN()); 
+                    return false;
+                }
+
+                // Determine the ratio of reductions
+                rho = (obj_x - obj_xps) / (obj_x - model_s);
+
+                // Update the trust region radius and return whether or not we
+                // accept the step
+                if(rho >= eta2){
+                    // Only increase the size of the trust region if we were
+                    // close to the boundary
+                    if(fabs(norm_s-delta) < Real(1e-4)*delta)
+                        delta = std::min(delta*Real(2.),delta_max);
+                    return true;
+                } else if(rho >= eta1 && rho < eta2)
+                    return true;
+                else {
+                    delta = norm_s/Real(2.);
+                    return false;
+                }
+            }
         };
     }
-#endif
 
 #if 0 
 
@@ -3592,74 +3739,6 @@ namespace peopt{
         typedef typename Functions Functions; 
         
 
-        // Checks whether we accept or reject a step
-        static bool checkStep(
-            State& state,
-            const Operator<VS,VS>& H,
-            const Functional<VS>& obj_fn
-        ){
-            // Create shortcuts to some elements in the state
-            const Vector& s=*(state.s.begin());
-            const Vector& u=*(state.u.begin());
-            const Vector& g=*(state.g.begin());
-            const Real& eta1=state.eta1;
-            const Real& eta2=state.eta2;
-            const Real& delta_max=state.delta_max;
-            const Real& obj_u=state.obj_u;
-            const Real& norm_s=state.norm_s;
-            Real& delta=state.delta;
-            Real& rho=state.rho;
-            Real& obj_ups=state.obj_ups;
-
-            // Allocate memory for temporaries that we need
-            Vector ups; VS::init(u,ups);
-            Vector Hu_s; VS::init(u,Hu_s);
-
-            // Determine u+s 
-            VS::copy(s,ups);
-            VS::axpy(Real(1.),u,ups);
-
-            // Determine the objective function evaluated at u+s
-            obj_ups=obj_fn(ups);
-            
-            // Determine H(u)s
-            H(s,Hu_s);
-
-            // Determine alpha+<g,s>+.5*<H(u)s,s>
-            Real model_s=obj_u+VS::innr(g,s)+Real(.5)*VS::innr(Hu_s,s);
-
-            // Add a safety check in case we don't actually minimize the TR
-            // subproblem correctly. This could happen for a variety of reasons.
-            // Most notably, if we do not correctly calculate the Hessian
-            // approximation, we could have a nonsymmetric approximation.
-            // In that case, truncated-CG will exit, but has an undefined
-            // result.  In the case that the actual reduction also increases,
-            // rho could have an extraneous positive value.  Hence, we require
-            // an extra check.
-            if(model_s > obj_u){
-                delta = norm_s/Real(2.);
-                rho = std::numeric_limits<Real>::quiet_NaN(); 
-                return false;
-            }
-
-            // Determine the ratio of reductions
-            rho = (obj_u - obj_ups) / (obj_u - model_s);
-
-            // Update the trust region radius and return whether or not we
-            // accept the step
-            if(rho >= eta2){
-                // Only increase the size of the trust region if we were close
-                // to the boundary
-                if(fabs(norm_s-delta) < Real(1e-4)*delta)
-                    delta = std::min(delta*Real(2.),delta_max);
-                return true;
-            } else if(rho >= eta1 && rho < eta2)
-                return true;
-            else {
-                delta = norm_s/Real(2.);
-                return false;
-            }
-        }
 
         // Finds the trust-region step
         static void getStepTR(
