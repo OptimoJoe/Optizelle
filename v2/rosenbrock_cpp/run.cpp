@@ -122,10 +122,15 @@ int main(){
     //state.algorithm_class=peopt::AlgorithmClass::TrustRegion;
 
     // BFGS
-    state.dir=peopt::LineSearchDirection::BFGS;
+    //state.dir=peopt::LineSearchDirection::BFGS;
+    //state.kind=peopt::LineSearchKind::GoldenSection;
+    //state.algorithm_class=peopt::AlgorithmClass::LineSearch;
+    //state.stored_history=10;
+    
+    // Newton-CG
+    state.dir=peopt::LineSearchDirection::NewtonCG;
     state.kind=peopt::LineSearchKind::GoldenSection;
     state.algorithm_class=peopt::AlgorithmClass::LineSearch;
-    state.stored_history=10;
 
     // Create a function, gradient, and Hessian for this problem
     RosenObjective F;
