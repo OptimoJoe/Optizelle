@@ -199,7 +199,7 @@ int main(){
 
     // Generate an initial guess for Rosenbrock
     std::vector <double> x(2);
-    x[0]=1.3; x[1]=1.;
+    x[0]=-1.2; x[1]=1.;
 
     // Create a direction for the finite difference tests
     std::vector <double> dx(2);
@@ -278,59 +278,37 @@ int main(){
     cfns.h.reset(new Utility());
     cfns.finalize(peopt::Messaging(),cstate);
 
-    // Create a place for us to add a breakpoint
-    int junk=0;
-
-#if 0
-    // Create the optimization functions
-    MyHS myhs;
-    peopt::Spaces::Unconstrained <MyHS,double> spc(myhs);
-    peopt::Spaces::Unconstrained <MyHS,double> spc2(MyHS());
-    peopt::State <peopt::Spaces::Unconstrained<MyHS,double> > state(spc,x);
-    peopt::State <peopt::Spaces::Unconstrained<MyHS,double> > state2(spc2,x);
-#endif
-  
-#if 0
-    // Create a state and setup the problem
-    peopt::core<MyVS>::State state(x);
-
-
-    // General problem setup
-    state.eps_g=1e-10;
-    state.eps_s=1e-10;
-    state.iter_max=200;
-    state.eps_krylov=1e-8;
-
+    // Setup the optimization problem
+    #if 1
     // Newton's method
-    state.H_type=peopt::Operators::External;
-    state.algorithm_class=peopt::AlgorithmClass::TrustRegion;
+    ustate.H_type = peopt::Operators::External;
+    ustate.iter_max = 100;
+    ustate.eps_krylov = 1e-10;
+    #endif
 
     // BFGS
-    //state.dir=peopt::LineSearchDirection::BFGS;
-    //state.kind=peopt::LineSearchKind::GoldenSection;
-    //state.algorithm_class=peopt::AlgorithmClass::LineSearch;
-    //state.stored_history=10;
+    #if 0
+    ustate.algorithm_class = peopt::AlgorithmClass::LineSearch;
+    ustate.dir = peopt::LineSearchDirection::BFGS;
+    ustate.stored_history = 10;
+    ustate.iter_max = 300;
+    #endif
+    
+    // Newton-CG 
+    #if 0
+    ustate.algorithm_class = peopt::AlgorithmClass::LineSearch;
+    ustate.dir = peopt::LineSearchDirection::NewtonCG;
+    ustate.H_type = peopt::Operators::External;
+    ustate.eps_krylov = 1e-10;
+    ustate.iter_max = 100;
+    #endif
 
-    // Create a function, gradient, and Hessian for this problem
-    RosenObjective F;
-    RosenGradient G;
-    // Make sure to link the Hessian to the current optimization
-    // iterate
-    RosenHessian H(*(state.u.begin()));
-   
-    // Do a finite difference test for the gradient and Hessian
-    std::cout << "Gradient finite difference check" << std::endl;
-    peopt::derivativeCheck<MyVS>(F,G,x,eta);
-
-    std::cout << "Hessian finite difference check" << std::endl;
-    peopt::derivativeCheck<MyVS,MyVS>(G,H,x,eta,x);
-
-    // Optimize the problem
-    peopt::core<MyVS>::getMin(state,F,G,H);
+    // Solve the optimization problem
+    peopt::Algorithms::Unconstrained <double,MyHS>
+        ::getMin(peopt::Messaging(2),ufns,ustate);
 
     // Print out the final answer
-    const std::vector <double>& opt_x=*(state.u.begin());
+    const std::vector <double>& opt_x=*(ustate.x.begin());
     std::cout << "The optimal point is: (" << opt_x[0] << ','
 	<< opt_x[1] << ')' << std::endl;
-#endif
 }

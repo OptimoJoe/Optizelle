@@ -97,14 +97,18 @@ namespace peopt{
     // Defines how we output messages to the user
     struct Messaging {
         // Defines the current print level
-        int plevel;
+        unsigned int plevel;
 
         // Sets the default messaging level to 1
         Messaging() : plevel(1) {};
 
+        // Changing the default messaging level during construction
+        Messaging(unsigned int plevel_) : plevel(plevel_) {};
+
         // Prints a message
-        virtual void print(const std::string msg,const int level) const {
-            if(level >= plevel) std::cout << msg << std::endl;
+        virtual void print(const std::string msg,const unsigned int level)
+        const {
+            if(level <= plevel) std::cout << msg << std::endl;
         }
 
         // Prints an error
@@ -518,7 +522,15 @@ namespace peopt{
             }
         };
     }
- 
+
+    // Different nonlinear-CG directions 
+    namespace NonlinearCGDirections {
+        enum t{
+            HestenesStiefel,        
+            PolakRibiere,           
+            FletcherReeves          
+        };
+    }
 
     // The structures in this namespace represent the internal state of the
     // optimization algorithm.
@@ -529,7 +541,7 @@ namespace peopt{
         // min_{x \in X} f(x)
         //
         // where f : X -> R
-        template <typename Real,template <typename Real> class XX> 
+        template <typename Real,template <typename> class XX> 
         struct Unconstrained {
         public:
             // Create some shortcuts for some type names
@@ -627,9 +639,6 @@ namespace peopt{
 
             // Objective value at the trial step
             Real obj_xps;
-
-            // Amount of verbosity
-            unsigned int verbose;
             
             // ------------- TRUST-REGION ------------- 
 
@@ -728,7 +737,6 @@ namespace peopt{
                 norm_styp=Real(std::numeric_limits<double>::quiet_NaN());
                 obj_x=Real(std::numeric_limits<double>::quiet_NaN());
                 obj_xps=Real(std::numeric_limits<double>::quiet_NaN());
-                verbose=1;
                 delta=Real(100.);
                 delta_max=Real(100.);
                 eta1=Real(.1);
@@ -769,26 +777,6 @@ namespace peopt{
                     msg.error(ss.str());
                 }
         
-                // Check that the number of stored vectors for algorithms
-                // such as SR1 and BFGS is nonnegative
-                if(stored_history < 0) {
-                    std::stringstream ss;
-                    ss << "The number of stored vectors for quasi-Newton "
-                        "methods must be nonnegative: stored_history = "
-                        << stored_history;
-                    msg.error(ss.str());
-                }
-
-                // Check that our fallback for reseting the stored vectors
-                // for quasi-Newton methods is nonnegative
-                if(history_reset < 0) {
-                    std::stringstream ss;
-                    ss << "The tolerance for resetting the quasi-Newton "
-                        "approximation must be nonnegative: history_reset = "
-                        << history_reset;
-                    msg.error(ss.str());
-                }
-
                 // Check that the current iteration is positive
                 if(iter <= 0) {
                     std::stringstream ss;
@@ -818,15 +806,6 @@ namespace peopt{
                     std::stringstream ss;
                     ss << "The maximum Krylov iteration must be "
                         "positive: krylov_iter_max = " << krylov_iter_max;
-                    msg.error(ss.str());
-                }
-
-                // Check that the total number of Krylov iteration is 
-                // nonnegative
-                if(krylov_iter_total < 0) {
-                    std::stringstream ss;
-                    ss << "The total number of Krylov iterations must be "
-                        "positive: krylov_iter_total = " << krylov_iter_total;
                     msg.error(ss.str());
                 }
 
@@ -900,14 +879,6 @@ namespace peopt{
                     msg.error(ss.str());
                 }
 
-                // Check that verbosity level is nonnegative
-                if(verbose<0){
-                    std::stringstream ss;
-                    ss << "The verbosity level must be nonnegative: verbose = "
-                        << verbose;
-                    msg.error(ss.str());
-                }
-                
                 // Check that the trust-region radius is positive
                 if(delta<=0){
                     std::stringstream ss;
@@ -972,51 +943,11 @@ namespace peopt{
                     msg.error(ss.str());
                 }
 
-
-                // Check that the number of rejected trust-region steps is
-                // nonnegative
-                if(rejected_trustregion < 0) {
-                    std::stringstream ss;
-                    ss << "The number of rejected trust-region steps must be "
-                        "nonnegative: rejected_trustregion = "
-                        << rejected_trustregion;
-                    msg.error(ss.str());
-                }
-
                 // Check that the line-search step length is positive 
                 if(alpha <= 0) {
                     std::stringstream ss;
                     ss << "The line-search step length must be positive: "
                         "alpha = " << alpha;
-                    msg.error(ss.str());
-                }
-
-                // Check that the number of line-search iterations
-                // is nonnegative
-                if(linesearch_iter < 0) {
-                    std::stringstream ss;
-                    ss << "The number of line-search iterations must be "
-                        "nonnegative: linesearch_iter = " << linesearch_iter;
-                    msg.error(ss.str());
-                }
-
-                // Check that the maximum number of line-search iterations is
-                // nonnegative
-                if(linesearch_iter_max < 0) {
-                    std::stringstream ss;
-                    ss << "The maximum number of line-search iterations must "
-                        "be nonnegative: linesearch_iter_max = "
-                        << linesearch_iter_max;
-                    msg.error(ss.str());
-                }
-
-                // Check that the total number of line-search iterations
-                // completed is nonnegative
-                if(linesearch_iter_total < 0) {
-                    std::stringstream ss;
-                    ss << "The total number of line-search iterations must "
-                        "be nonnegative: linesearch_iter_total = "
-                        << linesearch_iter_total;
                     msg.error(ss.str());
                 }
                 
@@ -1147,8 +1078,6 @@ namespace peopt{
                 nats.second.push_back(krylov_iter_max);
                 nats.first.push_back("krylov_iter_total");
                 nats.second.push_back(krylov_iter_total);
-                nats.first.push_back("verbose");
-                nats.second.push_back(verbose);
                 nats.first.push_back("rejected_trustregion");
                 nats.second.push_back(rejected_trustregion);
                 nats.first.push_back("linesearch_iter");
@@ -1253,7 +1182,6 @@ namespace peopt{
                     else if(*name=="krylov_iter") krylov_iter=*nat;
                     else if(*name=="krylov_iter_max") krylov_iter_max=*nat;
                     else if(*name=="krylov_iter_total") krylov_iter_total=*nat;
-                    else if(*name=="verbose") verbose=*nat;
                     else if(*name=="rejected_trustregion")
                         rejected_trustregion=*nat;
                     else if(*name=="linesearch_iter") linesearch_iter=*nat;
@@ -1343,7 +1271,6 @@ namespace peopt{
                         name == "krylov_iter" || 
                         name == "krylov_iter_max" ||
                         name == "krylov_iter_total" || 
-                        name == "verbose" || 
                         name == "rejected_trustregion" || 
                         name == "linesearch_iter" || 
                         name == "linesearch_iter_max" ||
@@ -1559,8 +1486,8 @@ namespace peopt{
         // where f : X -> R and g : X -> Y
         template <
             typename Real,
-            template <typename Real> class XX,
-            template <typename Real> class YY
+            template <typename> class XX,
+            template <typename> class YY
         > 
         struct EqualityConstrained: public virtual Unconstrained <Real,XX> {
         public:
@@ -1760,8 +1687,8 @@ namespace peopt{
         // where f : X -> R and h : X -> Z
         template <
             typename Real,
-            template <typename Real> class XX,
-            template <typename Real> class ZZ
+            template <typename> class XX,
+            template <typename> class ZZ
         > 
         struct InequalityConstrained : public virtual Unconstrained <Real,XX> {
         public:
@@ -1962,9 +1889,9 @@ namespace peopt{
         // where f : X -> R, g : X -> Y, and h : X -> Z
         template <
             typename Real,
-            template <typename Real> class X,
-            template <typename Real> class Y,
-            template <typename Real> class Z
+            template <typename> class X,
+            template <typename> class Y,
+            template <typename> class Z
         > 
         struct Constrained:
             public EqualityConstrained <Real,X,Y>,
@@ -2083,7 +2010,7 @@ namespace peopt{
     class StateManipulator {
     public:
         // Application
-        virtual void operator () (State& state) {};
+        virtual void operator () (State& state) const {};
 
         // Allow the derived class to deallocate memory
         virtual ~StateManipulator() {}
@@ -2092,8 +2019,8 @@ namespace peopt{
     // A simple operator specification, A : X->Y
     template <
         typename Real,
-        template <typename Real> class X,
-        template <typename Real> class Y
+        template <typename> class X,
+        template <typename> class Y
     >
     struct Operator {
     private:
@@ -2113,7 +2040,7 @@ namespace peopt{
     namespace Operators {
 
         // Unconstrained optimization 
-        template <typename Real,template <typename Real> class XX>
+        template <typename Real,template <typename> class XX>
         struct Unconstrained {
         private:
             // Create some type shortcuts
@@ -2586,7 +2513,7 @@ namespace peopt{
     }
 
     // A simple scalar valued function interface, f:X->R
-    template <typename Real,template <typename Real> class XX>
+    template <typename Real,template <typename> class XX>
     struct ScalarValuedFunction {
     private:
         // Create some type shortcuts
@@ -2663,8 +2590,8 @@ namespace peopt{
     // A simple vector valued function interface, f : X -> Y
     template <
         typename Real,
-        template <typename Real> class XX,
-        template <typename Real> class YY 
+        template <typename> class XX,
+        template <typename> class YY 
     >
     struct VectorValuedFunction {
         // Create some type shortcuts
@@ -2706,8 +2633,8 @@ namespace peopt{
     // but it also adds a line-search component.
     template <
         typename Real,
-        template <typename Real> class XX,
-        template <typename Real> class YY 
+        template <typename> class XX,
+        template <typename> class YY 
     >
     struct InequalityConstraint : public VectorValuedFunction <Real,XX,YY> {
         // Create some type shortcuts
@@ -2740,7 +2667,7 @@ namespace peopt{
         // min_{x \in X} f(x)
         //
         // where f : X -> R
-        template <typename Real,template <typename Real> class XX> 
+        template <typename Real,template <typename> class XX> 
         struct Unconstrained {
         public:
             // Objective function
@@ -2816,8 +2743,8 @@ namespace peopt{
         // where f : X -> R, g : X -> Y
         template <
             typename Real,
-            template <typename Real> class XX,
-            template <typename Real> class YY
+            template <typename> class XX,
+            template <typename> class YY
         > 
         struct EqualityConstrained: public virtual Unconstrained <Real,XX> {
         public:
@@ -2864,8 +2791,8 @@ namespace peopt{
         // where f : X -> R, h : X -> Z
         template <
             typename Real,
-            template <typename Real> class XX,
-            template <typename Real> class ZZ 
+            template <typename> class XX,
+            template <typename> class ZZ 
         > 
         struct InequalityConstrained : public virtual Unconstrained <Real,XX> {
         public:
@@ -2912,9 +2839,9 @@ namespace peopt{
         // where f : X -> R, g : X -> Y, h : X -> Z
         template <
             typename Real,
-            template <typename Real> class XX,
-            template <typename Real> class YY,
-            template <typename Real> class ZZ 
+            template <typename> class XX,
+            template <typename> class YY,
+            template <typename> class ZZ 
         > 
         struct Constrained:
             public EqualityConstrained <Real,XX,YY>,
@@ -2947,7 +2874,7 @@ namespace peopt{
         // accomplish this by doing a finite difference calculation on f.
         template <
             typename Real,
-            template <typename Real> class XX
+            template <typename> class XX
         >
         Real directionalDerivative(
             const ScalarValuedFunction<Real,XX>& f,
@@ -2994,7 +2921,7 @@ namespace peopt{
         // calculation on G where G(x)=grad f(x).
         template <
             typename Real,
-            template <typename Real> class XX
+            template <typename> class XX
         >
         void directionalDerivative(
             const ScalarValuedFunction<Real,XX>& f,
@@ -3049,8 +2976,8 @@ namespace peopt{
         // We accomplish this by doing a finite difference calculation on f.
         template <
             typename Real,
-            template <typename Real> class XX,
-            template <typename Real> class YY 
+            template <typename> class XX,
+            template <typename> class YY 
         >
         void directionalDerivative(
             const VectorValuedFunction<Real,XX,YY>& f,
@@ -3109,8 +3036,8 @@ namespace peopt{
         // the error in the approximation should be in the dx piece.
         template <
             typename Real,
-            template <typename Real> class XX,
-            template <typename Real> class YY 
+            template <typename> class XX,
+            template <typename> class YY 
         >
         void directionalDerivative(
             const VectorValuedFunction<Real,XX,YY>& f,
@@ -3167,7 +3094,7 @@ namespace peopt{
         // f : X->R is scalar valued.  In other words, we check grad f using f.
         template <
             typename Real,
-            template <typename Real> class XX
+            template <typename> class XX
         >
         void gradientCheck(
             const Messaging& msg,
@@ -3205,7 +3132,7 @@ namespace peopt{
         // is scalar valued.  In other words, we check hess f dx using grad f.
         template <
             typename Real,
-            template <typename Real> class XX
+            template <typename> class XX
         >
         void hessianCheck(
             const Messaging& msg,
@@ -3253,7 +3180,7 @@ namespace peopt{
         // comparing <H(x)dx,dxx> to <dx,H(x)dxx>.
         template <
             typename Real,
-            template <typename Real> class XX
+            template <typename> class XX
         >
         void hessianSymmetryCheck(
             const Messaging& msg,
@@ -3297,8 +3224,8 @@ namespace peopt{
         // vector-valued function f.  Specifically, we check f'(x)dx using f.
         template <
             typename Real,
-            template <typename Real> class XX,
-            template <typename Real> class YY 
+            template <typename> class XX,
+            template <typename> class YY 
         >
         void derivativeCheck(
             const Messaging& msg,
@@ -3350,8 +3277,8 @@ namespace peopt{
         // <f'(x)dx,dy> = <dx,f'(x)*dy>
         template <
             typename Real,
-            template <typename Real> class XX,
-            template <typename Real> class YY 
+            template <typename> class XX,
+            template <typename> class YY 
         >
         void derivativeAdjointCheck(
             const Messaging& msg,
@@ -3398,8 +3325,8 @@ namespace peopt{
         // (f''(x)dx)*dy using f'(x)*dy.
         template <
             typename Real,
-            template <typename Real> class XX,
-            template <typename Real> class YY 
+            template <typename> class XX,
+            template <typename> class YY 
         >
         void secondDerivativeCheck(
             const Messaging& msg,
@@ -3453,7 +3380,7 @@ namespace peopt{
         // Unconstrained optimization 
         template <
             typename Real,
-            template <typename Real> class XX
+            template <typename> class XX
         >
         struct Unconstrained {
 
@@ -3494,7 +3421,7 @@ namespace peopt{
             }
         
             // Computes the truncated-CG (Steihaug-Toint) trial step for
-            // trust-region algorithms
+            // trust-region and line-search algorithms
             static void truncatedCG(
                 const Messaging& msg,
                 const Functions::Unconstrained <Real,XX>& fns,
@@ -3502,6 +3429,8 @@ namespace peopt{
             ){
 
                 // Create shortcuts to some elements in the state
+                // Create some shortcuts
+                const AlgorithmClass::t& algorithm_class=state.algorithm_class;
                 const Vector& x=*(state.x.begin());
                 const Vector& g=*(state.g.begin());
                 const Real& delta=state.delta;
@@ -3568,28 +3497,50 @@ namespace peopt{
 
                     // If we have negative curvature or our trial point is
                     // outside the trust region radius, terminate truncated-CG
-                    // and find our final step.  We have the kappa!=kappa check
-                    // in order to trap NaNs.
+                    // and find our final step.  We ignore the trust-region
+                    // radius in the case of a line-search algorithm. We have
+                    // the kappa!=kappa check in order to trap NaNs.
                     if( kappa <= 0 ||
-                        norm_skp1_M2 >= delta*delta ||
+                        (algorithm_class==AlgorithmClass::TrustRegion
+                            && norm_skp1_M2 >= delta*delta) ||
                         kappa!=kappa
                     ){
-                        // sigma=positive root of || s_k + sigma p_k ||_M=delta
-                        sigma=(-inner_sk_M_pk + sqrt(inner_sk_M_pk*inner_sk_M_pk
-                            + norm_pk_M2*(delta*delta-norm_sk_M2)))/norm_pk_M2;
+                        switch(algorithm_class){
+                        // In the case of a trust-region algorithm, take the
+                        // last trial step and extend it all of the way to the
+                        // trust-region radius.
+                        case AlgorithmClass::TrustRegion:
+                            // sigma=positive root of
+                            // || s_k + sigma p_k ||_M=delta
+                            sigma=(-inner_sk_M_pk
+                                + sqrt(inner_sk_M_pk*inner_sk_M_pk
+                                + norm_pk_M2*(delta*delta-norm_sk_M2)))
+                                / norm_pk_M2;
 
-                        // s_kp1=s_k+sigma p_k
-                        X::axpy(sigma,p_k,s_k);
+                            // s_kp1=s_k+sigma p_k
+                            X::axpy(sigma,p_k,s_k);
+
+                            // Update the residual error for out output,
+                            // g_k=g_k+sigma Hp_k
+                            X::axpy(sigma,H_pk,g_k);
+                            break;
+                            
+                        // In the case of a line-search algorithm, do nothing
+                        // unless we're on the first iteration.  In this case,
+                        // take the steepest descent direction. 
+                        case AlgorithmClass::LineSearch:
+                            if(iter==1){
+                                X::copy(g,s_k);
+                                X::scal(Real(-1.),s_k);
+                            }
+                            break;
+                        }
 
                         // Return a message as to why we exited
                         if(kappa<=0 || kappa!=kappa)
                             krylov_stop = KrylovStop::NegativeCurvature;
                         else
                             krylov_stop = KrylovStop::TrustRegionViolated;
-
-                        // Update the residual error for out output,
-                        // g_k=g_k+sigma Hp_k
-                        X::axpy(sigma,H_pk,g_k);
 
                         // Exit the loop
                         break;
@@ -3634,7 +3585,7 @@ namespace peopt{
                     norm_pk_M2=inner_gk_vk+beta*beta*norm_pk_M2; 
 
                     // Print out diagnostics
-                    printKrylov(state);
+                    printKrylov(msg,state);
                 }
 
                 // Check if we've exceeded the maximum iteration
@@ -3643,16 +3594,24 @@ namespace peopt{
                     iter--; iter_total--;
                 }
                
-                // Grab the relative error in the CG solution
-                rel_err=sqrt(X::innr(g_k,g_k)) / (Real(1e-16)+norm_g);
+                // Grab the relative error in the CG solution.
+                // If we're running a line-search algorithm and we exit on the
+                // first iteration, then this doesn't make sense since we
+                // took the steepest descent direction without the
+                // preconditioner.  Hence, we return a NaN.
+                if(algorithm_class==AlgorithmClass::LineSearch && iter==1)
+                    rel_err= Real(std::numeric_limits<double>::quiet_NaN()); 
+
+                // Otherwise, we calculate the current relative error.
+                else
+                    rel_err=sqrt(X::innr(g_k,g_k)) / (Real(1e-16)+norm_g);
                     
                 // Print out diagnostics
-                if(iter!=iter_max) printKrylov(state);
+                if(iter!=iter_max) printKrylov(msg,state);
             }
 
             // Checks whether we accept or reject a step
             static bool checkStep(
-                const Messaging& msg,
                 const Functions::Unconstrained <Real,XX>& fns,
                 State::Unconstrained <Real,XX>& state
             ){
@@ -3671,7 +3630,6 @@ namespace peopt{
                 
                 // Create shortcuts to the functions that we need
                 const ScalarValuedFunction <Real,XX>& f=*(fns.f);
-                const Operator <Real,XX,XX>& Minv=*(fns.Minv);
 
                 // Allocate memory for temporaries that we need
                 Vector xps; X::init(x,xps);
@@ -3685,7 +3643,7 @@ namespace peopt{
                 obj_xps=f(xps);
                 
                 // Determine H(x)s
-                f.hvH(x,s,Hx_s);
+                f.hv(x,s,Hx_s);
 
                 // Determine alpha+<g,s>+.5*<H(u)s,s>
                 Real model_s=obj_x+X::innr(g,s)+Real(.5)*X::innr(Hx_s,s);
@@ -3700,7 +3658,7 @@ namespace peopt{
                 // positive value.  Hence, we require an extra check.
                 if(model_s > obj_x){
                     delta = norm_s/Real(2.);
-                    rho = Real(std::numeric_limits<Real>::quiet_NaN()); 
+                    rho = Real(std::numeric_limits<double>::quiet_NaN()); 
                     return false;
                 }
 
@@ -3722,1271 +3680,769 @@ namespace peopt{
                     return false;
                 }
             }
-        };
-    }
-
-#if 0 
-
-    // The core routines for peopt
-    template <typename Spaces>
-    struct core{
-        // Create some type shortcuts 
-        typedef typename Spaces::Real Real;
-        typedef typename Spaces::Var Var;
-        typedef typename Spaces::MultEq MultEq;
-        typedef typename Spaces::MultIneq MultIneq;
-        typedef typename State <Spaces> State;
-        typedef typename Functions Functions; 
         
+            // Finds the trust-region step
+            static void getStepTR(
+                const Messaging& msg,
+                const Functions::Unconstrained <Real,XX>& fns,
+                State::Unconstrained <Real,XX>& state
+            ){
+                // Create some shortcuts
+                unsigned int& rejected_trustregion=state.rejected_trustregion;
+                Vector& s=*(state.s.begin());
+                Real& norm_s=state.norm_s;
+                std::list <Vector>& oldY=state.oldY; 
+                std::list <Vector>& oldS=state.oldS; 
+                unsigned int& history_reset=state.history_reset;
 
-
-        // Finds the trust-region step
-        static void getStepTR(
-            State& state,
-            const Operator<VS,VS>& Minv,
-            const Operator<VS,VS>& H,
-            const Functional<VS>& obj_fn
-        ){
-            // Create some shortcuts
-            unsigned int& rejected_trustregion=state.rejected_trustregion;
-            Vector& s=*(state.s.begin());
-            Real& norm_s=state.norm_s;
-            List& oldY=state.oldY;
-            List& oldS=state.oldS;
-            unsigned int& history_reset=state.history_reset;
-
-            // Initialize the counter for the number of rejected steps
-            rejected_trustregion=0;
-            do{
-                // If the number of rejected steps is above the history_reset
-                // threshold, destroy the quasi-Newton information
-                if(rejected_trustregion > history_reset){
-                    oldY.empty();
-                    oldS.empty();
-                }
+                // Continue to look for a step until one comes back as valid
+                for(rejected_trustregion=0;
+                    true; 
+                    rejected_trustregion++
+                ) {
+                    // If the number of rejected steps is above the
+                    // history_reset threshold, destroy the quasi-Newton
+                    // information
+                    if(rejected_trustregion > history_reset){
+                        oldY.clear();
+                        oldS.clear();
+                    }
 
                     // Print out diagnostic information if we reject a step
-                if(rejected_trustregion>0) printState(state,true);
+                    if(rejected_trustregion>0) printState(msg,state,true);
 
-                // Use truncated-CG to find a new trial step
-                truncatedCG(state,Minv,H);
+                    // Use truncated-CG to find a new trial step
+                    truncatedCG(msg,fns,state);
+
+                    // Save the length of the trial step
+                    norm_s=sqrt(X::innr(s,s));
+
+                    // Check whether the step is good
+                    if(checkStep(fns,state)) break;
+                } 
+            }
+        
+            // Steepest descent search direction
+            static void SteepestDescent(
+                State::Unconstrained <Real,XX>& state
+            ) {
+                // Create some shortcuts 
+                const Vector& g=*(state.g.begin());
+                Vector& s=*(state.s.begin());
+
+                // We take the steepest descent direction
+                X::copy(g,s);
+                X::scal(Real(-1.),s);
+            }
+    
+            // Nonlinear Conjugate Gradient
+            static void NonlinearCG(
+                const NonlinearCGDirections::t dir,
+                State::Unconstrained <Real,XX>& state
+            ) {
+            
+                // Create some shortcuts 
+                const Vector& g=*(state.g.begin());
+                const Vector& s_old=*(state.s_old.begin());
+                const int& iter=state.iter;
+                Vector& s=*(state.s.begin());
+
+                // If we're on the first iterations, we take the steepest
+                // descent direction
+                if(iter==1) SteepestDescent(state);
+
+                // On subsequent iterations, we take the specified direction
+                else {
+                    // Find the momentum parameter
+                    double beta;
+                    switch(dir) {
+                    case NonlinearCGDirections::FletcherReeves:
+                        beta=FletcherReeves(state);
+                        break;
+                    case NonlinearCGDirections::PolakRibiere:
+                        beta=PolakRibiere(state);
+                        break;
+                    case NonlinearCGDirections::HestenesStiefel:
+                        beta=HestenesStiefel(state);
+                        break;
+                    }
+
+                    // Find -g+beta*s_old
+                    X::copy(g,s);
+                    X::scal(Real(-1.),s);
+                    X::axpy(beta,s_old,s);
+                }
+            }
+
+            // Fletcher-Reeves CG search direction
+            static Real FletcherReeves(
+                State::Unconstrained <Real,XX>& state
+            ) {
+
+                // Create some shortcuts 
+                const Vector& g=*(state.g.begin());
+                const Vector& g_old=*(state.g_old.begin());
+
+                // Return the momentum parameter
+                return X::innr(g,g)/X::innr(g_old,g_old);
+            }
+        
+            // Polak-Ribiere CG search direction
+            static Real PolakRibiere(
+                State::Unconstrained <Real,XX>& state
+            ) {
+
+                // Create some shortcuts 
+                const Vector& g=*(state.g.begin());
+                const Vector& g_old=*(state.g_old.begin());
+                    
+                // Return the momentum parameter
+                return (X::innr(g,g)-X::innr(g,g_old))
+                    /X::innr(g_old,g_old);
+            }
+            
+            // Hestenes-Stiefel search direction
+            static Real HestenesStiefel(
+                State::Unconstrained <Real,XX>& state
+            ) {
+
+                // Create some shortcuts 
+                const Vector& g=*(state.g.begin());
+                const Vector& g_old=*(state.g_old.begin());
+                const Vector& s_old=*(state.s_old.begin());
+                    
+                // Return the momentum parameter
+                return (X::innr(g,g)-X::innr(g,g_old))
+                    /(X::innr(g,s_old)-X::innr(g_old,s_old));
+            }
+
+            // BFGS search direction
+            static void BFGS(
+                const Messaging& msg,
+                State::Unconstrained <Real,XX>& state
+            ) {
+                
+                // Create some shortcuts 
+                const Vector& g=*(state.g.begin());
+                Vector& s=*(state.s.begin());
+
+                // Create the inverse BFGS operator
+                typename Operators::Unconstrained <Real,XX>::InvBFGS
+                    Hinv(msg,state); 
+
+                // Apply the inverse BFGS operator to the gradient
+                Hinv(g,s);
+
+                // Negate the result
+                X::scal(Real(-1.),s);
+            }
+
+            // Compute a Golden-Section search between eps and 2*alpha where
+            // alpha is the last line search parameter.
+            static void goldenSection(
+                const Functions::Unconstrained <Real,XX>& fns,
+                State::Unconstrained <Real,XX>& state
+            ) {
+                // Create some shortcuts
+                const Vector& x=*(state.x.begin());
+                const unsigned int& iter_max=state.linesearch_iter_max;
+                Real& alpha=state.alpha;
+                Vector& s=*(state.s.begin());
+                unsigned int& iter_total=state.linesearch_iter_total;
+                unsigned int& iter=state.linesearch_iter;
+                Real& obj_xps=state.obj_xps;
+                
+                // Create shortcuts to the functions that we need
+                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
+
+                // Create one work element that holds x+mu s or x+lambda s
+                Vector x_p_s; X::init(x,x_p_s);
+
+                // Find 1 over the golden ratio
+                Real beta=Real(2./(1.+sqrt(5.)));
+
+                // Find a bracket for the linesearch such that a < b
+                Real a=Real(1e-16);
+                Real b=Real(2.)*alpha;
+
+                // Find two new points between a and b, mu and lambda,
+                // such that lambda < mu
+                double lambda=a+(1.-beta)*(b-a);
+                double mu=a+beta*(b-a);
+
+                // Find the objective value at mu and labmda 
+
+                // mu 
+                X::copy(x,x_p_s);
+                X::axpy(mu,s,x_p_s);
+                Real obj_mu=f(x_p_s);
+
+                // lambda
+                X::copy(x,x_p_s);
+                X::axpy(lambda,s,x_p_s);
+                Real obj_lambda=f(x_p_s);
+
+                // Search for a fixed number of iterations 
+                for(iter=0;iter<iter_max;iter++){
+
+                    // If the objective is greater on the left, bracket on the
+                    // right.  Alternatively, it's possible that we're going to
+                    // generate a NaN on the right.  This means that obj_mu=NaN.
+                    // In this case we want to bracket on the left.  Since
+                    // obj_lambda > obj_mu will return false when obj_mu is a
+                    // NaN, we should be safe.
+                    if(obj_lambda > obj_mu){
+                        a=lambda;
+                        lambda=mu;
+                        obj_lambda=obj_mu;
+                        mu=a+beta*(b-a);
+
+                        X::copy(x,x_p_s);
+                        X::axpy(mu,s,x_p_s);
+                        obj_mu=f(x_p_s);
+
+                    // Otherwise, the objective is greater on the right, so
+                    // bracket on the left
+                    } else {
+                        b=mu;
+                        mu=lambda;
+                        obj_mu=obj_lambda;
+                        lambda=a+(1-beta)*(b-a);
+                
+                        X::copy(x,x_p_s);
+                        X::axpy(lambda,s,x_p_s);
+                        obj_lambda=f(x_p_s);
+                    }
+                }
+
+                // Keep track of the total number of iterations
+                iter_total += iter;
+
+                // Once we're finished narrowing in on a solution, take our best
+                // guess for the line search parameter
+                alpha=obj_lambda < obj_mu ? lambda : mu;
+
+                // Save the objective value at this step
+                obj_xps=obj_lambda < obj_mu ? obj_lambda : obj_mu;
+            }
+
+            // Find the line search parameter based on the 2-point approximation
+            // from Barzilai and Borwein
+            static void twoPoint(
+                const Functions::Unconstrained <Real,XX>& fns,
+                State::Unconstrained <Real,XX>& state
+            ) {
+                // Create some shortcuts
+                const Vector& x=*(state.x.begin());
+                const Vector& g=*(state.g.begin());
+                const Vector& x_old=*(state.x_old.begin());
+                const Vector& g_old=*(state.g_old.begin());
+                const LineSearchKind::t& kind=state.kind;
+                Real& alpha=state.alpha;
+                Vector& s=*(state.s.begin());
+                unsigned int& iter_total=state.linesearch_iter_total;
+                unsigned int& iter=state.linesearch_iter;
+                Real& obj_xps=state.obj_xps;
+                
+                // Create shortcuts to the functions that we need
+                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
+
+                // Create elements for delta_x and delta_g as well as one work
+                // element for storing x+alpha s
+                Vector delta_x; X::init(x,delta_x);
+                Vector delta_g; X::init(x,delta_g);
+                Vector x_p_s; X::init(x,x_p_s);
+
+                // Find delta_x
+                X::copy(x,delta_x);
+                X::axpy(Real(-1.),x_old,delta_x);
+
+                // Find delta_g
+                X::copy(g,delta_g);
+                X::axpy(Real(-1.),g_old,delta_g);
+
+                // Find alpha
+                if(kind==LineSearchKind::TwoPointA)
+                    alpha=X::innr(delta_x,delta_g)/X::innr(delta_g,delta_g);
+                else if(kind==LineSearchKind::TwoPointB)
+                    alpha=X::innr(delta_x,delta_x)/X::innr(delta_x,delta_g);
+
+                // Save the objective value at this step
+                X::copy(x,x_p_s);
+                X::axpy(alpha,s,x_p_s);
+                obj_xps=f(x_p_s);
+
+                // Since we do one function evaluation, increase the linesearch
+                // iteration by one
+                iter=1; iter_total++;
+            }
+            
+            // Compute a backtracking line-search. 
+            static void backTracking(
+                const Functions::Unconstrained <Real,XX>& fns,
+                State::Unconstrained <Real,XX>& state
+            ) {
+                // Create some shortcuts
+                const Vector& x=*(state.x.begin());
+                const unsigned int& iter_max=state.linesearch_iter_max;
+                Real& alpha=state.alpha;
+                Vector& s=*(state.s.begin());
+                unsigned int& iter_total=state.linesearch_iter_total;
+                unsigned int& iter=state.linesearch_iter;
+                Real& obj_xps=state.obj_xps;
+                
+                // Create shortcuts to the functions that we need
+                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
+
+                // Create one work element for holding x+alpha s
+                Vector x_p_s; X::init(x,x_p_s);
+
+                // Store the best objective value and alpha that we used to
+                // find it.
+                // Our initial guess will be at alpha*2.
+                Real alpha_best=Real(2.)*alpha;
+                X::copy(x,x_p_s);
+                X::axpy(alpha_best,s,x_p_s);
+                Real obj_best=f(x_p_s);
+
+                // Evaluate the objective iter_max times at a distance of
+                // 2*alpha, alpha, alpha/2, ....  Then, pick the best one.
+                // Note, we start iter at 1 since we've already done one
+                // iteration above.
+                Real alpha0=alpha;
+                for(iter=1;iter<iter_max;iter++){
+                    // Evaluate f(x+alpha*s)
+                    X::copy(x,x_p_s);
+                    X::axpy(alpha0,s,x_p_s);
+                    Real obj=f(x_p_s);
+
+                    // If this is better than our best guess so far, save it
+                    if(obj<obj_best){
+                        obj_best=obj;
+                        alpha_best=alpha0;
+                    }
+
+                    // Reduce the size of alpha
+                    alpha0 /= Real(2.);
+                }
+
+                // Save the best objective and alpha found
+                alpha=alpha_best;
+                obj_xps=obj_best;
+
+                // Indicate how many iterations we used to find this value
+                iter_total+=iter;
+            }
+
+            // Finds a trial step using a line-search for globalization
+            static void getStepLS(
+                const Messaging& msg,
+                const Functions::Unconstrained <Real,XX>& fns,
+                State::Unconstrained <Real,XX>& state
+            ){
+                // Create some shortcuts
+                const LineSearchDirection::t& dir=state.dir;
+                const LineSearchKind::t& kind=state.kind;
+                const int& iter=state.iter;
+                const int& linesearch_iter_max=state.linesearch_iter_max;
+                const Real& obj_x=state.obj_x;
+                Real& obj_xps=state.obj_xps;
+                Vector& s=*(state.s.begin());
+                Real& norm_s=state.norm_s;
+                Real& alpha=state.alpha;
+
+                // Find the line-search direction
+                switch(dir){
+                case LineSearchDirection::SteepestDescent:
+                    SteepestDescent(state);
+                    break;
+                case LineSearchDirection::FletcherReeves:
+                    NonlinearCG(NonlinearCGDirections::FletcherReeves,state);
+                    break;
+                case LineSearchDirection::PolakRibiere:
+                    NonlinearCG(NonlinearCGDirections::PolakRibiere,state);
+                    break;
+                case LineSearchDirection::HestenesStiefel:
+                    NonlinearCG(NonlinearCGDirections::HestenesStiefel,state);
+                    break;
+                case LineSearchDirection::BFGS:
+                    BFGS(msg,state);
+                    break;
+                case LineSearchDirection::NewtonCG:
+                    truncatedCG(msg,fns,state);
+                    break;
+                }
+
+                // Do a line-search in the specified direction
+                switch(kind){
+                case LineSearchKind::GoldenSection:
+                    // Continue doing a line-search until we get a reduction
+                    // in the objective value.
+                    do {
+                        // Conduct the golden section search
+                        goldenSection(fns,state);
+
+                        // If we have no reduction in the objective, print
+                        // some diagnostic information.
+                        if(obj_xps > obj_x) {
+                            norm_s=alpha*X::norm(s);
+                            printState(msg,state,true);
+
+                            // We reduce alpha by a factor of four when we
+                            // reject the step since the line-search always
+                            // looks twice alpha out in the direction of the 
+                            // search direction.  By reducing alpha by a factor
+                            // of four we insure that the next line-search
+                            // examines a unique set of points.
+                            alpha /= Real(4.);
+                        }
+
+                    // If we don't decrease the objective, try again 
+                    } while(obj_x < obj_xps || obj_xps!=obj_xps);
+                    break;
+                case LineSearchKind::BackTracking:
+                    // Continue doing a line-search until we get a reduction
+                    // in the objective value.
+                    do {
+                        // Conduct the golden section search
+                        goldenSection(fns,state);
+
+                        // If we have no reduction in the objective, print
+                        // some diagnostic information.
+                        if(obj_xps > obj_x) {
+                            norm_s=alpha*X::norm(s);
+                            printState(msg,state,true);
+
+                            // We set alpha to be four times less than the
+                            // minimimum alpha we searched before.  We do this
+                            // since the line-search always looks twice alpha
+                            // out in the beginning of the search.
+                            alpha = alpha/pow(Real(2.),linesearch_iter_max+1);
+                        }
+
+                    // If we don't decrease the objective, try again 
+                    } while(obj_x < obj_xps || obj_xps!=obj_xps);
+                    break;
+                case LineSearchKind::TwoPointA:
+                case LineSearchKind::TwoPointB:
+                    if(iter>1) twoPoint(fns,state);
+                    else goldenSection(fns,state);
+                    break;
+                case LineSearchKind::Brents:
+                    msg.error(
+                        "Brent's linesearch is not currently implemented.");
+                    break;
+                }
+            
+                // Scale the line-search direction by the line search parameter 
+                X::scal(alpha,s);
 
                 // Save the length of the trial step
-                norm_s=sqrt(VS::innr(s,s));
+                norm_s=sqrt(X::innr(s,s));
+            }
+
+            // Finds a new trial step
+            static void getStep(
+                const Messaging& msg,
+                const Functions::Unconstrained <Real,XX>& fns,
+                State::Unconstrained <Real,XX>& state
+            ){
+                // Create some shortcuts
+                const AlgorithmClass::t& algorithm_class=state.algorithm_class;
+
+                // Choose whether we use a line-search or trust-region method
+                switch(algorithm_class){
+                case AlgorithmClass::TrustRegion:
+                    getStepTR(msg,fns,state);
+                    break;
+                case AlgorithmClass::LineSearch:
+                    getStepLS(msg,fns,state);
+                    break;
+                }
+            }
+
+            // Updates the quasi-Newton information
+            static void updateQuasi(
+                State::Unconstrained <Real,XX>& state
+            ){
+                // Exit immediately if we're not using a quasi-Newton method
+                if(state.stored_history==0) return;
+
+                // Create some shortcuts
+                const Vector& x=*(state.x.begin());
+                const Vector& g=*(state.g.begin());
+                const Vector& x_old=*(state.x_old.begin());
+                const Vector& g_old=*(state.g_old.begin());
+                const Operators::t& Minv_type=state.Minv_type;
+                const Operators::t& H_type=state.H_type;
+                const LineSearchDirection::t& dir=state.dir;
+                std::list <Vector>& oldY=state.oldY;
+                std::list <Vector>& oldS=state.oldS;
                
-                // Increment the number of rejected steps (even if the step
-                // is ok.  This is corrected later.)
-                rejected_trustregion++;
-
-            // Check whether the step is good.
-            } while(!checkStep(state,H,obj_fn));
-
-            // Correct the number of rejected steps
-            rejected_trustregion--;
-        }
-        
-        // Steepest descent search direction
-        static void SteepestDescent(State& state){
-            // Create some shortcuts 
-            const Vector& g=*(state.g.begin());
-            Vector& s=*(state.s.begin());
-
-            // We take the steepest descent direction
-            VS::copy(g,s);
-            VS::scal(Real(-1.),s);
-        }
-
-        // Fletcher-Reeves CG search direction
-        static void FletcherReeves(State& state){
-
-            // Create some shortcuts 
-            const Vector& g=*(state.g.begin());
-            const Vector& g_old=*(state.g_old.begin());
-            const Vector& s_old=*(state.s_old.begin());
-            const int& iter=state.iter;
-            Vector& s=*(state.s.begin());
-
-            // If we're on the first iterations, we take the steepest descent
-            // direction
-            if(iter==1) SteepestDescent(state);
-
-            // On subsequent iterations, we take the FR direction
-            else {
-                // Find the momentum parameter
-                double beta=VS::innr(g,g)/VS::innr(g_old,g_old);
-
-                // Find -g+beta*s_old
-                VS::copy(g,s);
-                VS::scal(Real(-1.),s);
-                VS::axpy(beta,s_old,s);
-            }
-        }
-        
-        // Polak-Ribiere CG search direction
-        static void PolakRibiere(State& state){
-
-            // Create some shortcuts 
-            const Vector& g=*(state.g.begin());
-            const Vector& g_old=*(state.g_old.begin());
-            const Vector& s_old=*(state.s_old.begin());
-            const int& iter=state.iter;
-            Vector& s=*(state.s.begin());
-
-            // If we're on the first iterations, we take the steepest descent
-            // direction
-            if(iter==1) SteepestDescent(state);
-
-            // On subsequent iterations, we take the FR direction
-            else {
-                // Find the momentum parameter
-                double beta=(VS::innr(g,g)-VS::innr(g,g_old))
-                    /VS::innr(g_old,g_old);
-
-                // Find -g+beta*s_old
-                VS::copy(g,s);
-                VS::scal(Real(-1.),s);
-                VS::axpy(beta,s_old,s);
-            }
-        }
-        
-        // Hestenes-Stiefel search direction
-        static void HestenesStiefel(State& state){
-
-            // Create some shortcuts 
-            const Vector& g=*(state.g.begin());
-            const Vector& g_old=*(state.g_old.begin());
-            const Vector& s_old=*(state.s_old.begin());
-            const int& iter=state.iter;
-            Vector& s=*(state.s.begin());
-
-            // If we're on the first iterations, we take the steepest descent
-            // direction
-            if(iter==1) SteepestDescent(state);
-
-            // On subsequent iterations, we take the FR direction
-            else {
-                // Find the momentum parameter
-                double beta=(VS::innr(g,g)-VS::innr(g,g_old))
-                    /(VS::innr(g,s_old)-VS::innr(g_old,s_old));
-
-                // Find -g+beta*s_old
-                VS::copy(g,s);
-                VS::scal(Real(-1.),s);
-                VS::axpy(beta,s_old,s);
-            }
-        }
-
-        // BFGS search direction
-        static void BFGS_SD(State& state){
-            
-            // Create some shortcuts 
-            const Vector& g=*(state.g.begin());
-            Vector& s=*(state.s.begin());
-
-            // Create the inverse BFGS operator
-            InvBFGS Hinv(state); 
-
-            // Apply the inverse BFGS operator to the gradient
-            Hinv(g,s);
-
-            // Negate the result
-            VS::scal(Real(-1.),s);
-        }
-        
-        /* Computes the Newton-CG (truncated-CG) trial step.  Essentially, this
-        is the same as trust-region except that we do not have a restriction 
-        on the size of the step (no trust-reigon radius).  In the case that we
-        encounter negative curvature, we use the last good step.  */ 
-        static void NewtonCG(
-            State& state,
-            const Operator<VS,VS>& Minv,
-            const Operator<VS,VS>& H
-        ){
-            
-            // Create shortcuts to some elements in the state
-            const Vector& u=*(state.u.begin());
-            const Vector& g=*(state.g.begin());
-            const Real& eps_cg=state.eps_krylov;
-            const unsigned int& iter_max=state.krylov_iter_max;
-            Vector& s_k=*(state.s.begin());
-            unsigned int& iter=state.krylov_iter;
-            unsigned int& iter_total=state.krylov_iter_total;
-            KrylovStop::t& krylov_stop=state.krylov_stop;
-            Real& rel_err=state.krylov_rel_err;
-
-            // Allocate memory for temporaries that we need
-            Vector g_k; VS::init(u,g_k);
-            Vector v_k; VS::init(u,v_k);
-            Vector p_k; VS::init(u,p_k);
-            Vector H_pk; VS::init(u,H_pk);
-
-            // Allocate memory for a few constants that we need to track 
-            Real kappa;
-            Real alpha(0.);
-            Real beta;
-            Real norm_g;
-            Real inner_gk_vk,inner_gkp1_vkp1;
-
-            // Initialize our variables
-            VS::scal(Real(0.),s_k);                // s_0=0
-            VS::copy(g,g_k);                        // g_0=g
-            Minv(g_k,v_k);                        // v_0=inv(M)*g_0
-            VS::copy(v_k,p_k);                        // p_0=-v_0
-            VS::scal(Real(-1.),p_k);
-            inner_gk_vk=VS::innr(g_k,v_k);        // <g_0,v_0>        
-            norm_g=VS::innr(g,g);                // || g ||
-
-            // Run truncated CG until we hit our max iteration or we converge
-            iter_total++;
-            for(iter=1;iter<=iter_max;iter++,iter_total++){
-                // H_pk=H p_k
-                H(p_k,H_pk);
-
-                // Compute the curvature for this direction.  kappa=<p_k,H p_k>
-                kappa=VS::innr(p_k,H_pk);
-
-                // If we have negative curvature, don't bother with the next 
-                // step since we're going to exit and we don't need it. 
-                if(kappa > 0){
-                    // Determine a trial point
-                    alpha = VS::innr(g_k,v_k)/kappa;
-                }
-
-                // If we have negative curvature terminate truncated-CG and find
-                // our final step.  We have the kappa!=kappa check in order to
-                // trap NaNs.
-                if(kappa <= 0 || kappa!=kappa){
-
-                    // If we're on the first iteration and we already have
-                    // negative curvature, use the steepest-descent direction.
-                    if(iter==1){
-                        VS::copy(g_k,s_k);
-                        VS::scal(Real(-1.),s_k);
-                    }
-
-                    // Return a message as to why we exited
-                    krylov_stop = KrylovStop::NegativeCurvature;
-
-                    // Exit the loop
-                    break;
-                }
-
-                // Take a step in the computed direction. s_k=s_k+alpha p_k
-                VS::axpy(alpha,p_k,s_k);
-
-                // g_k=g_k+alpha H p_k
-                VS::axpy(alpha,H_pk,g_k);
-
-                // Test whether we've converged CG
-                if(sqrt(VS::innr(g_k,g_k)) <= eps_cg*norm_g){
-                    krylov_stop = KrylovStop::RelativeErrorSmall;
-                    break;
-                }
-
-                // v_k = Minv g_k
-                Minv(g_k,v_k);
-
-                // Compute the new <g_kp1,v_kp1>
-                inner_gkp1_vkp1=VS::innr(g_k,v_k);
-
-                // beta = <g_kp1,v_kp1> / <g_k,v_k>
-                beta= inner_gkp1_vkp1 / inner_gk_vk;
-
-                // Store the new inner product between g_k and p_k
-                inner_gk_vk=inner_gkp1_vkp1;
-                
-                // Find the new search direction.  p_k=-v_k + beta p_k
-                VS::scal(beta,p_k);
-                VS::axpy(Real(-1.),v_k,p_k);
-            }
-
-            // Check if we've exceeded the maximum iteration
-            if(iter>iter_max){
-              krylov_stop=KrylovStop::MaxItersExceeded;
-              iter--; iter_total--;
-            }
-           
-            // Grab the relative error in the CG solution
-            rel_err=sqrt(VS::innr(g_k,g_k)) / (Real(1e-16)+norm_g);
-        }
-
-        // Compute a Golden-Section search between eps and 2*alpha where
-        // alpha is the last line search parameter.
-        static void goldenSection(
-            State& state,
-            const Functional<VS>& F
-        ) {
-            // Create some shortcuts
-            const Vector& u=*(state.u.begin());
-            const unsigned int& iter_max=state.linesearch_iter_max;
-            Real& alpha=state.alpha;
-            Vector& s=*(state.s.begin());
-            unsigned int& iter_total=state.linesearch_iter_total;
-            unsigned int& iter=state.linesearch_iter;
-            Real& obj_ups=state.obj_ups;
-
-            // Create one work element
-            Vector work; VS::init(u,work);
-
-            // Find 1 over the golden ratio
-            Real beta=Real(2./(1.+sqrt(5.)));
-
-            // Find a bracket for the linesearch such that a < b
-            Real a=Real(1e-16);
-            Real b=Real(2.)*alpha;
-
-            // Find two new points between a and b, mu and lambda,
-            // such that lambda < mu
-            double lambda=a+(1.-beta)*(b-a);
-            double mu=a+beta*(b-a);
-
-            // Find the objective value at mu and labmda 
-
-            // mu 
-            VS::copy(u,work);
-            VS::axpy(mu,s,work);
-            Real obj_mu=F(work);
-
-            // lambda
-            VS::copy(u,work);
-            VS::axpy(lambda,s,work);
-            Real obj_lambda=F(work);
-
-            // Search for a fixed number of iterations 
-            for(iter=1;iter<=iter_max;iter++,iter_total++){
-
-                // If the objective is greater on the left, bracket on the
-                // right.  Alternatively, it's possible that we're going to
-                // generate a NaN on the right.  This means that obj_mu=NaN.
-                // In this case we want to bracket on the left.  Since
-                // obj_lambda > obj_mu will return false when obj_mu is a NaN,
-                // we should be safe.
-                if(obj_lambda > obj_mu){
-                    a=lambda;
-                    lambda=mu;
-                    obj_lambda=obj_mu;
-                    mu=a+beta*(b-a);
-
-                    VS::copy(u,work);
-                    VS::axpy(mu,s,work);
-                    obj_mu=F(work);
-
-                // Otherwise, the objective is greater on the right, so bracket
-                // on the left
-                } else {
-                    b=mu;
-                    mu=lambda;
-                    obj_mu=obj_lambda;
-                    lambda=a+(1-beta)*(b-a);
-            
-                    VS::copy(u,work);
-                    VS::axpy(lambda,s,work);
-                    obj_lambda=F(work);
-                }
-            }
-
-            // The iteration count is technically one larger than it should be
-            iter--; iter_total--;
-
-            // Once we're finished narrowing in on a solution, take our best
-            // guess for the line search parameter
-            alpha=obj_lambda < obj_mu ? lambda : mu;
-
-            // Save the objective value at this step
-            obj_ups=obj_lambda < obj_mu ? obj_lambda : obj_mu;
-        }
-
-        // Find the line search parameter based on the 2-point approximation
-        // from Barzilai and Borwein
-        static void twoPoint(
-            State& state,
-            const Functional<VS>& F
-        ) {
-            // Create some shortcuts
-            const Vector& u=*(state.u.begin());
-            const Vector& g=*(state.g.begin());
-            const Vector& u_old=*(state.u_old.begin());
-            const Vector& g_old=*(state.g_old.begin());
-            const LineSearchKind::t& kind=state.kind;
-            Real& alpha=state.alpha;
-            Vector& s=*(state.s.begin());
-            unsigned int& iter_total=state.linesearch_iter_total;
-            unsigned int& iter=state.linesearch_iter;
-            Real& obj_ups=state.obj_ups;
-
-            // Create elements for delta_u and delta_g as well as one work
-            // element
-            Vector delta_u; VS::init(u,delta_u);
-            Vector delta_g; VS::init(u,delta_g);
-            Vector work; VS::init(u,work);
-
-            // Find delta_u
-            VS::copy(u,delta_u);
-            VS::axpy(Real(-1.),u_old,delta_u);
-
-            // Find delta_g
-            VS::copy(g,delta_g);
-            VS::axpy(Real(-1.),g_old,delta_g);
-
-            // Find alpha
-            if(kind==LineSearchKind::TwoPointA)
-                alpha=VS::innr(delta_u,delta_g)/VS::innr(delta_g,delta_g);
-            else if(kind==LineSearchKind::TwoPointB)
-                alpha=VS::innr(delta_u,delta_u)/VS::innr(delta_u,delta_g);
-
-            // Save the objective value at this step
-            VS::copy(u,work);
-            VS::axpy(alpha,s,work);
-            obj_ups=F(work);
-
-            // Since we do one function evaluation, increase the linesearch
-            // iteration by one
-            iter=1; iter_total++;
-        }
-        
-        // Compute a backtracking line-search. 
-        static void backTracking(
-            State& state,
-            const Functional<VS>& F
-        ) {
-            // Create some shortcuts
-            const Vector& u=*(state.u.begin());
-            const unsigned int& iter_max=state.linesearch_iter_max;
-            Real& alpha=state.alpha;
-            Vector& s=*(state.s.begin());
-            unsigned int& iter_total=state.linesearch_iter_total;
-            unsigned int& iter=state.linesearch_iter;
-            Real& obj_ups=state.obj_ups;
-
-            // Create one work element
-            Vector work; VS::init(u,work);
-
-            // Store the best objective value and alpha that we used to find it.
-            // Our initial guess will be at alpha*2.
-            Real alpha_best=Real(2.)*alpha;
-            VS::copy(u,work);
-            VS::axpy(alpha_best,s,work);
-            Real obj_best=F(work);
-
-            // Evaluate the objective iter_max times at a distance of
-            // 2*alpha, alpha, alpha/2, ....  Then, pick the best one.
-            Real alpha0=alpha;
-            for(unsigned int i=0;i<iter_max-1;i++){
-                    // Evaluate F(u+alpha*s)
-                VS::copy(u,work);
-                VS::axpy(alpha0,s,work);
-                Real obj=F(work);
-
-                // If this is better than our best guess so far, save it
-                if(obj<obj_best){
-                    obj_best=obj;
-                    alpha_best=alpha0;
-                }
-
-                // Reduce the size of alpha
-                alpha0 /= Real(2.);
-            }
-
-            // Save the best objective and alpha found
-            alpha=alpha_best;
-            obj_ups=obj_best;
-
-            // Indicate how many iterations we used to find this value
-            iter_total+=iter_max;
-            iter=iter_max;
-        }
-       
-        // Finds a trial step using a line-search for globalization
-        static void getStepLS(
-            State& state,
-            const Operator<VS,VS>& Minv,
-            const Operator<VS,VS>& H,
-            const Functional<VS>& obj_fn
-        ){
-            // Create some shortcuts
-            const LineSearchDirection::t& dir=state.dir;
-            const LineSearchKind::t& kind=state.kind;
-            const int& iter=state.iter;
-            const int& linesearch_iter_max=state.linesearch_iter_max;
-            const Real& obj_u=state.obj_u;
-            const Real& obj_ups=state.obj_ups;
-            Vector& s=*(state.s.begin());
-            Real& norm_s=state.norm_s;
-            Real& alpha=state.alpha;
-
-            // Find the line-search direction
-            switch(dir){
-            case LineSearchDirection::SteepestDescent:
-                SteepestDescent(state);
-                break;
-            case LineSearchDirection::FletcherReeves:
-                FletcherReeves(state);
-                break;
-            case LineSearchDirection::PolakRibiere:
-                PolakRibiere(state);
-                break;
-            case LineSearchDirection::HestenesStiefel:
-                HestenesStiefel(state);
-                break;
-            case LineSearchDirection::BFGS:
-                BFGS_SD(state);
-                break;
-            case LineSearchDirection::NewtonCG:
-                NewtonCG(state,Minv,H);
-                break;
-            }
-
-            // Do a line-search in the specified direction
-            switch(kind){
-            case LineSearchKind::GoldenSection:
-                    do{
-                    // Conduct the golden section search
-                    goldenSection(state,obj_fn);
-
-                    // If we don't decrease, print out some diagnostic
-                    // information and reduce the size of alpha
-                    if(obj_ups > obj_u){
-                        norm_s=alpha*sqrt(VS::innr(s,s));
-                            printState(state,true);
-                        alpha /= Real(2.);
-                    }
-
-                // If we don't decrease the objective, try another linesearch
-                } while(obj_u < obj_ups || obj_ups!=obj_ups);
-                break;
-            case LineSearchKind::BackTracking:
-                    do{
-                    // Conduct a backtracking search
-                    backTracking(state,obj_fn);
-
-                    // If we don't decrease, print out some diagnostic
-                    // information and restart the search at the smallest
-                    // alpha we previously searched.
-                    if(obj_ups > obj_u){
-                        norm_s=alpha*sqrt(VS::innr(s,s));
-                            printState(state,true);
-                        alpha = alpha/pow(Real(2.),linesearch_iter_max+1);
-                    }
-
-                // If we don't decrease the objective, try another linesearch
-                } while(obj_u < obj_ups || obj_ups!=obj_ups);
-                break;
-            case LineSearchKind::TwoPointA:
-            case LineSearchKind::TwoPointB:
-                    if(iter>1) twoPoint(state,obj_fn);
-                else goldenSection(state,obj_fn);
-                break;
-            case LineSearchKind::Brents:
-                    VS::error("Brent's linesearch is not currently implemented.");        
-                break;
-            }
-        
-            // Scale the line-search direction by the line search parameter 
-            VS::scal(alpha,s);
-
-            // Save the length of the trial step
-            norm_s=sqrt(VS::innr(s,s));
-        }
-
-        // Finds a new trial step
-        static void getStep(
-            State& state,
-            const Operator<VS,VS>& Minv,
-            const Operator<VS,VS>& H,
-            const Functional<VS>& obj_fn
-        ){
-            // Create some shortcuts
-            const AlgorithmClass::t& algorithm_class=state.algorithm_class;
-
-            // Choose whether we use a line-search or trust-region method
-            switch(algorithm_class){
-            case AlgorithmClass::TrustRegion:
-                getStepTR(state,Minv,H,obj_fn);
-                break;
-            case AlgorithmClass::LineSearch:
-                getStepLS(state,Minv,H,obj_fn);
-                break;
-            }
-        }
-
-        // Updates the quasi-Newton information
-        static void updateQuasi(State& state) {
-            // Exit immediately if we're not using a quasi-Newton method
-            if(state.stored_history==0) return;
-
-            // Create some shortcuts
-            const Vector& u=*(state.u.begin());
-            const Vector& g=*(state.g.begin());
-            const Vector& u_old=*(state.u_old.begin());
-            const Vector& g_old=*(state.g_old.begin());
-            const Operators::t& Minv_type=state.Minv_type;
-            const Operators::t& H_type=state.H_type;
-            const LineSearchDirection::t& dir=state.dir;
-            List& oldY=state.oldY;
-            List& oldS=state.oldS;
-           
-            // Allocate some temp storage for y and s
-            Vector s; VS::init(u,s);
-            Vector y; VS::init(u,y);
-
-            // Find s = u-u_old
-            VS::copy(u,s);
-            VS::axpy(Real(-1.),u_old,s);
-
-            // Find y = g - g_old
-            VS::copy(g,y);
-            VS::axpy(Real(-1.),g_old,y);
-
-            // If we're using BFGS, check that <y,x> > 0
-            if((Minv_type==Operators::InvBFGS || H_type==Operators::BFGS
-                || dir==LineSearchDirection::BFGS)
-                && VS::innr(y,s) < 0)
-                return;
-
-            // Insert these into the quasi-Newton storage
-            oldS.push_front(s);
-            oldY.push_front(y);
-
-            // Determine if we need to free some memory
-            if(oldS.size()>state.stored_history){
+                // Allocate some temp storage for y and s
+                Vector s; X::init(x,s);
+                Vector y; X::init(x,y);
+
+                // Find s = u-u_old
+                X::copy(x,s);
+                X::axpy(Real(-1.),x_old,s);
+
+                // Find y = g - g_old
+                X::copy(g,y);
+                X::axpy(Real(-1.),g_old,y);
+
+                // If we're using BFGS, check that <y,s> > 0
+                if((Minv_type==Operators::InvBFGS || H_type==Operators::BFGS
+                    || dir==LineSearchDirection::BFGS)
+                    && X::innr(y,s) < 0)
+                    return;
+
+                // Insert these into the quasi-Newton storage
+                oldS.push_front(s);
+                oldY.push_front(y);
+
+                // Determine if we need to free some memory
+                if(oldS.size()>state.stored_history){
                     oldS.pop_back();
-                oldY.pop_back();
-            }
-        }
-
-        // Solves an optimization problem
-        static void getMin(
-            State& state,
-            StateManipulator& smanip,
-            Functional<VS>& F,
-            Operator<VS,VS>& G,
-            Operator<VS,VS>& H,
-            Operator<VS,VS>& Minv
-        ) {
-            // Create some shortcuts
-            Vector& u=*(state.u.begin());
-            Vector& g=*(state.g.begin());
-            Vector& s=*(state.s.begin());
-            Vector& u_old=*(state.u_old.begin());
-            Vector& g_old=*(state.g_old.begin());
-            Vector& s_old=*(state.s_old.begin());
-            Real& obj_u=state.obj_u;
-            Real& obj_ups=state.obj_ups;
-            Real& norm_s=state.norm_s;
-            Real& norm_g=state.norm_g;
-            Real& norm_gtyp=state.norm_gtyp;
-            Real& norm_styp=state.norm_styp;
-            unsigned int& iter=state.iter;
-            StoppingCondition::t& opt_stop=state.opt_stop;
-            AlgorithmClass::t& algorithm_class=state.algorithm_class;
-            LineSearchDirection::t& dir=state.dir;
-
-            // Evaluate the objective function and gradient if we've not done
-            // so already
-            if(obj_u != obj_u) {
-                obj_u=F(u);
-                G(u,g);
-                norm_g=sqrt(VS::innr(g,g));
-                norm_gtyp=norm_g;
+                    oldY.pop_back();
+                }
             }
 
-            // Prints out the header for the diagonstic information
-            printStateHeader(state);
-            if(algorithm_class==AlgorithmClass::TrustRegion
-                || dir==LineSearchDirection::NewtonCG)
-                printKrylovHeader(state);
+            // Solves an optimization problem
+            static void getMin(
+                const Messaging& msg,
+                const StateManipulator<State::Unconstrained <Real,XX> >& smanip,
+                Functions::Unconstrained <Real,XX>& fns,
+                State::Unconstrained <Real,XX>& state
+            ){
+                // Create some shortcuts
+                Vector& x=*(state.x.begin());
+                Vector& g=*(state.g.begin());
+                Vector& s=*(state.s.begin());
+                Vector& x_old=*(state.x_old.begin());
+                Vector& g_old=*(state.g_old.begin());
+                Vector& s_old=*(state.s_old.begin());
+                Real& obj_x=state.obj_x;
+                Real& obj_xps=state.obj_xps;
+                Real& norm_s=state.norm_s;
+                Real& norm_g=state.norm_g;
+                Real& norm_gtyp=state.norm_gtyp;
+                Real& norm_styp=state.norm_styp;
+                unsigned int& iter=state.iter;
+                StoppingCondition::t& opt_stop=state.opt_stop;
+                AlgorithmClass::t& algorithm_class=state.algorithm_class;
+                LineSearchDirection::t& dir=state.dir;
 
-            // Primary optimization loop
-            do{
+                // Finalize the functions that define the problem 
+                fns.finalize(msg,state);
+                
+                // Create shortcuts to the functions that we need
+                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
+
+                // Evaluate the objective function and gradient if we've not
+                // done so already
+                if(obj_x != obj_x) {
+                    obj_x=f(x);
+                    f.grad(x,g);
+                    norm_g=sqrt(X::innr(g,g));
+                    norm_gtyp=norm_g;
+                }
+
+                // Prints out the header for the diagonstic information
+                printStateHeader(msg,state);
+                if(algorithm_class==AlgorithmClass::TrustRegion
+                    || dir==LineSearchDirection::NewtonCG)
+                    printKrylovHeader(msg,state);
+
+                // Primary optimization loop
+                do{
                     // Print some diagnostic information
-                printState(state);
-
-                // Get a new optimization iterate.  
-                getStep(state,Minv,H,F);
-
-                // If we've not calculate it already, save the size of the step
-                if(norm_styp!=norm_styp) norm_styp=norm_s;
-
-                // Save the old variable, gradient, and trial step.  This
-                // is useful for both CG and quasi-Newton methods.
-                VS::copy(u,u_old);
-                VS::copy(g,g_old);
-                VS::copy(s,s_old);
-
-                // Move to the new iterate
-                VS::axpy(Real(1.),s,u);
-
-                // Manipulate the state if required
-                smanip(state);
-
-                // Find the new objective function and gradient
-                obj_u=obj_ups;
-                G(u,g);
-                norm_g=sqrt(VS::innr(g,g));
-
-                // Update the quasi-Newton information
-                updateQuasi(state);
-
-                // Increase the iteration
-                iter++;
-
-                // Check the stopping condition
-                opt_stop=checkStop(state);
-            } while(opt_stop==StoppingCondition::NotConverged);
-                    
-            // Print a final diagnostic 
-            printState(state);
-        }
-        
-        // Solves an optimization problem
-        static void getMin(
-            State& state,
-            StateManipulator& smanip,
-            Functional<VS>& F,
-            Operator<VS,VS>& G,
-            Operator<VS,VS>& H
-        ){
-            // Create a few shortcuts
-            const Operators::t& Minv_type=state.Minv_type;
-
-            // Determine the preconditioner
-            std::auto_ptr <Operator<VS,VS> > Minv;
-            switch(Minv_type){
-                case Operators::Identity:
-                    Minv.reset(new Identity());
-                    break;
-                case Operators::InvBFGS:
-                    Minv.reset(new InvBFGS(state));
-                    break;
-                case Operators::InvSR1:
-                    Minv.reset(new InvSR1(state));
-                    break;
-                case Operators::External:
-                    VS::error("An externally defined preconditioner must be "
-                        "provided explicitely.");
-                    break;
-                default:
-                    VS::error("Not a valid Hessian approximation.");
-                    break;
-            }
-
-            // Solve the minimization problem
-            getMin(state,smanip,F,G,H,*Minv);
-        }
-        
-        // Solves an optimization problem
-        static void getMin(
-            State& state,
-            Functional<VS>& F,
-            Operator<VS,VS>& G,
-            Operator<VS,VS>& H,
-            Operator<VS,VS>& Minv
-        ) {
-            StateManipulator smanip;
-            getMin(state,smanip,F,G,H,Minv);
-        }
-        
-        // Solves an optimization problem
-        static void getMin(
-            State& state,
-            Functional<VS>& F,
-            Operator<VS,VS>& G,
-            Operator<VS,VS>& H
-        ){
-            StateManipulator smanip;
-            getMin(state,smanip,F,G,H);
-        }
-        
-        // Solves an optimization problem
-        static void getMin(
-            State& state,
-            StateManipulator& smanip,
-            Functional<VS>& F,
-            Operator<VS,VS>& G
-        ){
-            // Create a few shortcuts
-            const Operators::t& H_type=state.H_type;
-
-            // Determine the Hessian approximation
-            std::auto_ptr <Operator<VS,VS> > H;
-            switch(H_type){
-                    case Operators::Identity:
-                    H.reset(new Identity());
-                    break;
-                    case Operators::ScaledIdentity:
-                    H.reset(new ScaledIdentity(state));
-                    break;
-                case Operators::BFGS:
-                    H.reset(new BFGS(state));
-                    break;
-                case Operators::SR1:
-                    H.reset(new SR1(state));
-                    break;
-                case Operators::External:
-                    VS::error("An externally defined Hessian must be provided "
-                        "explicitely.");
-                    break;
-                default:
-                    VS::error("Not a valid Hessian approximation.");
-                    break;
-            }
-
-            // Solve the minimization problem
-            getMin(state,smanip,F,G,*H);
-        }
-        
-        // Solves an optimization problem
-        static void getMin(
-            State& state,
-            Functional<VS>& F,
-            Operator<VS,VS>& G
-        ){
-            StateManipulator smanip;
-            getMin(state,smanip,F,G);
-        }
-
-        // Prints out useful information regarding the current optimization
-        // state
-        static void printState(const State& state,const bool noiter=false){
-            // Create some shortcuts
-            const int& iter=state.iter;
-            const Real& obj_u=state.obj_u;
-            const Real& norm_g=state.norm_g;
-            const Real& norm_s=state.norm_s;
-            const Real& krylov_rel_err=state.krylov_rel_err;
-            const int& krylov_iter=state.krylov_iter;
-            const KrylovStop::t& krylov_stop=state.krylov_stop; 
-            const AlgorithmClass::t& algorithm_class=state.algorithm_class;
-            const LineSearchDirection::t& dir=state.dir;
-            const int& linesearch_iter=state.linesearch_iter;
-            const int& verbose=state.verbose;
-
-            // Check if we should print
-            if(verbose<1) return;
-
-            // Basic information
-            std::stringstream ss;
-            if(!noiter) ss << std::setw(4) << iter << ' ';
-            else ss << std::setw(4) << '*' << ' ';
-            ss << std::scientific << std::setprecision(3)
-                    << std::setw(11) << obj_u << ' '
-                << std::setw(11) << norm_g << ' ';
-            if(iter==0) ss << "            ";
-            else ss << std::setw(11) << norm_s << ' ';
-
-            // Information for the Krylov method
-            if(algorithm_class==AlgorithmClass::TrustRegion
-                || dir==LineSearchDirection::NewtonCG
-            ){
-                ss << std::setw(11) << krylov_rel_err << ' ' 
-                    << std::setw(6) << krylov_iter << ' ';
-
-                switch(krylov_stop){
-                case KrylovStop::NegativeCurvature:
-                    ss << std::setw(10) << "Neg Curv" << ' '; 
-                    break;
-                case KrylovStop::RelativeErrorSmall:
-                    ss << std::setw(10) << "Rel Err " << ' '; 
-                    break;
-                case KrylovStop::MaxItersExceeded:
-                    ss << std::setw(10) << "Max Iter" << ' '; 
-                    break;
-                case KrylovStop::TrustRegionViolated:
-                    ss << std::setw(10) << "Trst Reg" << ' '; 
-                    break;
-                }
-            }
-
-            // Information for the line search
-            if(algorithm_class==AlgorithmClass::LineSearch){
-                ss << std::setw(6) << linesearch_iter << ' ';
-            }
-
-            // Send the information to the screen
-            VS::print(ss.str());
-        }
-        
-        // Prints out useful information regarding the Krylov method 
-        static void printKrylov(const State& state){
-            // Create some shortcuts
-            const Real& krylov_rel_err=state.krylov_rel_err;
-            const int& krylov_iter=state.krylov_iter;
-            const int& krylov_iter_total=state.krylov_iter_total;
-            const int& verbose=state.verbose;
-
-            // Check if we should print
-            if(verbose<2) return;
-
-            // Basic information
-            std::stringstream ss;
-            ss << "  " << std::setw(4) << krylov_iter << ' '
-                << std::setw(6) << krylov_iter_total << ' '
-                << std::scientific << std::setprecision(3)
-                    << std::setw(11) << krylov_rel_err; 
-
-            // Send the information to the screen
-            VS::print(ss.str());
-        }
-
-        // Prints out a description for the state
-        static void printStateHeader(const State& state){
-            // Create some shortcuts
-            const AlgorithmClass::t& algorithm_class=state.algorithm_class;
-            const LineSearchDirection::t& dir=state.dir;
-            const int& verbose=state.verbose;
-
-            // Check if we should print
-            if(verbose<1) return;
-
-            // Basic Header
-            std::stringstream ss;
-            ss << "Iter" << ' '
-                    << std::setw(11) << "Obj Value" << ' '
-                    << std::setw(11) << "norm(g)  " << ' '
-                    << std::setw(11) << "norm(s)  " << ' ';
-
-            // In case we're using a Krylov method
-            if(algorithm_class==AlgorithmClass::TrustRegion
-                || dir==LineSearchDirection::NewtonCG
-            ){
-                    ss << std::setw(11) << "Kry Error" << ' '
-                    << std::setw(6) << "KryIt" << ' ' 
-                    << std::setw(10) << "Kry Why " << ' ';
-            }
-
-            // Information for the line search
-            if(algorithm_class==AlgorithmClass::LineSearch){
-                ss << std::setw(6) << "LS It" << ' ';
-            }
-
-            // Send the information to the screen
-            VS::print(ss.str());
-        }
-        
-        // Prints out a description for the Krylov method 
-        static void printKrylovHeader(const State& state){
-            // Create some shortcuts
-            const int& verbose=state.verbose;
-
-            // Check if we should print
-            if(verbose<2) return;
-
-            // Basic Header
-            std::stringstream ss;
-            ss << "  Iter" << ' '
-                    << std::setw(6) << "Total" << ' '
-                    << std::setw(11) << "Rel Err" << ' ';
-
-            // Send the information to the screen
-            VS::print(ss.str());
-        }
-    };
-
-
-    // Utilities for parameter estimation.  
-    template <class U,class Y,class Z>
-    class parest{
-    public:
-            // Setup some types
-        typedef typename U::Vector U_Vector; 
-        typedef typename U::Real U_Real; 
-        typedef typename Y::Vector Y_Vector; 
-        typedef typename Y::Real Y_Real; 
-        typedef typename Z::Vector Z_Vector; 
-
-        // The Gauss-Newton Hessian approximation
-        class GaussNewton : public Operator <U,U> {
-        private:
-            // Residual function
-            const DiffOperator <Y,Z>& r;
-
-            // Solution operator
-            const DiffOperator <U,Y>& h;
-
-            // Point around which we find the Hessian approximation
-            const U_Vector& u;
-
-            // Points in the Y and Z space that we use to initialize
-            // additional memory.
-            const Y_Vector& y;
-            const Z_Vector& z;
-        public:
-            GaussNewton(
-                const DiffOperator <Y,Z>& r_,
-                const DiffOperator <U,Y>& h_,
-                const U_Vector& u_,
-                const Y_Vector& y_,
-                const Z_Vector& z_) :
-                r(r_), h(h_), u(u_), y(y_), z(z_)
-            {
-                    // Insure the max index on r and h are the same
-                if(r.max_index()!=h.max_index())
-                    U::error("The solution and residual operators used "
-                            "to compose the Gauss-Newton operator have "
-                        "a differing max index.");
-            }
-           
-            // Hessian vector product
-            void operator () (
-                const U_Vector& p,
-                U_Vector& result
-            ) const {
-
-                // Create two work elements in Y, one in Z, and one in U
-                Y_Vector y1; Y::init(y,y1);
-                Y_Vector y2; Y::init(y,y2);
-                Z_Vector z1; Z::init(z,z1);
-                U_Vector u1; U::init(u,u1);
-
-                // Zero out the result 
-                U::scal(U_Real(0.),result);
-
-                // Accumulate the affect of the GN approximation on p one piece
-                // at a time
-                for(int i=0;i<r.max_index();i++){
-
-                    // Find the solution, y.  Store in y1. 
-                    (*h.f(i))(u,y1);
-
-                    // Find h'(u)p.  Store in y2. 
-                    (*h.fp(i,u))(p,y2);
-
-                    // Find r'(y) y2.  Store in z1.
-                    (*r.fp(i,y1))(y2,z1);        
-
-                    // Find f'(y)* z1.  Store in y2. 
-                    (*r.fps(i,y1))(z1,y2);
-
-                    // Find h'(u)* y2.  Store in u1. 
-                    (*h.fps(i,u))(y2,u1);
-
-                    // Accumulate the result
-                    U::axpy(1.,u1,result);
-                }
-            }
-        };
-        
-        // The full-Newton Hessian 
-        class Newton : public Operator <U,U> {
-        private:
-            // Residual function
-            const DiffOperator <Y,Z>& r;
-
-            // Solution operator
-            const DiffOperator <U,Y>& h;
-
-            // Point around which we find the Hessian approximation
-            const U_Vector& u;
-
-            // Points in the Y and Z space that we use to initialize
-            // additional memory.
-            const Y_Vector& y;
-            const Z_Vector& z;
-
-        public:
-            Newton(
-                const DiffOperator <Y,Z>& r_,
-                const DiffOperator <U,Y>& h_,
-                const U_Vector& u_,
-                const Y_Vector& y_,
-                const Z_Vector& z_) :
-                r(r_), h(h_), u(u_), y(y_), z(z_)
-            {
-                    // Insure the max index on r and h are the same
-                if(r.max_index()!=h.max_index())
-                    U::error("The solution and residual operators used "
-                            "to compose the Newton operator have "
-                        "a differing max index.");
-            }
-
-            // Operator-vector product
-            void operator () (
-                const U_Vector& p,
-                U_Vector& result
-            ) const{
-
-                // Create three work elements in Y, one in Z, and one in U
-                Y_Vector y1; Y::init(y,y1);
-                Y_Vector y2; Y::init(y,y2);
-                Y_Vector y3; Y::init(y,y3);
-                Z_Vector z1; Z::init(z,z1);
-                U_Vector u1; U::init(u,u1);
-
-                // Zero out the result 
-                U::scal(U_Real(0.),result);
-
-                // Accumulate the affect of the GN approximation on p one piece
-                // at a time
-                for(int i=0;i<r.max_index();i++){
-
-                    // Accumulate the Gauss-Newton part of the Hessian
-
-                    // Find the solution, y.  Store in y1.  SAVE THIS. 
-                    (*h.f(i))(u,y1);
-
-                    // Find h'(u)p.  Store in y2.  SAVE THIS. 
-                    (*h.fp(i,u))(p,y2);
-
-                    // Find r'(y) y2.  Store in z1.
-                    (*r.fp(i,y1))(y2,z1);        
-
-                    // Find f'(y)* z1.  Store in y3. 
-                    (*r.fps(i,y1))(z1,y3);
-
-                    // Find h'(u)* y2.  Store in u1. 
-                    (*h.fps(i,u))(y3,u1);
-
-                    // Accumulate the result
-                    U::axpy(U_Real(1.),u1,result);
-
-                    // At this point, y1=h(u) and y2=h'(u)p.
-                    
-                    // Accumlate the second order terms for the solution
-                    // operator
-
-                    // Find r(y).  Store in z1.  SAVE THIS.
-                    (*r.f(i))(y1,z1);
-
-                    // Find r'(y)* z1.  Store in y3. 
-                    (*r.fps(i,y1))(z1,y3);
-
-                    // Find (h''(u)p)*y3.  Store in u1.
-                    (*h.fpps(i,u,y3))(p,u1);
-
-                    // Accumulate the result
-                    U::axpy(U_Real(1.),u1,result);
-
-                    // Accumulate the second order terms for the
-                    // projection operator
-
-                    // At this point, y1=h(u), y2=h'(u)p, z1=r(y).
-
-                    // Find (r''(y) y2)* z1.  Store in y3.
-                    (*r.fpps(i,y1,z1))(y2,y3);
-
-                    // Find h'(u)* y3.  Store in u1. 
-                    (*h.fps(i,u))(y3,u1);
-
-                    // Accumulate the result
-                    U::axpy(U_Real(1.),u1,result);
-                }
-            }
-        };
-        
-        // Finds the gradient 
-        class getGradient: public Operator <U,U> {
-        private:
-            // Residual function
-            const DiffOperator <Y,Z>& r;
-
-            // Solution operator
-            const DiffOperator <U,Y>& h;
-
-            // Points in the Y and Z space that we use to initialize
-            // additional memory.
-            const Y_Vector& y;
-            const Z_Vector& z;
-
-        public:
-            getGradient(
-                const DiffOperator <Y,Z>& r_,
-                const DiffOperator <U,Y>& h_,
-                const Y_Vector& y_,
-                const Z_Vector& z_) :
-                r(r_), h(h_), y(y_), z(z_)
-            {
-                    // Insure the max index on r and h are the same
-                if(r.max_index()!=h.max_index())
-                    U::error("The solution and residual operators used "
-                            "to compose the gradient operator have "
-                        "a differing max index.");
+                    printState(msg,state);
+
+                    // Get a new optimization iterate.  
+                    getStep(msg,fns,state);
+
+                    // If we've not calculated it already, save the size of
+                    // the step
+                    if(norm_styp!=norm_styp) norm_styp=norm_s;
+
+                    // Save the old variable, gradient, and trial step.  This
+                    // is useful for both CG and quasi-Newton methods.
+                    X::copy(x,x_old);
+                    X::copy(g,g_old);
+                    X::copy(s,s_old);
+
+                    // Move to the new iterate
+                    X::axpy(Real(1.),s,x);
+
+                    // Manipulate the state if required
+                    smanip(state);
+
+                    // Find the new objective function and gradient
+                    obj_x=obj_xps;
+                    f.grad(x,g);
+                    norm_g=sqrt(X::innr(g,g));
+
+                    // Update the quasi-Newton information
+                    updateQuasi(state);
+
+                    // Increase the iteration
+                    iter++;
+
+                    // Check the stopping condition
+                    opt_stop=checkStop(state);
+                } while(opt_stop==StoppingCondition::NotConverged);
+                        
+                // Print a final diagnostic 
+                printState(msg,state);
             }
             
-            void operator () (const U_Vector& u,U_Vector& g) const {
-                // Create two work elements in Y, one in Z, and one in U
-                Y_Vector y1; Y::init(y,y1);
-                Y_Vector y2; Y::init(y,y2);
-                Z_Vector z1; Z::init(z,z1);
-                U_Vector u1; U::init(u,u1);
+            // Solves an optimization problem where the user doesn't know about
+            // the state manipulator
+            static void getMin(
+                const Messaging& msg,
+                Functions::Unconstrained <Real,XX>& fns,
+                State::Unconstrained <Real,XX>& state
+            ){
+                // Create an empty state manipulator
+                StateManipulator<State::Unconstrained <Real,XX> > smanip;
 
-                // Zero out the gradient
-                U::scal(U_Real(0.),g);
-
-                // Accumulate the gradient one piece at a time
-                for(int i=0;i<r.max_index();i++){
-
-                    // Find the solution y.  Store in y1 
-                    (*h.f(i))(u,y1);
-
-                    // Find r(y).  Store in z1.
-                    (*r.f(i))(y1,z1);
-
-                    // Find r'(y)* z1.  Store in y2. 
-                    (*r.fps(i,y1))(z1,y2);
-
-                    // Find h'(u)* y2.  Store in u1. 
-                    (*h.fps(i,u))(y2,u1);
-
-                    // Accumulate the result 
-                    U::axpy(U_Real(1.),u1,g);
-                }
+                // Minimize the problem
+                getMin(msg,smanip,fns,state);
             }
-        };
+        
+            // Prints out useful information regarding the current optimization
+            // state
+            static void printState(
+                const Messaging& msg,
+                const State::Unconstrained <Real,XX>& state,
+                const bool noiter=false
+            ) {
+                // Create some shortcuts
+                const int& iter=state.iter;
+                const Real& obj_x=state.obj_x;
+                const Real& norm_g=state.norm_g;
+                const Real& norm_s=state.norm_s;
+                const Real& krylov_rel_err=state.krylov_rel_err;
+                const int& krylov_iter=state.krylov_iter;
+                const KrylovStop::t& krylov_stop=state.krylov_stop; 
+                const AlgorithmClass::t& algorithm_class=state.algorithm_class;
+                const LineSearchDirection::t& dir=state.dir;
+                const int& linesearch_iter=state.linesearch_iter;
 
-        // Computes the objective value 
-        class getObjective : public Functional <U> {
-        private:
-            // Residual function
-            const DiffOperator <Y,Z>& r;
+                // Basic information
+                std::stringstream ss;
+                if(!noiter) ss << std::setw(4) << iter << ' ';
+                else ss << std::setw(4) << '*' << ' ';
+                ss << std::scientific << std::setprecision(3)
+                    << std::setw(11) << obj_x << ' '
+                    << std::setw(11) << norm_g << ' ';
+                if(iter==0) ss << "            ";
+                else ss << std::setw(11) << norm_s << ' ';
 
-            // Solution operator
-            const DiffOperator <U,Y>& h;
+                // Information for the Krylov method
+                if(algorithm_class==AlgorithmClass::TrustRegion
+                    || dir==LineSearchDirection::NewtonCG
+                ){
+                    ss << std::setw(11) << krylov_rel_err << ' ' 
+                        << std::setw(6) << krylov_iter << ' ';
 
-            // Points in the Y and Z space that we use to initialize
-            // additional memory.
-            const Y_Vector& y;
-            const Z_Vector& z;
-
-        public:
-            getObjective(
-                const DiffOperator <Y,Z>& r_,
-                const DiffOperator <U,Y>& h_,
-                const Y_Vector& y_,
-                const Z_Vector& z_) :
-                r(r_), h(h_), y(y_), z(z_)
-            {
-                    // Insure the max index on r and h are the same
-                if(r.max_index()!=h.max_index())
-                    U::error("The solution and residual operators used "
-                            "to compose the objective function have "
-                        "a differing max index.");
-            }
-
-            // Finds the objective value
-            typename U::Real operator () (const U_Vector& u) const{
-                // Create one work element in Y and one in Z
-                Y_Vector y1; Y::init(y,y1);
-                Z_Vector z1; Z::init(z,z1);
-
-                // Accumulate the objective value a piece at a time
-                double obj_u=0.;
-                for(int i=0; i<r.max_index(); i++){
-
-                    // Find the solution y.  Store in y1.
-                    (*h.f(i))(u,y1);
-
-                    // Find r(y).  Store it in z1. 
-                    (*r.f(i))(y1,z1);
-
-                    // Accumulate .5*|| r_i(h_i(u)) ||^2
-                    obj_u += .5*Z::innr(z1,z1);
+                    switch(krylov_stop){
+                    case KrylovStop::NegativeCurvature:
+                        ss << std::setw(10) << "Neg Curv" << ' '; 
+                        break;
+                    case KrylovStop::RelativeErrorSmall:
+                        ss << std::setw(10) << "Rel Err " << ' '; 
+                        break;
+                    case KrylovStop::MaxItersExceeded:
+                        ss << std::setw(10) << "Max Iter" << ' '; 
+                        break;
+                    case KrylovStop::TrustRegionViolated:
+                        ss << std::setw(10) << "Trst Reg" << ' '; 
+                        break;
+                    }
                 }
 
-                // Return the accumulated answer
-                return obj_u;
+                // Information for the line search
+                if(algorithm_class==AlgorithmClass::LineSearch){
+                    ss << std::setw(6) << linesearch_iter << ' ';
+                }
+
+                // Send the information to the screen
+                msg.print(ss.str(),1);
             }
+            
+            // Prints out useful information regarding the Krylov method 
+            static void printKrylov(
+                const Messaging& msg,
+                const State::Unconstrained <Real,XX>& state
+            ) {
+                // Create some shortcuts
+                const Real& krylov_rel_err=state.krylov_rel_err;
+                const int& krylov_iter=state.krylov_iter;
+                const int& krylov_iter_total=state.krylov_iter_total;
+
+                // Basic information
+                std::stringstream ss;
+                ss << "  " << std::setw(4) << krylov_iter << ' '
+                    << std::setw(6) << krylov_iter_total << ' '
+                    << std::scientific << std::setprecision(3)
+                        << std::setw(11) << krylov_rel_err; 
+
+                // Send the information to the screen
+                msg.print(ss.str(),2);
+            }
+
+            // Prints out a description for the state
+            static void printStateHeader(
+                const Messaging& msg,
+                const State::Unconstrained <Real,XX>& state
+            ) {
+                // Create some shortcuts
+                const AlgorithmClass::t& algorithm_class=state.algorithm_class;
+                const LineSearchDirection::t& dir=state.dir;
+
+                // Basic Header
+                std::stringstream ss;
+                ss << "Iter" << ' '
+                        << std::setw(11) << "Obj Value" << ' '
+                        << std::setw(11) << "  norm(g)" << ' '
+                        << std::setw(11) << "  norm(s)" << ' ';
+
+                // In case we're using a Krylov method
+                if(algorithm_class==AlgorithmClass::TrustRegion
+                    || dir==LineSearchDirection::NewtonCG
+                ){
+                        ss << std::setw(11) << "Kry Error" << ' '
+                        << std::setw(6) << "KryIt" << ' ' 
+                        << std::setw(10) << "Kry Why " << ' ';
+                }
+
+                // Information for the line search
+                if(algorithm_class==AlgorithmClass::LineSearch){
+                    ss << std::setw(6) << "LS It" << ' ';
+                }
+
+                // Send the information to the screen
+                msg.print(ss.str(),1);
+            }
+            
+            // Prints out a description for the Krylov method 
+            static void printKrylovHeader(
+                const Messaging& msg,
+                const State::Unconstrained <Real,XX>& state
+            ) {
+                // Basic Header
+                std::stringstream ss;
+                ss << "  Iter" << ' '
+                        << std::setw(6) << "Total" << ' '
+                        << std::setw(11) << "Rel Err" << ' ';
+
+                // Send the information to the screen
+                msg.print(ss.str(),2);
+            }
+        
         };
-    };
-#endif
+    }
 }
 #endif
