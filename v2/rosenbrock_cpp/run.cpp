@@ -45,12 +45,12 @@ struct MyVS{
 
     // Prints out diagnostic information
     static void print(std::string msg){
-    	std::cout << msg;
+    	std::cout << msg << std::endl;
     }
 
     // Prints out error information
     static void error(std::string msg){
-    	std::cout << msg;
+    	std::cout << msg << std::endl;
     }
 };
 
@@ -118,14 +118,14 @@ int main(){
     state.eps_krylov=1e-8;
 
     // Newton's method
-    state.H_type=peopt::Operators::External;
-    state.algorithm_class=peopt::AlgorithmClass::TrustRegion;
+    //state.H_type=peopt::Operators::External;
+    //state.algorithm_class=peopt::AlgorithmClass::TrustRegion;
 
     // BFGS
-    //state.dir=peopt::LineSearchDirection::BFGS;
-    //state.kind=peopt::LineSearchKind::GoldenSection;
-    //state.algorithm_class=peopt::AlgorithmClass::LineSearch;
-    //state.stored_history=10;
+    state.dir=peopt::LineSearchDirection::BFGS;
+    state.kind=peopt::LineSearchKind::GoldenSection;
+    state.algorithm_class=peopt::AlgorithmClass::LineSearch;
+    state.stored_history=10;
 
     // Create a function, gradient, and Hessian for this problem
     RosenObjective F;
