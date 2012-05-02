@@ -9,6 +9,9 @@
 #include<sstream>
 #include<iomanip>
 #include<memory>
+#include<functional>
+#include<algorithm>
+#include<numeric>
 
 namespace peopt{
 
@@ -92,6 +95,103 @@ namespace peopt{
             const Vector& y,
             Vector& z
         ) const = 0;
+    };
+    
+    // A simple scalar valued function interface, f:X->R
+    template <typename Real,template <typename> class XX>
+    struct ScalarValuedFunction {
+    private:
+        // Create some type shortcuts
+        typedef XX <Real> X;
+        typedef typename X::Vector Vector;
+
+    public:
+        // <- f(x) 
+        virtual Real operator () (const Vector& x) const = 0;
+
+        // g = grad f(x) 
+        virtual void grad(const Vector& x,Vector& g) const = 0;
+
+        // H_dx = hess f(x) dx 
+        virtual void hessvec(const Vector& x,const Vector& dx,Vector& H_dx 
+        ) const {
+            X::copy(dx,H_dx); 
+        }
+
+        // Allow a derived class to deallocate memory
+        virtual ~ScalarValuedFunction() {}
+    };
+
+    // A simple vector valued function interface, f : X -> Y
+    template <
+        typename Real,
+        template <typename> class XX,
+        template <typename> class YY 
+    >
+    struct VectorValuedFunction {
+        // Create some type shortcuts
+        typedef XX <Real> X;
+        typedef typename X::Vector X_Vector; 
+        typedef YY <Real> Y;
+        typedef typename Y::Vector Y_Vector; 
+
+        // y=f(x)
+        virtual void operator () (const X_Vector& x,Y_Vector& y) const = 0;
+
+         // y=f'(x)dx 
+         virtual void p(
+             const X_Vector& x,
+             const X_Vector& dx,
+             Y_Vector& y
+         ) const = 0;
+
+         // z=f'(x)*dy
+         virtual void ps(
+             const X_Vector& x,
+             const Y_Vector& dy,
+             X_Vector& z
+         ) const= 0;
+         
+         // z=(f''(x)dx)*dy
+         virtual void pps(
+             const X_Vector& x,
+             const X_Vector& dx,
+             const Y_Vector& dy,
+             X_Vector& z
+         ) const = 0;
+         
+         // Allow a derived class to deallocate memory
+         virtual ~VectorValuedFunction() {}
+    };
+
+    // An inequality constraint.  Basically, this is a vector valued function,
+    // but it also adds a line-search component.
+    template <
+        typename Real,
+        template <typename> class XX,
+        template <typename> class YY 
+    >
+    struct InequalityConstraint : public VectorValuedFunction <Real,XX,YY> {
+        // Create some type shortcuts
+        typedef XX <Real> X;
+        typedef typename X::Vector X_Vector; 
+        typedef YY <Real> Y;
+        typedef typename Y::Vector Y_Vector; 
+
+        // Line-search, srch <- alpha where max(alpha >=0 : h(x+alpha dx) >=0).
+        // In the case where this number is infinite, set alpha=Real(-1.).
+        virtual Real srch(const X_Vector& x,const X_Vector& dx) const = 0;
+
+        // We only allow affine functions in inequality constraints.  Hence,
+        // the second derivative is zero.
+        void pps(
+             const X_Vector& x,
+             const X_Vector& dx,
+             const Y_Vector& dy,
+             X_Vector& z
+         ) const {
+                X::zero(z);
+         }
     };
 
     // Defines how we output messages to the user
@@ -531,2340 +631,59 @@ namespace peopt{
             FletcherReeves          
         };
     }
-
-    // The structures in this namespace represent the internal state of the
-    // optimization algorithm.
-    namespace State {
-
-        // State of an unconstrained optimization problem of the form
-        // 
-        // min_{x \in X} f(x)
-        //
-        // where f : X -> R
-        template <typename Real,template <typename> class XX> 
-        struct Unconstrained {
-        public:
-            // Create some shortcuts for some type names
-            typedef XX <Real> X;
-            typedef typename X::Vector X_Vector;
-
-            // ------------- GENERIC ------------- 
-
-            // Tolerance for the gradient stopping condition
-            Real eps_g;
-
-            // Tolerance for the step length stopping criteria
-            Real eps_s;
-
-            // Number of control objects to store in a quasi-Newton method
-            unsigned int stored_history;
-
-            // Number of failed iterations before we reset the history for
-            // quasi-Newton methods
-            unsigned int history_reset;
-
-            // Current iteration
-            unsigned int iter;
-
-            // Maximum number of optimization iterations
-            unsigned int iter_max;
-
-            // Why we've stopped the optimization
-            StoppingCondition::t opt_stop;
-
-            // Current number of Krylov iterations taken
-            unsigned int krylov_iter;
-
-            // Maximum number of iterations in the Krylov method
-            unsigned int krylov_iter_max;
-
-            // Total number of Krylov iterations taken
-            unsigned int krylov_iter_total;
-
-            // Why the Krylov method was last stopped
-            KrylovStop::t krylov_stop;
-
-            // Relative error in the Krylov method
-            Real krylov_rel_err;
-
-            // Stopping tolerance for the Krylov method
-            Real eps_krylov;
-
-            // Algorithm class
-            AlgorithmClass::t algorithm_class;
-
-            // Preconditioner
-            Operators::t Minv_type;
-
-            // Hessian approximation
-            Operators::t H_type;
-
-            // Norm of the gradient
-            Real norm_g;
-
-            // Norm of a typical tradient
-            Real norm_gtyp;
-
-            // Norm of the trial step
-            Real norm_s;
-
-            // Norm of a typical trial step
-            Real norm_styp;
-
-            // Optimization variable 
-            std::list <X_Vector> x; 
-            
-            // Gradient 
-            std::list <X_Vector> g;
-            
-            // Trial step 
-            std::list <X_Vector> s;
-            
-            // Old optimization variable 
-            std::list <X_Vector> x_old; 
-            
-            // Old gradient 
-            std::list <X_Vector> g_old;
-            
-            // Old trial step 
-            std::list <X_Vector> s_old;
-
-            // Contains the prior iteration information for the
-            // quasi-Newton operators
-            std::list <X_Vector> oldY;
-            std::list <X_Vector> oldS;
-
-            // Current objective value
-            Real obj_x;
-
-            // Objective value at the trial step
-            Real obj_xps;
-            
-            // ------------- TRUST-REGION ------------- 
-
-            // Trust region radius
-            Real delta;
-
-            // Maximum trust region radius
-            Real delta_max;
-
-            // Trust-region parameter for checking whether a step has been
-            // accepted
-            Real eta1;
-
-            // Trust-region parameter for checking whether a step has been
-            // accepted
-            Real eta2;
-
-            // Ratio between the predicted and actual reduction
-            Real rho;
-
-            // Number of rejected trust-region steps
-            unsigned int rejected_trustregion;
-
-            // ------------- LINE-SEARCH ------------- 
-
-            // Line-search step length
-            Real alpha;
-
-            // Current number of iterations used in the line-search
-            unsigned int linesearch_iter;
-
-            // Maximum number of iterations used in the line-search
-            unsigned int linesearch_iter_max;
-
-            // Total number of line-search iterations computed
-            unsigned int linesearch_iter_total;
-
-            // Stopping tolerance for the line-search
-            Real eps_ls;
-
-            // Search direction type
-            LineSearchDirection::t dir;
-
-            // Type of line-search 
-            LineSearchKind::t kind;
-            
-            // ------------- CONSTRUCTORS ------------ 
-
-            // Initialize the state without setting up any variables. 
-            Unconstrained() {
-                init_params();
-            };
-
-            // Initialize the state for unconstrained optimization.  
-            Unconstrained(const X_Vector& x) {
-                init_params();
-                init_vectors(x);
-            }
-
-        protected:
-            // This initializes all the variables required for unconstrained
-            // optimization.  These variables are also require for constrained
-            // optimization
-            void init_vectors(const X_Vector& x_) {
-                x.push_back(X::create()); X::init(x_,x.back());
-                    X::copy(x_,x.back());
-                g.push_back(X::create()); X::init(x_,g.back());
-                s.push_back(X::create()); X::init(x_,s.back()); 
-                x_old.push_back(X::create()); X::init(x_,x_old.back()); 
-                g_old.push_back(X::create()); X::init(x_,g_old.back()); 
-                s_old.push_back(X::create()); X::init(x_,s_old.back()); 
-            }
-
-            // This sets all of the parameters possible that don't require
-            // special memory allocation such as variables.
-            void init_params(){
-                eps_g=Real(1e-6);
-                eps_s=Real(1e-6);
-                stored_history=0;
-                history_reset=5;
-                iter=1;
-                iter_max=10;
-                opt_stop=StoppingCondition::NotConverged;
-                krylov_iter=1;
-                krylov_iter_max=10;
-                krylov_iter_total=0;
-                krylov_stop=KrylovStop::RelativeErrorSmall;
-                krylov_rel_err=Real(std::numeric_limits<double>::quiet_NaN());
-                eps_krylov=Real(1e-2);
-                algorithm_class=AlgorithmClass::TrustRegion;
-                Minv_type=Operators::Identity;
-                H_type=Operators::Identity;
-                norm_g=Real(std::numeric_limits<double>::quiet_NaN());
-                norm_gtyp=Real(std::numeric_limits<double>::quiet_NaN());
-                norm_s=Real(std::numeric_limits<double>::quiet_NaN());
-                norm_styp=Real(std::numeric_limits<double>::quiet_NaN());
-                obj_x=Real(std::numeric_limits<double>::quiet_NaN());
-                obj_xps=Real(std::numeric_limits<double>::quiet_NaN());
-                delta=Real(100.);
-                delta_max=Real(100.);
-                eta1=Real(.1);
-                eta2=Real(.9);
-                rho=Real(0.);
-                rejected_trustregion=0;
-                alpha=1.;
-                linesearch_iter=0;
-                linesearch_iter_max=5;
-                linesearch_iter_total=0;
-                eps_ls=Real(1e-2);
-                dir=LineSearchDirection::SteepestDescent;
-                kind=LineSearchKind::GoldenSection;
-            }
-
-        public:
-            
-            // --------- VERIFYING PARAMETERS -------- 
-
-            // Check that we have a valid set of parameters
-            void check(const Messaging& msg){
-
-                // Check that the tolerance for the gradient stopping condition
-                // is positive
-                if(eps_g <= 0) {
-                    std::stringstream ss;
-                    ss << "The tolerance for the gradient stopping condition "
-                        "must be positive: eps_g = " << eps_g;
-                    msg.error(ss.str());
-                }
-            
-                // Check that the tolerance for the step length stopping
-                // condition is positive
-                if(eps_s <= 0) {
-                    std::stringstream ss;
-                    ss << "The tolerance for the step length stopping "
-                        "condition must be positive: eps_s = " << eps_s; 
-                    msg.error(ss.str());
-                }
         
-                // Check that the current iteration is positive
-                if(iter <= 0) {
-                    std::stringstream ss;
-                    ss << "The current optimization iteration must be "
-                        "positive: iter = " << iter;
-                    msg.error(ss.str());
-                }
+    // Checks whether all the labels in the list labels are actually
+    // labels stored in the is_label function.  If not, this function
+    // throws an error.
+    template <typename is_label>
+    void checkLabels(
+        const Messaging& msg,
+        const std::list <std::string>& labels, 
+        const std::string& kind
+    ) {
+            // Create a base message
+            const std::string base
+                ="During serialization, found an invalid ";
 
-                // Check that the maximum iteration is positive
-                if(iter_max <= 0) {
-                    std::stringstream ss;
-                    ss << "The maximum optimization iteration must be "
-                        "positive: iter_max = " << iter_max;
-                    msg.error(ss.str());
-                }
+            // Check the labels
+            std::list <std::string>::const_iterator name = find_if(
+                labels.begin(), labels.end(),
+                std::not1(is_label()));
 
-                // Check that the current Krylov iteration is positive
-                if(krylov_iter <= 0) {
-                    std::stringstream ss;
-                    ss << "The current Krlov iteration must be "
-                        "positive: krylov_iter = " << krylov_iter;
-                    msg.error(ss.str());
-                }
-
-                // Check that the maximum Krylov iteration is positive
-                if(krylov_iter_max <= 0) {
-                    std::stringstream ss;
-                    ss << "The maximum Krylov iteration must be "
-                        "positive: krylov_iter_max = " << krylov_iter_max;
-                    msg.error(ss.str());
-                }
-
-                // Check that relative error in the Krylov method is nonnegative
-                if(krylov_rel_err < 0) {
-                    std::stringstream ss;
-                    ss << "The relative error in the Krylov method must be "
-                        "nonnegative: krylov_rel_err = " << krylov_rel_err;
-                    msg.error(ss.str());
-                }
-                
-                // Check that the stopping tolerance for the Krylov method is
-                // positive
-                if(eps_krylov <= 0) {
-                    std::stringstream ss;
-                    ss << "The tolerance for the Krylov method stopping "
-                        "condition must be positive: eps_krylov = "<<eps_krylov;
-                    msg.error(ss.str());
-                }
-
-                // Check that the norm of the gradient is nonnegative or
-                // if we're on the first iteration, we allow a NaN
-                if(norm_g < 0 || (iter!=1 && norm_g!=norm_g)) {
-                    std::stringstream ss;
-                    ss << "The norm of the gradient must be nonnegative: "
-                        "norm_g = " << norm_g; 
-                    msg.error(ss.str());
-                }
-
-                // Check that the norm of a typical gradient is nonnegative or
-                // if we're on the first iteration, we allow a NaN
-                if(norm_gtyp < 0 || (iter!=1 && norm_gtyp!=norm_gtyp)) {
-                    std::stringstream ss;
-                    ss << "The norm of a typical gradient must be nonnegative: "
-                        "norm_gtyp = " << norm_gtyp; 
-                    msg.error(ss.str());
-                }
-
-                // Check that the norm of the trial step is nonnegative or
-                // if we're on the first iteration, we allow a NaN
-                if(norm_s < 0 || (iter!=1 && norm_s!=norm_s)) {
-                    std::stringstream ss;
-                    ss << "The norm of the trial step must be nonnegative: "
-                        "norm_s = " << norm_s; 
-                    msg.error(ss.str());
-                }
-
-                // Check that the norm of a typical trial step is nonnegative or
-                // if we're on the first iteration, we allow a NaN
-                if(norm_styp < 0 || (iter!=1 && norm_styp!=norm_styp)) {
-                    std::stringstream ss;
-                    ss << "The norm of a typical trial step must be "
-                        "nonnegative: norm_styp = " << norm_styp; 
-                    msg.error(ss.str());
-                }
-
-                // Check that the objective value isn't a NaN past iteration 1
-                if(iter!=1 && obj_x!=obj_x) {
-                    std::stringstream ss;
-                    ss << "The objective value must be a number: obj_x = "
-                        << obj_x;
-                    msg.error(ss.str());
-                }
-
-                // Check that the objective at a trial step isn't a NaN past
-                // iteration 1
-                if(iter!=1 && obj_xps!=obj_xps) {
-                    std::stringstream ss;
-                    ss << "The objective value at the trial step must be a "
-                        "number: obj_xps = " << obj_xps;
-                    msg.error(ss.str());
-                }
-
-                // Check that the trust-region radius is positive
-                if(delta<=0){
-                    std::stringstream ss;
-                    ss << "The trust-region radius must be positive: delta = "
-                        << delta; 
-                    msg.error(ss.str());
-                }
-
-                // Check that the maximum trust-region radius is positive
-                if(delta_max<=0){
-                    std::stringstream ss;
-                    ss << "The maximum trust-region radius must be positive: "
-                        "delta_max = " << delta_max; 
-                    msg.error(ss.str());
-                }
-
-                // Check that the current trust-region radius is less than
-                // or equal to the maximum trust-region radius
-                if(delta > delta_max){
-                    std::stringstream ss;
-                    ss << "The trust-region radius must be less than or equal "
-                        "to the maximum trust-region radius: delta = "
-                        << delta << ", delta_max = " << delta_max;
-                    msg.error(ss.str());
-                }
-
-                // Check that the predicted vs. actual reduction tolerance
-                // is between 0 and 1
-                if(eta1 < 0 || eta1 > 1){
-                    std::stringstream ss;
-                    ss << "The tolerance for whether or not we accept a "
-                        "trust-region step must be between 0 and 1: eta1 = "
-                        << eta1;
-                    msg.error(ss.str());
-                }
-                
-                // Check that the other predicted vs. actual reduction tolerance
-                // is between 0 and 1
-                if(eta2 < 0 || eta2 > 1){
-                    std::stringstream ss;
-                    ss << "The tolerance for whether or not we increase the "
-                        "trust-region radius must be between 0 and 1: eta2 = "
-                        << eta2;
-                    msg.error(ss.str());
-                }
-
-                // Check that eta2 > eta1
-                if(eta1 >= eta2) {
-                    std::stringstream ss;
-                    ss << "The trust-region tolerances for accepting steps "
-                        "must satisfy the relationship that eta1 < eta2: "
-                        "eta1 = " << eta1 << ", eta2 = " << eta2;
-                    msg.error(ss.str());
-                }
-
-                // Check that the prediction versus actual reduction is
-                // nonnegative 
-                if(rho < 0) {
-                    std::stringstream ss;
-                    ss << "The predicted versus actual reduction must be "
-                        "nonnegative: rho = " << rho;
-                    msg.error(ss.str());
-                }
-
-                // Check that the line-search step length is positive 
-                if(alpha <= 0) {
-                    std::stringstream ss;
-                    ss << "The line-search step length must be positive: "
-                        "alpha = " << alpha;
-                    msg.error(ss.str());
-                }
-                
-                // Check that the stopping tolerance for the line-search
-                // methods is positive
-                if(eps_ls <= 0) {
-                    std::stringstream ss;
-                    ss << "The tolerance for the line-search stopping "
-                        "condition must be positive: eps_ls = " << eps_ls;
-                    msg.error(ss.str());
-                }
+            if(name!=labels.end()) {
+                std::stringstream ss;
+                ss << base << kind << *name;
+                msg.error(ss.str());
             }
-
-            // -------------- RESTARTING ------------- 
-
-        public:
-            // Create a series of types used for peering, capturing, and
-            // releasing information in the state
-            typedef std::pair < std::list <std::string>,
-                                std::list <X_Vector> > X_Vectors;
-            typedef std::pair < std::list <std::string>,
-                                std::list <Real> > Reals;
-            typedef std::pair < std::list <std::string>,
-                                std::list <unsigned int> > Nats;
-            typedef std::pair < std::list <std::string>,
-                                std::list <std::string> > Params; 
-
-        protected:
-            // ----- COPYING TO AND FROM STATE ------- 
-
-            // Copy out all variables.
-            void stateToVectors(X_Vectors& xs) {
-                // Move the memory of all variables into the list 
-                xs.first.push_back("x");
-                xs.second.splice(xs.second.end(),x);
-                xs.first.push_back("g");
-                xs.second.splice(xs.second.end(),g);
-                xs.first.push_back("s");
-                xs.second.splice(xs.second.end(),s);
-                xs.first.push_back("x_old");
-                xs.second.splice(xs.second.end(),x_old);
-                xs.first.push_back("g_old");
-                xs.second.splice(xs.second.end(),g_old);
-                xs.first.push_back("s_old");
-                xs.second.splice(xs.second.end(),s_old);
-
-                // Write out the quasi-Newton information with sequential names
-                {int i=1;
-                for(typename std::list <X_Vector>::iterator y=oldY.begin();
-                    y!=oldY.end();
-                    y=oldY.begin()
-                ){
-                    std::stringstream ss;
-                    ss << "oldY_" << i;
-                    xs.first.push_back(ss.str());
-                    xs.second.splice(xs.second.end(),oldY,y);
-                }}
-
-                // Write out the quasi-Newton information with sequential names
-                {int i=1;
-                for(typename std::list <X_Vector>::iterator s=oldS.begin();
-                    s!=oldS.end();
-                    s=oldS.begin()
-                ){
-                    std::stringstream ss;
-                    ss << "oldS_" << i;
-                    xs.first.push_back(ss.str());
-                    xs.second.splice(xs.second.end(),oldS,s);
-                }}
-            }
-            
-            // Copy out all non-variables.  This includes reals, naturals,
-            // and parameters
-            void stateToScalars(
-                Reals& reals,
-                Nats& nats,
-                Params& params
-            ) {
-                
-                // Copy in all the real numbers 
-                reals.first.push_back("eps_g");
-                reals.second.push_back(eps_g);
-                reals.first.push_back("eps_s");
-                reals.second.push_back(eps_s);
-                reals.first.push_back("krylov_rel_err");
-                reals.second.push_back(krylov_rel_err);
-                reals.first.push_back("eps_krylov");
-                reals.second.push_back(eps_krylov);
-                reals.first.push_back("norm_g");
-                reals.second.push_back(norm_g);
-                reals.first.push_back("norm_gtyp");
-                reals.second.push_back(norm_gtyp);
-                reals.first.push_back("norm_s");
-                reals.second.push_back(norm_s);
-                reals.first.push_back("norm_styp");
-                reals.second.push_back(norm_styp);
-                reals.first.push_back("obj_x");
-                reals.second.push_back(obj_x);
-                reals.first.push_back("obj_xps");
-                reals.second.push_back(obj_xps);
-                reals.first.push_back("delta");
-                reals.second.push_back(delta);
-                reals.first.push_back("delta_max");
-                reals.second.push_back(delta_max);
-                reals.first.push_back("eta1");
-                reals.second.push_back(eta1);
-                reals.first.push_back("eta2");
-                reals.second.push_back(eta2);
-                reals.first.push_back("rho");
-                reals.second.push_back(rho);
-                reals.first.push_back("alpha");
-                reals.second.push_back(alpha);
-                reals.first.push_back("eps_ls");
-                reals.second.push_back(eps_ls);
-
-                // Copy in all the natural numbers
-                nats.first.push_back("stored_history");
-                nats.second.push_back(stored_history);
-                nats.first.push_back("history_reset");
-                nats.second.push_back(history_reset);
-                nats.first.push_back("iter");
-                nats.second.push_back(iter);
-                nats.first.push_back("iter_max");
-                nats.second.push_back(iter_max);
-                nats.first.push_back("krylov_iter");
-                nats.second.push_back(krylov_iter);
-                nats.first.push_back("krylov_iter_max");
-                nats.second.push_back(krylov_iter_max);
-                nats.first.push_back("krylov_iter_total");
-                nats.second.push_back(krylov_iter_total);
-                nats.first.push_back("rejected_trustregion");
-                nats.second.push_back(rejected_trustregion);
-                nats.first.push_back("linesearch_iter");
-                nats.second.push_back(linesearch_iter);
-                nats.first.push_back("linesearch_iter_max");
-                nats.second.push_back(linesearch_iter_max);
-                nats.first.push_back("linesearch_iter_total");
-                nats.second.push_back(linesearch_iter_total);
-
-                // Copy in all the parameters
-                params.first.push_back("algorithm_class");
-                params.second.push_back(
-                    AlgorithmClass::to_string(algorithm_class));
-                params.first.push_back("opt_stop");
-                params.second.push_back(StoppingCondition::to_string(opt_stop));
-                params.first.push_back("krylov_stop");
-                params.second.push_back(KrylovStop::to_string(krylov_stop));
-                params.first.push_back("H_type");
-                params.second.push_back(Operators::to_string(H_type));
-                params.first.push_back("Minv_type");
-                params.second.push_back(Operators::to_string(Minv_type));
-                params.first.push_back("dir");
-                params.second.push_back(LineSearchDirection::to_string(dir));
-                params.first.push_back("kind");
-                params.second.push_back(LineSearchKind::to_string(kind));
-            }
-
-            // Copy in all variables.  This assumes that the quasi-Newton
-            // information is being read in order.
-            void vectorsToState(X_Vectors& xs) {
-
-                for(std::list <std::string>::iterator name=xs.first.begin();
-                    name!=xs.first.end();
-                    name++
-                ) {
-                    // Since we're using a splice operation, we slowly empty
-                    // the variable list.  Hence, we always take the first
-                    // element.
-                    typename std::list <X_Vector>::iterator xx
-                        =xs.second.begin();
-
-                    // Determine which xxiable we're reading in and then splice
-                    // it in the correct location
-                    if(*name=="x") x.splice(x.end(),xs.second,xx);
-                    else if(*name=="g") g.splice(g.end(),xs.second,xx);
-                    else if(*name=="s") s.splice(s.end(),xs.second,xx); 
-                    else if(*name=="x_old")
-                        x_old.splice(x_old.end(),xs.second,xx);
-                    else if(*name=="g_old")
-                        g_old.splice(g_old.end(),xs.second,xx);
-                    else if(*name=="s_old")
-                        s_old.splice(s_old.end(),xs.second,xx);
-                    else if(name->substr(0,5)=="oldY_")
-                        oldY.splice(oldY.end(),xs.second,xx);
-                    else if(name->substr(0,5)=="oldS_")
-                        oldS.splice(oldS.end(),xs.second,xx);
-                }
-            }
-
-            // Copy in all non-variables.  This includes reals, naturals,
-            // and parameters
-            void scalarsToState(
-                Reals& reals,
-                Nats& nats,
-                Params& params
-            ) {
-                // Copy in any reals 
-                typename std::list <Real>::iterator real=reals.second.begin();
-                for(std::list <std::string>::iterator name=reals.first.begin();
-                    name!=reals.first.end();
-                    name++,real++
-                ){
-                    if(*name=="eps_g") eps_g=*real;
-                    else if(*name=="eps_s") eps_s=*real;
-                    else if(*name=="krylov_rel_err") krylov_rel_err=*real;
-                    else if(*name=="eps_krylov") eps_krylov=*real;
-                    else if(*name=="norm_g") norm_g=*real;
-                    else if(*name=="norm_gtyp") norm_gtyp=*real;
-                    else if(*name=="norm_s") norm_g=*real;
-                    else if(*name=="norm_styp") norm_gtyp=*real;
-                    else if(*name=="obj_x") obj_x=*real;
-                    else if(*name=="obj_xps") obj_xps=*real;
-                    else if(*name=="delta") delta=*real;
-                    else if(*name=="delta_max") delta_max=*real;
-                    else if(*name=="eta1") eta1=*real;
-                    else if(*name=="eta2") eta2=*real;
-                    else if(*name=="rho") rho=*real;
-                    else if(*name=="alpha") alpha=*real;
-                    else if(*name=="eps_ls") eps_ls=*real;
-                }
-            
-                // Next, copy in any naturals
-                std::list <unsigned int>::iterator nat=nats.second.begin();
-                for(std::list <std::string>::iterator name=nats.first.begin();
-                    name!=nats.first.end();
-                    name++,nat++
-                ){
-                    if(*name=="stored_history") stored_history=*nat;
-                    else if(*name=="history_reset") history_reset=*nat;
-                    else if(*name=="iter") iter=*nat;
-                    else if(*name=="iter_max") iter_max=*nat;
-                    else if(*name=="krylov_iter") krylov_iter=*nat;
-                    else if(*name=="krylov_iter_max") krylov_iter_max=*nat;
-                    else if(*name=="krylov_iter_total") krylov_iter_total=*nat;
-                    else if(*name=="rejected_trustregion")
-                        rejected_trustregion=*nat;
-                    else if(*name=="linesearch_iter") linesearch_iter=*nat;
-                    else if(*name=="linesearch_iter_max")
-                        linesearch_iter_max=*nat;
-                    else if(*name=="linesearch_iter_total")
-                        linesearch_iter_total=*nat;
-                }
-                    
-                // Next, copy in any parameters 
-                std::list <std::string>::iterator param=params.second.begin();
-                for(std::list <std::string>::iterator name=params.first.begin();
-                    name!=params.first.end();
-                    name++,param++
-                ){
-                    if(*name=="algorithm_class")
-                        algorithm_class=AlgorithmClass::from_string(*param);
-                    else if(*name=="opt_stop")
-                        opt_stop=StoppingCondition::from_string(*param);
-                    else if(*name=="krylov_stop")
-                        krylov_stop=KrylovStop::from_string(*param);
-                    else if(*name=="H_type")
-                        H_type=Operators::from_string(*param);
-                    else if(*name=="Minv_type")
-                        Minv_type=Operators::from_string(*param);
-                    else if(*name=="dir")
-                        dir=LineSearchDirection::from_string(*param);
-                    else if(*name=="kind")
-                        kind=LineSearchKind::from_string(*param);
-                }
-            }
-            
-            // ---------- VERIFYING LABELS ----------- 
-        private: 
-            // Checks whether we have a valid variable label
-            struct is_var : public std::unary_function<std::string, bool> {
-                bool operator () (const std::string& name) const {
-                    if( name == "x" || 
-                        name == "g" || 
-                        name == "s" || 
-                        name == "x_old" || 
-                        name == "g_old" || 
-                        name == "s_old" || 
-                        name.substr(0,5)=="oldY_" || 
-                        name.substr(0,5)=="oldS_" 
-                    ) 
-                        return true;
-                    else
-                        return false;
-                }
-            };
-           
-            // Checks whether we have a valid real label
-            struct is_real : public std::unary_function<std::string, bool> {
-                bool operator () (const std::string& name) const {
-                    if( name == "eps_g" || 
-                        name == "eps_s" || 
-                        name == "krylov_rel_err" || 
-                        name == "eps_krylov" || 
-                        name == "norm_g" || 
-                        name == "norm_gtyp" || 
-                        name == "norm_s" ||
-                        name == "norm_styp" || 
-                        name == "obj_x" || 
-                        name == "obj_xps" ||
-                        name == "delta" || 
-                        name == "delta_max" || 
-                        name == "eta1" || 
-                        name == "eta2" || 
-                        name == "rho" || 
-                        name == "alpha" || 
-                        name == "eps_ls"
-                    ) 
-                        return true;
-                    else
-                        return false;
-                }
-            };
-
-            // Checks whether we have a valid natural number label
-            struct is_nat : public std::unary_function<std::string, bool> {
-                bool operator () (const std::string& name) const {
-                    if( name == "stored_history" ||
-                        name == "history_reset" || 
-                        name == "iter" || 
-                        name == "iter_max" || 
-                        name == "krylov_iter" || 
-                        name == "krylov_iter_max" ||
-                        name == "krylov_iter_total" || 
-                        name == "rejected_trustregion" || 
-                        name == "linesearch_iter" || 
-                        name == "linesearch_iter_max" ||
-                        name == "linesearch_iter_total" 
-                    ) 
-                        return true;
-                    else
-                        return false;
-                }
-            };
-           
-            // Checks whether we have a valid parameter label
-            struct is_param : public std::unary_function<std::string, bool> {
-                bool operator () (const std::string& name) const {
-                    if( name == "algorithm_class" || 
-                        name == "opt_stop" || 
-                        name == "krylov_stop" ||
-                        name == "H_type" || 
-                        name == "Minv_type" ||
-                        name == "dir" || 
-                        name == "kind" 
-                    ) 
-                        return true;
-                    else
-                        return false;
-                }
-            };
-
-        protected:
-            // Checks that the labels used during serialization are correct
-            void checkLabels(
-                const Messaging& msg,
-                const X_Vectors& xs,
-                const Reals& reals,
-                const Nats& nats,
-                const Params& params
-            ) {
-                // Create a base message
-                const std::string base
-                    ="During serialization, found an invalid ";
-
-                // Check the variable names
-                {
-                    std::list <std::string>::const_iterator name = find_if(
-                        xs.first.begin(), xs.first.end(),
-                        not1(is_var()));
-                    if(name!=xs.first.end()){
-                        std::stringstream ss;
-                        ss << base << "variable name: " << *name;
-                        msg.error(ss.str());
-                    }
-                }
-                
-                // Check the real names
-                {
-                    std::list <std::string>::const_iterator name = find_if(
-                        reals.first.begin(), reals.first.end(),
-                        not1(is_real()));
-                    if(name!=reals.first.end()){
-                        std::stringstream ss;
-                        ss << base << "real name: " << *name;
-                        msg.error(ss.str());
-                    }
-                }
-                    
-                // Check the natural names
-                {
-                    std::list <std::string>::const_iterator name = find_if(
-                        nats.first.begin(), nats.first.end(),
-                        not1(is_nat()));
-                    if(name!=nats.first.end()){
-                        std::stringstream ss;
-                        ss << base << "natural name: " << *name;
-                        msg.error(ss.str());
-                    }
-                }
-                
-                // Check the parameter names
-                {
-                    std::list <std::string>::const_iterator name = find_if(
-                        params.first.begin(), params.first.end(),
-                        not1(is_param()));
-                    if(name!=params.first.end()){
-                        std::stringstream ss;
-                        ss << base << "parameter name: " << *name;
-                        msg.error(ss.str());
-                    }
-                }
-            }
-
-            // Check that the strings used to represent the parameters are
-            // correct.
-            void checkParams(const Messaging& msg,Params& params) {
-                // Create a base message
-                const std::string base
-                    ="During serialization, found an invalid ";
-        
-                // Check that the actual parameters are valid
-                std::list <std::string>::iterator param=params.second.begin();
-                for(std::list <std::string>::iterator name=params.first.begin();
-                    name!=params.first.end();
-                    name++,param++
-                ){
-                    // Check the algorithm class
-                    if(*name=="algorithm_class"){
-                        if(!AlgorithmClass::is_valid()(*param)){
-                            std::stringstream ss;
-                            ss << base << "algorithm class: " << *param;
-                            msg.error(ss.str());
-                        }
-
-                    // Check the optimization stopping conditions
-                    } else if(*name=="opt_stop"){
-                        if(!StoppingCondition::is_valid()(*param)){
-                            std::stringstream ss;
-                            ss << base << "stopping condition: " << *param;
-                            msg.error(ss.str());
-                        }
-
-                    // Check the Krylov stopping conditions
-                    } else if(*name=="krylov_stop"){
-                        if(!KrylovStop::is_valid()(*param)) {
-                            std::stringstream ss;
-                            ss <<base <<"Krylov stopping condition: " << *param;
-                            msg.error(ss.str());
-                        }
-
-                    // Check the Hessian type
-                    } else if(*name=="H_type"){
-                        if(!Operators::is_valid()(*param)) {
-                            std::stringstream ss;
-                            ss << base<<"Hessian type: " << *param;
-                            msg.error(ss.str());
-                        }
-
-                    // Check the type of the preconditioner
-                    } else if(*name=="Minv_type"){
-                        if(!Operators::is_valid()(*param)){
-                            std::stringstream ss;
-                            ss << base << "preconditioner type: " << *param;
-                            msg.error(ss.str());
-                        }
-
-                    // Check the line-search direction
-                    } else if(*name=="dir"){
-                        if(!LineSearchDirection::is_valid()(*param)) {
-                            std::stringstream ss;
-                            ss << base << "line-search direction: " << *param;
-                            msg.error(ss.str());
-                        }
-
-                    // Check the kind of line-search
-                    } else if(*name=="kind"){
-                        if(!LineSearchKind::is_valid()(*param)) {
-                            std::stringstream ss;
-                            ss << base << "line-search kind: " << *param;
-                            msg.error(ss.str());
-                        }
-                    }
-                }
-            }
-
-        public: 
-            // Release the data into structures controlled by the user 
-            void release(
-                X_Vectors& xs,
-                Reals& reals,
-                Nats& nats,
-                Params& params
-            ) {
-                // Copy out all of the variable information
-                Unconstrained <Real,XX>::stateToVectors(xs);
-
-                // Copy out all of the scalar information
-                Unconstrained <Real,XX>::stateToScalars(reals,nats,params);
-            }
-            
-            // Capture data from structures controlled by the user.  Note,
-            // we don't sort the oldY and oldS based on the prefix.  In fact,
-            // we completely ignore this information.  Therefore, this routine
-            // really depends on oldY and oldS to have their elements inserted
-            // into vars in order.  In other words, oldY_1 must come before
-            // oldY_2, etc.
-            void capture(
-                const Messaging& msg,
-                X_Vectors& xs,
-                Reals& reals,
-                Nats& nats,
-                Params& params
-            ) {
-
-                // Check the labels on the user input
-                Unconstrained <Real,XX>::checkLabels(msg,xs,reals,nats,params);
-
-                // Check the strings used to represent parameters
-                Unconstrained <Real,XX>::checkParams(msg,params);
-
-                // Copy in the variables 
-                Unconstrained <Real,XX>::vectorsToState(xs);
-                
-                // Copy in all of the scalar information
-                Unconstrained <Real,XX>::scalarsToState(reals,nats,params);
-
-                // Check that we have a valid state 
-                Unconstrained <Real,XX>::check(msg);
-            }
-        };
-        
-        // State of an equality constrained optimization problem of the form
-        // 
-        // min_{x \in X} f(x) st g(x) = 0
-        //
-        // where f : X -> R and g : X -> Y
-        template <
-            typename Real,
-            template <typename> class XX,
-            template <typename> class YY
-        > 
-        struct EqualityConstrained: public virtual Unconstrained <Real,XX> {
-        public:
-            // Create some shortcuts for some type names
-            typedef XX <Real> X;
-            typedef typename X::Vector X_Vector;
-            typedef YY <Real> Y;
-            typedef typename Y::Vector Y_Vector;
-            
-            // The Lagrange multiplier (dual variable) for the equality
-            // constraints
-            std::list <Y_Vector> y;
-            
-            // Initialize the state without setting up any variables. 
-            EqualityConstrained() {
-                // Initialize 
-                Unconstrained <Real,XX>::init_params();
-                EqualityConstrained <Real,XX,YY>::init_params();
-            };
-            
-            // Initialize the state for equality constrained optimization.
-            EqualityConstrained(
-                const X_Vector& x,
-                const Y_Vector& y
-            ) {
-                Unconstrained <Real,XX>::init_params();
-                Unconstrained <Real,XX>::init_vectors(x);
-                EqualityConstrained <Real,XX,YY>::init_params();
-                EqualityConstrained <Real,XX,YY>::init_vectors(y);
-            }
-
-        protected: 
-            // This initializes all the parameters required for equality
-            // constrained optimization.  
-            void init_params() { }
-
-            // This initializes all the variables required for equality
-            // constrained optimization.  
-            void init_vectors(const Y_Vector& y_) {
-                y.push_back(Y::create()); Y::init(y_,y.back());
-                    Y::copy(y_,y.back());
-            }
-
-        public:
-            // Types for holding information for vectors for restarts
-            typedef std::pair < std::list <std::string>,
-                                std::list <X_Vector> > X_Vectors;
-            typedef std::pair < std::list <std::string>,
-                                std::list <Y_Vector> > Y_Vectors;
-            typedef std::pair < std::list <std::string>,
-                                std::list <Real> > Reals;
-            typedef std::pair < std::list <std::string>,
-                                std::list <unsigned int> > Nats;
-            typedef std::pair < std::list <std::string>,
-                                std::list <std::string> > Params; 
-        
-        protected:
-            // Copy out all equality multipliers 
-            void stateToVectors(Y_Vectors& ys) {
-                ys.first.push_back("y");
-                ys.second.splice(ys.second.end(),y);
-            }
-
-            // Copy out all the scalar information
-            void stateToScalars(
-                Reals& reals,
-                Nats& nats,
-                Params& params
-            ) { }
-            
-            // Copy in all equality multipliers 
-            void vectorsToState(Y_Vectors& ys) { 
-                for(std::list <std::string>::iterator name=ys.first.begin();
-                    name!=ys.first.end();
-                    name++
-                ) {
-                    // Since we're using a splice operation, we slowly empty
-                    // the multiplier list.  Hence, we always take the first
-                    // element.
-                    typename std::list <Y_Vector>::iterator yy
-                        =ys.second.begin();
-
-                    // Determine which variable we're reading in and then splice
-                    // it in the correct location
-                    if(*name=="y") y.splice(y.end(),ys.second,yy);
-                }
-            }
-            
-            // Copy in all the scalar information
-            void scalarsToState(
-                Reals& reals,
-                Nats& nats,
-                Params& params
-            ) { }
-
-        private:    
-            // Checks whether we have a valid equality multiplier label
-            struct is_eq : public std::unary_function<std::string, bool> {
-                bool operator () (const std::string& name) const {
-                    if( name == "y") 
-                        return true;
-                    else
-                        return false;
-                }
-            };
-
-        protected:
-            // Checks that the labels used during serialization are correct
-            void checkLabels(
-                const Messaging& msg,
-                const Y_Vectors& ys,
-                const Reals& reals,
-                const Nats& nats,
-                const Params& params
-            ) {
-                // Create a base message
-                const std::string base
-                    ="During serialization, found an invalid ";
-
-                // Check the equality multiplier names
-                {
-                    std::list <std::string>::const_iterator name = find_if(
-                        ys.first.begin(), ys.first.end(),
-                        not1(is_eq()));
-                    if(name!=ys.first.end()){
-                        std::stringstream ss;
-                        ss << base << "equality multiplier name: " << *name;
-                        msg.error(ss.str());
-                    }
-                }
-            }
-
-            // Check that the strings used to represent the parameters are
-            // correct.
-            void checkParams(const Messaging& msg,Params& params) { }
-            
-            // Check that we have a valid set of parameters
-            void check(const Messaging& msg){ }
-
-        public: 
-            // Release the data into structures controlled by the user 
-            void release(
-                X_Vectors& xs,
-                Y_Vectors& ys,
-                Reals& reals,
-                Nats& nats,
-                Params& params
-            ) {
-                // Copy out all of the variable information
-                Unconstrained <Real,XX>::stateToVectors(xs);
-                EqualityConstrained <Real,XX,YY>::stateToVectors(ys);
-            
-                // Copy out all of the scalar information
-                Unconstrained <Real,XX>::stateToScalars(reals,nats,params);
-                EqualityConstrained <Real,XX,YY>
-                    ::stateToScalars(reals,nats,params);
-            }
-
-            // Capture data from structures controlled by the user.  
-            void capture(
-                const Messaging& msg,
-                X_Vectors& xs,
-                Y_Vectors& ys,
-                Reals& reals,
-                Nats& nats,
-                Params& params
-            ) {
-
-                // Check the labels on the user input
-                Unconstrained <Real,XX>::checkLabels(msg,xs,reals,nats,params);
-                EqualityConstrained <Real,XX,YY>
-                    ::checkLabels(msg,ys,reals,nats,params);
-
-                // Check the strings used to represent parameters
-                Unconstrained <Real,XX>::checkParams(msg,params);
-                EqualityConstrained <Real,XX,YY>::checkParams(msg,params);
-
-                // Copy in the variables 
-                Unconstrained <Real,XX>::vectorsToState(xs);
-                EqualityConstrained <Real,XX,YY>::vectorsToState(ys);
-                
-                // Copy in all of the scalar information
-                Unconstrained <Real,XX>::scalarsToState(reals,nats,params);
-                EqualityConstrained <Real,XX,YY>
-                    ::scalarsToState(reals,nats,params);
-
-                // Check that we have a valid state 
-                Unconstrained <Real,XX>::check(msg);
-                EqualityConstrained <Real,XX,YY>::check(msg);
-            }
-        };
-        
-        // State of an inequality constrained optimization problem of the form
-        // 
-        // min_{x \in X} f(x) st h(x) >=_K 0
-        //
-        // where f : X -> R and h : X -> Z
-        template <
-            typename Real,
-            template <typename> class XX,
-            template <typename> class ZZ
-        > 
-        struct InequalityConstrained : public virtual Unconstrained <Real,XX> {
-        public:
-            // Create some shortcuts for some type names
-            typedef XX <Real> X;
-            typedef typename X::Vector X_Vector;
-            typedef ZZ <Real> Z;
-            typedef typename Z::Vector Z_Vector;
-            
-            // The Lagrange multiplier (dual variable) for the
-            // inequality constraints 
-            std::list <Z_Vector> z;
-            
-            // Initialize the state without setting up any variables. 
-            InequalityConstrained() {
-                Unconstrained <Real,XX>::init_params();
-                InequalityConstrained <Real,XX,ZZ>::init_params();
-            };
-            
-            // Initialize the state for inequality constrained optimization.
-            InequalityConstrained(
-                const X_Vector& x,
-                const Z_Vector& z
-            ) {
-                Unconstrained <Real,XX>::init_params();
-                Unconstrained <Real,XX>::init_vectors(x);
-                InequalityConstrained <Real,XX,ZZ>::init_params();
-                InequalityConstrained <Real,XX,ZZ>::init_vectors(z);
-            }
-
-        protected:
-            // This initializes all the parameters required for inequality
-            // constrained optimization.  
-            void init_params() { }
-
-            // This initializes all the variables required for inequality
-            // constrained optimization.  
-            void init_vectors(const Z_Vector& z_) {
-                z.push_back(Z::create()); Z::init(z_,z.back());
-                    Z::copy(z_,z.back());
-            }
-
-        public:
-            // Types for holding information for vectors for restarts
-            typedef std::pair < std::list <std::string>,
-                                std::list <X_Vector> > X_Vectors;
-            typedef std::pair < std::list <std::string>,
-                                std::list <Z_Vector> > Z_Vectors;
-            typedef std::pair < std::list <std::string>,
-                                std::list <Real> > Reals;
-            typedef std::pair < std::list <std::string>,
-                                std::list <unsigned int> > Nats;
-            typedef std::pair < std::list <std::string>,
-                                std::list <std::string> > Params; 
-
-        protected: 
-            // Copy out the inequality multipliers 
-            void stateToVectors(Z_Vectors& zs) {
-                zs.first.push_back("z");
-                zs.second.splice(zs.second.end(),z);
-            }
-            
-            // Copy out the scalar information
-            void stateToScalars(
-                Reals& reals,
-                Nats& nats,
-                Params& params
-            ) { }
-            
-            // Copy in inequality multipliers 
-            void vectorsToState(Z_Vectors& zs) { 
-                for(std::list <std::string>::iterator name=zs.first.begin();
-                    name!=zs.first.end();
-                    name++
-                ) {
-                    // Since we're using a splice operation, we slowly empty
-                    // the multiplier list.  Hence, we always take the first
-                    // element.
-                    typename std::list <Z_Vector>::iterator zz
-                        =zs.second.begin();
-
-                    // Determine which variable we're reading in and then splice
-                    // it in the correct location
-                    if(*name=="z") z.splice(z.end(),zs.second,zz);
-                }
-            }
-            
-            // Copy in the scalar information
-            void scalarsToState(
-                Reals& reals,
-                Nats& nats,
-                Params& params
-            ) { }
-
-
-        private:
-            // Checks whether we have a valid inequality multiplier label
-            struct is_ineq : public std::unary_function<std::string, bool> {
-                bool operator () (const std::string& name) const {
-                    if( name == "z") 
-                        return true;
-                    else
-                        return false;
-                }
-            };
-
-        protected:
-            // Checks that the labels used during serialization are correct
-            void checkLabels(
-                const Messaging& msg,
-                const Z_Vectors& zs,
-                const Reals& reals,
-                const Nats& nats,
-                const Params& params
-            ) {
-                // Create a base message
-                const std::string base
-                    ="During serialization, found an invalid ";
-
-                // Check the inequality multiplier names
-                {
-                    std::list <std::string>::const_iterator name = find_if(
-                        zs.first.begin(), zs.first.end(),
-                        not1(is_ineq()));
-                    if(name!=zs.first.end()){
-                        std::stringstream ss;
-                        ss << base << "inequality multiplier name: " << *name;
-                        msg.error(ss.str());
-                    }
-                }
-            }
-
-            // Check that the strings used to represent the parameters are
-            // correct.
-            void checkParams(const Messaging& msg,Params& params) { }
-            
-            // Check that we have a valid set of parameters.
-            void check(const Messaging& msg){ }
-
-        public: 
-            // Release the data into structures controlled by the user 
-            void release(
-                X_Vectors& xs,
-                Z_Vectors& zs,
-                Reals& reals,
-                Nats& nats,
-                Params& params
-            ) {
-                // Copy out all of the variable information
-                Unconstrained <Real,XX>::stateToVectors(xs);
-                InequalityConstrained <Real,XX,ZZ>::stateToVectors(zs);
-            
-                // Copy out all of the scalar information
-                Unconstrained <Real,XX>::stateToScalars(reals,nats,params);
-                InequalityConstrained <Real,XX,ZZ>
-                    ::stateToScalars(reals,nats,params);
-            }
-            
-            // Capture data from structures controlled by the user.  
-            void capture(
-                const Messaging& msg,
-                X_Vectors& xs,
-                Z_Vectors& zs,
-                Reals& reals,
-                Nats& nats,
-                Params& params
-            ) {
-
-                // Check the labels on the user input
-                Unconstrained <Real,XX>::checkLabels(msg,xs,reals,nats,params);
-                InequalityConstrained <Real,XX,ZZ>::checkLabels(
-                    msg,zs,reals,nats,params);
-
-                // Check the strings used to represent parameters
-                Unconstrained <Real,XX>::checkParams(msg,params);
-                InequalityConstrained <Real,XX,ZZ>::checkParams(msg,params);
-
-                // Copy in the variables 
-                Unconstrained <Real,XX>::vectorsToState(xs);
-                InequalityConstrained <Real,XX,ZZ>::vectorsToState(zs);
-                
-                // Copy in all of the scalar information
-                Unconstrained <Real,XX>::scalarsToState(reals,nats,params);
-                InequalityConstrained <Real,XX,ZZ>
-                    ::scalarsToState(reals,nats,params);
-
-                // Check that we have a valid state 
-                Unconstrained <Real,XX>::check(msg);
-                InequalityConstrained <Real,XX,ZZ>::check(msg);
-            }
-        };
-
-        // State of an equality and inequality constrained optimization
-        // problem of the form
-        // 
-        // min_{x \in X} f(x) st g(x) = 0, h(x) >=_K 0
-        //
-        // where f : X -> R, g : X -> Y, and h : X -> Z
-        template <
-            typename Real,
-            template <typename> class X,
-            template <typename> class Y,
-            template <typename> class Z
-        > 
-        struct Constrained:
-            public EqualityConstrained <Real,X,Y>,
-            public InequalityConstrained <Real,X,Z>
-        {
-        public:
-            // Create some shortcuts for some type names
-            typedef typename X <Real>::Vector X_Vector;
-            typedef typename Y <Real>::Vector Y_Vector;
-            typedef typename Z <Real>::Vector Z_Vector;
-            
-            // Initialize the state without setting up any variables. 
-            Constrained() {
-                Unconstrained <Real,X>::init_params();
-                EqualityConstrained <Real,X,Y>::init_params();
-                InequalityConstrained <Real,X,Z>::init_params();
-            };
-            
-            // Initialize the state for general constrained optimization.
-            Constrained(
-                const X_Vector& x,
-                const Y_Vector& y,
-                const Z_Vector& z
-            ) {
-                Unconstrained <Real,X>::init_params();
-                Unconstrained <Real,X>::init_vectors(x);
-                EqualityConstrained <Real,X,Y>::init_params();
-                EqualityConstrained <Real,X,Y>::init_vectors(y);
-                InequalityConstrained <Real,X,Z>::init_params();
-                InequalityConstrained <Real,X,Z>::init_vectors(z);
-            }
-            
-            // Types for holding information for vectors for restarts
-            typedef std::pair < std::list <std::string>,
-                                std::list <X_Vector> > X_Vectors;
-            typedef std::pair < std::list <std::string>,
-                                std::list <Y_Vector> > Y_Vectors;
-            typedef std::pair < std::list <std::string>,
-                                std::list <Z_Vector> > Z_Vectors;
-            typedef std::pair < std::list <std::string>,
-                                std::list <Real> > Reals;
-            typedef std::pair < std::list <std::string>,
-                                std::list <unsigned int> > Nats;
-            typedef std::pair < std::list <std::string>,
-                                std::list <std::string> > Params; 
-
-        public: 
-            // Release the data into structures controlled by the user 
-            void release(
-                X_Vectors& xs,
-                Y_Vectors& ys,
-                Z_Vectors& zs,
-                Reals& reals,
-                Nats& nats,
-                Params& params
-            ) {
-                // Copy out all of the variable information
-                Unconstrained <Real,X>::stateToVectors(xs);
-                EqualityConstrained <Real,X,Y>::stateToVectors(ys);
-                InequalityConstrained <Real,X,Z>::stateToVectors(zs);
-            
-                // Copy out all of the scalar information
-                Unconstrained <Real,X>::stateToScalars(reals,nats,params);
-                EqualityConstrained <Real,X,Y>
-                    ::stateToScalars(reals,nats,params);
-                InequalityConstrained <Real,X,Z>
-                    ::stateToScalars(reals,nats,params);
-            }
-            
-            // Capture data from structures controlled by the user.  
-            void capture(
-                const Messaging& msg,
-                X_Vectors& xs,
-                Y_Vectors& ys,
-                Z_Vectors& zs,
-                Reals& reals,
-                Nats& nats,
-                Params& params
-            ) {
-
-                // Check the labels on the user input
-                Unconstrained <Real,X>::checkLabels(msg,xs,reals,nats,params);
-                EqualityConstrained <Real,X,Y>::checkLabels(
-                    msg,ys,reals,nats,params);
-                InequalityConstrained <Real,X,Z>::checkLabels(
-                    msg,zs,reals,nats,params);
-
-                // Check the strings used to represent parameters
-                Unconstrained <Real,X>::checkParams(msg,params);
-                EqualityConstrained <Real,X,Y>::checkParams(msg,params);
-                InequalityConstrained <Real,X,Z>::checkParams(msg,params);
-
-                // Copy in the variables 
-                Unconstrained <Real,X>::vectorsToState(xs);
-                EqualityConstrained <Real,X,Y>::vectorsToState(ys);
-                InequalityConstrained <Real,X,Z>::vectorsToState(zs);
-                
-                // Copy in all of the scalar information
-                Unconstrained <Real,X>::scalarsToState(reals,nats,params);
-                EqualityConstrained <Real,X,Y>
-                    ::scalarsToState(reals,nats,params);
-                InequalityConstrained <Real,X,Z>
-                    ::scalarsToState(reals,nats,params);
-
-                // Check that we have a valid state 
-                Unconstrained <Real,X>::check(msg);
-                EqualityConstrained <Real,X,Y>::check(msg);
-                InequalityConstrained <Real,X,Z>::check(msg);
-            }
-        };
     }
 
-    // A function that has free reign to manipulate or analyze the state.
-    // This should be used cautiously.
-    template <typename State>
-    class StateManipulator {
-    public:
-        // Application
-        virtual void operator () (State& state) const {};
-
-        // Allow the derived class to deallocate memory
-        virtual ~StateManipulator() {}
-    };
-
-    // A simple operator specification, A : X->Y
-    template <
-        typename Real,
-        template <typename> class X,
-        template <typename> class Y
-    >
-    struct Operator {
-    private:
-        // Create some type shortcuts
-        typedef typename X <Real>::Vector X_Vector;
-        typedef typename Y <Real>::Vector Y_Vector;
-    public:
-        // Basic application
-        virtual void operator () (const X_Vector& x,Y_Vector &y) const = 0;
-
-        // Allow a derived class to deallocate memory 
-        virtual ~Operator() {}
-    };
-
-    // This contains the different operators required for each class of 
-    // optimization methods.
-    namespace Operators {
-
-        // Unconstrained optimization 
-        template <typename Real,template <typename> class XX>
-        struct Unconstrained {
-        private:
-            // Create some type shortcuts
-            typedef XX <Real> X;
-            typedef typename X::Vector Vector;
-
-        public:
-
-            // The identity operator 
-            struct Identity : public Operator <Real,XX,XX> {
-                void operator () (const Vector& dx,Vector& result) const{
-                    X::copy(dx,result);
-                }
-            };
-
-            // The scaled identity Hessian approximation.  Specifically, use use
-            // norm(g) / delta_max I.
-            class ScaledIdentity : public Operator <Real,XX,XX> {
-            private:
-                // Norm of the gradient
-                const Real& norm_g;
-
-                // Maximum size of the trust-region radius
-                const Real& delta_max;
-            public:
-                ScaledIdentity(const State::Unconstrained <Real,XX>& state)
-                    : norm_g(state.norm_g), delta_max(state.delta_max) {};
-
-                void operator () (const Vector& dx,Vector& result) const{
-                    X::copy(dx,result);
-                    X::scal(norm_g/delta_max,result);
-                }
-            };
-
-            // The BFGS Hessian approximation.  
-            /* Note, the formula we normally see for BFGS denotes the inverse
-                Hessian approximation.  This is not the inverse, but the true
-                Hessian approximation. */ 
-            class BFGS : public Operator <Real,XX,XX> {
-            private:
-                // Stored quasi-Newton information
-                const std::list<Vector>& oldY;
-                const std::list<Vector>& oldS;
-
-                // Messaging device in case the qusi-Newton information is bad
-                const Messaging& msg;
-            public:
-                BFGS(
-                    const Messaging& msg_,
-                    const State::Unconstrained <Real,XX>& state
-                ) : oldY(state.oldY), oldS(state.oldS), msg(msg_) {};
-
-                // Operator interface
-                /* It's not entirely clear to me what the best implementation
-                for this method really is.  In the following implementation, we
-                require an additional k work elements where k is the number of
-                stored gradient and position differences.  It's possible to
-                reduce this to 1 or 2, but we need to compute redundant
-                information.  It's also possible to implementation the compact
-                representation, see "Representations of quasi-Newton matrices
-                and their use in limited memory methods" from Byrd, Nocedal,
-                and Schnabel.  The problem with that algorithm is that is
-                requires machinery such as linear system solves that we don't
-                current have.  It also works much better with matrices or
-                multivectors of data and we don't require the user to provide
-                these abstractions. */
-                void operator () (const Vector& p, Vector& result) const{
-
-                    // Check that the number of stored gradient and trial step
-                    // differences is the same.
-                    if(oldY.size() != oldS.size())
-                        msg.error("In the BFGS Hessian approximation, the "
-                            "number of stored gradient differences must equal "
-                            "the number of stored trial step differences.");
-
-                    // Allocate memory for work
-                    std::list <Vector> work(oldY.size(),p);
-                    for(typename std::list <Vector>::iterator w=work.begin();
-                        w!=work.end();
-                        w++
-                    ) X::init(p,*w);
-
-                    // If we have no vectors in our history, we return the
-                    // direction
-                    X::copy(p,result);
-                    if(oldY.size() == 0) return;
-
-                    // As a safety check, insure that the inner product
-                    // between all the (s,y) pairs is positive
-                    typename std::list <Vector>::const_iterator y0=oldY.begin();
-                    typename std::list <Vector>::const_iterator s0=oldS.begin();
-                    while(y0!=oldY.end()){
-                        Real inner_y_s=X::innr(*y0++,*s0++);
-                        if(inner_y_s<0)
-                            msg.error("Detected a (s,y) pair in BFGS that "
-                                "possesed a nonpositive inner product");
-                    }
-
-                    // Othwerwise, we copy all of the trial step differences
-                    // into the work space
-                    typename std::list <Vector>::iterator Bisj_iter
-                        =work.begin();
-                    typename std::list <Vector>::const_iterator sk_iter
-                        =oldS.begin();
-                    while(Bisj_iter!=work.end())
-                        X::copy((*sk_iter++),(*Bisj_iter++));
-
-                    // Keep track of the element Bisi
-                    typename std::list <Vector>::const_iterator Bisi_iter
-                        =work.end(); Bisi_iter--;
-
-                    // Keep iterating until Bisi equals the first element in the
-                    // work list. This means we have computed B1s1, B2s2, ...,
-                    // Bksk.
-                    Bisj_iter=work.begin();
-                    typename std::list <Vector>::const_iterator si_iter
-                        =oldS.end(); si_iter--;
-                    typename std::list <Vector>::const_iterator yi_iter
-                        =oldY.end(); yi_iter--;
-                    typename std::list <Vector>::const_iterator sj_iter
-                        =oldS.begin();
-                    while(1){
-
-                        // Create some reference to our iterators that are
-                        // easier to work with
-                        const Vector& si=*si_iter;
-                        const Vector& yi=*yi_iter;
-                        const Vector& Bisi=*Bisi_iter;
-
-                        // Determine <Bisi,si>
-                        Real inner_Bisi_si=X::innr(Bisi,si);
-
-                        // Determine <yi,si>
-                        Real inner_yi_si=X::innr(yi,si);
-
-                        // Determine <si,Bip>
-                        Real inner_si_Bip=X::innr(si,result);
-
-                        // Determine <yi,p>
-                        Real inner_yi_p=X::innr(yi,p);
-
-                        // Determine -<si,Bip>/<Bisi,si> Bisi + Bip.  Store in
-                        // Bip.  This will become B_{i+1}p.
-                        X::axpy(-inner_si_Bip/inner_Bisi_si,Bisi,result);
-
-                        // Determine <yi,p>/<yi,si> yi + w where we calculated w
-                        // in the line above.  This completes the calculation of
-                        // B_{i+1}p
-                        X::axpy(inner_yi_p/inner_yi_si,yi,result);
-
-                        // Check whether or not we've calculated B_{i+1}p for
-                        // the last time
-                        if(Bisi_iter==work.begin()) break;
-
-                        // Begin the calculation of B_{i+1}sj
-                        while(si_iter!=sj_iter){
-                            // Add some additional references to the iterators 
-                            const Vector& sj=*sj_iter;
-                            Vector& Bisj=*Bisj_iter;
-
-                            // Determine <si,Bisj>
-                            Real inner_si_Bisj=X::innr(si,Bisj);
-
-                            // Determine <yi,sj>
-                            Real inner_yi_sj=X::innr(yi,sj);
-
-                            // Determine -<si,Bisj>/<Bisi,si> Bisi + Bisj
-                            // Store in Bisj.  This will become B_{i+1}sj.
-                            X::axpy(-inner_si_Bisj/inner_Bisi_si,Bisi,Bisj);
-
-                            // Determine <yi,sj>/<yi,si> yi + w where we 
-                            // calculated w in the line above.  This completes 
-                            // the computation of B_{i+1}sj.
-                            X::axpy(inner_yi_sj/inner_yi_si,yi,Bisj);
-
-                            // Change j to be j-1 and adjust Bisj and sj 
-                            // accordingly
-                            sj_iter++;
-                            Bisj_iter++;
-                        }
-
-                        // At this point, we've computed all Bisj entries on the
-                        // current row.  As a result, we increment i and set j 
-                        // to be k.  This requires us to modify si, yi, sj, 
-                        // Bisj, and Bisi accordingly.
-                        
-                        // Increment i and adjust si
-                        si_iter--;
-
-                        // Increment i and adjust yi
-                        yi_iter--;
-
-                        // Set j=k and adjust sj
-                        sj_iter=oldS.begin();
-
-                        // Set j=k, increment i, and adjust Bisj
-                        Bisj_iter=work.begin();
-
-                        // Increment i and adjust Bisi
-                        Bisi_iter--;
-                    }
-                }
-            };
-
-            // The SR1 Hessian approximation.  
-            /* The oldY and oldS lists have the same structure as the BFGS
-            preconditioner. */
-            class SR1 : public Operator <Real,XX,XX> {
-            private:
-                // Create some type shortcuts
-                typedef XX <Real> X;
-                typedef typename X::Vector Vector;
-
-                // Stored quasi-Newton information
-                const std::list<Vector>& oldY;
-                const std::list<Vector>& oldS;
-
-                // Messaging device in case the qusi-Newton information is bad
-                const Messaging& msg;
-            public:
-                SR1(
-                    const Messaging& msg_,
-                    const State::Unconstrained <Real,XX>& state
-                ) : oldY(state.oldY), oldS(state.oldS), msg(msg_) {};
-                
-                // Operator interface
-                void operator () (const Vector& p,Vector& result) const{
-
-                    // Check that the number of stored gradient and trial step
-                    // differences is the same.
-                    if(oldY.size() != oldS.size())
-                        msg.error("In the SR1 Hessian approximation, the "
-                            "number of stored gradient differences must equal "
-                            "the number of stored trial step differences.");
-
-                    // Allocate memory for work
-                    std::list <Vector> work(oldY.size(),p);
-                    for(typename std::list <Vector>::iterator w=work.begin();
-                        w!=work.end();
-                        w++
-                    ) X::init(p,*w);
-
-                    // If we have no vectors in our history, we return the 
-                    // direction
-                    X::copy(p,result);
-                    if(oldY.size() == 0) return;
-
-                    // Othwerwise, we copy all of the trial step differences 
-                    // into the work space
-                    typename std::list <Vector>::iterator Bisj_iter
-                        =work.begin();
-                    typename std::list <Vector>::const_iterator sk_iter
-                        =oldS.begin();
-                    while(Bisj_iter!=work.end())
-                        X::copy((*sk_iter++),(*Bisj_iter++));
-
-                    // Keep track of the element Bisi
-                    typename std::list <Vector>::const_iterator Bisi_iter
-                        =work.end(); Bisi_iter--;
-
-                    // Keep iterating until Bisi equals the first element in the
-                    // work list. This means we have computed B1s1, B2s2, ...,
-                    // Bksk.
-                    Bisj_iter=work.begin();
-                    typename std::list <Vector>::const_iterator si_iter
-                        =oldS.end(); si_iter--;
-                    typename std::list <Vector>::const_iterator yi_iter
-                        =oldY.end(); yi_iter--;
-                    typename std::list <Vector>::const_iterator sj_iter
-                        =oldS.begin();
-                    while(1){
-
-                        // Create some reference to our iterators that are 
-                        // easier to work with
-                        const Vector& si=*si_iter;
-                        const Vector& yi=*yi_iter;
-                        const Vector& Bisi=*Bisi_iter;
-
-                        // Determine <yi,p>
-                        Real inner_yi_p=X::innr(yi,p);
-
-                        // Determine <Bisi,p>
-                        Real inner_Bisi_p=X::innr(Bisi,p);
-
-                        // Determine <yi,si>
-                        Real inner_yi_si=X::innr(yi,si);
-
-                        // Determine <Bisi,si>
-                        Real inner_Bisi_si=X::innr(Bisi,si);
-
-                        // Determine (<yi,p>-<Bisi,p>) / (<y_i,s_i>-<Bisi,si>).
-                        // Store in alpha
-                        Real alpha=(inner_yi_p-inner_Bisi_p)
-                            / (inner_yi_si-inner_Bisi_si);
-
-                        // Determine alpha y_i + Bip.  Store in result (which
-                        // accumulate Bip).
-                        X::axpy(alpha,yi,result);
-
-                        // Then, add -alpha*Bisi to this result
-                        X::axpy(-alpha,Bisi,result);
-
-                        // Check whether or not we've calculated B_{i+1}p for 
-                        // the last time
-                        if(Bisi_iter==work.begin()) break;
-
-                        // Begin the calculation of B_{i+1}sj
-                        while(si_iter!=sj_iter){
-                            // Add some additional references to the iterators 
-                            const Vector& sj=*sj_iter;
-                            Vector& Bisj=*Bisj_iter;
-
-                            // Determine <yi,sj>
-                            Real inner_yi_sj=X::innr(yi,sj);
-
-                            // Determine <Bisi,sj>
-                            Real inner_Bisi_sj=X::innr(Bisi,sj);
-
-                            // Determine (<yi,p>-<Bisi,p>)/(<y_i,s_i>-<Bisi,si>)
-                            // Store in beta 
-                            Real beta= (inner_yi_sj-inner_Bisi_sj) /
-                                (inner_yi_si-inner_Bisi_si);
-                        
-                            // Determine beta y_i + Bisj.  Store in Bisj. 
-                            X::axpy(beta,yi,Bisj);
-
-                            // Add -beta*Bisi to this result
-                            X::axpy(-beta,Bisi,Bisj);
-
-                            // Change j to be j-1 and adjust Bisj and sj 
-                            // accordingly
-                            sj_iter++;
-                            Bisj_iter++;
-                        }
-
-                        // At this point, we've computed all Bisj entries on the
-                        // current row.  As a result, we increment i and set j 
-                        // to be k.  This requires us to modify si, yi, sj, 
-                        // Bisj, and Bisi accordingly.
-                        
-                        // Increment i and adjust si
-                        si_iter--;
-
-                        // Increment i and adjust yi
-                        yi_iter--;
-
-                        // Set j=k and adjust sj
-                        sj_iter=oldS.begin();
-
-                        // Set j=k, increment i, and adjust Bisj
-                        Bisj_iter=work.begin();
-
-                        // Increment i and adjust Bisi
-                        Bisi_iter--;
-                    }
-                }
-            };
-
-            // The inverse BFGS operator 
-            /* The oldY list has the following structure
-                oldY[0] = y_k = grad J(u_k) - grad J(u_{k-1})
-                oldY[1] = y_{k-1} = grad J(u_{k-1}) - grad J(u_{k-2})
-                The oldS list has the following structure
-                oldS[0] = s_k = u_k - u_k{-1}
-                oldS[1] = s_{k-1} = u_{k-1} - u_k{k-2} */
-            class InvBFGS : public Operator <Real,XX,XX> {
-            private:
-                // Stored quasi-Newton information
-                const std::list<Vector>& oldY;
-                const std::list<Vector>& oldS;
-
-                // Messaging device in case the qusi-Newton information is bad
-                const Messaging& msg;
-            public:
-                InvBFGS(
-                    const Messaging& msg_,
-                    const State::Unconstrained <Real,XX>& state
-                ) : oldY(state.oldY), oldS(state.oldS), msg(msg_) {};
-                
-                // Operator interface
-                void operator () (const Vector& p,Vector& result) const{
-
-                    // Check that the number of stored gradient and trial step
-                    // differences is the same.
-                    if(oldY.size() != oldS.size())
-                        msg.error("In the inverse BFGS operator, the number "
-                            "of stored gradient differences must equal the "
-                            "number of stored trial step differences.");
-                    
-                    // As a safety check, insure that the inner product between
-                    // all the (s,y) pairs is positive
-                    typename std::list <Vector>::const_iterator y0=oldY.begin();
-                    typename std::list <Vector>::const_iterator s0=oldS.begin();
-                    while(y0!=oldY.end()){
-                        Real inner_y_s=X::innr(*y0++,*s0++);
-                        if(inner_y_s<0)
-                            msg.error("Detected a (s,y) pair in the inverse "
-                                "BFGS operator that possesed a nonpositive "
-                                "inner product");
-                    }
-
-                    // Create two vectors to hold some intermediate calculations
-                    std::vector <Real> alpha(oldY.size());
-                    std::vector <Real> rho(oldY.size());
-
-                    // Before we begin computing, copy p to our result 
-                    X::copy(p,result);
-
-                    // In order to compute, we first iterate over all the stored
-                    // element in the forward direction.  Then, we iterate over
-                    // them backward.
-                    typename std::list <Vector>::const_iterator y_iter
-                        =oldY.begin();
-                    typename std::list <Vector>::const_iterator s_iter
-                        =oldS.begin();
-                    int i=0;
-                    while(y_iter != oldY.end()){
-                        // Find y_k, s_k, and their inner product
-                        const Vector& y_k=*(y_iter++);
-                        const Vector& s_k=*(s_iter++);
-                        rho[i]=Real(1.)/X::innr(y_k,s_k);
-
-                        // Find rho_i <s_i,result>.  Store in alpha_i
-                        alpha[i]=rho[i]*X::innr(s_k,result);
-
-                        // result = - alpha_i y_i + result 
-                        X::axpy(-alpha[i],y_k,result);
-
-                        // Make sure we don't overwrite alpha and rho
-                        i++;
-                    }
-
-                    // Assume that H_0 is the identity operator (which may or 
-                    // may not work in Hilbert space)
-
-                    // Now, let us iterate backward over our elements to 
-                    // complete the computation
-                    while(y_iter != oldY.begin()){
-                        // Find y_k and s_k
-                        const Vector& s_k=*(--s_iter);
-                        const Vector& y_k=*(--y_iter);
-
-                        // beta=rho_i <y_i,result>
-                        Real beta= rho[--i] * X::innr(y_k,result);
-
-                        // result=  (alpha_i-beta) s_i + result
-                        X::axpy(alpha[i]-beta,s_k,result);
-                    }
-                }
-            };
-            
-            // The inverse SR1 operator.  
-            /* In this definition, we take a shortcut and simply use the SR1
-                Hessian approximation where we swap Y and S.  The oldY and oldS
-                lists have the same structure as the BFGS operator. */
-            class InvSR1 : public Operator <Real,XX,XX> {
-            private:
-                // Store the SR1 operator
-                SR1 sr1;
-            public:
-                InvSR1(
-                    const Messaging& msg,
-                    const State::Unconstrained <Real,XX>& state
-                ) : sr1(msg,state) {};
-                void operator () (const Vector& p,Vector& result) const{
-                    sr1(p,result);
-                }
-            };
-        };
-    }
-
-    // A simple scalar valued function interface, f:X->R
-    template <typename Real,template <typename> class XX>
-    struct ScalarValuedFunction {
-    private:
-        // Create some type shortcuts
-        typedef XX <Real> X;
-        typedef typename X::Vector Vector;
-
-        // Hessian approximation
-        std::auto_ptr <Operator <Real,XX,XX> > H;
-
-        // This forces derived classes to call the constructor that depends
-        // on the state
-        ScalarValuedFunction() {}
-    public:
-         // <- f(x) 
-         virtual Real operator () (const Vector& x) const = 0;
-
-         // g = grad f(x) 
-         virtual void grad(const Vector& x,Vector& g) const = 0;
-
-         // H_dx = hess f(x) dx 
-         virtual void hessvec(const Vector& x,const Vector& dx,Vector& H_dx 
-         ) const {
-                X::copy(dx,H_dx); 
-         }
-
-         // This actually computes the Hessian-vector product.  In essence,
-         // we may want to use a Hessian approximation provided by the
-         // optimization routines.  The following routine selects whether or
-         // not we use the hessvec provided by the user.
-         void hv(const Vector& x,const Vector& dx,Vector& H_dx) const {
-             if(H.get()!=NULL) 
-                (*H)(dx,H_dx);
-             else
-                hessvec(x,dx,H_dx);
-         }
-
-         // The constructor determines whether we really need to build
-         // a Hessian-vector product or if we use an internal approximation
-         ScalarValuedFunction(
-             const Messaging& msg,
-             const State::Unconstrained <Real,XX>& state
-         ) {
-            
-            // Determine the Hessian approximation
-            switch(state.H_type){
-                case Operators::Identity:
-                    H.reset(new typename Operators::Unconstrained <Real,XX>
-                        ::Identity());
-                    break;
-                case Operators::ScaledIdentity:
-                    H.reset(new typename Operators::Unconstrained <Real,XX>
-                        ::ScaledIdentity (state));
-                    break;
-                case Operators::BFGS:
-                    H.reset(new typename Operators::Unconstrained <Real,XX>
-                        ::BFGS(msg,state));
-                    break;
-                case Operators::SR1:
-                    H.reset(new typename Operators::Unconstrained <Real,XX>
-                        ::SR1(msg,state));
-                    break;
-                case Operators::External:
-                    break;
-                default:
-                    msg.error("Not a valid Hessian approximation.");
-                    break;
-            }
+    // Combines two strings in a funny sort of way.  Basically, given
+    // a and b, if a is empty, this function returns b.  However, if
+    // a is nonempty, it returns a.
+    struct combineStrings : public std::binary_function
+        <std::string,std::string,std::string>
+    {
+        std::string operator() (std::string a,std::string b) const {
+            if(a=="") return b; else return a;
         }
-
-        // Allow a derived class to deallocate memory
-        virtual ~ScalarValuedFunction() {}
     };
-
-    // A simple vector valued function interface, f : X -> Y
-    template <
-        typename Real,
-        template <typename> class XX,
-        template <typename> class YY 
-    >
-    struct VectorValuedFunction {
-        // Create some type shortcuts
-        typedef XX <Real> X;
-        typedef typename X::Vector X_Vector; 
-        typedef YY <Real> Y;
-        typedef typename Y::Vector Y_Vector; 
-
-        // y=f(x)
-        virtual void operator () (const X_Vector& x,Y_Vector& y) const = 0;
-
-         // y=f'(x)dx 
-         virtual void p(
-             const X_Vector& x,
-             const X_Vector& dx,
-             Y_Vector& y
-         ) const = 0;
-
-         // z=f'(x)*dy
-         virtual void ps(
-             const X_Vector& x,
-             const Y_Vector& dy,
-             X_Vector& z
-         ) const= 0;
-         
-         // z=(f''(x)dx)*dy
-         virtual void pps(
-             const X_Vector& x,
-             const X_Vector& dx,
-             const Y_Vector& dy,
-             X_Vector& z
-         ) const = 0;
-         
-         // Allow a derived class to deallocate memory
-         virtual ~VectorValuedFunction() {}
-    };
-
-    // An inequality constraint.  Basically, this is a vector valued function,
-    // but it also adds a line-search component.
-    template <
-        typename Real,
-        template <typename> class XX,
-        template <typename> class YY 
-    >
-    struct InequalityConstraint : public VectorValuedFunction <Real,XX,YY> {
-        // Create some type shortcuts
-        typedef XX <Real> X;
-        typedef typename X::Vector X_Vector; 
-        typedef YY <Real> Y;
-        typedef typename Y::Vector Y_Vector; 
-
-        // Line-search, srch <- alpha where max(alpha >=0 : h(x+alpha dx) >=0).
-        // In the case where this number is infinite, set alpha=Real(-1.).
-        virtual Real srch(const X_Vector& x,const X_Vector& dx) const = 0;
-
-        // We only allow affine functions in inequality constraints.  Hence,
-        // the second derivative is zero.
-        void pps(
-             const X_Vector& x,
-             const X_Vector& dx,
-             const Y_Vector& dy,
-             X_Vector& z
-         ) const {
-                X::zero(z);
-         }
-    };
-
-    // All the functions required by an optimization algorithm.  Note, this
-    // routine owns the memory for these operations.  
-    namespace Functions {
-        // Functions pertinent to an unconstrained optimization problem 
-        // 
-        // min_{x \in X} f(x)
-        //
-        // where f : X -> R
-        template <typename Real,template <typename> class XX> 
-        struct Unconstrained {
-        public:
-            // Objective function
-            std::auto_ptr <ScalarValuedFunction <Real,XX> > f;
-
-            // Preconditioner for the Hessian of the objective
-            std::auto_ptr <Operator <Real,XX,XX> > Minv;
-
-        protected:
-            // Check that all the functions are defined
-            void check(const Messaging& msg) {
-                // Check that objective function exists 
-                if(f.get()==NULL)
-                    msg.error("Missing an objective function definition.");
-                
-                // Check that a preconditioner exists 
-                if(Minv.get()==NULL)
-                    msg.error("Missing a preconditioner definition.");
-            }
-
-            // Create a preconditioner if requested
-            void create(
-                const Messaging& msg,
-                const State::Unconstrained <Real,XX>& state
-            ) {
-                // Determine the preconditioner
-                switch(state.Minv_type){
-                    case Operators::Identity:
-                        Minv.reset(new typename
-                            Operators::Unconstrained<Real,XX>::Identity());
-                        break;
-                    case Operators::InvBFGS:
-                        Minv.reset(new typename
-                            Operators::Unconstrained<Real,XX>
-                                ::InvBFGS(msg,state));
-                        break;
-                    case Operators::InvSR1:
-                        Minv.reset(new typename
-                            Operators::Unconstrained<Real,XX>
-                                ::InvSR1(msg,state));
-                        break;
-                    case Operators::External:
-                        if(Minv.get()==NULL)
-                            msg.error("An externally defined preconditioner "
-                                "must be provided explicitely.");
-                        break;
-                    default:
-                        msg.error("Not a valid Hessian approximation.");
-                        break;
-                }
-            }
-
-        public:
-            // Finalize the construction of the functions by creating
-            // any missing pieces and then checking the result.
-            void finalize(
-                const Messaging& msg,
-                const State::Unconstrained <Real,XX>& state
-            ) {
-
-                // Create the missing pieces
-                Unconstrained <Real,XX>::create(msg,state);
-
-                // Check the results
-                Unconstrained <Real,XX>::check(msg);
-            }
-        };
-        
-        // Functions pertinent to an equality constrained optimization problem 
-        // 
-        // min_{x \in X} f(x) st g(x)=0
-        //
-        // where f : X -> R, g : X -> Y
-        template <
-            typename Real,
-            template <typename> class XX,
-            template <typename> class YY
-        > 
-        struct EqualityConstrained: public virtual Unconstrained <Real,XX> {
-        public:
-            // Equality constraints 
-            std::auto_ptr <VectorValuedFunction <Real,XX,YY> > g;
-           
-        protected:
-            // Check that all the functions are defined
-            void check(const Messaging& msg) {
-                // Check that the constraints exist 
-                if(g.get()==NULL)
-                    msg.error("Missing the equality constraint definition.");
-            }
-
-            // At the moment, we don't create any preconditioners for
-            // equality constrained optimization
-            void create(
-                const Messaging& msg,
-                const State::EqualityConstrained <Real,XX,YY>& state
-            ) { }
-
-        public:
-            // Finalize the construction of the functions by creating
-            // any missing pieces and then checking the result.
-            void finalize(
-                const Messaging& msg,
-                const State::EqualityConstrained <Real,XX,YY>& state
-            ) {
-
-                // Create the missing pieces
-                Unconstrained <Real,XX>::create(msg,state);
-                EqualityConstrained <Real,XX,YY>::create(msg,state);
-
-                // Check the results
-                Unconstrained <Real,XX>::check(msg);
-                EqualityConstrained <Real,XX,YY>::check(msg);
-            }
-        };
-        
-        // Functions pertinent to an inequality constrained optimization problem
-        // 
-        // min_{x \in X} f(x) st h(x) >=_K 0
-        //
-        // where f : X -> R, h : X -> Z
-        template <
-            typename Real,
-            template <typename> class XX,
-            template <typename> class ZZ 
-        > 
-        struct InequalityConstrained : public virtual Unconstrained <Real,XX> {
-        public:
-            // Inequality constraints 
-            std::auto_ptr <InequalityConstraint <Real,XX,ZZ> > h;
-
-        protected:
-            // Check that all the functions are defined
-            void check(const Messaging& msg) {
-                // Check that the constraints exist 
-                if(h.get()==NULL)
-                    msg.error("Missing the inequality constraint definition.");
-            }
-
-            // At the moment, we don't create any preconditioners for
-            // inequality constrained optimization
-            void create(
-                const Messaging& msg,
-                const State::InequalityConstrained <Real,XX,ZZ>& state
-            ) { }
-
-        public:
-            // Finalize the construction of the functions by creating
-            // any missing pieces and then checking the result.
-            void finalize(
-                const Messaging& msg,
-                const State::InequalityConstrained <Real,XX,ZZ>& state
-            ) {
-
-                // Create the missing pieces
-                Unconstrained <Real,XX>::create(msg,state);
-                InequalityConstrained <Real,XX,ZZ>::create(msg,state);
-
-                // Check the results
-                Unconstrained <Real,XX>::check(msg);
-                InequalityConstrained <Real,XX,ZZ>::check(msg);
-            }
-        };
-        
-        // Functions pertinent to a general constrained optimization problem
-        // 
-        // min_{x \in X} f(x) st g(x)=0, h(x) >=_K 0
-        //
-        // where f : X -> R, g : X -> Y, h : X -> Z
-        template <
-            typename Real,
-            template <typename> class XX,
-            template <typename> class YY,
-            template <typename> class ZZ 
-        > 
-        struct Constrained:
-            public EqualityConstrained <Real,XX,YY>,
-            public InequalityConstrained <Real,XX,ZZ>
-        {
-            // Finalize the construction of the functions by creating
-            // any missing pieces and then checking the result.
-            void finalize(
-                const Messaging& msg,
-                const State::Constrained <Real,XX,YY,ZZ>& state
-            ) {
-
-                // Create the missing pieces
-                Unconstrained <Real,XX>::create(msg,state);
-                EqualityConstrained <Real,XX,YY>::create(msg,state);
-                InequalityConstrained <Real,XX,ZZ>::create(msg,state);
-
-                // Check the results
-                Unconstrained <Real,XX>::check(msg);
-                EqualityConstrained <Real,XX,YY>::check(msg);
-                InequalityConstrained <Real,XX,ZZ>::check(msg);
-            }
-        };
+    
+    // This checks the parameters and prints and error in there's a problem.
+    template <typename checkParamVal>
+    void checkParams(
+        const Messaging& msg,
+        const std::pair <std::list <std::string>,std::list <std::string> >&
+            params 
+    ) {
+        std::string err=std::inner_product(
+            params.first.begin(),
+            params.first.end(),
+            params.second.begin(),
+            std::string(""),
+            checkParamVal(),
+            combineStrings()
+        );
+        if(err!="") msg.error(err);
     }
 
     // A collection of miscellaneous diagnostics that help determine errors.
@@ -3151,7 +970,7 @@ namespace peopt{
 
             // Calculate hess f in the direction dx.  
             X_Vector hess_f_dx; X::init(x,hess_f_dx);
-            f.hv(x,dx,hess_f_dx);
+            f.hessvec(x,dx,hess_f_dx);
 
             // Compute an ensemble of finite difference tests in a linear manner
             msg.print("Finite difference test on the Hessian.",1);
@@ -3195,11 +1014,11 @@ namespace peopt{
 
             // Calculate hess f in the direction dx.  
             X_Vector H_x_dx; X::init(x,H_x_dx);
-            f.hv(x,dx,H_x_dx);
+            f.hessvec(x,dx,H_x_dx);
             
             // Calculate hess f in the direction dxx.  
             X_Vector H_x_dxx; X::init(x,H_x_dxx);
-            f.hv(x,dxx,H_x_dxx);
+            f.hessvec(x,dxx,H_x_dxx);
             
             // Calculate <H(x)dx,dxx>
             Real innr_Hxdx_dxx = X::innr(H_x_dx,dxx);
@@ -3374,23 +1193,1499 @@ namespace peopt{
         }
     }
 
-    // This contains the different algorithms used for optimization 
-    namespace Algorithms {
 
-        // Unconstrained optimization 
-        template <
-            typename Real,
-            template <typename> class XX
-        >
-        struct Unconstrained {
+    // A function that has free reign to manipulate or analyze the state.
+    // This should be used cautiously.
+    template <typename State>
+    class StateManipulator {
+    public:
+        // Application
+        virtual void operator () (State& state) const {};
 
-            // Create some type shortcuts
-            typedef XX <Real> X;
-            typedef typename X::Vector Vector;
+        // Allow the derived class to deallocate memory
+        virtual ~StateManipulator() {}
+    };
+
+    // A simple operator specification, A : X->Y
+    template <
+        typename Real,
+        template <typename> class X,
+        template <typename> class Y
+    >
+    struct Operator {
+    private:
+        // Create some type shortcuts
+        typedef typename X <Real>::Vector X_Vector;
+        typedef typename Y <Real>::Vector Y_Vector;
+    public:
+        // Basic application
+        virtual void operator () (const X_Vector& x,Y_Vector &y) const = 0;
+
+        // Allow a derived class to deallocate memory 
+        virtual ~Operator() {}
+    };
+
+       
+    // Functions that manipulate and support problems of the form
+    // 
+    // min_{x \in X} f(x)
+    //
+    // where f : X -> R
+    template <typename Real,template <typename> class XX> 
+    struct Unconstrained {
+        // Create some type shortcuts
+        typedef XX <Real> X;
+        typedef typename X::Vector X_Vector;
+
+        typedef std::pair < std::list <std::string>,
+                            std::list <Real> > Reals;
+        typedef std::pair < std::list <std::string>,
+                            std::list <unsigned int> > Nats;
+        typedef std::pair < std::list <std::string>,
+                            std::list <std::string> > Params; 
+        typedef std::pair < std::list <std::string>,
+                            std::list <X_Vector> > X_Vectors;
+
+        // Functions that manipulate the internal state of the optimization 
+        // algorithm.
+        struct State {
+
+            // The actual internal state of the optimization
+            struct t {
+
+                // ------------- GENERIC ------------- 
+
+                // Tolerance for the gradient stopping condition
+                Real eps_g;
+
+                // Tolerance for the step length stopping criteria
+                Real eps_s;
+
+                // Number of control objects to store in a quasi-Newton method
+                unsigned int stored_history;
+
+                // Number of failed iterations before we reset the history for
+                // quasi-Newton methods
+                unsigned int history_reset;
+
+                // Current iteration
+                unsigned int iter;
+
+                // Maximum number of optimization iterations
+                unsigned int iter_max;
+
+                // Why we've stopped the optimization
+                StoppingCondition::t opt_stop;
+
+                // Current number of Krylov iterations taken
+                unsigned int krylov_iter;
+
+                // Maximum number of iterations in the Krylov method
+                unsigned int krylov_iter_max;
+
+                // Total number of Krylov iterations taken
+                unsigned int krylov_iter_total;
+
+                // Why the Krylov method was last stopped
+                KrylovStop::t krylov_stop;
+
+                // Relative error in the Krylov method
+                Real krylov_rel_err;
+
+                // Stopping tolerance for the Krylov method
+                Real eps_krylov;
+
+                // Algorithm class
+                AlgorithmClass::t algorithm_class;
+
+                // Preconditioner
+                Operators::t Minv_type;
+
+                // Hessian approximation
+                Operators::t H_type;
+
+                // Norm of the gradient
+                Real norm_g;
+
+                // Norm of a typical tradient
+                Real norm_gtyp;
+
+                // Norm of the trial step
+                Real norm_s;
+
+                // Norm of a typical trial step
+                Real norm_styp;
+
+                // Optimization variable 
+                std::list <X_Vector> x; 
+                
+                // Gradient 
+                std::list <X_Vector> g;
+                
+                // Trial step 
+                std::list <X_Vector> s;
+                
+                // Old optimization variable 
+                std::list <X_Vector> x_old; 
+                
+                // Old gradient 
+                std::list <X_Vector> g_old;
+                
+                // Old trial step 
+                std::list <X_Vector> s_old;
+
+                // Contains the prior iteration information for the
+                // quasi-Newton operators
+                std::list <X_Vector> oldY;
+                std::list <X_Vector> oldS;
+
+                // Current objective value
+                Real obj_x;
+
+                // Objective value at the trial step
+                Real obj_xps;
+                
+                // ------------- TRUST-REGION ------------- 
+
+                // Trust region radius
+                Real delta;
+
+                // Maximum trust region radius
+                Real delta_max;
+
+                // Trust-region parameter for checking whether a step has been
+                // accepted
+                Real eta1;
+
+                // Trust-region parameter for checking whether a step has been
+                // accepted
+                Real eta2;
+
+                // Ratio between the predicted and actual reduction
+                Real rho;
+
+                // Number of rejected trust-region steps
+                unsigned int rejected_trustregion;
+
+                // ------------- LINE-SEARCH ------------- 
+
+                // Line-search step length
+                Real alpha;
+
+                // Current number of iterations used in the line-search
+                unsigned int linesearch_iter;
+
+                // Maximum number of iterations used in the line-search
+                unsigned int linesearch_iter_max;
+
+                // Total number of line-search iterations computed
+                unsigned int linesearch_iter_total;
+
+                // Stopping tolerance for the line-search
+                Real eps_ls;
+
+                // Search direction type
+                LineSearchDirection::t dir;
+
+                // Type of line-search 
+                LineSearchKind::t kind;
+                
+                // ------------- CONSTRUCTORS ------------ 
+
+                // Initialize the state without setting up any variables. 
+                t() {
+                    init_params();
+                };
+
+                // Initialize the state for unconstrained optimization.  
+                t(const X_Vector& x) {
+                    init_params();
+                    init_vectors(x);
+                }
+
+            protected:
+                // This initializes all the variables required for unconstrained
+                // optimization.  
+                void init_vectors(const X_Vector& x_) {
+                    x.push_back(X::create()); X::init(x_,x.back());
+                        X::copy(x_,x.back());
+                    g.push_back(X::create()); X::init(x_,g.back());
+                    s.push_back(X::create()); X::init(x_,s.back()); 
+                    x_old.push_back(X::create()); X::init(x_,x_old.back()); 
+                    g_old.push_back(X::create()); X::init(x_,g_old.back()); 
+                    s_old.push_back(X::create()); X::init(x_,s_old.back()); 
+                }
+
+                // This sets all of the parameters possible that don't require
+                // special memory allocation such as variables.
+                void init_params(){
+                    eps_g=Real(1e-6);
+                    eps_s=Real(1e-6);
+                    stored_history=0;
+                    history_reset=5;
+                    iter=1;
+                    iter_max=10;
+                    opt_stop=StoppingCondition::NotConverged;
+                    krylov_iter=1;
+                    krylov_iter_max=10;
+                    krylov_iter_total=0;
+                    krylov_stop=KrylovStop::RelativeErrorSmall;
+                    krylov_rel_err=
+                        Real(std::numeric_limits<double>::quiet_NaN());
+                    eps_krylov=Real(1e-2);
+                    algorithm_class=AlgorithmClass::TrustRegion;
+                    Minv_type=Operators::Identity;
+                    H_type=Operators::Identity;
+                    norm_g=Real(std::numeric_limits<double>::quiet_NaN());
+                    norm_gtyp=Real(std::numeric_limits<double>::quiet_NaN());
+                    norm_s=Real(std::numeric_limits<double>::quiet_NaN());
+                    norm_styp=Real(std::numeric_limits<double>::quiet_NaN());
+                    obj_x=Real(std::numeric_limits<double>::quiet_NaN());
+                    obj_xps=Real(std::numeric_limits<double>::quiet_NaN());
+                    delta=Real(100.);
+                    delta_max=Real(100.);
+                    eta1=Real(.1);
+                    eta2=Real(.9);
+                    rho=Real(0.);
+                    rejected_trustregion=0;
+                    alpha=1.;
+                    linesearch_iter=0;
+                    linesearch_iter_max=5;
+                    linesearch_iter_total=0;
+                    eps_ls=Real(1e-2);
+                    dir=LineSearchDirection::SteepestDescent;
+                    kind=LineSearchKind::GoldenSection;
+                }
+            };
+
+            // Check that we have a valid set of parameters.  
+            static void check(const Messaging& msg,const t& state) {
+                   
+                // Use this to build an error message
+                std::stringstream ss;
+                
+                // Check that the tolerance for the gradient stopping condition
+                // is positive
+                if(state.eps_g <= Real(0.)) 
+                    ss << "The tolerance for the gradient stopping condition "
+                        "must be positive: eps_g = " << state.eps_g;
+            
+                // Check that the tolerance for the step length stopping
+                // condition is positive
+                if(state.eps_s <= Real(0.)) 
+                    ss << "The tolerance for the step length stopping "
+                        "condition must be positive: eps_s = " << state.eps_s; 
+        
+                // Check that the current iteration is positive
+                if(state.iter <= 0) 
+                    ss << "The current optimization iteration must be "
+                        "positive: iter = " << state.iter;
+
+                // Check that the maximum iteration is positive
+                if(state.iter_max <= 0) 
+                    ss << "The maximum optimization iteration must be "
+                        "positive: iter_max = " << state.iter_max;
+
+                // Check that the current Krylov iteration is positive
+                if(state.krylov_iter <= 0) 
+                    ss << "The current Krlov iteration must be "
+                        "positive: krylov_iter = " << state.krylov_iter;
+
+                // Check that the maximum Krylov iteration is positive
+                if(state.krylov_iter_max <= 0) 
+                    ss << "The maximum Krylov iteration must be "
+                        "positive: krylov_iter_max = " << state.krylov_iter_max;
+
+                // Check that relative error in the Krylov method is nonnegative
+                if(state.krylov_rel_err < Real(0.)) 
+                    ss << "The relative error in the Krylov method must be "
+                        "nonnegative: krylov_rel_err = " <<state.krylov_rel_err;
+                
+                // Check that the stopping tolerance for the Krylov method is
+                // positive
+                if(state.eps_krylov <= Real(0.)) 
+                    ss << "The tolerance for the Krylov method stopping "
+                        "condition must be positive: eps_krylov = "
+                    << state.eps_krylov;
+
+                // Check that the norm of the gradient is nonnegative or
+                // if we're on the first iteration, we allow a NaN
+                if(state.norm_g < Real(0.)
+                    || (state.iter!=1 && state.norm_g!=state.norm_g)
+                )
+                    ss << "The norm of the gradient must be nonnegative: "
+                        "norm_g = " << state.norm_g; 
+
+                // Check that the norm of a typical gradient is nonnegative or
+                // if we're on the first iteration, we allow a NaN
+                if(state.norm_gtyp < Real(0.)
+                    || (state.iter!=1 && state.norm_gtyp!=state.norm_gtyp)
+                ) 
+                    ss << "The norm of a typical gradient must be nonnegative: "
+                        "norm_gtyp = " << state.norm_gtyp; 
+
+                // Check that the norm of the trial step is nonnegative or
+                // if we're on the first iteration, we allow a NaN
+                if(state.norm_s < Real(0.)
+                    || (state.iter!=1 && state.norm_s!=state.norm_s)
+                ) 
+                    ss << "The norm of the trial step must be nonnegative: "
+                        "norm_s = " << state.norm_s; 
+
+                // Check that the norm of a typical trial step is nonnegative or
+                // if we're on the first iteration, we allow a NaN
+                if(state.norm_styp < Real(0.)
+                    || (state.iter!=1 && state.norm_styp!=state.norm_styp)
+                ) 
+                    ss << "The norm of a typical trial step must be "
+                        "nonnegative: norm_styp = " << state.norm_styp; 
+
+                // Check that the objective value isn't a NaN past iteration 1
+                if(state.iter!=1 && state.obj_x!=state.obj_x)
+                    ss << "The objective value must be a number: obj_x = "
+                        << state.obj_x;
+
+                // Check that the objective at a trial step isn't a NaN past
+                // iteration 1
+                if(state.iter!=1 && state.obj_xps!=state.obj_xps) 
+                    ss << "The objective value at the trial step must be a "
+                        "number: obj_xps = " << state.obj_xps;
+
+                // Check that the trust-region radius is positive
+                if(state.delta<=Real(0.))
+                    ss << "The trust-region radius must be positive: delta = "
+                        << state.delta; 
+
+                // Check that the maximum trust-region radius is positive
+                if(state.delta_max<=Real(0.))
+                    ss << "The maximum trust-region radius must be positive: "
+                        "delta_max = " << state.delta_max; 
+
+                // Check that the current trust-region radius is less than
+                // or equal to the maximum trust-region radius
+                if(state.delta > state.delta_max)
+                    ss << "The trust-region radius must be less than or equal "
+                        "to the maximum trust-region radius: delta = "
+                        << state.delta << ", delta_max = " << state.delta_max;
+
+                // Check that the predicted vs. actual reduction tolerance
+                // is between 0 and 1
+                if(state.eta1 < Real(0.) || state.eta1 > Real(1.))
+                    ss << "The tolerance for whether or not we accept a "
+                        "trust-region step must be between 0 and 1: eta1 = "
+                        << state.eta1;
+                
+                // Check that the other predicted vs. actual reduction tolerance
+                // is between 0 and 1
+                if(state.eta2 < Real(0.) || state.eta2 > Real(1.))
+                    ss << "The tolerance for whether or not we increase the "
+                        "trust-region radius must be between 0 and 1: eta2 = "
+                        << state.eta2;
+
+                // Check that eta2 > eta1
+                if(state.eta1 >= state.eta2) 
+                    ss << "The trust-region tolerances for accepting steps "
+                        "must satisfy the relationship that eta1 < eta2: "
+                        "eta1 = " << state.eta1 << ", eta2 = " << state.eta2;
+
+                // Check that the prediction versus actual reduction is
+                // nonnegative 
+                if(state.rho < Real(0.)) 
+                    ss << "The predicted versus actual reduction must be "
+                        "nonnegative: rho = " << state.rho;
+
+                // Check that the line-search step length is positive 
+                if(state.alpha <= Real(0.)) 
+                    ss << "The line-search step length must be positive: "
+                        "alpha = " << state.alpha;
+                
+                // Check that the stopping tolerance for the line-search
+                // methods is positive
+                if(state.eps_ls <= Real(0.)) 
+                    ss << "The tolerance for the line-search stopping "
+                        "condition must be positive: eps_ls = " << state.eps_ls;
+
+                // If there's an error, print it
+                if(ss.str()!="") msg.error(ss.str());
+            }
+        };
+    
+        // Utilities for restarting the optimization
+        struct Restart {
+
+            // Checks whether we have a valid real label.
+            struct is_real : public std::unary_function<std::string, bool> {
+                bool operator () (const std::string& name) const {
+                    if( name == "eps_g" || 
+                        name == "eps_s" || 
+                        name == "krylov_rel_err" || 
+                        name == "eps_krylov" || 
+                        name == "norm_g" || 
+                        name == "norm_gtyp" || 
+                        name == "norm_s" ||
+                        name == "norm_styp" || 
+                        name == "obj_x" || 
+                        name == "obj_xps" ||
+                        name == "delta" || 
+                        name == "delta_max" || 
+                        name == "eta1" || 
+                        name == "eta2" || 
+                        name == "rho" || 
+                        name == "alpha" || 
+                        name == "eps_ls"
+                    ) 
+                        return true;
+                    else
+                        return false;
+                }
+            };
+
+            // Checks whether we have a valid natural number label.
+            struct is_nat : public std::unary_function<std::string, bool> {
+                bool operator () (const std::string& name) const {
+                    if( name == "stored_history" ||
+                        name == "history_reset" || 
+                        name == "iter" || 
+                        name == "iter_max" || 
+                        name == "krylov_iter" || 
+                        name == "krylov_iter_max" ||
+                        name == "krylov_iter_total" || 
+                        name == "rejected_trustregion" || 
+                        name == "linesearch_iter" || 
+                        name == "linesearch_iter_max" ||
+                        name == "linesearch_iter_total" 
+                    ) 
+                        return true;
+                    else
+                        return false;
+                }
+            };
+           
+            // Checks whether we have a valid parameter label.
+            struct is_param : public std::unary_function<std::string, bool> {
+                bool operator () (const std::string& name) const {
+                    if( name == "algorithm_class" || 
+                        name == "opt_stop" || 
+                        name == "krylov_stop" ||
+                        name == "H_type" || 
+                        name == "Minv_type" ||
+                        name == "dir" || 
+                        name == "kind" 
+                    ) 
+                        return true;
+                    else
+                        return false;
+                }
+            };
+            
+            // Checks whether we have a valid variable label
+            struct is_x : public std::unary_function<std::string, bool> {
+                bool operator () (const std::string& name) const {
+                    if( name == "x" || 
+                        name == "g" || 
+                        name == "s" || 
+                        name == "x_old" || 
+                        name == "g_old" || 
+                        name == "s_old" || 
+                        name.substr(0,5)=="oldY_" || 
+                        name.substr(0,5)=="oldS_" 
+                    ) 
+                        return true;
+                    else
+                        return false;
+                }
+            };
+
+            // Checks whether we have valid labels
+            static void checkLabels(
+                const Messaging& msg,
+                const Reals& reals,
+                const Nats& nats,
+                const Params& params,
+                const X_Vectors& xs
+            ) {
+                peopt::checkLabels <is_real> (msg,reals.first," real name: ");
+                peopt::checkLabels <is_nat> (msg,nats.first," natural name: ");
+                peopt::checkLabels <is_param>
+                    (msg,params.first," paramater name: ");
+                peopt::checkLabels <is_x> (msg,xs.first," variable name: ");
+            }
+
+            // Checks whether or not the value used to represent a parameter
+            // is valid.  This function returns a string with the error
+            // if there is one.  Otherwise, it returns an empty string.
+            struct checkParamVal : public std::binary_function
+                <std::string,std::string,std::string>
+            {
+                std::string operator() (
+                    std::string label,
+                    std::string val
+                ) {
+                    // Create a base message
+                    const std::string base
+                        ="During serialization, found an invalid ";
+
+                    // Used to build the message 
+                    std::stringstream ss;
+
+                    // Check the algorithm class
+                    if(label=="algorithm_class") {
+                        if(!AlgorithmClass::is_valid()(val))
+                            ss << base << "algorithm class: " << val;
+
+                    // Check the optimization stopping conditions
+                    } else if(label=="opt_stop"){
+                        if(!StoppingCondition::is_valid()(val))
+                            ss << base << "stopping condition: " << val;
+
+                    // Check the Krylov stopping conditions
+                    } else if(label=="krylov_stop"){
+                        if(!KrylovStop::is_valid()(val)) 
+                            ss <<base <<"Krylov stopping condition: " << val;
+
+                    // Check the Hessian type
+                    } else if(label=="H_type"){
+                        if(!Operators::is_valid()(val))
+                            ss << base<<"Hessian type: " << val;
+
+                    // Check the type of the preconditioner
+                    } else if(label=="Minv_type"){
+                        if(!Operators::is_valid()(val))
+                            ss << base << "preconditioner type: " << val;
+
+                    // Check the line-search direction
+                    } else if(label=="dir"){
+                        if(!LineSearchDirection::is_valid()(val)) 
+                            ss << base << "line-search direction: " << val;
+
+                    // Check the kind of line-search
+                    } else if(label=="kind"){
+                        if(!LineSearchKind::is_valid()(val)) 
+                            ss << base << "line-search kind: " << val;
+                    }
+                    return ss.str();
+                }
+            };
+            
+            // Copy out all variables.
+            static void stateToVectors(
+                typename State::t& state, 
+                X_Vectors& xs
+            ) {
+                // Move the memory of all variables into the list 
+                xs.first.push_back("x");
+                xs.second.splice(xs.second.end(),state.x);
+                xs.first.push_back("g");
+                xs.second.splice(xs.second.end(),state.g);
+                xs.first.push_back("s");
+                xs.second.splice(xs.second.end(),state.s);
+                xs.first.push_back("x_old");
+                xs.second.splice(xs.second.end(),state.x_old);
+                xs.first.push_back("g_old");
+                xs.second.splice(xs.second.end(),state.g_old);
+                xs.first.push_back("s_old");
+                xs.second.splice(xs.second.end(),state.s_old);
+
+                // Write out the quasi-Newton information with sequential names
+                {int i=1;
+                for(typename std::list<X_Vector>::iterator y=state.oldY.begin();
+                    y!=state.oldY.end();
+                    y=state.oldY.begin()
+                ){
+                    std::stringstream ss;
+                    ss << "oldY_" << i;
+                    xs.first.push_back(ss.str());
+                    xs.second.splice(xs.second.end(),state.oldY,y);
+                }}
+
+                // Write out the quasi-Newton information with sequential names
+                {int i=1;
+                for(typename std::list<X_Vector>::iterator s=state.oldS.begin();
+                    s!=state.oldS.end();
+                    s=state.oldS.begin()
+                ){
+                    std::stringstream ss;
+                    ss << "oldS_" << i;
+                    xs.first.push_back(ss.str());
+                    xs.second.splice(xs.second.end(),state.oldS,s);
+                }}
+            }
+            
+            // Copy out all non-variables.  This includes reals, naturals,
+            // and parameters
+            static void stateToScalars(
+                typename State::t& state, 
+                Reals& reals,
+                Nats& nats,
+                Params& params
+            ) {
+                
+                // Copy in all the real numbers 
+                reals.first.push_back("eps_g");
+                reals.second.push_back(state.eps_g);
+                reals.first.push_back("eps_s");
+                reals.second.push_back(state.eps_s);
+                reals.first.push_back("krylov_rel_err");
+                reals.second.push_back(state.krylov_rel_err);
+                reals.first.push_back("eps_krylov");
+                reals.second.push_back(state.eps_krylov);
+                reals.first.push_back("norm_g");
+                reals.second.push_back(state.norm_g);
+                reals.first.push_back("norm_gtyp");
+                reals.second.push_back(state.norm_gtyp);
+                reals.first.push_back("norm_s");
+                reals.second.push_back(state.norm_s);
+                reals.first.push_back("norm_styp");
+                reals.second.push_back(state.norm_styp);
+                reals.first.push_back("obj_x");
+                reals.second.push_back(state.obj_x);
+                reals.first.push_back("obj_xps");
+                reals.second.push_back(state.obj_xps);
+                reals.first.push_back("delta");
+                reals.second.push_back(state.delta);
+                reals.first.push_back("delta_max");
+                reals.second.push_back(state.delta_max);
+                reals.first.push_back("eta1");
+                reals.second.push_back(state.eta1);
+                reals.first.push_back("eta2");
+                reals.second.push_back(state.eta2);
+                reals.first.push_back("rho");
+                reals.second.push_back(state.rho);
+                reals.first.push_back("alpha");
+                reals.second.push_back(state.alpha);
+                reals.first.push_back("eps_ls");
+                reals.second.push_back(state.eps_ls);
+
+                // Copy in all the natural numbers
+                nats.first.push_back("stored_history");
+                nats.second.push_back(state.stored_history);
+                nats.first.push_back("history_reset");
+                nats.second.push_back(state.history_reset);
+                nats.first.push_back("iter");
+                nats.second.push_back(state.iter);
+                nats.first.push_back("iter_max");
+                nats.second.push_back(state.iter_max);
+                nats.first.push_back("krylov_iter");
+                nats.second.push_back(state.krylov_iter);
+                nats.first.push_back("krylov_iter_max");
+                nats.second.push_back(state.krylov_iter_max);
+                nats.first.push_back("krylov_iter_total");
+                nats.second.push_back(state.krylov_iter_total);
+                nats.first.push_back("rejected_trustregion");
+                nats.second.push_back(state.rejected_trustregion);
+                nats.first.push_back("linesearch_iter");
+                nats.second.push_back(state.linesearch_iter);
+                nats.first.push_back("linesearch_iter_max");
+                nats.second.push_back(state.linesearch_iter_max);
+                nats.first.push_back("linesearch_iter_total");
+                nats.second.push_back(state.linesearch_iter_total);
+
+                // Copy in all the parameters
+                params.first.push_back("algorithm_class");
+                params.second.push_back(
+                    AlgorithmClass::to_string(state.algorithm_class));
+                params.first.push_back("opt_stop");
+                params.second.push_back(
+                    StoppingCondition::to_string(state.opt_stop));
+                params.first.push_back("krylov_stop");
+                params.second.push_back(
+                    KrylovStop::to_string(state.krylov_stop));
+                params.first.push_back("H_type");
+                params.second.push_back(
+                    Operators::to_string(state.H_type));
+                params.first.push_back("Minv_type");
+                params.second.push_back(
+                    Operators::to_string(state.Minv_type));
+                params.first.push_back("dir");
+                params.second.push_back(
+                    LineSearchDirection::to_string(state.dir));
+                params.first.push_back("kind");
+                params.second.push_back(
+                    LineSearchKind::to_string(state.kind));
+            }
+
+            // Copy in all variables.  This assumes that the quasi-Newton
+            // information is being read in order.
+            static void vectorsToState(
+                typename State::t& state,
+                X_Vectors& xs
+            ) {
+
+                for(std::list <std::string>::iterator name=xs.first.begin();
+                    name!=xs.first.end();
+                    name++
+                ) {
+                    // Since we're using a splice operation, we slowly empty
+                    // the variable list.  Hence, we always take the first
+                    // element.
+                    typename std::list <X_Vector>::iterator xx
+                        =xs.second.begin();
+
+                    // Determine which xxiable we're reading in and then splice
+                    // it in the correct location
+                    if(*name=="x")
+                        state.x.splice(state.x.end(),xs.second,xx);
+                    else if(*name=="g")
+                        state.g.splice(state.g.end(),xs.second,xx);
+                    else if(*name=="s")
+                        state.s.splice(state.s.end(),xs.second,xx); 
+                    else if(*name=="x_old")
+                        state.x_old.splice(state.x_old.end(),xs.second,xx);
+                    else if(*name=="g_old")
+                        state.g_old.splice(state.g_old.end(),xs.second,xx);
+                    else if(*name=="s_old")
+                        state.s_old.splice(state.s_old.end(),xs.second,xx);
+                    else if(name->substr(0,5)=="oldY_")
+                        state.oldY.splice(state.oldY.end(),xs.second,xx);
+                    else if(name->substr(0,5)=="oldS_")
+                        state.oldS.splice(state.oldS.end(),xs.second,xx);
+                }
+            }
+
+            // Copy in all non-variables.  This includes reals, naturals,
+            // and parameters
+            static void scalarsToState(
+                typename State::t& state,
+                Reals& reals,
+                Nats& nats,
+                Params& params
+            ) {
+                // Copy in any reals 
+                typename std::list <Real>::iterator real=reals.second.begin();
+                for(std::list <std::string>::iterator name=reals.first.begin();
+                    name!=reals.first.end();
+                    name++,real++
+                ){
+                    if(*name=="eps_g") state.eps_g=*real;
+                    else if(*name=="eps_s") state.eps_s=*real;
+                    else if(*name=="krylov_rel_err") state.krylov_rel_err=*real;
+                    else if(*name=="eps_krylov") state.eps_krylov=*real;
+                    else if(*name=="norm_g") state.norm_g=*real;
+                    else if(*name=="norm_gtyp") state.norm_gtyp=*real;
+                    else if(*name=="norm_s") state.norm_g=*real;
+                    else if(*name=="norm_styp") state.norm_gtyp=*real;
+                    else if(*name=="obj_x") state.obj_x=*real;
+                    else if(*name=="obj_xps") state.obj_xps=*real;
+                    else if(*name=="delta") state.delta=*real;
+                    else if(*name=="delta_max") state.delta_max=*real;
+                    else if(*name=="eta1") state.eta1=*real;
+                    else if(*name=="eta2") state.eta2=*real;
+                    else if(*name=="rho") state.rho=*real;
+                    else if(*name=="alpha") state.alpha=*real;
+                    else if(*name=="eps_ls") state.eps_ls=*real;
+                }
+            
+                // Next, copy in any naturals
+                std::list <unsigned int>::iterator nat=nats.second.begin();
+                for(std::list <std::string>::iterator name=nats.first.begin();
+                    name!=nats.first.end();
+                    name++,nat++
+                ){
+                    if(*name=="stored_history") state.stored_history=*nat;
+                    else if(*name=="history_reset") state.history_reset=*nat;
+                    else if(*name=="iter") state.iter=*nat;
+                    else if(*name=="iter_max") state.iter_max=*nat;
+                    else if(*name=="krylov_iter") state.krylov_iter=*nat;
+                    else if(*name=="krylov_iter_max")
+                        state.krylov_iter_max=*nat;
+                    else if(*name=="krylov_iter_total")
+                        state.krylov_iter_total=*nat;
+                    else if(*name=="rejected_trustregion")
+                        state.rejected_trustregion=*nat;
+                    else if(*name=="linesearch_iter")
+                        state.linesearch_iter=*nat;
+                    else if(*name=="linesearch_iter_max")
+                        state.linesearch_iter_max=*nat;
+                    else if(*name=="linesearch_iter_total")
+                        state.linesearch_iter_total=*nat;
+                }
+                    
+                // Next, copy in any parameters 
+                std::list <std::string>::iterator param=params.second.begin();
+                for(std::list <std::string>::iterator name=params.first.begin();
+                    name!=params.first.end();
+                    name++,param++
+                ){
+                    if(*name=="algorithm_class")
+                        state.algorithm_class
+                            =AlgorithmClass::from_string(*param);
+                    else if(*name=="opt_stop")
+                        state.opt_stop=StoppingCondition::from_string(*param);
+                    else if(*name=="krylov_stop")
+                        state.krylov_stop=KrylovStop::from_string(*param);
+                    else if(*name=="H_type")
+                        state.H_type=Operators::from_string(*param);
+                    else if(*name=="Minv_type")
+                        state.Minv_type=Operators::from_string(*param);
+                    else if(*name=="dir")
+                        state.dir=LineSearchDirection::from_string(*param);
+                    else if(*name=="kind")
+                        state.kind=LineSearchKind::from_string(*param);
+                }
+            }
+            
+            // Release the data into structures controlled by the user 
+            static void release(
+                typename State::t& state,
+                X_Vectors& xs,
+                Reals& reals,
+                Nats& nats,
+                Params& params
+            ) {
+                // Copy out all of the variable information
+                Unconstrained <Real,XX>::Restart::stateToVectors(state,xs);
+            
+                // Copy out all of the scalar information
+                Unconstrained <Real,XX>
+                    ::Restart::stateToScalars(state,reals,nats,params);
+            }
+            
+            // Capture data from structures controlled by the user.  Note,
+            // we don't sort the oldY and oldS based on the prefix.  In fact,
+            // we completely ignore this information.  Therefore, this routine
+            // really depends on oldY and oldS to have their elements inserted
+            // into vars in order.  In other words, oldY_1 must come before
+            // oldY_2, etc.
+            static void capture(
+                const Messaging& msg,
+                typename State::t& state,
+                X_Vectors& xs,
+                Reals& reals,
+                Nats& nats,
+                Params& params
+            ) {
+
+                // Check the labels on the user input
+                checkLabels(msg,reals,nats,params,xs);
+
+                // Check the strings used to represent parameters
+                checkParams <checkParamVal> (msg,params);
+
+                // Copy in the variables 
+                Unconstrained <Real,XX>::Restart::vectorsToState(state,xs);
+                
+                // Copy in all of the scalar information
+                Unconstrained <Real,XX>
+                    ::Restart::scalarsToState(state,reals,nats,params);
+
+                // Check that we have a valid state 
+                State::check(msg,state);
+            }
+        };
+
+        // All the functions required by an optimization algorithm.  Note, this
+        // routine owns the memory for these operations.  
+        struct Functions {
+            // The identity operator 
+            struct Identity : public Operator <Real,XX,XX> {
+                void operator () (const X_Vector& dx,X_Vector& result) const{
+                    X::copy(dx,result);
+                }
+            };
+
+            // The scaled identity Hessian approximation.  Specifically, use use
+            // norm(g) / delta_max I.
+            class ScaledIdentity : public Operator <Real,XX,XX> {
+            private:
+                // Norm of the gradient
+                const Real& norm_g;
+
+                // Maximum size of the trust-region radius
+                const Real& delta_max;
+            public:
+                ScaledIdentity(const typename State::t& state)
+                    : norm_g(state.norm_g), delta_max(state.delta_max) {};
+
+                void operator () (const X_Vector& dx,X_Vector& result) const{
+                    X::copy(dx,result);
+                    X::scal(norm_g/delta_max,result);
+                }
+            };
+
+            // The BFGS Hessian approximation.  
+            /* Note, the formula we normally see for BFGS denotes the inverse
+                Hessian approximation.  This is not the inverse, but the true
+                Hessian approximation. */ 
+            class BFGS : public Operator <Real,XX,XX> {
+            private:
+                // Stored quasi-Newton information
+                const std::list<X_Vector>& oldY;
+                const std::list<X_Vector>& oldS;
+
+                // Messaging device in case the qusi-Newton information is bad
+                const Messaging& msg;
+            public:
+                BFGS(
+                    const Messaging& msg_,
+                    const typename State::t& state
+                ) : oldY(state.oldY), oldS(state.oldS), msg(msg_) {};
+
+                // Operator interface
+                /* It's not entirely clear to me what the best implementation
+                for this method really is.  In the following implementation, we
+                require an additional k work elements where k is the number of
+                stored gradient and position differences.  It's possible to
+                reduce this to 1 or 2, but we need to compute redundant
+                information.  It's also possible to implementation the compact
+                representation, see "Representations of quasi-Newton matrices
+                and their use in limited memory methods" from Byrd, Nocedal,
+                and Schnabel.  The problem with that algorithm is that is
+                requires machinery such as linear system solves that we don't
+                current have.  It also works much better with matrices or
+                multivectors of data and we don't require the user to provide
+                these abstractions. */
+                void operator () (const X_Vector& p, X_Vector& result) const{
+
+                    // Check that the number of stored gradient and trial step
+                    // differences is the same.
+                    if(oldY.size() != oldS.size())
+                        msg.error("In the BFGS Hessian approximation, the "
+                            "number of stored gradient differences must equal "
+                            "the number of stored trial step differences.");
+
+                    // Allocate memory for work
+                    std::list <X_Vector> work(oldY.size(),p);
+                    for(typename std::list <X_Vector>::iterator w=work.begin();
+                        w!=work.end();
+                        w++
+                    ) X::init(p,*w);
+
+                    // If we have no vectors in our history, we return the
+                    // direction
+                    X::copy(p,result);
+                    if(oldY.size() == 0) return;
+
+                    // As a safety check, insure that the inner product
+                    // between all the (s,y) pairs is positive
+                    typename std::list <X_Vector>::const_iterator y0
+                        = oldY.begin();
+                    typename std::list <X_Vector>::const_iterator s0
+                        = oldS.begin();
+                    while(y0!=oldY.end()){
+                        Real inner_y_s=X::innr(*y0++,*s0++);
+                        if(inner_y_s<0)
+                            msg.error("Detected a (s,y) pair in BFGS that "
+                                "possesed a nonpositive inner product");
+                    }
+
+                    // Othwerwise, we copy all of the trial step differences
+                    // into the work space
+                    typename std::list <X_Vector>::iterator Bisj_iter
+                        =work.begin();
+                    typename std::list <X_Vector>::const_iterator sk_iter
+                        =oldS.begin();
+                    while(Bisj_iter!=work.end())
+                        X::copy((*sk_iter++),(*Bisj_iter++));
+
+                    // Keep track of the element Bisi
+                    typename std::list <X_Vector>::const_iterator Bisi_iter
+                        =work.end(); Bisi_iter--;
+
+                    // Keep iterating until Bisi equals the first element in the
+                    // work list. This means we have computed B1s1, B2s2, ...,
+                    // Bksk.
+                    Bisj_iter=work.begin();
+                    typename std::list <X_Vector>::const_iterator si_iter
+                        =oldS.end(); si_iter--;
+                    typename std::list <X_Vector>::const_iterator yi_iter
+                        =oldY.end(); yi_iter--;
+                    typename std::list <X_Vector>::const_iterator sj_iter
+                        =oldS.begin();
+                    while(1){
+
+                        // Create some reference to our iterators that are
+                        // easier to work with
+                        const X_Vector& si=*si_iter;
+                        const X_Vector& yi=*yi_iter;
+                        const X_Vector& Bisi=*Bisi_iter;
+
+                        // Determine <Bisi,si>
+                        Real inner_Bisi_si=X::innr(Bisi,si);
+
+                        // Determine <yi,si>
+                        Real inner_yi_si=X::innr(yi,si);
+
+                        // Determine <si,Bip>
+                        Real inner_si_Bip=X::innr(si,result);
+
+                        // Determine <yi,p>
+                        Real inner_yi_p=X::innr(yi,p);
+
+                        // Determine -<si,Bip>/<Bisi,si> Bisi + Bip.  Store in
+                        // Bip.  This will become B_{i+1}p.
+                        X::axpy(-inner_si_Bip/inner_Bisi_si,Bisi,result);
+
+                        // Determine <yi,p>/<yi,si> yi + w where we calculated w
+                        // in the line above.  This completes the calculation of
+                        // B_{i+1}p
+                        X::axpy(inner_yi_p/inner_yi_si,yi,result);
+
+                        // Check whether or not we've calculated B_{i+1}p for
+                        // the last time
+                        if(Bisi_iter==work.begin()) break;
+
+                        // Begin the calculation of B_{i+1}sj
+                        while(si_iter!=sj_iter){
+                            // Add some additional references to the iterators 
+                            const X_Vector& sj=*sj_iter;
+                            X_Vector& Bisj=*Bisj_iter;
+
+                            // Determine <si,Bisj>
+                            Real inner_si_Bisj=X::innr(si,Bisj);
+
+                            // Determine <yi,sj>
+                            Real inner_yi_sj=X::innr(yi,sj);
+
+                            // Determine -<si,Bisj>/<Bisi,si> Bisi + Bisj
+                            // Store in Bisj.  This will become B_{i+1}sj.
+                            X::axpy(-inner_si_Bisj/inner_Bisi_si,Bisi,Bisj);
+
+                            // Determine <yi,sj>/<yi,si> yi + w where we 
+                            // calculated w in the line above.  This completes 
+                            // the computation of B_{i+1}sj.
+                            X::axpy(inner_yi_sj/inner_yi_si,yi,Bisj);
+
+                            // Change j to be j-1 and adjust Bisj and sj 
+                            // accordingly
+                            sj_iter++;
+                            Bisj_iter++;
+                        }
+
+                        // At this point, we've computed all Bisj entries on the
+                        // current row.  As a result, we increment i and set j 
+                        // to be k.  This requires us to modify si, yi, sj, 
+                        // Bisj, and Bisi accordingly.
+                        
+                        // Increment i and adjust si
+                        si_iter--;
+
+                        // Increment i and adjust yi
+                        yi_iter--;
+
+                        // Set j=k and adjust sj
+                        sj_iter=oldS.begin();
+
+                        // Set j=k, increment i, and adjust Bisj
+                        Bisj_iter=work.begin();
+
+                        // Increment i and adjust Bisi
+                        Bisi_iter--;
+                    }
+                }
+            };
+
+            // The SR1 Hessian approximation.  
+            /* The oldY and oldS lists have the same structure as the BFGS
+            preconditioner. */
+            class SR1 : public Operator <Real,XX,XX> {
+            private:
+
+                // Stored quasi-Newton information
+                const std::list<X_Vector>& oldY;
+                const std::list<X_Vector>& oldS;
+
+                // Messaging device in case the qusi-Newton information is bad
+                const Messaging& msg;
+            public:
+                SR1(
+                    const Messaging& msg_,
+                    const typename State::t& state
+                ) : oldY(state.oldY), oldS(state.oldS), msg(msg_) {};
+                
+                // Operator interface
+                void operator () (const X_Vector& p,X_Vector& result) const{
+
+                    // Check that the number of stored gradient and trial step
+                    // differences is the same.
+                    if(oldY.size() != oldS.size())
+                        msg.error("In the SR1 Hessian approximation, the "
+                            "number of stored gradient differences must equal "
+                            "the number of stored trial step differences.");
+
+                    // Allocate memory for work
+                    std::list <X_Vector> work(oldY.size(),p);
+                    for(typename std::list <X_Vector>::iterator w=work.begin();
+                        w!=work.end();
+                        w++
+                    ) X::init(p,*w);
+
+                    // If we have no vectors in our history, we return the 
+                    // direction
+                    X::copy(p,result);
+                    if(oldY.size() == 0) return;
+
+                    // Othwerwise, we copy all of the trial step differences 
+                    // into the work space
+                    typename std::list <X_Vector>::iterator Bisj_iter
+                        =work.begin();
+                    typename std::list <X_Vector>::const_iterator sk_iter
+                        =oldS.begin();
+                    while(Bisj_iter!=work.end())
+                        X::copy((*sk_iter++),(*Bisj_iter++));
+
+                    // Keep track of the element Bisi
+                    typename std::list <X_Vector>::const_iterator Bisi_iter
+                        =work.end(); Bisi_iter--;
+
+                    // Keep iterating until Bisi equals the first element in the
+                    // work list. This means we have computed B1s1, B2s2, ...,
+                    // Bksk.
+                    Bisj_iter=work.begin();
+                    typename std::list <X_Vector>::const_iterator si_iter
+                        =oldS.end(); si_iter--;
+                    typename std::list <X_Vector>::const_iterator yi_iter
+                        =oldY.end(); yi_iter--;
+                    typename std::list <X_Vector>::const_iterator sj_iter
+                        =oldS.begin();
+                    while(1){
+
+                        // Create some reference to our iterators that are 
+                        // easier to work with
+                        const X_Vector& si=*si_iter;
+                        const X_Vector& yi=*yi_iter;
+                        const X_Vector& Bisi=*Bisi_iter;
+
+                        // Determine <yi,p>
+                        Real inner_yi_p=X::innr(yi,p);
+
+                        // Determine <Bisi,p>
+                        Real inner_Bisi_p=X::innr(Bisi,p);
+
+                        // Determine <yi,si>
+                        Real inner_yi_si=X::innr(yi,si);
+
+                        // Determine <Bisi,si>
+                        Real inner_Bisi_si=X::innr(Bisi,si);
+
+                        // Determine (<yi,p>-<Bisi,p>) / (<y_i,s_i>-<Bisi,si>).
+                        // Store in alpha
+                        Real alpha=(inner_yi_p-inner_Bisi_p)
+                            / (inner_yi_si-inner_Bisi_si);
+
+                        // Determine alpha y_i + Bip.  Store in result (which
+                        // accumulate Bip).
+                        X::axpy(alpha,yi,result);
+
+                        // Then, add -alpha*Bisi to this result
+                        X::axpy(-alpha,Bisi,result);
+
+                        // Check whether or not we've calculated B_{i+1}p for 
+                        // the last time
+                        if(Bisi_iter==work.begin()) break;
+
+                        // Begin the calculation of B_{i+1}sj
+                        while(si_iter!=sj_iter){
+                            // Add some additional references to the iterators 
+                            const X_Vector& sj=*sj_iter;
+                            X_Vector& Bisj=*Bisj_iter;
+
+                            // Determine <yi,sj>
+                            Real inner_yi_sj=X::innr(yi,sj);
+
+                            // Determine <Bisi,sj>
+                            Real inner_Bisi_sj=X::innr(Bisi,sj);
+
+                            // Determine (<yi,p>-<Bisi,p>)/(<y_i,s_i>-<Bisi,si>)
+                            // Store in beta 
+                            Real beta= (inner_yi_sj-inner_Bisi_sj) /
+                                (inner_yi_si-inner_Bisi_si);
+                        
+                            // Determine beta y_i + Bisj.  Store in Bisj. 
+                            X::axpy(beta,yi,Bisj);
+
+                            // Add -beta*Bisi to this result
+                            X::axpy(-beta,Bisi,Bisj);
+
+                            // Change j to be j-1 and adjust Bisj and sj 
+                            // accordingly
+                            sj_iter++;
+                            Bisj_iter++;
+                        }
+
+                        // At this point, we've computed all Bisj entries on the
+                        // current row.  As a result, we increment i and set j 
+                        // to be k.  This requires us to modify si, yi, sj, 
+                        // Bisj, and Bisi accordingly.
+                        
+                        // Increment i and adjust si
+                        si_iter--;
+
+                        // Increment i and adjust yi
+                        yi_iter--;
+
+                        // Set j=k and adjust sj
+                        sj_iter=oldS.begin();
+
+                        // Set j=k, increment i, and adjust Bisj
+                        Bisj_iter=work.begin();
+
+                        // Increment i and adjust Bisi
+                        Bisi_iter--;
+                    }
+                }
+            };
+
+            // The inverse BFGS operator 
+            /* The oldY list has the following structure
+                oldY[0] = y_k = grad J(u_k) - grad J(u_{k-1})
+                oldY[1] = y_{k-1} = grad J(u_{k-1}) - grad J(u_{k-2})
+                The oldS list has the following structure
+                oldS[0] = s_k = u_k - u_k{-1}
+                oldS[1] = s_{k-1} = u_{k-1} - u_k{k-2} */
+            class InvBFGS : public Operator <Real,XX,XX> {
+            private:
+                // Stored quasi-Newton information
+                const std::list<X_Vector>& oldY;
+                const std::list<X_Vector>& oldS;
+
+                // Messaging device in case the qusi-Newton information is bad
+                const Messaging& msg;
+            public:
+                InvBFGS(
+                    const Messaging& msg_,
+                    const typename State::t& state
+                ) : oldY(state.oldY), oldS(state.oldS), msg(msg_) {};
+                
+                // Operator interface
+                void operator () (const X_Vector& p,X_Vector& result) const{
+
+                    // Check that the number of stored gradient and trial step
+                    // differences is the same.
+                    if(oldY.size() != oldS.size())
+                        msg.error("In the inverse BFGS operator, the number "
+                            "of stored gradient differences must equal the "
+                            "number of stored trial step differences.");
+                    
+                    // As a safety check, insure that the inner product between
+                    // all the (s,y) pairs is positive
+                    typename std::list <X_Vector>::const_iterator y0
+                        = oldY.begin();
+                    typename std::list <X_Vector>::const_iterator s0
+                        = oldS.begin();
+                    while(y0!=oldY.end()){
+                        Real inner_y_s=X::innr(*y0++,*s0++);
+                        if(inner_y_s<0)
+                            msg.error("Detected a (s,y) pair in the inverse "
+                                "BFGS operator that possesed a nonpositive "
+                                "inner product");
+                    }
+
+                    // Create two vectors to hold some intermediate calculations
+                    std::vector <Real> alpha(oldY.size());
+                    std::vector <Real> rho(oldY.size());
+
+                    // Before we begin computing, copy p to our result 
+                    X::copy(p,result);
+
+                    // In order to compute, we first iterate over all the stored
+                    // element in the forward direction.  Then, we iterate over
+                    // them backward.
+                    typename std::list <X_Vector>::const_iterator y_iter
+                        =oldY.begin();
+                    typename std::list <X_Vector>::const_iterator s_iter
+                        =oldS.begin();
+                    int i=0;
+                    while(y_iter != oldY.end()){
+                        // Find y_k, s_k, and their inner product
+                        const X_Vector& y_k=*(y_iter++);
+                        const X_Vector& s_k=*(s_iter++);
+                        rho[i]=Real(1.)/X::innr(y_k,s_k);
+
+                        // Find rho_i <s_i,result>.  Store in alpha_i
+                        alpha[i]=rho[i]*X::innr(s_k,result);
+
+                        // result = - alpha_i y_i + result 
+                        X::axpy(-alpha[i],y_k,result);
+
+                        // Make sure we don't overwrite alpha and rho
+                        i++;
+                    }
+
+                    // Assume that H_0 is the identity operator (which may or 
+                    // may not work in Hilbert space)
+
+                    // Now, let us iterate backward over our elements to 
+                    // complete the computation
+                    while(y_iter != oldY.begin()){
+                        // Find y_k and s_k
+                        const X_Vector& s_k=*(--s_iter);
+                        const X_Vector& y_k=*(--y_iter);
+
+                        // beta=rho_i <y_i,result>
+                        Real beta= rho[--i] * X::innr(y_k,result);
+
+                        // result=  (alpha_i-beta) s_i + result
+                        X::axpy(alpha[i]-beta,s_k,result);
+                    }
+                }
+            };
+            
+            // The inverse SR1 operator.  
+            /* In this definition, we take a shortcut and simply use the SR1
+                Hessian approximation where we swap Y and S.  The oldY and oldS
+                lists have the same structure as the BFGS operator. */
+            class InvSR1 : public Operator <Real,XX,XX> {
+            private:
+                // Store the SR1 operator
+                SR1 sr1;
+            public:
+                InvSR1(
+                    const Messaging& msg,
+                    const typename State::t& state
+                ) : sr1(msg,state) {};
+                void operator () (const X_Vector& p,X_Vector& result) const{
+                    sr1(p,result);
+                }
+            };
+
+            // A scalar valued function that overrides the Hessian if need be. 
+            struct AdjustedScalarValuedFunction
+                : public peopt::ScalarValuedFunction <Real,XX>
+            {
+            private:
+
+                // Hessian approximation
+                std::auto_ptr <Operator <Real,XX,XX> > H;
+
+                // Underlying function
+                std::auto_ptr <peopt::ScalarValuedFunction <Real,XX> > f;
+
+                // This forces derived classes to call the constructor that
+                // depends on the state
+                AdjustedScalarValuedFunction() {}
+
+            public:
+                 // <- f(x) 
+                 Real operator () (const X_Vector& x) const {
+                     return (*f)(x);
+                 }
+
+                 // g = grad f(x) 
+                 void grad(const X_Vector& x,X_Vector& g) const {
+                     f->grad(x,g);
+                 }
+
+                 // H_dx = hess f(x) dx 
+                 // This actually computes the Hessian-vector product.  In 
+                 // essence, we may want to use a Hessian approximation 
+                 // provided by the optimization routines.  The following
+                 // routine selects whether or not we use the hessvec 
+                 // provided by the user.
+                 virtual void hessvec(
+                     const X_Vector& x,
+                     const X_Vector& dx,
+                     X_Vector& H_dx 
+                 ) const {
+                     if(H.get()!=NULL) 
+                        (*H)(dx,H_dx);
+                     else
+                        f->hessvec(x,dx,H_dx);
+                 }
+
+                 // The constructor determines whether we really need to build
+                 // a Hessian-vector product or if we use an internal
+                 // approximation
+                 AdjustedScalarValuedFunction(
+                     const Messaging& msg,
+                     const typename State::t& state,
+                     std::auto_ptr <peopt::ScalarValuedFunction <Real,XX> > f_
+                 ) : f(f_) {
+                    
+                    // Determine the Hessian approximation
+                    switch(state.H_type){
+                        case Operators::Identity:
+                            H.reset(new Identity());
+                            break;
+                        case Operators::ScaledIdentity:
+                            H.reset(new ScaledIdentity (state));
+                            break;
+                        case Operators::BFGS:
+                            H.reset(new BFGS(msg,state));
+                            break;
+                        case Operators::SR1:
+                            H.reset(new SR1(msg,state));
+                            break;
+                        case Operators::External:
+                            break;
+                        default:
+                            msg.error("Not a valid Hessian approximation.");
+                            break;
+                    }
+                }
+            };
+
+            // Actual storage of the functions required
+            struct t{
+                // Objective function
+                std::auto_ptr <ScalarValuedFunction <Real,XX> > f;
+
+                // Preconditioner for the Hessian of the objective
+                std::auto_ptr <Operator <Real,XX,XX> > Minv;
+            };
+
+            // Check that all the functions are defined
+            static void check(const Messaging& msg,const t& fns) {
+                // Check that objective function exists 
+                if(fns.f.get()==NULL)
+                    msg.error("Missing an objective function definition.");
+                
+                // Check that a preconditioner exists 
+                if(fns.Minv.get()==NULL)
+                    msg.error("Missing a preconditioner definition.");
+            }
+
+            // Initialize any missing functions for just unconstrained
+            // optimization.
+            static void init_(
+                const Messaging& msg,
+                const typename State::t& state,
+                t& fns
+            ) {
+                // Determine the preconditioner
+                switch(state.Minv_type){
+                    case Operators::Identity:
+                        fns.Minv.reset(new Identity());
+                        break;
+                    case Operators::InvBFGS:
+                        fns.Minv.reset(new InvBFGS(msg,state));
+                        break;
+                    case Operators::InvSR1:
+                        fns.Minv.reset(new InvSR1(msg,state));
+                        break;
+                    case Operators::External:
+                        if(fns.Minv.get()==NULL)
+                            msg.error("An externally defined preconditioner "
+                                "must be provided explicitely.");
+                        break;
+                    default:
+                        msg.error("Not a valid Hessian approximation.");
+                        break;
+                }
+
+                // Check that all functions are defined (namely, the 
+                // objective).
+                check(msg,fns);
+
+                // Modify the objective function if necessary
+                fns.f.reset(new AdjustedScalarValuedFunction(msg,state,fns.f));
+            }
+
+            // Initialize any missing functions 
+            static void init(
+                const Messaging& msg,
+                const typename State::t& state,
+                t& fns
+            ) {
+                Unconstrained <Real,XX>::Functions::init_(msg,state,fns);
+            }
+        };
+
+        // This contains the different algorithms used for optimization 
+        struct Algorithms {
 
             // Checks a set of stopping conditions
             static StoppingCondition::t checkStop(
-                const State::Unconstrained <Real,XX>& state
+                const typename State::t& state
             ){
                 // Create some shortcuts
                 const Real& norm_g=state.norm_g;
@@ -3424,19 +2719,19 @@ namespace peopt{
             // trust-region and line-search algorithms
             static void truncatedCG(
                 const Messaging& msg,
-                const Functions::Unconstrained <Real,XX>& fns,
-                State::Unconstrained <Real,XX>& state
+                const typename Functions::t& fns,
+                typename State::t& state
             ){
 
                 // Create shortcuts to some elements in the state
                 // Create some shortcuts
                 const AlgorithmClass::t& algorithm_class=state.algorithm_class;
-                const Vector& x=*(state.x.begin());
-                const Vector& g=*(state.g.begin());
+                const X_Vector& x=*(state.x.begin());
+                const X_Vector& g=*(state.g.begin());
                 const Real& delta=state.delta;
                 const Real& eps_cg=state.eps_krylov;
                 const unsigned int& iter_max=state.krylov_iter_max;
-                Vector& s_k=*(state.s.begin());
+                X_Vector& s_k=*(state.s.begin());
                 unsigned int& iter=state.krylov_iter;
                 unsigned int& iter_total=state.krylov_iter_total;
                 KrylovStop::t& krylov_stop=state.krylov_stop;
@@ -3447,10 +2742,10 @@ namespace peopt{
                 const Operator <Real,XX,XX>& Minv=*(fns.Minv);
 
                 // Allocate memory for temporaries that we need
-                Vector g_k; X::init(x,g_k);
-                Vector v_k; X::init(x,v_k);
-                Vector p_k; X::init(x,p_k);
-                Vector H_pk; X::init(x,H_pk);
+                X_Vector g_k; X::init(x,g_k);
+                X_Vector v_k; X::init(x,v_k);
+                X_Vector p_k; X::init(x,p_k);
+                X_Vector H_pk; X::init(x,H_pk);
 
                 // Allocate memory for a few constants that we need to track 
                 Real kappa;
@@ -3477,7 +2772,7 @@ namespace peopt{
                 iter_total++;
                 for(iter=1;iter<=iter_max;iter++,iter_total++){
                     // H_pk=H p_k
-                    f.hv(x,p_k,H_pk);
+                    f.hessvec(x,p_k,H_pk);
 
                     // Compute the curvature for this direction.
                     // kappa=<p_k,H p_k>
@@ -3612,13 +2907,13 @@ namespace peopt{
 
             // Checks whether we accept or reject a step
             static bool checkStep(
-                const Functions::Unconstrained <Real,XX>& fns,
-                State::Unconstrained <Real,XX>& state
+                const typename Functions::t& fns,
+                typename State::t& state
             ){
                 // Create shortcuts to some elements in the state
-                const Vector& s=*(state.s.begin());
-                const Vector& x=*(state.x.begin());
-                const Vector& g=*(state.g.begin());
+                const X_Vector& s=*(state.s.begin());
+                const X_Vector& x=*(state.x.begin());
+                const X_Vector& g=*(state.g.begin());
                 const Real& eta1=state.eta1;
                 const Real& eta2=state.eta2;
                 const Real& delta_max=state.delta_max;
@@ -3632,8 +2927,8 @@ namespace peopt{
                 const ScalarValuedFunction <Real,XX>& f=*(fns.f);
 
                 // Allocate memory for temporaries that we need
-                Vector xps; X::init(x,xps);
-                Vector Hx_s; X::init(x,Hx_s);
+                X_Vector xps; X::init(x,xps);
+                X_Vector Hx_s; X::init(x,Hx_s);
 
                 // Determine x+s 
                 X::copy(s,xps);
@@ -3643,7 +2938,7 @@ namespace peopt{
                 obj_xps=f(xps);
                 
                 // Determine H(x)s
-                f.hv(x,s,Hx_s);
+                f.hessvec(x,s,Hx_s);
 
                 // Determine alpha+<g,s>+.5*<H(u)s,s>
                 Real model_s=obj_x+X::innr(g,s)+Real(.5)*X::innr(Hx_s,s);
@@ -3684,15 +2979,15 @@ namespace peopt{
             // Finds the trust-region step
             static void getStepTR(
                 const Messaging& msg,
-                const Functions::Unconstrained <Real,XX>& fns,
-                State::Unconstrained <Real,XX>& state
+                const typename Functions::t& fns,
+                typename State::t& state
             ){
                 // Create some shortcuts
                 unsigned int& rejected_trustregion=state.rejected_trustregion;
-                Vector& s=*(state.s.begin());
+                X_Vector& s=*(state.s.begin());
                 Real& norm_s=state.norm_s;
-                std::list <Vector>& oldY=state.oldY; 
-                std::list <Vector>& oldS=state.oldS; 
+                std::list <X_Vector>& oldY=state.oldY; 
+                std::list <X_Vector>& oldS=state.oldS; 
                 unsigned int& history_reset=state.history_reset;
 
                 // Continue to look for a step until one comes back as valid
@@ -3724,11 +3019,11 @@ namespace peopt{
         
             // Steepest descent search direction
             static void SteepestDescent(
-                State::Unconstrained <Real,XX>& state
+                typename State::t& state
             ) {
                 // Create some shortcuts 
-                const Vector& g=*(state.g.begin());
-                Vector& s=*(state.s.begin());
+                const X_Vector& g=*(state.g.begin());
+                X_Vector& s=*(state.s.begin());
 
                 // We take the steepest descent direction
                 X::copy(g,s);
@@ -3738,14 +3033,14 @@ namespace peopt{
             // Nonlinear Conjugate Gradient
             static void NonlinearCG(
                 const NonlinearCGDirections::t dir,
-                State::Unconstrained <Real,XX>& state
+                typename State::t& state
             ) {
             
                 // Create some shortcuts 
-                const Vector& g=*(state.g.begin());
-                const Vector& s_old=*(state.s_old.begin());
+                const X_Vector& g=*(state.g.begin());
+                const X_Vector& s_old=*(state.s_old.begin());
                 const int& iter=state.iter;
-                Vector& s=*(state.s.begin());
+                X_Vector& s=*(state.s.begin());
 
                 // If we're on the first iterations, we take the steepest
                 // descent direction
@@ -3776,12 +3071,12 @@ namespace peopt{
 
             // Fletcher-Reeves CG search direction
             static Real FletcherReeves(
-                State::Unconstrained <Real,XX>& state
+                typename State::t& state
             ) {
 
                 // Create some shortcuts 
-                const Vector& g=*(state.g.begin());
-                const Vector& g_old=*(state.g_old.begin());
+                const X_Vector& g=*(state.g.begin());
+                const X_Vector& g_old=*(state.g_old.begin());
 
                 // Return the momentum parameter
                 return X::innr(g,g)/X::innr(g_old,g_old);
@@ -3789,12 +3084,12 @@ namespace peopt{
         
             // Polak-Ribiere CG search direction
             static Real PolakRibiere(
-                State::Unconstrained <Real,XX>& state
+                typename State::t& state
             ) {
 
                 // Create some shortcuts 
-                const Vector& g=*(state.g.begin());
-                const Vector& g_old=*(state.g_old.begin());
+                const X_Vector& g=*(state.g.begin());
+                const X_Vector& g_old=*(state.g_old.begin());
                     
                 // Return the momentum parameter
                 return (X::innr(g,g)-X::innr(g,g_old))
@@ -3803,13 +3098,13 @@ namespace peopt{
             
             // Hestenes-Stiefel search direction
             static Real HestenesStiefel(
-                State::Unconstrained <Real,XX>& state
+                typename State::t& state
             ) {
 
                 // Create some shortcuts 
-                const Vector& g=*(state.g.begin());
-                const Vector& g_old=*(state.g_old.begin());
-                const Vector& s_old=*(state.s_old.begin());
+                const X_Vector& g=*(state.g.begin());
+                const X_Vector& g_old=*(state.g_old.begin());
+                const X_Vector& s_old=*(state.s_old.begin());
                     
                 // Return the momentum parameter
                 return (X::innr(g,g)-X::innr(g,g_old))
@@ -3819,16 +3114,15 @@ namespace peopt{
             // BFGS search direction
             static void BFGS(
                 const Messaging& msg,
-                State::Unconstrained <Real,XX>& state
+                typename State::t& state
             ) {
                 
                 // Create some shortcuts 
-                const Vector& g=*(state.g.begin());
-                Vector& s=*(state.s.begin());
+                const X_Vector& g=*(state.g.begin());
+                X_Vector& s=*(state.s.begin());
 
                 // Create the inverse BFGS operator
-                typename Operators::Unconstrained <Real,XX>::InvBFGS
-                    Hinv(msg,state); 
+                typename Functions::InvBFGS Hinv(msg,state); 
 
                 // Apply the inverse BFGS operator to the gradient
                 Hinv(g,s);
@@ -3840,14 +3134,14 @@ namespace peopt{
             // Compute a Golden-Section search between eps and 2*alpha where
             // alpha is the last line search parameter.
             static void goldenSection(
-                const Functions::Unconstrained <Real,XX>& fns,
-                State::Unconstrained <Real,XX>& state
+                const typename Functions::t& fns,
+                typename State::t& state
             ) {
                 // Create some shortcuts
-                const Vector& x=*(state.x.begin());
+                const X_Vector& x=*(state.x.begin());
                 const unsigned int& iter_max=state.linesearch_iter_max;
                 Real& alpha=state.alpha;
-                Vector& s=*(state.s.begin());
+                X_Vector& s=*(state.s.begin());
                 unsigned int& iter_total=state.linesearch_iter_total;
                 unsigned int& iter=state.linesearch_iter;
                 Real& obj_xps=state.obj_xps;
@@ -3856,7 +3150,7 @@ namespace peopt{
                 const ScalarValuedFunction <Real,XX>& f=*(fns.f);
 
                 // Create one work element that holds x+mu s or x+lambda s
-                Vector x_p_s; X::init(x,x_p_s);
+                X_Vector x_p_s; X::init(x,x_p_s);
 
                 // Find 1 over the golden ratio
                 Real beta=Real(2./(1.+sqrt(5.)));
@@ -3929,17 +3223,17 @@ namespace peopt{
             // Find the line search parameter based on the 2-point approximation
             // from Barzilai and Borwein
             static void twoPoint(
-                const Functions::Unconstrained <Real,XX>& fns,
-                State::Unconstrained <Real,XX>& state
+                const typename Functions::t& fns,
+                typename State::t& state
             ) {
                 // Create some shortcuts
-                const Vector& x=*(state.x.begin());
-                const Vector& g=*(state.g.begin());
-                const Vector& x_old=*(state.x_old.begin());
-                const Vector& g_old=*(state.g_old.begin());
+                const X_Vector& x=*(state.x.begin());
+                const X_Vector& g=*(state.g.begin());
+                const X_Vector& x_old=*(state.x_old.begin());
+                const X_Vector& g_old=*(state.g_old.begin());
                 const LineSearchKind::t& kind=state.kind;
                 Real& alpha=state.alpha;
-                Vector& s=*(state.s.begin());
+                X_Vector& s=*(state.s.begin());
                 unsigned int& iter_total=state.linesearch_iter_total;
                 unsigned int& iter=state.linesearch_iter;
                 Real& obj_xps=state.obj_xps;
@@ -3949,9 +3243,9 @@ namespace peopt{
 
                 // Create elements for delta_x and delta_g as well as one work
                 // element for storing x+alpha s
-                Vector delta_x; X::init(x,delta_x);
-                Vector delta_g; X::init(x,delta_g);
-                Vector x_p_s; X::init(x,x_p_s);
+                X_Vector delta_x; X::init(x,delta_x);
+                X_Vector delta_g; X::init(x,delta_g);
+                X_Vector x_p_s; X::init(x,x_p_s);
 
                 // Find delta_x
                 X::copy(x,delta_x);
@@ -3979,14 +3273,14 @@ namespace peopt{
             
             // Compute a backtracking line-search. 
             static void backTracking(
-                const Functions::Unconstrained <Real,XX>& fns,
-                State::Unconstrained <Real,XX>& state
+                const typename Functions::t& fns,
+                typename State::t& state
             ) {
                 // Create some shortcuts
-                const Vector& x=*(state.x.begin());
+                const X_Vector& x=*(state.x.begin());
                 const unsigned int& iter_max=state.linesearch_iter_max;
                 Real& alpha=state.alpha;
-                Vector& s=*(state.s.begin());
+                X_Vector& s=*(state.s.begin());
                 unsigned int& iter_total=state.linesearch_iter_total;
                 unsigned int& iter=state.linesearch_iter;
                 Real& obj_xps=state.obj_xps;
@@ -3995,7 +3289,7 @@ namespace peopt{
                 const ScalarValuedFunction <Real,XX>& f=*(fns.f);
 
                 // Create one work element for holding x+alpha s
-                Vector x_p_s; X::init(x,x_p_s);
+                X_Vector x_p_s; X::init(x,x_p_s);
 
                 // Store the best objective value and alpha that we used to
                 // find it.
@@ -4037,8 +3331,8 @@ namespace peopt{
             // Finds a trial step using a line-search for globalization
             static void getStepLS(
                 const Messaging& msg,
-                const Functions::Unconstrained <Real,XX>& fns,
-                State::Unconstrained <Real,XX>& state
+                const typename Functions::t& fns,
+                typename State::t& state
             ){
                 // Create some shortcuts
                 const LineSearchDirection::t& dir=state.dir;
@@ -4047,7 +3341,7 @@ namespace peopt{
                 const int& linesearch_iter_max=state.linesearch_iter_max;
                 const Real& obj_x=state.obj_x;
                 Real& obj_xps=state.obj_xps;
-                Vector& s=*(state.s.begin());
+                X_Vector& s=*(state.s.begin());
                 Real& norm_s=state.norm_s;
                 Real& alpha=state.alpha;
 
@@ -4144,8 +3438,8 @@ namespace peopt{
             // Finds a new trial step
             static void getStep(
                 const Messaging& msg,
-                const Functions::Unconstrained <Real,XX>& fns,
-                State::Unconstrained <Real,XX>& state
+                const typename Functions::t& fns,
+                typename State::t& state
             ){
                 // Create some shortcuts
                 const AlgorithmClass::t& algorithm_class=state.algorithm_class;
@@ -4163,25 +3457,25 @@ namespace peopt{
 
             // Updates the quasi-Newton information
             static void updateQuasi(
-                State::Unconstrained <Real,XX>& state
+                typename State::t& state
             ){
                 // Exit immediately if we're not using a quasi-Newton method
                 if(state.stored_history==0) return;
 
                 // Create some shortcuts
-                const Vector& x=*(state.x.begin());
-                const Vector& g=*(state.g.begin());
-                const Vector& x_old=*(state.x_old.begin());
-                const Vector& g_old=*(state.g_old.begin());
+                const X_Vector& x=*(state.x.begin());
+                const X_Vector& g=*(state.g.begin());
+                const X_Vector& x_old=*(state.x_old.begin());
+                const X_Vector& g_old=*(state.g_old.begin());
                 const Operators::t& Minv_type=state.Minv_type;
                 const Operators::t& H_type=state.H_type;
                 const LineSearchDirection::t& dir=state.dir;
-                std::list <Vector>& oldY=state.oldY;
-                std::list <Vector>& oldS=state.oldS;
+                std::list <X_Vector>& oldY=state.oldY;
+                std::list <X_Vector>& oldS=state.oldS;
                
                 // Allocate some temp storage for y and s
-                Vector s; X::init(x,s);
-                Vector y; X::init(x,y);
+                X_Vector s; X::init(x,s);
+                X_Vector y; X::init(x,y);
 
                 // Find s = u-u_old
                 X::copy(x,s);
@@ -4211,17 +3505,17 @@ namespace peopt{
             // Solves an optimization problem
             static void getMin(
                 const Messaging& msg,
-                const StateManipulator<State::Unconstrained <Real,XX> >& smanip,
-                Functions::Unconstrained <Real,XX>& fns,
-                State::Unconstrained <Real,XX>& state
+                const StateManipulator<typename State::t>& smanip,
+                typename Functions::t& fns,
+                typename State::t& state
             ){
                 // Create some shortcuts
-                Vector& x=*(state.x.begin());
-                Vector& g=*(state.g.begin());
-                Vector& s=*(state.s.begin());
-                Vector& x_old=*(state.x_old.begin());
-                Vector& g_old=*(state.g_old.begin());
-                Vector& s_old=*(state.s_old.begin());
+                X_Vector& x=*(state.x.begin());
+                X_Vector& g=*(state.g.begin());
+                X_Vector& s=*(state.s.begin());
+                X_Vector& x_old=*(state.x_old.begin());
+                X_Vector& g_old=*(state.g_old.begin());
+                X_Vector& s_old=*(state.s_old.begin());
                 Real& obj_x=state.obj_x;
                 Real& obj_xps=state.obj_xps;
                 Real& norm_s=state.norm_s;
@@ -4233,8 +3527,8 @@ namespace peopt{
                 AlgorithmClass::t& algorithm_class=state.algorithm_class;
                 LineSearchDirection::t& dir=state.dir;
 
-                // Finalize the functions that define the problem 
-                fns.finalize(msg,state);
+                // Initialize any remaining functions required for optimization 
+                Functions::init(msg,state,fns);
                 
                 // Create shortcuts to the functions that we need
                 const ScalarValuedFunction <Real,XX>& f=*(fns.f);
@@ -4301,11 +3595,12 @@ namespace peopt{
             // the state manipulator
             static void getMin(
                 const Messaging& msg,
-                Functions::Unconstrained <Real,XX>& fns,
-                State::Unconstrained <Real,XX>& state
+                typename Functions::t& fns,
+                typename State::t& state
             ){
                 // Create an empty state manipulator
-                StateManipulator<State::Unconstrained <Real,XX> > smanip;
+                StateManipulator <typename Unconstrained <Real,XX>::State::t >
+                    smanip;
 
                 // Minimize the problem
                 getMin(msg,smanip,fns,state);
@@ -4315,7 +3610,7 @@ namespace peopt{
             // state
             static void printState(
                 const Messaging& msg,
-                const State::Unconstrained <Real,XX>& state,
+                const typename State::t& state,
                 const bool noiter=false
             ) {
                 // Create some shortcuts
@@ -4375,7 +3670,7 @@ namespace peopt{
             // Prints out useful information regarding the Krylov method 
             static void printKrylov(
                 const Messaging& msg,
-                const State::Unconstrained <Real,XX>& state
+                const typename State::t& state
             ) {
                 // Create some shortcuts
                 const Real& krylov_rel_err=state.krylov_rel_err;
@@ -4396,7 +3691,7 @@ namespace peopt{
             // Prints out a description for the state
             static void printStateHeader(
                 const Messaging& msg,
-                const State::Unconstrained <Real,XX>& state
+                const typename State::t& state
             ) {
                 // Create some shortcuts
                 const AlgorithmClass::t& algorithm_class=state.algorithm_class;
@@ -4430,7 +3725,7 @@ namespace peopt{
             // Prints out a description for the Krylov method 
             static void printKrylovHeader(
                 const Messaging& msg,
-                const State::Unconstrained <Real,XX>& state
+                const typename State::t& state
             ) {
                 // Basic Header
                 std::stringstream ss;
@@ -4443,6 +3738,1055 @@ namespace peopt{
             }
         
         };
-    }
+    };
+
+        
+    // Functions that manipulate and support problems of the form
+    // 
+    // min_{x \in X} f(x) st g(x) = 0
+    //
+    // where f : X -> R and g : X -> Y
+    template <
+        typename Real,
+        template <typename> class XX,
+        template <typename> class YY
+    > 
+    struct EqualityConstrained {
+        // Create some shortcuts for some type names
+        typedef XX <Real> X;
+        typedef typename X::Vector X_Vector;
+        typedef YY <Real> Y;
+        typedef typename Y::Vector Y_Vector;
+        
+        typedef std::pair < std::list <std::string>,
+                            std::list <Real> > Reals;
+        typedef std::pair < std::list <std::string>,
+                            std::list <unsigned int> > Nats;
+        typedef std::pair < std::list <std::string>,
+                            std::list <std::string> > Params; 
+        typedef std::pair < std::list <std::string>,
+                            std::list <X_Vector> > X_Vectors;
+        typedef std::pair < std::list <std::string>,
+                            std::list <Y_Vector> > Y_Vectors;
+
+        // Functions that manipulate the internal state of the optimization 
+        // algorithm.
+        struct State {
+
+            // The actual internal state of the optimization
+            struct t: public virtual Unconstrained <Real,XX>::State::t {
+
+                // Create some type shortcuts
+                typedef typename Unconstrained <Real,XX>::State::t
+                    UnconstrainedState;
+                typedef typename EqualityConstrained <Real,XX,YY>::State::t
+                    EqualityConstrainedState;
+            
+                // The Lagrange multiplier (dual variable) for the equality
+                // constraints
+                std::list <Y_Vector> y;
+                
+                // Initialize the state without setting up any variables. 
+                t() {
+                    UnconstrainedState::init_params();
+                    EqualityConstrainedState::init_params();
+                };
+                
+                // Initialize the state for equality constrained optimization.
+                t(
+                    const X_Vector& x,
+                    const Y_Vector& y
+                ) {
+                    UnconstrainedState::init_params();
+                    UnconstrainedState::init_vectors(x);
+                    EqualityConstrainedState::init_params();
+                    EqualityConstrainedState::init_vectors(y);
+                }
+
+            protected: 
+                // This initializes all the parameters required for equality
+                // constrained optimization.  
+                void init_params() { }
+
+                // This initializes all the variables required for equality
+                // constrained optimization.  
+                void init_vectors(const Y_Vector& y_) {
+                    y.push_back(Y::create()); Y::init(y_,y.back());
+                        Y::copy(y_,y.back());
+                }
+            };
+            
+            // Check that we have a valid set of parameters.  
+            static void check(const Messaging& msg,const t& state) {
+                // Check the unconstrained parameters
+                Unconstrained <Real,XX>::State::check(msg,state);
+            }
+        };
+        
+        // Utilities for restarting the optimization
+        struct Restart {
+
+            // Checks whether we have a valid real label.
+            struct is_real : public std::unary_function<std::string, bool> {
+                bool operator () (const std::string& name) const {
+                    if( typename Unconstrained <Real,XX>::Restart
+                        ::is_real()(name)
+                    )
+                        return true;
+                    else
+                        return false;
+                    }
+            };
+            
+            // Checks whether we have a valid natural number label.
+            struct is_nat : public std::unary_function<std::string, bool> {
+                bool operator () (const std::string& name) const {
+                    if( typename Unconstrained <Real,XX>::Restart
+                        ::is_nat()(name)
+                    )
+                        return true;
+                    else
+                        return false;
+                }
+            };
+           
+            // Checks whether we have a valid parameter label.
+            struct is_param : public std::unary_function<std::string, bool> {
+                bool operator () (const std::string& name) const {
+                    if( typename Unconstrained <Real,XX>::Restart
+                        ::is_param()(name)
+                    ) 
+                        return true;
+                    else
+                        return false;
+                }
+            };
+            
+            // Checks whether we have a valid variable label
+            struct is_x : public std::unary_function<std::string, bool> {
+                bool operator () (const std::string& name) const {
+                    if( typename Unconstrained <Real,XX>::Restart
+                        ::is_x()(name)
+                    ) 
+                        return true;
+                    else
+                        return false;
+                }
+            };
+            
+            // Checks whether we have a valid equality multiplier label
+            struct is_y : public std::unary_function<std::string, bool> {
+                bool operator () (const std::string& name) const {
+                    if( name == "y") 
+                        return true;
+                    else
+                        return false;
+                }
+            };
+
+            // Checks whether we have valid labels
+            static void checkLabels(
+                const Messaging& msg,
+                const Reals& reals,
+                const Nats& nats,
+                const Params& params,
+                const X_Vectors& xs,
+                const Y_Vectors& ys
+            ) {
+                peopt::checkLabels <is_real>
+                    (msg,reals.first," real name: ");
+                peopt::checkLabels <is_nat>
+                    (msg,nats.first," natural name: ");
+                peopt::checkLabels <is_param>
+                    (msg,params.first," paramater name: ");
+                peopt::checkLabels <is_x>
+                    (msg,xs.first," variable name: ");
+                peopt::checkLabels <is_y>
+                    (msg,ys.first," equality multiplier name: ");
+            }
+            
+            // Checks whether or not the value used to represent a parameter
+            // is valid.  This function returns a string with the error
+            // if there is one.  Otherwise, it returns an empty string.
+            struct checkParamVal : public std::binary_function
+                <std::string,std::string,std::string>
+            {
+                std::string operator() (
+                    std::string label,
+                    std::string val
+                ) {
+
+                    // Create a base message
+                    const std::string base
+                        ="During serialization, found an invalid ";
+
+                    // Used to build the message 
+                    std::stringstream ss;
+
+                    // Check the unconstrained parameters
+                    if(typename Unconstrained <Real,XX>::Restart
+                        ::is_param()(label)
+                    ) {
+                        ss << typename Unconstrained <Real,XX>::Restart
+                            ::checkParamVal()(label,val);
+                    }
+                    return ss.str();
+                }
+            };
+            
+            // Copy out all equality multipliers 
+            static void stateToVectors(
+                typename State::t& state, 
+                Y_Vectors& ys
+            ) {
+                ys.first.push_back("y");
+                ys.second.splice(ys.second.end(),state.y);
+            }
+
+            // Copy out all the scalar information
+            static void stateToScalars(
+                typename State::t& state,
+                Reals& reals,
+                Nats& nats,
+                Params& params
+            ) { }
+            
+            // Copy in all equality multipliers 
+            static void vectorsToState(
+                typename State::t& state,
+                Y_Vectors& ys
+            ) {
+                for(std::list <std::string>::iterator name=ys.first.begin();
+                    name!=ys.first.end();
+                    name++
+                ) {
+                    // Since we're using a splice operation, we slowly empty
+                    // the multiplier list.  Hence, we always take the first
+                    // element.
+                    typename std::list <Y_Vector>::iterator yy
+                        =ys.second.begin();
+
+                    // Determine which variable we're reading in and then splice
+                    // it in the correct location
+                    if(*name=="y") state.y.splice(state.y.end(),ys.second,yy);
+                }
+            }
+            
+            // Copy in all the scalar information
+            static void scalarsToState(
+                typename State::t& state,
+                Reals& reals,
+                Nats& nats,
+                Params& params
+            ) { }
+
+            // Release the data into structures controlled by the user 
+            static void release(
+                typename State::t& state,
+                X_Vectors& xs,
+                Y_Vectors& ys,
+                Reals& reals,
+                Nats& nats,
+                Params& params
+            ) {
+                // Copy out all of the variable information
+                Unconstrained <Real,XX>::Restart::stateToVectors(state,xs);
+                EqualityConstrained <Real,XX,YY>
+                    ::Restart::stateToVectors(state,ys);
+            
+                // Copy out all of the scalar information
+                Unconstrained <Real,XX>
+                    ::Restart::stateToScalars(state,reals,nats,params);
+                EqualityConstrained <Real,XX,YY>
+                    ::Restart::stateToScalars(state,reals,nats,params);
+            }
+
+            // Capture data from structures controlled by the user.  
+            static void capture(
+                const Messaging& msg,
+                typename State::t& state,
+                X_Vectors& xs,
+                Y_Vectors& ys,
+                Reals& reals,
+                Nats& nats,
+                Params& params
+            ) {
+
+                // Check the labels on the user input
+                checkLabels(msg,reals,nats,params,xs,ys);
+
+                // Check the strings used to represent parameters
+                checkParams <checkParamVal> (msg,params);
+
+                // Copy in the variables 
+                Unconstrained <Real,XX>::Restart::vectorsToState(state,xs);
+                EqualityConstrained <Real,XX,YY>
+                    ::Restart::vectorsToState(state,ys);
+                
+                // Copy in all of the scalar information
+                Unconstrained <Real,XX>
+                    ::Restart::scalarsToState(state,reals,nats,params);
+                EqualityConstrained <Real,XX,YY>
+                    ::Restart::scalarsToState(state,reals,nats,params);
+
+                // Check that we have a valid state 
+                State::check(msg,state);
+            }
+        };
+        
+        // All the functions required by an optimization algorithm.  Note, this
+        // routine owns the memory for these operations.  
+        struct Functions {
+
+            // Actual storage of the functions required
+            struct t: public virtual Unconstrained <Real,XX>::Functions::t {
+                // Equality constraints 
+                std::auto_ptr <VectorValuedFunction <Real,XX,YY> > g;
+            };
+
+            // Check that all the functions are defined
+            static void check(const Messaging& msg,const t& fns) {
+
+                // Check the unconstrained pieces
+                Unconstrained <Real,XX>::Functions::check(msg,fns);
+                
+                // Check that the equality constraints exist 
+                if(fns.g.get()==NULL)
+                    msg.error("Missing the equality constraint definition.");
+            }
+
+            // Initialize any missing functions for just equality constrained 
+            // optimization.
+            static void init_(
+                const Messaging& msg,
+                const typename State::t& state,
+                t& fns
+            ) {
+            }
+
+            // Initialize any missing functions 
+            static void init(
+                const Messaging& msg,
+                const typename State::t& state,
+                t& fns
+            ) {
+                Unconstrained <Real,XX>
+                    ::Functions::init_(msg,state,fns);
+                EqualityConstrained <Real,XX,YY>
+                    ::Functions::init_(msg,state,fns);
+            }
+        };
+    };
+        
+    // Functions that manipulate and support problems of the form
+    // 
+    // min_{x \in X} f(x) st h(x) >=_K 0
+    //
+    // where f : X -> R and h : X -> Z
+    template <
+        typename Real,
+        template <typename> class XX,
+        template <typename> class ZZ
+    > 
+    struct InequalityConstrained : public virtual Unconstrained <Real,XX> {
+        
+        // Create some shortcuts for some type names
+        typedef XX <Real> X;
+        typedef typename X::Vector X_Vector;
+        typedef ZZ <Real> Z;
+        typedef typename Z::Vector Z_Vector;
+        
+        typedef std::pair < std::list <std::string>,
+                            std::list <Real> > Reals;
+        typedef std::pair < std::list <std::string>,
+                            std::list <unsigned int> > Nats;
+        typedef std::pair < std::list <std::string>,
+                            std::list <std::string> > Params; 
+        typedef std::pair < std::list <std::string>,
+                            std::list <X_Vector> > X_Vectors;
+        typedef std::pair < std::list <std::string>,
+                            std::list <Z_Vector> > Z_Vectors;
+
+        // Functions that manipulate the internal state of the optimization 
+        // algorithm.
+        struct State {
+
+            // The actual internal state of the optimization
+            struct t: public virtual Unconstrained <Real,XX>::State::t {
+
+                // Create some type shortcuts
+                typedef typename Unconstrained <Real,XX>::State::t
+                    UnconstrainedState;
+                typedef typename InequalityConstrained <Real,XX,ZZ>::State::t
+                    InequalityConstrainedState;
+
+                // The Lagrange multiplier (dual variable) for the
+                // inequality constraints 
+                std::list <Z_Vector> z;
+
+                // Interior point parameter
+                Real mu;
+                
+                // Initialize the state without setting up any variables. 
+                t() {
+                    UnconstrainedState::init_params();
+                    InequalityConstrainedState::init_params();
+                };
+                
+                // Initialize the state for inequality constrained optimization.
+                t(
+                    const X_Vector& x,
+                    const Z_Vector& z
+                ) {
+                    UnconstrainedState::init_params();
+                    UnconstrainedState::init_vectors(x);
+                    InequalityConstrainedState::init_params();
+                    InequalityConstrainedState::init_vectors(z);
+                }
+
+            protected:
+                // This initializes all the parameters required for inequality
+                // constrained optimization.  
+                void init_params() {
+                    mu = Real(1.0); 
+                }
+
+                // This initializes all the variables required for inequality
+                // constrained optimization.  
+                void init_vectors(const Z_Vector& z_) {
+                    z.push_back(Z::create()); Z::init(z_,z.back());
+                        Z::copy(z_,z.back());
+                }
+            };
+            
+            // Check that we have a valid set of parameters.  
+            static void check(const Messaging& msg,const t& state) {
+
+                // Check the unconstrained parameters
+                Unconstrained <Real,XX>::State::check(msg,state);
+                   
+                // Use this to build an error message
+                std::stringstream ss;
+                
+                // Check that the interior point parameter is positive 
+                if(state.mu <= Real(0.)) 
+                    ss << "The interior point parameter must be positive: " 
+                        "mu = " << state.mu;
+
+                // If there's an error, print it
+                if(ss.str()!="") msg.error(ss.str());
+            }
+        };
+        // Utilities for restarting the optimization
+        struct Restart {
+
+            // Checks whether we have a valid real label.
+            struct is_real : public std::unary_function<std::string, bool> {
+                bool operator () (const std::string& name) const {
+                    if( typename Unconstrained <Real,XX>::Restart
+                            ::is_real()(name) ||
+                        name == "mu"
+                    )
+                        return true;
+                    else
+                        return false;
+                    }
+            };
+            
+            // Checks whether we have a valid natural number label.
+            struct is_nat : public std::unary_function<std::string, bool> {
+                bool operator () (const std::string& name) const {
+                    if( typename Unconstrained <Real,XX>::Restart
+                        ::is_nat()(name)
+                    )
+                        return true;
+                    else
+                        return false;
+                }
+            };
+           
+            // Checks whether we have a valid parameter label.
+            struct is_param : public std::unary_function<std::string, bool> {
+                bool operator () (const std::string& name) const {
+                    if( typename Unconstrained <Real,XX>::Restart
+                        ::is_param()(name)
+                    ) 
+                        return true;
+                    else
+                        return false;
+                }
+            };
+            
+            // Checks whether we have a valid variable label
+            struct is_x : public std::unary_function<std::string, bool> {
+                bool operator () (const std::string& name) const {
+                    if( typename Unconstrained <Real,XX>::Restart
+                        ::is_x()(name)
+                    ) 
+                        return true;
+                    else
+                        return false;
+                }
+            };
+            
+            // Checks whether we have a valid inequality multiplier label
+            struct is_z : public std::unary_function<std::string, bool> {
+                bool operator () (const std::string& name) const {
+                    if( name == "z") 
+                        return true;
+                    else
+                        return false;
+                }
+            };
+
+            // Checks whether we have valid labels
+            static void checkLabels(
+                const Messaging& msg,
+                const Reals& reals,
+                const Nats& nats,
+                const Params& params,
+                const X_Vectors& xs,
+                const Z_Vectors& zs
+            ) {
+                peopt::checkLabels <is_real>
+                    (msg,reals.first," real name: ");
+                peopt::checkLabels <is_nat>
+                    (msg,nats.first," natural name: ");
+                peopt::checkLabels <is_param>
+                    (msg,params.first," paramater name: ");
+                peopt::checkLabels <is_x>
+                    (msg,xs.first," variable name: ");
+                peopt::checkLabels <is_z>
+                    (msg,zs.first," inequality multiplier name: ");
+            }
+            
+            // Checks whether or not the value used to represent a parameter
+            // is valid.  This function returns a string with the error
+            // if there is one.  Otherwise, it returns an empty string.
+            struct checkParamVal : public std::binary_function
+                <std::string,std::string,std::string>
+            {
+                std::string operator() (
+                    std::string label,
+                    std::string val
+                ) {
+
+                    // Create a base message
+                    const std::string base
+                        ="During serialization, found an invalid ";
+
+                    // Used to build the message 
+                    std::stringstream ss;
+
+                    // Check the unconstrained parameters
+                    if(typename Unconstrained <Real,XX>
+                        ::Restart::is_param()(label)
+                    ) {
+                        ss << typename Unconstrained <Real,XX>::Restart
+                            ::checkParamVal()(label,val);
+                    }
+                    return ss.str();
+                }
+            };
+            
+            // Copy out the inequality multipliers 
+            static void stateToVectors(
+                typename State::t& state, 
+                Z_Vectors& zs
+            ) {
+                zs.first.push_back("z");
+                zs.second.splice(zs.second.end(),state.z);
+            }
+            
+            // Copy out the scalar information
+            static void stateToScalars(
+                typename State::t& state,
+                Reals& reals,
+                Nats& nats,
+                Params& params
+            ) {
+                // Copy in all the real numbers
+                reals.first.push_back("mu");
+                reals.second.push_back(state.mu);
+            }
+            
+            // Copy in inequality multipliers 
+            static void vectorsToState(
+                typename State::t& state,
+                Z_Vectors& zs
+            ) {
+                for(std::list <std::string>::iterator name=zs.first.begin();
+                    name!=zs.first.end();
+                    name++
+                ) {
+                    // Since we're using a splice operation, we slowly empty
+                    // the multiplier list.  Hence, we always take the first
+                    // element.
+                    typename std::list <Z_Vector>::iterator zz
+                        =zs.second.begin();
+
+                    // Determine which variable we're reading in and then splice
+                    // it in the correct location
+                    if(*name=="z") state.z.splice(state.z.end(),zs.second,zz);
+                }
+            }
+            
+            // Copy in the scalar information
+            static void scalarsToState(
+                typename State::t& state,
+                Reals& reals,
+                Nats& nats,
+                Params& params
+            ) { 
+                // Copy in any reals 
+                typename std::list <Real>::iterator real=reals.second.begin();
+                for(std::list <std::string>::iterator name=reals.first.begin();
+                    name!=reals.first.end();
+                    name++,real++
+                ){
+                    if(*name=="mu") state.mu=*real;
+                } 
+            }
+
+            // Release the data into structures controlled by the user 
+            static void release(
+                typename State::t& state,
+                X_Vectors& xs,
+                Z_Vectors& zs,
+                Reals& reals,
+                Nats& nats,
+                Params& params
+            ) {
+                // Copy out all of the variable information
+                Unconstrained <Real,XX>::Restart::stateToVectors(state,xs);
+                InequalityConstrained <Real,XX,ZZ>
+                    ::Restart::stateToVectors(state,zs);
+            
+                // Copy out all of the scalar information
+                Unconstrained <Real,XX>
+                    ::Restart::stateToScalars(state,reals,nats,params);
+                InequalityConstrained <Real,XX,ZZ>
+                    ::Restart::stateToScalars(state,reals,nats,params);
+            }
+            
+            // Capture data from structures controlled by the user.  
+            static void capture(
+                const Messaging& msg,
+                typename State::t& state,
+                X_Vectors& xs,
+                Z_Vectors& zs,
+                Reals& reals,
+                Nats& nats,
+                Params& params
+            ) {
+                // Check the labels on the user input
+                checkLabels(msg,reals,nats,params,xs,zs);
+
+                // Check the strings used to represent parameters
+                checkParams <checkParamVal> (msg,params);
+
+                // Copy in the variables 
+                Unconstrained <Real,XX>::Restart::vectorsToState(state,xs);
+                InequalityConstrained <Real,XX,ZZ>
+                    ::Restart::vectorsToState(state,zs);
+                
+                // Copy in all of the scalar information
+                Unconstrained <Real,XX>
+                    ::Restart::scalarsToState(state,reals,nats,params);
+                InequalityConstrained <Real,XX,ZZ>
+                    ::Restart::scalarsToState(state,reals,nats,params);
+
+                // Check that we have a valid state 
+                State::check(msg,state);
+            }
+        };
+        
+        // All the functions required by an optimization algorithm.  Note, this
+        // routine owns the memory for these operations.  
+        struct Functions {
+
+            // Actual storage of the functions required
+            struct t: public virtual Unconstrained <Real,XX>::Functions::t {
+                // Inequality constraints 
+                std::auto_ptr <InequalityConstraint <Real,XX,ZZ> > h;
+            };
+
+            // Check that all the functions are defined
+            static void check(const Messaging& msg,const t& fns) {
+
+                // Check the unconstrained pieces
+                Unconstrained <Real,XX>::Functions::check(msg,fns);
+                
+                // Check that the inequality constraints exist 
+                if(fns.h.get()==NULL)
+                    msg.error("Missing the inequality constraint definition.");
+            }
+
+            // Initialize any missing functions for just inequality constrained 
+            // optimization.
+            static void init_(
+                const Messaging& msg,
+                const typename State::t& state,
+                t& fns
+            ) {
+            }
+
+            // Initialize any missing functions 
+            static void init(
+                const Messaging& msg,
+                const typename State::t& state,
+                t& fns
+            ) {
+                Unconstrained <Real,XX>
+                    ::Functions::init_(msg,state,fns);
+                InequalityConstrained <Real,XX,ZZ>
+                    ::Functions::init_(msg,state,fns);
+            }
+        };
+    };
+        
+    // Functions that manipulate and support problems of the form
+    // problem of the form
+    // 
+    // min_{x \in X} f(x) st g(x) = 0, h(x) >=_K 0
+    //
+    // where f : X -> R, g : X -> Y, and h : X -> Z
+    template <
+        typename Real,
+        template <typename> class XX,
+        template <typename> class YY,
+        template <typename> class ZZ
+    > 
+    struct Constrained {
+        
+        // Create some shortcuts for some type names
+        typedef XX <Real> X;
+        typedef typename X::Vector X_Vector;
+        typedef YY <Real> Y;
+        typedef typename Y::Vector Y_Vector;
+        typedef ZZ <Real> Z;
+        typedef typename Z::Vector Z_Vector;
+        
+        typedef std::pair < std::list <std::string>,
+                            std::list <Real> > Reals;
+        typedef std::pair < std::list <std::string>,
+                            std::list <unsigned int> > Nats;
+        typedef std::pair < std::list <std::string>,
+                            std::list <std::string> > Params; 
+        typedef std::pair < std::list <std::string>,
+                            std::list <X_Vector> > X_Vectors;
+        typedef std::pair < std::list <std::string>,
+                            std::list <Y_Vector> > Y_Vectors;
+        typedef std::pair < std::list <std::string>,
+                            std::list <Z_Vector> > Z_Vectors;
+
+        // Functions that manipulate the internal state of the optimization 
+        // algorithm.
+        struct State {
+
+            // The actual internal state of the optimization
+            struct t: 
+                public EqualityConstrained <Real,XX,YY>::State::t,
+                public InequalityConstrained <Real,XX,ZZ>::State::t
+            {
+
+                // Create some type shortcuts
+                typedef typename Unconstrained <Real,XX>::State::t
+                    UnconstrainedState;
+                typedef typename EqualityConstrained <Real,XX,YY>::State::t
+                    EqualityConstrainedState;
+                typedef typename InequalityConstrained <Real,XX,ZZ>::State::t
+                    InequalityConstrainedState;
+            
+                // Initialize the state without setting up any variables. 
+                t() {
+                    UnconstrainedState::init_params();
+                    EqualityConstrainedState::init_params();
+                    InequalityConstrainedState::init_params();
+                };
+                
+                // Initialize the state for general constrained optimization.
+                t(
+                    const X_Vector& x,
+                    const Y_Vector& y,
+                    const Z_Vector& z
+                ) {
+                    UnconstrainedState::init_params();
+                    UnconstrainedState::init_vectors(x);
+                    EqualityConstrainedState::init_params();
+                    EqualityConstrainedState::init_vectors(y);
+                    InequalityConstrainedState::init_params();
+                    InequalityConstrainedState::init_vectors(z);
+                }
+            };
+            
+
+            // Check that we have a valid set of parameters.  Technically,
+            // this will check the unconstrained parameters more than once.
+            // However, that doesn't really hurt anything.
+            static void check(const Messaging& msg,const t& state) {
+                // Check the unconstrained parameters
+                Unconstrained <Real,XX>::State::check(msg,state);
+                
+                // Check the equality constrained parameters
+                EqualityConstrained <Real,XX,YY>::State::check(msg,state);
+
+                // Check the inequality constrained parameters
+                InequalityConstrained <Real,XX,ZZ>::State::check(msg,state);
+            }
+        };
+        
+        // Utilities for restarting the optimization
+        struct Restart {
+            // Checks whether we have a valid real label.
+            struct is_real : public std::unary_function<std::string, bool> {
+                bool operator () (const std::string& name) const {
+                    if( typename EqualityConstrained <Real,XX,YY>::Restart
+                            ::is_real()(name) ||
+                        typename InequalityConstrained <Real,XX,ZZ>::Restart
+                            ::is_real()(name)
+                    )
+                        return true;
+                    else
+                        return false;
+                    }
+            };
+            
+            // Checks whether we have a valid natural number label.
+            struct is_nat : public std::unary_function<std::string, bool> {
+                bool operator () (const std::string& name) const {
+                    if( typename EqualityConstrained <Real,XX,YY>::Restart
+                            ::is_nat()(name) ||
+                        typename InequalityConstrained <Real,XX,ZZ>::Restart
+                            ::is_nat()(name)
+                    )
+                        return true;
+                    else
+                        return false;
+                }
+            };
+           
+            // Checks whether we have a valid parameter label.
+            struct is_param : public std::unary_function<std::string, bool> {
+                bool operator () (const std::string& name) const {
+                    if( typename EqualityConstrained <Real,XX,YY>::Restart
+                            ::is_param()(name) ||
+                        typename InequalityConstrained <Real,XX,ZZ>::Restart
+                            ::is_param()(name)
+                    ) 
+                        return true;
+                    else
+                        return false;
+                }
+            };
+            
+            // Checks whether we have a valid variable label
+            struct is_x : public std::unary_function<std::string, bool> {
+                bool operator () (const std::string& name) const {
+                    if( typename EqualityConstrained <Real,XX,YY>::Restart
+                            ::is_x()(name) ||
+                        typename InequalityConstrained <Real,XX,ZZ>::Restart
+                            ::is_x()(name)
+                    ) 
+                        return true;
+                    else
+                        return false;
+                }
+            };
+            
+            // Checks whether we have a valid equality multiplier label
+            struct is_y : public std::unary_function<std::string, bool> {
+                bool operator () (const std::string& name) const {
+                    if( typename EqualityConstrained <Real,XX,YY>::Restart
+                            ::is_y()(name)
+                    ) 
+                        return true;
+                    else
+                        return false;
+                }
+            };
+            
+            // Checks whether we have a valid inequality multiplier label
+            struct is_z : public std::unary_function<std::string, bool> {
+                bool operator () (const std::string& name) const {
+                    if( typename InequalityConstrained <Real,XX,ZZ>::Restart
+                            ::is_z()(name)
+                    ) 
+                        return true;
+                    else
+                        return false;
+                }
+            };
+
+            // Checks whether we have valid labels
+            static void checkLabels(
+                const Messaging& msg,
+                const Reals& reals,
+                const Nats& nats,
+                const Params& params,
+                const X_Vectors& xs,
+                const Y_Vectors& ys,
+                const Z_Vectors& zs
+            ) {
+                peopt::checkLabels <is_real>
+                    (msg,reals.first," real name: ");
+                peopt::checkLabels <is_nat>
+                    (msg,nats.first," natural name: ");
+                peopt::checkLabels <is_param>
+                    (msg,params.first," paramater name: ");
+                peopt::checkLabels <is_x>
+                    (msg,xs.first," variable name: ");
+                peopt::checkLabels <is_y>
+                    (msg,ys.first," equality multiplier name: ");
+                peopt::checkLabels <is_z>
+                    (msg,zs.first," inequality multiplier name: ");
+            }
+            
+            // Checks whether or not the value used to represent a parameter
+            // is valid.  This function returns a string with the error
+            // if there is one.  Otherwise, it returns an empty string.
+            struct checkParamVal : public std::binary_function
+                <std::string,std::string,std::string>
+            {
+                std::string operator() (
+                    std::string label,
+                    std::string val
+                ) {
+
+                    // Create a base message
+                    const std::string base
+                        ="During serialization, found an invalid ";
+
+                    // Used to build the message 
+                    std::stringstream ss;
+
+                    // Check the equality parameters
+                    if(typename EqualityConstrained <Real,XX,YY>
+                        ::Restart::is_param()(label)
+                    ) {
+                        ss << typename EqualityConstrained <Real,XX,YY>
+                            ::Restart::checkParamVal()(label,val);
+
+                    // Check the inequality parameters
+                    } else if (typename InequalityConstrained <Real,XX,ZZ>
+                        ::Restart::is_param()(label)
+                    ) {
+                        ss << typename InequalityConstrained <Real,XX,ZZ>
+                            ::Restart::checkParamVal()(label,val);
+                    }
+
+                    return ss.str();
+                }
+            };
+            
+            // Release the data into structures controlled by the user 
+            static void release(
+                typename State::t& state,
+                X_Vectors& xs,
+                Y_Vectors& ys,
+                Z_Vectors& zs,
+                Reals& reals,
+                Nats& nats,
+                Params& params
+            ) {
+                // Copy out all of the variable information
+                Unconstrained <Real,XX>::Restart::stateToVectors(state,xs);
+                EqualityConstrained <Real,XX,YY>
+                    ::Restart::stateToVectors(state,ys);
+                InequalityConstrained <Real,XX,ZZ>
+                    ::Restart::stateToVectors(state,zs);
+            
+                // Copy out all of the scalar information
+                Unconstrained <Real,XX>
+                    ::Restart::stateToScalars(state,reals,nats,params);
+                EqualityConstrained <Real,XX,YY>
+                    ::Restart::stateToScalars(state,reals,nats,params);
+                InequalityConstrained <Real,XX,ZZ>
+                    ::Restart::stateToScalars(state,reals,nats,params);
+            }
+
+            // Capture data from structures controlled by the user.  
+            static void capture(
+                const Messaging& msg,
+                typename State::t& state,
+                X_Vectors& xs,
+                Y_Vectors& ys,
+                Z_Vectors& zs,
+                Reals& reals,
+                Nats& nats,
+                Params& params
+            ) {
+
+                // Check the labels on the user input
+                checkLabels(msg,reals,nats,params,xs,ys,zs);
+
+                // Check the strings used to represent parameters
+                checkParams <checkParamVal> (msg,params);
+
+                // Copy in the variables 
+                Unconstrained <Real,XX>::Restart::vectorsToState(state,xs);
+                EqualityConstrained <Real,XX,YY>
+                    ::Restart::vectorsToState(state,ys);
+                InequalityConstrained <Real,XX,ZZ>
+                    ::Restart::vectorsToState(state,zs);
+                
+                // Copy in all of the scalar information
+                Unconstrained <Real,XX>
+                    ::Restart::scalarsToState(state,reals,nats,params);
+                EqualityConstrained <Real,XX,YY>
+                    ::Restart::scalarsToState(state,reals,nats,params);
+                InequalityConstrained <Real,XX,ZZ>
+                    ::Restart::scalarsToState(state,reals,nats,params);
+
+                // Check that we have a valid state 
+                State::check(msg,state);
+            }
+        };
+
+        // All the functions required by an optimization algorithm.  Note, this
+        // routine owns the memory for these operations.  
+        struct Functions {
+
+            // Actual storage of the functions required
+            struct t: 
+                public EqualityConstrained <Real,XX,YY>::Functions::t,
+                public InequalityConstrained <Real,XX,ZZ>::Functions::t
+            {};
+
+            // Check that all the functions are defined
+            static void check(const Messaging& msg,const t& fns) {
+                EqualityConstrained <Real,XX,YY>::Functions::check(msg,fns);
+                InequalityConstrained <Real,XX,ZZ>::Functions::check(msg,fns);
+            }
+
+            // Initialize any missing functions for just constrained 
+            // optimization.
+            static void init_(
+                const Messaging& msg,
+                const typename State::t& state,
+                t& fns
+            ) {
+            }
+
+            // Initialize any missing functions 
+            static void init(
+                const Messaging& msg,
+                const typename State::t& state,
+                t& fns
+            ) {
+                Unconstrained <Real,XX>
+                    ::Functions::init_(msg,state,fns);
+                EqualityConstrained <Real,XX,YY>
+                    ::Functions::init_(msg,state,fns);
+                InequalityConstrained <Real,XX,ZZ>
+                    ::Functions::init_(msg,state,fns);
+            }
+        };
+
+    };
+
+#if 0
+        
+#endif
 }
 #endif

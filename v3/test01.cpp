@@ -85,6 +85,37 @@ Real quint(Real x){
     return x*x*x*x*x; 
 }
 
+#if 0
+    // A simple scalar valued function interface, f:X->R
+    template <typename Real,template <typename> class XX>
+    struct ScalarValuedFunction {
+    private:
+        // Create some type shortcuts
+        typedef XX <Real> X;
+        typedef typename X::Vector Vector;
+
+        // This forces derived classes to call the constructor that depends
+        // on the state
+        ScalarValuedFunction() {}
+    public:
+         // <- f(x) 
+         virtual Real operator () (const Vector& x) const = 0;
+
+         // g = grad f(x) 
+         virtual void grad(const Vector& x,Vector& g) const = 0;
+
+         // H_dx = hess f(x) dx 
+         virtual void hessvec(const Vector& x,const Vector& dx,Vector& H_dx
+         ) const {
+                X::copy(dx,H_dx);
+         }
+
+        // Allow a derived class to deallocate memory
+        virtual ~ScalarValuedFunction() {}
+    };
+#endif
+
+
 // Define the Rosenbrock function where
 // 
 // f(x,y)=(1-x)^2+100(y-x^2)^2
@@ -115,12 +146,6 @@ struct Rosen : public peopt::ScalarValuedFunction <double,MyHS> {
     	H_dx[0]= (1200*sq(x[0])-400*x[1]+2)*dx[0]-400*x[0]*dx[1];
         H_dx[1]= -400*x[0]*dx[0] + 200*dx[1];
     }
-
-    Rosen(
-        const peopt::Messaging& msg,
-        const peopt::State::Unconstrained <double,MyHS>& state
-    ) : peopt::ScalarValuedFunction <double,MyHS> (msg,state) {}
-
 };
 
 // Define some utility function where
@@ -214,14 +239,84 @@ int main(){
     dy[0]=.3; dy[1]=-.12; dy[2]=1.2;
 
     // Create an optimization state
-    peopt::State::Unconstrained <double,MyHS> ustate(x);
-    peopt::State::EqualityConstrained <double,MyHS,MyHS> estate(x,x);
-    peopt::State::InequalityConstrained <double,MyHS,MyHS> istate(x,x);
-    peopt::State::Constrained <double,MyHS,MyHS,MyHS> cstate(x,x,x);
+    peopt::Unconstrained <double,MyHS>::State::t ustate(x);
+    peopt::EqualityConstrained <double,MyHS,MyHS>::State::t estate(x,x);
+    peopt::InequalityConstrained <double,MyHS,MyHS>::State::t  istate(x,x);
+    peopt::Constrained <double,MyHS,MyHS,MyHS>::State::t cstate(x,x,x);
 
+    // Do a capture and release of the state
+    peopt::Constrained <double,MyHS,MyHS,MyHS>::X_Vectors xs;
+    peopt::Constrained <double,MyHS,MyHS,MyHS>::Y_Vectors ys;
+    peopt::Constrained <double,MyHS,MyHS,MyHS>::Z_Vectors zs;
+    peopt::Constrained <double,MyHS,MyHS,MyHS>::Reals reals;
+    peopt::Constrained <double,MyHS,MyHS,MyHS>::Nats nats;
+    peopt::Constrained <double,MyHS,MyHS,MyHS>::Params params;
+
+    peopt::Unconstrained <double,MyHS>::Restart
+        ::release(ustate,xs,reals,nats,params);
+    peopt::Unconstrained <double,MyHS>::Restart
+        ::capture(peopt::Messaging(),ustate,xs,reals,nats,params);
+   
+    xs.first.clear(); ys.first.clear(); zs.first.clear();
+    reals.first.clear(); nats.first.clear(); params.first.clear();
+    xs.second.clear(); ys.second.clear(); zs.second.clear();
+    reals.second.clear(); nats.second.clear(); params.second.clear();
+    peopt::EqualityConstrained <double,MyHS,MyHS>::Restart
+        ::release(estate,xs,ys,reals,nats,params);
+    peopt::EqualityConstrained <double,MyHS,MyHS>::Restart
+        ::capture(peopt::Messaging(),estate,xs,ys,reals,nats,params);
+    
+    xs.first.clear(); ys.first.clear(); zs.first.clear();
+    reals.first.clear(); nats.first.clear(); params.first.clear();
+    xs.second.clear(); ys.second.clear(); zs.second.clear();
+    reals.second.clear(); nats.second.clear(); params.second.clear();
+    peopt::InequalityConstrained <double,MyHS,MyHS>::Restart
+        ::release(istate,xs,zs,reals,nats,params);
+    peopt::InequalityConstrained <double,MyHS,MyHS>::Restart
+        ::capture(peopt::Messaging(),istate,xs,zs,reals,nats,params);
+    
+    xs.first.clear(); ys.first.clear(); zs.first.clear();
+    reals.first.clear(); nats.first.clear(); params.first.clear();
+    xs.second.clear(); ys.second.clear(); zs.second.clear();
+    reals.second.clear(); nats.second.clear(); params.second.clear();
+    peopt::Constrained <double,MyHS,MyHS,MyHS>::Restart
+        ::release(cstate,xs,ys,zs,reals,nats,params);
+    peopt::Constrained <double,MyHS,MyHS,MyHS>::Restart
+        ::capture(peopt::Messaging(),cstate,xs,ys,zs,reals,nats,params);
+
+    // Create a bundle of functions
+    peopt::Unconstrained <double,MyHS>::Functions::t ufns;
+    ufns.f.reset(new Rosen);
+    #if 0
+    ustate.H_type=peopt::Operators::SR1;
+    peopt::Unconstrained <double,MyHS>::Functions
+        ::init(peopt::Messaging(),ustate,ufns);
+    #endif
+    
+    peopt::EqualityConstrained <double,MyHS,MyHS>::Functions::t efns;
+    efns.f.reset(new Rosen);
+    efns.g.reset(new Utility);
+    estate.H_type=peopt::Operators::SR1;
+    peopt::EqualityConstrained <double,MyHS,MyHS>::Functions
+        ::init(peopt::Messaging(),estate,efns);
+    
+    peopt::InequalityConstrained <double,MyHS,MyHS>::Functions::t ifns;
+    ifns.f.reset(new Rosen);
+    ifns.h.reset(new Utility);
+    istate.H_type=peopt::Operators::SR1;
+    peopt::InequalityConstrained <double,MyHS,MyHS>::Functions
+        ::init(peopt::Messaging(),istate,ifns);
+    
+    peopt::Constrained <double,MyHS,MyHS,MyHS>::Functions::t cfns;
+    cfns.f.reset(new Rosen);
+    cfns.g.reset(new Utility);
+    cfns.h.reset(new Utility);
+    cstate.H_type=peopt::Operators::SR1;
+    peopt::InequalityConstrained <double,MyHS,MyHS>::Functions
+        ::init(peopt::Messaging(),cstate,cfns);
+    
     // Construct the Rosenbrock fucntion
-    cstate.H_type=peopt::Operators::External;
-    Rosen f(peopt::Messaging(),cstate);
+    Rosen f;
 
     // Do some finite difference tests on the Rosenbrock function
     peopt::Diagnostics::gradientCheck <> (peopt::Messaging(),f,x,dx);
@@ -236,48 +331,8 @@ int main(){
     peopt::Diagnostics::derivativeAdjointCheck <>(peopt::Messaging(),g,x,dx,dy);
     peopt::Diagnostics::secondDerivativeCheck <> (peopt::Messaging(),g,x,dx,dy);
 
-    // Do a capture and release of the state
-    peopt::State::Constrained <double,MyHS,MyHS,MyHS>::X_Vectors xs;
-    peopt::State::Constrained <double,MyHS,MyHS,MyHS>::Y_Vectors ys;
-    peopt::State::Constrained <double,MyHS,MyHS,MyHS>::Z_Vectors zs;
-    peopt::State::Constrained <double,MyHS,MyHS,MyHS>::Reals reals;
-    peopt::State::Constrained <double,MyHS,MyHS,MyHS>::Nats nats;
-    peopt::State::Constrained <double,MyHS,MyHS,MyHS>::Params params;
-
-    cstate.release(xs,ys,zs,reals,nats,params);
-    cstate.capture(peopt::Messaging(),xs,ys,zs,reals,nats,params);
-
-    // Create some quasi-Newton operators
-    peopt::Operators::Unconstrained <double,MyHS>::BFGS
-        bfgs(peopt::Messaging(),cstate);
-    peopt::Operators::Unconstrained <double,MyHS>::SR1
-        sr1(peopt::Messaging(),cstate);
-    peopt::Operators::Unconstrained <double,MyHS>::InvBFGS
-        inv_bfgs(peopt::Messaging(),cstate);
-    peopt::Operators::Unconstrained <double,MyHS>::InvSR1
-        inv_sr1(peopt::Messaging(),cstate);
-
-    // Create a package of functions
-    peopt::Functions::Unconstrained <double,MyHS> ufns;
-    ufns.f.reset(new Rosen(peopt::Messaging(),cstate));
-    ufns.finalize(peopt::Messaging(),cstate);
+    int junk=1;
     
-    peopt::Functions::EqualityConstrained <double,MyHS,MyHS> efns;
-    efns.f.reset(new Rosen(peopt::Messaging(),cstate));
-    efns.g.reset(new Utility());
-    efns.finalize(peopt::Messaging(),cstate);
-    
-    peopt::Functions::InequalityConstrained <double,MyHS,MyHS> ifns;
-    ifns.f.reset(new Rosen(peopt::Messaging(),cstate));
-    ifns.h.reset(new Utility());
-    ifns.finalize(peopt::Messaging(),cstate);
-    
-    peopt::Functions::Constrained <double,MyHS,MyHS,MyHS> cfns;
-    cfns.f.reset(new Rosen(peopt::Messaging(),cstate));
-    cfns.g.reset(new Utility());
-    cfns.h.reset(new Utility());
-    cfns.finalize(peopt::Messaging(),cstate);
-
     // Setup the optimization problem
     #if 1
     // Newton's method
@@ -304,8 +359,8 @@ int main(){
     #endif
 
     // Solve the optimization problem
-    peopt::Algorithms::Unconstrained <double,MyHS>
-        ::getMin(peopt::Messaging(2),ufns,ustate);
+    peopt::Unconstrained <double,MyHS>::Algorithms
+        ::getMin(peopt::Messaging(1),ufns,ustate);
 
     // Print out the final answer
     const std::vector <double>& opt_x=*(ustate.x.begin());
