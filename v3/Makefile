@@ -2,7 +2,7 @@
 OBJS = test01.o
 
 # Set the optimizations
-CFLAGS= -Wall -g #-O2
+CFLAGS= -Wall -g -pedantic #-O2
 
 all: $(OBJS)
 	g++ test01.o -o test01

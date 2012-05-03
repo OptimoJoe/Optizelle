@@ -15,22 +15,6 @@
 
 namespace peopt{
 
-    // A trick to determine if two types are the same
-    template <typename T1,typename T2>
-    struct is_same{
-    private:
-        static const bool same=false;
-    public:
-        static bool eval() {return same;}
-    };
-    template <typename T>
-    struct is_same <T,T>{
-    private:
-        static const bool same=true;
-    public:
-        static bool eval() {return same;}
-    };
-
     // Defines a Hilbert space 
     template <typename Vector_,typename Real_>
     struct HilbertSpace {
@@ -97,7 +81,7 @@ namespace peopt{
         ) const = 0;
     };
     
-    // A simple scalar valued function interface, f:X->R
+    // A simple scalar valued function interface, f : X -> R
     template <typename Real,template <typename> class XX>
     struct ScalarValuedFunction {
     private:

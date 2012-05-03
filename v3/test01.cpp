@@ -331,8 +331,6 @@ int main(){
     peopt::Diagnostics::derivativeAdjointCheck <>(peopt::Messaging(),g,x,dx,dy);
     peopt::Diagnostics::secondDerivativeCheck <> (peopt::Messaging(),g,x,dx,dy);
 
-    int junk=1;
-    
     // Setup the optimization problem
     #if 1
     // Newton's method
