@@ -2605,8 +2605,11 @@ namespace peopt{
             struct Merit : public peopt::ScalarValuedFunction <Real,XX> {
             private:
                 const peopt::ScalarValuedFunction <Real,XX>& f;
+                const Messaging& msg;
             public:
-                Merit(const peopt::ScalarValuedFunction <Real,XX>& f_):f(f_) { }
+                Merit(
+                    const peopt::ScalarValuedFunction <Real,XX>& f_,
+                    const Messaging& msg_) : f(f_),msg(msg_) { }
 
                 // <- f(x) 
                 Real operator () (const X_Vector& x) const {
@@ -2615,7 +2618,8 @@ namespace peopt{
 
                 // g = grad f(x) 
                 void grad(const X_Vector& x,X_Vector& g) const {
-                    f.grad(x,g);
+                    msg.error("The gradient of the merit function is "
+                        "undefined.");
                 }
 
                 // H_dx = hess f(x) dx 
@@ -2624,7 +2628,8 @@ namespace peopt{
                     const X_Vector& dx,
                     X_Vector& H_dx
                 ) const {
-                    f.hessvec(x,dx,H_dx);
+                    msg.error("The Hessian of the merit function is "
+                        "undefined.");
                 }
             };
 
@@ -2691,7 +2696,7 @@ namespace peopt{
                 fns.f.reset(new AdjustedScalarValuedFunction(msg,state,fns.f));
 
                 // Create the merit function
-                fns.f_merit.reset(new Merit(*fns.f));
+                fns.f_merit.reset(new Merit(*fns.f,msg));
             }
 
             // Initialize any missing functions 
