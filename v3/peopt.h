@@ -3475,8 +3475,8 @@ namespace peopt{
                     // Continue doing a line-search until we get a reduction
                     // in the merit value.
                     do {
-                        // Conduct the golden section search
-                        goldenSection(fns,state);
+                        // Conduct the backtracking search
+                        backTracking(fns,state);
 
                         // If we have no reduction in the merit, print
                         // some diagnostic information.
