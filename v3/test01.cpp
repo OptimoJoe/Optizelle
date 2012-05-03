@@ -85,37 +85,6 @@ Real quint(Real x){
     return x*x*x*x*x; 
 }
 
-#if 0
-    // A simple scalar valued function interface, f:X->R
-    template <typename Real,template <typename> class XX>
-    struct ScalarValuedFunction {
-    private:
-        // Create some type shortcuts
-        typedef XX <Real> X;
-        typedef typename X::Vector Vector;
-
-        // This forces derived classes to call the constructor that depends
-        // on the state
-        ScalarValuedFunction() {}
-    public:
-         // <- f(x) 
-         virtual Real operator () (const Vector& x) const = 0;
-
-         // g = grad f(x) 
-         virtual void grad(const Vector& x,Vector& g) const = 0;
-
-         // H_dx = hess f(x) dx 
-         virtual void hessvec(const Vector& x,const Vector& dx,Vector& H_dx
-         ) const {
-                X::copy(dx,H_dx);
-         }
-
-        // Allow a derived class to deallocate memory
-        virtual ~ScalarValuedFunction() {}
-    };
-#endif
-
-
 // Define the Rosenbrock function where
 // 
 // f(x,y)=(1-x)^2+100(y-x^2)^2

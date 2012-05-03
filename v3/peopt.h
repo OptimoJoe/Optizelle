@@ -2604,25 +2604,75 @@ namespace peopt{
             // in place and use a reference.
             struct Merit : public peopt::ScalarValuedFunction <Real,XX> {
             private:
-                const peopt::ScalarValuedFunction <Real,XX>& f;
                 const Messaging& msg;
+                const peopt::ScalarValuedFunction <Real,XX>& f;
             public:
                 Merit(
-                    const peopt::ScalarValuedFunction <Real,XX>& f_,
-                    const Messaging& msg_) : f(f_),msg(msg_) { }
+                    const Messaging& msg_,
+                    const typename Functions::t& fns
+                ) : msg(msg_), f(*(fns.f)) {}
 
                 // <- f(x) 
                 Real operator () (const X_Vector& x) const {
                     return f(x); 
                 }
 
-                // g = grad f(x) 
+                // Throw an error 
                 void grad(const X_Vector& x,X_Vector& g) const {
                     msg.error("The gradient of the merit function is "
                         "undefined.");
                 }
 
-                // H_dx = hess f(x) dx 
+                // Throw an error 
+                void hessvec(
+                    const X_Vector& x,
+                    const X_Vector& dx,
+                    X_Vector& H_dx
+                ) const {
+                    msg.error("The Hessian of the merit function is "
+                        "undefined.");
+                }
+            };
+           
+            // A model for an unconstrained optimization problem.  In our case,
+            // we use a quadratic model based on a Taylor series.  
+            struct Model: public peopt::ScalarValuedFunction <Real,XX> {
+            private:
+                const Messaging& msg;
+                const peopt::ScalarValuedFunction <Real,XX>& f;
+                const Real& merit_x;
+                const std::list <X_Vector>& gg;
+                const std::list <X_Vector>& xx;
+            public:
+                Model(
+                    const Messaging& msg_,
+                    const typename Functions::t& fns,
+                    const typename State::t& state
+                ) : msg(msg_), f(*(fns.f)), merit_x(state.merit_x), gg(state.g),
+                    xx(state.x)
+                { }
+
+                // <- m(s) 
+                Real operator () (const X_Vector& s) const {
+                    // Get the current iterate and the gradient
+                    const X_Vector& g=*(gg.begin());
+                    const X_Vector& x=*(xx.begin());
+
+                    // Determine H(x)s
+                    X_Vector Hx_s; X::init(x,Hx_s);
+                    f.hessvec(x,s,Hx_s);
+
+                    // Calculate the model
+                    return merit_x+X::innr(g,s)+Real(.5)*X::innr(Hx_s,s);
+                }
+
+                // Throw an error 
+                void grad(const X_Vector& x,X_Vector& g) const {
+                    msg.error("The gradient of the merit function is "
+                        "undefined.");
+                }
+
+                // Throw an error 
                 void hessvec(
                     const X_Vector& x,
                     const X_Vector& dx,
@@ -2646,7 +2696,7 @@ namespace peopt{
                 std::auto_ptr <ScalarValuedFunction <Real,XX> > f_merit;
 
                 // Merit function used for the model of the problem
-                std::auto_ptr <ScalarValuedFunction <Real,XX> > m_merit;
+                std::auto_ptr <ScalarValuedFunction <Real,XX> > model;
             };
 
             // Check that all the functions are defined
@@ -2696,7 +2746,10 @@ namespace peopt{
                 fns.f.reset(new AdjustedScalarValuedFunction(msg,state,fns.f));
 
                 // Create the merit function
-                fns.f_merit.reset(new Merit(*fns.f,msg));
+                fns.f_merit.reset(new Merit(msg,fns));
+
+                // Create the model
+                fns.model.reset(new Model(msg,fns,state));
             }
 
             // Initialize any missing functions 
@@ -2942,7 +2995,6 @@ namespace peopt{
                 // Create shortcuts to some elements in the state
                 const X_Vector& s=*(state.s.begin());
                 const X_Vector& x=*(state.x.begin());
-                const X_Vector& g=*(state.g.begin());
                 const Real& eta1=state.eta1;
                 const Real& eta2=state.eta2;
                 const Real& delta_max=state.delta_max;
@@ -2953,12 +3005,11 @@ namespace peopt{
                 Real& merit_xps=state.merit_xps;
                 
                 // Create shortcuts to the functions that we need
-                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
                 const ScalarValuedFunction <Real,XX>& f_merit=*(fns.f_merit);
+                const ScalarValuedFunction <Real,XX>& model=*(fns.model);
 
                 // Allocate memory for temporaries that we need
                 X_Vector xps; X::init(x,xps);
-                X_Vector Hx_s; X::init(x,Hx_s);
 
                 // Determine x+s 
                 X::copy(s,xps);
@@ -2967,11 +3018,8 @@ namespace peopt{
                 // Determine the merit function evaluated at x+s
                 merit_xps=f_merit(xps);
                 
-                // Determine H(x)s
-                f.hessvec(x,s,Hx_s);
-
-                // Determine alpha+<g,s>+.5*<H(u)s,s>
-                Real model_s=merit_x+X::innr(g,s)+Real(.5)*X::innr(Hx_s,s);
+                // Determine the model function at s, m(s)
+                Real model_s=model(s);
 
                 // Add a safety check in case we don't actually minimize the TR
                 // subproblem correctly. This could happen for a variety of
