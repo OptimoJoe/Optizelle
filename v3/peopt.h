@@ -97,10 +97,8 @@ namespace peopt{
         virtual void grad(const Vector& x,Vector& g) const = 0;
 
         // H_dx = hess f(x) dx 
-        virtual void hessvec(const Vector& x,const Vector& dx,Vector& H_dx 
-        ) const {
-            X::copy(dx,H_dx); 
-        }
+        virtual void hessvec(const Vector& x,const Vector& dx,Vector& H_dx)
+            const = 0;
 
         // Allow a derived class to deallocate memory
         virtual ~ScalarValuedFunction() {}
@@ -562,8 +560,8 @@ namespace peopt{
         enum t{
             // Occurs after we take the optimization step u+s, but before
             // we calculate the gradient based on this new step.  In addition,
-            // after this point we set the objective value, obj_u, to be
-            // obj_ups.
+            // after this point we set the merit value, merit_x, to be
+            // merit_xps.
             AfterStepBeforeGradient,
 
             // This occurs last in the optimization loop.  At this point,
@@ -1210,7 +1208,7 @@ namespace peopt{
     };
 
        
-    // Functions that manipulate and support problems of the form
+    // Routines that manipulate and support problems of the form
     // 
     // min_{x \in X} f(x)
     //
@@ -1230,7 +1228,7 @@ namespace peopt{
         typedef std::pair < std::list <std::string>,
                             std::list <X_Vector> > X_Vectors;
 
-        // Functions that manipulate the internal state of the optimization 
+        // Routines that manipulate the internal state of the optimization 
         // algorithm.
         struct State {
 
@@ -1323,11 +1321,11 @@ namespace peopt{
                 std::list <X_Vector> oldY;
                 std::list <X_Vector> oldS;
 
-                // Current objective value
-                Real obj_x;
+                // Current value of the merit function 
+                Real merit_x;
 
-                // Objective value at the trial step
-                Real obj_xps;
+                // Merit function at the trial step
+                Real merit_xps;
                 
                 // ------------- TRUST-REGION ------------- 
 
@@ -1424,8 +1422,8 @@ namespace peopt{
                     norm_gtyp=Real(std::numeric_limits<double>::quiet_NaN());
                     norm_s=Real(std::numeric_limits<double>::quiet_NaN());
                     norm_styp=Real(std::numeric_limits<double>::quiet_NaN());
-                    obj_x=Real(std::numeric_limits<double>::quiet_NaN());
-                    obj_xps=Real(std::numeric_limits<double>::quiet_NaN());
+                    merit_x=Real(std::numeric_limits<double>::quiet_NaN());
+                    merit_xps=Real(std::numeric_limits<double>::quiet_NaN());
                     delta=Real(100.);
                     delta_max=Real(100.);
                     eta1=Real(.1);
@@ -1524,16 +1522,17 @@ namespace peopt{
                     ss << "The norm of a typical trial step must be "
                         "nonnegative: norm_styp = " << state.norm_styp; 
 
-                // Check that the objective value isn't a NaN past iteration 1
-                if(state.iter!=1 && state.obj_x!=state.obj_x)
-                    ss << "The objective value must be a number: obj_x = "
-                        << state.obj_x;
-
-                // Check that the objective at a trial step isn't a NaN past
+                // Check that the merit functions's value isn't a NaN past
                 // iteration 1
-                if(state.iter!=1 && state.obj_xps!=state.obj_xps) 
+                if(state.iter!=1 && state.merit_x!=state.merit_x)
+                    ss<< "The merit function value must be a number: merit_x = "
+                        << state.merit_x;
+
+                // Check that the merit function's value at a trial step isn't
+                // a NaN past iteration 1
+                if(state.iter!=1 && state.merit_xps!=state.merit_xps) 
                     ss << "The objective value at the trial step must be a "
-                        "number: obj_xps = " << state.obj_xps;
+                        "number: merit_xps = " << state.merit_xps;
 
                 // Check that the trust-region radius is positive
                 if(state.delta<=Real(0.))
@@ -1608,8 +1607,8 @@ namespace peopt{
                         name == "norm_gtyp" || 
                         name == "norm_s" ||
                         name == "norm_styp" || 
-                        name == "obj_x" || 
-                        name == "obj_xps" ||
+                        name == "merit_x" || 
+                        name == "merit_xps" ||
                         name == "delta" || 
                         name == "delta_max" || 
                         name == "eta1" || 
@@ -1821,10 +1820,10 @@ namespace peopt{
                 reals.second.push_back(state.norm_s);
                 reals.first.push_back("norm_styp");
                 reals.second.push_back(state.norm_styp);
-                reals.first.push_back("obj_x");
-                reals.second.push_back(state.obj_x);
-                reals.first.push_back("obj_xps");
-                reals.second.push_back(state.obj_xps);
+                reals.first.push_back("merit_x");
+                reals.second.push_back(state.merit_x);
+                reals.first.push_back("merit_xps");
+                reals.second.push_back(state.merit_xps);
                 reals.first.push_back("delta");
                 reals.second.push_back(state.delta);
                 reals.first.push_back("delta_max");
@@ -1948,8 +1947,8 @@ namespace peopt{
                     else if(*name=="norm_gtyp") state.norm_gtyp=*real;
                     else if(*name=="norm_s") state.norm_g=*real;
                     else if(*name=="norm_styp") state.norm_gtyp=*real;
-                    else if(*name=="obj_x") state.obj_x=*real;
-                    else if(*name=="obj_xps") state.obj_xps=*real;
+                    else if(*name=="merit_x") state.merit_x=*real;
+                    else if(*name=="merit_xps") state.merit_xps=*real;
                     else if(*name=="delta") state.delta=*real;
                     else if(*name=="delta_max") state.delta_max=*real;
                     else if(*name=="eta1") state.eta1=*real;
@@ -2598,6 +2597,38 @@ namespace peopt{
                 }
             };
 
+            // A simple merit function for unconstrained optimization problems.
+            // Note, this function does *not* own the memory for the objective.
+            // We need to also use the objective in the model, so rather than
+            // copying all the memory, we keep the memory for the objective
+            // in place and use a reference.
+            struct Merit : public peopt::ScalarValuedFunction <Real,XX> {
+            private:
+                const peopt::ScalarValuedFunction <Real,XX>& f;
+            public:
+                Merit(const peopt::ScalarValuedFunction <Real,XX>& f_):f(f_) { }
+
+                // <- f(x) 
+                Real operator () (const X_Vector& x) const {
+                    return f(x); 
+                }
+
+                // g = grad f(x) 
+                void grad(const X_Vector& x,X_Vector& g) const {
+                    f.grad(x,g);
+                }
+
+                // H_dx = hess f(x) dx 
+                void hessvec(
+                    const X_Vector& x,
+                    const X_Vector& dx,
+                    X_Vector& H_dx
+                ) const {
+                    f.hessvec(x,dx,H_dx);
+                }
+            };
+
+
             // Actual storage of the functions required
             struct t{
                 // Objective function
@@ -2605,6 +2636,12 @@ namespace peopt{
 
                 // Preconditioner for the Hessian of the objective
                 std::auto_ptr <Operator <Real,XX,XX> > Minv;
+
+                // Merit function used in globalization
+                std::auto_ptr <ScalarValuedFunction <Real,XX> > f_merit;
+
+                // Merit function used for the model of the problem
+                std::auto_ptr <ScalarValuedFunction <Real,XX> > m_merit;
             };
 
             // Check that all the functions are defined
@@ -2652,6 +2689,9 @@ namespace peopt{
 
                 // Modify the objective function if necessary
                 fns.f.reset(new AdjustedScalarValuedFunction(msg,state,fns.f));
+
+                // Create the merit function
+                fns.f_merit.reset(new Merit(*fns.f));
             }
 
             // Initialize any missing functions 
@@ -2901,14 +2941,15 @@ namespace peopt{
                 const Real& eta1=state.eta1;
                 const Real& eta2=state.eta2;
                 const Real& delta_max=state.delta_max;
-                const Real& obj_x=state.obj_x;
+                const Real& merit_x=state.merit_x;
                 const Real& norm_s=state.norm_s;
                 Real& delta=state.delta;
                 Real& rho=state.rho;
-                Real& obj_xps=state.obj_xps;
+                Real& merit_xps=state.merit_xps;
                 
                 // Create shortcuts to the functions that we need
                 const ScalarValuedFunction <Real,XX>& f=*(fns.f);
+                const ScalarValuedFunction <Real,XX>& f_merit=*(fns.f_merit);
 
                 // Allocate memory for temporaries that we need
                 X_Vector xps; X::init(x,xps);
@@ -2918,14 +2959,14 @@ namespace peopt{
                 X::copy(s,xps);
                 X::axpy(Real(1.),x,xps);
 
-                // Determine the objective function evaluated at u+s
-                obj_xps=f(xps);
+                // Determine the merit function evaluated at x+s
+                merit_xps=f_merit(xps);
                 
                 // Determine H(x)s
                 f.hessvec(x,s,Hx_s);
 
                 // Determine alpha+<g,s>+.5*<H(u)s,s>
-                Real model_s=obj_x+X::innr(g,s)+Real(.5)*X::innr(Hx_s,s);
+                Real model_s=merit_x+X::innr(g,s)+Real(.5)*X::innr(Hx_s,s);
 
                 // Add a safety check in case we don't actually minimize the TR
                 // subproblem correctly. This could happen for a variety of
@@ -2935,14 +2976,14 @@ namespace peopt{
                 // has an undefined result.  In the case that the actual 
                 // reduction also increases, rho could have an extraneous 
                 // positive value.  Hence, we require an extra check.
-                if(model_s > obj_x){
+                if(model_s > merit_x){
                     delta = norm_s/Real(2.);
                     rho = Real(std::numeric_limits<double>::quiet_NaN()); 
                     return false;
                 }
 
                 // Determine the ratio of reductions
-                rho = (obj_x - obj_xps) / (obj_x - model_s);
+                rho = (merit_x - merit_xps) / (merit_x - model_s);
 
                 // Update the trust region radius and return whether or not we
                 // accept the step
@@ -3128,10 +3169,10 @@ namespace peopt{
                 X_Vector& s=*(state.s.begin());
                 unsigned int& iter_total=state.linesearch_iter_total;
                 unsigned int& iter=state.linesearch_iter;
-                Real& obj_xps=state.obj_xps;
+                Real& merit_xps=state.merit_xps;
                 
                 // Create shortcuts to the functions that we need
-                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
+                const ScalarValuedFunction <Real,XX>& f_merit=*(fns.f_merit);
 
                 // Create one work element that holds x+mu s or x+lambda s
                 X_Vector x_p_s; X::init(x,x_p_s);
@@ -3148,48 +3189,48 @@ namespace peopt{
                 double lambda=a+(1.-beta)*(b-a);
                 double mu=a+beta*(b-a);
 
-                // Find the objective value at mu and labmda 
+                // Find the merit value at mu and labmda 
 
                 // mu 
                 X::copy(x,x_p_s);
                 X::axpy(mu,s,x_p_s);
-                Real obj_mu=f(x_p_s);
+                Real merit_mu=f_merit(x_p_s);
 
                 // lambda
                 X::copy(x,x_p_s);
                 X::axpy(lambda,s,x_p_s);
-                Real obj_lambda=f(x_p_s);
+                Real merit_lambda=f_merit(x_p_s);
 
                 // Search for a fixed number of iterations 
                 for(iter=0;iter<iter_max;iter++){
 
-                    // If the objective is greater on the left, bracket on the
+                    // If the merit is greater on the left, bracket on the
                     // right.  Alternatively, it's possible that we're going to
-                    // generate a NaN on the right.  This means that obj_mu=NaN.
-                    // In this case we want to bracket on the left.  Since
-                    // obj_lambda > obj_mu will return false when obj_mu is a
-                    // NaN, we should be safe.
-                    if(obj_lambda > obj_mu){
+                    // generate a NaN on the right.  This means that
+                    // merit_mu=NaN.  In this case we want to bracket on the
+                    // left.  Since merit_lambda > merit_mu will return false 
+                    // when merit_mu is a NaN, we should be safe.
+                    if(merit_lambda > merit_mu){
                         a=lambda;
                         lambda=mu;
-                        obj_lambda=obj_mu;
+                        merit_lambda=merit_mu;
                         mu=a+beta*(b-a);
 
                         X::copy(x,x_p_s);
                         X::axpy(mu,s,x_p_s);
-                        obj_mu=f(x_p_s);
+                        merit_mu=f_merit(x_p_s);
 
                     // Otherwise, the objective is greater on the right, so
                     // bracket on the left
                     } else {
                         b=mu;
                         mu=lambda;
-                        obj_mu=obj_lambda;
+                        merit_mu=merit_lambda;
                         lambda=a+(1-beta)*(b-a);
                 
                         X::copy(x,x_p_s);
                         X::axpy(lambda,s,x_p_s);
-                        obj_lambda=f(x_p_s);
+                        merit_lambda=f_merit(x_p_s);
                     }
                 }
 
@@ -3198,10 +3239,10 @@ namespace peopt{
 
                 // Once we're finished narrowing in on a solution, take our best
                 // guess for the line search parameter
-                alpha=obj_lambda < obj_mu ? lambda : mu;
+                alpha=merit_lambda < merit_mu ? lambda : mu;
 
                 // Save the objective value at this step
-                obj_xps=obj_lambda < obj_mu ? obj_lambda : obj_mu;
+                merit_xps=merit_lambda < merit_mu ? merit_lambda : merit_mu;
             }
 
             // Find the line search parameter based on the 2-point approximation
@@ -3220,10 +3261,10 @@ namespace peopt{
                 X_Vector& s=*(state.s.begin());
                 unsigned int& iter_total=state.linesearch_iter_total;
                 unsigned int& iter=state.linesearch_iter;
-                Real& obj_xps=state.obj_xps;
+                Real& merit_xps=state.merit_xps;
                 
                 // Create shortcuts to the functions that we need
-                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
+                const ScalarValuedFunction <Real,XX>& f_merit=*(fns.f_merit);
 
                 // Create elements for delta_x and delta_g as well as one work
                 // element for storing x+alpha s
@@ -3245,10 +3286,10 @@ namespace peopt{
                 else if(kind==LineSearchKind::TwoPointB)
                     alpha=X::innr(delta_x,delta_x)/X::innr(delta_x,delta_g);
 
-                // Save the objective value at this step
+                // Save the merit value at this step
                 X::copy(x,x_p_s);
                 X::axpy(alpha,s,x_p_s);
-                obj_xps=f(x_p_s);
+                merit_xps=f_merit(x_p_s);
 
                 // Since we do one function evaluation, increase the linesearch
                 // iteration by one
@@ -3267,36 +3308,35 @@ namespace peopt{
                 X_Vector& s=*(state.s.begin());
                 unsigned int& iter_total=state.linesearch_iter_total;
                 unsigned int& iter=state.linesearch_iter;
-                Real& obj_xps=state.obj_xps;
+                Real& merit_xps=state.merit_xps;
                 
                 // Create shortcuts to the functions that we need
-                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
+                const ScalarValuedFunction <Real,XX>& f_merit=*(fns.f_merit);
 
                 // Create one work element for holding x+alpha s
                 X_Vector x_p_s; X::init(x,x_p_s);
 
-                // Store the best objective value and alpha that we used to
-                // find it.
+                // Store the best merit value and alpha that we used to find it.
                 // Our initial guess will be at alpha*2.
                 Real alpha_best=Real(2.)*alpha;
                 X::copy(x,x_p_s);
                 X::axpy(alpha_best,s,x_p_s);
-                Real obj_best=f(x_p_s);
+                Real merit_best=f_merit(x_p_s);
 
-                // Evaluate the objective iter_max times at a distance of
+                // Evaluate the merit iter_max times at a distance of
                 // 2*alpha, alpha, alpha/2, ....  Then, pick the best one.
                 // Note, we start iter at 1 since we've already done one
                 // iteration above.
                 Real alpha0=alpha;
                 for(iter=1;iter<iter_max;iter++){
-                    // Evaluate f(x+alpha*s)
+                    // Evaluate f_merit(x+alpha*s)
                     X::copy(x,x_p_s);
                     X::axpy(alpha0,s,x_p_s);
-                    Real obj=f(x_p_s);
+                    Real merit=f_merit(x_p_s);
 
                     // If this is better than our best guess so far, save it
-                    if(obj<obj_best){
-                        obj_best=obj;
+                    if(merit<merit_best){
+                        merit_best=merit;
                         alpha_best=alpha0;
                     }
 
@@ -3304,9 +3344,9 @@ namespace peopt{
                     alpha0 /= Real(2.);
                 }
 
-                // Save the best objective and alpha found
+                // Save the best merit value and alpha found
                 alpha=alpha_best;
-                obj_xps=obj_best;
+                merit_xps=merit_best;
 
                 // Indicate how many iterations we used to find this value
                 iter_total+=iter;
@@ -3323,8 +3363,8 @@ namespace peopt{
                 const LineSearchKind::t& kind=state.kind;
                 const int& iter=state.iter;
                 const int& linesearch_iter_max=state.linesearch_iter_max;
-                const Real& obj_x=state.obj_x;
-                Real& obj_xps=state.obj_xps;
+                const Real& merit_x=state.merit_x;
+                Real& merit_xps=state.merit_xps;
                 X_Vector& s=*(state.s.begin());
                 Real& norm_s=state.norm_s;
                 Real& alpha=state.alpha;
@@ -3355,14 +3395,14 @@ namespace peopt{
                 switch(kind){
                 case LineSearchKind::GoldenSection:
                     // Continue doing a line-search until we get a reduction
-                    // in the objective value.
+                    // in the merit value.
                     do {
                         // Conduct the golden section search
                         goldenSection(fns,state);
 
-                        // If we have no reduction in the objective, print
+                        // If we have no reduction in the merit, print
                         // some diagnostic information.
-                        if(obj_xps > obj_x) {
+                        if(merit_xps > merit_x) {
                             norm_s=alpha*X::norm(s);
                             printState(msg,state,true);
 
@@ -3375,19 +3415,19 @@ namespace peopt{
                             alpha /= Real(4.);
                         }
 
-                    // If we don't decrease the objective, try again 
-                    } while(obj_x < obj_xps || obj_xps!=obj_xps);
+                    // If we don't decrease the merit , try again 
+                    } while(merit_x < merit_xps || merit_xps!=merit_xps);
                     break;
                 case LineSearchKind::BackTracking:
                     // Continue doing a line-search until we get a reduction
-                    // in the objective value.
+                    // in the merit value.
                     do {
                         // Conduct the golden section search
                         goldenSection(fns,state);
 
-                        // If we have no reduction in the objective, print
+                        // If we have no reduction in the merit, print
                         // some diagnostic information.
-                        if(obj_xps > obj_x) {
+                        if(merit_xps > merit_x) {
                             norm_s=alpha*X::norm(s);
                             printState(msg,state,true);
 
@@ -3398,8 +3438,8 @@ namespace peopt{
                             alpha = alpha/pow(Real(2.),linesearch_iter_max+1);
                         }
 
-                    // If we don't decrease the objective, try again 
-                    } while(obj_x < obj_xps || obj_xps!=obj_xps);
+                    // If we don't decrease the merit, try again 
+                    } while(merit_x < merit_xps || merit_xps!=merit_xps);
                     break;
                 case LineSearchKind::TwoPointA:
                 case LineSearchKind::TwoPointB:
@@ -3500,8 +3540,8 @@ namespace peopt{
                 X_Vector& x_old=*(state.x_old.begin());
                 X_Vector& g_old=*(state.g_old.begin());
                 X_Vector& s_old=*(state.s_old.begin());
-                Real& obj_x=state.obj_x;
-                Real& obj_xps=state.obj_xps;
+                Real& merit_x=state.merit_x;
+                Real& merit_xps=state.merit_xps;
                 Real& norm_s=state.norm_s;
                 Real& norm_g=state.norm_g;
                 Real& norm_gtyp=state.norm_gtyp;
@@ -3516,11 +3556,12 @@ namespace peopt{
                 
                 // Create shortcuts to the functions that we need
                 const ScalarValuedFunction <Real,XX>& f=*(fns.f);
+                const ScalarValuedFunction <Real,XX>& f_merit=*(fns.f_merit);
 
-                // Evaluate the objective function and gradient if we've not
+                // Evaluate the merit function and gradient if we've not
                 // done so already
-                if(obj_x != obj_x) {
-                    obj_x=f(x);
+                if(merit_x != merit_x) {
+                    merit_x=f_merit(x);
                     f.grad(x,g);
                     norm_g=sqrt(X::innr(g,g));
                     norm_gtyp=norm_g;
@@ -3556,8 +3597,8 @@ namespace peopt{
                     // Manipulate the state if required
                     smanip(state);
 
-                    // Find the new objective function and gradient
-                    obj_x=obj_xps;
+                    // Find the new merit value and gradient
+                    merit_x=merit_xps;
                     f.grad(x,g);
                     norm_g=sqrt(X::innr(g,g));
 
@@ -3599,7 +3640,7 @@ namespace peopt{
             ) {
                 // Create some shortcuts
                 const int& iter=state.iter;
-                const Real& obj_x=state.obj_x;
+                const Real& merit_x=state.merit_x;
                 const Real& norm_g=state.norm_g;
                 const Real& norm_s=state.norm_s;
                 const Real& krylov_rel_err=state.krylov_rel_err;
@@ -3614,7 +3655,7 @@ namespace peopt{
                 if(!noiter) ss << std::setw(4) << iter << ' ';
                 else ss << std::setw(4) << '*' << ' ';
                 ss << std::scientific << std::setprecision(3)
-                    << std::setw(11) << obj_x << ' '
+                    << std::setw(11) << merit_x << ' '
                     << std::setw(11) << norm_g << ' ';
                 if(iter==0) ss << "            ";
                 else ss << std::setw(11) << norm_s << ' ';
@@ -3684,7 +3725,7 @@ namespace peopt{
                 // Basic Header
                 std::stringstream ss;
                 ss << "Iter" << ' '
-                        << std::setw(11) << "Obj Value" << ' '
+                        << std::setw(11) << "Merit Val" << ' '
                         << std::setw(11) << "  norm(g)" << ' '
                         << std::setw(11) << "  norm(s)" << ' ';
 
@@ -3725,7 +3766,7 @@ namespace peopt{
     };
 
         
-    // Functions that manipulate and support problems of the form
+    // Routines that manipulate and support problems of the form
     // 
     // min_{x \in X} f(x) st g(x) = 0
     //
@@ -3753,7 +3794,7 @@ namespace peopt{
         typedef std::pair < std::list <std::string>,
                             std::list <Y_Vector> > Y_Vectors;
 
-        // Functions that manipulate the internal state of the optimization 
+        // Routines that manipulate the internal state of the optimization 
         // algorithm.
         struct State {
 
@@ -4062,7 +4103,7 @@ namespace peopt{
         };
     };
         
-    // Functions that manipulate and support problems of the form
+    // Routines that manipulate and support problems of the form
     // 
     // min_{x \in X} f(x) st h(x) >=_K 0
     //
@@ -4429,7 +4470,7 @@ namespace peopt{
         };
     };
         
-    // Functions that manipulate and support problems of the form
+    // Routines that manipulate and support problems of the form
     // problem of the form
     // 
     // min_{x \in X} f(x) st g(x) = 0, h(x) >=_K 0
@@ -4464,7 +4505,7 @@ namespace peopt{
         typedef std::pair < std::list <std::string>,
                             std::list <Z_Vector> > Z_Vectors;
 
-        // Functions that manipulate the internal state of the optimization 
+        // Routines that manipulate the internal state of the optimization 
         // algorithm.
         struct State {
 
