@@ -49,15 +49,55 @@ struct MyHS {
     // innr <- <x,y>
     static Real innr(const Vector& x,const Vector& y) {
         Real z=0;
-        for(unsigned int i=0;i<x.size();i++){
+        for(unsigned int i=0;i<x.size();i++)
             z+=x[i]*y[i];
-        }
         return z;
     }
 
     // norm <- ||x||
     static Real norm(const Vector& x) {
         return sqrt(innr(x,x));
+    }
+
+    // Jordan product, z <- x o y
+    static void prod(const Vector& x, const Vector& y, Vector& z) {
+        for(unsigned int i=0;i<x.size();i++) 
+            z[i]=x[i]*y[i];
+    }
+
+    // Identity element, x <- e such that x o e = x
+    static void id(Vector& x) {
+        for(unsigned int i=0;i<x.size();i++) 
+            x[i]=1.;
+    }
+    
+    // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y
+    static void linv(const Vector& x,const Vector& y,Vector& z) {
+        for(unsigned int i=0;i<x.size();i++) 
+            z[i]=(1/x[i])*y[i];
+    }
+
+    // Barrier function, barr <- barr(x) where x o grad barr(x) = e
+    static Real barr(const Vector& x) {
+        Real z=0;
+        for(unsigned int i=0;i<x.size();i++)
+            z+=std::log(x[i]);
+        return z;
+    }
+
+    // Line search, srch <- argmax {alpha \in Real >= 0 : alpha x + y >= 0}
+    // where y > 0.  If the argmax is infinity, then return Real(-1.).
+    static Real srch(const Vector& x,const Vector& y) {
+        Real alpha=Real(-1.);
+        for(unsigned int i=0;i<x.size();i++) {
+            if(x[i] < 0) {
+                Real alpha0;
+                alpha0 = -y[i]/x[i];
+                if(alpha==Real(-1.) || alpha0 < alpha)
+                    alpha=alpha0;
+            }
+        }
+        return alpha;
     }
 };
 
@@ -123,7 +163,7 @@ struct Rosen : public peopt::ScalarValuedFunction <double,MyHS> {
 //         [ 3 x^2 y + y^3]
 //         [ log(x) + 3y^5]
 //
-struct Utility  : public peopt::InequalityConstraint <double,MyHS,MyHS> {
+struct Utility  : public peopt::VectorValuedFunction <double,MyHS,MyHS> {
     typedef MyHS <double> X;
     typedef MyHS <double> Y;
 
@@ -179,14 +219,6 @@ struct Utility  : public peopt::InequalityConstraint <double,MyHS,MyHS> {
                +(6.*x[0]*dx[0]+6.*x[1]*dx[1])*dy[1]
                +(60.*cub(x[1])*dx[1])*dy[2];
     }
-
-    // linsearch
-    double srch(
-        const X::Vector& x,
-        const X::Vector& dx
-    ) const {
-        return 0.;
-    }
 };
 
 int main(){
@@ -239,6 +271,7 @@ int main(){
     reals.first.clear(); nats.first.clear(); params.first.clear();
     xs.second.clear(); ys.second.clear(); zs.second.clear();
     reals.second.clear(); nats.second.clear(); params.second.clear();
+    istate.mu_trg=.25;
     peopt::InequalityConstrained <double,MyHS,MyHS>::Restart
         ::release(istate,xs,zs,reals,nats,params);
     peopt::InequalityConstrained <double,MyHS,MyHS>::Restart
@@ -258,6 +291,7 @@ int main(){
     ufns.f.reset(new Rosen);
     #if 0
     ustate.H_type=peopt::Operators::SR1;
+    //ustate.H_type=peopt::Operators::External;
     peopt::Unconstrained <double,MyHS>::Functions
         ::init(peopt::Messaging(),ustate,ufns);
     #endif
@@ -272,9 +306,11 @@ int main(){
     peopt::InequalityConstrained <double,MyHS,MyHS>::Functions::t ifns;
     ifns.f.reset(new Rosen);
     ifns.h.reset(new Utility);
+    #if 0
     istate.H_type=peopt::Operators::SR1;
     peopt::InequalityConstrained <double,MyHS,MyHS>::Functions
         ::init(peopt::Messaging(),istate,ifns);
+    #endif
     
     peopt::Constrained <double,MyHS,MyHS,MyHS>::Functions::t cfns;
     cfns.f.reset(new Rosen);
@@ -333,4 +369,11 @@ int main(){
     const std::vector <double>& opt_x=*(ustate.x.begin());
     std::cout << "The optimal point is: (" << opt_x[0] << ','
 	<< opt_x[1] << ')' << std::endl;
+
+    // Steepest descent
+    istate.algorithm_class = peopt::AlgorithmClass::LineSearch;
+
+    // Solve a inequality constrained optimization problem
+    peopt::InequalityConstrained <double,MyHS,MyHS>::Algorithms
+        ::getMin(peopt::Messaging(1),ifns,istate);
 }

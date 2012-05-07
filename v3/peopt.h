@@ -146,36 +146,6 @@ namespace peopt{
          virtual ~VectorValuedFunction() {}
     };
 
-    // An inequality constraint.  Basically, this is a vector valued function,
-    // but it also adds a line-search component.
-    template <
-        typename Real,
-        template <typename> class XX,
-        template <typename> class YY 
-    >
-    struct InequalityConstraint : public VectorValuedFunction <Real,XX,YY> {
-        // Create some type shortcuts
-        typedef XX <Real> X;
-        typedef typename X::Vector X_Vector; 
-        typedef YY <Real> Y;
-        typedef typename Y::Vector Y_Vector; 
-
-        // Line-search, srch <- alpha where max(alpha >=0 : h(x+alpha dx) >=0).
-        // In the case where this number is infinite, set alpha=Real(-1.).
-        virtual Real srch(const X_Vector& x,const X_Vector& dx) const = 0;
-
-        // We only allow affine functions in inequality constraints.  Hence,
-        // the second derivative is zero.
-        void pps(
-             const X_Vector& x,
-             const X_Vector& dx,
-             const Y_Vector& dy,
-             X_Vector& z
-         ) const {
-                X::zero(z);
-         }
-    };
-
     // Defines how we output messages to the user
     struct Messaging {
         // Defines the current print level
@@ -567,16 +537,27 @@ namespace peopt{
             // This occurs last in the optimization loop.  At this point,
             // we have already incremented our optimization iteration and
             // checked our stopping condition
-            EndOfOptimizationIteration  
+            EndOfOptimizationIteration,
+
+            // This occurs prior to the computation of the line search
+            BeforeLineSearch,
+
+            // This occurs prior to checking the predicted versus actual
+            // reduction in a trust-region method.
+            BeforeActualVersusPredicted 
         };
             
-        // Converts the line-search kind to a string 
+        // Converts the optimization location to a string 
         std::string to_string(t loc){
             switch(loc){
             case AfterStepBeforeGradient:
                 return "AfterStepBeforeGradient";
             case EndOfOptimizationIteration:
                 return "EndOfOptimizationIteration";
+            case BeforeLineSearch:
+                return "BeforeLineSearch";
+            case BeforeActualVersusPredicted:
+                return "BeforeActualVersusPredicted";
             default:
                 throw;
             }
@@ -588,6 +569,10 @@ namespace peopt{
                 return AfterStepBeforeGradient; 
             else if(loc=="EndOfOptimizationIteration")
                 return EndOfOptimizationIteration; 
+            else if(loc=="BeforeLineSearch")
+                return BeforeLineSearch;
+            else if(loc=="BeforeActualVersusPredicted")
+                return BeforeActualVersusPredicted;
             else
                 throw;
         }
@@ -596,7 +581,9 @@ namespace peopt{
         struct is_valid : public std::unary_function<std::string, bool> {
             bool operator () (const std::string& name) const {
                 if( name=="AfterStepBeforeGradient" ||
-                    name=="EndOfOptimizationIteration"
+                    name=="EndOfOptimizationIteration" ||
+                    name=="BeforeLineSearch" ||
+                    name=="BeforeActualVersusPredicted"
                 )
                     return true;
                 else
@@ -966,7 +953,8 @@ namespace peopt{
                 X::axpy(Real(-1.),hess_f_dx,res);
 
                 // Determine the relative error
-                Real rel_err=X::norm(res)/(Real(1e-16)+X::norm(hess_f_dx));
+                Real rel_err=sqrt(X::innr(res,res)) /
+                    (Real(1e-16)+sqrt(X::innr(hess_f_dx,hess_f_dx)));
 
                 // Print out the differences
                 std::stringstream ss;
@@ -1062,7 +1050,8 @@ namespace peopt{
                 Y::axpy(Real(-1.),fp_x_dx,res);
 
                 // Determine the relative error
-                Real rel_err=Y::norm(res)/(Real(1e-16)+Y::norm(fp_x_dx));
+                Real rel_err=sqrt(Y::innr(res,res)) / 
+                    (Real(1e-16)+sqrt(Y::innr(fp_x_dx,fp_x_dx)));
 
                 // Print out the differences
                 std::stringstream ss;
@@ -1163,7 +1152,8 @@ namespace peopt{
                 X::axpy(Real(-1.),fpps_x_dx_dy,res);
 
                 // Determine the relative error
-                Real rel_err=X::norm(res)/(Real(1e-16)+X::norm(fpps_x_dx_dy));
+                Real rel_err=sqrt(X::innr(res,res))
+                    / (Real(1e-16)+sqrt(X::innr(fpps_x_dx_dy,fpps_x_dx_dy)));
 
                 // Print out the differences
                 std::stringstream ss;
@@ -1178,11 +1168,15 @@ namespace peopt{
 
     // A function that has free reign to manipulate or analyze the state.
     // This should be used cautiously.
-    template <typename State>
+    template <typename Functions,typename State>
     class StateManipulator {
     public:
         // Application
-        virtual void operator () (State& state) const {};
+        virtual void operator () (
+            const Functions& fns,
+            State& state,
+            OptimizationLocation::t loc
+        ) const {};
 
         // Allow the derived class to deallocate memory
         virtual ~StateManipulator() {}
@@ -1385,6 +1379,9 @@ namespace peopt{
                     init_vectors(x);
                 }
 
+                // A trick to allow dynamic casting later
+                virtual ~t() {}
+
             protected:
                 // This initializes all the variables required for unconstrained
                 // optimization.  
@@ -1454,45 +1451,45 @@ namespace peopt{
             
                 // Check that the tolerance for the step length stopping
                 // condition is positive
-                if(state.eps_s <= Real(0.)) 
+                else if(state.eps_s <= Real(0.)) 
                     ss << "The tolerance for the step length stopping "
                         "condition must be positive: eps_s = " << state.eps_s; 
         
                 // Check that the current iteration is positive
-                if(state.iter <= 0) 
+                else if(state.iter <= 0) 
                     ss << "The current optimization iteration must be "
                         "positive: iter = " << state.iter;
 
                 // Check that the maximum iteration is positive
-                if(state.iter_max <= 0) 
+                else if(state.iter_max <= 0) 
                     ss << "The maximum optimization iteration must be "
                         "positive: iter_max = " << state.iter_max;
 
                 // Check that the current Krylov iteration is positive
-                if(state.krylov_iter <= 0) 
+                else if(state.krylov_iter <= 0) 
                     ss << "The current Krlov iteration must be "
                         "positive: krylov_iter = " << state.krylov_iter;
 
                 // Check that the maximum Krylov iteration is positive
-                if(state.krylov_iter_max <= 0) 
+                else if(state.krylov_iter_max <= 0) 
                     ss << "The maximum Krylov iteration must be "
                         "positive: krylov_iter_max = " << state.krylov_iter_max;
 
                 // Check that relative error in the Krylov method is nonnegative
-                if(state.krylov_rel_err < Real(0.)) 
+                else if(state.krylov_rel_err < Real(0.)) 
                     ss << "The relative error in the Krylov method must be "
                         "nonnegative: krylov_rel_err = " <<state.krylov_rel_err;
                 
                 // Check that the stopping tolerance for the Krylov method is
                 // positive
-                if(state.eps_krylov <= Real(0.)) 
+                else if(state.eps_krylov <= Real(0.)) 
                     ss << "The tolerance for the Krylov method stopping "
                         "condition must be positive: eps_krylov = "
                     << state.eps_krylov;
 
                 // Check that the norm of the gradient is nonnegative or
                 // if we're on the first iteration, we allow a NaN
-                if(state.norm_g < Real(0.)
+                else if(state.norm_g < Real(0.)
                     || (state.iter!=1 && state.norm_g!=state.norm_g)
                 )
                     ss << "The norm of the gradient must be nonnegative: "
@@ -1500,7 +1497,7 @@ namespace peopt{
 
                 // Check that the norm of a typical gradient is nonnegative or
                 // if we're on the first iteration, we allow a NaN
-                if(state.norm_gtyp < Real(0.)
+                else if(state.norm_gtyp < Real(0.)
                     || (state.iter!=1 && state.norm_gtyp!=state.norm_gtyp)
                 ) 
                     ss << "The norm of a typical gradient must be nonnegative: "
@@ -1508,7 +1505,7 @@ namespace peopt{
 
                 // Check that the norm of the trial step is nonnegative or
                 // if we're on the first iteration, we allow a NaN
-                if(state.norm_s < Real(0.)
+                else if(state.norm_s < Real(0.)
                     || (state.iter!=1 && state.norm_s!=state.norm_s)
                 ) 
                     ss << "The norm of the trial step must be nonnegative: "
@@ -1516,7 +1513,7 @@ namespace peopt{
 
                 // Check that the norm of a typical trial step is nonnegative or
                 // if we're on the first iteration, we allow a NaN
-                if(state.norm_styp < Real(0.)
+                else if(state.norm_styp < Real(0.)
                     || (state.iter!=1 && state.norm_styp!=state.norm_styp)
                 ) 
                     ss << "The norm of a typical trial step must be "
@@ -1524,67 +1521,67 @@ namespace peopt{
 
                 // Check that the merit functions's value isn't a NaN past
                 // iteration 1
-                if(state.iter!=1 && state.merit_x!=state.merit_x)
+                else if(state.iter!=1 && state.merit_x!=state.merit_x)
                     ss<< "The merit function value must be a number: merit_x = "
                         << state.merit_x;
 
                 // Check that the merit function's value at a trial step isn't
                 // a NaN past iteration 1
-                if(state.iter!=1 && state.merit_xps!=state.merit_xps) 
+                else if(state.iter!=1 && state.merit_xps!=state.merit_xps) 
                     ss << "The objective value at the trial step must be a "
                         "number: merit_xps = " << state.merit_xps;
 
                 // Check that the trust-region radius is positive
-                if(state.delta<=Real(0.))
+                else if(state.delta<=Real(0.))
                     ss << "The trust-region radius must be positive: delta = "
                         << state.delta; 
 
                 // Check that the maximum trust-region radius is positive
-                if(state.delta_max<=Real(0.))
+                else if(state.delta_max<=Real(0.))
                     ss << "The maximum trust-region radius must be positive: "
                         "delta_max = " << state.delta_max; 
 
                 // Check that the current trust-region radius is less than
                 // or equal to the maximum trust-region radius
-                if(state.delta > state.delta_max)
+                else if(state.delta > state.delta_max)
                     ss << "The trust-region radius must be less than or equal "
                         "to the maximum trust-region radius: delta = "
                         << state.delta << ", delta_max = " << state.delta_max;
 
                 // Check that the predicted vs. actual reduction tolerance
                 // is between 0 and 1
-                if(state.eta1 < Real(0.) || state.eta1 > Real(1.))
+                else if(state.eta1 < Real(0.) || state.eta1 > Real(1.))
                     ss << "The tolerance for whether or not we accept a "
                         "trust-region step must be between 0 and 1: eta1 = "
                         << state.eta1;
                 
                 // Check that the other predicted vs. actual reduction tolerance
                 // is between 0 and 1
-                if(state.eta2 < Real(0.) || state.eta2 > Real(1.))
+                else if(state.eta2 < Real(0.) || state.eta2 > Real(1.))
                     ss << "The tolerance for whether or not we increase the "
                         "trust-region radius must be between 0 and 1: eta2 = "
                         << state.eta2;
 
                 // Check that eta2 > eta1
-                if(state.eta1 >= state.eta2) 
+                else if(state.eta1 >= state.eta2) 
                     ss << "The trust-region tolerances for accepting steps "
                         "must satisfy the relationship that eta1 < eta2: "
                         "eta1 = " << state.eta1 << ", eta2 = " << state.eta2;
 
                 // Check that the prediction versus actual reduction is
                 // nonnegative 
-                if(state.rho < Real(0.)) 
+                else if(state.rho < Real(0.)) 
                     ss << "The predicted versus actual reduction must be "
                         "nonnegative: rho = " << state.rho;
 
                 // Check that the line-search step length is positive 
-                if(state.alpha <= Real(0.)) 
+                else if(state.alpha <= Real(0.)) 
                     ss << "The line-search step length must be positive: "
                         "alpha = " << state.alpha;
                 
                 // Check that the stopping tolerance for the line-search
                 // methods is positive
-                if(state.eps_ls <= Real(0.)) 
+                else if(state.eps_ls <= Real(0.)) 
                     ss << "The tolerance for the line-search stopping "
                         "condition must be positive: eps_ls = " << state.eps_ls;
 
@@ -2522,7 +2519,7 @@ namespace peopt{
             };
 
             // A scalar valued function that overrides the Hessian if need be. 
-            struct AdjustedScalarValuedFunction
+            struct HessianAdjustedFunction
                 : public peopt::ScalarValuedFunction <Real,XX>
             {
             private:
@@ -2535,9 +2532,40 @@ namespace peopt{
 
                 // This forces derived classes to call the constructor that
                 // depends on the state
-                AdjustedScalarValuedFunction() {}
+                HessianAdjustedFunction() {}
 
             public:
+                // The constructor determines whether we really need to build
+                // a Hessian-vector product or if we use an internal
+                // approximation
+                HessianAdjustedFunction(
+                    const Messaging& msg,
+                    const typename State::t& state,
+                    typename Functions::t& fns
+                ) : f(fns.f) {
+                    
+                    // Determine the Hessian approximation
+                    switch(state.H_type){
+                        case Operators::Identity:
+                            H.reset(new Identity());
+                            break;
+                        case Operators::ScaledIdentity:
+                            H.reset(new ScaledIdentity (state));
+                            break;
+                        case Operators::BFGS:
+                            H.reset(new BFGS(msg,state));
+                            break;
+                        case Operators::SR1:
+                            H.reset(new SR1(msg,state));
+                            break;
+                        case Operators::External:
+                            break;
+                        default:
+                            msg.error("Not a valid Hessian approximation.");
+                            break;
+                    }
+                }
+
                  // <- f(x) 
                  Real operator () (const X_Vector& x) const {
                      return (*f)(x);
@@ -2564,37 +2592,6 @@ namespace peopt{
                      else
                         f->hessvec(x,dx,H_dx);
                  }
-
-                 // The constructor determines whether we really need to build
-                 // a Hessian-vector product or if we use an internal
-                 // approximation
-                 AdjustedScalarValuedFunction(
-                     const Messaging& msg,
-                     const typename State::t& state,
-                     std::auto_ptr <peopt::ScalarValuedFunction <Real,XX> > f_
-                 ) : f(f_) {
-                    
-                    // Determine the Hessian approximation
-                    switch(state.H_type){
-                        case Operators::Identity:
-                            H.reset(new Identity());
-                            break;
-                        case Operators::ScaledIdentity:
-                            H.reset(new ScaledIdentity (state));
-                            break;
-                        case Operators::BFGS:
-                            H.reset(new BFGS(msg,state));
-                            break;
-                        case Operators::SR1:
-                            H.reset(new SR1(msg,state));
-                            break;
-                        case Operators::External:
-                            break;
-                        default:
-                            msg.error("Not a valid Hessian approximation.");
-                            break;
-                    }
-                }
             };
 
             // A simple merit function for unconstrained optimization problems.
@@ -2605,16 +2602,31 @@ namespace peopt{
             struct Merit : public peopt::ScalarValuedFunction <Real,XX> {
             private:
                 const Messaging& msg;
-                const peopt::ScalarValuedFunction <Real,XX>& f;
+
+                // This is a little bit weird since we have a reference to
+                // an auto_ptr.  Basically, the Functions::t structure owns
+                // the memory for all of the functions, which are stored
+                // as auto_ptrs.  We want this function to have a reference
+                // to the objective.  Now, during the initialization, the
+                // objective may and probably be modified for a variety of
+                // reasons.  For example, we may replace the function with
+                // another that has a modified Hessian.  When this happens,
+                // the underlying function is replaced, so if we just have 
+                // a reference to the actual function and not the pointer,
+                // we could get into trouble.
+                const std::auto_ptr <peopt::ScalarValuedFunction <Real,XX> >& f;
+
+                // Make sure we call the constructor below
+                Merit () {}
             public:
                 Merit(
                     const Messaging& msg_,
                     const typename Functions::t& fns
-                ) : msg(msg_), f(*(fns.f)) {}
+                ) : msg(msg_), f(fns.f) {}
 
                 // <- f(x) 
                 Real operator () (const X_Vector& x) const {
-                    return f(x); 
+                    return (*f)(x); 
                 }
 
                 // Throw an error 
@@ -2697,6 +2709,9 @@ namespace peopt{
 
                 // Merit function used for the model of the problem
                 std::auto_ptr <ScalarValuedFunction <Real,XX> > model;
+                
+                // A trick to allow dynamic casting later
+                virtual ~t() {}
             };
 
             // Check that all the functions are defined
@@ -2743,7 +2758,7 @@ namespace peopt{
                 check(msg,fns);
 
                 // Modify the objective function if necessary
-                fns.f.reset(new AdjustedScalarValuedFunction(msg,state,fns.f));
+                fns.f.reset(new HessianAdjustedFunction(msg,state,fns));
 
                 // Create the merit function
                 fns.f_merit.reset(new Merit(msg,fns));
@@ -3058,6 +3073,8 @@ namespace peopt{
             static void getStepTR(
                 const Messaging& msg,
                 const typename Functions::t& fns,
+                const StateManipulator<typename Functions::t,typename State::t>&
+                    smanip,
                 typename State::t& state
             ){
                 // Create some shortcuts
@@ -3086,6 +3103,10 @@ namespace peopt{
 
                     // Use truncated-CG to find a new trial step
                     truncatedCG(msg,fns,state);
+
+                    // Manipulate the state if required
+                    smanip(fns,state,
+                        OptimizationLocation::BeforeActualVersusPredicted);
 
                     // Save the length of the trial step
                     norm_s=sqrt(X::innr(s,s));
@@ -3409,6 +3430,8 @@ namespace peopt{
             static void getStepLS(
                 const Messaging& msg,
                 const typename Functions::t& fns,
+                const StateManipulator<typename Functions::t,typename State::t>&
+                    smanip,
                 typename State::t& state
             ){
                 // Create some shortcuts
@@ -3456,7 +3479,7 @@ namespace peopt{
                         // If we have no reduction in the merit, print
                         // some diagnostic information.
                         if(merit_xps > merit_x) {
-                            norm_s=alpha*X::norm(s);
+                            norm_s=alpha*sqrt(X::innr(s,s));
                             printState(msg,state,true);
 
                             // We reduce alpha by a factor of four when we
@@ -3481,7 +3504,7 @@ namespace peopt{
                         // If we have no reduction in the merit, print
                         // some diagnostic information.
                         if(merit_xps > merit_x) {
-                            norm_s=alpha*X::norm(s);
+                            norm_s=alpha*sqrt(X::innr(s,s));
                             printState(msg,state,true);
 
                             // We set alpha to be four times less than the
@@ -3516,6 +3539,8 @@ namespace peopt{
             static void getStep(
                 const Messaging& msg,
                 const typename Functions::t& fns,
+                const StateManipulator<typename Functions::t,typename State::t>&
+                    smanip,
                 typename State::t& state
             ){
                 // Create some shortcuts
@@ -3524,10 +3549,10 @@ namespace peopt{
                 // Choose whether we use a line-search or trust-region method
                 switch(algorithm_class){
                 case AlgorithmClass::TrustRegion:
-                    getStepTR(msg,fns,state);
+                    getStepTR(msg,fns,smanip,state);
                     break;
                 case AlgorithmClass::LineSearch:
-                    getStepLS(msg,fns,state);
+                    getStepLS(msg,fns,smanip,state);
                     break;
                 }
             }
@@ -3580,9 +3605,10 @@ namespace peopt{
             }
 
             // Solves an optimization problem
-            static void getMin(
+            static void getMin_(
                 const Messaging& msg,
-                const StateManipulator<typename State::t>& smanip,
+                const StateManipulator<typename Functions::t,typename State::t>&
+                    smanip,
                 typename Functions::t& fns,
                 typename State::t& state
             ){
@@ -3603,9 +3629,6 @@ namespace peopt{
                 StoppingCondition::t& opt_stop=state.opt_stop;
                 AlgorithmClass::t& algorithm_class=state.algorithm_class;
                 LineSearchDirection::t& dir=state.dir;
-
-                // Initialize any remaining functions required for optimization 
-                Functions::init(msg,state,fns);
                 
                 // Create shortcuts to the functions that we need
                 const ScalarValuedFunction <Real,XX>& f=*(fns.f);
@@ -3632,7 +3655,7 @@ namespace peopt{
                     printState(msg,state);
 
                     // Get a new optimization iterate.  
-                    getStep(msg,fns,state);
+                    getStep(msg,fns,smanip,state);
 
                     // If we've not calculated it already, save the size of
                     // the step
@@ -3648,7 +3671,8 @@ namespace peopt{
                     X::axpy(Real(1.),s,x);
 
                     // Manipulate the state if required
-                    smanip(state);
+                    smanip(fns,state,
+                        OptimizationLocation::AfterStepBeforeGradient);
 
                     // Find the new merit value and gradient
                     merit_x=merit_xps;
@@ -3663,6 +3687,10 @@ namespace peopt{
 
                     // Check the stopping condition
                     opt_stop=checkStop(state);
+
+                    // Manipulate the state if required
+                    smanip(fns,state,
+                        OptimizationLocation::EndOfOptimizationIteration);
                 } while(opt_stop==StoppingCondition::NotConverged);
                         
                 // Print a final diagnostic 
@@ -3677,11 +3705,27 @@ namespace peopt{
                 typename State::t& state
             ){
                 // Create an empty state manipulator
-                StateManipulator <typename Unconstrained <Real,XX>::State::t >
+                StateManipulator<typename Functions::t,typename State::t>
                     smanip;
 
                 // Minimize the problem
                 getMin(msg,smanip,fns,state);
+            }
+            
+            // Initializes remaining functions then solves an optimization
+            // problem
+            static void getMin(
+                const Messaging& msg,
+                const StateManipulator<typename Functions::t,typename State::t>&
+                    smanip,
+                typename Functions::t& fns,
+                typename State::t& state
+            ){
+                // Initialize any remaining functions required for optimization 
+                Functions::init(msg,state,fns);
+
+                // Minimize the problem
+                getMin_(msg,smanip,fns,state);
             }
         
             // Prints out useful information regarding the current optimization
@@ -4204,6 +4248,20 @@ namespace peopt{
 
                 // Interior point parameter
                 Real mu;
+
+                // The tolerance how how close we need to be to the central
+                // path with respect to mu
+                Real mu_tol;
+
+                // The target mu that we aim for
+                Real mu_trg;
+
+                // The amount that we reduce the interior point parameter by
+                // everytime we approach the central path
+                Real sigma;
+
+                // How close we move to the boundary during a single step
+                Real gamma;
                 
                 // Initialize the state without setting up any variables. 
                 t() {
@@ -4227,6 +4285,10 @@ namespace peopt{
                 // constrained optimization.  
                 void init_params() {
                     mu = Real(1.0); 
+                    mu_tol = Real(1e-2);
+                    mu_trg = Real(1e-8);
+                    sigma = Real(0.5);
+                    gamma = Real(0.95);
                 }
 
                 // This initializes all the variables required for inequality
@@ -4251,6 +4313,27 @@ namespace peopt{
                     ss << "The interior point parameter must be positive: " 
                         "mu = " << state.mu;
 
+                // Check that the interior point tolerance is positive 
+                else if(state.mu_tol <= Real(0.)) 
+                    ss << "The interior point tolerance must be positive: " 
+                        "mu_tol = " << state.mu_tol;
+
+                // Check that the target mu is positive
+                else if(state.mu_trg <= Real(0.)) 
+                    ss << "The target interior point parameter "
+                        "must be positive: mu_trg = " << state.mu_trg;
+
+                // Check that the reduction in the interior point parameter
+                // is between 0 and 1.
+                else if(state.sigma <= Real(0.) || state.sigma >= Real(1.)) 
+                    ss << "The reduction in the interior point parameter "
+                        "must be between 0 and 1: sigma = " << state.sigma;
+
+                // Check that the fraction to the boundary is between 0 and 1. 
+                else if(state.gamma <= Real(0.) || state.gamma >= Real(1.)) 
+                    ss << "The fraction to the boundary must be between " 
+                        "0 and 1: gamma= " << state.gamma;
+
                 // If there's an error, print it
                 if(ss.str()!="") msg.error(ss.str());
             }
@@ -4263,7 +4346,11 @@ namespace peopt{
                 bool operator () (const std::string& name) const {
                     if( typename Unconstrained <Real,XX>::Restart
                             ::is_real()(name) ||
-                        name == "mu"
+                        name == "mu" ||
+                        name == "mu_tol" ||
+                        name == "mu_trg" ||
+                        name == "sigma" ||
+                        name == "gamma" 
                     )
                         return true;
                     else
@@ -4386,6 +4473,14 @@ namespace peopt{
                 // Copy in all the real numbers
                 reals.first.push_back("mu");
                 reals.second.push_back(state.mu);
+                reals.first.push_back("mu_tol");
+                reals.second.push_back(state.mu_tol);
+                reals.first.push_back("mu_trg");
+                reals.second.push_back(state.mu_trg);
+                reals.first.push_back("sigma");
+                reals.second.push_back(state.sigma);
+                reals.first.push_back("gamma");
+                reals.second.push_back(state.gamma);
             }
             
             // Copy in inequality multipliers 
@@ -4423,6 +4518,10 @@ namespace peopt{
                     name++,real++
                 ){
                     if(*name=="mu") state.mu=*real;
+                    else if(*name=="mu_tol") state.mu_tol=*real;
+                    else if(*name=="mu_trg") state.mu_trg=*real;
+                    else if(*name=="sigma") state.sigma=*real;
+                    else if(*name=="gamma") state.gamma=*real;
                 } 
             }
 
@@ -4483,10 +4582,186 @@ namespace peopt{
         // routine owns the memory for these operations.  
         struct Functions {
 
+            // A function with a modified Hessian used in inequality
+            // constrained optimization
+            struct InequalityModifiedFunction 
+                : public peopt::ScalarValuedFunction <Real,XX>
+            {
+            private:
+                //Underlying function.  
+                std::auto_ptr <peopt::ScalarValuedFunction <Real,XX> > f;
+
+                // Inequality constraint. For a reason why we have a reference
+                // to an auto_ptr, see the discussion inside
+                // Unconstrained::Functions::Merit
+                const std::auto_ptr <peopt::VectorValuedFunction <Real,XX,ZZ> >&
+                    h;
+
+                // Inequality Lagrange multiplier
+                const std::list <Z_Vector>& zz;
+
+                // Interior point parameter
+                const Real& mu;
+
+                // This forces derived classes to call the constructor that
+                // depends on the state
+                InequalityModifiedFunction() {}
+
+            public:
+                // The constructor determines whether we really need to build
+                // a Hessian-vector product or if we use an internal
+                // approximation
+                InequalityModifiedFunction(
+                    const Messaging& msg,
+                    const typename State::t& state,
+                    typename Functions::t& fns
+                ) : f(fns.f), h(fns.h), zz(state.z), mu(state.mu) { }
+
+                // <- f(x) 
+                Real operator () (const X_Vector& x) const {
+                    return (*f)(x);
+                }
+
+                // g = grad f(x) + h'(x)*(-z + mu inv(L(h(x))) e)
+                void grad(const X_Vector& x,X_Vector& g) const {
+                    // Get access to z
+                    const Z_Vector& z=zz.front();
+
+                    // Create work elements for accumulating the
+                    // interior point pieces
+                    Z_Vector ip1; Z::init(z,ip1);
+                    Z_Vector ip2; Z::init(z,ip2);
+                    Z_Vector ip3; Z::init(z,ip3);
+                    X_Vector ip4; X::init(x,ip4);
+
+                    // g <- grad f(x)
+                    f->grad(x,g);
+
+                    // ip1 <- e
+                    Z::id(ip1);
+
+                    // ip2 <- h(x)
+                    (*h)(x,ip2);
+
+                    // ip3 <- inv(L(h(x))) e 
+                    Z::linv(ip2,ip1,ip3);
+
+                    // ip3 <- mu inv(L(h(x))) e 
+                    Z::scal(mu,ip3);
+
+                    // ip3 <- -z + mu inv(L(h(x))) e 
+                    Z::axpy(Real(-1.),z,ip3);
+
+                    // ip4 <- h'(x)*(-z + mu inv(L(h(x))) e)
+                    h->ps(x,ip3,ip4);
+
+                    // g <- grad f(x) + h'(x)*(-z + mu inv(L(h(x))) e)
+                    X::axpy(Real(1.),ip4,g);
+
+                }
+
+                // H_dx = hess f(x) dx + h'(x)* inv(L(h(x))) (z o (h'(x) dx))
+                // This adds on the interior point piece to the Hessian. 
+                virtual void hessvec(
+                    const X_Vector& x,
+                    const X_Vector& dx,
+                    X_Vector& H_dx 
+                ) const {
+                    // Get access to z
+                    const Z_Vector& z=zz.front();
+
+                    // Create work elements for accumulating the
+                    // interior point pieces
+                    Z_Vector ip1; Z::init(z,ip1);
+                    Z_Vector ip2; Z::init(z,ip2);
+                    Z_Vector ip3; Z::init(z,ip3);
+                    X_Vector ip4; X::init(x,ip4);
+
+                    // H_dx <- hess f(x) dx
+                    f->hessvec(x,dx,H_dx);
+
+                    // ip1 <- h'(x) dx
+                    h->p(x,dx,ip1);
+
+                    // ip2 <- z o h'(x) dx
+                    Z::prod(z,ip1,ip2);
+
+                    // ip3 <- h(x)
+                    (*h)(x,ip3); 
+
+                    // ip1 <- inv(L(h(x))) (z o h'(x) dx) 
+                    Z::linv(ip3,ip2,ip1);
+
+                    // ip4 <- h'(x)* inv(L(h(x))) (z o h'(x) dx) 
+                    h->ps(x,ip1,ip4);
+
+                    // H_dx = hess f(x) dx + h'(x)* inv(L(h(x))) (z o h'(x) dx) 
+                    X::axpy(Real(1.0),ip4,H_dx);
+                }
+            };
+
+            // A log-barrier merit function 
+            struct Merit : public peopt::ScalarValuedFunction <Real,XX> {
+            private:
+                // Messaging tool
+                const Messaging& msg;
+                
+                // Underlying function.  This takes control of the memory
+                std::auto_ptr <peopt::ScalarValuedFunction <Real,XX> >
+                    f_merit;
+
+                // Inequality constraint.
+                const std::auto_ptr <peopt::VectorValuedFunction <Real,XX,ZZ> >&
+                    h;
+
+                // Interior point parameter
+                const Real& mu;
+
+                // Inequality Lagrange multiplier
+                const std::list <Z_Vector>& zz;
+                
+                // Make sure we call the constructor below
+                Merit () {}
+            public:
+                Merit(
+                    const Messaging& msg_,
+                    const typename State::t& state,
+                    typename Functions::t& fns
+                ) : msg(msg_), f_merit(fns.f_merit), h(fns.h), mu(state.mu),
+                    zz(state.z) {}
+
+                // <- f_merit(x) + mu barr(h(x))
+                Real operator () (const X_Vector& x) const {
+                    // Calculate h(x)
+                    const Z_Vector& z=zz.front();
+                    Z_Vector h_x; Z::init(z,h_x);
+                    (*h)(x,h_x);
+
+                    // Return f_merit(x) + mu barr(h(x))
+                    return (*f_merit)(x) + mu * Z::barr(h_x); 
+                }
+
+                // Throw an error 
+                void grad(const X_Vector& x,X_Vector& g) const {
+                    msg.error("The gradient of the merit function is "
+                        "undefined.");
+                }
+
+                // Throw an error 
+                void hessvec(
+                    const X_Vector& x,
+                    const X_Vector& dx,
+                    X_Vector& H_dx
+                ) const {
+                    msg.error("The Hessian of the merit function is "
+                        "undefined.");
+                }
+            };
+
             // Actual storage of the functions required
             struct t: public virtual Unconstrained <Real,XX>::Functions::t {
                 // Inequality constraints 
-                std::auto_ptr <InequalityConstraint <Real,XX,ZZ> > h;
+                std::auto_ptr <VectorValuedFunction <Real,XX,ZZ> > h;
             };
 
             // Check that all the functions are defined
@@ -4507,6 +4782,12 @@ namespace peopt{
                 const typename State::t& state,
                 t& fns
             ) {
+                // Modify the objective 
+                fns.f.reset(new InequalityModifiedFunction(msg,state,fns));
+
+                // Create the merit function
+                fns.f_merit.reset(new Merit(msg,state,fns));
+
             }
 
             // Initialize any missing functions 
@@ -4519,6 +4800,256 @@ namespace peopt{
                     ::Functions::init_(msg,state,fns);
                 InequalityConstrained <Real,XX,ZZ>
                     ::Functions::init_(msg,state,fns);
+            }
+        };
+
+
+        // This contains the different algorithms used for optimization 
+        struct Algorithms {
+
+            // This adds the interior point through use of a state manipulator.
+            template <typename Functions_,typename State_>
+            struct InteriorPointManipulator
+                : public StateManipulator <Functions_,State_>
+            {
+            private:
+                // A reference to the user-defined state manipulator
+                const StateManipulator<typename Functions::t,typename State::t>&
+                    smanip;
+
+            public:
+                InteriorPointManipulator(const StateManipulator
+                    <typename Functions::t,typename State::t>& smanip_
+                ) : smanip(smanip_) {}
+
+
+                // Application
+                void operator () (
+                    const Functions_& fns_,
+                    State_& state_,
+                    OptimizationLocation::t loc
+                ) const {
+                    // Dynamically cast the incoming state and fns to the
+                    // to work with the interior-point spaces.  In theory,
+                    // this should always work since we're doing this trickery
+                    // internally.  Basically, this is required since we're
+                    // inserting into either the unconstrained or equality
+                    // constrained code.  Within this code, the state
+                    // manipulator is hard coded to use the state for the
+                    // appropriate problem even though this state is really
+                    // an inequality constraint when called using the routines
+                    // below.
+                    const typename Functions::t& fns
+                        =dynamic_cast <const typename Functions::t&> (fns_);
+                    typename State::t& state 
+                        =dynamic_cast <typename State::t&> (state_);
+
+                    // Call the user define manipulator
+                    smanip(fns,state,loc);
+
+                    // Create some shortcuts 
+                    const Real& mu_tol=state.mu_tol;
+                    const Real& mu_trg=state.mu_trg;
+                    const Real& norm_g=state.norm_g;
+                    const Real& sigma=state.sigma;
+                    const Real& gamma=state.gamma;
+                    Z_Vector& z=state.z.front();
+                    X_Vector& x=state.x.front();
+                    X_Vector& s=state.s.front();
+                    Real& mu=state.mu;
+                    StoppingCondition::t& opt_stop=state.opt_stop;
+                    VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
+
+                    switch(loc){
+                    
+                    // Here, we take a step in the Lagrange multiplier
+                    case OptimizationLocation::AfterStepBeforeGradient: {
+                        // Get the identity element in the Jordan algebra 
+                        // z_tmp1 <- e
+                        Z_Vector z_tmp1; Z::init(z,z_tmp1);
+                        Z::id(z_tmp1);
+
+                        // h_x <- h(x)
+                        Z_Vector h_x; Z::init(z,h_x);
+                        h(x,h_x);
+
+                        // dz <- inv L(h(x)) e
+                        Z_Vector dz; Z::init(z,dz);
+                        Z::linv(h_x,z_tmp1,dz);
+
+                        // dz <- mu inv L(h(x)) e
+                        Z::scal(mu,dz);
+                        
+                        // dz <- -z + inv L(h(x)) e
+                        Z::axpy(Real(-1.0),z,dz);
+
+                        // z_tmp1 <- h'(x)s 
+                        h.ps(x,s,z_tmp1);
+
+                        // z_tmp2 <- z o h'(x)s
+                        Z_Vector z_tmp2; Z::init(z,z_tmp2);
+                        Z::prod(z,z_tmp1,z_tmp2);
+
+                        // z_tmp1 <- inv L(h(x)) (z o h'(x)s)
+                        Z::linv(h_x,z_tmp2,z_tmp1);
+
+                        // dz <- - inv L(h(x)) (z o h'(x)s) -z +mu inv L(h(x)) e
+                        Z::axpy(Real(-1.0),z_tmp1,dz);
+
+                        // z <- z + dz
+                        Z::axpy(Real(1.0),dz,z);
+                        break;
+
+                    // Here, we need to prevent convergence unless mu is close
+                    // to mu_trg.  We also use this opportunity to reduce mu
+                    // if required.
+                    } case OptimizationLocation::EndOfOptimizationIteration: {
+
+                        // Determine the scaling factor for the interior-
+                        // point parameter estimate
+                        Z_Vector z_tmp; Z::init(z,z_tmp);
+                        Z::id(z_tmp);
+                        Real m = Z::innr(z_tmp,z_tmp);
+
+                        // Determine h(x);
+                        h(x,z_tmp);
+
+                        // Estimate the interior-point parameter
+                        Real mu_est = Z::innr(z,z_tmp) / m;
+
+                        // Determine if we should reduce mu
+                        if( fabs(mu-mu_est) < mu_tol*mu &&
+                            mu > mu_trg &&
+                            norm_g < mu
+                        ) mu = mu*sigma < mu_trg ? mu_trg : mu*sigma;
+
+                        // Prevent convergence unless the mu is mu_trg and
+                        // mu_est is close to mu;
+                        if( opt_stop
+                                ==StoppingCondition::RelativeGradientSmall &&
+                            mu==mu_trg &&
+                            fabs(mu-mu_est) < mu_tol*mu
+                        )
+                            opt_stop=StoppingCondition::NotConverged;
+
+                        break;
+                    } case OptimizationLocation::BeforeLineSearch:
+                        break;
+                    case OptimizationLocation::BeforeActualVersusPredicted: {
+                        
+                        // Determine how far we can go in the primal variable
+                        
+                        // z_tmp1=h(x)
+                        Z_Vector z_tmp1; Z::init(z,z_tmp1);
+                        h(x,z_tmp1);
+                       
+                        // x_tmp1=x+s
+                        X_Vector x_tmp1; X::init(x,x_tmp1);
+                        X::copy(x,x_tmp1);
+                        X::axpy(Real(1.),s,x_tmp1);
+
+                        // z_tmp2=h(x+s)
+                        Z_Vector z_tmp2; Z::init(z,z_tmp2);
+                        h(x_tmp1,z_tmp2);
+
+                        // z_tmp2=h(x+s)-h(x)
+                        Z::axpy(Real(-1.),z_tmp1,z_tmp2);
+
+                        // Find the largest alpha such that
+                        // alpha (h(x+s)-h(x)) + h(x) >=0
+                        Real alpha1=Z::srch(z_tmp2,z_tmp1);
+
+                        // Determine how far we can go in the dual variable
+
+                        // z_tmp1=h'(x)s
+                        h.p(x,s,z_tmp1);
+                        
+                        // z_tmp2 = z o h'(x)s
+                        Z::prod(z,z_tmp1,z_tmp2);
+
+                        // z_tmp2 = - z o h'(x)s
+                        Z::scal(Real(-1.),z_tmp2);
+
+                        // z_tmp1 = e
+                        Z::id(z_tmp1);
+
+                        // z_tmp1 = mu e
+                        Z::scal(mu,z_tmp1);
+
+                        // Find the largest alpha such that
+                        // alpha (- z o h'(x)s) + mu e >=0
+                        Real alpha2=Z::srch(z_tmp2,z_tmp1);
+
+                        // Determine the farthest we can go in both variables
+                        Real alpha0;
+                        if(alpha1 < Real(0.) && alpha2 >= Real(0.))
+                            alpha0 = alpha2;
+                        else if(alpha1 >= Real(0.) && alpha2 < Real(0.))
+                            alpha0 = alpha1;
+                        else if(alpha1 < Real(0.) && alpha2 < Real(0.))
+                            alpha0 = Real(-1.);
+                        else
+                            alpha0 = alpha1 < alpha2 ? alpha1 : alpha2;
+
+                        // Next, determine if we need to back off from the
+                        // boundary or leave the step unchanged.
+                        if(alpha0 ==Real(-1.) || alpha0*gamma > Real(1.))
+                            alpha0=Real(1.);
+                        else
+                            alpha0=alpha0*gamma;
+                        alpha0 =
+                            alpha0 == Real(-1.) || alpha0*gamma > Real(1.) ?
+                                Real(1.0) :
+                                alpha0*gamma;
+
+                        // Shorten the step length accordingly
+                        X::scal(alpha0,s);
+
+                        break;
+                    } default:
+                        break;
+                    }
+
+                }
+            };
+
+            // Solves an optimization problem where the user doesn't know about
+            // the state manipulator
+            static void getMin(
+                const Messaging& msg,
+                typename Functions::t& fns,
+                typename State::t& state
+            ){
+                // Create an empty state manipulator
+                StateManipulator<typename Functions::t,typename State::t>
+                    smanip;
+
+                // Minimize the problem
+                getMin(msg,smanip,fns,state);
+            }
+            
+            // Initializes remaining functions then solves an optimization
+            // problem
+            static void getMin(
+                const Messaging& msg,
+                const StateManipulator<typename Functions::t,typename State::t>&
+                    smanip,
+                typename Functions::t& fns,
+                typename State::t& state
+            ){
+
+                // Add the interior point pieces to the state manipulator
+                InteriorPointManipulator
+                    < typename Unconstrained<Real,XX>::Functions::t,
+                      typename Unconstrained<Real,XX>::State::t >
+                    ipmanip(smanip);
+                
+                // Initialize any remaining functions required for optimization 
+                Functions::init(msg,state,fns);
+                
+                // Minimize the problem
+                Unconstrained <Real,XX>::Algorithms
+                    ::getMin_(msg,ipmanip,fns,state);
             }
         };
     };
