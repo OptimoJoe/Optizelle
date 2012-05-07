@@ -242,6 +242,8 @@ int main(){
     state.H_type = peopt::Operators::External;
     state.iter_max = 100;
     state.eps_krylov = 1e-10;
+    state.eps_s = 1e-16;
+    state.eps_g = 1e-10;
     #endif
 
     // BFGS

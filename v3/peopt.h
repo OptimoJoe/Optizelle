@@ -4622,7 +4622,8 @@ namespace peopt{
                     return (*f)(x);
                 }
 
-                // g = grad f(x) - h'(x)*(-z + mu inv(L(h(x))) e)
+                // g = grad f(x) - h'(x)*z - h'(x)*(-z + mu inv(L(h(x))) e)
+                //   = grad f(x) - h'(x)*(mu inv(L(h(x))) e)
                 void grad(const X_Vector& x,X_Vector& g) const {
                     // Get access to z
                     const Z_Vector& z=zz.front();
@@ -4650,7 +4651,7 @@ namespace peopt{
                     Z::scal(mu,ip3);
 
                     // ip3 <- -z + mu inv(L(h(x))) e 
-                    Z::axpy(Real(-1.),z,ip3);
+                    //Z::axpy(Real(-1.),z,ip3);
 
                     // ip4 <- h'(x)*(-z + mu inv(L(h(x))) e)
                     h->ps(x,ip3,ip4);
@@ -4859,6 +4860,10 @@ namespace peopt{
                     Real& mu=state.mu;
                     StoppingCondition::t& opt_stop=state.opt_stop;
                     VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
+                    ScalarValuedFunction <Real,XX>& f_merit=*(fns.f_merit);
+                    ScalarValuedFunction <Real,XX>& f=*(fns.f);
+                    Real& merit_x=state.merit_x;
+                    X_Vector& g=state.g.front();
 
                     switch(loc){
                     
@@ -4921,7 +4926,17 @@ namespace peopt{
                         if( fabs(mu-mu_est) < mu_tol*mu &&
                             mu > mu_trg &&
                             norm_g < mu
-                        ) mu = mu*sigma < mu_trg ? mu_trg : mu*sigma;
+                        ) {
+                            // Reduce mu
+                            mu = mu*sigma < mu_trg ? mu_trg : mu*sigma;
+
+                            // Recalculate the merit function since it 
+                            // depends on mu.
+                            merit_x=f_merit(x);
+
+                            // Recalculate the gradient since it depends on mu
+                            f.grad(x,g); 
+                        }
 
                         // Prevent convergence unless the mu is mu_trg and
                         // mu_est is close to mu;
