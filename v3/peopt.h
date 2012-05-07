@@ -4622,7 +4622,7 @@ namespace peopt{
                     return (*f)(x);
                 }
 
-                // g = grad f(x) + h'(x)*(-z + mu inv(L(h(x))) e)
+                // g = grad f(x) - h'(x)*(-z + mu inv(L(h(x))) e)
                 void grad(const X_Vector& x,X_Vector& g) const {
                     // Get access to z
                     const Z_Vector& z=zz.front();
@@ -4655,8 +4655,8 @@ namespace peopt{
                     // ip4 <- h'(x)*(-z + mu inv(L(h(x))) e)
                     h->ps(x,ip3,ip4);
 
-                    // g <- grad f(x) + h'(x)*(-z + mu inv(L(h(x))) e)
-                    X::axpy(Real(1.),ip4,g);
+                    // g <- grad f(x) - h'(x)*(-z + mu inv(L(h(x))) e)
+                    X::axpy(Real(-1.),ip4,g);
 
                 }
 
@@ -4993,10 +4993,6 @@ namespace peopt{
 
                         // Next, determine if we need to back off from the
                         // boundary or leave the step unchanged.
-                        if(alpha0 ==Real(-1.) || alpha0*gamma > Real(1.))
-                            alpha0=Real(1.);
-                        else
-                            alpha0=alpha0*gamma;
                         alpha0 =
                             alpha0 == Real(-1.) || alpha0*gamma > Real(1.) ?
                                 Real(1.0) :

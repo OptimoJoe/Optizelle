@@ -110,7 +110,7 @@ struct MyObj : public peopt::ScalarValuedFunction <double,MyHS> {
     typedef MyHS <double> X;
     typedef double Real;
 
-    // Evaluation of the Rosenbrock function
+    // Evaluation 
     double operator () (const X::Vector& x) const {
         return sq(x[0]+Real(1.))+sq(x[1]+Real(1.));
     }
@@ -215,8 +215,10 @@ int main(){
     peopt::InequalityConstrained <double,MyHS,MyHS>::Functions::t fns;
     fns.f.reset(new MyObj);
     fns.h.reset(new MyIneq);
+    #if 0
     peopt::InequalityConstrained <double,MyHS,MyHS>::Functions::init(
         peopt::Messaging(),state,fns);
+    #endif
     
     // Do some finite difference tests on the objective
     peopt::Diagnostics::gradientCheck <>
@@ -233,8 +235,6 @@ int main(){
         (peopt::Messaging(),*(fns.h),x,dx,dy);
     peopt::Diagnostics::secondDerivativeCheck <>
         (peopt::Messaging(),*(fns.h),x,dx,dy);
-
-    return 1;
 
     // Setup the optimization problem
     #if 1
