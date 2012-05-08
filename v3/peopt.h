@@ -528,6 +528,9 @@ namespace peopt{
     
     namespace OptimizationLocation{
         enum t{
+            // Occurs just before we take the optimization step u+s
+            BeforeStep,
+
             // Occurs after we take the optimization step u+s, but before
             // we calculate the gradient based on this new step.  In addition,
             // after this point we set the merit value, merit_x, to be
@@ -550,6 +553,8 @@ namespace peopt{
         // Converts the optimization location to a string 
         std::string to_string(t loc){
             switch(loc){
+            case BeforeStep:
+                return "BeforeStep";
             case AfterStepBeforeGradient:
                 return "AfterStepBeforeGradient";
             case EndOfOptimizationIteration:
@@ -565,7 +570,9 @@ namespace peopt{
         
         // Converts a string to a line-search kind 
         t from_string(std::string loc){
-            if(loc=="AfterStepBeforeGradient")
+            if(loc=="BeforeStep")
+                return BeforeStep; 
+            else if(loc=="AfterStepBeforeGradient")
                 return AfterStepBeforeGradient; 
             else if(loc=="EndOfOptimizationIteration")
                 return EndOfOptimizationIteration; 
@@ -580,7 +587,8 @@ namespace peopt{
         // Checks whether or not a string is valid
         struct is_valid : public std::unary_function<std::string, bool> {
             bool operator () (const std::string& name) const {
-                if( name=="AfterStepBeforeGradient" ||
+                if( name=="BeforeStep" || 
+                    name=="AfterStepBeforeGradient" ||
                     name=="EndOfOptimizationIteration" ||
                     name=="BeforeLineSearch" ||
                     name=="BeforeActualVersusPredicted"
@@ -3673,6 +3681,9 @@ namespace peopt{
                     X::copy(g,g_old);
                     X::copy(s,s_old);
 
+                    // Manipulate the state if required
+                    smanip(fns,state,OptimizationLocation::BeforeStep);
+
                     // Move to the new iterate
                     X::axpy(Real(1.),s,x);
 
@@ -4853,7 +4864,7 @@ namespace peopt{
                 typename State::t& state
             ) {
                 // Create some shortcuts
-                X_Vector& x=state.x_old.front();
+                X_Vector& x=state.x.front();
                 X_Vector& s=state.s.front();
                 Z_Vector& z=state.z.front();
                 Real& mu=state.mu;
@@ -5129,7 +5140,7 @@ namespace peopt{
                     switch(loc){
                     
                     // Find the new inequality multiplier
-                    case OptimizationLocation::AfterStepBeforeGradient:
+                    case OptimizationLocation::BeforeStep:
                         findInequalityMultiplier(fns,state);
                         break;
 
