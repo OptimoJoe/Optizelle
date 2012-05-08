@@ -237,13 +237,15 @@ int main(){
         (peopt::Messaging(),*(fns.h),x,dx,dy);
 
     // Setup the optimization problem
-    #if 1
+    #if 0
     // Newton's method
     state.H_type = peopt::Operators::External;
     state.iter_max = 100;
     state.eps_krylov = 1e-10;
     state.eps_s = 1e-16;
     state.eps_g = 1e-10;
+    state.sigma = 0.25;
+    state.gamma = 0.995;
     #endif
 
     // BFGS
@@ -255,12 +257,16 @@ int main(){
     #endif
     
     // Newton-CG 
-    #if 0
+    #if 1
     state.algorithm_class = peopt::AlgorithmClass::LineSearch;
     state.dir = peopt::LineSearchDirection::NewtonCG;
     state.H_type = peopt::Operators::External;
     state.eps_krylov = 1e-10;
     state.iter_max = 100;
+    state.eps_s = 1e-16;
+    state.eps_g = 1e-10;
+    state.sigma = 0.25;
+    state.gamma = 0.995;
     #endif
 
     // Solve the optimization problem

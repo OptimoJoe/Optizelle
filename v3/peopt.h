@@ -3466,6 +3466,9 @@ namespace peopt{
                     truncatedCG(msg,fns,state);
                     break;
                 }
+                    
+                // Manipulate the state if required
+                smanip(fns,state,OptimizationLocation::BeforeLineSearch);
 
                 // Do a line-search in the specified direction
                 switch(kind){
@@ -4622,6 +4625,7 @@ namespace peopt{
                     return (*f)(x);
                 }
 
+                #if 0
                 // g = grad f(x) - h'(x)*z - h'(x)*(-z + mu inv(L(h(x))) e)
                 //   = grad f(x) - h'(x)*(mu inv(L(h(x))) e)
                 void grad(const X_Vector& x,X_Vector& g) const {
@@ -4659,6 +4663,38 @@ namespace peopt{
                     // g <- grad f(x) - h'(x)*(-z + mu inv(L(h(x))) e)
                     X::axpy(Real(-1.),ip4,g);
 
+                }
+                #endif
+
+                // g = grad f(x) - mu h'(x)* (inv(L(h(x))) e)
+                void grad(const X_Vector& x,X_Vector& g) const {
+                    // Get access to z
+                    const Z_Vector& z=zz.front();
+
+                    // Create work elements for accumulating the
+                    // interior point pieces
+                    Z_Vector ip1; Z::init(z,ip1);
+                    Z_Vector ip2; Z::init(z,ip2);
+                    Z_Vector ip3; Z::init(z,ip3);
+                    X_Vector ip4; X::init(x,ip4);
+
+                    // g <- grad f(x)
+                    f->grad(x,g);
+
+                    // ip1 <- e
+                    Z::id(ip1);
+
+                    // ip2 <- h(x)
+                    (*h)(x,ip2);
+
+                    // ip3 <- inv(L(h(x))) e 
+                    Z::linv(ip2,ip1,ip3);
+
+                    // ip4 <- h'(x)* (inv(L(h(x))) e)
+                    h->ps(x,ip3,ip4);
+
+                    // g <- grad f(x) - mu h'(x)* (inv(L(h(x))) e)
+                    X::axpy(-mu,ip4,g);
                 }
 
                 // H_dx = hess f(x) dx + h'(x)* inv(L(h(x))) (z o (h'(x) dx))
@@ -4807,6 +4843,245 @@ namespace peopt{
 
         // This contains the different algorithms used for optimization 
         struct Algorithms {
+            // Finds the new inequality Lagrange multiplier
+            // z = inv L(h(x)) (-z o h'(x)s + mu e)
+            static void findInequalityMultiplier(
+                const typename Functions::t& fns,
+                typename State::t& state
+            ) {
+                // Create some shortcuts
+                X_Vector& x=state.x.front();
+                X_Vector& s=state.s.front();
+                Z_Vector& z=state.z.front();
+                Real& mu=state.mu;
+                VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
+
+                // z_tmp1 <- h'(x)s
+                Z_Vector z_tmp1; Z::init(z,z_tmp1);
+                h.ps(x,s,z_tmp1);
+
+                // z_tmp2 <- z o h'(x)s
+                Z_Vector z_tmp2; Z::init(z,z_tmp2);
+                Z::prod(z,z_tmp1,z_tmp2);
+
+                // z_tmp2 <- - z o h'(x)s
+                Z::scal(Real(-1.),z_tmp2);
+
+                // z_tmp1 <- e
+                Z::id(z_tmp1);
+
+                // z_tmp2 <- -z o h'(x)s + mu e
+                Z::axpy(mu,z_tmp1,z_tmp2);
+
+                // z_tmp1 <- h(x)
+                h(x,z_tmp1);
+
+                // z <- inv L(h(x)) (-z o h'(x)s + mu e)
+                Z::linv(z_tmp1,z_tmp2,z);
+            }
+
+            // Estimates the interior point parameter with the formula
+            // mu_est = <z,h(x)>/m
+            static Real estimateInteriorPointParameter(
+                const typename Functions::t& fns,
+                typename State::t& state
+            ) {
+                // Create some shortcuts
+                const X_Vector& x=state.x.front();
+                const Z_Vector& z=state.z.front();
+                const VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
+
+                // Determine the scaling factor for the interior-
+                // point parameter estimate
+                Z_Vector z_tmp; Z::init(z,z_tmp);
+                Z::id(z_tmp);
+                Real m = Z::innr(z_tmp,z_tmp);
+
+                // Determine h(x);
+                h(x,z_tmp);
+
+                // Estimate the interior-point parameter
+                return Z::innr(z,z_tmp) / m;
+            }
+           
+            // Adjusts the interior point parameter, mu, based on the progress
+            // of the algorithm.
+            static void adjustInteriorPointParameter(
+                const typename Functions::t& fns,
+                typename State::t& state
+            ) {
+                // Create some shortcuts
+                const Real& mu_trg=state.mu_trg;
+                const Real& mu_tol=state.mu_tol;
+                const Real& sigma=state.sigma;
+                const X_Vector& x=state.x.front();
+                const ScalarValuedFunction <Real,XX>& f_merit=*(fns.f_merit);
+                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
+                X_Vector& g=state.g.front();
+                Real& mu=state.mu;
+                Real& merit_x=state.merit_x;
+                Real& norm_g=state.norm_g;
+
+                // Estimate the interior-point parameter
+                Real mu_est = estimateInteriorPointParameter(fns,state);
+
+                // Determine if we should reduce mu
+                if( fabs(mu-mu_est) < mu_tol*mu &&
+                    mu > mu_trg &&
+                    norm_g < mu
+                ) {
+                    // Reduce mu
+                    mu = mu*sigma < mu_trg ? mu_trg : mu*sigma;
+
+                    // Recalculate the merit function since it 
+                    // depends on mu.
+                    merit_x=f_merit(x);
+
+                    // Recalculate the gradient since it depends on mu
+                    f.grad(x,g); 
+                    norm_g=std::sqrt(X::innr(g,g));
+                }
+            }
+
+            // Adjust the stopping conditions unless mu=mu_trg and the
+            // estimated mu, mu_est, is close to mu.
+            static void adjustStoppingConditions(
+                const typename Functions::t& fns,
+                typename State::t& state
+            ) {
+                // Create some shortcuts
+                const Real& mu=state.mu;
+                const Real& mu_trg=state.mu_trg;
+                const Real& mu_tol=state.mu_tol;
+                StoppingCondition::t& opt_stop=state.opt_stop;
+                
+                // Estimate the interior-point parameter
+                Real mu_est = estimateInteriorPointParameter(fns,state);
+
+                // Prevent convergence unless the mu is mu_trg and
+                // mu_est is close to mu;
+                if( opt_stop==StoppingCondition::RelativeGradientSmall &&
+                    mu==mu_trg &&
+                    fabs(mu-mu_est) < mu_tol*mu
+                )
+                    opt_stop=StoppingCondition::NotConverged;
+            }
+
+            // Conduct a line search that preserves positivity of both the
+            // primal and dual variables.  For trust-region methods, this
+            // is pretty straightforward since we only need to modify our
+            // step.  For a line-search algorithm, we modify the line-search
+            // step length so that the farthest the line-search will look
+            // is within the safe region for positivity.
+            static void positivityLineSearch(
+                const typename Functions::t& fns,
+                typename State::t& state
+            ) {
+                // Create some shortcuts 
+                const Real& gamma=state.gamma;
+                const Real& mu=state.mu;
+                const AlgorithmClass::t& algorithm_class
+                    =state.algorithm_class;
+                const Z_Vector& z=state.z.front();
+                const X_Vector& x=state.x.front();
+                const VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
+                X_Vector& s=state.s.front();
+                Real& alpha=state.alpha;
+
+                // Create a fake step.  In the case of a trust-region
+                // method this is just the step.  In the case of
+                // a line-search method this is 2 alpha s.  This represents
+                // the farthest either method will attempt to step.
+                X_Vector ss; X::init(x,ss);
+                X::copy(s,ss);
+                if(algorithm_class==AlgorithmClass::LineSearch)
+                    X::scal(Real(2.)*alpha,ss);
+                
+                // Determine how far we can go in the primal variable
+                
+                // z_tmp1=h(x)
+                Z_Vector z_tmp1; Z::init(z,z_tmp1);
+                h(x,z_tmp1);
+               
+                // x_tmp1=x+s
+                X_Vector x_tmp1; X::init(x,x_tmp1);
+                X::copy(x,x_tmp1);
+                X::axpy(Real(1.),ss,x_tmp1);
+
+                // z_tmp2=h(x+s)
+                Z_Vector z_tmp2; Z::init(z,z_tmp2);
+                h(x_tmp1,z_tmp2);
+
+                // z_tmp2=h(x+s)-h(x)
+                Z::axpy(Real(-1.),z_tmp1,z_tmp2);
+
+                // Find the largest alpha such that
+                // alpha (h(x+s)-h(x)) + h(x) >=0
+                Real alpha1=Z::srch(z_tmp2,z_tmp1);
+
+                // Determine how far we can go in the dual variable
+
+                // z_tmp1=h'(x)s
+                h.p(x,ss,z_tmp1);
+                
+                // z_tmp2 = z o h'(x)s
+                Z::prod(z,z_tmp1,z_tmp2);
+
+                // z_tmp2 = - z o h'(x)s
+                Z::scal(Real(-1.),z_tmp2);
+
+                // z_tmp1 = e
+                Z::id(z_tmp1);
+
+                // z_tmp1 = mu e
+                Z::scal(mu,z_tmp1);
+
+                // Find the largest alpha such that
+                // alpha (- z o h'(x)s) + mu e >=0
+                Real alpha2=Z::srch(z_tmp2,z_tmp1);
+
+                // Determine the farthest we can go in both variables
+                Real alpha0;
+
+                // Only the dual step is restrictive
+                if(alpha1 < Real(0.) && alpha2 >= Real(0.))
+                    alpha0 = alpha2;
+
+                // Only the primal step is restrictive
+                else if(alpha1 >= Real(0.) && alpha2 < Real(0.))
+                    alpha0 = alpha1;
+
+                // Neither step is restrictive
+                else if(alpha1 < Real(0.) && alpha2 < Real(0.))
+                    alpha0 = Real(-1.);
+
+                // Both steps are restrictive
+                else
+                    alpha0 = alpha1 < alpha2 ? alpha1 : alpha2;
+                    
+                // Next, determine if we need to back off from the
+                // boundary or leave the step unchanged.
+                alpha0 =
+                    alpha0 == Real(-1.) || alpha0*gamma > Real(1.) ?
+                        // If we're unrestricted or backing off still puts
+                        // us farther than we want to go
+                        Real(1.) :
+                        // If we're restricted, back off from the boundary
+                        alpha0*gamma;
+
+                // If we're doing a trust-region method, shorten the
+                // step length accordingly
+                if(algorithm_class==AlgorithmClass::TrustRegion) 
+
+                    // Shorten the step
+                    X::scal(alpha0,s);
+
+                // If we're doing a line-search method, make sure
+                // we can't line-search past this point
+                else
+                    alpha *= alpha0;
+
+            }
 
             // This adds the interior point through use of a state manipulator.
             template <typename Functions_,typename State_>
@@ -4848,176 +5123,27 @@ namespace peopt{
                     // Call the user define manipulator
                     smanip(fns,state,loc);
 
-                    // Create some shortcuts 
-                    const Real& mu_tol=state.mu_tol;
-                    const Real& mu_trg=state.mu_trg;
-                    const Real& norm_g=state.norm_g;
-                    const Real& sigma=state.sigma;
-                    const Real& gamma=state.gamma;
-                    Z_Vector& z=state.z.front();
-                    X_Vector& x=state.x.front();
-                    X_Vector& s=state.s.front();
-                    Real& mu=state.mu;
-                    StoppingCondition::t& opt_stop=state.opt_stop;
-                    VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
-                    ScalarValuedFunction <Real,XX>& f_merit=*(fns.f_merit);
-                    ScalarValuedFunction <Real,XX>& f=*(fns.f);
-                    Real& merit_x=state.merit_x;
-                    X_Vector& g=state.g.front();
-
                     switch(loc){
                     
-                    // Here, we take a step in the Lagrange multiplier
-                    case OptimizationLocation::AfterStepBeforeGradient: {
-                        // Get the identity element in the Jordan algebra 
-                        // z_tmp1 <- e
-                        Z_Vector z_tmp1; Z::init(z,z_tmp1);
-                        Z::id(z_tmp1);
-
-                        // h_x <- h(x)
-                        Z_Vector h_x; Z::init(z,h_x);
-                        h(x,h_x);
-
-                        // dz <- inv L(h(x)) e
-                        Z_Vector dz; Z::init(z,dz);
-                        Z::linv(h_x,z_tmp1,dz);
-
-                        // dz <- mu inv L(h(x)) e
-                        Z::scal(mu,dz);
-                        
-                        // dz <- -z + inv L(h(x)) e
-                        Z::axpy(Real(-1.0),z,dz);
-
-                        // z_tmp1 <- h'(x)s 
-                        h.ps(x,s,z_tmp1);
-
-                        // z_tmp2 <- z o h'(x)s
-                        Z_Vector z_tmp2; Z::init(z,z_tmp2);
-                        Z::prod(z,z_tmp1,z_tmp2);
-
-                        // z_tmp1 <- inv L(h(x)) (z o h'(x)s)
-                        Z::linv(h_x,z_tmp2,z_tmp1);
-
-                        // dz <- - inv L(h(x)) (z o h'(x)s) -z +mu inv L(h(x)) e
-                        Z::axpy(Real(-1.0),z_tmp1,dz);
-
-                        // z <- z + dz
-                        Z::axpy(Real(1.0),dz,z);
+                    // Find the new inequality multiplier
+                    case OptimizationLocation::AfterStepBeforeGradient:
+                        findInequalityMultiplier(fns,state);
                         break;
 
-                    // Here, we need to prevent convergence unless mu is close
-                    // to mu_trg.  We also use this opportunity to reduce mu
-                    // if required.
-                    } case OptimizationLocation::EndOfOptimizationIteration: {
-
-                        // Determine the scaling factor for the interior-
-                        // point parameter estimate
-                        Z_Vector z_tmp; Z::init(z,z_tmp);
-                        Z::id(z_tmp);
-                        Real m = Z::innr(z_tmp,z_tmp);
-
-                        // Determine h(x);
-                        h(x,z_tmp);
-
-                        // Estimate the interior-point parameter
-                        Real mu_est = Z::innr(z,z_tmp) / m;
-
-                        // Determine if we should reduce mu
-                        if( fabs(mu-mu_est) < mu_tol*mu &&
-                            mu > mu_trg &&
-                            norm_g < mu
-                        ) {
-                            // Reduce mu
-                            mu = mu*sigma < mu_trg ? mu_trg : mu*sigma;
-
-                            // Recalculate the merit function since it 
-                            // depends on mu.
-                            merit_x=f_merit(x);
-
-                            // Recalculate the gradient since it depends on mu
-                            f.grad(x,g); 
-                        }
-
-                        // Prevent convergence unless the mu is mu_trg and
-                        // mu_est is close to mu;
-                        if( opt_stop
-                                ==StoppingCondition::RelativeGradientSmall &&
-                            mu==mu_trg &&
-                            fabs(mu-mu_est) < mu_tol*mu
-                        )
-                            opt_stop=StoppingCondition::NotConverged;
-
+                    // Adjust the interior point parameter and insure that
+                    // we do not converge unless the interior point parameter
+                    // is small.
+                    case OptimizationLocation::EndOfOptimizationIteration:
+                        adjustInteriorPointParameter(fns,state);
+                        adjustStoppingConditions(fns,state);
                         break;
-                    } case OptimizationLocation::BeforeLineSearch:
+
+                    // Adjust our step or potential step to preserve positivity
+                    case OptimizationLocation::BeforeLineSearch:
+                    case OptimizationLocation::BeforeActualVersusPredicted:
+                        positivityLineSearch(fns,state);
                         break;
-                    case OptimizationLocation::BeforeActualVersusPredicted: {
-                        
-                        // Determine how far we can go in the primal variable
-                        
-                        // z_tmp1=h(x)
-                        Z_Vector z_tmp1; Z::init(z,z_tmp1);
-                        h(x,z_tmp1);
-                       
-                        // x_tmp1=x+s
-                        X_Vector x_tmp1; X::init(x,x_tmp1);
-                        X::copy(x,x_tmp1);
-                        X::axpy(Real(1.),s,x_tmp1);
-
-                        // z_tmp2=h(x+s)
-                        Z_Vector z_tmp2; Z::init(z,z_tmp2);
-                        h(x_tmp1,z_tmp2);
-
-                        // z_tmp2=h(x+s)-h(x)
-                        Z::axpy(Real(-1.),z_tmp1,z_tmp2);
-
-                        // Find the largest alpha such that
-                        // alpha (h(x+s)-h(x)) + h(x) >=0
-                        Real alpha1=Z::srch(z_tmp2,z_tmp1);
-
-                        // Determine how far we can go in the dual variable
-
-                        // z_tmp1=h'(x)s
-                        h.p(x,s,z_tmp1);
-                        
-                        // z_tmp2 = z o h'(x)s
-                        Z::prod(z,z_tmp1,z_tmp2);
-
-                        // z_tmp2 = - z o h'(x)s
-                        Z::scal(Real(-1.),z_tmp2);
-
-                        // z_tmp1 = e
-                        Z::id(z_tmp1);
-
-                        // z_tmp1 = mu e
-                        Z::scal(mu,z_tmp1);
-
-                        // Find the largest alpha such that
-                        // alpha (- z o h'(x)s) + mu e >=0
-                        Real alpha2=Z::srch(z_tmp2,z_tmp1);
-
-                        // Determine the farthest we can go in both variables
-                        Real alpha0;
-                        if(alpha1 < Real(0.) && alpha2 >= Real(0.))
-                            alpha0 = alpha2;
-                        else if(alpha1 >= Real(0.) && alpha2 < Real(0.))
-                            alpha0 = alpha1;
-                        else if(alpha1 < Real(0.) && alpha2 < Real(0.))
-                            alpha0 = Real(-1.);
-                        else
-                            alpha0 = alpha1 < alpha2 ? alpha1 : alpha2;
-
-                        // Next, determine if we need to back off from the
-                        // boundary or leave the step unchanged.
-                        alpha0 =
-                            alpha0 == Real(-1.) || alpha0*gamma > Real(1.) ?
-                                Real(1.0) :
-                                alpha0*gamma;
-
-                        // Shorten the step length accordingly
-                        X::scal(alpha0,s);
-
-                        break;
-                    } default:
+                    default:
                         break;
                     }
 
