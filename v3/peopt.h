@@ -2988,10 +2988,13 @@ namespace peopt{
                
                 // Grab the relative error in the CG solution.
                 // If we're running a line-search algorithm and we exit on the
-                // first iteration, then this doesn't make sense since we
-                // took the steepest descent direction without the
-                // preconditioner.  Hence, we return a NaN.
-                if(algorithm_class==AlgorithmClass::LineSearch && iter==1)
+                // first iteration due to negative curvature, then this doesn't
+                // make sense since we took the steepest descent direction 
+                // without the preconditioner.  Hence, we return a NaN.
+                if( algorithm_class==AlgorithmClass::LineSearch &&
+                    iter==1 &&
+                    kappa < 0
+                )
                     rel_err= Real(std::numeric_limits<double>::quiet_NaN()); 
 
                 // Otherwise, we calculate the current relative error.
@@ -4767,15 +4770,15 @@ namespace peopt{
                 ) : msg(msg_), f_merit(fns.f_merit), h(fns.h), mu(state.mu),
                     zz(state.z) {}
 
-                // <- f_merit(x) + mu barr(h(x))
+                // <- f_merit(x) - mu barr(h(x))
                 Real operator () (const X_Vector& x) const {
                     // Calculate h(x)
                     const Z_Vector& z=zz.front();
                     Z_Vector h_x; Z::init(z,h_x);
                     (*h)(x,h_x);
 
-                    // Return f_merit(x) + mu barr(h(x))
-                    return (*f_merit)(x) + mu * Z::barr(h_x); 
+                    // Return f_merit(x) - mu barr(h(x))
+                    return (*f_merit)(x) - mu * Z::barr(h_x); 
                 }
 
                 // Throw an error 
@@ -4850,7 +4853,7 @@ namespace peopt{
                 typename State::t& state
             ) {
                 // Create some shortcuts
-                X_Vector& x=state.x.front();
+                X_Vector& x=state.x_old.front();
                 X_Vector& s=state.s.front();
                 Z_Vector& z=state.z.front();
                 Real& mu=state.mu;
@@ -5146,7 +5149,6 @@ namespace peopt{
                     default:
                         break;
                     }
-
                 }
             };
 
@@ -5183,6 +5185,10 @@ namespace peopt{
                 
                 // Initialize any remaining functions required for optimization 
                 Functions::init(msg,state,fns);
+
+                // Modify the interior point parameter to be the estimated
+                // parameter
+                state.mu=estimateInteriorPointParameter(fns,state);
                 
                 // Minimize the problem
                 Unconstrained <Real,XX>::Algorithms
