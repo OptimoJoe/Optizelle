@@ -189,7 +189,7 @@ int main(){
 
     // Generate an initial guess for the primal
     std::vector <double> x(2);
-    x[0]=1.1; x[1]=1.1;
+    x[0]=2.1; x[1]=1.1;
 
     // Generate an initial guess for the dual
     std::vector <double> z(2);
@@ -249,15 +249,18 @@ int main(){
     #endif
 
     // BFGS
-    #if 0
+    #if 1
     state.algorithm_class = peopt::AlgorithmClass::LineSearch;
     state.dir = peopt::LineSearchDirection::BFGS;
     state.stored_history = 10;
     state.iter_max = 300;
+    state.sigma = 0.10;
+    state.gamma = 0.95;
+    state.eps_s = 1e-16;
     #endif
     
     // Newton-CG 
-    #if 1
+    #if 0
     state.algorithm_class = peopt::AlgorithmClass::LineSearch;
     state.dir = peopt::LineSearchDirection::NewtonCG;
     state.H_type = peopt::Operators::External;

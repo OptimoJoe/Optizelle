@@ -4301,7 +4301,7 @@ namespace peopt{
                 // This initializes all the parameters required for inequality
                 // constrained optimization.  
                 void init_params() {
-                    mu = Real(1.0); 
+                    mu = Real(std::numeric_limits<double>::quiet_NaN());
                     mu_tol = Real(1e-2);
                     mu_trg = Real(1e-8);
                     sigma = Real(0.5);
@@ -4311,8 +4311,16 @@ namespace peopt{
                 // This initializes all the variables required for inequality
                 // constrained optimization.  
                 void init_vectors(const Z_Vector& z_) {
+                    // Allocate memory for z
                     z.push_back(Z::create()); Z::init(z_,z.back());
                         Z::copy(z_,z.back());
+
+                    // Set z to be ||x|| e
+                    Z_Vector& zz=z.front();
+                    X_Vector& xx=this->x.front();
+                    Z::id(zz);
+                    Z::scal(sqrt(X::innr(xx,xx)),zz);
+
                 }
             };
             
@@ -4639,47 +4647,6 @@ namespace peopt{
                     return (*f)(x);
                 }
 
-                #if 0
-                // g = grad f(x) - h'(x)*z - h'(x)*(-z + mu inv(L(h(x))) e)
-                //   = grad f(x) - h'(x)*(mu inv(L(h(x))) e)
-                void grad(const X_Vector& x,X_Vector& g) const {
-                    // Get access to z
-                    const Z_Vector& z=zz.front();
-
-                    // Create work elements for accumulating the
-                    // interior point pieces
-                    Z_Vector ip1; Z::init(z,ip1);
-                    Z_Vector ip2; Z::init(z,ip2);
-                    Z_Vector ip3; Z::init(z,ip3);
-                    X_Vector ip4; X::init(x,ip4);
-
-                    // g <- grad f(x)
-                    f->grad(x,g);
-
-                    // ip1 <- e
-                    Z::id(ip1);
-
-                    // ip2 <- h(x)
-                    (*h)(x,ip2);
-
-                    // ip3 <- inv(L(h(x))) e 
-                    Z::linv(ip2,ip1,ip3);
-
-                    // ip3 <- mu inv(L(h(x))) e 
-                    Z::scal(mu,ip3);
-
-                    // ip3 <- -z + mu inv(L(h(x))) e 
-                    //Z::axpy(Real(-1.),z,ip3);
-
-                    // ip4 <- h'(x)*(-z + mu inv(L(h(x))) e)
-                    h->ps(x,ip3,ip4);
-
-                    // g <- grad f(x) - h'(x)*(-z + mu inv(L(h(x))) e)
-                    X::axpy(Real(-1.),ip4,g);
-
-                }
-                #endif
-
                 // g = grad f(x) - mu h'(x)* (inv(L(h(x))) e)
                 void grad(const X_Vector& x,X_Vector& g) const {
                     // Get access to z
@@ -4953,7 +4920,7 @@ namespace peopt{
 
                     // Recalculate the gradient since it depends on mu
                     f.grad(x,g); 
-                    norm_g=std::sqrt(X::innr(g,g));
+                    norm_g=sqrt(X::innr(g,g));
                 }
             }
 
@@ -5197,9 +5164,10 @@ namespace peopt{
                 // Initialize any remaining functions required for optimization 
                 Functions::init(msg,state,fns);
 
-                // Modify the interior point parameter to be the estimated
-                // parameter
-                state.mu=estimateInteriorPointParameter(fns,state);
+                // If it has not been set, modify the interior point parameter
+                // to be the estimated parameter
+                if(state.mu!=state.mu)
+                    state.mu=estimateInteriorPointParameter(fns,state);
                 
                 // Minimize the problem
                 Unconstrained <Real,XX>::Algorithms
