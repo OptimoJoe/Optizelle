@@ -120,8 +120,8 @@ struct MyObj : public peopt::ScalarValuedFunction <double,MyHS> {
         const X::Vector& x,
         X::Vector& g
     ) const {
-        g[0]=2*x[0]+1;
-        g[1]=2*x[1]+1;
+        g[0]=2*x[0]+2;
+        g[1]=2*x[1]+2;
     }
 
     // Hessian-vector product
@@ -237,7 +237,7 @@ int main(){
         (peopt::Messaging(),*(fns.h),x,dx,dy);
 
     // Setup the optimization problem
-    #if 0
+    #if 1
     // Newton's method
     state.H_type = peopt::Operators::External;
     state.iter_max = 100;
@@ -257,7 +257,7 @@ int main(){
     #endif
     
     // Newton-CG 
-    #if 1
+    #if 0
     state.algorithm_class = peopt::AlgorithmClass::LineSearch;
     state.dir = peopt::LineSearchDirection::NewtonCG;
     state.H_type = peopt::Operators::External;
