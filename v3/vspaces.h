@@ -579,6 +579,11 @@ namespace peopt {
                 // Get the size of the block
                 unsigned int m=x.blkSize(blk);
 
+                // In case we need to take a Choleski factorization for the
+                // SDP blocks
+                std::vector <Real> U;
+                int info;
+
                 // Depending on the block, compute a different barrier
                 switch(x.blkType(blk)) {
 
@@ -595,20 +600,25 @@ namespace peopt {
                         -dot <Real> (m-1,&(x(blk,2)),1,&(x(blk,2)),1));
                     break;
 
-                // z += log(det(x))
+                // z += log(det(x)).  We compute this by noting that
+                // log(det(x)) = log(det(u'u)) = log(det(u')det(u))
+                //             = log(det(u)^2) = 2 log(det(u))
                 case Cone::Semidefinite: {
-                    // Get the Schur complement of the block.  With any luck
-                    // these are cached.
-                    peopt::SQL <double>::get_schur(x,blk,V,D);
 
-                    // Find the determinant of x
+                    // Find the Choleski factorization of X
+                    U.resize(m*m);
+                    peopt::copy <Real> (m*m,&(x(blk,1,1)),1,&(U[0]),1);
+                    peopt::potrf <Real> ('U',m,&(U[0]),m,info);
+
+                    // Find the deterimant of the Choleski factor
                     Real det(1.);
                     #pragma omp parallel for reduction(*:det) schedule(static)
-                    for(unsigned int i=0;i<m;i++)
-                        det*=D[i];
-
+                    for(unsigned int i=1;i<=m;i++)
+                        det*=U[peopt::ijtok(i,i,m)];
+                    
                     // Complete the barrier computation by taking the log
-                    z+= log <Real> (det);
+                    z+= Real(2.) * log <Real> (det);
+                    
                     break;
                 } }
             }
@@ -723,7 +733,7 @@ namespace peopt {
 
                     // First, make a copy of Y and store it in invU
                     std::vector <Real> invU(m*m);
-                    peopt::copy <Real> (m,&(y(blk,1,1)),1,&(invU[0]),1);
+                    peopt::copy <Real> (m*m,&(y(blk,1,1)),1,&(invU[0]),1);
 
                     // invU <- chol(Y)
                     int info;
