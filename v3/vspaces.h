@@ -569,10 +569,6 @@ namespace peopt {
             // This accumulates the barrier's value
             Real z=0;
 
-            // We have these two vectors in case we have a SDP block
-            std::vector <double> D;
-            std::vector <double> V;
-
             // Loop over all the blocks
             for(unsigned int blk=1;blk<=x.numBlocks();blk++) {
 
@@ -582,7 +578,6 @@ namespace peopt {
                 // In case we need to take a Choleski factorization for the
                 // SDP blocks
                 std::vector <Real> U;
-                int info;
 
                 // Depending on the block, compute a different barrier
                 switch(x.blkType(blk)) {
@@ -607,6 +602,7 @@ namespace peopt {
 
                     // Find the Choleski factorization of X
                     U.resize(m*m);
+                    int info;
                     peopt::copy <Real> (m*m,&(x(blk,1,1)),1,&(U[0]),1);
                     peopt::potrf <Real> ('U',m,&(U[0]),m,info);
 
@@ -632,6 +628,11 @@ namespace peopt {
         static Real srch(const Vector& x,const Vector& y) {
             // Line search parameter
             Real alpha=Real(-1.);
+                   
+            // Variables required for the linesearch on SDP blocks 
+            std::vector <Real> invU;
+            std::vector <Real> tmp;
+            std::vector <Real> invUtXinvU;
 
             // Loop over all the blocks
             for(unsigned int blk=1;blk<=x.numBlocks();blk++) {
@@ -732,7 +733,7 @@ namespace peopt {
                 case Cone::Semidefinite: {
 
                     // First, make a copy of Y and store it in invU
-                    std::vector <Real> invU(m*m);
+                    invU.resize(m*m);
                     peopt::copy <Real> (m*m,&(y(blk,1,1)),1,&(invU[0]),1);
 
                     // invU <- chol(Y)
@@ -743,8 +744,8 @@ namespace peopt {
                     peopt::trtri <Real> ('U','N',m,&(invU[0]),m,info);
 
                     // Find inv(chol(Y))' X inv(chol(Y))
-                    std::vector <Real> tmp(m*m);
-                    std::vector <Real> invUtXinvU(m*m);
+                    tmp.resize(m*m);
+                    invUtXinvU.resize(m*m);
         
                     // tmp <- X inv(chol(Y)) 
                     peopt::symm <Real> ('L','U',m,m,Real(1.),&(x(blk,1,1)),m,
