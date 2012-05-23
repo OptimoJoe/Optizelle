@@ -7,6 +7,7 @@
 #include<limits>
 #include<cmath>
 #include<sstream>
+#include<iostream>
 #include<iomanip>
 #include<memory>
 #include<functional>
@@ -15,72 +16,6 @@
 
 namespace peopt{
 
-    // Defines a Hilbert space 
-    template <typename Vector_,typename Real_>
-    struct HilbertSpace {
-        // Define the vector space and the field
-        typedef Vector_ Vector;
-        typedef Real_ Real;
-
-        // Create an empty, uninitialized vector
-        virtual Vector create() = 0;
-
-        // Memory allocation and size setting
-        virtual void init(const Vector& x,Vector& y) = 0;
-
-        // y <- x (Shallow.  No memory allocation.)
-        virtual void copy(const Vector& x,Vector& y) = 0;
-
-        // x <- alpha * x
-        virtual void scal(const Real& alpha,Vector& x) = 0;
-
-        // x <- 0.  Part of the reason we have this function and not just
-        // use scal is that if the elements of x become NaN, then the
-        // scaling operation may be undefined.  This is a hard set, which
-        // should always be safe.
-        virtual void zero(Vector& x) = 0;
-
-        // y <- alpha * x + y
-        virtual void axpy(const Real& alpha,const Vector& x,Vector& y) = 0;
-
-        // innr <- <x,y>
-        virtual Real innr(const Vector& x,const Vector& y) = 0;
-
-        // norm <- ||x||
-        Real norm(const Vector& x) {
-            return sqrt(innr(x,x));
-        }
-
-        // Deallocates memory required by the vector space
-        virtual ~HilbertSpace() {}
-    };
-    
-    // Augments a Hilbert space with a Euclidean-Jordean algebra that defines
-    // a cone
-    template <typename Vector_,typename Real_>
-    struct Cone : public HilbertSpace <Vector_,Real_> {
-        // Define the vector space and the field
-        typedef Vector_ Vector;
-        typedef Real_ Real;
-
-        // Jordan product, z <- x o y
-        virtual void prod(
-            const Vector& x,
-            const Vector& y,
-            Vector& z
-        ) const = 0;
-
-        // Identity element, x <- e such that x o e = x
-        virtual void id(Vector& x) const = 0;
-
-        // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y
-        virtual void linv(
-            const Vector& x,
-            const Vector& y,
-            Vector& z
-        ) const = 0;
-    };
-    
     // A simple scalar valued function interface, f : X -> R
     template <typename Real,template <typename> class XX>
     struct ScalarValuedFunction {
@@ -156,6 +91,9 @@ namespace peopt{
 
         // Changing the default messaging level during construction
         Messaging(unsigned int plevel_) : plevel(plevel_) {};
+
+        // Copy constructor
+        Messaging(const Messaging& msg) : plevel(msg.plevel) {};
 
         // Prints a message
         virtual void print(const std::string msg,const unsigned int level)
@@ -841,7 +779,7 @@ namespace peopt{
             const typename XX <Real>::Vector& dx,
             const typename YY <Real>::Vector& dy,
             const Real& epsilon,
-            typename YY <Real>::Vector& dd
+            typename XX <Real>::Vector& dd
         ){
             // Create some type shortcuts
             typedef XX <Real> X;
@@ -853,37 +791,37 @@ namespace peopt{
             X_Vector x_op_dx; X::init(x,x_op_dx);
 
             // Create an element for f'(x+eps dx)*dy, etc.
-            Y_Vector fps_xopdx_dy; Y::init(dd,fps_xopdx_dy);
+            X_Vector fps_xopdx_dy; X::init(dd,fps_xopdx_dy);
 
             // Zero out the directional derivative
-            Y::zero(dd);
+            X::zero(dd);
 
             // f'(x+eps dx)*dy
             X::copy(x,x_op_dx);
             X::axpy(epsilon,dx,x_op_dx);
             f.ps(x_op_dx,dy,fps_xopdx_dy);
-            Y::axpy(Real(8.),fps_xopdx_dy,dd);
+            X::axpy(Real(8.),fps_xopdx_dy,dd);
 
             // f'(x-eps dx)*dy
             X::copy(x,x_op_dx);
             X::axpy(-epsilon,dx,x_op_dx);
             f.ps(x_op_dx,dy,fps_xopdx_dy);
-            Y::axpy(Real(-8.),fps_xopdx_dy,dd);
+            X::axpy(Real(-8.),fps_xopdx_dy,dd);
 
             // f'(x+2 eps dx)*dy
             X::copy(x,x_op_dx);
             X::axpy(Real(2.)*epsilon,dx,x_op_dx);
             f.ps(x_op_dx,dy,fps_xopdx_dy);
-            Y::axpy(Real(-1.),fps_xopdx_dy,dd);
+            X::axpy(Real(-1.),fps_xopdx_dy,dd);
 
             // f'(x-2 eps dx)*dy
             X::copy(x,x_op_dx);
             X::axpy(Real(-2.)*epsilon,dx,x_op_dx);
             f.ps(x_op_dx,dy,fps_xopdx_dy);
-            Y::axpy(Real(1.),fps_xopdx_dy,dd);
+            X::axpy(Real(1.),fps_xopdx_dy,dd);
 
             // Finish the finite difference calculation 
-            Y::scal(Real(1.)/(Real(12.)*epsilon),dd);
+            X::scal(Real(1.)/(Real(12.)*epsilon),dd);
         }
 
         // Performs a finite difference test on the gradient of f where  
@@ -1144,7 +1082,7 @@ namespace peopt{
             X_Vector res; X::init(x,res);
 
             // Calculate (f''(x)dx)*dy
-            X_Vector fpps_x_dx_dy; X::init(dy,fpps_x_dx_dy);
+            X_Vector fpps_x_dx_dy; X::init(dx,fpps_x_dx_dy);
             f.pps(x,dx,dy,fpps_x_dx_dy);
 
             // Compute an ensemble of finite difference tests in a linear manner
@@ -1394,13 +1332,13 @@ namespace peopt{
                 // This initializes all the variables required for unconstrained
                 // optimization.  
                 void init_vectors(const X_Vector& x_) {
-                    x.push_back(X::create()); X::init(x_,x.back());
+                    x.push_back(X_Vector()); X::init(x_,x.back());
                         X::copy(x_,x.back());
-                    g.push_back(X::create()); X::init(x_,g.back());
-                    s.push_back(X::create()); X::init(x_,s.back()); 
-                    x_old.push_back(X::create()); X::init(x_,x_old.back()); 
-                    g_old.push_back(X::create()); X::init(x_,g_old.back()); 
-                    s_old.push_back(X::create()); X::init(x_,s_old.back()); 
+                    g.push_back(X_Vector()); X::init(x_,g.back());
+                    s.push_back(X_Vector()); X::init(x_,s.back()); 
+                    x_old.push_back(X_Vector()); X::init(x_,x_old.back()); 
+                    g_old.push_back(X_Vector()); X::init(x_,g_old.back()); 
+                    s_old.push_back(X_Vector()); X::init(x_,s_old.back()); 
                 }
 
                 // This sets all of the parameters possible that don't require
@@ -3950,7 +3888,7 @@ namespace peopt{
                 // This initializes all the variables required for equality
                 // constrained optimization.  
                 void init_vectors(const Y_Vector& y_) {
-                    y.push_back(Y::create()); Y::init(y_,y.back());
+                    y.push_back(Y_Vector()); Y::init(y_,y.back());
                         Y::copy(y_,y.back());
                 }
             };
@@ -4312,7 +4250,7 @@ namespace peopt{
                 // constrained optimization.  
                 void init_vectors(const Z_Vector& z_) {
                     // Allocate memory for z
-                    z.push_back(Z::create()); Z::init(z_,z.back());
+                    z.push_back(Z_Vector()); Z::init(z_,z.back());
                         Z::copy(z_,z.back());
 
                     // Set z to be ||x|| e
@@ -4839,7 +4777,8 @@ namespace peopt{
 
                 // z_tmp1 <- h'(x)s
                 Z_Vector z_tmp1; Z::init(z,z_tmp1);
-                h.ps(x,s,z_tmp1);
+                //h.ps(x,s,z_tmp1);
+                h.p(x,s,z_tmp1);
 
                 // z_tmp2 <- z o h'(x)s
                 Z_Vector z_tmp2; Z::init(z,z_tmp2);
