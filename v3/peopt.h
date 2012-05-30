@@ -4506,6 +4506,16 @@ namespace peopt{
                 // inequality constraints 
                 std::list <Z_Vector> z;
 
+                // The inequality constraint evaluated at x.  In theory,
+                // we can always just evaluate this when we need it.  However,
+                // we do require its computation both in the gradient as well
+                // as Hessian calculations.  More specifically, when computing
+                // with SDP constraints, we require the Schur factorization
+                // of this quantity in order to solve the Sylvester equations
+                // for Linv(h(x)).  By caching it, we have the ability
+                // to cache the Schur factorization.
+                std::list <Z_Vector> h_x;
+
                 // Interior point parameter
                 Real mu;
 
@@ -4561,6 +4571,9 @@ namespace peopt{
                     // Allocate memory for z
                     z.push_back(Z_Vector()); Z::init(z_,z.back());
                         Z::copy(z_,z.back());
+
+                    // Allocate memory for h(x)
+                    h_x.push_back(Z_Vector()); Z::init(z_,h_x.back());
 
                     // Set z to be ||x|| e
                     Z_Vector& zz=z.front();
@@ -4675,7 +4688,9 @@ namespace peopt{
             // Checks whether we have a valid inequality multiplier label
             struct is_z : public std::unary_function<std::string, bool> {
                 bool operator () (const std::string& name) const {
-                    if( name == "z") 
+                    if( name == "z" ||
+                        name == "h_x"
+                    )
                         return true;
                     else
                         return false;
@@ -4739,6 +4754,8 @@ namespace peopt{
             ) {
                 zs.first.push_back("z");
                 zs.second.splice(zs.second.end(),state.z);
+                zs.first.push_back("h_x");
+                zs.second.splice(zs.second.end(),state.h_x);
             }
             
             // Copy out the scalar information
@@ -4780,7 +4797,10 @@ namespace peopt{
 
                     // Determine which variable we're reading in and then splice
                     // it in the correct location
-                    if(*name=="z") state.z.splice(state.z.end(),zs.second,zz);
+                    if(*name=="z")
+                        state.z.splice(state.z.end(),zs.second,zz);
+                    else if(*name=="h_x")
+                        state.h_x.splice(state.h_x.end(),zs.second,zz);
                 }
             }
             
@@ -4884,6 +4904,9 @@ namespace peopt{
                 // Interior point parameter
                 const Real& mu;
 
+                // Inequality constraint evaluated at x
+                const std::list <Z_Vector>& h_xx;
+
                 // This forces derived classes to call the constructor that
                 // depends on the state
                 InequalityModifiedFunction() {}
@@ -4896,7 +4919,8 @@ namespace peopt{
                     const Messaging& msg,
                     const typename State::t& state,
                     typename Functions::t& fns
-                ) : f(fns.f), h(fns.h), zz(state.z), mu(state.mu) { }
+                ) : f(fns.f), h(fns.h), zz(state.z), mu(state.mu),
+                    h_xx(state.h_x) { }
 
                 // <- f(x) 
                 Real operator () (const X_Vector& x) const {
@@ -4905,15 +4929,15 @@ namespace peopt{
 
                 // g = grad f(x) - mu h'(x)* (inv(L(h(x))) e)
                 void grad(const X_Vector& x,X_Vector& g) const {
-                    // Get access to z
+                    // Get access to z and h(x)
                     const Z_Vector& z=zz.front();
+                    const Z_Vector& h_x=h_xx.front();
 
                     // Create work elements for accumulating the
                     // interior point pieces
                     Z_Vector ip1; Z::init(z,ip1);
                     Z_Vector ip2; Z::init(z,ip2);
-                    Z_Vector ip3; Z::init(z,ip3);
-                    X_Vector ip4; X::init(x,ip4);
+                    X_Vector ip3; X::init(x,ip3);
 
                     // g <- grad f(x)
                     f->grad(x,g);
@@ -4921,17 +4945,14 @@ namespace peopt{
                     // ip1 <- e
                     Z::id(ip1);
 
-                    // ip2 <- h(x)
-                    (*h)(x,ip2);
+                    // ip2 <- inv(L(h(x))) e 
+                    Z::linv(h_x,ip1,ip2);
 
-                    // ip3 <- inv(L(h(x))) e 
-                    Z::linv(ip2,ip1,ip3);
-
-                    // ip4 <- h'(x)* (inv(L(h(x))) e)
-                    h->ps(x,ip3,ip4);
+                    // ip3 <- h'(x)* (inv(L(h(x))) e)
+                    h->ps(x,ip2,ip3);
 
                     // g <- grad f(x) - mu h'(x)* (inv(L(h(x))) e)
-                    X::axpy(-mu,ip4,g);
+                    X::axpy(-mu,ip3,g);
                 }
 
                 // H_dx = hess f(x) dx + h'(x)* inv(L(h(x))) (z o (h'(x) dx))
@@ -4941,15 +4962,15 @@ namespace peopt{
                     const X_Vector& dx,
                     X_Vector& H_dx 
                 ) const {
-                    // Get access to z
+                    // Get access to z and h(x)
                     const Z_Vector& z=zz.front();
+                    const Z_Vector& h_x=h_xx.front();
 
                     // Create work elements for accumulating the
                     // interior point pieces
                     Z_Vector ip1; Z::init(z,ip1);
                     Z_Vector ip2; Z::init(z,ip2);
-                    Z_Vector ip3; Z::init(z,ip3);
-                    X_Vector ip4; X::init(x,ip4);
+                    X_Vector ip3; X::init(x,ip3);
 
                     // H_dx <- hess f(x) dx
                     f->hessvec(x,dx,H_dx);
@@ -4960,17 +4981,14 @@ namespace peopt{
                     // ip2 <- z o h'(x) dx
                     Z::prod(z,ip1,ip2);
 
-                    // ip3 <- h(x)
-                    (*h)(x,ip3); 
-
                     // ip1 <- inv(L(h(x))) (z o h'(x) dx) 
-                    Z::linv(ip3,ip2,ip1);
+                    Z::linv(h_x,ip2,ip1);
 
-                    // ip4 <- h'(x)* inv(L(h(x))) (z o h'(x) dx) 
-                    h->ps(x,ip1,ip4);
+                    // ip3 <- h'(x)* inv(L(h(x))) (z o h'(x) dx) 
+                    h->ps(x,ip1,ip3);
 
                     // H_dx = hess f(x) dx + h'(x)* inv(L(h(x))) (z o h'(x) dx) 
-                    X::axpy(Real(1.0),ip4,H_dx);
+                    X::axpy(Real(1.0),ip3,H_dx);
                 }
             };
 
@@ -5006,7 +5024,9 @@ namespace peopt{
 
                 // <- f_merit(x) - mu barr(h(x))
                 Real operator () (const X_Vector& x) const {
-                    // Calculate h(x)
+                    // Calculate h(x).  Funny enough, we don't use the cached
+                    // value of h(x) here since we evaluate this function at
+                    // points such as x+s.  Be careful of this.
                     const Z_Vector& z=zz.front();
                     Z_Vector h_x; Z::init(z,h_x);
                     (*h)(x,h_x);
@@ -5188,11 +5208,12 @@ namespace peopt{
                 typename State::t& state
             ) {
                 // Create some shortcuts
-                X_Vector& x=state.x.front();
-                X_Vector& s=state.s.front();
+                const Z_Vector& h_x=state.h_x.front();
+                const X_Vector& x=state.x.front();
+                const X_Vector& s=state.s.front();
+                const Real& mu=state.mu;
+                const VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
                 Z_Vector& z=state.z.front();
-                Real& mu=state.mu;
-                VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
 
                 // z_tmp1 <- h'(x)s
                 Z_Vector z_tmp1; Z::init(z,z_tmp1);
@@ -5211,11 +5232,8 @@ namespace peopt{
                 // z_tmp2 <- -z o h'(x)s + mu e
                 Z::axpy(mu,z_tmp1,z_tmp2);
 
-                // z_tmp1 <- h(x)
-                h(x,z_tmp1);
-
                 // z <- inv L(h(x)) (-z o h'(x)s + mu e)
-                Z::linv(z_tmp1,z_tmp2,z);
+                Z::linv(h_x,z_tmp2,z);
             }
 
             // Estimates the interior point parameter with the formula
@@ -5225,9 +5243,8 @@ namespace peopt{
                 const typename State::t& state
             ) {
                 // Create some shortcuts
-                const X_Vector& x=state.x.front();
                 const Z_Vector& z=state.z.front();
-                const VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
+                const Z_Vector& h_x=state.h_x.front();
 
                 // Determine the scaling factor for the interior-
                 // point parameter estimate
@@ -5235,11 +5252,8 @@ namespace peopt{
                 Z::id(z_tmp);
                 Real m = Z::innr(z_tmp,z_tmp);
 
-                // Determine h(x);
-                h(x,z_tmp);
-
                 // Estimate the interior-point parameter
-                return Z::innr(z,z_tmp) / m;
+                return Z::innr(z,h_x) / m;
             }
            
             // Adjusts the interior point parameter, mu, based on the progress
@@ -5318,6 +5332,7 @@ namespace peopt{
                     =state.algorithm_class;
                 const Z_Vector& z=state.z.front();
                 const X_Vector& x=state.x.front();
+                const Z_Vector& h_x=state.h_x.front();
                 const VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
                 X_Vector& s=state.s.front();
                 Real& alpha=state.alpha;
@@ -5333,25 +5348,21 @@ namespace peopt{
                 
                 // Determine how far we can go in the primal variable
                 
-                // z_tmp1=h(x)
-                Z_Vector z_tmp1; Z::init(z,z_tmp1);
-                h(x,z_tmp1);
-               
                 // x_tmp1=x+s
                 X_Vector x_tmp1; X::init(x,x_tmp1);
                 X::copy(x,x_tmp1);
                 X::axpy(Real(1.),ss,x_tmp1);
 
-                // z_tmp2=h(x+s)
-                Z_Vector z_tmp2; Z::init(z,z_tmp2);
-                h(x_tmp1,z_tmp2);
+                // z_tmp1=h(x+s)
+                Z_Vector z_tmp1; Z::init(z,z_tmp1);
+                h(x_tmp1,z_tmp1);
 
                 // z_tmp2=h(x+s)-h(x)
-                Z::axpy(Real(-1.),z_tmp1,z_tmp2);
+                Z::axpy(Real(-1.),h_x,z_tmp1);
 
                 // Find the largest alpha such that
                 // alpha (h(x+s)-h(x)) + h(x) >=0
-                Real alpha1=Z::srch(z_tmp2,z_tmp1);
+                Real alpha1=Z::srch(z_tmp1,h_x);
 
                 // Determine how far we can go in the dual variable
 
@@ -5359,6 +5370,7 @@ namespace peopt{
                 h.p(x,ss,z_tmp1);
                 
                 // z_tmp2 = z o h'(x)s
+                Z_Vector z_tmp2; Z::init(z,z_tmp2);
                 Z::prod(z,z_tmp1,z_tmp2);
 
                 // z_tmp2 = - z o h'(x)s
@@ -5458,6 +5470,9 @@ namespace peopt{
                     smanip(fns,state,loc);
                     
                     // Create some shorcuts
+                    const VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
+                    const X_Vector& x=state.x.front();
+                    Z_Vector& h_x=state.h_x.front();
                     Real& mu_est = state.mu_est;
 
                     switch(loc){
@@ -5467,8 +5482,13 @@ namespace peopt{
                         findInequalityMultiplier(fns,state);
                         break;
 
-                    // Find the new interior point estimate
+                    // Update our cached copy of h(x) and find the new 
+                    // interior point estimate.
                     case OptimizationLocation::AfterStepBeforeGradient:
+                        // Calculate h(x)
+                        h(x,h_x);
+
+                        // Update the interior point estimate
                         mu_est = estimateInteriorPointParameter(fns,state);
                         break; 
 
@@ -5529,6 +5549,9 @@ namespace peopt{
                 
                 // Initialize any remaining functions required for optimization 
                 Functions::init(msg,state,fns);
+
+                // Initialize the value h(x)
+                (*fns.h)(state.x.back(),state.h_x.back());
 
                 // Estimate the interior point parameter
                 state.mu_est=estimateInteriorPointParameter(fns,state);
