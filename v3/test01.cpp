@@ -363,17 +363,10 @@ int main(){
 
     // Solve the optimization problem
     peopt::Unconstrained <double,MyHS>::Algorithms
-        ::getMin(peopt::Messaging(1),ufns,ustate);
+        ::getMin(peopt::Messaging(2),ufns,ustate);
 
     // Print out the final answer
     const std::vector <double>& opt_x=*(ustate.x.begin());
     std::cout << "The optimal point is: (" << opt_x[0] << ','
 	<< opt_x[1] << ')' << std::endl;
-
-    // Steepest descent
-    istate.algorithm_class = peopt::AlgorithmClass::LineSearch;
-
-    // Solve a inequality constrained optimization problem
-    peopt::InequalityConstrained <double,MyHS,MyHS>::Algorithms
-        ::getMin(peopt::Messaging(1),ifns,istate);
 }

@@ -186,6 +186,10 @@ int main(){
     peopt::InequalityConstrained <double,MyHS,MyHS>::Algorithms
         ::getMin(peopt::Messaging(1),fns,state);
 
+    // Print out the reason for convergence
+    std::cout << "The algorithm converged due to: " <<
+        peopt::StoppingCondition::to_string(state.opt_stop) << std::endl;
+
     // Print out the final answer
     const std::vector <double>& opt_x=*(state.x.begin());
     std::cout << "The optimal point is: (" << opt_x[0] << ','

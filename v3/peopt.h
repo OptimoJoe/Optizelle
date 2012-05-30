@@ -84,21 +84,20 @@ namespace peopt{
     // Defines how we output messages to the user
     struct Messaging {
         // Defines the current print level
-        unsigned int plevel;
+        unsigned int level;
 
         // Sets the default messaging level to 1
-        Messaging() : plevel(1) {};
+        Messaging() : level(1) {};
 
         // Changing the default messaging level during construction
-        Messaging(unsigned int plevel_) : plevel(plevel_) {};
+        Messaging(unsigned int level_) : level(level_) {};
 
         // Copy constructor
-        Messaging(const Messaging& msg) : plevel(msg.plevel) {};
+        Messaging(const Messaging& msg) : level(msg.level) {};
 
         // Prints a message
-        virtual void print(const std::string msg,const unsigned int level)
-        const {
-            if(level <= plevel) std::cout << msg << std::endl;
+        virtual void print(const std::string msg) const {
+            if(level <= level) std::cout << msg << std::endl;
         }
 
         // Prints an error
@@ -466,6 +465,9 @@ namespace peopt{
     
     namespace OptimizationLocation{
         enum t{
+            // Occurs after the initial function and gradient evaluation 
+            AfterInitialFuncAndGrad,
+
             // Occurs just before we take the optimization step u+s
             BeforeStep,
 
@@ -483,14 +485,28 @@ namespace peopt{
             // This occurs prior to the computation of the line search
             BeforeLineSearch,
 
+            // This occurs after a rejected trust-region step
+            AfterRejectedTrustRegion,
+
+            // This occurs after a rejected line-search step
+            AfterRejectedLineSearch,
+
             // This occurs prior to checking the predicted versus actual
             // reduction in a trust-region method.
-            BeforeActualVersusPredicted 
+            BeforeActualVersusPredicted,
+
+            // This occurs at the end of a Krylov iteration
+            EndOfKrylovIteration,
+
+            // This occurs at the end of all optimization 
+            EndOfOptimization
         };
             
         // Converts the optimization location to a string 
         std::string to_string(t loc){
             switch(loc){
+            case AfterInitialFuncAndGrad:
+                return "AfterInitialFuncAndGrad";
             case BeforeStep:
                 return "BeforeStep";
             case AfterStepBeforeGradient:
@@ -499,8 +515,16 @@ namespace peopt{
                 return "EndOfOptimizationIteration";
             case BeforeLineSearch:
                 return "BeforeLineSearch";
+            case AfterRejectedTrustRegion:
+                return "AfterRejectedTrustRegion";
+            case AfterRejectedLineSearch:
+                return "AfterRejectedLineSearch";
             case BeforeActualVersusPredicted:
                 return "BeforeActualVersusPredicted";
+            case EndOfKrylovIteration:
+                return "EndOfKrylovIteration";
+            case EndOfOptimization:
+                return "EndOfOptimization";
             default:
                 throw;
             }
@@ -508,6 +532,8 @@ namespace peopt{
         
         // Converts a string to a line-search kind 
         t from_string(std::string loc){
+            if(loc=="AfterInitialFuncAndGrad")
+                return AfterInitialFuncAndGrad;
             if(loc=="BeforeStep")
                 return BeforeStep; 
             else if(loc=="AfterStepBeforeGradient")
@@ -516,8 +542,16 @@ namespace peopt{
                 return EndOfOptimizationIteration; 
             else if(loc=="BeforeLineSearch")
                 return BeforeLineSearch;
+            else if(loc=="AfterRejectedTrustRegion")
+                return AfterRejectedTrustRegion;
+            else if(loc=="AfterRejectedLineSearch")
+                return AfterRejectedLineSearch;
             else if(loc=="BeforeActualVersusPredicted")
                 return BeforeActualVersusPredicted;
+            else if(loc=="EndOfKrylovIteration")
+                return EndOfKrylovIteration;
+            else if(loc=="EndOfOptimization")
+                return EndOfOptimization;
             else
                 throw;
         }
@@ -525,11 +559,16 @@ namespace peopt{
         // Checks whether or not a string is valid
         struct is_valid : public std::unary_function<std::string, bool> {
             bool operator () (const std::string& name) const {
-                if( name=="BeforeStep" || 
+                if( name=="AfterInitialFuncAndGrad" ||
+                    name=="BeforeStep" || 
                     name=="AfterStepBeforeGradient" ||
                     name=="EndOfOptimizationIteration" ||
                     name=="BeforeLineSearch" ||
-                    name=="BeforeActualVersusPredicted"
+                    name=="AfterRejectedTrustRegion" ||
+                    name=="AfterRejectedLineSearch" ||
+                    name=="BeforeActualVersusPredicted" ||
+                    name=="EndOfKrylovIteration" ||
+                    name=="EndOfOptimization"
                 )
                     return true;
                 else
@@ -582,7 +621,7 @@ namespace peopt{
             if(a=="") return b; else return a;
         }
     };
-    
+  
     // This checks the parameters and prints and error in there's a problem.
     template <typename checkParamVal>
     void checkParams(
@@ -599,6 +638,55 @@ namespace peopt{
             combineStrings()
         );
         if(err!="") msg.error(err);
+    }
+
+    // Converts a variety of basic datatypes to strings
+    std::ostream& formatReal(std::ostream& out) {
+        return out << std::setprecision(2) << std::scientific << std::setw(10)
+            << std::left;
+    }
+    std::ostream& formatInt(std::ostream& out) {
+        return out << std::setw(10) << std::left;
+    }
+    std::ostream& formatString(std::ostream& out) {
+        return out << std::setw(10) << std::left;
+    }
+    template <typename T>
+    std::string atos(T x);
+    template <>
+    std::string atos <double> (double x){
+        std::stringstream ss;
+        ss << formatReal << x;
+        return ss.str();
+    }
+    template <>
+    std::string atos <unsigned int> (unsigned int x){
+        std::stringstream ss;
+        ss << formatInt << x;
+        return ss.str();
+    }
+    template <>
+    std::string atos <const char*> (const char* x){
+        std::stringstream ss;
+        ss << formatString << x;
+        return ss.str();
+    }
+    template <>
+    std::string atos <KrylovStop::t> (KrylovStop::t x){
+        std::stringstream ss;
+        // Converts the Krylov stopping condition to a shorter string 
+        switch(x){
+        case KrylovStop::NegativeCurvature:
+            return atos <> ("NegCurv");
+        case KrylovStop::RelativeErrorSmall:
+            return atos <> ("RelErrSml");
+        case KrylovStop::MaxItersExceeded:
+            return atos <> ("IterExcd");
+        case KrylovStop::TrustRegionViolated:
+            return atos <> ("TrstReg");
+        default:
+            throw;
+        }
     }
 
     // A collection of miscellaneous diagnostics that help determine errors.
@@ -848,7 +936,8 @@ namespace peopt{
             Real dd_grad=X::innr(f_grad,dx);
 
             // Compute an ensemble of finite difference tests in a linear manner
-            msg.print("Finite difference test on the gradient.",1);
+            if(msg.level>=1)
+                msg.print("Finite difference test on the gradient.");
             for(int i=-2;i<=5;i++){
                 Real epsilon=pow(Real(.1),i);
                 Real dd=directionalDerivative <> (f,x,dx,epsilon);
@@ -858,7 +947,7 @@ namespace peopt{
                 else ss << "The relative difference (1e-" << i << "): ";
                 ss << std::scientific << std::setprecision(16)
                     << fabs(dd_grad-dd)/(Real(1e-16)+fabs(dd_grad));
-                msg.print(ss.str(),1);
+                if(msg.level>=1) msg.print(ss.str());
             }
         }
         
@@ -888,7 +977,8 @@ namespace peopt{
             f.hessvec(x,dx,hess_f_dx);
 
             // Compute an ensemble of finite difference tests in a linear manner
-            msg.print("Finite difference test on the Hessian.",1);
+            if(msg.level>=1)
+                msg.print("Finite difference test on the Hessian.");
             for(int i=-2;i<=5;i++){
 
                 // Calculate the directional derivative
@@ -903,11 +993,13 @@ namespace peopt{
                     (Real(1e-16)+sqrt(X::innr(hess_f_dx,hess_f_dx)));
 
                 // Print out the differences
-                std::stringstream ss;
-                if(i<0) ss << "The relative difference (1e+" << -i <<  "): ";
-                else ss << "The relative difference (1e-" << i << "): ";
-                ss << std::scientific << std::setprecision(16) << rel_err; 
-                msg.print(ss.str(),1);
+                if(msg.level>=1) {
+                    std::stringstream ss;
+                    if(i<0)ss << "The relative difference (1e+" << -i <<  "): ";
+                    else ss << "The relative difference (1e-" << i << "): ";
+                    ss << std::scientific << std::setprecision(16) << rel_err; 
+                    msg.print(ss.str());
+                }
             }
         }
         
@@ -947,12 +1039,14 @@ namespace peopt{
             Real diff=fabs(innr_Hxdx_dxx-innr_dx_Hxdxx);
 
             // Send a message with the result
-            msg.print("Symmetry test on the Hessian of a scalar valued "
-                "function.",1);
-            std::stringstream ss;
-            ss << "The absolute err. between <H(x)dx,dxx> and <dx,H(x)dxx>: "
-                << std::scientific << std::setprecision(16) << diff;
-            msg.print(ss.str(),1);
+            if(msg.level>=1) {
+                msg.print("Symmetry test on the Hessian of a scalar valued "
+                    "function.");
+                std::stringstream ss;
+                ss<< "The absolute err. between <H(x)dx,dxx> and <dx,H(x)dxx>: "
+                    << std::scientific << std::setprecision(16) << diff;
+                msg.print(ss.str());
+            }
         }
 
         // Performs a finite difference test on the derivative of a
@@ -984,8 +1078,9 @@ namespace peopt{
             f.p(x,dx,fp_x_dx);
 
             // Compute an ensemble of finite difference tests in a linear manner
-            msg.print("Finite difference test on the derivative of a "
-                "vector-valued function.",1);
+            if(msg.level>=1) 
+                msg.print("Finite difference test on the derivative of a "
+                    "vector-valued function.");
             for(int i=-2;i<=5;i++){
 
                 // Calculate the directional derivative
@@ -1000,11 +1095,13 @@ namespace peopt{
                     (Real(1e-16)+sqrt(Y::innr(fp_x_dx,fp_x_dx)));
 
                 // Print out the differences
-                std::stringstream ss;
-                if(i<0) ss << "The relative difference (1e+" << -i <<  "): ";
-                else ss << "The relative difference (1e-" << i << "): ";
-                ss << std::scientific << std::setprecision(16) << rel_err; 
-                msg.print(ss.str(),1);
+                if(msg.level>=1) {
+                    std::stringstream ss;
+                    if(i<0)ss << "The relative difference (1e+" << -i <<  "): ";
+                    else ss << "The relative difference (1e-" << i << "): ";
+                    ss << std::scientific << std::setprecision(16) << rel_err; 
+                    msg.print(ss.str());
+                }
             }
         }
 
@@ -1048,12 +1145,14 @@ namespace peopt{
             Real diff=fabs(innr_fpxdx_dy-innr_dx_fpsxdy);
 
             // Send a message with the result
-            msg.print("Adjoint test on the first derivative of a vector valued "
-                "function.",1);
-            std::stringstream ss;
-            ss << "The absolute err. between <f'(x)dx,dy> and <dx,f'(x)*dy>: "
-                << std::scientific << std::setprecision(16) << diff;
-            msg.print(ss.str(),1);
+            if(msg.level>=1) {
+                msg.print("Adjoint test on the first derivative of a vector "
+                    "valued function.");
+                std::stringstream ss;
+                ss<<"The absolute err. between <f'(x)dx,dy> and <dx,f'(x)*dy>: "
+                    << std::scientific << std::setprecision(16) << diff;
+                msg.print(ss.str());
+            }
         }
 
         // Performs a finite difference test on the second-derivative-adjoint 
@@ -1086,8 +1185,9 @@ namespace peopt{
             f.pps(x,dx,dy,fpps_x_dx_dy);
 
             // Compute an ensemble of finite difference tests in a linear manner
-            msg.print("Finite difference test on the 2nd-derivative adj. "
-                "of a vector-valued function.",1);
+            if(msg.level>=1) 
+                msg.print("Finite difference test on the 2nd-derivative adj. "
+                    "of a vector-valued function.");
             for(int i=-2;i<=5;i++){
 
                 // Calculate the directional derivative
@@ -1102,11 +1202,13 @@ namespace peopt{
                     / (Real(1e-16)+sqrt(X::innr(fpps_x_dx_dy,fpps_x_dx_dy)));
 
                 // Print out the differences
-                std::stringstream ss;
-                if(i<0) ss << "The relative difference (1e+" << -i <<  "): ";
-                else ss << "The relative difference (1e-" << i << "): ";
-                ss << std::scientific << std::setprecision(16) << rel_err; 
-                msg.print(ss.str(),1);
+                if(msg.level>=1) {
+                    std::stringstream ss;
+                    if(i<0)ss << "The relative difference (1e+" << -i <<  "): ";
+                    else ss << "The relative difference (1e-" << i << "): ";
+                    ss << std::scientific << std::setprecision(16) << rel_err; 
+                    msg.print(ss.str());
+                }
             }
         }
     }
@@ -1126,6 +1228,116 @@ namespace peopt{
 
         // Allow the derived class to deallocate memory
         virtual ~StateManipulator() {}
+    };
+   
+    // A state manipulator that's been customized in order to print diagonistic
+    // information
+    template < typename External,typename Internal >
+    class DiagnosticManipulator : public StateManipulator
+        <typename External::Functions::t,typename External::State::t>
+    {
+    private:
+        // Create some type shortcuts
+        typedef StateManipulator
+            <typename External::Functions::t,typename External::State::t> 
+            InternalManipulator;
+
+        // A reference to an existing state manipulator 
+        const InternalManipulator& smanip;
+
+        // A reference to the messsaging object
+        const Messaging& msg;
+
+    public:
+
+        // Create a reference to an existing manipulator 
+        DiagnosticManipulator(
+            const InternalManipulator& smanip_,
+            const Messaging& msg_
+        ) : smanip(smanip_), msg(msg_) {}
+
+        // Application
+        void operator () (
+            const typename External::Functions::t& fns_,
+            typename External::State::t& state_,
+            OptimizationLocation::t loc
+        ) const {
+
+            // Call the internal manipulator 
+            smanip(fns_,state_,loc);
+
+            // Dynamically cast the incoming state to match the internal state.
+            // In theory, this should always work since we're doing this 
+            // trickery internally.  
+            typename Internal::State::t& state 
+                =dynamic_cast <typename Internal::State::t&> (state_);
+
+            switch(loc){
+
+            // Output the headers for the diagonstic information
+            case OptimizationLocation::AfterInitialFuncAndGrad:
+                if(msg.level >=1) {
+                    // Get the headers 
+                    std::list <std::string> out;
+                    Internal::Printer::getStateHeader(state,out);
+                    if(msg.level >=2)
+                        Internal::Printer::getKrylovHeader(state,out);
+
+                    // Output the result
+                    msg.print(std::accumulate (
+                        out.begin(),out.end(),std::string()));
+                }
+            // Output the overall state at the end of the optimization
+            // iteration
+            case OptimizationLocation::EndOfOptimizationIteration: 
+            case OptimizationLocation::AfterRejectedTrustRegion:
+            case OptimizationLocation::AfterRejectedLineSearch:
+                if(msg.level >= 1) {
+                    // Get the diagonstic information
+                    std::list <std::string> out;
+
+                    // Don't print out the iteration information if
+                    // we reject the step
+                    if(    loc==OptimizationLocation
+                            ::AfterRejectedTrustRegion
+                        || loc==OptimizationLocation
+                            ::AfterRejectedLineSearch
+                    )
+                        Internal::Printer::getState(state,false,true,out);
+                    else 
+                        Internal::Printer::getState(state,false,false,out);
+
+                    // Print out blank Krylov information 
+                    Internal::Printer::getKrylov(state,true,out);
+
+                    // Output the result
+                    msg.print(std::accumulate (
+                        out.begin(),out.end(),std::string()));
+                }
+                break;
+
+            // Output information at the end of each Krylov iteration
+            case OptimizationLocation::EndOfKrylovIteration:
+                if(msg.level >= 2) {
+                    // Get the diagonstic information
+                    std::list <std::string> out;
+
+                    // Print out blank state information
+                    Internal::Printer::getState(state,true,false,out);
+
+                    // Print out the Krylov information 
+                    Internal::Printer::getKrylov(state,false,out);
+
+                    // Output the result
+                    msg.print(std::accumulate (
+                        out.begin(),out.end(),std::string()));
+                }
+                break;
+
+            default:
+                break;
+            }
+        }
     };
 
     // A simple operator specification, A : X->Y
@@ -2089,7 +2301,7 @@ namespace peopt{
                         = oldS.begin();
                     while(y0!=oldY.end()){
                         Real inner_y_s=X::innr(*y0++,*s0++);
-                        if(inner_y_s<0)
+                        if(inner_y_s<=0)
                             msg.error("Detected a (s,y) pair in BFGS that "
                                 "possesed a nonpositive inner product");
                     }
@@ -2390,7 +2602,7 @@ namespace peopt{
                         = oldS.begin();
                     while(y0!=oldY.end()){
                         Real inner_y_s=X::innr(*y0++,*s0++);
-                        if(inner_y_s<0)
+                        if(inner_y_s<=0)
                             msg.error("Detected a (s,y) pair in the inverse "
                                 "BFGS operator that possesed a nonpositive "
                                 "inner product");
@@ -2723,6 +2935,184 @@ namespace peopt{
             }
         };
 
+        // Contains functions that assist in creating an output for diagonstics
+        struct Printer {
+
+            // Gets the header for the state information
+            static void getStateHeader_(
+                const typename State::t& state,
+                std::list <std::string>& out
+            ) {
+
+                // Create some shortcuts
+                const AlgorithmClass::t& algorithm_class=state.algorithm_class;
+                const LineSearchDirection::t& dir=state.dir;
+
+                // Basic information
+                out.push_back(atos <> ("Iter"));
+                out.push_back(atos <> ("Merit(x)"));
+                out.push_back(atos <> ("|| g ||"));
+                out.push_back(atos <> ("|| s ||"));
+
+                // In case we're using a Krylov method
+                if(    algorithm_class==AlgorithmClass::TrustRegion
+                    || dir==LineSearchDirection::NewtonCG
+                ){
+                    out.push_back(atos <> ("Kry Iter"));
+                    out.push_back(atos <> ("Kry Err"));
+                    out.push_back(atos <> ("Kry Why"));
+                }
+
+                // In case we're using a line-search method
+                if(algorithm_class==AlgorithmClass::LineSearch) {
+                    out.push_back(atos <> ("LS Iter"));
+                }
+            }
+
+            // Combines all of the state headers
+            static void getStateHeader(
+                const typename State::t& state,
+                std::list <std::string>& out
+            ) {
+                Unconstrained <Real,XX>::Printer::getStateHeader_(state,out);
+            }
+
+            // Gets the state information for output
+            static void getState_(
+                const typename State::t& state,
+                const bool blank,
+                const bool noiter,
+                std::list <std::string>& out
+            ) {
+
+                // Create some shortcuts
+                const unsigned int& iter=state.iter;
+                const Real& merit_x=state.merit_x;
+                const Real& norm_g=state.norm_g;
+                const Real& norm_s=state.norm_s;
+                const unsigned int& krylov_iter=state.krylov_iter;
+                const Real& krylov_rel_err=state.krylov_rel_err;
+                const KrylovStop::t& krylov_stop=state.krylov_stop;
+                const unsigned int& linesearch_iter=state.linesearch_iter;
+                const AlgorithmClass::t& algorithm_class=state.algorithm_class;
+                const LineSearchDirection::t& dir=state.dir;
+
+                // Get a iterator to the last element prior to inserting
+                // elements
+                std::list <std::string>::iterator prior=out.end(); prior--;
+
+                // Basic information
+                if(!noiter)
+                    out.push_back(atos <> (iter));
+                else
+                    out.push_back(atos <> ("*"));
+                out.push_back(atos <> (merit_x));
+                out.push_back(atos <> (norm_g));
+                out.push_back(atos <> (norm_s));
+
+                // In case we're using a Krylov method
+                if(    algorithm_class==AlgorithmClass::TrustRegion
+                    || dir==LineSearchDirection::NewtonCG
+                ){
+                    out.push_back(atos <> (krylov_iter));
+                    out.push_back(atos <> (krylov_rel_err));
+                    out.push_back(atos <> (krylov_stop));
+                }
+
+                // In case we're using a line-search method
+                if(algorithm_class==AlgorithmClass::LineSearch) {
+                    out.push_back(atos <> (linesearch_iter));
+                }
+
+                // If we needed to do blank insertions, overwrite the elements
+                // with nothing
+                if(blank)
+                    for(std::list <std::string>::iterator x=++prior;
+                        x!=out.end();
+                        x++
+                    )
+                        (*x)=atos <> ("");
+            }
+
+            // Combines all of the state information
+            static void getState(
+                const typename State::t& state,
+                const bool blank,
+                const bool noiter,
+                std::list <std::string>& out
+            ) {
+                Unconstrained <Real,XX>::Printer
+                    ::getState_(state,blank,noiter,out);
+            }
+
+            // Get the header for the Krylov iteration
+            static void getKrylovHeader_(
+                const typename State::t& state,
+                std::list <std::string>& out
+            ) {
+                // Create some shortcuts
+                const AlgorithmClass::t& algorithm_class=state.algorithm_class;
+                const LineSearchDirection::t& dir=state.dir;
+
+                // In case we're using a Krylov method
+                if(    algorithm_class==AlgorithmClass::TrustRegion
+                    || dir==LineSearchDirection::NewtonCG
+                ){
+                    out.push_back(atos <> ("KrySubItr"));
+                    out.push_back(atos <> ("KryTotItr"));
+                    out.push_back(atos <> ("KrySubErr"));
+                }
+            }
+
+            // Combines all of the Krylov headers
+            static void getKrylovHeader(
+                const typename State::t& state,
+                std::list <std::string>& out
+            ) {
+                Unconstrained <Real,XX>::Printer::getKrylovHeader_(state,out);
+            }
+            
+            // Get the information for the Krylov iteration
+            static void getKrylov_(
+                const typename State::t& state,
+                const bool blank,
+                std::list <std::string>& out
+            ) {
+                // Create some shortcuts
+                const unsigned int& krylov_iter=state.krylov_iter;
+                const unsigned int& krylov_iter_total=state.krylov_iter_total;
+                const Real& krylov_rel_err=state.krylov_rel_err;
+
+                // Get a iterator to the last element prior to inserting
+                // elements
+                std::list <std::string>::iterator prior=out.end(); prior--;
+
+                // Basic information
+                out.push_back(atos <> (krylov_iter));
+                out.push_back(atos <> (krylov_iter_total));
+                out.push_back(atos <> (krylov_rel_err));
+                
+                // If we needed to do blank insertions, overwrite the elements
+                // with nothing
+                if(blank) {
+                    for(std::list <std::string>::iterator x=++prior;
+                        x!=out.end();
+                        x++
+                    )
+                        (*x)=atos <> ("");
+                }
+            }
+
+            // Combines all of the Krylov information
+            static void getKrylov(
+                const typename State::t& state,
+                const bool blank,
+                std::list <std::string>& out
+            ) {
+                Unconstrained <Real,XX>::Printer::getKrylov_(state,blank,out);
+            }
+        };
+
         // This contains the different algorithms used for optimization 
         struct Algorithms {
 
@@ -2740,19 +3130,19 @@ namespace peopt{
                 const Real& eps_g=state.eps_g;
                 const Real& eps_s=state.eps_s;
 
-                // Check whether the norm is small relative to some typical
-                // gradient
-                if(norm_g < eps_g*norm_gtyp)
-                    return StoppingCondition::RelativeGradientSmall;
+                // Check if we've exceeded the number of iterations
+                if(iter>=iter_max)
+                    return StoppingCondition::MaxItersExceeded;
 
                 // Check whether the change in the step length has become too
                 // small relative to some typical step
                 if(norm_s < eps_s*norm_styp)
                     return StoppingCondition::RelativeStepSmall;
-
-                // Check if we've exceeded the number of iterations
-                if(iter>=iter_max)
-                    return StoppingCondition::MaxItersExceeded;
+                
+                // Check whether the norm is small relative to some typical
+                // gradient
+                if(norm_g < eps_g*norm_gtyp)
+                    return StoppingCondition::RelativeGradientSmall;
 
                 // Otherwise, return that we're not converged 
                 return StoppingCondition::NotConverged;
@@ -2763,6 +3153,8 @@ namespace peopt{
             static void truncatedCG(
                 const Messaging& msg,
                 const typename Functions::t& fns,
+                const StateManipulator<typename Functions::t,typename State::t>&
+                    smanip,
                 typename State::t& state
             ){
 
@@ -2922,8 +3314,9 @@ namespace peopt{
                     // Update the norm of p_k
                     norm_pk_M2=inner_gk_vk+beta*beta*norm_pk_M2; 
 
-                    // Print out diagnostics
-                    printKrylov(msg,state);
+                    // Manipulate the state if required 
+                    smanip(fns,state,
+                        OptimizationLocation::EndOfKrylovIteration);
                 }
 
                 // Check if we've exceeded the maximum iteration
@@ -2947,8 +3340,12 @@ namespace peopt{
                 else
                     rel_err=sqrt(X::innr(g_k,g_k)) / (Real(1e-16)+norm_g);
                     
-                // Print out diagnostics
-                if(iter!=iter_max) printKrylov(msg,state);
+                // If we don't exit because of iterations, this is sort
+                // of like the end of a Krylov iteration
+                if(iter!=iter_max) 
+                    smanip(fns,state,
+                        OptimizationLocation::EndOfKrylovIteration);
+
             }
 
             // Checks whether we accept or reject a step
@@ -3027,6 +3424,7 @@ namespace peopt{
                 typename State::t& state
             ){
                 // Create some shortcuts
+                const Real& eps_s=state.eps_s;
                 unsigned int& rejected_trustregion=state.rejected_trustregion;
                 X_Vector& s=*(state.s.begin());
                 Real& norm_s=state.norm_s;
@@ -3047,11 +3445,13 @@ namespace peopt{
                         oldS.clear();
                     }
 
-                    // Print out diagnostic information if we reject a step
-                    if(rejected_trustregion>0) printState(msg,state,true);
+                    // Manipulate the state if required
+                    if(rejected_trustregion > 0)
+                        smanip(fns,state,
+                            OptimizationLocation::AfterRejectedTrustRegion);
 
                     // Use truncated-CG to find a new trial step
-                    truncatedCG(msg,fns,state);
+                    truncatedCG(msg,fns,smanip,state);
 
                     // Manipulate the state if required
                     smanip(fns,state,
@@ -3062,6 +3462,15 @@ namespace peopt{
 
                     // Check whether the step is good
                     if(checkStep(fns,state)) break;
+
+                    // Alternatively, check if the step becomes so small
+                    // that we're not making progress.  In this case, take
+                    // a zero step and allow the stopping conditions to exit
+                    if(norm_s < eps_s) {
+                        X::scal(Real(0.),s);
+                        norm_s=Real(0.);
+                        break;
+                    }
                 } 
             }
         
@@ -3389,6 +3798,7 @@ namespace peopt{
                 const int& iter=state.iter;
                 const int& linesearch_iter_max=state.linesearch_iter_max;
                 const Real& merit_x=state.merit_x;
+                const Real& eps_s=state.eps_s;
                 Real& merit_xps=state.merit_xps;
                 X_Vector& s=*(state.s.begin());
                 Real& norm_s=state.norm_s;
@@ -3412,7 +3822,7 @@ namespace peopt{
                     BFGS(msg,state);
                     break;
                 case LineSearchDirection::NewtonCG:
-                    truncatedCG(msg,fns,state);
+                    truncatedCG(msg,fns,smanip,state);
                     break;
                 }
                     
@@ -3430,9 +3840,22 @@ namespace peopt{
 
                         // If we have no reduction in the merit, print
                         // some diagnostic information.
-                        if(merit_xps > merit_x) {
+                        if(merit_xps > merit_x || merit_xps!=merit_xps) {
+
+                            // Determine the size of the step
                             norm_s=alpha*sqrt(X::innr(s,s));
-                            printState(msg,state,true);
+
+                            // Check if the step becomes so small that we're not
+                            // making progress.  In this case, take a zero step 
+                            // and allow the stopping conditions to exit
+                            if(norm_s < eps_s) {
+                                alpha=0.;
+                                break;
+                            }
+
+                            // Manipulate the state if required
+                            smanip(fns,state,
+                                OptimizationLocation::AfterRejectedLineSearch);
 
                             // We reduce alpha by a factor of four when we
                             // reject the step since the line-search always
@@ -3455,9 +3878,21 @@ namespace peopt{
 
                         // If we have no reduction in the merit, print
                         // some diagnostic information.
-                        if(merit_xps > merit_x) {
+                        if(merit_xps > merit_x || merit_xps!=merit_xps) {
+                            // Determine the size of the step
                             norm_s=alpha*sqrt(X::innr(s,s));
-                            printState(msg,state,true);
+
+                            // Check if the step becomes so small that we're not
+                            // making progress.  In this case, take a zero step 
+                            // and allow the stopping conditions to exit
+                            if(norm_s < eps_s) {
+                                alpha=0.;
+                                break;
+                            }
+
+                            // Manipulate the state if required
+                            smanip(fns,state,
+                                OptimizationLocation::AfterRejectedLineSearch);
 
                             // We set alpha to be four times less than the
                             // minimimum alpha we searched before.  We do this
@@ -3579,8 +4014,10 @@ namespace peopt{
                 Real& norm_styp=state.norm_styp;
                 unsigned int& iter=state.iter;
                 StoppingCondition::t& opt_stop=state.opt_stop;
+                #if 0
                 AlgorithmClass::t& algorithm_class=state.algorithm_class;
                 LineSearchDirection::t& dir=state.dir;
+                #endif
                 
                 // Create shortcuts to the functions that we need
                 const ScalarValuedFunction <Real,XX>& f=*(fns.f);
@@ -3595,16 +4032,11 @@ namespace peopt{
                     norm_gtyp=norm_g;
                 }
 
-                // Prints out the header for the diagonstic information
-                printStateHeader(msg,state);
-                if(algorithm_class==AlgorithmClass::TrustRegion
-                    || dir==LineSearchDirection::NewtonCG)
-                    printKrylovHeader(msg,state);
+                // Manipulate the state if required
+                smanip(fns,state,OptimizationLocation::AfterInitialFuncAndGrad);
 
                 // Primary optimization loop
                 do{
-                    // Print some diagnostic information
-                    printState(msg,state);
 
                     // Get a new optimization iterate.  
                     getStep(msg,fns,smanip,state);
@@ -3648,8 +4080,8 @@ namespace peopt{
                         OptimizationLocation::EndOfOptimizationIteration);
                 } while(opt_stop==StoppingCondition::NotConverged);
                         
-                // Print a final diagnostic 
-                printState(msg,state);
+                // Manipulate the state one final time if required
+                smanip(fns,state,OptimizationLocation::EndOfOptimization);
             }
             
             // Solves an optimization problem where the user doesn't know about
@@ -3679,141 +4111,14 @@ namespace peopt{
                 // Initialize any remaining functions required for optimization 
                 Functions::init(msg,state,fns);
 
+                // Add the output to the state manipulator
+                DiagnosticManipulator
+                    <Unconstrained<Real,XX>,Unconstrained<Real,XX> >
+                    iomanip(smanip,msg);
+
                 // Minimize the problem
-                getMin_(msg,smanip,fns,state);
+                getMin_(msg,iomanip,fns,state);
             }
-        
-            // Prints out useful information regarding the current optimization
-            // state
-            static void printState(
-                const Messaging& msg,
-                const typename State::t& state,
-                const bool noiter=false
-            ) {
-                // Create some shortcuts
-                const int& iter=state.iter;
-                const Real& merit_x=state.merit_x;
-                const Real& norm_g=state.norm_g;
-                const Real& norm_s=state.norm_s;
-                const Real& krylov_rel_err=state.krylov_rel_err;
-                const int& krylov_iter=state.krylov_iter;
-                const KrylovStop::t& krylov_stop=state.krylov_stop; 
-                const AlgorithmClass::t& algorithm_class=state.algorithm_class;
-                const LineSearchDirection::t& dir=state.dir;
-                const int& linesearch_iter=state.linesearch_iter;
-
-                // Basic information
-                std::stringstream ss;
-                if(!noiter) ss << std::setw(4) << iter << ' ';
-                else ss << std::setw(4) << '*' << ' ';
-                ss << std::scientific << std::setprecision(3)
-                    << std::setw(11) << merit_x << ' '
-                    << std::setw(11) << norm_g << ' ';
-                if(iter==0) ss << "            ";
-                else ss << std::setw(11) << norm_s << ' ';
-
-                // Information for the Krylov method
-                if(algorithm_class==AlgorithmClass::TrustRegion
-                    || dir==LineSearchDirection::NewtonCG
-                ){
-                    ss << std::setw(11) << krylov_rel_err << ' ' 
-                        << std::setw(6) << krylov_iter << ' ';
-
-                    switch(krylov_stop){
-                    case KrylovStop::NegativeCurvature:
-                        ss << std::setw(10) << "Neg Curv" << ' '; 
-                        break;
-                    case KrylovStop::RelativeErrorSmall:
-                        ss << std::setw(10) << "Rel Err " << ' '; 
-                        break;
-                    case KrylovStop::MaxItersExceeded:
-                        ss << std::setw(10) << "Max Iter" << ' '; 
-                        break;
-                    case KrylovStop::TrustRegionViolated:
-                        ss << std::setw(10) << "Trst Reg" << ' '; 
-                        break;
-                    }
-                }
-
-                // Information for the line search
-                if(algorithm_class==AlgorithmClass::LineSearch){
-                    ss << std::setw(6) << linesearch_iter << ' ';
-                }
-
-                // Send the information to the screen
-                msg.print(ss.str(),1);
-            }
-            
-            // Prints out useful information regarding the Krylov method 
-            static void printKrylov(
-                const Messaging& msg,
-                const typename State::t& state
-            ) {
-                // Create some shortcuts
-                const Real& krylov_rel_err=state.krylov_rel_err;
-                const int& krylov_iter=state.krylov_iter;
-                const int& krylov_iter_total=state.krylov_iter_total;
-
-                // Basic information
-                std::stringstream ss;
-                ss << "  " << std::setw(4) << krylov_iter << ' '
-                    << std::setw(6) << krylov_iter_total << ' '
-                    << std::scientific << std::setprecision(3)
-                        << std::setw(11) << krylov_rel_err; 
-
-                // Send the information to the screen
-                msg.print(ss.str(),2);
-            }
-
-            // Prints out a description for the state
-            static void printStateHeader(
-                const Messaging& msg,
-                const typename State::t& state
-            ) {
-                // Create some shortcuts
-                const AlgorithmClass::t& algorithm_class=state.algorithm_class;
-                const LineSearchDirection::t& dir=state.dir;
-
-                // Basic Header
-                std::stringstream ss;
-                ss << "Iter" << ' '
-                        << std::setw(11) << "Merit Val" << ' '
-                        << std::setw(11) << "  norm(g)" << ' '
-                        << std::setw(11) << "  norm(s)" << ' ';
-
-                // In case we're using a Krylov method
-                if(algorithm_class==AlgorithmClass::TrustRegion
-                    || dir==LineSearchDirection::NewtonCG
-                ){
-                        ss << std::setw(11) << "Kry Error" << ' '
-                        << std::setw(6) << "KryIt" << ' ' 
-                        << std::setw(10) << "Kry Why " << ' ';
-                }
-
-                // Information for the line search
-                if(algorithm_class==AlgorithmClass::LineSearch){
-                    ss << std::setw(6) << "LS It" << ' ';
-                }
-
-                // Send the information to the screen
-                msg.print(ss.str(),1);
-            }
-            
-            // Prints out a description for the Krylov method 
-            static void printKrylovHeader(
-                const Messaging& msg,
-                const typename State::t& state
-            ) {
-                // Basic Header
-                std::stringstream ss;
-                ss << "  Iter" << ' '
-                        << std::setw(6) << "Total" << ' '
-                        << std::setw(11) << "Rel Err" << ' ';
-
-                // Send the information to the screen
-                msg.print(ss.str(),2);
-            }
-        
         };
     };
 
@@ -4204,6 +4509,9 @@ namespace peopt{
                 // Interior point parameter
                 Real mu;
 
+                // Current estimate of the interior point parameter
+                Real mu_est;
+
                 // The tolerance how how close we need to be to the central
                 // path with respect to mu
                 Real mu_tol;
@@ -4240,8 +4548,9 @@ namespace peopt{
                 // constrained optimization.  
                 void init_params() {
                     mu = Real(std::numeric_limits<double>::quiet_NaN());
+                    mu_est = Real(std::numeric_limits<double>::quiet_NaN());
                     mu_tol = Real(1e-2);
-                    mu_trg = Real(1e-8);
+                    mu_trg = Real(1e-6);
                     sigma = Real(0.5);
                     gamma = Real(0.95);
                 }
@@ -4275,6 +4584,11 @@ namespace peopt{
                 if(state.mu <= Real(0.)) 
                     ss << "The interior point parameter must be positive: " 
                         "mu = " << state.mu;
+
+                // Check that the interior point parameter estimate is positive
+                if(state.mu_est <= Real(0.)) 
+                    ss << "The interior point parameter estimate must be "
+                        "positive:  mu_est = " << state.mu;
 
                 // Check that the interior point tolerance is positive 
                 else if(state.mu_tol <= Real(0.)) 
@@ -4310,6 +4624,7 @@ namespace peopt{
                     if( typename Unconstrained <Real,XX>::Restart
                             ::is_real()(name) ||
                         name == "mu" ||
+                        name == "mu_est" ||
                         name == "mu_tol" ||
                         name == "mu_trg" ||
                         name == "sigma" ||
@@ -4436,6 +4751,8 @@ namespace peopt{
                 // Copy in all the real numbers
                 reals.first.push_back("mu");
                 reals.second.push_back(state.mu);
+                reals.first.push_back("mu_est");
+                reals.second.push_back(state.mu_est);
                 reals.first.push_back("mu_tol");
                 reals.second.push_back(state.mu_tol);
                 reals.first.push_back("mu_trg");
@@ -4481,6 +4798,7 @@ namespace peopt{
                     name++,real++
                 ){
                     if(*name=="mu") state.mu=*real;
+                    else if(*name=="mu_est") state.mu_est=*real;
                     else if(*name=="mu_tol") state.mu_tol=*real;
                     else if(*name=="mu_trg") state.mu_trg=*real;
                     else if(*name=="sigma") state.sigma=*real;
@@ -4758,7 +5076,108 @@ namespace peopt{
                     ::Functions::init_(msg,state,fns);
             }
         };
+        
+        // Contains functions that assist in creating an output for diagonstics
+        struct Printer {
 
+            // Gets the header for the state information
+            static void getStateHeader_(
+                const typename State::t& state,
+                std::list <std::string>& out
+            ) {
+
+                // Interior point pieces of the state 
+                out.push_back(atos <> ("mu_est"));
+                out.push_back(atos <> ("mu"));
+            }
+
+            // Combines all of the state headers
+            static void getStateHeader(
+                const typename State::t& state,
+                std::list <std::string>& out
+            ) {
+                Unconstrained <Real,XX>::Printer::getStateHeader_(state,out);
+                InequalityConstrained <Real,XX,ZZ>::Printer::getStateHeader_
+                    (state,out);
+            }
+
+            // Gets the state information for output
+            static void getState_(
+                const typename State::t& state,
+                const bool blank,
+                std::list <std::string>& out
+            ) {
+
+                // Create some shortcuts
+                const Real& mu=state.mu; 
+                const Real& mu_est=state.mu_est; 
+
+                // Get a iterator to the last element prior to inserting
+                // elements
+                std::list <std::string>::iterator prior=out.end(); prior--;
+
+                // Interior point information
+                // Estimate the interior-point parameter
+                out.push_back(atos <> (mu_est));
+                out.push_back(atos <> (mu));
+
+                // If we needed to do blank insertions, overwrite the elements
+                // with nothing
+                if(blank)
+                    for(std::list <std::string>::iterator x=++prior;
+                        x!=out.end();
+                        x++
+                    )
+                        (*x)=atos <> ("");
+            }
+
+            // Combines all of the state information
+            static void getState(
+                const typename State::t& state,
+                const bool blank,
+                const bool noiter,
+                std::list <std::string>& out
+            ) {
+                Unconstrained <Real,XX>::Printer
+                    ::getState_(state,blank,noiter,out);
+                InequalityConstrained <Real,XX,ZZ>::Printer
+                    ::getState_(state,blank,out);
+            }
+            
+            // Get the header for the Krylov iteration
+            static void getKrylovHeader_(
+                const typename State::t& state,
+                std::list <std::string>& out
+            ) { }
+
+            // Combines all of the Krylov headers
+            static void getKrylovHeader(
+                const typename State::t& state,
+                std::list <std::string>& out
+            ) {
+                Unconstrained <Real,XX>::Printer::getKrylovHeader_(state,out);
+                InequalityConstrained <Real,XX,ZZ>::Printer
+                    ::getKrylovHeader_(state,out);
+            }
+            
+            // Get the information for the Krylov iteration
+            static void getKrylov_(
+                const typename State::t& state,
+                const bool blank,
+                std::list <std::string>& out
+            ) { }
+
+            // Combines all of the Krylov information
+            static void getKrylov(
+                const typename State::t& state,
+                const bool blank,
+                std::list <std::string>& out
+            ) {
+                Unconstrained <Real,XX>::Printer::getKrylov_(state,blank,out);
+                InequalityConstrained <Real,XX,ZZ>::Printer
+                    ::getKrylov_(state,blank,out);
+            }
+        };
 
         // This contains the different algorithms used for optimization 
         struct Algorithms {
@@ -4777,7 +5196,6 @@ namespace peopt{
 
                 // z_tmp1 <- h'(x)s
                 Z_Vector z_tmp1; Z::init(z,z_tmp1);
-                //h.ps(x,s,z_tmp1);
                 h.p(x,s,z_tmp1);
 
                 // z_tmp2 <- z o h'(x)s
@@ -4804,7 +5222,7 @@ namespace peopt{
             // mu_est = <z,h(x)>/m
             static Real estimateInteriorPointParameter(
                 const typename Functions::t& fns,
-                typename State::t& state
+                const typename State::t& state
             ) {
                 // Create some shortcuts
                 const X_Vector& x=state.x.front();
@@ -4831,6 +5249,7 @@ namespace peopt{
                 typename State::t& state
             ) {
                 // Create some shortcuts
+                const Real& mu_est=state.mu_est;
                 const Real& mu_trg=state.mu_trg;
                 const Real& mu_tol=state.mu_tol;
                 const Real& sigma=state.sigma;
@@ -4841,9 +5260,6 @@ namespace peopt{
                 Real& mu=state.mu;
                 Real& merit_x=state.merit_x;
                 Real& norm_g=state.norm_g;
-
-                // Estimate the interior-point parameter
-                Real mu_est = estimateInteriorPointParameter(fns,state);
 
                 // Determine if we should reduce mu
                 if( fabs(mu-mu_est) < mu_tol*mu &&
@@ -4871,18 +5287,16 @@ namespace peopt{
             ) {
                 // Create some shortcuts
                 const Real& mu=state.mu;
+                const Real& mu_est=state.mu_est;
                 const Real& mu_trg=state.mu_trg;
                 const Real& mu_tol=state.mu_tol;
                 StoppingCondition::t& opt_stop=state.opt_stop;
                 
-                // Estimate the interior-point parameter
-                Real mu_est = estimateInteriorPointParameter(fns,state);
-
                 // Prevent convergence unless the mu is mu_trg and
                 // mu_est is close to mu;
                 if( opt_stop==StoppingCondition::RelativeGradientSmall &&
-                    mu==mu_trg &&
-                    fabs(mu-mu_est) < mu_tol*mu
+                    (mu!=mu_trg || 
+                    fabs(mu-mu_est) >= mu_tol*mu)
                 )
                     opt_stop=StoppingCondition::NotConverged;
             }
@@ -5042,6 +5456,9 @@ namespace peopt{
 
                     // Call the user define manipulator
                     smanip(fns,state,loc);
+                    
+                    // Create some shorcuts
+                    Real& mu_est = state.mu_est;
 
                     switch(loc){
                     
@@ -5049,6 +5466,11 @@ namespace peopt{
                     case OptimizationLocation::BeforeStep:
                         findInequalityMultiplier(fns,state);
                         break;
+
+                    // Find the new interior point estimate
+                    case OptimizationLocation::AfterStepBeforeGradient:
+                        mu_est = estimateInteriorPointParameter(fns,state);
+                        break; 
 
                     // Adjust the interior point parameter and insure that
                     // we do not converge unless the interior point parameter
@@ -5100,17 +5522,25 @@ namespace peopt{
                       typename Unconstrained<Real,XX>::State::t >
                     ipmanip(smanip);
                 
+                // Adds the output pieces to the state manipulator 
+                DiagnosticManipulator
+                    <Unconstrained<Real,XX>,InequalityConstrained<Real,XX,ZZ> >
+                    iomanip(ipmanip,msg);
+                
                 // Initialize any remaining functions required for optimization 
                 Functions::init(msg,state,fns);
+
+                // Estimate the interior point parameter
+                state.mu_est=estimateInteriorPointParameter(fns,state);
 
                 // If it has not been set, modify the interior point parameter
                 // to be the estimated parameter
                 if(state.mu!=state.mu)
-                    state.mu=estimateInteriorPointParameter(fns,state);
+                    state.mu=state.mu_est;
                 
                 // Minimize the problem
                 Unconstrained <Real,XX>::Algorithms
-                    ::getMin_(msg,ipmanip,fns,state);
+                    ::getMin_(msg,iomanip,fns,state);
             }
         };
     };

@@ -237,25 +237,21 @@ int main(){
         (peopt::Messaging(),*(fns.h),x,dx,dy);
 
     // Setup the optimization problem
-    #if 0
+    #if 1
     // Newton's method
     state.H_type = peopt::Operators::External;
     state.iter_max = 100;
     state.eps_krylov = 1e-10;
     state.eps_s = 1e-16;
     state.eps_g = 1e-10;
-    state.sigma = 0.10;
-    state.gamma = 0.95;
     #endif
 
     // BFGS
-    #if 1
+    #if 0
     state.algorithm_class = peopt::AlgorithmClass::LineSearch;
     state.dir = peopt::LineSearchDirection::BFGS;
     state.stored_history = 10;
     state.iter_max = 300;
-    state.sigma = 0.10;
-    state.gamma = 0.95;
     state.eps_s = 1e-16;
     #endif
     
@@ -267,14 +263,21 @@ int main(){
     state.eps_krylov = 1e-10;
     state.iter_max = 300;
     state.eps_s = 1e-16;
-    state.eps_g = 1e-10;
-    state.sigma = 0.10;
-    state.gamma = 0.95;
+    state.eps_g = 1e-6;
     #endif
+
+    // Set the interior point parameters
+    state.mu_trg=1e-6;
+    state.sigma=0.05;
+    state.gamma=.995;
 
     // Solve the optimization problem
     peopt::InequalityConstrained <double,MyHS,MyHS>::Algorithms
         ::getMin(peopt::Messaging(1),fns,state);
+
+    // Print out the reason for convergence
+    std::cout << "The algorithm converged due to: " <<
+        peopt::StoppingCondition::to_string(state.opt_stop) << std::endl;
 
     // Print out the final answer
     const std::vector <double>& opt_x=*(state.x.begin());
