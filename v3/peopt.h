@@ -3031,7 +3031,7 @@ namespace peopt{
                         x!=out.end();
                         x++
                     )
-                        (*x)=atos <> ("");
+                        x->clear();
             }
 
             // Combines all of the state information
@@ -3099,7 +3099,7 @@ namespace peopt{
                         x!=out.end();
                         x++
                     )
-                        (*x)=atos <> ("");
+                        x->clear();
                 }
             }
 
@@ -3183,7 +3183,7 @@ namespace peopt{
                 X_Vector H_pk; X::init(x,H_pk);
 
                 // Allocate memory for a few constants that we need to track 
-                Real kappa;
+                Real kappa(0.);
                 Real sigma;
                 Real alpha(0.);
                 Real beta;
@@ -5148,7 +5148,7 @@ namespace peopt{
                         x!=out.end();
                         x++
                     )
-                        (*x)=atos <> ("");
+                        x->clear();
             }
 
             // Combines all of the state information
