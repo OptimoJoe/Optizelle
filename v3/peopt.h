@@ -4024,10 +4024,6 @@ namespace peopt{
                 Real& norm_styp=state.norm_styp;
                 unsigned int& iter=state.iter;
                 StoppingCondition::t& opt_stop=state.opt_stop;
-                #if 0
-                AlgorithmClass::t& algorithm_class=state.algorithm_class;
-                LineSearchDirection::t& dir=state.dir;
-                #endif
                 
                 // Create shortcuts to the functions that we need
                 const ScalarValuedFunction <Real,XX>& f=*(fns.f);
@@ -4123,6 +4119,9 @@ namespace peopt{
             ){
                 // Initialize any remaining functions required for optimization 
                 Functions::init(msg,state,fns);
+
+                // Check the inputs to the optimization
+                State::check(msg,state);
 
                 // Add the output to the state manipulator
                 DiagnosticManipulator

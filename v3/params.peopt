@@ -1,14 +1,9 @@
 {
    "peopt" : {
       "msg_level" : 1,
-      "iter_max" : 100,
-      "eps_krylov" : 1e-10,
       "H_type" : "External",
-      "stored_history" : 5,
-      "eps_s" : 1e-16,
-      "eps_g" : 1e-10,
-      "sigma" : 0.10,
-      "gamma" : 0.995
+      "iter_max" : 100,
+      "eps_krylov" : 1e-2
    },
    "peopt_TR_Newton" : {
       "H_type" : "External",
