@@ -337,7 +337,7 @@ int main(){
     peopt::Diagnostics::secondDerivativeCheck <> (peopt::Messaging(),g,x,dx,dy);
 
     // Setup the optimization problem
-    #if 1
+    #if 0
     // Newton's method
     ustate.H_type = peopt::Operators::External;
     ustate.iter_max = 100;
@@ -353,11 +353,11 @@ int main(){
     #endif
     
     // Newton-CG 
-    #if 0
+    #if 1
     ustate.algorithm_class = peopt::AlgorithmClass::LineSearch;
     ustate.dir = peopt::LineSearchDirection::NewtonCG;
     ustate.H_type = peopt::Operators::External;
-    ustate.eps_krylov = 1e-10;
+    ustate.eps_krylov = 1e-2;
     ustate.iter_max = 100;
     #endif
 

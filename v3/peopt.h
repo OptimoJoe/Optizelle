@@ -84,7 +84,7 @@ namespace peopt{
     // Defines how we output messages to the user
     struct Messaging {
         // Defines the current print level
-        unsigned int level;
+        mutable unsigned int level;
 
         // Sets the default messaging level to 1
         Messaging() : level(1) {};
@@ -97,7 +97,7 @@ namespace peopt{
 
         // Prints a message
         virtual void print(const std::string msg) const {
-            if(level <= level) std::cout << msg << std::endl;
+            std::cout << msg << std::endl;
         }
 
         // Prints an error
@@ -1478,6 +1478,9 @@ namespace peopt{
 
                 // Merit function at the trial step
                 Real merit_xps;
+
+                // Messaging level
+                unsigned int msg_level;
                 
                 // ------------- TRUST-REGION ------------- 
 
@@ -1579,6 +1582,7 @@ namespace peopt{
                     norm_styp=Real(std::numeric_limits<double>::quiet_NaN());
                     merit_x=Real(std::numeric_limits<double>::quiet_NaN());
                     merit_xps=Real(std::numeric_limits<double>::quiet_NaN());
+                    msg_level=1;
                     delta=Real(100.);
                     delta_max=Real(100.);
                     eta1=Real(.1);
@@ -1788,6 +1792,7 @@ namespace peopt{
                         name == "krylov_iter" || 
                         name == "krylov_iter_max" ||
                         name == "krylov_iter_total" || 
+                        name == "msg_level" ||
                         name == "rejected_trustregion" || 
                         name == "linesearch_iter" || 
                         name == "linesearch_iter_max" ||
@@ -2009,6 +2014,8 @@ namespace peopt{
                 nats.second.push_back(state.krylov_iter_max);
                 nats.first.push_back("krylov_iter_total");
                 nats.second.push_back(state.krylov_iter_total);
+                nats.first.push_back("msg_level");
+                nats.second.push_back(state.msg_level);
                 nats.first.push_back("rejected_trustregion");
                 nats.second.push_back(state.rejected_trustregion);
                 nats.first.push_back("linesearch_iter");
@@ -2128,6 +2135,8 @@ namespace peopt{
                         state.krylov_iter_max=*nat;
                     else if(*name=="krylov_iter_total")
                         state.krylov_iter_total=*nat;
+                    else if(*name=="msg_level")
+                        state.msg_level=*nat;
                     else if(*name=="rejected_trustregion")
                         state.rejected_trustregion=*nat;
                     else if(*name=="linesearch_iter")
@@ -3025,13 +3034,13 @@ namespace peopt{
                 }
 
                 // If we needed to do blank insertions, overwrite the elements
-                // with nothing
+                // with spaces 
                 if(blank)
                     for(std::list <std::string>::iterator x=++prior;
                         x!=out.end();
                         x++
                     )
-                        x->clear();
+                        (*x)="          ";
             }
 
             // Combines all of the state information
@@ -4000,6 +4009,7 @@ namespace peopt{
                 typename State::t& state
             ){
                 // Create some shortcuts
+                const unsigned int msg_level=state.msg_level;
                 X_Vector& x=*(state.x.begin());
                 X_Vector& g=*(state.g.begin());
                 X_Vector& s=*(state.s.begin());
@@ -4022,6 +4032,9 @@ namespace peopt{
                 // Create shortcuts to the functions that we need
                 const ScalarValuedFunction <Real,XX>& f=*(fns.f);
                 const ScalarValuedFunction <Real,XX>& f_merit=*(fns.f_merit);
+
+                // Set the messaging level
+                msg.level=msg_level;
 
                 // Evaluate the merit function and gradient if we've not
                 // done so already
@@ -5142,13 +5155,13 @@ namespace peopt{
                 out.push_back(atos <> (mu));
 
                 // If we needed to do blank insertions, overwrite the elements
-                // with nothing
+                // with spaces 
                 if(blank)
                     for(std::list <std::string>::iterator x=++prior;
                         x!=out.end();
                         x++
                     )
-                        x->clear();
+                        (*x)="          ";
             }
 
             // Combines all of the state information
