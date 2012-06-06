@@ -124,9 +124,6 @@ namespace peopt {
     template <typename Real>
     struct SQL {
         struct Vector {
-            // Messaging utility for error messages
-            peopt::Messaging msg;
-
             // The overall variable data
             std::vector <Real> data;
 
@@ -156,15 +153,15 @@ namespace peopt {
             Vector () {}
 
             // We require a vector of cone types and their sizes
-            Vector (const Messaging& msg_,
+            Vector (const Messaging& msg,
                 const std::vector <Cone::t>& types_,
                 const std::vector <unsigned int>& sizes_
-            ) : msg(msg_), types(types_), sizes(sizes_) {
+            ) : types(types_), sizes(sizes_) {
 
                 // Insure that the type of cones and their sizes lines up
                 if(types.size()!=sizes.size())
-                    msg.error("The vector containing the type of cones must be "
-                        "the same size as the vector with the cone sizes.");
+                    msg.error("The vector containing the type of cones must "
+                        "be the same size as the vector with the cone sizes.");
 
                 // Make sure we have at least one cone
                 if(types.size() == 0)
@@ -339,7 +336,6 @@ namespace peopt {
         
         // Memory allocation and size setting
         static void init(const Vector& x, Vector& y) {
-            y.msg=x.msg;
             y.data.resize(x.data.size());
             y.offsets=x.offsets;
             y.types=x.types;
