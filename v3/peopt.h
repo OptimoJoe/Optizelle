@@ -83,18 +83,6 @@ namespace peopt{
 
     // Defines how we output messages to the user
     struct Messaging {
-        // Defines the current print level
-        mutable unsigned int level;
-
-        // Sets the default messaging level to 1
-        Messaging() : level(1) {};
-
-        // Changing the default messaging level during construction
-        Messaging(unsigned int level_) : level(level_) {};
-
-        // Copy constructor
-        Messaging(const Messaging& msg) : level(msg.level) {};
-
         // Prints a message
         virtual void print(const std::string msg) const {
             std::cout << msg << std::endl;
@@ -111,14 +99,14 @@ namespace peopt{
     };
 
     // Which algorithm class do we use
-    namespace AlgorithmClass{
+    struct AlgorithmClass{
         enum t{
             TrustRegion,            // Trust-Region algorithms
             LineSearch              // Line-search algorithms
         };
 
         // Converts the algorithm class to a string
-        std::string to_string(t algorithm_class){
+        static std::string to_string(t algorithm_class){
             switch(algorithm_class){
             case TrustRegion:
                 return "TrustRegion";
@@ -130,7 +118,7 @@ namespace peopt{
         }
         
         // Converts a string to an algorithm class 
-        t from_string(std::string algorithm_class){
+        static t from_string(std::string algorithm_class){
             if(algorithm_class=="TrustRegion")
                 return TrustRegion;
             else if(algorithm_class=="LineSearch")
@@ -150,10 +138,10 @@ namespace peopt{
                     return false;
             }
         };
-    }
+    };
 
     // Reasons why we stop the algorithm
-    namespace StoppingCondition{
+    struct StoppingCondition{
         enum t{
             NotConverged,            // Algorithm did not converge
             RelativeGradientSmall,   // Relative gradient was sufficiently small
@@ -163,7 +151,7 @@ namespace peopt{
         };
 
         // Converts the stopping condition to a string 
-        std::string to_string(t opt_stop){
+        static std::string to_string(t opt_stop){
             switch(opt_stop){
             case NotConverged:
                 return "NotConverged";
@@ -181,7 +169,7 @@ namespace peopt{
         }
 
         // Converts a string to a stopping condition
-        t from_string(std::string opt_stop){
+        static t from_string(std::string opt_stop){
             if(opt_stop=="NotConverged")
                 return NotConverged;
             else if(opt_stop=="RelativeGradientSmall")
@@ -210,10 +198,10 @@ namespace peopt{
                     return false;
             }
         };
-    }
+    };
 
     // Reasons we stop the Krylov method
-    namespace KrylovStop{
+    struct KrylovStop{
         enum t{
             NegativeCurvature,        // Negative curvature detected
             RelativeErrorSmall,       // Relative error is small
@@ -222,7 +210,7 @@ namespace peopt{
         };
 
         // Converts the Krylov stopping condition to a string 
-        std::string to_string(t krylov_stop){
+        static std::string to_string(t krylov_stop){
             switch(krylov_stop){
             case NegativeCurvature:
                 return "NegativeCurvature";
@@ -238,7 +226,7 @@ namespace peopt{
         }
         
         // Converts a string to a Krylov stopping condition
-        t from_string(std::string krylov_stop){
+        static t from_string(std::string krylov_stop){
             if(krylov_stop=="NegativeCurvature")
                 return NegativeCurvature;
             else if(krylov_stop=="RelativeErrorSmall")
@@ -264,10 +252,10 @@ namespace peopt{
                     return false;
             }
         };
-    }
+    };
 
     // Various operators for both Hessian approximations and preconditioners
-    namespace Operators{
+    struct Operators{
         enum t{
             Identity,          // Identity approximation
             ScaledIdentity,    // Scaled identity approximation
@@ -279,7 +267,7 @@ namespace peopt{
         };
         
         // Converts the operator type to a string 
-        std::string to_string(t op){
+        static std::string to_string(t op){
             switch(op){
             case Identity:
                 return "Identity";
@@ -301,7 +289,7 @@ namespace peopt{
         }
         
         // Converts a string to a operator 
-        t from_string(std::string op){
+        static t from_string(std::string op){
             if(op=="Identity")
                 return Identity; 
             else if(op=="ScaledIdentity")
@@ -336,10 +324,10 @@ namespace peopt{
                     return false;
             }
         };
-    }
+    };
 
     // Different kinds of search directions 
-    namespace LineSearchDirection{
+    struct LineSearchDirection{
         enum t{
             SteepestDescent,          // SteepestDescent 
             FletcherReeves,           // Fletcher-Reeves CG
@@ -350,7 +338,7 @@ namespace peopt{
         };
         
         // Converts the line-search direction to a string 
-        std::string to_string(t dir){
+        static std::string to_string(t dir){
             switch(dir){
             case SteepestDescent:
                 return "SteepestDescent";
@@ -370,7 +358,7 @@ namespace peopt{
         }
         
         // Converts a string to a line-search direction 
-        t from_string(std::string dir){
+        static t from_string(std::string dir){
             if(dir=="SteepestDescent")
                 return SteepestDescent; 
             else if(dir=="FletcherReeves")
@@ -402,9 +390,9 @@ namespace peopt{
                     return false;
             }
         };
-    }
+    };
 
-    namespace LineSearchKind{
+    struct LineSearchKind{
         enum t{
             Brents,           // Brent's minimization
             GoldenSection,    // Golden-section search 
@@ -414,7 +402,7 @@ namespace peopt{
         };
             
         // Converts the line-search kind to a string 
-        std::string to_string(t kind){
+        static std::string to_string(t kind){
             switch(kind){
             case Brents:
                 return "Brents";
@@ -432,7 +420,7 @@ namespace peopt{
         }
         
         // Converts a string to a line-search kind 
-        t from_string(std::string kind){
+        static t from_string(std::string kind){
             if(kind=="Brents")
                 return Brents; 
             else if(kind=="GoldenSection")
@@ -461,9 +449,9 @@ namespace peopt{
                     return false;
             }
         };
-    }
+    };
     
-    namespace OptimizationLocation{
+    struct OptimizationLocation{
         enum t{
             // Occurs after the initial function and gradient evaluation 
             AfterInitialFuncAndGrad,
@@ -503,7 +491,7 @@ namespace peopt{
         };
             
         // Converts the optimization location to a string 
-        std::string to_string(t loc){
+        static std::string to_string(t loc){
             switch(loc){
             case AfterInitialFuncAndGrad:
                 return "AfterInitialFuncAndGrad";
@@ -531,7 +519,7 @@ namespace peopt{
         }
         
         // Converts a string to a line-search kind 
-        t from_string(std::string loc){
+        static t from_string(std::string loc){
             if(loc=="AfterInitialFuncAndGrad")
                 return AfterInitialFuncAndGrad;
             if(loc=="BeforeStep")
@@ -575,117 +563,120 @@ namespace peopt{
                     return false;
             }
         };
-    }
-
-    // Different nonlinear-CG directions 
-    namespace NonlinearCGDirections {
-        enum t{
-            HestenesStiefel,        
-            PolakRibiere,           
-            FletcherReeves          
-        };
-    }
-        
-    // Checks whether all the labels in the list labels are actually
-    // labels stored in the is_label function.  If not, this function
-    // throws an error.
-    template <typename is_label>
-    void checkLabels(
-        const Messaging& msg,
-        const std::list <std::string>& labels, 
-        const std::string& kind
-    ) {
-            // Create a base message
-            const std::string base
-                ="During serialization, found an invalid ";
-
-            // Check the labels
-            std::list <std::string>::const_iterator name = find_if(
-                labels.begin(), labels.end(),
-                std::not1(is_label()));
-
-            if(name!=labels.end()) {
-                std::stringstream ss;
-                ss << base << kind << *name;
-                msg.error(ss.str());
-            }
-    }
-
-    // Combines two strings in a funny sort of way.  Basically, given
-    // a and b, if a is empty, this function returns b.  However, if
-    // a is nonempty, it returns a.
-    struct combineStrings : public std::binary_function
-        <std::string,std::string,std::string>
-    {
-        std::string operator() (std::string a,std::string b) const {
-            if(a=="") return b; else return a;
-        }
     };
-  
-    // This checks the parameters and prints and error in there's a problem.
-    template <typename checkParamVal>
-    void checkParams(
-        const Messaging& msg,
-        const std::pair <std::list <std::string>,std::list <std::string> >&
-            params 
-    ) {
-        std::string err=std::inner_product(
-            params.first.begin(),
-            params.first.end(),
-            params.second.begin(),
-            std::string(""),
-            checkParamVal(),
-            combineStrings()
-        );
-        if(err!="") msg.error(err);
-    }
 
-    // Converts a variety of basic datatypes to strings
-    std::ostream& formatReal(std::ostream& out) {
-        return out << std::setprecision(2) << std::scientific << std::setw(10)
-            << std::left;
-    }
-    std::ostream& formatInt(std::ostream& out) {
-        return out << std::setw(10) << std::left;
-    }
-    std::ostream& formatString(std::ostream& out) {
-        return out << std::setw(10) << std::left;
-    }
-    template <typename T>
-    std::string atos(T x);
-    template <>
-    std::string atos <double> (double x){
-        std::stringstream ss;
-        ss << formatReal << x;
-        return ss.str();
-    }
-    template <>
-    std::string atos <unsigned int> (unsigned int x){
-        std::stringstream ss;
-        ss << formatInt << x;
-        return ss.str();
-    }
-    template <>
-    std::string atos <const char*> (const char* x){
-        std::stringstream ss;
-        ss << formatString << x;
-        return ss.str();
-    }
-    template <>
-    std::string atos <KrylovStop::t> (KrylovStop::t x){
-        std::stringstream ss;
-        // Converts the Krylov stopping condition to a shorter string 
-        switch(x){
-        case KrylovStop::NegativeCurvature:
-            return atos <> ("NegCurv");
-        case KrylovStop::RelativeErrorSmall:
-            return atos <> ("RelErrSml");
-        case KrylovStop::MaxItersExceeded:
-            return atos <> ("IterExcd");
-        case KrylovStop::TrustRegionViolated:
-            return atos <> ("TrstReg");
-        default:
-            throw;
+    // A collection of short routines that are only required locally
+    namespace {
+        // Different nonlinear-CG directions 
+        struct NonlinearCGDirections {
+            enum t{
+                HestenesStiefel,        
+                PolakRibiere,           
+                FletcherReeves          
+            };
+        };
+            
+        // Checks whether all the labels in the list labels are actually
+        // labels stored in the is_label function.  If not, this function
+        // throws an error.
+        template <typename is_label>
+        void checkLabels(
+            const Messaging& msg,
+            const std::list <std::string>& labels, 
+            const std::string& kind
+        ) {
+                // Create a base message
+                const std::string base
+                    ="During serialization, found an invalid ";
+
+                // Check the labels
+                std::list <std::string>::const_iterator name = find_if(
+                    labels.begin(), labels.end(),
+                    std::not1(is_label()));
+
+                if(name!=labels.end()) {
+                    std::stringstream ss;
+                    ss << base << kind << *name;
+                    msg.error(ss.str());
+                }
+        }
+
+        // Combines two strings in a funny sort of way.  Basically, given
+        // a and b, if a is empty, this function returns b.  However, if
+        // a is nonempty, it returns a.
+        struct combineStrings : public std::binary_function
+            <std::string,std::string,std::string>
+        {
+            std::string operator() (std::string a,std::string b) const {
+                if(a=="") return b; else return a;
+            }
+        };
+      
+        // This checks the parameters and prints and error in there's a problem.
+        template <typename checkParamVal>
+        void checkParams(
+            const Messaging& msg,
+            const std::pair <std::list <std::string>,std::list <std::string> >&
+                params 
+        ) {
+            std::string err=std::inner_product(
+                params.first.begin(),
+                params.first.end(),
+                params.second.begin(),
+                std::string(""),
+                checkParamVal(),
+                combineStrings()
+            );
+            if(err!="") msg.error(err);
+        }
+
+        // Converts a variety of basic datatypes to strings
+        std::ostream& formatReal(std::ostream& out) {
+            return out<<std::setprecision(2) << std::scientific << std::setw(10)
+                << std::left;
+        }
+        std::ostream& formatInt(std::ostream& out) {
+            return out << std::setw(10) << std::left;
+        }
+        std::ostream& formatString(std::ostream& out) {
+            return out << std::setw(10) << std::left;
+        }
+        template <typename T>
+        std::string atos(T x);
+        template <>
+        std::string atos <double> (double x){
+            std::stringstream ss;
+            ss << formatReal << x;
+            return ss.str();
+        }
+        template <>
+        std::string atos <unsigned int> (unsigned int x){
+            std::stringstream ss;
+            ss << formatInt << x;
+            return ss.str();
+        }
+        template <>
+        std::string atos <const char*> (const char* x){
+            std::stringstream ss;
+            ss << formatString << x;
+            return ss.str();
+        }
+        template <>
+        std::string atos <KrylovStop::t> (KrylovStop::t x){
+            std::stringstream ss;
+            // Converts the Krylov stopping condition to a shorter string 
+            switch(x){
+            case KrylovStop::NegativeCurvature:
+                return atos <> ("NegCurv");
+            case KrylovStop::RelativeErrorSmall:
+                return atos <> ("RelErrSml");
+            case KrylovStop::MaxItersExceeded:
+                return atos <> ("IterExcd");
+            case KrylovStop::TrustRegionViolated:
+                return atos <> ("TrstReg");
+            default:
+                throw;
+            }
         }
     }
 
@@ -936,8 +927,7 @@ namespace peopt{
             Real dd_grad=X::innr(f_grad,dx);
 
             // Compute an ensemble of finite difference tests in a linear manner
-            if(msg.level>=1)
-                msg.print("Finite difference test on the gradient.");
+            msg.print("Finite difference test on the gradient.");
             for(int i=-2;i<=5;i++){
                 Real epsilon=pow(Real(.1),i);
                 Real dd=directionalDerivative <> (f,x,dx,epsilon);
@@ -947,7 +937,7 @@ namespace peopt{
                 else ss << "The relative difference (1e-" << i << "): ";
                 ss << std::scientific << std::setprecision(16)
                     << fabs(dd_grad-dd)/(Real(1e-16)+fabs(dd_grad));
-                if(msg.level>=1) msg.print(ss.str());
+                msg.print(ss.str());
             }
         }
         
@@ -977,8 +967,7 @@ namespace peopt{
             f.hessvec(x,dx,hess_f_dx);
 
             // Compute an ensemble of finite difference tests in a linear manner
-            if(msg.level>=1)
-                msg.print("Finite difference test on the Hessian.");
+            msg.print("Finite difference test on the Hessian.");
             for(int i=-2;i<=5;i++){
 
                 // Calculate the directional derivative
@@ -993,13 +982,11 @@ namespace peopt{
                     (Real(1e-16)+sqrt(X::innr(hess_f_dx,hess_f_dx)));
 
                 // Print out the differences
-                if(msg.level>=1) {
-                    std::stringstream ss;
-                    if(i<0)ss << "The relative difference (1e+" << -i <<  "): ";
-                    else ss << "The relative difference (1e-" << i << "): ";
-                    ss << std::scientific << std::setprecision(16) << rel_err; 
-                    msg.print(ss.str());
-                }
+                std::stringstream ss;
+                if(i<0)ss << "The relative difference (1e+" << -i <<  "): ";
+                else ss << "The relative difference (1e-" << i << "): ";
+                ss << std::scientific << std::setprecision(16) << rel_err; 
+                msg.print(ss.str());
             }
         }
         
@@ -1039,14 +1026,12 @@ namespace peopt{
             Real diff=fabs(innr_Hxdx_dxx-innr_dx_Hxdxx);
 
             // Send a message with the result
-            if(msg.level>=1) {
-                msg.print("Symmetry test on the Hessian of a scalar valued "
-                    "function.");
-                std::stringstream ss;
-                ss<< "The absolute err. between <H(x)dx,dxx> and <dx,H(x)dxx>: "
-                    << std::scientific << std::setprecision(16) << diff;
-                msg.print(ss.str());
-            }
+            msg.print("Symmetry test on the Hessian of a scalar valued "
+                "function.");
+            std::stringstream ss;
+            ss<< "The absolute err. between <H(x)dx,dxx> and <dx,H(x)dxx>: "
+                << std::scientific << std::setprecision(16) << diff;
+            msg.print(ss.str());
         }
 
         // Performs a finite difference test on the derivative of a
@@ -1078,9 +1063,8 @@ namespace peopt{
             f.p(x,dx,fp_x_dx);
 
             // Compute an ensemble of finite difference tests in a linear manner
-            if(msg.level>=1) 
-                msg.print("Finite difference test on the derivative of a "
-                    "vector-valued function.");
+            msg.print("Finite difference test on the derivative of a "
+                "vector-valued function.");
             for(int i=-2;i<=5;i++){
 
                 // Calculate the directional derivative
@@ -1095,13 +1079,11 @@ namespace peopt{
                     (Real(1e-16)+sqrt(Y::innr(fp_x_dx,fp_x_dx)));
 
                 // Print out the differences
-                if(msg.level>=1) {
-                    std::stringstream ss;
-                    if(i<0)ss << "The relative difference (1e+" << -i <<  "): ";
-                    else ss << "The relative difference (1e-" << i << "): ";
-                    ss << std::scientific << std::setprecision(16) << rel_err; 
-                    msg.print(ss.str());
-                }
+                std::stringstream ss;
+                if(i<0)ss << "The relative difference (1e+" << -i <<  "): ";
+                else ss << "The relative difference (1e-" << i << "): ";
+                ss << std::scientific << std::setprecision(16) << rel_err; 
+                msg.print(ss.str());
             }
         }
 
@@ -1145,14 +1127,12 @@ namespace peopt{
             Real diff=fabs(innr_fpxdx_dy-innr_dx_fpsxdy);
 
             // Send a message with the result
-            if(msg.level>=1) {
-                msg.print("Adjoint test on the first derivative of a vector "
-                    "valued function.");
-                std::stringstream ss;
-                ss<<"The absolute err. between <f'(x)dx,dy> and <dx,f'(x)*dy>: "
-                    << std::scientific << std::setprecision(16) << diff;
-                msg.print(ss.str());
-            }
+            msg.print("Adjoint test on the first derivative of a vector "
+                "valued function.");
+            std::stringstream ss;
+            ss<<"The absolute err. between <f'(x)dx,dy> and <dx,f'(x)*dy>: "
+                << std::scientific << std::setprecision(16) << diff;
+            msg.print(ss.str());
         }
 
         // Performs a finite difference test on the second-derivative-adjoint 
@@ -1185,9 +1165,8 @@ namespace peopt{
             f.pps(x,dx,dy,fpps_x_dx_dy);
 
             // Compute an ensemble of finite difference tests in a linear manner
-            if(msg.level>=1) 
-                msg.print("Finite difference test on the 2nd-derivative adj. "
-                    "of a vector-valued function.");
+            msg.print("Finite difference test on the 2nd-derivative adj. "
+                "of a vector-valued function.");
             for(int i=-2;i<=5;i++){
 
                 // Calculate the directional derivative
@@ -1202,13 +1181,11 @@ namespace peopt{
                     / (Real(1e-16)+sqrt(X::innr(fpps_x_dx_dy,fpps_x_dx_dy)));
 
                 // Print out the differences
-                if(msg.level>=1) {
-                    std::stringstream ss;
-                    if(i<0)ss << "The relative difference (1e+" << -i <<  "): ";
-                    else ss << "The relative difference (1e-" << i << "): ";
-                    ss << std::scientific << std::setprecision(16) << rel_err; 
-                    msg.print(ss.str());
-                }
+                std::stringstream ss;
+                if(i<0)ss << "The relative difference (1e+" << -i <<  "): ";
+                else ss << "The relative difference (1e-" << i << "): ";
+                ss << std::scientific << std::setprecision(16) << rel_err; 
+                msg.print(ss.str());
             }
         }
     }
@@ -1272,15 +1249,18 @@ namespace peopt{
             typename Internal::State::t& state 
                 =dynamic_cast <typename Internal::State::t&> (state_);
 
+            // Create some shortcuts
+            const unsigned int& msg_level=state.msg_level;
+
             switch(loc){
 
             // Output the headers for the diagonstic information
             case OptimizationLocation::AfterInitialFuncAndGrad:
-                if(msg.level >=1) {
+                if(msg_level >=1) {
                     // Get the headers 
                     std::list <std::string> out;
                     Internal::Printer::getStateHeader(state,out);
-                    if(msg.level >=2)
+                    if(msg_level >=2)
                         Internal::Printer::getKrylovHeader(state,out);
 
                     // Output the result
@@ -1292,7 +1272,7 @@ namespace peopt{
             case OptimizationLocation::EndOfOptimizationIteration: 
             case OptimizationLocation::AfterRejectedTrustRegion:
             case OptimizationLocation::AfterRejectedLineSearch:
-                if(msg.level >= 1) {
+                if(msg_level >= 1) {
                     // Get the diagonstic information
                     std::list <std::string> out;
 
@@ -1318,7 +1298,7 @@ namespace peopt{
 
             // Output information at the end of each Krylov iteration
             case OptimizationLocation::EndOfKrylovIteration:
-                if(msg.level >= 2) {
+                if(msg_level >= 2) {
                     // Get the diagonstic information
                     std::list <std::string> out;
 
@@ -4009,7 +3989,6 @@ namespace peopt{
                 typename State::t& state
             ){
                 // Create some shortcuts
-                const unsigned int msg_level=state.msg_level;
                 X_Vector& x=*(state.x.begin());
                 X_Vector& g=*(state.g.begin());
                 X_Vector& s=*(state.s.begin());
@@ -4028,9 +4007,6 @@ namespace peopt{
                 // Create shortcuts to the functions that we need
                 const ScalarValuedFunction <Real,XX>& f=*(fns.f);
                 const ScalarValuedFunction <Real,XX>& f_merit=*(fns.f_merit);
-
-                // Set the messaging level
-                msg.level=msg_level;
 
                 // Evaluate the merit function and gradient if we've not
                 // done so already

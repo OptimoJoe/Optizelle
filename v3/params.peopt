@@ -3,7 +3,7 @@
       "msg_level" : 1,
       "H_type" : "External",
       "iter_max" : 100,
-      "eps_krylov" : 1e-2
+      "eps_krylov" : 1e-12
    },
    "peopt_TR_Newton" : {
       "H_type" : "External",

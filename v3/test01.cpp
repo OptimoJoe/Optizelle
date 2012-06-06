@@ -363,7 +363,7 @@ int main(){
 
     // Solve the optimization problem
     peopt::Unconstrained <double,MyHS>::Algorithms
-        ::getMin(peopt::Messaging(2),ufns,ustate);
+        ::getMin(peopt::Messaging(),ufns,ustate);
 
     // Print out the final answer
     const std::vector <double>& opt_x=*(ustate.x.begin());

@@ -228,7 +228,7 @@ int main(){
 
     // Solve the optimization problem
     peopt::InequalityConstrained <double,peopt::Rm,peopt::SQL>::Algorithms
-        ::getMin(peopt::Messaging(1),fns,state);
+        ::getMin(peopt::Messaging(),fns,state);
 
     // Print out the reason for convergence
     std::cout << "The algorithm converged due to: " <<
