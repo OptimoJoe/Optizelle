@@ -1193,13 +1193,13 @@ namespace peopt{
 
     // A function that has free reign to manipulate or analyze the state.
     // This should be used cautiously.
-    template <typename Functions,typename State>
+    template <typename ProblemClass>
     class StateManipulator {
     public:
         // Application
         virtual void operator () (
-            const Functions& fns,
-            State& state,
+            const typename ProblemClass::Functions::t& fns,
+            typename ProblemClass::State::t& state,
             OptimizationLocation::t loc
         ) const {};
 
@@ -1209,18 +1209,11 @@ namespace peopt{
    
     // A state manipulator that's been customized in order to print diagonistic
     // information
-    template < typename External,typename Internal >
-    class DiagnosticManipulator : public StateManipulator
-        <typename External::Functions::t,typename External::State::t>
-    {
+    template <typename ProblemClass>
+    class DiagnosticManipulator : public StateManipulator <ProblemClass> {
     private:
-        // Create some type shortcuts
-        typedef StateManipulator
-            <typename External::Functions::t,typename External::State::t> 
-            InternalManipulator;
-
         // A reference to an existing state manipulator 
-        const InternalManipulator& smanip;
+        const StateManipulator <ProblemClass>& smanip;
 
         // A reference to the messsaging object
         const Messaging& msg;
@@ -1229,25 +1222,19 @@ namespace peopt{
 
         // Create a reference to an existing manipulator 
         DiagnosticManipulator(
-            const InternalManipulator& smanip_,
+            const StateManipulator <ProblemClass>& smanip_,
             const Messaging& msg_
         ) : smanip(smanip_), msg(msg_) {}
 
         // Application
         void operator () (
-            const typename External::Functions::t& fns_,
-            typename External::State::t& state_,
+            const typename ProblemClass::Functions::t& fns,
+            typename ProblemClass::State::t& state,
             OptimizationLocation::t loc
         ) const {
 
             // Call the internal manipulator 
-            smanip(fns_,state_,loc);
-
-            // Dynamically cast the incoming state to match the internal state.
-            // In theory, this should always work since we're doing this 
-            // trickery internally.  
-            typename Internal::State::t& state 
-                =dynamic_cast <typename Internal::State::t&> (state_);
+            smanip(fns,state,loc);
 
             // Create some shortcuts
             const unsigned int& msg_level=state.msg_level;
@@ -1259,9 +1246,9 @@ namespace peopt{
                 if(msg_level >=1) {
                     // Get the headers 
                     std::list <std::string> out;
-                    Internal::Printer::getStateHeader(state,out);
+                    ProblemClass::Printer::getStateHeader(state,out);
                     if(msg_level >=2)
-                        Internal::Printer::getKrylovHeader(state,out);
+                        ProblemClass::Printer::getKrylovHeader(state,out);
 
                     // Output the result
                     msg.print(std::accumulate (
@@ -1283,12 +1270,12 @@ namespace peopt{
                         || loc==OptimizationLocation
                             ::AfterRejectedLineSearch
                     )
-                        Internal::Printer::getState(state,false,true,out);
+                        ProblemClass::Printer::getState(state,false,true,out);
                     else 
-                        Internal::Printer::getState(state,false,false,out);
+                        ProblemClass::Printer::getState(state,false,false,out);
 
                     // Print out blank Krylov information 
-                    Internal::Printer::getKrylov(state,true,out);
+                    ProblemClass::Printer::getKrylov(state,true,out);
 
                     // Output the result
                     msg.print(std::accumulate (
@@ -1303,10 +1290,10 @@ namespace peopt{
                     std::list <std::string> out;
 
                     // Print out blank state information
-                    Internal::Printer::getState(state,true,false,out);
+                    ProblemClass::Printer::getState(state,true,false,out);
 
                     // Print out the Krylov information 
-                    Internal::Printer::getKrylov(state,false,out);
+                    ProblemClass::Printer::getKrylov(state,false,out);
 
                     // Output the result
                     msg.print(std::accumulate (
@@ -1317,6 +1304,33 @@ namespace peopt{
             default:
                 break;
             }
+        }
+    };
+
+    // This converts one manipulator to another.  In theory, the dynamic
+    // casting can file, so make sure to only use this when compatibility
+    // can be guaranteed.
+    template <typename Internal,typename External> 
+    struct ConversionManipulator : public StateManipulator <External> {
+    private:
+        // A reference to the user-defined state manipulator
+        const StateManipulator<Internal>& smanip;
+
+    public:
+        ConversionManipulator(const StateManipulator <Internal>& smanip_)
+            : smanip(smanip_) {}
+
+        // Application
+        void operator () (
+            const typename External::Functions::t& fns_,
+            typename External::State::t& state_,
+            OptimizationLocation::t loc
+        ) const {
+            const typename Internal::Functions::t& fns
+                =dynamic_cast <const typename Internal::Functions::t&> (fns_);
+            typename Internal::State::t& state 
+                =dynamic_cast <typename Internal::State::t&> (state_);
+            smanip(fns,state,loc);
         }
     };
 
@@ -2754,7 +2768,7 @@ namespace peopt{
                 // an auto_ptr.  Basically, the Functions::t structure owns
                 // the memory for all of the functions, which are stored
                 // as auto_ptrs.  We want this function to have a reference
-                // to the objective.  Now, during the initialization, the
+                // to that objective.  Now, during the initialization, the
                 // objective may and probably be modified for a variety of
                 // reasons.  For example, we may replace the function with
                 // another that has a modified Hessian.  When this happens,
@@ -3141,9 +3155,8 @@ namespace peopt{
             // trust-region and line-search algorithms
             static void truncatedCG(
                 const Messaging& msg,
+                const StateManipulator <Unconstrained <Real,XX> >& smanip,
                 const typename Functions::t& fns,
-                const StateManipulator<typename Functions::t,typename State::t>&
-                    smanip,
                 typename State::t& state
             ){
 
@@ -3407,9 +3420,8 @@ namespace peopt{
             // Finds the trust-region step
             static void getStepTR(
                 const Messaging& msg,
+                const StateManipulator <Unconstrained <Real,XX> >& smanip,
                 const typename Functions::t& fns,
-                const StateManipulator<typename Functions::t,typename State::t>&
-                    smanip,
                 typename State::t& state
             ){
                 // Create some shortcuts
@@ -3440,7 +3452,7 @@ namespace peopt{
                             OptimizationLocation::AfterRejectedTrustRegion);
 
                     // Use truncated-CG to find a new trial step
-                    truncatedCG(msg,fns,smanip,state);
+                    truncatedCG(msg,smanip,fns,state);
 
                     // Manipulate the state if required
                     smanip(fns,state,
@@ -3776,9 +3788,8 @@ namespace peopt{
             // Finds a trial step using a line-search for globalization
             static void getStepLS(
                 const Messaging& msg,
+                const StateManipulator <Unconstrained <Real,XX> >& smanip,
                 const typename Functions::t& fns,
-                const StateManipulator<typename Functions::t,typename State::t>&
-                    smanip,
                 typename State::t& state
             ){
                 // Create some shortcuts
@@ -3811,7 +3822,7 @@ namespace peopt{
                     BFGS(msg,state);
                     break;
                 case LineSearchDirection::NewtonCG:
-                    truncatedCG(msg,fns,smanip,state);
+                    truncatedCG(msg,smanip,fns,state);
                     break;
                 }
                     
@@ -3914,9 +3925,8 @@ namespace peopt{
             // Finds a new trial step
             static void getStep(
                 const Messaging& msg,
+                const StateManipulator <Unconstrained <Real,XX> >& smanip,
                 const typename Functions::t& fns,
-                const StateManipulator<typename Functions::t,typename State::t>&
-                    smanip,
                 typename State::t& state
             ){
                 // Create some shortcuts
@@ -3925,10 +3935,10 @@ namespace peopt{
                 // Choose whether we use a line-search or trust-region method
                 switch(algorithm_class){
                 case AlgorithmClass::TrustRegion:
-                    getStepTR(msg,fns,smanip,state);
+                    getStepTR(msg,smanip,fns,state);
                     break;
                 case AlgorithmClass::LineSearch:
-                    getStepLS(msg,fns,smanip,state);
+                    getStepLS(msg,smanip,fns,state);
                     break;
                 }
             }
@@ -3983,8 +3993,7 @@ namespace peopt{
             // Solves an optimization problem
             static void getMin_(
                 const Messaging& msg,
-                const StateManipulator<typename Functions::t,typename State::t>&
-                    smanip,
+                const StateManipulator <Unconstrained <Real,XX> >& smanip,
                 typename Functions::t& fns,
                 typename State::t& state
             ){
@@ -4024,7 +4033,7 @@ namespace peopt{
                 do{
 
                     // Get a new optimization iterate.  
-                    getStep(msg,fns,smanip,state);
+                    getStep(msg,smanip,fns,state);
 
                     // If we've not calculated it already, save the size of
                     // the step
@@ -4077,8 +4086,7 @@ namespace peopt{
                 typename State::t& state
             ){
                 // Create an empty state manipulator
-                StateManipulator<typename Functions::t,typename State::t>
-                    smanip;
+                StateManipulator <Unconstrained <Real,XX> > smanip;
 
                 // Minimize the problem
                 getMin(msg,smanip,fns,state);
@@ -4088,8 +4096,7 @@ namespace peopt{
             // problem
             static void getMin(
                 const Messaging& msg,
-                const StateManipulator<typename Functions::t,typename State::t>&
-                    smanip,
+                const StateManipulator <Unconstrained <Real,XX> >& smanip,
                 typename Functions::t& fns,
                 typename State::t& state
             ){
@@ -4100,8 +4107,7 @@ namespace peopt{
                 State::check(msg,state);
 
                 // Add the output to the state manipulator
-                DiagnosticManipulator
-                    <Unconstrained<Real,XX>,Unconstrained<Real,XX> >
+                DiagnosticManipulator <Unconstrained<Real,XX> >
                     iomanip(smanip,msg);
 
                 // Minimize the problem
@@ -5418,25 +5424,24 @@ namespace peopt{
             }
 
             // This adds the interior point through use of a state manipulator.
-            template <typename Functions_,typename State_>
+            template <typename ProblemClass>
             struct InteriorPointManipulator
-                : public StateManipulator <Functions_,State_>
+                : public StateManipulator <ProblemClass>
             {
             private:
                 // A reference to the user-defined state manipulator
-                const StateManipulator<typename Functions::t,typename State::t>&
-                    smanip;
+                const StateManipulator<ProblemClass>& smanip;
 
             public:
-                InteriorPointManipulator(const StateManipulator
-                    <typename Functions::t,typename State::t>& smanip_
+                InteriorPointManipulator(
+                    const StateManipulator <ProblemClass>& smanip_
                 ) : smanip(smanip_) {}
 
 
                 // Application
                 void operator () (
-                    const Functions_& fns_,
-                    State_& state_,
+                    const typename ProblemClass::Functions::t& fns_,
+                    typename ProblemClass::State::t& state_,
                     OptimizationLocation::t loc
                 ) const {
                     // Dynamically cast the incoming state and fns to the
@@ -5507,8 +5512,7 @@ namespace peopt{
                 typename State::t& state
             ){
                 // Create an empty state manipulator
-                StateManipulator<typename Functions::t,typename State::t>
-                    smanip;
+                StateManipulator <InequalityConstrained <Real,XX,ZZ> > smanip;
 
                 // Minimize the problem
                 getMin(msg,smanip,fns,state);
@@ -5518,22 +5522,24 @@ namespace peopt{
             // problem
             static void getMin(
                 const Messaging& msg,
-                const StateManipulator<typename Functions::t,typename State::t>&
+                const StateManipulator <InequalityConstrained <Real,XX,ZZ> >&
                     smanip,
                 typename Functions::t& fns,
                 typename State::t& state
             ){
 
                 // Add the interior point pieces to the state manipulator
-                InteriorPointManipulator
-                    < typename Unconstrained<Real,XX>::Functions::t,
-                      typename Unconstrained<Real,XX>::State::t >
+                InteriorPointManipulator <InequalityConstrained <Real,XX,ZZ> >
                     ipmanip(smanip);
                 
                 // Adds the output pieces to the state manipulator 
-                DiagnosticManipulator
-                    <Unconstrained<Real,XX>,InequalityConstrained<Real,XX,ZZ> >
-                    iomanip(ipmanip,msg);
+                DiagnosticManipulator <InequalityConstrained <Real,XX,ZZ> >
+                    dmanip(ipmanip,msg);
+
+                // Insures that we can interact with unconstrained code
+                ConversionManipulator
+                    <InequalityConstrained<Real,XX,ZZ>,Unconstrained <Real,XX> >
+                    cmanip(dmanip);
                 
                 // Initialize any remaining functions required for optimization 
                 Functions::init(msg,state,fns);
@@ -5551,7 +5557,7 @@ namespace peopt{
                 
                 // Minimize the problem
                 Unconstrained <Real,XX>::Algorithms
-                    ::getMin_(msg,iomanip,fns,state);
+                    ::getMin_(msg,cmanip,fns,state);
             }
         };
     };
