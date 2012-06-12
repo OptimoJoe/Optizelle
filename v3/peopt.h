@@ -1520,81 +1520,100 @@ namespace peopt{
 
                 // Type of line-search 
                 LineSearchKind::t kind;
-                
-                // ------------- CONSTRUCTORS ------------ 
 
-                // Initialize the state without setting up any variables. 
+                // Initialization constructors
                 t() {
-                    init_params();
-                };
-
-                // Initialize the state for unconstrained optimization.  
-                t(const X_Vector& x) {
-                    init_params();
-                    init_vectors(x);
+                    Unconstrained <Real,XX>::State::init_params(*this);
                 }
-
+                t(const X_Vector& x) {
+                    Unconstrained <Real,XX>::State::init_params(*this);
+                    Unconstrained <Real,XX>::State::init_vectors(*this,x);
+                }
+                
                 // A trick to allow dynamic casting later
                 virtual ~t() {}
-
-            protected:
-                // This initializes all the variables required for unconstrained
-                // optimization.  
-                void init_vectors(const X_Vector& x_) {
-                    x.push_back(X_Vector()); X::init(x_,x.back());
-                        X::copy(x_,x.back());
-                    g.push_back(X_Vector()); X::init(x_,g.back());
-                    s.push_back(X_Vector()); X::init(x_,s.back()); 
-                    x_old.push_back(X_Vector()); X::init(x_,x_old.back()); 
-                    g_old.push_back(X_Vector()); X::init(x_,g_old.back()); 
-                    s_old.push_back(X_Vector()); X::init(x_,s_old.back()); 
-                }
-
-                // This sets all of the parameters possible that don't require
-                // special memory allocation such as variables.
-                void init_params(){
-                    eps_g=Real(1e-6);
-                    eps_s=Real(1e-6);
-                    stored_history=0;
-                    history_reset=5;
-                    iter=1;
-                    iter_max=10;
-                    opt_stop=StoppingCondition::NotConverged;
-                    krylov_iter=1;
-                    krylov_iter_max=10;
-                    krylov_iter_total=0;
-                    krylov_stop=KrylovStop::RelativeErrorSmall;
-                    krylov_rel_err=
-                        Real(std::numeric_limits<double>::quiet_NaN());
-                    eps_krylov=Real(1e-2);
-                    algorithm_class=AlgorithmClass::TrustRegion;
-                    Minv_type=Operators::Identity;
-                    H_type=Operators::Identity;
-                    norm_g=Real(std::numeric_limits<double>::quiet_NaN());
-                    norm_gtyp=Real(std::numeric_limits<double>::quiet_NaN());
-                    norm_s=Real(std::numeric_limits<double>::quiet_NaN());
-                    norm_styp=Real(std::numeric_limits<double>::quiet_NaN());
-                    merit_x=Real(std::numeric_limits<double>::quiet_NaN());
-                    merit_xps=Real(std::numeric_limits<double>::quiet_NaN());
-                    msg_level=1;
-                    delta=Real(100.);
-                    delta_max=Real(100.);
-                    eta1=Real(.1);
-                    eta2=Real(.9);
-                    rho=Real(0.);
-                    rejected_trustregion=0;
-                    alpha=1.;
-                    linesearch_iter=0;
-                    linesearch_iter_max=5;
-                    linesearch_iter_total=0;
-                    eps_ls=Real(1e-2);
-                    dir=LineSearchDirection::SteepestDescent;
-                    kind=LineSearchKind::GoldenSection;
-                }
             };
 
+            // This sets all of the parameters possible that don't require
+            // special memory allocation such as variables.
+            static void init_params_(t& state){
+                state.eps_g=Real(1e-6);
+                state.eps_s=Real(1e-6);
+                state.stored_history=0;
+                state.history_reset=5;
+                state.iter=1;
+                state.iter_max=10;
+                state.opt_stop=StoppingCondition::NotConverged;
+                state.krylov_iter=1;
+                state.krylov_iter_max=10;
+                state.krylov_iter_total=0;
+                state.krylov_stop=KrylovStop::RelativeErrorSmall;
+                state.krylov_rel_err=
+                    Real(std::numeric_limits<double>::quiet_NaN());
+                state.eps_krylov=Real(1e-2);
+                state.algorithm_class=AlgorithmClass::TrustRegion;
+                state.Minv_type=Operators::Identity;
+                state.H_type=Operators::Identity;
+                state.norm_g=Real(std::numeric_limits<double>::quiet_NaN());
+                state.norm_gtyp=Real(std::numeric_limits<double>::quiet_NaN());
+                state.norm_s=Real(std::numeric_limits<double>::quiet_NaN());
+                state.norm_styp=Real(std::numeric_limits<double>::quiet_NaN());
+                state.merit_x=Real(std::numeric_limits<double>::quiet_NaN());
+                state.merit_xps=Real(std::numeric_limits<double>::quiet_NaN());
+                state.msg_level=1;
+                state.delta=Real(100.);
+                state.delta_max=Real(100.);
+                state.eta1=Real(.1);
+                state.eta2=Real(.9);
+                state.rho=Real(0.);
+                state.rejected_trustregion=0;
+                state.alpha=1.;
+                state.linesearch_iter=0;
+                state.linesearch_iter_max=5;
+                state.linesearch_iter_total=0;
+                state.eps_ls=Real(1e-2);
+                state.dir=LineSearchDirection::SteepestDescent;
+                state.kind=LineSearchKind::GoldenSection;
+            }
+            static void init_params(t& state){
+                Unconstrained <Real,XX>::State::init_params_(state);
+            }
+
+            // This initializes all the variables required for unconstrained
+            // optimization.  
+            static void init_vectors_(t& state,const X_Vector& x) {
+                state.x.clear();
+                    state.x.push_back(X_Vector());
+                    X::init(x,state.x.back());
+                    X::copy(x,state.x.back());
+                state.g.clear();
+                    state.g.push_back(X_Vector());
+                    X::init(x,state.g.back());
+                state.s.clear();
+                    state.s.push_back(X_Vector());
+                    X::init(x,state.s.back()); 
+                state.x_old.clear();
+                    state.x_old.push_back(X_Vector());
+                    X::init(x,state.x_old.back());
+                state.g_old.clear();
+                    state.g_old.push_back(X_Vector());
+                    X::init(x,state.g_old.back()); 
+                state.s_old.clear();
+                    state.s_old.push_back(X_Vector());
+                    X::init(x,state.s_old.back()); 
+            }
+            static void init_vectors(t& state,const X_Vector& x) {
+                Unconstrained <Real,XX>::State::init_vectors_(state,x);
+            }
+
+            // Initialize everything
+            static void init(t& state,const X_Vector& x) {
+                init_params(state);
+                init_vectors(state,x);
+            }
+
             // Check that we have a valid set of parameters.  
-            static void check(const Messaging& msg,const t& state) {
+            static void check_(const Messaging& msg,const t& state) {
                    
                 // Use this to build an error message
                 std::stringstream ss;
@@ -1744,8 +1763,11 @@ namespace peopt{
                 // If there's an error, print it
                 if(ss.str()!="") msg.error(ss.str());
             }
+            static void check(const Messaging& msg,const t& state) {
+                Unconstrained <Real,XX>::State::check_(msg,state);
+            }
         };
-    
+
         // Utilities for restarting the optimization
         struct Restart {
 
@@ -4152,50 +4174,57 @@ namespace peopt{
             // The actual internal state of the optimization
             struct t: public virtual Unconstrained <Real,XX>::State::t {
 
-                // Create some type shortcuts
-                typedef typename Unconstrained <Real,XX>::State::t
-                    UnconstrainedState;
-                typedef typename EqualityConstrained <Real,XX,YY>::State::t
-                    EqualityConstrainedState;
-            
                 // The Lagrange multiplier (dual variable) for the equality
                 // constraints
                 std::list <Y_Vector> y;
-                
-                // Initialize the state without setting up any variables. 
+
+                // Initialization constructors
                 t() {
-                    UnconstrainedState::init_params();
-                    EqualityConstrainedState::init_params();
-                };
-                
-                // Initialize the state for equality constrained optimization.
-                t(
-                    const X_Vector& x,
-                    const Y_Vector& y
-                ) {
-                    UnconstrainedState::init_params();
-                    UnconstrainedState::init_vectors(x);
-                    EqualityConstrainedState::init_params();
-                    EqualityConstrainedState::init_vectors(y);
+                    EqualityConstrained <Real,XX,YY>::State::init_params(*this);
                 }
-
-            protected: 
-                // This initializes all the parameters required for equality
-                // constrained optimization.  
-                void init_params() { }
-
-                // This initializes all the variables required for equality
-                // constrained optimization.  
-                void init_vectors(const Y_Vector& y_) {
-                    y.push_back(Y_Vector()); Y::init(y_,y.back());
-                        Y::copy(y_,y.back());
+                t(const X_Vector& x,const Y_Vector& y) {
+                    EqualityConstrained <Real,XX,YY>::State::init_params(*this);
+                    EqualityConstrained <Real,XX,YY>::State
+                        ::init_vectors(*this,x,y);
                 }
             };
             
+            // This initializes all the parameters required for equality
+            // constrained optimization.  
+            static void init_params_(t& state) { }
+            static void init_params(t& state) {
+                Unconstrained <Real,XX>::State::init_params_(state); 
+                EqualityConstrained <Real,XX,YY>::State::init_params_(state);
+            }
+
+            // This initializes all the variables required for equality
+            // constrained optimization.  
+            static void init_vectors_(t& state, const Y_Vector& y) {
+                state.y.clear();
+                    state.y.push_back(Y_Vector());
+                    Y::init(y,state.y.back());
+                    Y::copy(y,state.y.back());
+            }
+            static void init_vectors(
+                t& state,
+                const X_Vector& x,
+                const Y_Vector& y
+            ) {
+                Unconstrained <Real,XX>::State::init_vectors_(state,x); 
+                EqualityConstrained <Real,XX,YY>::State::init_vectors_(state,y);
+            }
+           
+            // Initializes everything
+            static void init(t& state, const X_Vector& x, const Y_Vector& y) {
+                init_params(state);
+                init_vectors(state,x,y);
+            }
+
             // Check that we have a valid set of parameters.  
+            static void check_(const Messaging& msg,const t& state) { }
             static void check(const Messaging& msg,const t& state) {
-                // Check the unconstrained parameters
-                Unconstrained <Real,XX>::State::check(msg,state);
+                Unconstrained <Real,XX>::State::check_(msg,state);
+                EqualityConstrained <Real,XX,YY>::State::check_(msg,state);
             }
         };
         
@@ -4489,13 +4518,6 @@ namespace peopt{
 
             // The actual internal state of the optimization
             struct t: public virtual Unconstrained <Real,XX>::State::t {
-
-                // Create some type shortcuts
-                typedef typename Unconstrained <Real,XX>::State::t
-                    UnconstrainedState;
-                typedef typename InequalityConstrained <Real,XX,ZZ>::State::t
-                    InequalityConstrainedState;
-
                 // The Lagrange multiplier (dual variable) for the
                 // inequality constraints 
                 std::list <Z_Vector> z;
@@ -4529,61 +4551,76 @@ namespace peopt{
 
                 // How close we move to the boundary during a single step
                 Real gamma;
-                
-                // Initialize the state without setting up any variables. 
+
+                // Initialization constructors
                 t() {
-                    UnconstrainedState::init_params();
-                    InequalityConstrainedState::init_params();
-                };
-                
-                // Initialize the state for inequality constrained optimization.
-                t(
-                    const X_Vector& x,
-                    const Z_Vector& z
-                ) {
-                    UnconstrainedState::init_params();
-                    UnconstrainedState::init_vectors(x);
-                    InequalityConstrainedState::init_params();
-                    InequalityConstrainedState::init_vectors(z);
+                    InequalityConstrained <Real,XX,ZZ>::State
+                        ::init_params(*this);
                 }
-
-            protected:
-                // This initializes all the parameters required for inequality
-                // constrained optimization.  
-                void init_params() {
-                    mu = Real(std::numeric_limits<double>::quiet_NaN());
-                    mu_est = Real(std::numeric_limits<double>::quiet_NaN());
-                    mu_tol = Real(1e-2);
-                    mu_trg = Real(1e-6);
-                    sigma = Real(0.5);
-                    gamma = Real(0.95);
-                }
-
-                // This initializes all the variables required for inequality
-                // constrained optimization.  
-                void init_vectors(const Z_Vector& z_) {
-                    // Allocate memory for z
-                    z.push_back(Z_Vector()); Z::init(z_,z.back());
-                        Z::copy(z_,z.back());
-
-                    // Allocate memory for h(x)
-                    h_x.push_back(Z_Vector()); Z::init(z_,h_x.back());
-
-                    // Set z to be ||x|| e
-                    Z_Vector& zz=z.front();
-                    X_Vector& xx=this->x.front();
-                    Z::id(zz);
-                    Z::scal(sqrt(X::innr(xx,xx)),zz);
-
+                t(const X_Vector& x,const Z_Vector& z) {
+                    InequalityConstrained <Real,XX,ZZ>::State
+                        ::init_params(*this);
+                    InequalityConstrained <Real,XX,ZZ>::State
+                        ::init_vectors(*this,x,z);
                 }
             };
-            
-            // Check that we have a valid set of parameters.  
-            static void check(const Messaging& msg,const t& state) {
+                
+            // This initializes all the parameters required for inequality
+            // constrained optimization.  
+            static void init_params_(t& state) {
+                state.mu = Real(std::numeric_limits<double>::quiet_NaN());
+                state.mu_est = Real(std::numeric_limits<double>::quiet_NaN());
+                state.mu_tol = Real(1e-2);
+                state.mu_trg = Real(1e-6);
+                state.sigma = Real(0.5);
+                state.gamma = Real(0.95);
+            }
+            static void init_params(t& state) {
+                Unconstrained <Real,XX>::State::init_params_(state); 
+                InequalityConstrained <Real,XX,ZZ>::State::init_params_(state);
+            }
 
-                // Check the unconstrained parameters
-                Unconstrained <Real,XX>::State::check(msg,state);
-                   
+            // This initializes all the variables required for inequality
+            // constrained optimization.  
+            static void init_vectors_(
+                t& state,
+                const X_Vector& x,
+                const Z_Vector& z
+            ) {
+                // Allocate memory for z
+                state.z.clear();
+                    state.z.push_back(Z_Vector());
+                    Z::init(z,state.z.back());
+                    Z::copy(z,state.z.back());
+
+                // Allocate memory for h(x)
+                state.h_x.clear();
+                    state.h_x.push_back(Z_Vector());
+                    Z::init(z,state.h_x.back());
+
+                // Set z to be ||x|| e
+                Z_Vector& zz=state.z.front();
+                Z::id(zz);
+                Z::scal(sqrt(X::innr(x,x)),zz);
+            }
+            static void init_vectors(
+                t& state,
+                const X_Vector& x,
+                const Z_Vector& z
+            ) {
+                Unconstrained <Real,XX>::State::init_vectors_(state,x); 
+                InequalityConstrained <Real,XX,ZZ>::State
+                    ::init_vectors_(state,x,z); 
+            }
+           
+            // Initializes everything
+            static void init(t& state, const X_Vector& x, const Z_Vector& z) {
+                init_params(state);
+                init_vectors(state,x,z);
+            }
+
+            // Check that we have a valid set of parameters.  
+            static void check_(const Messaging& msg,const t& state) {
                 // Use this to build an error message
                 std::stringstream ss;
                 
@@ -4620,6 +4657,10 @@ namespace peopt{
 
                 // If there's an error, print it
                 if(ss.str()!="") msg.error(ss.str());
+            }
+            static void check(const Messaging& msg,const t& state) {
+                Unconstrained <Real,XX>::State::check_(msg,state);
+                InequalityConstrained <Real,XX,ZZ>::State::check_(msg,state);
             }
         };
         // Utilities for restarting the optimization
@@ -5606,50 +5647,55 @@ namespace peopt{
                 public EqualityConstrained <Real,XX,YY>::State::t,
                 public InequalityConstrained <Real,XX,ZZ>::State::t
             {
-
-                // Create some type shortcuts
-                typedef typename Unconstrained <Real,XX>::State::t
-                    UnconstrainedState;
-                typedef typename EqualityConstrained <Real,XX,YY>::State::t
-                    EqualityConstrainedState;
-                typedef typename InequalityConstrained <Real,XX,ZZ>::State::t
-                    InequalityConstrainedState;
-            
-                // Initialize the state without setting up any variables. 
+                // Initialization constructors
                 t() {
-                    UnconstrainedState::init_params();
-                    EqualityConstrainedState::init_params();
-                    InequalityConstrainedState::init_params();
-                };
-                
-                // Initialize the state for general constrained optimization.
-                t(
-                    const X_Vector& x,
-                    const Y_Vector& y,
-                    const Z_Vector& z
-                ) {
-                    UnconstrainedState::init_params();
-                    UnconstrainedState::init_vectors(x);
-                    EqualityConstrainedState::init_params();
-                    EqualityConstrainedState::init_vectors(y);
-                    InequalityConstrainedState::init_params();
-                    InequalityConstrainedState::init_vectors(z);
+                    Constrained <Real,XX,YY,ZZ>::State::init_params(*this);
+                }
+                t(const X_Vector& x,const Y_Vector& y,const Z_Vector& z) {
+                    Constrained <Real,XX,YY,ZZ>::State::init_params(*this);
+                    Constrained <Real,XX,YY,ZZ>::State
+                        ::init_vectors(*this,x,y,z);
                 }
             };
             
+            // This initializes all the parameters required for constrained
+            // optimization.  
+            static void init_params(t& state) {
+                Unconstrained <Real,XX>::State::init_params_(state); 
+                EqualityConstrained <Real,XX,YY>::State::init_params_(state);
+                InequalityConstrained <Real,XX,ZZ>::State::init_params_(state);
+            }
 
-            // Check that we have a valid set of parameters.  Technically,
-            // this will check the unconstrained parameters more than once.
-            // However, that doesn't really hurt anything.
+            // This initializes all the variables required for inequality
+            // constrained optimization.  
+            static void init_vectors(
+                t& state,
+                const X_Vector& x,
+                const Y_Vector& y,
+                const Z_Vector& z
+            ) {
+                Unconstrained <Real,XX>::State::init_vectors_(state,x); 
+                EqualityConstrained <Real,XX,YY>::State::init_vectors_(state,y);
+                InequalityConstrained <Real,XX,ZZ>::State
+                    ::init_vectors_(state,x,z); 
+            }
+           
+            // Initializes everything
+            static void init(
+                t& state,
+                const X_Vector& x,
+                const Y_Vector& y,
+                const Z_Vector& z
+            ) {
+                init_params(state);
+                init_vectors(state,x,y,z);
+            }
+
+            // Check that we have a valid set of parameters.
             static void check(const Messaging& msg,const t& state) {
-                // Check the unconstrained parameters
-                Unconstrained <Real,XX>::State::check(msg,state);
-                
-                // Check the equality constrained parameters
-                EqualityConstrained <Real,XX,YY>::State::check(msg,state);
-
-                // Check the inequality constrained parameters
-                InequalityConstrained <Real,XX,ZZ>::State::check(msg,state);
+                Unconstrained <Real,XX>::State::check_(msg,state);
+                EqualityConstrained <Real,XX,YY>::State::check_(msg,state);
+                InequalityConstrained <Real,XX,ZZ>::State::check_(msg,state);
             }
         };
         
