@@ -1556,8 +1556,7 @@ namespace peopt{
                 state.krylov_iter_max=10;
                 state.krylov_iter_total=0;
                 state.krylov_stop=KrylovStop::RelativeErrorSmall;
-                state.krylov_rel_err=
-                    Real(std::numeric_limits<double>::quiet_NaN());
+                state.krylov_rel_err=Real(0.);
                 state.eps_krylov=Real(1e-2);
                 state.algorithm_class=AlgorithmClass::TrustRegion;
                 state.Minv_type=Operators::Identity;
@@ -2131,8 +2130,8 @@ namespace peopt{
                     else if(*name=="eps_krylov") state.eps_krylov=*real;
                     else if(*name=="norm_g") state.norm_g=*real;
                     else if(*name=="norm_gtyp") state.norm_gtyp=*real;
-                    else if(*name=="norm_s") state.norm_g=*real;
-                    else if(*name=="norm_styp") state.norm_gtyp=*real;
+                    else if(*name=="norm_s") state.norm_s=*real;
+                    else if(*name=="norm_styp") state.norm_styp=*real;
                     else if(*name=="merit_x") state.merit_x=*real;
                     else if(*name=="merit_xps") state.merit_xps=*real;
                     else if(*name=="delta") state.delta=*real;
