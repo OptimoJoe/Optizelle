@@ -3,13 +3,16 @@
 
 #include <fstream>
 #include "peopt.h"
-#include "json.bak/json.h"
+#include "json/json.h"
 
 namespace peopt {
     using namespace peopt;
-    namespace json {
+    struct json {
         // Parses a JSON file and returns the root
-        Json::Value parse(const peopt::Messaging& msg,const std::string fname) {
+        static Json::Value parse(
+            const peopt::Messaging& msg,
+            const std::string fname
+        ) {
             // Read in the input file
             Json::Value root;
             Json::Reader reader;
@@ -24,9 +27,6 @@ namespace peopt {
             return root;
         }
 
-        // Base error message
-        const std::string base = "Invalid JSON parameter: ";
-
         template <typename Real,template <typename> class XX> 
         struct Unconstrained {
             // Read parameters from file
@@ -35,6 +35,9 @@ namespace peopt {
                 const std::string fname,
                 typename peopt::Unconstrained <Real,XX>::State::t& state
             ) {
+                // Base error message
+                const std::string base = "Invalid JSON parameter: ";
+
                 // Read in the input file
                 Json::Value root=parse(msg,fname);
 
@@ -352,7 +355,7 @@ namespace peopt {
                        icon.substr(17,icon.size());
             }
         };
-    }
+    };
 }
 
 #endif

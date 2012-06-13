@@ -453,6 +453,9 @@ namespace peopt{
     
     struct OptimizationLocation{
         enum t{
+            // Occurs before the initial function and gradient evaluation 
+            BeforeInitialFuncAndGrad,
+
             // Occurs after the initial function and gradient evaluation 
             AfterInitialFuncAndGrad,
 
@@ -493,6 +496,8 @@ namespace peopt{
         // Converts the optimization location to a string 
         static std::string to_string(t loc){
             switch(loc){
+            case BeforeInitialFuncAndGrad:
+                return "BeforeInitialFuncAndGrad";
             case AfterInitialFuncAndGrad:
                 return "AfterInitialFuncAndGrad";
             case BeforeStep:
@@ -520,9 +525,11 @@ namespace peopt{
         
         // Converts a string to a line-search kind 
         static t from_string(std::string loc){
-            if(loc=="AfterInitialFuncAndGrad")
+            if(loc=="BeforeInitialFuncAndGrad")
+                return BeforeInitialFuncAndGrad;
+            else if(loc=="AfterInitialFuncAndGrad")
                 return AfterInitialFuncAndGrad;
-            if(loc=="BeforeStep")
+            else if(loc=="BeforeStep")
                 return BeforeStep; 
             else if(loc=="AfterStepBeforeGradient")
                 return AfterStepBeforeGradient; 
@@ -547,7 +554,8 @@ namespace peopt{
         // Checks whether or not a string is valid
         struct is_valid : public std::unary_function<std::string, bool> {
             bool operator () (const std::string& name) const {
-                if( name=="AfterInitialFuncAndGrad" ||
+                if( name=="BeforeInitialFuncAndGrad" ||
+                    name=="AfterInitialFuncAndGrad" ||
                     name=="BeforeStep" || 
                     name=="AfterStepBeforeGradient" ||
                     name=="EndOfOptimizationIteration" ||
@@ -4038,6 +4046,10 @@ namespace peopt{
                 // Create shortcuts to the functions that we need
                 const ScalarValuedFunction <Real,XX>& f=*(fns.f);
                 const ScalarValuedFunction <Real,XX>& f_merit=*(fns.f_merit);
+
+                // Manipulate the state if required
+                smanip(fns,state,OptimizationLocation
+                    ::BeforeInitialFuncAndGrad);
 
                 // Evaluate the merit function and gradient if we've not
                 // done so already
