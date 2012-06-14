@@ -4053,8 +4053,8 @@ namespace peopt{
                 // Evaluate the merit function and gradient if we've not
                 // done so already
                 if(merit_x != merit_x) {
-                    merit_x=f_merit(x);
                     f.grad(x,g);
+                    merit_x=f_merit(x);
                     norm_g=sqrt(X::innr(g,g));
                     norm_gtyp=norm_g;
                 }
