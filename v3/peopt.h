@@ -2246,6 +2246,24 @@ namespace peopt{
         // All the functions required by an optimization algorithm.  Note, this
         // routine owns the memory for these operations.  
         struct Functions {
+            // Actual storage of the functions required
+            struct t{
+                // Objective function
+                std::auto_ptr <ScalarValuedFunction <Real,XX> > f;
+
+                // Preconditioner for the Hessian of the objective
+                std::auto_ptr <Operator <Real,XX,XX> > Minv;
+
+                // Merit function used in globalization
+                std::auto_ptr <ScalarValuedFunction <Real,XX> > f_merit;
+
+                // Merit function used for the model of the problem
+                std::auto_ptr <ScalarValuedFunction <Real,XX> > model;
+                
+                // A trick to allow dynamic casting later
+                virtual ~t() {}
+            };
+
             // The identity operator 
             struct Identity : public Operator <Real,XX,XX> {
                 void operator () (const X_Vector& dx,X_Vector& result) const{
@@ -2883,25 +2901,6 @@ namespace peopt{
                     msg.error("The Hessian of the merit function is "
                         "undefined.");
                 }
-            };
-
-
-            // Actual storage of the functions required
-            struct t{
-                // Objective function
-                std::auto_ptr <ScalarValuedFunction <Real,XX> > f;
-
-                // Preconditioner for the Hessian of the objective
-                std::auto_ptr <Operator <Real,XX,XX> > Minv;
-
-                // Merit function used in globalization
-                std::auto_ptr <ScalarValuedFunction <Real,XX> > f_merit;
-
-                // Merit function used for the model of the problem
-                std::auto_ptr <ScalarValuedFunction <Real,XX> > model;
-                
-                // A trick to allow dynamic casting later
-                virtual ~t() {}
             };
 
             // Check that all the functions are defined
@@ -4928,6 +4927,11 @@ namespace peopt{
         // All the functions required by an optimization algorithm.  Note, this
         // routine owns the memory for these operations.  
         struct Functions {
+            // Actual storage of the functions required
+            struct t: public virtual Unconstrained <Real,XX>::Functions::t {
+                // Inequality constraints 
+                std::auto_ptr <VectorValuedFunction <Real,XX,ZZ> > h;
+            };
 
             // A function with a modified Hessian used in inequality
             // constrained optimization
@@ -5096,12 +5100,6 @@ namespace peopt{
                     msg.error("The Hessian of the merit function is "
                         "undefined.");
                 }
-            };
-
-            // Actual storage of the functions required
-            struct t: public virtual Unconstrained <Real,XX>::Functions::t {
-                // Inequality constraints 
-                std::auto_ptr <VectorValuedFunction <Real,XX,ZZ> > h;
             };
 
             // Check that all the functions are defined
