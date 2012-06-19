@@ -3536,7 +3536,7 @@ namespace peopt{
                 // On subsequent iterations, we take the specified direction
                 else {
                     // Find the momentum parameter
-                    double beta;
+                    double beta=0;
                     switch(dir) {
                     case NonlinearCGDirections::FletcherReeves:
                         beta=FletcherReeves(state);
