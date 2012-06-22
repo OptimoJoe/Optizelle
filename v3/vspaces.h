@@ -204,7 +204,7 @@ namespace peopt {
                 // Create the memory required for the cached Schur
                 // decompositions
                 schur.resize(schur_offsets.back());
-                schur_base.resize(schur_offsets.back());
+                schur_base.resize(schur_base_offsets.back());
             }
 
             // Simple indexing
