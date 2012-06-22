@@ -575,6 +575,13 @@ namespace peopt{
 
     // A collection of short routines that are only required locally
     namespace {
+        // Returns the smallest positive non-Nan number between the two. 
+        // If both are NaN, it will return NaN.
+        template <typename Real>
+        Real get_smallest(const Real x,const Real y) {
+            return (x < y) || (y != y) ? x : y;
+        }
+
         // Different nonlinear-CG directions 
         struct NonlinearCGDirections {
             enum t{
@@ -912,12 +919,13 @@ namespace peopt{
         }
 
         // Performs a finite difference test on the gradient of f where  
-        // f : X->R is scalar valued.  In other words, we check grad f using f.
+        // f : X->R is scalar valued.  In other words, we check grad f using f
+        // and return the smallest relative error. 
         template <
             typename Real,
             template <typename> class XX
         >
-        void gradientCheck(
+        Real gradientCheck(
             const Messaging& msg,
             const ScalarValuedFunction<Real,XX>& f,
             const typename XX <Real>::Vector& x,
@@ -936,17 +944,27 @@ namespace peopt{
 
             // Compute an ensemble of finite difference tests in a linear manner
             msg.print("Finite difference test on the gradient.");
+            Real min_rel_err = Real(std::numeric_limits<double>::quiet_NaN());
             for(int i=-2;i<=5;i++){
                 Real epsilon=pow(Real(.1),i);
                 Real dd=directionalDerivative <> (f,x,dx,epsilon);
 
+                // Calculate the relative error
+                Real rel_err=fabs(dd_grad-dd)/(Real(1e-16)+fabs(dd_grad));
+
+                // Calculate the smallest relative error seen so far 
+                min_rel_err=get_smallest <> (rel_err,min_rel_err);
+
+                // Print out the relative error
                 std::stringstream ss;
                 if(i<0) ss << "The relative difference (1e+" << -i <<  "): ";
                 else ss << "The relative difference (1e-" << i << "): ";
-                ss << std::scientific << std::setprecision(16)
-                    << fabs(dd_grad-dd)/(Real(1e-16)+fabs(dd_grad));
+                ss << std::scientific << std::setprecision(16) << rel_err; 
                 msg.print(ss.str());
             }
+            
+            // Return the function's smallest relative error
+            return min_rel_err;
         }
         
         // Performs a finite difference test on the hessian of f where f : X->R
@@ -955,7 +973,7 @@ namespace peopt{
             typename Real,
             template <typename> class XX
         >
-        void hessianCheck(
+        Real hessianCheck(
             const Messaging& msg,
             const ScalarValuedFunction<Real,XX>& f,
             const typename XX <Real>::Vector& x,
@@ -976,6 +994,7 @@ namespace peopt{
 
             // Compute an ensemble of finite difference tests in a linear manner
             msg.print("Finite difference test on the Hessian.");
+            Real min_rel_err = Real(std::numeric_limits<double>::quiet_NaN());
             for(int i=-2;i<=5;i++){
 
                 // Calculate the directional derivative
@@ -989,6 +1008,9 @@ namespace peopt{
                 Real rel_err=sqrt(X::innr(res,res)) /
                     (Real(1e-16)+sqrt(X::innr(hess_f_dx,hess_f_dx)));
 
+                // Calculate the smallest relative error seen so far 
+                min_rel_err=get_smallest <> (rel_err,min_rel_err);
+
                 // Print out the differences
                 std::stringstream ss;
                 if(i<0)ss << "The relative difference (1e+" << -i <<  "): ";
@@ -996,6 +1018,9 @@ namespace peopt{
                 ss << std::scientific << std::setprecision(16) << rel_err; 
                 msg.print(ss.str());
             }
+            
+            // Return the function's smallest relative error
+            return min_rel_err;
         }
         
         // This tests the symmetry of the Hessian.  We accomplish this by
@@ -1004,7 +1029,7 @@ namespace peopt{
             typename Real,
             template <typename> class XX
         >
-        void hessianSymmetryCheck(
+        Real hessianSymmetryCheck(
             const Messaging& msg,
             const ScalarValuedFunction<Real,XX>& f,
             const typename XX <Real>::Vector& x,
@@ -1040,6 +1065,9 @@ namespace peopt{
             ss<< "The absolute err. between <H(x)dx,dxx> and <dx,H(x)dxx>: "
                 << std::scientific << std::setprecision(16) << diff;
             msg.print(ss.str());
+            
+            // Return the absolute error in symmetry 
+            return diff;
         }
 
         // Performs a finite difference test on the derivative of a
@@ -1049,7 +1077,7 @@ namespace peopt{
             template <typename> class XX,
             template <typename> class YY 
         >
-        void derivativeCheck(
+        Real derivativeCheck(
             const Messaging& msg,
             const VectorValuedFunction<Real,XX,YY>& f,
             const typename XX <Real>::Vector& x,
@@ -1073,6 +1101,7 @@ namespace peopt{
             // Compute an ensemble of finite difference tests in a linear manner
             msg.print("Finite difference test on the derivative of a "
                 "vector-valued function.");
+            Real min_rel_err = Real(std::numeric_limits<double>::quiet_NaN());
             for(int i=-2;i<=5;i++){
 
                 // Calculate the directional derivative
@@ -1085,6 +1114,9 @@ namespace peopt{
                 // Determine the relative error
                 Real rel_err=sqrt(Y::innr(res,res)) / 
                     (Real(1e-16)+sqrt(Y::innr(fp_x_dx,fp_x_dx)));
+                
+                // Calculate the smallest relative error seen so far 
+                min_rel_err=get_smallest <> (rel_err,min_rel_err);
 
                 // Print out the differences
                 std::stringstream ss;
@@ -1093,6 +1125,9 @@ namespace peopt{
                 ss << std::scientific << std::setprecision(16) << rel_err; 
                 msg.print(ss.str());
             }
+            
+            // Return the function's smallest relative error
+            return min_rel_err; 
         }
 
         // Performs an adjoint check on the first-order derivative of a vector
@@ -1103,7 +1138,7 @@ namespace peopt{
             template <typename> class XX,
             template <typename> class YY 
         >
-        void derivativeAdjointCheck(
+        Real derivativeAdjointCheck(
             const Messaging& msg,
             const VectorValuedFunction<Real,XX,YY>& f,
             const typename XX <Real>::Vector& x,
@@ -1141,6 +1176,9 @@ namespace peopt{
             ss<<"The absolute err. between <f'(x)dx,dy> and <dx,f'(x)*dy>: "
                 << std::scientific << std::setprecision(16) << diff;
             msg.print(ss.str());
+            
+            // Return the absolute error in symmetry 
+            return diff;
         }
 
         // Performs a finite difference test on the second-derivative-adjoint 
@@ -1151,7 +1189,7 @@ namespace peopt{
             template <typename> class XX,
             template <typename> class YY 
         >
-        void secondDerivativeCheck(
+        Real secondDerivativeCheck(
             const Messaging& msg,
             const VectorValuedFunction<Real,XX,YY>& f,
             const typename XX <Real>::Vector& x,
@@ -1175,6 +1213,7 @@ namespace peopt{
             // Compute an ensemble of finite difference tests in a linear manner
             msg.print("Finite difference test on the 2nd-derivative adj. "
                 "of a vector-valued function.");
+            Real min_rel_err = Real(std::numeric_limits<double>::quiet_NaN());
             for(int i=-2;i<=5;i++){
 
                 // Calculate the directional derivative
@@ -1187,6 +1226,9 @@ namespace peopt{
                 // Determine the relative error
                 Real rel_err=sqrt(X::innr(res,res))
                     / (Real(1e-16)+sqrt(X::innr(fpps_x_dx_dy,fpps_x_dx_dy)));
+                
+                // Calculate the smallest relative error seen so far 
+                min_rel_err=get_smallest <> (rel_err,min_rel_err);
 
                 // Print out the differences
                 std::stringstream ss;
@@ -1195,6 +1237,9 @@ namespace peopt{
                 ss << std::scientific << std::setprecision(16) << rel_err; 
                 msg.print(ss.str());
             }
+            
+            // Return the function's smallest relative error
+            return min_rel_err; 
         }
     }
 
