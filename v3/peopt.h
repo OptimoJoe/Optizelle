@@ -4656,7 +4656,7 @@ namespace peopt{
                 // Set z to be ||x||/||e|| e.  In this way, ||z||=||x||.
                 Z_Vector& zz=state.z.front();
                 Z::id(zz);
-                Z::scal(sqrt(X::innr(x,x))/sqrt(X::innr(zz,zz)),zz);
+                Z::scal(sqrt(X::innr(x,x))/sqrt(Z::innr(zz,zz)),zz);
             }
             static void init_vectors(
                 t& state,
