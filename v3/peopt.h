@@ -3687,7 +3687,7 @@ namespace peopt{
                 Real beta=Real(2./(1.+sqrt(5.)));
 
                 // Find a bracket for the linesearch such that a < b
-                Real a=Real(1e-16);
+                Real a=Real(0.);
                 Real b=Real(2.)*alpha;
 
                 // Find two new points between a and b, mu and lambda,
