@@ -266,7 +266,7 @@ namespace peopt {
             // Copy out the the base of the last decomposition
             std::vector <Real> tmp(m*m);
             peopt::copy <Real>
-                (m*m,&(X.schur_base[X.schur_offsets[k]]),1,&(tmp[0]),1);
+                (m*m,&(X.schur_base[X.schur_base_offsets[k]]),1,&(tmp[0]),1);
 
             // tmp <- Base_k - X_k
             peopt::axpy <Real>
@@ -288,7 +288,7 @@ namespace peopt {
 
                 // Store X_k as the new base
                 peopt::copy <Real> (m*m,&(X.data[X.offsets[k]]),1,
-                    &(X.schur_base[X.schur_offsets[k]]),1);
+                    &(X.schur_base[X.schur_base_offsets[k]]),1);
 
                 // Find the Schur decomposition of X_k 
 
