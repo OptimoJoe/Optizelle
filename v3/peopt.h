@@ -5063,27 +5063,40 @@ namespace peopt{
 
                     // Create work elements for accumulating the
                     // interior point pieces
-                    Z_Vector ip1; Z::init(z,ip1);
-                    Z_Vector ip2; Z::init(z,ip2);
-                    X_Vector ip3; X::init(x,ip3);
+                    Z_Vector z_tmp1; Z::init(z,z_tmp1);
+                    Z_Vector z_tmp2; Z::init(z,z_tmp2);
+                    Z_Vector linv_hx_z_prod_hpx; Z::init(z,linv_hx_z_prod_hpx);
+                    X_Vector hess_mod; X::init(x,hess_mod);
 
                     // H_dx <- hess f(x) dx
                     f->hessvec(x,dx,H_dx);
 
-                    // ip1 <- h'(x) dx
-                    h->p(x,dx,ip1);
+                    // z_tmp1 <- h'(x) dx
+                    h->p(x,dx,z_tmp1);
 
-                    // ip2 <- z o h'(x) dx
-                    Z::prod(z,ip1,ip2);
+                    // z_tmp2 <- z o h'(x) dx
+                    Z::prod(z,z_tmp1,z_tmp2);
 
-                    // ip1 <- inv(L(h(x))) (z o h'(x) dx) 
-                    Z::linv(h_x,ip2,ip1);
+                    // linv_hx_z_prod_hpx <- inv(L(h(x))) (z o h'(x) dx) 
+                    Z::linv(h_x,z_tmp2,linv_hx_z_prod_hpx);
+                    
+                    // z_tmp2 <- inv L(h(x)) h'(x) dx
+                    Z::linv(h_x,z_tmp1,z_tmp2);
+                    
+                    // z_tmp1 <- z o (inv L(h(x)) h'(x) dx)
+                    Z::prod(z,z_tmp2,z_tmp1);
 
-                    // ip3 <- h'(x)* inv(L(h(x))) (z o h'(x) dx) 
-                    h->ps(x,ip1,ip3);
+                    // z_tmp1 <- (inv(L(h(x))) (z o h'(x) dx)
+                    //               + z o (inv L(h(x)) h'(x) dx))/2
+                    Z::axpy(Real(1.),linv_hx_z_prod_hpx,z_tmp1);
+                    Z::scal(Real(.5),z_tmp1);
+
+                    // hess_mod <- h'(x)* (inv(L(h(x))) (z o h'(x) dx)
+                    //                    + z o (inv L(h(x)) h'(x) dx))/2
+                    h->ps(x,z_tmp1,hess_mod);
 
                     // H_dx = hess f(x) dx + h'(x)* inv(L(h(x))) (z o h'(x) dx) 
-                    X::axpy(Real(1.0),ip3,H_dx);
+                    X::axpy(Real(1.),hess_mod,H_dx);
                 }
             };
 
