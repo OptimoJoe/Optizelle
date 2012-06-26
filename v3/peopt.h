@@ -4049,7 +4049,7 @@ namespace peopt{
                 // If we're using BFGS, check that <y,s> > 0
                 if((Minv_type==Operators::InvBFGS || H_type==Operators::BFGS
                     || dir==LineSearchDirection::BFGS)
-                    && X::innr(y,s) < 0)
+                    && X::innr(y,s) <= 0)
                     return;
 
                 // Insert these into the quasi-Newton storage
