@@ -18,6 +18,11 @@ extern "C" {
             double* vl,double* vu,int* il,int* iu,int* m,double* w,double* z,
             int* ldz,int* nzc,int* isuppz,int* tryrac,double* work,int* lwork,
             int* iwork,int* liwork,int* info);
+        void DSTEVR(char* jobz,char* range,int* n,double *D,double *E,
+            double* vl,double* vu,int* il,int* iu,double* abstol,int* m,
+            double* w,double* z,int* ldz,int* isuppz,double* work,int* lwork,
+            int* iwork,int* liwork,int* info);
+        double DLAMCH(char* cmach);
         void DGEMM(char* transa,char* transb,int* m,int* n,int* k,
             double* alpha, double* A, int* lda,double* B,int* ldb,
             double* beta,double* C,int *ldc);
@@ -45,6 +50,11 @@ extern "C" {
             float* vl,float* vu,int* il,int* iu,int* m,float* w,float* z,
             int* ldz,int* nzc,int* isuppz,int* tryrac,float* work,int* lwork,
             int* iwork,int* liwork,int* info);
+        void SSTEVR(char* jobz,char* range,int* n,float *D,float *E,
+            float* vl,float* vu,int* il,int* iu,float* abstol,int* m,
+            float* w,float* z,int* ldz,int* isuppz,float* work,int* lwork,
+            int* iwork,int* liwork,int* info);
+        float SLAMCH(char* cmach);
         void SGEMM(char* transa,char* transb,int* m,int* n,int* k,
             float* alpha, float* A, int* lda,float* B,int* ldb,
             float* beta,float* C,int *ldc);
@@ -72,6 +82,11 @@ extern "C" {
             double* vl,double* vu,int* il,int* iu,int* m,double* w,double* z,
             int* ldz,int* nzc,int* isuppz,int* tryrac,double* work,int* lwork,
             int* iwork,int* liwork,int* info);
+        void DSTEVR_(char* jobz,char* range,int* n,double *D,double *E,
+            double* vl,double* vu,int* il,int* iu,double* abstol,int* m,
+            double* w,double* z,int* ldz,int* isuppz,double* work,int* lwork,
+            int* iwork,int* liwork,int* info);
+        double DLAMCH_(char* cmach);
         void DGEMM_(char* transa,char* transb,int* m,int* n,int* k,
             double* alpha, double* A, int* lda,double* B,int* ldb,
             double* beta,double* C,int *ldc);
@@ -99,6 +114,11 @@ extern "C" {
             float* vl,float* vu,int* il,int* iu,int* m,float* w,float* z,
             int* ldz,int* nzc,int* isuppz,int* tryrac,float* work,int* lwork,
             int* iwork,int* liwork,int* info);
+        void SSTEVR_(char* jobz,char* range,int* n,float *D,float *E,
+            float* vl,float* vu,int* il,int* iu,float* abstol,int* m,
+            float* w,float* z,int* ldz,int* isuppz,float* work,int* lwork,
+            int* iwork,int* liwork,int* info);
+        float SLAMCH_(char* cmach);
         void SGEMM_(char* transa,char* transb,int* m,int* n,int* k,
             float* alpha, float* A, int* lda,float* B,int* ldb,
             float* beta,float* C,int *ldc);
@@ -128,6 +148,11 @@ extern "C" {
             double* vl,double* vu,int* il,int* iu,int* m,double* w,double* z,
             int* ldz,int* nzc,int* isuppz,int* tryrac,double* work,int* lwork,
             int* iwork,int* liwork,int* info);
+        void dstevr(char* jobz,char* range,int* n,double *D,double *E,
+            double* vl,double* vu,int* il,int* iu,double* abstol,int* m,
+            double* w,double* z,int* ldz,int* isuppz,double* work,int* lwork,
+            int* iwork,int* liwork,int* info);
+        double dlamch(char* cmach);
         void dgemm(char* transa,char* transb,int* m,int* n,int* k,
             double* alpha, double* A, int* lda,double* B,int* ldb,
             double* beta,double* C,int *ldc);
@@ -155,6 +180,11 @@ extern "C" {
             float* vl,float* vu,int* il,int* iu,int* m,float* w,float* z,
             int* ldz,int* nzc,int* isuppz,int* tryrac,float* work,int* lwork,
             int* iwork,int* liwork,int* info);
+        void sstevr(char* jobz,char* range,int* n,float *D,float *E,
+            float* vl,float* vu,int* il,int* iu,float* abstol,int* m,
+            float* w,float* z,int* ldz,int* isuppz,float* work,int* lwork,
+            int* iwork,int* liwork,int* info);
+        float slamch(char* cmach);
         void sgemm(char* transa,char* transb,int* m,int* n,int* k,
             float* alpha, float* A, int* lda,float* B,int* ldb,
             float* beta,float* C,int *ldc);
@@ -182,6 +212,11 @@ extern "C" {
             double* vl,double* vu,int* il,int* iu,int* m,double* w,double* z,
             int* ldz,int* nzc,int* isuppz,int* tryrac,double* work,int* lwork,
             int* iwork,int* liwork,int* info);
+        void dstevr_(char* jobz,char* range,int* n,double *D,double *E,
+            double* vl,double* vu,int* il,int* iu,double* abstol,int* m,
+            double* w,double* z,int* ldz,int* isuppz,double* work,int* lwork,
+            int* iwork,int* liwork,int* info);
+        double dlamch_(char* cmach);
         void dgemm_(char* transa,char* transb,int* m,int* n,int* k,
             double* alpha, double* A, int* lda,double* B,int* ldb,
             double* beta,double* C,int *ldc);
@@ -209,6 +244,11 @@ extern "C" {
             float* vl,float* vu,int* il,int* iu,int* m,float* w,float* z,
             int* ldz,int* nzc,int* isuppz,int* tryrac,float* work,int* lwork,
             int* iwork,int* liwork,int* info);
+        void sstevr_(char* jobz,char* range,int* n,float *D,float *E,
+            float* vl,float* vu,int* il,int* iu,float* abstol,int* m,
+            float* w,float* z,int* ldz,int* isuppz,float* work,int* lwork,
+            int* iwork,int* liwork,int* info);
+        float slamch_(char* cmach);
         void sgemm_(char* transa,char* transb,int* m,int* n,int* k,
             float* alpha, float* A, int* lda,float* B,int* ldb,
             float* beta,float* C,int *ldc);
@@ -519,6 +559,90 @@ namespace peopt {
             #else
                 sstemr_(&jobz,&range,&n,D,E,&vl,&vu,&il,&iu,&m,w,z,&ldz,&nzc,
                     isuppz,&tryrac,work,&lwork,iwork,&liwork,&info);
+            #endif
+        #endif
+    }
+    
+    template <>
+    void stevr(char jobz,char range,int n,double *D,double *E,double vl,
+        double vu,int il,int iu,double abstol,int& m,double* w,double* z,
+        int ldz,int* isuppz,double* work,int lwork,int* iwork,int liwork,
+        int& info
+    ) {
+        #ifdef CAPS_FORTRAN
+            #ifdef NOUNDER_FORTRAN
+                DSTEVR(&jobz,&range,&n,D,E,&vl,&vu,&il,&iu,&abstol,&m,w,z,&ldz,
+                    isuppz,work,&lwork,iwork,&liwork,&info);
+            #else
+                DSTEVR_(&jobz,&range,&n,D,E,&vl,&vu,&il,&iu,&abstol,&m,w,z,&ldz,
+                    isuppz,work,&lwork,iwork,&liwork,&info);
+            #endif
+        #else
+            #ifdef NOUNDER_FORTRAN
+                dstevr(&jobz,&range,&n,D,E,&vl,&vu,&il,&iu,&abstol,&m,w,z,&ldz,
+                    isuppz,work,&lwork,iwork,&liwork,&info);
+            #else
+                dstevr_(&jobz,&range,&n,D,E,&vl,&vu,&il,&iu,&abstol,&m,w,z,&ldz,
+                    isuppz,work,&lwork,iwork,&liwork,&info);
+            #endif
+        #endif
+    }
+    
+    template <>
+    void stevr(char jobz,char range,int n,float *D,float *E,float vl,
+        float vu,int il,int iu,float abstol,int& m,float* w,float* z,
+        int ldz,int* isuppz,float* work,int lwork,int* iwork,int liwork,
+        int& info
+    ) {
+        #ifdef CAPS_FORTRAN
+            #ifdef NOUNDER_FORTRAN
+                SSTEVR(&jobz,&range,&n,D,E,&vl,&vu,&il,&iu,&abstol,&m,w,z,&ldz,
+                    isuppz,work,&lwork,iwork,&liwork,&info);
+            #else
+                SSTEVR_(&jobz,&range,&n,D,E,&vl,&vu,&il,&iu,&abstol,&m,w,z,&ldz,
+                    isuppz,work,&lwork,iwork,&liwork,&info);
+            #endif
+        #else
+            #ifdef NOUNDER_FORTRAN
+                sstevr(&jobz,&range,&n,D,E,&vl,&vu,&il,&iu,&abstol,&m,w,z,&ldz,
+                    isuppz,work,&lwork,iwork,&liwork,&info);
+            #else
+                sstevr_(&jobz,&range,&n,D,E,&vl,&vu,&il,&iu,&abstol,&m,w,z,&ldz,
+                    isuppz,work,&lwork,iwork,&liwork,&info);
+            #endif
+        #endif
+    }
+
+    template <>
+    double lamch(char cmach) {
+        #ifdef CAPS_FORTRAN
+            #ifdef NOUNDER_FORTRAN
+                return DLAMCH(&cmach);
+            #else
+                return DLAMCH_(&cmach);
+            #endif
+        #else
+            #ifdef NOUNDER_FORTRAN
+                return dlamch(&cmach);
+            #else
+                return dlamch_(&cmach);
+            #endif
+        #endif
+    }
+
+    template <>
+    float lamch(char cmach) {
+        #ifdef CAPS_FORTRAN
+            #ifdef NOUNDER_FORTRAN
+                return SLAMCH(&cmach);
+            #else
+                return SLAMCH_(&cmach);
+            #endif
+        #else
+            #ifdef NOUNDER_FORTRAN
+                return slamch(&cmach);
+            #else
+                return slamch_(&cmach);
             #endif
         #endif
     }

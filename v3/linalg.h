@@ -31,6 +31,14 @@ namespace peopt {
     void stemr(char jobz,char range,int n,T *D,T *E,T vl,T vu,int il,int iu,
         int& m,T* w,T* z,int ldz,int nzc,int* isuppz,int& tryrac,T* work,
         int lwork,int* iwork,int liwork,int& info);
+    
+    template <typename T>
+    void stevr(char jobz,char range,int n,T *D,T *E,T vl,T vu,int il,int iu,
+        T abstol, int& m,T* w,T* z,int ldz,int* isuppz,T* work,
+        int lwork,int* iwork,int liwork,int& info);
+
+    template <typename T>
+    T lamch(char cmach);
 
     template <typename T>
     void gemm(char transa,char transb,int m,int n,int k,T alpha,
@@ -139,7 +147,7 @@ namespace peopt {
         int liwork=-1;
         int info;
         int nevals;
-        int nzc=0;
+        //int nzc=0;
         std::vector <T> W;
         std::vector <T> Z;
         std::vector <T> D;
@@ -176,7 +184,8 @@ namespace peopt {
             // Store the norm of the Arnoldi vector w in the off diagonal part
             // of T.
             beta.push_back(std::sqrt(dot <T> (m,&(w[0]),1,&(w[0]),1)));
-    
+   
+   #if 0
             // Figure out the workspaces for the eigenvalues and eigenvectors
             int k=alpha.size();  // Size of the eigenvalue subproblem
             D.resize(alpha.size());
@@ -202,6 +211,33 @@ namespace peopt {
             peopt::stemr <double> ('V','A',k,&(D[0]),&(E[0]),double(0.),
                 double(0.),0,0,nevals,&(W[0]),&(Z[0]),k,k,&(isuppz[0]),
                 nzc,&(work[0]),lwork,&(iwork[0]),liwork,info);
+#else
+            // Figure out the workspaces for the eigenvalues and eigenvectors
+            int k=alpha.size();  // Size of the eigenvalue subproblem
+            D.resize(alpha.size());
+            copy <T> (k,&(alpha[0]),1,&(D[0]),1);
+            E.resize(beta.size());
+            copy <T> (k,&(beta[0]),1,&(E[0]),1);
+            isuppz.resize(2*k);
+            lwork=-1;
+            liwork=-1;
+            W.resize(k);
+            Z.resize(k*k);
+            peopt::stevr <T> ('V','A',k,&(D[0]),&(E[0]),T(0.),
+                T(0.),0,0,peopt::lamch <T> ('S'),nevals,&(W[0]),&(Z[0]),k,
+                &(isuppz[0]),&(work[0]),lwork,&(iwork[0]),liwork,info);
+
+            // Resize the workspace 
+            lwork = int(work[0])+1;
+            work.resize(lwork);
+            liwork = iwork[0];
+            iwork.resize(liwork);
+
+            // Find the eigenvalues and vectors 
+            peopt::stevr <T> ('V','A',k,&(D[0]),&(E[0]),T(0.),
+                T(0.),0,0,peopt::lamch <T> ('S'),nevals,&(W[0]),&(Z[0]),k,
+                &(isuppz[0]),&(work[0]),lwork,&(iwork[0]),liwork,info);
+#endif
 
             // Find beta_i |s_{ik}| where s_{ik} is the ith (last) element
             // of the kth Ritz vector where k corresponds to the largest
