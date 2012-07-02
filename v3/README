@@ -1,0 +1,101 @@
+Pretty Efficient Optimization (peopt) v0.3.0
+
+--------------------------------DESCRIPTION---------------------------------
+The library peopt contains a collection of routines implementing matrix-free
+algorithms for optimization.  This includes unconstrained as well as
+general inequality constrained problems.  Its particular focus is on providing
+abstractions for users who require control of the underlying linear algebra
+and communication structure.  As such, it is particularly well suited for
+large scale optimization.
+
+-------------------------BUILDING AND INSTALLATION--------------------------
+In order to see a full list of build options, run:
+
+        ./configure --help
+
+In the simplest case, building and installing is as simple as:
+
+        ./configure && make && make install
+
+The core of the library consists of only headers, so if certain libraries are
+not found, it's likely that only the headers will be installed to
+${PREFIX}/include/peopt.  In the case that BLAS and LAPACK are found, a small
+library is installed to ${PREFIX}/lib.  There are particular flags that are
+useful to be mindful of.  First, is the location of BLAS:
+
+        --with-blas=<lib>
+
+The tag <lib> needs to be the complete set of LDFLAGS required to build BLAS.
+This may also include any Fortran libraries required.  For example, a common
+set of flags would are
+
+        --with-blas="-L/home/xxx/usr/lib/ -lf77blas -lcblas -latlas -lgfortran"
+
+Next, is the LAPACK library:
+
+        --with-lapack=<lib>
+
+Similar to BLAS, this needs to be a full set of LDFLAGS.  Now, typically, if
+autoconfig can find BLAS, there's no need to add this library.  The build
+system automatically includes the set of BLAS flags and will look for lapack
+in the same location.  Next, comes jsoncpp:
+
+        --with-jsoncpp[=ARG]
+
+The argument can either be "yes", where the build system will attempt to
+find jsoncpp in the typical library path.  Alternatively, the argument
+can be a directory.  Note, this is different from BLAS and LAPACK above
+where the LDFLAGS are specified.  Here, the build system will look in the
+directory ARG/include/json and ARG/lib for the appropriate headers and
+libraries.  For example, the following is a valid flag:
+
+        --with-jsoncpp="/home/xxx/usr"
+
+Next comes the flags for Boost:
+
+        --with-boost[=ARG]
+        --with-boost-libdir=LIB_DIR
+        --with-boost-unit-test-framework[=special-lib]
+
+The --with--boost argument can either be "yes", "no", or a path.  By default,
+this flag will look for boost in typical locations.  Alternatively, a path
+can be given whereupon boost will look in ARG/include, ARG/lib, ARG/lib64 and
+so on.  For example, the following is a valid flag:
+
+        --with-boost="/home/xxx/usr"
+
+Similarly, --with-bost-libdir looks for the directory where the Boost library
+files are contained.  The build system tries to deduce this, but can frequently
+have trouble.  In the case that it does, it can be specified manually.  For
+example, the follow is a valid flag:
+
+        --with-boost-libdir="/home/xxx/usr/lib"
+
+Finally, the last flag --with-boost-unit-test-framework is used with the unit
+test framework library has an abnormal name.  It is rare that this flag needs
+to be specified, but in the case that it does, just give the name of the
+library, not the full path.  For example, the following is a valid flag:
+
+        --with-boost-unit-test-framework="my_boost_unit_test_framework"
+
+Note, when searching for the unit test framework, the build system will look
+in the directory specified by --with-boost-libdir.
+
+----------------------------------UNIT TESTS-----------------------------------
+The unit tests do not build by default.  In order to build and run them,
+enter the directory src/unit and execute the commands
+
+        make unit && ./run
+
+The unit tests require both LAPACK and Boost in order to run.
+
+-----------------------------------EXAMPLES------------------------------------
+The examples also do not build by default.  In order to build an run them,
+enter the individual directories in src/examples and execute the commands
+
+        make example && ./run
+
+The requirements for each of these examples is different.  Sometimes
+they require nothing.  Sometimes they require LAPACK and jsoncpp.  In
+general, if the build requirements are not met, the build system will
+notify why.
