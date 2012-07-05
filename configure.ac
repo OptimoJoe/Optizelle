@@ -43,15 +43,23 @@ AC_LANG_POP(C++)
 
 # Checks for library functions.
 
-# Figure out the Fortran demangling
-AC_FC_WRAPPERS
-
-# Checks for BLAS and LAPACK
+# Checks for BLAS
 m4_include([m4/ax_blas.m4])
-m4_include([m4/ax_lapack.m4])
-AX_BLAS()
-AX_LAPACK(have_lapack=true)
-AM_CONDITIONAL(HAVE_LAPACK,test "$have_lapack" = "true")
+AX_BLAS(have_blas=true)
+
+# Checks for LAPACK
+if test "x$have_blas" == "xtrue" 
+then
+    m4_include([m4/ax_lapack.m4])
+    AX_LAPACK(have_lapack=true)
+fi
+AM_CONDITIONAL(HAVE_LAPACK,test "x$have_lapack" = "xtrue")
+
+# Figure out the Fortran demangling
+if test "x$have_blas" == "xtrue" 
+then
+    AC_FC_WRAPPERS
+fi
 
 # Checks for OpenMP
 m4_include([m4/ax_openmp.m4])

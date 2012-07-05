@@ -38,7 +38,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 subdir = src/peopt
-DIST_COMMON = $(pkginclude_HEADERS) $(srcdir)/Makefile.am \
+DIST_COMMON = $(am__pkginclude_HEADERS_DIST) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_blas.m4 \
@@ -84,6 +84,7 @@ LINK = $(LIBTOOL) --tag=CC --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 SOURCES = $(libpeopt_la_SOURCES)
 DIST_SOURCES = $(libpeopt_la_SOURCES)
+am__pkginclude_HEADERS_DIST = json.h peopt.h linalg.h vspaces.h
 pkgincludeHEADERS_INSTALL = $(INSTALL_HEADER)
 HEADERS = $(pkginclude_HEADERS)
 ETAGS = etags
@@ -211,7 +212,8 @@ AUTOMAKE_OPTIONS = gnu
 @HAVE_LAPACK_TRUE@lib_LTLIBRARIES = libpeopt.la
 AM_CXXFLAGS = $(OPENMP_CXXFLAGS)
 libpeopt_la_SOURCES = linalg.cpp json.h linalg.h peopt.h vspaces.h
-pkginclude_HEADERS = json.h linalg.h peopt.h vspaces.h
+@HAVE_LAPACK_FALSE@pkginclude_HEADERS = json.h peopt.h
+@HAVE_LAPACK_TRUE@pkginclude_HEADERS = json.h linalg.h peopt.h vspaces.h
 all: all-am
 
 .SUFFIXES:

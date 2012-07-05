@@ -6,4 +6,8 @@ else
 endif
 AM_CXXFLAGS = $(OPENMP_CXXFLAGS)
 libpeopt_la_SOURCES = linalg.cpp json.h linalg.h peopt.h vspaces.h
-pkginclude_HEADERS = json.h linalg.h peopt.h vspaces.h
+if HAVE_LAPACK
+    pkginclude_HEADERS = json.h linalg.h peopt.h vspaces.h
+else
+    pkginclude_HEADERS = json.h peopt.h
+endif
