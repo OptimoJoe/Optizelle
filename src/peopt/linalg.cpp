@@ -1,97 +1,97 @@
 #include "linalg.h"
 extern "C" {
 // Double BLAS and LAPACK routines
-#define dcopy_fortran FC_FUNC (dcopy,DCOPY)
+#define dcopy_fortran F77_FUNC (dcopy,DCOPY)
 void dcopy_fortran(int* m,double* x,int* incx,double* y,int* incy);
-#define daxpy_fortran FC_FUNC (daxpy,DAXPY)
+#define daxpy_fortran F77_FUNC (daxpy,DAXPY)
 void daxpy_fortran(int* m,double* alpha,double* x,int* incx,double* y,
     int* incy);
-#define dscal_fortran FC_FUNC (dscal,DSCAL)
+#define dscal_fortran F77_FUNC (dscal,DSCAL)
 void dscal_fortran(int* m,double* alpha,double* x,int* incx);
-#define ddot_fortran FC_FUNC (ddot,DDOT)
+#define ddot_fortran F77_FUNC (ddot,DDOT)
 double ddot_fortran(int* m,double* x,int* incx,double* y,int* incy);
-#define dsyr2k_fortran FC_FUNC (dsyr2k,DSYR2K)
+#define dsyr2k_fortran F77_FUNC (dsyr2k,DSYR2K)
 void dsyr2k_fortran(char* uplo,char* trans,int* n,int* k,double* alpha,
     double* A,int* lda,double* B,int* ldb,double* beta,
     double* C,int* ldc);
-#define dsyevr_fortran FC_FUNC (dsyevr,DSYEVR)
+#define dsyevr_fortran F77_FUNC (dsyevr,DSYEVR)
 void dsyevr_fortran(char* jobz,char* range,char* uplo,int* n,double *A,
     int* lda,double* vl,double* vu,int* il,int* iu,double* abstol,
     int* m,double* w,double* z,int* ldz,int* isuppz,double* work,
     int* lwork,int* iwork,int* liwork,int* info);
-#define dstemr_fortran FC_FUNC (dstemr,DSTEMR)
+#define dstemr_fortran F77_FUNC (dstemr,DSTEMR)
 void dstemr_fortran(char* jobz,char* range,int* n,double *D,double *E,
     double* vl,double* vu,int* il,int* iu,int* m,double* w,double* z,
     int* ldz,int* nzc,int* isuppz,int* tryrac,double* work,int* lwork,
     int* iwork,int* liwork,int* info);
-#define dstevr_fortran FC_FUNC (dstevr,DSTEVR)
+#define dstevr_fortran F77_FUNC (dstevr,DSTEVR)
 void dstevr_fortran(char* jobz,char* range,int* n,double *D,double *E,
     double* vl,double* vu,int* il,int* iu,double* abstol,int* m,
     double* w,double* z,int* ldz,int* isuppz,double* work,int* lwork,
     int* iwork,int* liwork,int* info);
-#define dlamch_fortran FC_FUNC (dlamch,DLAMCH)
+#define dlamch_fortran F77_FUNC (dlamch,DLAMCH)
 double dlamch_fortran(char* cmach);
-#define dgemm_fortran FC_FUNC (dgemm,DGEMM)
+#define dgemm_fortran F77_FUNC (dgemm,DGEMM)
 void dgemm_fortran(char* transa,char* transb,int* m,int* n,int* k,
     double* alpha, double* A, int* lda,double* B,int* ldb,
     double* beta,double* C,int *ldc);
-#define dsymm_fortran FC_FUNC (dsymm,DSYMM)
+#define dsymm_fortran F77_FUNC (dsymm,DSYMM)
 void dsymm_fortran(char* side,char* uplo,int* m,int* n,double* alpha,
     double* A, int* lda,double* B,int* ldb,double* beta,double* C,
     int *ldc);
-#define dsymv_fortran FC_FUNC (dsymv,DSYMV)
+#define dsymv_fortran F77_FUNC (dsymv,DSYMV)
 void dsymv_fortran(char* uplo,int* n,double* alpha,double* A, int* lda,
     double* x,int* incx,double* beta,double* y,int *incy);
-#define dpotrf_fortran FC_FUNC (dpotrf,DPOTRF)
+#define dpotrf_fortran F77_FUNC (dpotrf,DPOTRF)
 void dpotrf_fortran(char* uplo,int *n,double* A,int* lda,int* info);
-#define dtrtri_fortran FC_FUNC (dtrtri,DTRTRI)
+#define dtrtri_fortran F77_FUNC (dtrtri,DTRTRI)
 void dtrtri_fortran(char* uplo,char* diag,int* n,double* A,int* lda,int* info);
 
 // Float BLAS and LAPACK routines
-#define scopy_fortran FC_FUNC (scopy,SCOPY)
+#define scopy_fortran F77_FUNC (scopy,SCOPY)
 void scopy_fortran(int* m,float* x,int* incx,float* y,int* incy);
-#define saxpy_fortran FC_FUNC (saxpy,SAXPY)
+#define saxpy_fortran F77_FUNC (saxpy,SAXPY)
 void saxpy_fortran(int* m,float* alpha,float* x,int* incx,float* y,
     int* incy);
-#define sscal_fortran FC_FUNC (sscal,SSCAL)
+#define sscal_fortran F77_FUNC (sscal,SSCAL)
 void sscal_fortran(int* m,float* alpha,float* x,int* incx);
-#define sdot_fortran FC_FUNC (sdot,SDOT)
+#define sdot_fortran F77_FUNC (sdot,SDOT)
 float sdot_fortran(int* m,float* x,int* incx,float* y,int* incy);
-#define ssyr2k_fortran FC_FUNC (ssyr2k,SSYR2K)
+#define ssyr2k_fortran F77_FUNC (ssyr2k,SSYR2K)
 void ssyr2k_fortran(char* uplo,char* trans,int* n,int* k,float* alpha,
     float* A,int* lda,float* B,int* ldb,float* beta,
     float* C,int* ldc);
-#define ssyevr_fortran FC_FUNC (ssyevr,SSYEVR)
+#define ssyevr_fortran F77_FUNC (ssyevr,SSYEVR)
 void ssyevr_fortran(char* jobz,char* range,char* uplo,int* n,float *A,
     int* lda,float* vl,float* vu,int* il,int* iu,float* abstol,
     int* m,float* w,float* z,int* ldz,int* isuppz,float* work,
     int* lwork,int* iwork,int* liwork,int* info);
-#define sstemr_fortran FC_FUNC (sstemr,SSTEMR)
+#define sstemr_fortran F77_FUNC (sstemr,SSTEMR)
 void sstemr_fortran(char* jobz,char* range,int* n,float *D,float *E,
     float* vl,float* vu,int* il,int* iu,int* m,float* w,float* z,
     int* ldz,int* nzc,int* isuppz,int* tryrac,float* work,int* lwork,
     int* iwork,int* liwork,int* info);
-#define sstevr_fortran FC_FUNC (sstevr,SSTEVR)
+#define sstevr_fortran F77_FUNC (sstevr,SSTEVR)
 void sstevr_fortran(char* jobz,char* range,int* n,float *D,float *E,
     float* vl,float* vu,int* il,int* iu,float* abstol,int* m,
     float* w,float* z,int* ldz,int* isuppz,float* work,int* lwork,
     int* iwork,int* liwork,int* info);
-#define slamch_fortran FC_FUNC (slamch,SLAMCH)
+#define slamch_fortran F77_FUNC (slamch,SLAMCH)
 float slamch_fortran(char* cmach);
-#define sgemm_fortran FC_FUNC (sgemm,SGEMM)
+#define sgemm_fortran F77_FUNC (sgemm,SGEMM)
 void sgemm_fortran(char* transa,char* transb,int* m,int* n,int* k,
     float* alpha, float* A, int* lda,float* B,int* ldb,
     float* beta,float* C,int *ldc);
-#define ssymm_fortran FC_FUNC (ssymm,SSYMM)
+#define ssymm_fortran F77_FUNC (ssymm,SSYMM)
 void ssymm_fortran(char* side,char* uplo,int* m,int* n,float* alpha,
     float* A, int* lda,float* B,int* ldb,float* beta,float* C,
     int *ldc);
-#define ssymv_fortran FC_FUNC (ssymv,SSYMV)
+#define ssymv_fortran F77_FUNC (ssymv,SSYMV)
 void ssymv_fortran(char* uplo,int* n,float* alpha,float* A, int* lda,
     float* x,int* incx,float* beta,float* y,int *incy);
-#define spotrf_fortran FC_FUNC (spotrf,SPOTRF)
+#define spotrf_fortran F77_FUNC (spotrf,SPOTRF)
 void spotrf_fortran(char* uplo,int *n,float* A,int* lda,int* info);
-#define strtri_fortran FC_FUNC (strtri,STRTRI)
+#define strtri_fortran F77_FUNC (strtri,STRTRI)
 void strtri_fortran(char* uplo,char* diag,int* n,float* A,int* lda,int* info);
 }
 

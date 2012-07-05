@@ -7,8 +7,7 @@ AM_INIT_AUTOMAKE(peopt, 0.3.0, josyoun@sandia.gov)
 # Checks for programs.
 AC_PROG_CXX       # Needed for the primary program
 AC_PROG_CC        # Needed for the tests below.  For example, OpenMP
-AC_PROG_F77       # Needed for testing BLAS and LAPACK
-AC_PROG_FC        # Needed for name mangling
+AC_PROG_F77       # Needed for testing BLAS, LAPACK, and name mangling
 AC_PROG_LIBTOOL   # Needed for libtool
 
 # Checks for libraries.
@@ -43,22 +42,30 @@ AC_LANG_POP(C++)
 
 # Checks for library functions.
 
-# Checks for BLAS
+# Checks for BLAS.  This macros fails if we do not have a valid F77 compiler.
+# As such, we need to check for the compiler ahead of time.
 m4_include([m4/ax_blas.m4])
-AX_BLAS(have_blas=true)
+if test "x${F77}" != "x"
+then
+    AX_BLAS(have_blas=true)
+else
+    echo "Valid Fortran 77 compiler not found, so skipping BLAS configuration."
+fi
 
 # Checks for LAPACK
 if test "x$have_blas" == "xtrue" 
 then
     m4_include([m4/ax_lapack.m4])
     AX_LAPACK(have_lapack=true)
+else
+    echo "Valid BLAS library not found, so skipping LAPACK configuration." 
 fi
 AM_CONDITIONAL(HAVE_LAPACK,test "x$have_lapack" = "xtrue")
 
 # Figure out the Fortran demangling
 if test "x$have_blas" == "xtrue" 
 then
-    AC_FC_WRAPPERS
+    AC_F77_WRAPPERS
 fi
 
 # Checks for OpenMP
@@ -71,17 +78,21 @@ AC_LANG_POP(C++)
 # Checks for JSONCPP
 AC_LANG_PUSH(C++)
 AC_ARG_WITH(jsoncpp,[
-  --with-jsoncpp@<:@=ARG@:>@    use jsoncpp from a standard location (ARG=yes)
+  --with-jsoncpp@<:@=ARG@:>@
+                          use jsoncpp from a standard location (ARG=yes || "")
                           use jsoncpp from a specified location (ARG=<path>)
-                          do not use jsoncpp (ARG="")])
-# First, check for the header
-if test "x$with_jsoncpp" == "xyes"
+                          do not use jsoncpp (ARGS="no")])
+# First, check for the header in the standard location
+if test "x$with_jsoncpp" == "xyes" || test "x$with_jsoncpp" == "x"
 then
     AC_CHECK_HEADERS(json/json.h,,
         [AC_MSG_ERROR(
             [jsoncpp support enabled, but the header could not be found])])
     JSONCPP_LIBS="-ljson"
-elif test "x$with_jsoncpp" != "x"
+    jsoncpp_header=true
+
+# Then, check a custom location
+elif test "x$with_jsoncpp" != "xno" 
 then
     jsoncpp_path="$with_jsoncpp"
     AC_CHECK_HEADERS($jsoncpp_path/include/json/json.h,,
@@ -93,9 +104,10 @@ then
     AC_SUBST(JSONCPP_LDFLAGS)
     JSONCPP_LIBS="-ljson"
     AC_SUBST(JSONCPP_LIBS)
+    jsoncpp_header=true
 fi
 # If we've succesfully found the header, check for the library
-if test "x$with_jsoncpp" != "x"
+if test "x$jsoncpp_header" == "xtrue"
 then
     old_CPPFLAGS=$CPPFLAGS 
     old_LDFLAGS=$LDFLAGS
