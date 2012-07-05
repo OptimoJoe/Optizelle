@@ -21,7 +21,18 @@ The core of the library consists of only headers, so if certain libraries are
 not found, it's likely that only the headers will be installed to
 ${PREFIX}/include/peopt.  In the case that BLAS and LAPACK are found, a small
 library is installed to ${PREFIX}/lib.  There are particular flags that are
-useful to be mindful of.  First, is the location of BLAS:
+useful to be mindful of.  First, is the headers only installation:
+
+        --with-headers-only=<ARG>
+
+where <ARG> can either be yes or is left blank.  When <ARG> is yes, no
+compilation is completed and the rest of the flags below are ignored.  This is
+used in the case where we do not intend to use any of the predefined vector
+spaces.  In this case, building and installing is as simple as
+
+        ./configure --with-headers-only=yes && make install
+
+Next, we can specify the BLAS libraries:
 
         --with-blas=<lib>
 
