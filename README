@@ -31,7 +31,10 @@ set of flags would are
 
         --with-blas="-L/home/xxx/usr/lib/ -lf77blas -lcblas -latlas -lgfortran"
 
-Next, is the LAPACK library:
+Alternatively, we can set <lib>=no.  In this case, we do not compile the
+peopt vector spaces, no library is installed, no headers associated with
+the peopt vector spaces are installed, and we do not check for the LAPACK
+libraries.  Next, is the LAPACK library:
 
         --with-lapack=<lib>
 
@@ -42,8 +45,8 @@ in the same location.  Next, comes jsoncpp:
 
         --with-jsoncpp[=ARG]
 
-The argument can either be "yes", where the build system will attempt to
-find jsoncpp in the typical library path.  Alternatively, the argument
+The argument can either be "yes" or blank, where the build system will attempt
+to find jsoncpp in the typical library path.  Alternatively, the argument
 can be a directory.  Note, this is different from BLAS and LAPACK above
 where the LDFLAGS are specified.  Here, the build system will look in the
 directory ARG/include/json and ARG/lib for the appropriate headers and
@@ -51,7 +54,9 @@ libraries.  For example, the following is a valid flag:
 
         --with-jsoncpp="/home/xxx/usr"
 
-Next comes the flags for Boost:
+If the argument is set to "no", we still install the peopt json header, but
+do not compile any example that depends on json.  Next comes the flags for
+Boost:
 
         --with-boost[=ARG]
         --with-boost-libdir=LIB_DIR

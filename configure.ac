@@ -6,7 +6,6 @@ AM_INIT_AUTOMAKE(peopt, 0.3.0, josyoun@sandia.gov)
 
 # Checks for programs.
 AC_PROG_CXX       # Needed for the primary program
-AC_PROG_CC        # Needed for the tests below.  For example, OpenMP
 AC_PROG_F77       # Needed for testing BLAS, LAPACK, and name mangling
 AC_PROG_LIBTOOL   # Needed for libtool
 
@@ -78,8 +77,7 @@ AC_LANG_POP(C++)
 # Checks for JSONCPP
 AC_LANG_PUSH(C++)
 AC_ARG_WITH(jsoncpp,[
-  --with-jsoncpp@<:@=ARG@:>@
-                          use jsoncpp from a standard location (ARG=yes || "")
+  --with-jsoncpp@<:@=ARG@:>@    use jsoncpp from a standard location (ARG=yes || "")
                           use jsoncpp from a specified location (ARG=<path>)
                           do not use jsoncpp (ARGS="no")])
 # First, check for the header in the standard location
