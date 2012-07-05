@@ -6,9 +6,7 @@ AM_INIT_AUTOMAKE(peopt, 0.3.0, josyoun@sandia.gov)
 
 # Checks for programs.
 AC_PROG_CXX       # Needed for the primary program
-AC_PROG_CC        # Needed for the tests below.  For example, OpenMP
-AC_PROG_F77       # Needed for testing BLAS and LAPACK
-AC_PROG_FC        # Needed for name mangling
+AC_PROG_F77       # Needed for testing BLAS, LAPACK, and name mangling
 AC_PROG_LIBTOOL   # Needed for libtool
 
 # Checks for libraries.
@@ -43,51 +41,79 @@ AC_LANG_POP(C++)
 
 # Checks for library functions.
 
-# Figure out the Fortran demangling
-AC_FC_WRAPPERS
+AC_ARG_WITH([headers-only],
+    AS_HELP_STRING(
+        [--with-headers-only@<:@=ARG@:>@],
+        [Skip the build process and only install a base set of headers.
+        When this flag is set, the flags below are ignored.  (ARG=yes).
+        Do a full build (ARGS="no" || "")]
+    ),
+    [if test "x$withval"="xyes"; then headers_only="yes"; fi]
+)
 
-# Checks for BLAS and LAPACK
+# Checks for BLAS.
 m4_include([m4/ax_blas.m4])
+if test "x${headers_only}" != "xyes"; then
+    AX_BLAS(have_blas=true)
+fi
+
+# Checks for LAPACK
 m4_include([m4/ax_lapack.m4])
-AX_BLAS()
-AX_LAPACK(have_lapack=true)
-AM_CONDITIONAL(HAVE_LAPACK,test "$have_lapack" = "true")
+if test "x${headers_only}" != "xyes" && test "x$have_blas" == "xtrue"; then
+    AX_LAPACK(have_lapack=true)
+fi
+AM_CONDITIONAL(HAVE_LAPACK,test "x$have_lapack" = "xtrue")
+
+# Figure out the Fortran demangling
+if test "x$have_blas" == "xtrue"; then
+    AC_F77_WRAPPERS
+fi
 
 # Checks for OpenMP
 m4_include([m4/ax_openmp.m4])
-AC_LANG_PUSH(C++)
-AX_OPENMP()
-AC_SUBST(OPENMP_CXXFLAGS)
-AC_LANG_POP(C++)
+if test "x$headers_only" != "xyes"; then
+    AC_LANG_PUSH(C++)
+    AX_OPENMP()
+    AC_SUBST(OPENMP_CXXFLAGS)
+    AC_LANG_POP(C++)
+fi
 
 # Checks for JSONCPP
 AC_LANG_PUSH(C++)
-AC_ARG_WITH(jsoncpp,[
-  --with-jsoncpp@<:@=ARG@:>@    use jsoncpp from a standard location (ARG=yes)
-                          use jsoncpp from a specified location (ARG=<path>)
-                          do not use jsoncpp (ARG="")])
-# First, check for the header
-if test "x$with_jsoncpp" == "xyes"
-then
-    AC_CHECK_HEADERS(json/json.h,,
-        [AC_MSG_ERROR(
-            [jsoncpp support enabled, but the header could not be found])])
-    JSONCPP_LIBS="-ljson"
-elif test "x$with_jsoncpp" != "x"
-then
-    jsoncpp_path="$with_jsoncpp"
-    AC_CHECK_HEADERS($jsoncpp_path/include/json/json.h,,
-        [AC_MSG_ERROR(
-            [jsoncpp support enabled, but the header could not be found])])
-    JSONCPP_CPPFLAGS="-I$jsoncpp_path/include"
-    AC_SUBST(JSONCPP_CPPFLAGS)
-    JSONCPP_LDFLAGS="-L$jsoncpp_path/lib"
-    AC_SUBST(JSONCPP_LDFLAGS)
-    JSONCPP_LIBS="-ljson"
-    AC_SUBST(JSONCPP_LIBS)
+AC_ARG_WITH(jsoncpp,
+    AS_HELP_STRING(
+        [--with-jsoncpp@<:@=ARG@:>@],
+        [Use jsoncpp from a standard location (ARG=yes || "").
+        Use jsoncpp from a specified location (ARG=<path>).
+        Do not use jsoncpp (ARGS="no").]
+    )
+)
+if test "x${headers_only}" != "xyes"; then
+    # First, check for the header in the standard location
+    if test "x$with_jsoncpp" == "xyes" || test "x$with_jsoncpp" == "x"; then
+        AC_CHECK_HEADERS(json/json.h,,
+            [AC_MSG_ERROR(
+                [jsoncpp support enabled, but the header could not be found])])
+        JSONCPP_LIBS="-ljson"
+        jsoncpp_header=true
+
+    # Then, check a custom location
+    elif test "x$with_jsoncpp" != "xno"; then
+        jsoncpp_path="$with_jsoncpp"
+        AC_CHECK_HEADERS($jsoncpp_path/include/json/json.h,,
+            [AC_MSG_ERROR(
+                [jsoncpp support enabled, but the header could not be found])])
+        JSONCPP_CPPFLAGS="-I$jsoncpp_path/include"
+        AC_SUBST(JSONCPP_CPPFLAGS)
+        JSONCPP_LDFLAGS="-L$jsoncpp_path/lib"
+        AC_SUBST(JSONCPP_LDFLAGS)
+        JSONCPP_LIBS="-ljson"
+        AC_SUBST(JSONCPP_LIBS)
+        jsoncpp_header=true
+    fi
 fi
 # If we've succesfully found the header, check for the library
-if test "x$with_jsoncpp" != "x"
+if test "x$jsoncpp_header" == "xtrue"
 then
     old_CPPFLAGS=$CPPFLAGS 
     old_LDFLAGS=$LDFLAGS
@@ -113,12 +139,14 @@ AM_CONDITIONAL(HAVE_JSONCPP,test "x$jsoncpp_lib" = "xyes")
 AC_LANG_POP(C++)
 
 # Checks for the Boost libraries
-m4_include([m4/ax_boost_base.m4])
-m4_include([m4/ax_boost_unit_test_framework.m4])
-AX_BOOST_BASE(,boost_base=true)
-if test "x$boost_base" = "xtrue"
-then
-    AX_BOOST_UNIT_TEST_FRAMEWORK()
+if test "x${headers_only}" != "xyes"; then
+    m4_include([m4/ax_boost_base.m4])
+    m4_include([m4/ax_boost_unit_test_framework.m4])
+    AX_BOOST_BASE(,boost_base=true)
+    if test "x$boost_base" = "xtrue"
+    then
+        AX_BOOST_UNIT_TEST_FRAMEWORK()
+    fi
 fi
 AM_CONDITIONAL(HAVE_BOOST,test "x$BOOST_UNIT_TEST_FRAMEWORK_LIB" != "x")
 
