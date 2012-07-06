@@ -12,11 +12,6 @@
 template <typename Real>
 struct MyHS { 
     typedef std::vector <Real> Vector;
-
-    // Create an empty, uninitialized vector
-    static Vector create() {
-        return std::vector <Real> ();
-    }
     
     // Memory allocation and size setting
     static void init(const Vector& x, Vector& y) {
