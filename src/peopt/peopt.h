@@ -3071,6 +3071,20 @@ namespace peopt{
                 const unsigned int& linesearch_iter=state.linesearch_iter;
                 const AlgorithmClass::t& algorithm_class=state.algorithm_class;
                 const LineSearchDirection::t& dir=state.dir;
+                const unsigned int& rejected_trustregion
+                    =state.rejected_trustregion;
+
+                // Figure out if we're at the absolute beginning of the
+                // optimization.  We have to be a little saavy about this
+                // since we could be on the first iteration, but in the
+                // middle of a line-search or trust-region method and
+                // still want to output things
+                bool opt_begin = (iter==1) &&
+                    ((algorithm_class == AlgorithmClass::LineSearch && 
+                        linesearch_iter==0) ||
+                    (algorithm_class == AlgorithmClass::TrustRegion && 
+                        rejected_trustregion == 0));
+
 
                 // Get a iterator to the last element prior to inserting
                 // elements
@@ -3083,20 +3097,29 @@ namespace peopt{
                     out.push_back(atos <> ("*"));
                 out.push_back(atos <> (merit_x));
                 out.push_back(atos <> (norm_g));
-                out.push_back(atos <> (norm_s));
+                if(!opt_begin)
+                    out.push_back(atos <> (norm_s));
+                else
+                    out.push_back("          ");
 
                 // In case we're using a Krylov method
                 if(    algorithm_class==AlgorithmClass::TrustRegion
                     || dir==LineSearchDirection::NewtonCG
                 ){
-                    out.push_back(atos <> (krylov_iter));
-                    out.push_back(atos <> (krylov_rel_err));
-                    out.push_back(atos <> (krylov_stop));
+                    if(!opt_begin) {
+                        out.push_back(atos <> (krylov_iter));
+                        out.push_back(atos <> (krylov_rel_err));
+                        out.push_back(atos <> (krylov_stop));
+                    } else 
+                        for(int i=0;i<3;i++) out.push_back("          ");
                 }
 
                 // In case we're using a line-search method
                 if(algorithm_class==AlgorithmClass::LineSearch) {
-                    out.push_back(atos <> (linesearch_iter));
+                    if(!opt_begin)
+                        out.push_back(atos <> (linesearch_iter));
+                    else 
+                        out.push_back("          ");
                 }
 
                 // If we needed to do blank insertions, overwrite the elements
