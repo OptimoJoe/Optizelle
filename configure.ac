@@ -123,10 +123,10 @@ then
     LIBS="$LIBS $JSONCPP_LIBS"
     AC_CACHE_CHECK(
         [whether the jsoncpp library is available],
-        [jsoncpp_lib],
+        [jsoncpp_cv_lib],
         [AC_LINK_IFELSE(
             [AC_LANG_PROGRAM([#include <json/json.h>],[Json::Value dummy])],
-            [jsoncpp_lib=yes],                                           
+            [jsoncpp_cv_lib=yes],                                           
             [AC_MSG_ERROR(
                 [jsoncpp support enabled, but the library could not be found])])
         ]
@@ -135,7 +135,7 @@ then
     LDFLAGS=$old_LDFLAGS
     LIBS=$old_LIBS 
 fi
-AM_CONDITIONAL(HAVE_JSONCPP,test "x$jsoncpp_lib" = "xyes")
+AM_CONDITIONAL(HAVE_JSONCPP,test "x$jsoncpp_cv_lib" = "xyes")
 AC_LANG_POP(C++)
 
 # Checks for the Boost libraries
