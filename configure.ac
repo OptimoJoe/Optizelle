@@ -3,6 +3,7 @@ AC_PREREQ(2.59)
 AC_INIT(peopt, 0.3.0, josyoun@sandia.gov)
 AC_CONFIG_AUX_DIR(build-aux)
 AM_INIT_AUTOMAKE(peopt, 0.3.0, josyoun@sandia.gov)
+AC_CONFIG_MACRO_DIR([m4])
 
 # Checks for programs.
 AC_PROG_CXX       # Needed for the primary program
