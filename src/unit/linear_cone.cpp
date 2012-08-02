@@ -138,7 +138,7 @@ BOOST_AUTO_TEST_CASE(newton_cg) {
     state.H_type = peopt::Operators::External;
     state.eps_krylov = 1e-10;
     state.iter_max = 300;
-    state.eps_s = 1e-16;
+    state.eps_dx = 1e-16;
     state.eps_g = 1e-6;
     state.mu_trg=1e-6;
     state.sigma=0.05;
@@ -186,7 +186,7 @@ BOOST_AUTO_TEST_CASE(tr_newton) {
     state.H_type = peopt::Operators::External;
     state.iter_max = 100;
     state.eps_krylov = 1e-10;
-    state.eps_s = 1e-16;
+    state.eps_dx = 1e-16;
     state.eps_g = 1e-10;
     state.mu_trg=1e-6;
     state.sigma=0.05;
@@ -235,7 +235,7 @@ BOOST_AUTO_TEST_CASE(bfgs) {
     state.dir = peopt::LineSearchDirection::BFGS;
     state.stored_history = 10;
     state.iter_max = 300;
-    state.eps_s = 1e-16;
+    state.eps_dx = 1e-16;
     state.mu_trg=1e-6;
     state.sigma=0.05;
     state.gamma=.995;
