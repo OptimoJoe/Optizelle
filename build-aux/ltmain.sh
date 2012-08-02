@@ -1,1 +1,0 @@
-/home/josyoun/usr/share/libtool/config/ltmain.sh
