@@ -1545,7 +1545,7 @@ namespace peopt{
                 Real eta2;
 
                 // Ratio between the predicted and actual reduction
-                Real rho;
+                Real ared_over_pred;
 
                 // Number of rejected trust-region steps
                 unsigned int rejected_trustregion;
@@ -1616,7 +1616,7 @@ namespace peopt{
                 state.delta_max=Real(100.);
                 state.eta1=Real(.1);
                 state.eta2=Real(.9);
-                state.rho=Real(0.);
+                state.ared_over_pred=Real(0.);
                 state.rejected_trustregion=0;
                 state.alpha=1.;
                 state.linesearch_iter=0;
@@ -1796,9 +1796,10 @@ namespace peopt{
 
                 // Check that the prediction versus actual reduction is
                 // nonnegative 
-                else if(state.rho < Real(0.)) 
+                else if(state.ared_over_pred < Real(0.)) 
                     ss << "The predicted versus actual reduction must be "
-                        "nonnegative: rho = " << state.rho;
+                        "nonnegative: ared_over_pred = "
+                        << state.ared_over_pred;
 
                 // Check that the line-search step length is positive 
                 else if(state.alpha <= Real(0.)) 
@@ -1839,7 +1840,7 @@ namespace peopt{
                         name == "delta_max" || 
                         name == "eta1" || 
                         name == "eta2" || 
-                        name == "rho" || 
+                        name == "ared_over_pred" || 
                         name == "alpha" || 
                         name == "eps_ls"
                     ) 
@@ -2059,8 +2060,8 @@ namespace peopt{
                 reals.second.push_back(state.eta1);
                 reals.first.push_back("eta2");
                 reals.second.push_back(state.eta2);
-                reals.first.push_back("rho");
-                reals.second.push_back(state.rho);
+                reals.first.push_back("ared_over_pred");
+                reals.second.push_back(state.ared_over_pred);
                 reals.first.push_back("alpha");
                 reals.second.push_back(state.alpha);
                 reals.first.push_back("eps_ls");
@@ -2182,7 +2183,8 @@ namespace peopt{
                     else if(*name=="delta_max") state.delta_max=*real;
                     else if(*name=="eta1") state.eta1=*real;
                     else if(*name=="eta2") state.eta2=*real;
-                    else if(*name=="rho") state.rho=*real;
+                    else if(*name=="ared_over_pred")
+                        state.ared_over_pred=*real;
                     else if(*name=="alpha") state.alpha=*real;
                     else if(*name=="eps_ls") state.eps_ls=*real;
                 }
@@ -3459,7 +3461,7 @@ namespace peopt{
                 const Real& merit_x=state.merit_x;
                 const Real& norm_dx=state.norm_dx;
                 Real& delta=state.delta;
-                Real& rho=state.rho;
+                Real& ared_over_pred=state.ared_over_pred;
                 Real& merit_xpdx=state.merit_xpdx;
                 
                 // Create shortcuts to the functions that we need
@@ -3485,26 +3487,28 @@ namespace peopt{
                 // Hessian approximation, we could have a nonsymmetric 
                 // approximation.  In that case, truncated-CG will exit, but 
                 // has an undefined result.  In the case that the actual 
-                // reduction also increases, rho could have an extraneous 
-                // positive value.  Hence, we require an extra check.
+                // reduction also increases, the reduction ratio
+                // could have an extraneous positive value.  Hence, we require 
+                // an extra check.
                 if(model_dx >= merit_x){
                     delta = norm_dx/Real(2.);
-                    rho = Real(std::numeric_limits<double>::quiet_NaN()); 
+                    ared_over_pred
+                        = Real(std::numeric_limits<double>::quiet_NaN()); 
                     return false;
                 }
 
                 // Determine the ratio of reductions
-                rho = (merit_x - merit_xpdx) / (merit_x - model_dx);
+                ared_over_pred = (merit_x - merit_xpdx) / (merit_x - model_dx);
 
                 // Update the trust region radius and return whether or not we
                 // accept the step
-                if(rho >= eta2){
+                if(ared_over_pred >= eta2){
                     // Only increase the size of the trust region if we were
                     // close to the boundary
                     if(fabs(norm_dx-delta) < Real(1e-4)*delta)
                         delta = std::min(delta*Real(2.),delta_max);
                     return true;
-                } else if(rho >= eta1 && rho < eta2)
+                } else if(ared_over_pred >= eta1 && ared_over_pred < eta2)
                     return true;
                 else {
                     delta = norm_dx/Real(2.);
@@ -4255,6 +4259,44 @@ namespace peopt{
                 // constraints
                 std::list <Y_Vector> y;
 
+                // The fraction of the total trust-region used for the
+                // quasi-norm step
+                Real zeta;
+
+                // Trust-region parameter that bounds the error in the
+                // predicted reduction
+                Real eta0;
+
+                // Penalty parameter for the augmented-Lagrangian
+                Real rho;
+
+                // Fixed increase in the penalty parameter
+                Real rho_bar;
+
+                // Stopping tolerance for the norm of the constraints
+                Real eps_constr;
+
+                // Inexactness tolerances
+                Real xi_all;    // General inexactness tolerance
+                Real xi_qn;     // Quasi-Newton step
+                Real xi_pg;     // Projection of the gradient
+                Real xi_proj;   // Null-space projection
+                Real xi_tang;   // Tangential step
+                Real xi_lmh;    // Lagrange multiplier
+
+                // Absolute tolerance on the residual of the Lagrange
+                // multiplier solve.
+                Real xi_lmg;
+
+                // Tolerance for how much error is acceptable after computing
+                // the tangential step given the result from the tangential
+                // subproblem;
+                Real xi_4;
+
+                // Preconditioners for the augmented system
+                Operators::t Minv_left_type;
+                Operators::t Minv_right_type;
+
                 // Initialization constructors
                 t() {
                     EqualityConstrained <Real,XX,YY>::State::init_params(*this);
@@ -4268,7 +4310,23 @@ namespace peopt{
             
             // This initializes all the parameters required for equality
             // constrained optimization.  
-            static void init_params_(t& state) { }
+            static void init_params_(t& state) {
+                state.zeta = Real(0.8);
+                state.eta0 = Real(0.5);;
+                state.rho = Real(1.0);;
+                state.rho_bar = Real(1e-8);
+                state.eps_constr = Real(1e-6);
+                state.xi_all = Real(1e-4);
+                state.xi_qn = state.xi_all;
+                state.xi_pg = state.xi_all;
+                state.xi_proj = state.xi_all;
+                state.xi_tang = state.xi_all;
+                state.xi_lmh = state.xi_all;
+                state.xi_lmg = Real(1e4);
+                state.xi_4 = Real(2.);
+                state.Minv_left_type=Operators::Identity;
+                state.Minv_right_type=Operators::Identity;
+            }
             static void init_params(t& state) {
                 Unconstrained <Real,XX>::State::init_params_(state); 
                 EqualityConstrained <Real,XX,YY>::State::init_params_(state);
@@ -4298,7 +4356,114 @@ namespace peopt{
             }
 
             // Check that we have a valid set of parameters.  
-            static void check_(const Messaging& msg,const t& state) { }
+            static void check_(const Messaging& msg,const t& state) {
+                   
+                // Use this to build an error message
+                std::stringstream ss;
+                
+                // Check that the fraction of the trust-region used for the
+                // quasi-Newton step is between 0 and 1
+                // is positive
+                if(state.zeta <= Real(0.) || state.zeta >= Real(1.)) 
+                    ss << "The fraction of the trust-region used for the "
+                        "quasi-Newton step must lie in the interval (0,1): "
+                        "zeta = " << state.zeta;
+                
+                // Check that the trust-region parameter that bounds the
+                // error in the preduction reduction lies between 0 and 1-eta1.
+                else if(state.eta0 <= Real(0.)
+                    || state.eta0 >= Real(1.)-state.eta1) 
+                    ss << "The trust-region parameter that bounds the error "
+                        "in the predicted reduction must lie in the interval "
+                        "(0,1-eta1): eta0 = " << state.eta0;
+
+                // Check that the augmented Lagrangian penalty parameter is
+                // greater than or equal to 1
+                else if(state.rho < Real(1.))
+                    ss << "The augmented Lagrangian penalty paramter must be "
+                        "greater than or equal to 1: rho = " << state.rho;
+
+                // Check that the fixed increased to the augmented Lagrangian
+                // penalty parameter is positive 
+                else if(state.rho_bar <= Real(0.))
+                    ss << "The fixed increase to the augmented Lagrangian "
+                        "penalty paramter must be positive: rho_bar = " 
+                        << state.rho_bar;
+
+                // Check that the stopping tolerance for the norm of the
+                // constraints is positive
+                else if(state.eps_constr <= Real(0.))
+                    ss << "The tolerance used in the norm of the constraints "
+                        "stopping condition must be positive: eps_constr = "
+                        << state.eps_constr;
+
+                // Check that the default inexactness tolerance lies in the
+                // interval (0,1)
+                else if(state.xi_all <= Real(0.) || state.xi_all >= Real(1.))
+                    ss << "The default inexactness tolerance must lie in the "
+                        "interval (0,1): xi_all = " << state.xi_all;
+                
+                // Check that the quasi-Newton step inexactness tolerance lies 
+                // in the interval (0,1) 
+                else if(state.xi_qn <= Real(0.) || state.xi_qn >= Real(1.))
+                    ss << "The quasi-Newton step inexactness tolerance must "
+                        "lie in the interval (0,1): xi_qn = " << state.xi_qn;
+                
+                // Check that the projected gradient inexactness tolerance lies 
+                // in the interval (0,1) 
+                else if(state.xi_pg <= Real(0.) || state.xi_pg >= Real(1.))
+                    ss << "The projected gradient inexactness tolerance must "
+                        "lie in the interval (0,1): xi_pg = " << state.xi_pg;
+                
+                // Check that the nullspace projection inexactness tolerance
+                // lies in the interval (0,1) 
+                else if(state.xi_proj <= Real(0.) || state.xi_proj >= Real(1.))
+                    ss << "The nullspace projection inexactness tolerance must "
+                        "lie in the interval (0,1): xi_proj = "<< state.xi_proj;
+                
+                // Check that the tangential step inexactness tolerance
+                // lies in the interval (0,1) 
+                else if(state.xi_tang <= Real(0.) || state.xi_tang >= Real(1.))
+                    ss << "The tangential step inexactness tolerance must "
+                        "lie in the interval (0,1): xi_tang = "<< state.xi_tang;
+                
+                // Check that the Lagrange multiplier inexactness tolerance
+                // lies in the interval (0,1) 
+                else if(state.xi_lmh <= Real(0.) || state.xi_lmh >= Real(1.))
+                    ss << "The Lagrange multiplier inexactness tolerance must "
+                        "lie in the interval (0,1): xi_lmh = " << state.xi_lmh;
+
+                // Check that the absolute tolerance on the residual of the
+                // Lagrange multiplier solve is positive
+                else if(state.xi_lmg <= Real(0.))
+                    ss << "The Lagrange multiplier residual tolerance must "
+                        "be positive: xi_lmg = " << state.xi_lmg;
+
+                // Check that the tolerance for the error acceptable in
+                // the tangential step is greater than 1.
+                else if(state.xi_4 <= Real(1.))
+                    ss << "The tolerance on the acceptable error in the "
+                        "tangential step must be greater than or equal to 1: "
+                        "xi4 = " << state.xi_4;
+                
+                // Check that the left preconditioner for the augmented system
+                // is either defined by the user or the identity.
+                else if(state.Minv_left_type != Operators::Identity &&
+                    state.Minv_left_type != Operators::External)
+                    ss << "The left preconditioner for the augmented system "
+                        "must be either user defined or the identity: "
+                        "Minv_left_type = "
+                        << Operators::to_string(state.Minv_left_type);
+                
+                // Check that the right preconditioner for the augmented system
+                // is either defined by the user or the identity.
+                else if(state.Minv_right_type != Operators::Identity &&
+                    state.Minv_right_type != Operators::External)
+                    ss << "The right preconditioner for the augmented system "
+                        "must be either user defined or the identity: "
+                        "Minv_right_type = "
+                        << Operators::to_string(state.Minv_right_type);
+            }
             static void check(const Messaging& msg,const t& state) {
                 Unconstrained <Real,XX>::State::check_(msg,state);
                 EqualityConstrained <Real,XX,YY>::State::check_(msg,state);
@@ -4312,7 +4477,20 @@ namespace peopt{
             struct is_real : public std::unary_function<std::string, bool> {
                 bool operator () (const std::string& name) const {
                     if( typename Unconstrained <Real,XX>::Restart
-                        ::is_real()(name)
+                            ::is_real()(name) ||
+                        name == "zeta" ||
+                        name == "eta0" ||
+                        name == "rho" ||
+                        name == "rho_bar" ||
+                        name == "eps_constr" ||
+                        name == "xi_all" ||
+                        name == "xi_qn" || 
+                        name == "xi_pg" ||
+                        name == "xi_proj" ||
+                        name == "xi_tang" ||
+                        name == "xi_lmh" ||
+                        name == "xi_lmg" ||
+                        name == "xi_4"
                     )
                         return true;
                     else
@@ -4336,7 +4514,9 @@ namespace peopt{
             struct is_param : public std::unary_function<std::string, bool> {
                 bool operator () (const std::string& name) const {
                     if( typename Unconstrained <Real,XX>::Restart
-                        ::is_param()(name)
+                        ::is_param()(name) ||
+                        name == "Minv_right_type" ||
+                        name == "Minv_left_type" 
                     ) 
                         return true;
                     else
@@ -4411,7 +4591,20 @@ namespace peopt{
                     ) {
                         ss << typename Unconstrained <Real,XX>::Restart
                             ::checkParamVal()(label,val);
+
+                    // Check the type of the left preconditioner to the
+                    // augmented system
+                    } else if(label=="Minv_left_type"){
+                        if(!Operators::is_valid()(val))
+                            ss << base << "preconditioner type: " << val;
+                    
+                    // Check the type of the right preconditioner to the
+                    // augmented system
+                    } else if(label=="Minv_right_type"){
+                        if(!Operators::is_valid()(val))
+                            ss << base << "preconditioner type: " << val;
                     }
+
                     return ss.str();
                 }
             };
@@ -4431,7 +4624,43 @@ namespace peopt{
                 Reals& reals,
                 Nats& nats,
                 Params& params
-            ) { }
+            ) { 
+                // Copy in all the real numbers
+                reals.first.push_back("zeta");
+                reals.second.push_back(state.zeta);
+                reals.first.push_back("eta0");
+                reals.second.push_back(state.eta0);
+                reals.first.push_back("rho");
+                reals.second.push_back(state.rho);
+                reals.first.push_back("rho_bar");
+                reals.second.push_back(state.rho_bar);
+                reals.first.push_back("eps_constr");
+                reals.second.push_back(state.eps_constr);
+                reals.first.push_back("xi_all");
+                reals.second.push_back(state.xi_all);
+                reals.first.push_back("xi_qn");
+                reals.second.push_back(state.xi_qn);
+                reals.first.push_back("xi_pg");
+                reals.second.push_back(state.xi_pg);
+                reals.first.push_back("xi_proj");
+                reals.second.push_back(state.xi_proj);
+                reals.first.push_back("xi_tang");
+                reals.second.push_back(state.xi_tang);
+                reals.first.push_back("xi_lmh");
+                reals.second.push_back(state.xi_lmh);
+                reals.first.push_back("xi_lmg");
+                reals.second.push_back(state.xi_lmg);
+                reals.first.push_back("xi_4");
+                reals.second.push_back(state.xi_4);
+
+                // Copy in all the paramters
+                params.first.push_back("Minv_left_type");
+                params.second.push_back(
+                    Operators::to_string(state.Minv_left_type));
+                params.first.push_back("Minv_right_type");
+                params.second.push_back(
+                    Operators::to_string(state.Minv_right_type));
+            }
             
             // Copy in all equality multipliers 
             static void vectorsToState(
@@ -4460,7 +4689,40 @@ namespace peopt{
                 Reals& reals,
                 Nats& nats,
                 Params& params
-            ) { }
+            ) { 
+                // Copy in any reals 
+                typename std::list <Real>::iterator real=reals.second.begin();
+                for(std::list <std::string>::iterator name=reals.first.begin();
+                    name!=reals.first.end();
+                    name++,real++
+                ){
+                    if(*name=="zeta") state.zeta=*real;
+                    else if(*name=="eta0") state.eta0=*real;
+                    else if(*name=="rho") state.rho=*real;
+                    else if(*name=="rho_bar") state.rho_bar=*real;
+                    else if(*name=="eps_constr") state.eps_constr=*real;
+                    else if(*name=="xi_all") state.xi_all=*real;
+                    else if(*name=="xi_qn") state.xi_qn=*real;
+                    else if(*name=="xi_pg") state.xi_pg=*real;
+                    else if(*name=="xi_proj") state.xi_proj=*real;
+                    else if(*name=="xi_tang") state.xi_tang=*real;
+                    else if(*name=="xi_lmh") state.xi_lmh=*real;
+                    else if(*name=="xi_lmg") state.xi_lmg=*real;
+                    else if(*name=="xi_4") state.xi_4=*real;
+                }
+                
+                // Next, copy in any parameters 
+                std::list <std::string>::iterator param=params.second.begin();
+                for(std::list <std::string>::iterator name=params.first.begin();
+                    name!=params.first.end();
+                    name++,param++
+                ){
+                    if(*name=="Minv_left_type")
+                        state.Minv_left_type=Operators::from_string(*param);
+                    else if(*name=="Minv_right_type")
+                        state.Minv_right_type=Operators::from_string(*param);
+                }
+            }
 
             // Release the data into structures controlled by the user 
             static void release(
@@ -4524,6 +4786,19 @@ namespace peopt{
             struct t: public virtual Unconstrained <Real,XX>::Functions::t {
                 // Equality constraints 
                 std::auto_ptr <VectorValuedFunction <Real,XX,YY> > g;
+
+                // Left preconditioner for the augmented system
+                std::auto_ptr <Operator <Real,YY,YY> > Minv_left;
+
+                // Right preconditioner for the augmented system
+                std::auto_ptr <Operator <Real,YY,YY> > Minv_right;
+            };
+            
+            // The identity operator 
+            struct Identity : public Operator <Real,YY,YY> {
+                void operator () (const Y_Vector& dy,Y_Vector& result) const{
+                    Y::copy(dy,result);
+                }
             };
 
             // Check that all the functions are defined
@@ -4535,6 +4810,14 @@ namespace peopt{
                 // Check that the equality constraints exist 
                 if(fns.g.get()==NULL)
                     msg.error("Missing the equality constraint definition.");
+
+                // Check that preconditioners exist
+                if(fns.Minv_left.get()==NULL)
+                    msg.error("Missing a left preconditioner for the "
+                        "augmented system.");
+                if(fns.Minv_right.get()==NULL)
+                    msg.error("Missing a right preconditioner for the "
+                        "augmented system.");
             }
 
             // Initialize any missing functions for just equality constrained 
@@ -4544,6 +4827,42 @@ namespace peopt{
                 const typename State::t& state,
                 t& fns
             ) {
+                // Determine the left preconditioner for the augmented system
+                switch(state.Minv_left_type){
+                    case Operators::Identity:
+                        fns.Minv_left.reset(new Identity());
+                        break;
+                    case Operators::External:
+                        if(fns.Minv_left.get()==NULL)
+                            msg.error("An externally defined left "
+                                "preconditioner for the augmented system must "
+                                "be provided explicitely.");
+                        break;
+                    default:
+                        msg.error("Not a valid left preconditioner for the "
+                            "augmented system.");
+                        break;
+                }
+                
+                // Determine the right preconditioner for the augmented system
+                switch(state.Minv_right_type){
+                    case Operators::Identity:
+                        fns.Minv_right.reset(new Identity());
+                        break;
+                    case Operators::External:
+                        if(fns.Minv_right.get()==NULL)
+                            msg.error("An externally defined right "
+                                "preconditioner for the augmented system must "
+                                "be provided explicitely.");
+                        break;
+                    default:
+                        msg.error("Not a valid right preconditioner for the "
+                            "augmented system.");
+                        break;
+                }
+                
+                // Check that all functions are defined 
+                check(msg,fns);
             }
 
             // Initialize any missing functions 
