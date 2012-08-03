@@ -4248,6 +4248,47 @@ namespace peopt{
         typedef std::pair < std::list <std::string>,
                             std::list <Y_Vector> > Y_Vectors;
 
+        // This defines a product space between X and Y
+        struct XxY {
+            typedef std::pair <X_Vector,Y_Vector> Vector;
+
+            // Memory allocation and size setting
+            static void init(const Vector& x, Vector& y) {
+                X::init(x.first,y.first);
+                Y::init(x.second,y.second);
+            }
+
+            // y <- x (Shallow.  No memory allocation.)
+            static void copy(const Vector& x, Vector& y) {
+                X::copy(x.first,y.first);
+                Y::copy(x.second,y.second);
+            }
+
+            // x <- alpha * x
+            static void scal(const Real& alpha, Vector& x) {
+                X::copy(alpha,x.first);
+                Y::copy(alpha,x.second);
+            }
+
+            // x <- 0 
+            static void zero(Vector& x) {
+                X::zero(x.first);
+                Y::zero(x.second);
+            }
+
+            // y <- alpha * x + y
+            static void axpy(const Real& alpha, const Vector& x, Vector& y) {
+                X::axpy(alpha,x.first,y.first);
+                Y::axpy(alpha,x.second,y.second);
+            }
+
+            // innr <- <x,y>
+            static Real innr(const Vector& x,const Vector& y) {
+                return X::innr(x.first,y.first) + Y::innr(x.second,y.second);
+            }
+        };
+        typedef typename XxY::Vector XxY_Vector;
+
         // Routines that manipulate the internal state of the optimization 
         // algorithm.
         struct State {
