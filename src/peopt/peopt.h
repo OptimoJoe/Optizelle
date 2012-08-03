@@ -12,6 +12,8 @@
 #include<functional>
 #include<algorithm>
 #include<numeric>
+#include<utility>
+#include"linalg.h"
 
 namespace peopt{
 
@@ -1386,26 +1388,6 @@ namespace peopt{
         }
     };
 
-    // A simple operator specification, A : X->Y
-    template <
-        typename Real,
-        template <typename> class X,
-        template <typename> class Y
-    >
-    struct Operator {
-    private:
-        // Create some type shortcuts
-        typedef typename X <Real>::Vector X_Vector;
-        typedef typename Y <Real>::Vector Y_Vector;
-    public:
-        // Basic application
-        virtual void operator () (const X_Vector& x,Y_Vector &y) const = 0;
-
-        // Allow a derived class to deallocate memory 
-        virtual ~Operator() {}
-    };
-
-       
     // Routines that manipulate and support problems of the form
     // 
     // min_{x \in X} f(x)

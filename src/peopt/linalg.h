@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <cmath>
+#include <list>
 
 namespace peopt {
     template <typename T>
@@ -71,6 +72,25 @@ namespace peopt {
     
     // Indexing function for matrices
     unsigned int ijtok(unsigned int i,unsigned int j,unsigned int m);
+    
+    // A simple operator specification, A : X->Y
+    template <
+        typename Real,
+        template <typename> class XX,
+        template <typename> class YY
+    >
+    struct Operator {
+    private:
+        // Create some type shortcuts
+        typedef typename XX <Real>::Vector X_Vector;
+        typedef typename YY <Real>::Vector Y_Vector;
+    public:
+        // Basic application
+        virtual void operator () (const X_Vector& x,Y_Vector &y) const = 0;
+
+        // Allow a derived class to deallocate memory 
+        virtual ~Operator() {}
+    };
 
     /* Given a Schur decomposition of A, A=V D V', solve the Sylvester equation
     
@@ -255,6 +275,318 @@ namespace peopt {
 
         // Return the smallest Ritz value
         return W[0];
+    }
+
+    // Orthogonalizes a vector x to a list of other xs.  
+    template <
+        typename Real,
+        template <typename> class XX
+    >
+    void orthogonalize(
+        const std::list <typename XX <Real>::Vector>& vs,
+        typename XX <Real>::Vector& x,
+        Real* R
+    ) {
+        // Create some type shortcuts
+        typedef XX <Real> X;
+        typedef typename X::Vector X_Vector;
+
+        // Orthogonalize the vectors
+        int i=0;
+        for(typename std::list <X_Vector>::const_iterator v=vs.begin();
+            v!=vs.end();
+            v++
+        ) {
+            Real beta=X::innr(*v,x);
+            X::axpy(Real(-1.)*beta,*v,x);
+            R[i] = beta;
+            i++;
+        }
+    }
+
+    // Solves for the linear solve iterate x in the current Krylov space 
+    template <
+        typename Real,
+        template <typename> class XX
+    >
+    void solveInKrylov(
+        const unsigned int m,
+        const Real* R,
+        const Real* Qt_e1,
+        const std::list <typename XX <Real>::Vector>& vs,
+        const Operator <Real,XX,XX>& Mr_inv,
+        typename XX <Real>::Vector& x
+    ) {
+        // Create some type shortcuts
+        typedef XX <Real> X;
+        typedef typename X::Vector X_Vector;
+        
+        // Allocate memory for the solution of the triangular solve 
+        std::vector <Real> y(m);
+
+        // Create two temporary elements required to solve for the iterate
+        X_Vector V_y; X::init(x,V_y);
+        X_Vector Mrinv_V_y; X::init(x,Mrinv_V_y);
+
+        // Solve the system for y
+        copy <Real> (m,&(Qt_e1[0]),1,&(y[0]),1);
+        tpsv <Real> ('U','N','N',m,&(R[0]),&(y[0]),1);
+
+        // Compute tmp = V y
+        X::zero(V_y);
+        int j=0;
+        for(typename std::list <X_Vector>::const_iterator vv=vs.begin();
+            vv!=vs.end();
+            vv++
+        ) {
+            X::axpy(Real(y[j]),*vv,V_y);
+            j++;
+        }
+
+        // Right recondition the above linear combination
+        Mr_inv(V_y,Mrinv_V_y);
+
+        // Find the updated linear system iterate
+        X::axpy(Real(1.0),Mrinv_V_y,x);
+    }
+
+    // Resets the GMRES method.  This does a number of things
+    // 1.  Calculates the preconditioned residual.
+    // 2.  Finds the norm of the preconditioned residual.
+    // 3.  Finds the initial Krylov vector.
+    // 4.  Initializes the list of Krylov vectors.
+    // 5.  Finds the initial RHS for the least squares system, Q' norm(w1) e1.
+    // 6.  Clears out all of the old Givens rotations
+    // These steps are required during initialization as well as during a
+    // restart of GMRES
+    template <
+        typename Real,
+        template <typename> class XX
+    >
+    void resetGMRES(
+        const Operator <Real,XX,XX>& A,
+        const typename XX <Real>::Vector& b,
+        const Operator <Real,XX,XX>& Ml_inv,
+        const typename XX <Real>::Vector& x,
+        const unsigned int rst_freq,
+        typename XX <Real>::Vector& v,
+        std::list <typename XX <Real>::Vector>& vs,
+        typename XX <Real>::Vector& r,
+        Real& norm_r,
+        std::vector <Real>& Qt_e1,
+        std::list <std::pair<Real,Real> >& Qts
+    ){
+        // Create some type shortcuts
+        typedef XX <Real> X;
+        typedef typename X::Vector X_Vector;
+
+        // Compute the new residual 
+        A(x,r);
+        X::scal(Real(-1.),r);
+        X::axpy(Real(1.),b,r);
+
+        // Apply the left preconditioner to the residual.  This completes #1.
+        X_Vector tmp; X::init(x,tmp);
+        X::copy(r,tmp);
+        Ml_inv(tmp,r);
+
+        // Store the new norm of the preconditioned residual.  This completes #2.
+        norm_r = sqrt(X::innr(r,r));
+
+        // Find the initial Krylov vector.  This completes #3.
+        X::copy(r,v);
+        X::scal(Real(1.)/norm_r,v);
+
+        // Clear memory for the list of Krylov vectors and insert the first
+        // vector.  This completes #4.
+        vs.clear();
+        vs.push_back(X_Vector());
+        X::init(x,vs.back());
+        X::copy(v,vs.back());
+
+        // Find the initial right hand side for the vector Q' norm(w1) e1.  This
+        // completes #5.
+        scal <Real> (rst_freq+1,Real(0.),&(Qt_e1[0]),1);
+        Qt_e1[0] = norm_r;
+
+        // Clear out the Givens rotations.  This completes #6.
+        Qts.clear();
+    }
+
+    // Computes the GMRES algorithm in order to solve A(x)=b.
+    // (input) A : Operator that computes A(x)
+    // (input) b : Right hand side
+    // (input) eps : Relative stopping tolerance.  We check the relative 
+    //    difference between the current and original preconditioned
+    //    norm of the residual.
+    // (input) iter_max : Maximum number of iterations
+    // (input) rst_freq : Restarts GMRES every rst_freq iterations.  If we don't
+    //    want restarting, set this to zero. 
+    // (input) Ml_inv : Operator that computes the left preconditioner
+    // (input) Mr_inv : Operator that computes the right preconditioner
+    // (input/output) x : Initial guess of the solution.  Returns the final
+    //    solution.
+    // (return) (norm_r,iter) : Final norm of the preconditioned residual and
+    //    the number of iteratisno computed.  They are returned in a STL pair.
+    template <
+        typename Real,
+        template <typename> class XX
+    >
+    std::pair <Real,int> gmres(
+        const Operator <Real,XX,XX>& A,
+        const typename XX <Real>::Vector& b,
+        const Real eps,
+        const unsigned int iter_max,
+        unsigned int rst_freq,
+        const Operator <Real,XX,XX>& Ml_inv,
+        const Operator <Real,XX,XX>& Mr_inv,
+        typename XX <Real>::Vector& x
+    ){
+
+        // Create some type shortcuts
+        typedef XX <Real> X;
+        typedef typename X::Vector X_Vector;
+
+        // Adjust the restart frequency if it is too big
+        rst_freq = rst_freq > iter_max ? iter_max : rst_freq;
+
+        // Adjust the restart frequency if none is desired.
+        rst_freq = rst_freq == 0 ? iter_max : rst_freq;
+
+        // Allocate memory for the residual
+        X_Vector r; X::init(x,r);
+        
+        // Allocate memory for the norm of the preconditioned residual
+        Real norm_r;
+
+        // Allocate memory for the original norm of the preconditioned residual
+        Real norm_r0;
+
+        // Allocate memory for the R matrix in the QR factorization of H where
+        // A V = V H + e_m' w_m
+        // Note, this size is restricted to be no larger than the restart frequency
+        std::vector <Real> R(rst_freq*(rst_freq+1)/2);
+
+        // Allocate memory for the normalized Krylov vector
+        X_Vector v; X::init(x,v);
+
+        // Allocate memory for w, the orthogonalized, but not normalized vector
+        X_Vector w; X::init(x,w);
+
+        // Allocate memory for the list of Krylov vectors
+        std::list <X_Vector> vs;
+
+        // Allocate memory for right hand side of the linear system, the vector
+        // Q' norm(w1) e1.  Since we have a problem overdetermined by a single
+        // index at each step, the size of this vector is the restart frequency
+        // plus 1.
+        std::vector <Real> Qt_e1(rst_freq+1);
+
+        // Allocoate memory for the Givens rotations
+        std::list <std::pair<Real,Real> > Qts;
+
+        // Allocate a temporary work element
+        X_Vector A_Mrinv_v; X::init(x,A_Mrinv_v);
+
+        // Allocate memory for the subiteration number of GMRES taking into
+        // account restarting
+        unsigned int i;
+
+        // Initialize the GMRES algorithm
+        resetGMRES <Real,XX> (A,b,Ml_inv,x,rst_freq,v,vs,r,norm_r,Qt_e1,Qts);
+
+        // Save the initial norm of the preconditioned residual
+        norm_r0 = norm_r;
+
+        // Iterate until the maximum iteration
+        unsigned int iter;
+        for(iter = 1; iter <= iter_max;iter++) {
+
+            // Find the current iterate taking into account restarting
+            i = iter % rst_freq;
+
+            // We the above remainder is zero, we're on our final iteration before
+            // restarting.  However, the iterate in this case is equal to the
+            // restart frequency and not zero since our factorization has size
+            // rst_freq x rst_freq.
+            if(i == 0) i = rst_freq;
+
+            // Find the next Krylov vector
+            Mr_inv(v,w);
+            A(w,A_Mrinv_v);
+            Ml_inv(A_Mrinv_v,w);
+
+            // Orthogonalize this Krylov vector with respect to the rest
+            orthogonalize <Real,XX> (vs,w,&(R[(i-1)*i/2]));
+
+            // Find the norm of the remaining, orthogonalized vector
+            Real norm_w = sqrt(X::innr(w,w));
+
+            // Normalize the orthogonalized Krylov vector and insert it into the
+            // list of Krylov vectros
+            X::copy(w,v);
+            X::scal(Real(1.)/norm_w,v);
+            vs.push_back(X_Vector()); X::init(x,vs.back());
+            X::copy(v,vs.back());
+
+            // Apply the existing Givens rotations to the new column of R
+            int j=1;
+            for(typename std::list <std::pair<Real,Real> >::iterator Qt=Qts.begin();
+                Qt!=Qts.end();
+                Qt++
+            ) { 
+                rot <Real> (1,&(R[(j-1)+(i-1)*i/2]),1,&(R[j+(i-1)*i/2]),1,
+                    Qt->first,Qt->second);
+                j++;
+            }
+
+            // Form the new Givens rotation
+            Qts.push_back(std::pair <Real,Real> ());
+            rotg <Real> (R[(i-1)+i*(i-1)/2],norm_w,Qts.back().first,Qts.back().second);
+
+            // Apply this new Givens rotation to the last element of R and norm(w).
+            // This fixes our system R.
+            rot <Real> (1,&(R[(i-1)+i*(i-1)/2]),1,&(norm_w),1,
+                Qts.back().first,Qts.back().second);
+
+            // Apply the new givens rotation to the RHS.  This also determines the new norm
+            // of the preconditioned residual.
+            rot <Real> (1,&(Qt_e1[i-1]),1,&(Qt_e1[i]),1,
+                Qts.back().first,Qts.back().second);
+            norm_r = fabs(Qt_e1[i]);
+
+            // Determine if we should exit since the norm of the residual is small
+            if(norm_r < eps * norm_r0) break;	
+
+            // If we've hit the restart frequency, reset the Krylov spaces and
+            // factorizations
+            if(i%rst_freq==0) {
+                // Solve for the new iterate
+                solveInKrylov <Real,XX> (i,&(R[0]),&(Qt_e1[0]),vs,Mr_inv,x);
+
+                // Reset the GMRES algorithm
+                resetGMRES<Real,XX> (A,b,Ml_inv,x,rst_freq,v,vs,r,norm_r,Qt_e1,Qts);
+
+                // Make sure to correctly indicate that we're now working on
+                // iteration 0 of the next round of GMRES.  If we exit immediately
+                // thereafter, we use this check to make sure we don't do any 
+                // additional solves for x.
+                i = 0;
+            }
+        }
+
+        // As long as we didn't just solve for our new ierate, go ahead and solve
+        // for it now.
+        if(i > 0) solveInKrylov <Real,XX> (i,&(R[0]),&(Qt_e1[0]),vs,Mr_inv,x);
+
+        // Compute the new norm of the residual 
+        A(x,r);
+        X::scal(Real(-1.),r);
+        X::axpy(Real(1.),b,r);
+        norm_r = sqrt(X::innr(r,r));
+
+        // Return the norm and the residual
+        return std::pair <Real,unsigned int> (norm_r,iter);
     }
 }
 
