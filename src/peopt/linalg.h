@@ -334,13 +334,10 @@ namespace peopt {
 
         // Compute tmp = V y
         X::zero(V_y);
-        int j=0;
-        for(typename std::list <X_Vector>::const_iterator vv=vs.begin();
-            vv!=vs.end();
-            vv++
-        ) {
+        typename std::list <X_Vector>::const_iterator vv=vs.begin();
+        for(int j=0;j<m;j++) {
             X::axpy(Real(y[j]),*vv,V_y);
-            j++;
+            vv++;
         }
 
         // Right recondition the above linear combination
@@ -442,8 +439,8 @@ namespace peopt {
     std::pair <Real,int> gmres(
         const Operator <Real,XX,XX>& A,
         const typename XX <Real>::Vector& b,
-        const Real eps,
-        const unsigned int iter_max,
+        Real eps,
+        unsigned int iter_max,
         unsigned int rst_freq,
         const Operator <Real,XX,XX>& Ml_inv,
         const Operator <Real,XX,XX>& Mr_inv,
@@ -515,7 +512,7 @@ namespace peopt {
         norm_rtrue = sqrt(X::innr(rtrue,rtrue));
 
         // Initialize the GMRES algorithm
-        resetGMRES<Real,XX> (rtrue,Ml_inv,x,rst_freq,v,vs,r,norm_r,
+        resetGMRES<Real,XX> (rtrue,Ml_inv,rst_freq,v,vs,r,norm_r,
             Qt_e1,Qts);
             
         // If for some bizarre reason, we're already optimal, don't do any work 
@@ -605,7 +602,7 @@ namespace peopt {
                 X::copy(x_p_dx,x);
 
                 // Reset the GMRES algorithm
-                resetGMRES<Real,XX> (rtrue,Ml_inv,x,rst_freq,v,vs,r,norm_r,
+                resetGMRES<Real,XX> (rtrue,Ml_inv,rst_freq,v,vs,r,norm_r,
                     Qt_e1,Qts);
 
                 // Make sure to correctly indicate that we're now working on
@@ -614,8 +611,10 @@ namespace peopt {
                 // don't do any additional solves for x.
                 i = 0;
             }
-
         }
+
+        // Adjust the iteration number if we ran out of iterations
+        iter = iter > iter_max ? iter_max : iter;
 
         // As long as we didn't just solve for our new ierate, go ahead and solve
         // for it now.
