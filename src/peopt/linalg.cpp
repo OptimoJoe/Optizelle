@@ -303,36 +303,6 @@ namespace peopt {
         strtri_fortran(&uplo,&diag,&n,A,&lda,&info);
     }
     
-    // Absolute value
-    template <>
-    double abs(double alpha) {
-        return std::fabs(alpha);
-    }
-    template <>
-    float abs(float alpha) {
-        return std::fabs(alpha);
-    }
-    
-    // Square root
-    template <>
-    double sqrt(double alpha) {
-        return std::sqrt(alpha);
-    }
-    template <>
-    float sqrt(float alpha) {
-        return std::sqrt(alpha);
-    }
-    
-    // Logarithm 
-    template <>
-    double log(double alpha) {
-        return std::log(alpha);
-    }
-    template <>
-    float log(float alpha) {
-        return std::log(alpha);
-    }
-    
     // Indexing function for matrices.  This assumes that the upper right
     // corner has index (1,1).  Basically, we're using the indexing scheme
     // of math and Fortran and not of C.
