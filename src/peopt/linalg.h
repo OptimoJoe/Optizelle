@@ -59,17 +59,15 @@ namespace peopt {
     template <typename T>
     void trtri(char uplo,char diag,int n,T* A,int lda,int& info);
 
-    // Absolute value
     template <typename T>
-    T abs(T alpha);
+    void rotg(T a,T b,T& c,T& s);
 
-    // Square root
     template <typename T>
-    T sqrt(T alpha);
+    void rot(int n,const T* x,int incx,T* y,int incy,T c,T s);
 
-    // Logarithm
-    template <typename T>
-    T log(T alpha);
+    template <typename Real>
+    void tpsv(char uplo,char trans,char diag,int n,const Real* Ap,Real* x,
+        int incx);
     
     // Indexing function for matrices
     unsigned int ijtok(unsigned int i,unsigned int j,unsigned int m);
@@ -245,12 +243,12 @@ namespace peopt {
             // going to converge first, but they'll both be the first two.
             // Hence, we converge until these errors estimates are accurate
             // enough.
-            T err_est_min = abs <T> (Z[ijtok(k,1,k)])*beta[i+1];
-            T err_est_max = abs <T> (Z[ijtok(k,k,k)])*beta[i+1];
+            T err_est_min = fabs(Z[ijtok(k,1,k)])*beta[i+1];
+            T err_est_max = fabs(Z[ijtok(k,k,k)])*beta[i+1];
 
             // Stop of the error estimates are small
-            if(    err_est_min < abs <T> (W[0]) * tol
-                && err_est_max < abs <T> (W[i]) * tol
+            if(    err_est_min < fabs(W[0]) * tol
+                && err_est_max < fabs(W[i]) * tol
             )
                 break;
         }

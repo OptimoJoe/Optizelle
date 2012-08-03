@@ -46,6 +46,15 @@ void dsymv_fortran(char* uplo,int* n,double* alpha,double* A, int* lda,
 void dpotrf_fortran(char* uplo,int *n,double* A,int* lda,int* info);
 #define dtrtri_fortran F77_FUNC (dtrtri,DTRTRI)
 void dtrtri_fortran(char* uplo,char* diag,int* n,double* A,int* lda,int* info);
+#define drotg_fortran F77_FUNC (drotg,DROTG)
+void drotg_fortran(double* a,double* b,double* c,double *s);
+#define drot_fortran F77_FUNC (drot,DROT)
+void drot_fortran(int* m,double* x,int* incx,double* y,int* incy,double* c,
+    double *s);
+#define dtpsv_fortran F77_FUNC (dtpsv,DTPSV)
+void dtpsv_fortran(char* uplo,char* trans,char* diag,int* n,double* Ap,
+    double* x,int* incx);
+
 
 // Float BLAS and LAPACK routines
 #define scopy_fortran F77_FUNC (scopy,SCOPY)
@@ -93,6 +102,14 @@ void ssymv_fortran(char* uplo,int* n,float* alpha,float* A, int* lda,
 void spotrf_fortran(char* uplo,int *n,float* A,int* lda,int* info);
 #define strtri_fortran F77_FUNC (strtri,STRTRI)
 void strtri_fortran(char* uplo,char* diag,int* n,float* A,int* lda,int* info);
+#define srotg_fortran F77_FUNC (srotg,SROTG)
+void srotg_fortran(float* a,float* b,float* c,float *s);
+#define srot_fortran F77_FUNC (srot,SROT)
+void srot_fortran(int* m,float* x,int* incx,float* y,int* incy,float* c,
+    float *s);
+#define stpsv_fortran F77_FUNC (stpsv,STPSV)
+void stpsv_fortran(char* uplo,char* trans,char* diag,int* n,float* Ap,
+    float* x,int* incx);
 }
 
 namespace peopt {
@@ -301,6 +318,44 @@ namespace peopt {
     template <>
     void trtri(char uplo,char diag,int n,float* A,int lda,int& info) {
         strtri_fortran(&uplo,&diag,&n,A,&lda,&info);
+    }
+
+    template <>
+    void rotg <double> (double a,double b,double& c,double& s) {
+        drotg_fortran(&a,&b,&c,&s);
+    }
+    
+    template <>
+    void rotg <float> (float a,float b,float& c,float& s) {
+        srotg_fortran(&a,&b,&c,&s);
+    }
+    
+    template <>
+    void rot <double> (int n,const double* x,int incx,double* y,int incy,
+        double c,double s
+    ){
+        drot_fortran(&n,const_cast <double*> (x),&incx,y,&incy,&c,&s);
+    }
+    
+    template <>
+    void rot <float> (int n,const float* x,int incx,float* y,int incy,
+        float c,float s
+    ){
+        srot_fortran(&n,const_cast <float*> (x),&incx,y,&incy,&c,&s);
+    }
+    
+    template <>
+    void tpsv(char uplo,char trans,char diag,int n,const double* Ap,double* x,
+        int incx
+    ) {
+        dtpsv_fortran(&uplo,&trans,&diag,&n,const_cast <double*> (Ap),x,&incx);
+    }
+    
+    template <>
+    void tpsv(char uplo,char trans,char diag,int n,const float* Ap,float* x,
+        int incx
+    ) {
+        stpsv_fortran(&uplo,&trans,&diag,&n,const_cast <float*> (Ap),x,&incx);
     }
     
     // Indexing function for matrices.  This assumes that the upper right
