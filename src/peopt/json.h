@@ -189,10 +189,61 @@ namespace peopt {
                 typename peopt::EqualityConstrained <Real,XX,YY>::State::t&
                     state
             ) {
+                // Base error message
+                const std::string base = "Invalid JSON parameter: ";
+
                 // Read in the input file
                 Json::Value root=parse(msg,fname);
 
                 // Read in the parameters
+                state.zeta=Real(root["peopt"]
+                    .get("zeta",state.zeta).asDouble());
+                state.eta0=Real(root["peopt"]
+                    .get("eta0",state.zeta).asDouble());
+                state.rho=Real(root["peopt"]
+                    .get("rho",state.zeta).asDouble());
+                state.rho_bar=Real(root["peopt"]
+                    .get("rho_bar",state.zeta).asDouble());
+                state.eps_constr=Real(root["peopt"]
+                    .get("eps_constr",state.zeta).asDouble());
+                state.xi_all=Real(root["peopt"]
+                    .get("xi_all",state.zeta).asDouble());
+                state.xi_qn=Real(root["peopt"]
+                    .get("xi_qn",state.zeta).asDouble());
+                state.xi_pg=Real(root["peopt"]
+                    .get("xi_pg",state.zeta).asDouble());
+                state.xi_proj=Real(root["peopt"]
+                    .get("xi_proj",state.zeta).asDouble());
+                state.xi_tang=Real(root["peopt"]
+                    .get("xi_tang",state.zeta).asDouble());
+                state.xi_lmh=Real(root["peopt"]
+                    .get("xi_lmh",state.zeta).asDouble());
+                state.xi_lmg=Real(root["peopt"]
+                    .get("xi_lmg",state.zeta).asDouble());
+                state.xi_4=Real(root["peopt"]
+                    .get("xi_4",state.zeta).asDouble());
+                
+                std::string Minv_right_type=root["peopt"]
+                    .get("Minv_right_type",
+                        Operators::to_string(state.Minv_right_type))
+                    .asString();
+                if(Operators::is_valid()(Minv_right_type))
+                    state.Minv_right_type
+                        = Operators::from_string(Minv_right_type);
+                else
+                    msg.error(base + Minv_right_type
+                        + " is not a valid Minv_right_type");
+                
+                std::string Minv_left_type=root["peopt"]
+                    .get("Minv_left_type",
+                        Operators::to_string(state.Minv_left_type))
+                    .asString();
+                if(Operators::is_valid()(Minv_left_type))
+                    state.Minv_left_type
+                        = Operators::from_string(Minv_left_type);
+                else
+                    msg.error(base + Minv_left_type
+                        + " is not a valid Minv_left_type");
             }
             static void read(
                 const peopt::Messaging& msg,
@@ -216,6 +267,23 @@ namespace peopt {
                 Json::StyledWriter writer;
 
                 // Write the optimization parameters
+                root["peopt"]["zeta"]=state.zeta;
+                root["peopt"]["eta0"]=state.eta0;
+                root["peopt"]["rho"]=state.rho;
+                root["peopt"]["rho_bar"]=state.rho_bar;
+                root["peopt"]["eps_constr"]=state.eps_constr;
+                root["peopt"]["xi_all"]=state.xi_all;
+                root["peopt"]["xi_qn"]=state.xi_qn;
+                root["peopt"]["xi_pg"]=state.xi_pg;
+                root["peopt"]["xi_proj"]=state.xi_proj;
+                root["peopt"]["xi_tang"]=state.xi_tang;
+                root["peopt"]["xi_lmh"]=state.xi_lmh;
+                root["peopt"]["xi_lmg"]=state.xi_lmg;
+                root["peopt"]["xi_4"]=state.xi_4;
+                root["peopt"]["Minv_right_type"]=
+                    Operators::to_string(state.Minv_right_type);
+                root["peopt"]["Minv_left_type"]=
+                    Operators::to_string(state.Minv_left_type);
 
                 return writer.write(root);
             }
