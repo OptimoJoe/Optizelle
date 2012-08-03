@@ -4249,7 +4249,8 @@ namespace peopt{
                             std::list <Y_Vector> > Y_Vectors;
 
         // This defines a product space between X and Y
-        struct XxY {
+        template <typename Real_>
+        struct XXxYY {
             typedef std::pair <X_Vector,Y_Vector> Vector;
 
             // Memory allocation and size setting
@@ -4265,7 +4266,7 @@ namespace peopt{
             }
 
             // x <- alpha * x
-            static void scal(const Real& alpha, Vector& x) {
+            static void scal(const Real_& alpha, Vector& x) {
                 X::copy(alpha,x.first);
                 Y::copy(alpha,x.second);
             }
@@ -4277,16 +4278,17 @@ namespace peopt{
             }
 
             // y <- alpha * x + y
-            static void axpy(const Real& alpha, const Vector& x, Vector& y) {
+            static void axpy(const Real_& alpha, const Vector& x, Vector& y) {
                 X::axpy(alpha,x.first,y.first);
                 Y::axpy(alpha,x.second,y.second);
             }
 
             // innr <- <x,y>
-            static Real innr(const Vector& x,const Vector& y) {
+            static Real_ innr(const Vector& x,const Vector& y) {
                 return X::innr(x.first,y.first) + Y::innr(x.second,y.second);
             }
         };
+        typedef XXxYY <Real> XxY;
         typedef typename XxY::Vector XxY_Vector;
 
         // Routines that manipulate the internal state of the optimization 
@@ -4917,6 +4919,11 @@ namespace peopt{
                 EqualityConstrained <Real,XX,YY>
                     ::Functions::init_(msg,state,fns);
             }
+        };
+        
+        // This contains the different algorithms used for optimization 
+        struct Algorithms {
+
         };
     };
         
