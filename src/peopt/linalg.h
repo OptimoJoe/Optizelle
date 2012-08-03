@@ -304,7 +304,7 @@ namespace peopt {
         }
     }
 
-    // Solves for the linear solve iterate x in the current Krylov space 
+    // Solves for the linear solve iterate update dx in the current Krylov space
     template <
         typename Real,
         template <typename> class XX
@@ -315,7 +315,8 @@ namespace peopt {
         const Real* Qt_e1,
         const std::list <typename XX <Real>::Vector>& vs,
         const Operator <Real,XX,XX>& Mr_inv,
-        typename XX <Real>::Vector& x
+        const typename XX <Real>::Vector& x,
+        typename XX <Real>::Vector& dx
     ) {
         // Create some type shortcuts
         typedef XX <Real> X;
@@ -324,9 +325,8 @@ namespace peopt {
         // Allocate memory for the solution of the triangular solve 
         std::vector <Real> y(m);
 
-        // Create two temporary elements required to solve for the iterate
+        // Create one temporary element required to solve for the iterate
         X_Vector V_y; X::init(x,V_y);
-        X_Vector Mrinv_V_y; X::init(x,Mrinv_V_y);
 
         // Solve the system for y
         copy <Real> (m,&(Qt_e1[0]),1,&(y[0]),1);
@@ -344,10 +344,7 @@ namespace peopt {
         }
 
         // Right recondition the above linear combination
-        Mr_inv(V_y,Mrinv_V_y);
-
-        // Find the updated linear system iterate
-        X::axpy(Real(1.0),Mrinv_V_y,x);
+        Mr_inv(V_y,dx);
     }
 
     // Resets the GMRES method.  This does a number of things
@@ -364,10 +361,8 @@ namespace peopt {
         template <typename> class XX
     >
     void resetGMRES(
-        const Operator <Real,XX,XX>& A,
-        const typename XX <Real>::Vector& b,
+        const typename XX <Real>::Vector& rtrue,
         const Operator <Real,XX,XX>& Ml_inv,
-        const typename XX <Real>::Vector& x,
         const unsigned int rst_freq,
         typename XX <Real>::Vector& v,
         std::list <typename XX <Real>::Vector>& vs,
@@ -380,17 +375,11 @@ namespace peopt {
         typedef XX <Real> X;
         typedef typename X::Vector X_Vector;
 
-        // Compute the new residual 
-        A(x,r);
-        X::scal(Real(-1.),r);
-        X::axpy(Real(1.),b,r);
+        // Apply the left preconditioner to the true residual.  This
+        // completes #1
+        Ml_inv(rtrue,r);
 
-        // Apply the left preconditioner to the residual.  This completes #1.
-        X_Vector tmp; X::init(x,tmp);
-        X::copy(r,tmp);
-        Ml_inv(tmp,r);
-
-        // Store the new norm of the preconditioned residual.  This completes #2.
+        // Store the norm of the preconditioned residual.  This completes #2.
         norm_r = sqrt(X::innr(r,r));
 
         // Find the initial Krylov vector.  This completes #3.
@@ -401,7 +390,7 @@ namespace peopt {
         // vector.  This completes #4.
         vs.clear();
         vs.push_back(X_Vector());
-        X::init(x,vs.back());
+        X::init(rtrue,vs.back());
         X::copy(v,vs.back());
 
         // Find the initial right hand side for the vector Q' norm(w1) e1.  This
@@ -412,6 +401,24 @@ namespace peopt {
         // Clear out the Givens rotations.  This completes #6.
         Qts.clear();
     }
+    // A function that has free reign to manipulate and change the stopping
+    // tolerance for GMRES.  This should be used cautiously.
+    template <
+        typename Real,
+        template <typename> class XX
+    >
+    class GMRESManipulator {
+    public:
+        // Application
+        virtual void operator () (
+            const typename XX <Real>::Vector& b,
+            const typename XX <Real>::Vector& x,
+            Real& eps
+        ) const {}
+
+        // Allow the derived class to deallocate memory
+        virtual ~GMRESManipulator() {}
+    };
 
     // Computes the GMRES algorithm in order to solve A(x)=b.
     // (input) A : Operator that computes A(x)
@@ -426,8 +433,8 @@ namespace peopt {
     // (input) Mr_inv : Operator that computes the right preconditioner
     // (input/output) x : Initial guess of the solution.  Returns the final
     //    solution.
-    // (return) (norm_r,iter) : Final norm of the preconditioned residual and
-    //    the number of iteratisno computed.  They are returned in a STL pair.
+    // (return) (norm_rtrue,iter) : Final norm of the true residual and
+    //    the number of iterations computed.  They are returned in a STL pair.
     template <
         typename Real,
         template <typename> class XX
@@ -440,6 +447,7 @@ namespace peopt {
         unsigned int rst_freq,
         const Operator <Real,XX,XX>& Ml_inv,
         const Operator <Real,XX,XX>& Mr_inv,
+        const GMRESManipulator <Real,XX>& gmanip,
         typename XX <Real>::Vector& x
     ){
 
@@ -456,11 +464,19 @@ namespace peopt {
         // Allocate memory for the residual
         X_Vector r; X::init(x,r);
         
-        // Allocate memory for the norm of the preconditioned residual
+        // Allocate memory for the iterate update 
+        X_Vector dx; X::init(x,dx);
+        
+        // Allocate memory for x + dx 
+        X_Vector x_p_dx; X::init(x,x_p_dx);
+        
+        // Allocate memory for the true residual
+        X_Vector rtrue; X::init(x,rtrue);
+        
+        // Allocate memory for the norm of the true, preconditioned, and
+        // original true norm of the residual
+        Real norm_rtrue;
         Real norm_r;
-
-        // Allocate memory for the original norm of the preconditioned residual
-        Real norm_r0;
 
         // Allocate memory for the R matrix in the QR factorization of H where
         // A V = V H + e_m' w_m
@@ -492,11 +508,19 @@ namespace peopt {
         // account restarting
         unsigned int i;
 
-        // Initialize the GMRES algorithm
-        resetGMRES <Real,XX> (A,b,Ml_inv,x,rst_freq,v,vs,r,norm_r,Qt_e1,Qts);
+        // Find the true residual and its norm
+        A(x,rtrue);
+        X::scal(Real(-1.),rtrue);
+        X::axpy(Real(1.),b,rtrue);
+        norm_rtrue = sqrt(X::innr(rtrue,rtrue));
 
-        // Save the initial norm of the preconditioned residual
-        norm_r0 = norm_r;
+        // Initialize the GMRES algorithm
+        resetGMRES<Real,XX> (rtrue,Ml_inv,x,rst_freq,v,vs,r,norm_r,
+            Qt_e1,Qts);
+            
+        // If for some bizarre reason, we're already optimal, don't do any work 
+        gmanip(x,b,eps);
+        if(norm_rtrue < eps) iter_max=0;	
 
         // Iterate until the maximum iteration
         unsigned int iter;
@@ -505,10 +529,10 @@ namespace peopt {
             // Find the current iterate taking into account restarting
             i = iter % rst_freq;
 
-            // We the above remainder is zero, we're on our final iteration before
-            // restarting.  However, the iterate in this case is equal to the
-            // restart frequency and not zero since our factorization has size
-            // rst_freq x rst_freq.
+            // We the above remainder is zero, we're on our final iteration
+            // before restarting.  However, the iterate in this case is equal to
+            // the restart frequency and not zero since our factorization has
+            // size rst_freq x rst_freq.
             if(i == 0) i = rst_freq;
 
             // Find the next Krylov vector
@@ -554,39 +578,54 @@ namespace peopt {
             rot <Real> (1,&(Qt_e1[i-1]),1,&(Qt_e1[i]),1,
                 Qts.back().first,Qts.back().second);
             norm_r = fabs(Qt_e1[i]);
+                
+            // Solve for the new iterate update 
+            solveInKrylov <Real,XX> (i,&(R[0]),&(Qt_e1[0]),vs,Mr_inv,x,dx);
 
-            // Determine if we should exit since the norm of the residual is small
-            if(norm_r < eps * norm_r0) break;	
+            // Find the current iterate, its residual, the residual's norm
+            X::copy(x,x_p_dx);
+            X::axpy(Real(1.),dx,x_p_dx);
+            A(x_p_dx,rtrue);
+            X::scal(Real(-1.),rtrue);
+            X::axpy(Real(1.),b,rtrue);
+            norm_rtrue = sqrt(X::innr(rtrue,rtrue));
+
+            // Adjust the stopping tolerance
+            gmanip(x_p_dx,b,eps);
+
+            // Determine if we should exit since the norm of the true residual
+            // is small
+            if(norm_rtrue < eps) break;	
 
             // If we've hit the restart frequency, reset the Krylov spaces and
             // factorizations
             if(i%rst_freq==0) {
-                // Solve for the new iterate
-                solveInKrylov <Real,XX> (i,&(R[0]),&(Qt_e1[0]),vs,Mr_inv,x);
+
+                // Move to the new iterate
+                X::copy(x_p_dx,x);
 
                 // Reset the GMRES algorithm
-                resetGMRES<Real,XX> (A,b,Ml_inv,x,rst_freq,v,vs,r,norm_r,Qt_e1,Qts);
+                resetGMRES<Real,XX> (rtrue,Ml_inv,x,rst_freq,v,vs,r,norm_r,
+                    Qt_e1,Qts);
 
                 // Make sure to correctly indicate that we're now working on
-                // iteration 0 of the next round of GMRES.  If we exit immediately
-                // thereafter, we use this check to make sure we don't do any 
-                // additional solves for x.
+                // iteration 0 of the next round of GMRES.  If we exit
+                // immediately thereafter, we use this check to make sure we
+                // don't do any additional solves for x.
                 i = 0;
             }
+
         }
 
         // As long as we didn't just solve for our new ierate, go ahead and solve
         // for it now.
-        if(i > 0) solveInKrylov <Real,XX> (i,&(R[0]),&(Qt_e1[0]),vs,Mr_inv,x);
-
-        // Compute the new norm of the residual 
-        A(x,r);
-        X::scal(Real(-1.),r);
-        X::axpy(Real(1.),b,r);
-        norm_r = sqrt(X::innr(r,r));
+        if(i > 0){ 
+            solveInKrylov <Real,XX> (i,&(R[0]),&(Qt_e1[0]),vs,Mr_inv,x,dx);
+            X::axpy(Real(1.),dx,x);
+        }
 
         // Return the norm and the residual
-        return std::pair <Real,unsigned int> (norm_r,iter);
+        return std::pair <Real,unsigned int> (norm_rtrue,iter);
     }
 }
 
