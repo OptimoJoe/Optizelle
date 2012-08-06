@@ -4322,6 +4322,10 @@ namespace peopt{
                 Operators::t Minv_left_type;
                 Operators::t Minv_right_type;
 
+                // Maximum number of iterations used when solving the augmented
+                // system
+                unsigned int augsys_iter_max;
+
                 // Initialization constructors
                 t() {
                     EqualityConstrained <Real,XX,YY>::State::init_params(*this);
@@ -4351,6 +4355,7 @@ namespace peopt{
                 state.xi_4 = Real(2.);
                 state.Minv_left_type=Operators::Identity;
                 state.Minv_right_type=Operators::Identity;
+                state.augsys_iter_max = 100;
             }
             static void init_params(t& state) {
                 Unconstrained <Real,XX>::State::init_params_(state); 
@@ -4488,6 +4493,13 @@ namespace peopt{
                         "must be either user defined or the identity: "
                         "Minv_right_type = "
                         << Operators::to_string(state.Minv_right_type);
+
+                // Check that the number of iterations used when solving the
+                // augmented system is positive
+                else if(state.augsys_iter_max == 0)
+                    ss << "The number of iterations used when solving the "
+                        "augmented system must be positive: augsys_iter_max = "
+                        << state.augsys_iter_max;
             }
             static void check(const Messaging& msg,const t& state) {
                 Unconstrained <Real,XX>::State::check_(msg,state);
@@ -4527,7 +4539,8 @@ namespace peopt{
             struct is_nat : public std::unary_function<std::string, bool> {
                 bool operator () (const std::string& name) const {
                     if( typename Unconstrained <Real,XX>::Restart
-                        ::is_nat()(name)
+                        ::is_nat()(name) ||
+                        name == "augsys_iter_max"
                     )
                         return true;
                     else
@@ -4678,13 +4691,19 @@ namespace peopt{
                 reals.first.push_back("xi_4");
                 reals.second.push_back(state.xi_4);
 
-                // Copy in all the paramters
+                // Copy in all the natural numbers
+                nats.first.push_back("augsys_iter_max");
+                nats.second.push_back(state.augsys_iter_max);
+
+                // Copy in all the parameters
                 params.first.push_back("Minv_left_type");
                 params.second.push_back(
                     Operators::to_string(state.Minv_left_type));
                 params.first.push_back("Minv_right_type");
                 params.second.push_back(
                     Operators::to_string(state.Minv_right_type));
+
+
             }
             
             // Copy in all equality multipliers 
@@ -4734,6 +4753,15 @@ namespace peopt{
                     else if(*name=="xi_lmh") state.xi_lmh=*real;
                     else if(*name=="xi_lmg") state.xi_lmg=*real;
                     else if(*name=="xi_4") state.xi_4=*real;
+                }
+                
+                // Next, copy in any naturals
+                std::list <unsigned int>::iterator nat=nats.second.begin();
+                for(std::list <std::string>::iterator name=nats.first.begin();
+                    name!=nats.first.end();
+                    name++,nat++
+                ){
+                    if(*name=="augsys_iter_max") state.augsys_iter_max=*nat;
                 }
                 
                 // Next, copy in any parameters 

@@ -244,6 +244,9 @@ namespace peopt {
                 else
                     msg.error(base + Minv_left_type
                         + " is not a valid Minv_left_type");
+                
+                state.augsys_iter_max=Real(root["peopt"]
+                    .get("augsys_iter_max",state.augsys_iter_max).asInt());
             }
             static void read(
                 const peopt::Messaging& msg,
@@ -284,6 +287,7 @@ namespace peopt {
                     Operators::to_string(state.Minv_right_type);
                 root["peopt"]["Minv_left_type"]=
                     Operators::to_string(state.Minv_left_type);
+                root["peopt"]["augsys_iter_max"]=state.augsys_iter_max;
 
                 return writer.write(root);
             }
