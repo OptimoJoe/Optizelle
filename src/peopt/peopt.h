@@ -2106,34 +2106,43 @@ namespace peopt{
                 X_Vectors& xs
             ) {
 
-                for(std::list <std::string>::iterator name=xs.first.begin();
+                typename std::list <X_Vector>::iterator x
+                    =xs.second.begin();
+                for(typename std::list <std::string>::iterator name 
+                        =xs.first.begin();
                     name!=xs.first.end();
-                    name++
                 ) {
-                    // Since we're using a splice operation, we slowly empty
-                    // the variable list.  Hence, we always take the first
-                    // element.
-                    typename std::list <X_Vector>::iterator xx
-                        =xs.second.begin();
+                    // Make a copy of the current iterators.  We use these
+                    // to remove elements
+                    typename std::list <std::string>::iterator name0 = name;
+                    typename std::list <X_Vector>::iterator x0 = x;
 
-                    // Determine which xxiable we're reading in and then splice
+                    // Increment our primary iterators 
+                    name++; x++;
+
+                    // Determine which variable we're reading in and then splice
                     // it in the correct location
-                    if(*name=="x")
-                        state.x.splice(state.x.end(),xs.second,xx);
-                    else if(*name=="g")
-                        state.g.splice(state.g.end(),xs.second,xx);
-                    else if(*name=="dx")
-                        state.dx.splice(state.dx.end(),xs.second,xx); 
-                    else if(*name=="x_old")
-                        state.x_old.splice(state.x_old.end(),xs.second,xx);
-                    else if(*name=="g_old")
-                        state.g_old.splice(state.g_old.end(),xs.second,xx);
-                    else if(*name=="dx_old")
-                        state.dx_old.splice(state.dx_old.end(),xs.second,xx);
-                    else if(name->substr(0,5)=="oldY_")
-                        state.oldY.splice(state.oldY.end(),xs.second,xx);
-                    else if(name->substr(0,5)=="oldS_")
-                        state.oldS.splice(state.oldS.end(),xs.second,xx);
+                    if(*name0=="x")
+                        state.x.splice(state.x.end(),xs.second,x0);
+                    else if(*name0=="g")
+                        state.g.splice(state.g.end(),xs.second,x0);
+                    else if(*name0=="dx")
+                        state.dx.splice(state.dx.end(),xs.second,x0); 
+                    else if(*name0=="x_old")
+                        state.x_old.splice(state.x_old.end(),xs.second,x0);
+                    else if(*name0=="g_old")
+                        state.g_old.splice(state.g_old.end(),xs.second,x0);
+                    else if(*name0=="dx_old")
+                        state.dx_old.splice(state.dx_old.end(),xs.second,x0);
+                    else if(name0->substr(0,5)=="oldY_")
+                        state.oldY.splice(state.oldY.end(),xs.second,x0);
+                    else if(name0->substr(0,5)=="oldS_")
+                        state.oldS.splice(state.oldS.end(),xs.second,x0);
+
+                    // Remove the string corresponding to the element just
+                    // spliced if slicing occured.
+                    if(xs.first.size() != xs.second.size())
+                        xs.first.erase(name0);
                 }
             }
 
@@ -3240,7 +3249,6 @@ namespace peopt{
             ){
 
                 // Create shortcuts to some elements in the state
-                // Create some shortcuts
                 const AlgorithmClass::t& algorithm_class=state.algorithm_class;
                 const X_Vector& x=*(state.x.begin());
                 const X_Vector& g=*(state.g.begin());
@@ -4326,6 +4334,18 @@ namespace peopt{
                 // system
                 unsigned int augsys_iter_max;
 
+                // Normal step
+                std::list <X_Vector> dx_n;
+
+                // Tangential step
+                std::list <X_Vector> dx_t;
+                
+                // Cauchy point 
+                std::list <X_Vector> dx_tcp;
+                
+                // Tangential step after applying the nullspace projection 
+                std::list <X_Vector> dx_tnull;
+
                 // Initialization constructors
                 t() {
                     EqualityConstrained <Real,XX,YY>::State::init_params(*this);
@@ -4364,11 +4384,31 @@ namespace peopt{
 
             // This initializes all the variables required for equality
             // constrained optimization.  
-            static void init_vectors_(t& state, const Y_Vector& y) {
+            static void init_vectors_(
+                t& state,
+                const X_Vector& x,
+                const Y_Vector& y
+            ) {
                 state.y.clear();
                     state.y.push_back(Y_Vector());
                     Y::init(y,state.y.back());
                     Y::copy(y,state.y.back());
+                
+                state.dx_n.clear();
+                    state.dx_n.push_back(X_Vector());
+                    X::init(state.x.back(),state.dx_n.back());
+                
+                state.dx_t.clear();
+                    state.dx_t.push_back(X_Vector());
+                    X::init(state.x.back(),state.dx_t.back());
+                
+                state.dx_tcp.clear();
+                    state.dx_tcp.push_back(X_Vector());
+                    X::init(state.x.back(),state.dx_tcp.back());
+                
+                state.dx_tnull.clear();
+                    state.dx_tnull.push_back(X_Vector());
+                    X::init(state.x.back(),state.dx_tnull.back());
             }
             static void init_vectors(
                 t& state,
@@ -4376,7 +4416,8 @@ namespace peopt{
                 const Y_Vector& y
             ) {
                 Unconstrained <Real,XX>::State::init_vectors_(state,x); 
-                EqualityConstrained <Real,XX,YY>::State::init_vectors_(state,y);
+                EqualityConstrained <Real,XX,YY>::State
+                    ::init_vectors_(state,x,y);
             }
            
             // Initializes everything
@@ -4552,7 +4593,7 @@ namespace peopt{
             struct is_param : public std::unary_function<std::string, bool> {
                 bool operator () (const std::string& name) const {
                     if( typename Unconstrained <Real,XX>::Restart
-                        ::is_param()(name) ||
+                            ::is_param()(name) ||
                         name == "Minv_right_type" ||
                         name == "Minv_left_type" 
                     ) 
@@ -4566,7 +4607,11 @@ namespace peopt{
             struct is_x : public std::unary_function<std::string, bool> {
                 bool operator () (const std::string& name) const {
                     if( typename Unconstrained <Real,XX>::Restart
-                        ::is_x()(name)
+                            ::is_x()(name) ||
+                        name == "dx_n" ||
+                        name == "dx_t" ||
+                        name == "dx_tcp" ||
+                        name == "dx_tnull" 
                     ) 
                         return true;
                     else
@@ -4650,10 +4695,19 @@ namespace peopt{
             // Copy out all equality multipliers 
             static void stateToVectors(
                 typename State::t& state, 
+                X_Vectors& xs,
                 Y_Vectors& ys
             ) {
                 ys.first.push_back("y");
                 ys.second.splice(ys.second.end(),state.y);
+                xs.first.push_back("dx_n");
+                xs.second.splice(xs.second.end(),state.dx_n);
+                xs.first.push_back("dx_t");
+                xs.second.splice(xs.second.end(),state.dx_t);
+                xs.first.push_back("dx_tcp");
+                xs.second.splice(xs.second.end(),state.dx_tcp);
+                xs.first.push_back("dx_tnull");
+                xs.second.splice(xs.second.end(),state.dx_tnull);
             }
 
             // Copy out all the scalar information
@@ -4709,21 +4763,63 @@ namespace peopt{
             // Copy in all equality multipliers 
             static void vectorsToState(
                 typename State::t& state,
+                X_Vectors& xs,
                 Y_Vectors& ys
             ) {
-                for(std::list <std::string>::iterator name=ys.first.begin();
+                typename std::list <X_Vector>::iterator y
+                    =ys.second.begin();
+                for(typename std::list <std::string>::iterator name 
+                        =ys.first.begin();
                     name!=ys.first.end();
-                    name++
                 ) {
-                    // Since we're using a splice operation, we slowly empty
-                    // the multiplier list.  Hence, we always take the first
-                    // element.
-                    typename std::list <Y_Vector>::iterator yy
-                        =ys.second.begin();
+                    // Make a copy of the current iterators.  We use these
+                    // to remove elements
+                    typename std::list <std::string>::iterator name0 = name;
+                    typename std::list <Y_Vector>::iterator y0 = y;
+
+                    // Increment our primary iterators 
+                    name++; y++;
 
                     // Determine which variable we're reading in and then splice
                     // it in the correct location
-                    if(*name=="y") state.y.splice(state.y.end(),ys.second,yy);
+                    if(*name0=="y") state.y.splice(state.y.end(),ys.second,y0);
+                    
+                    // Remove the string corresponding to the element just
+                    // spliced if splicing occured.
+                    if(ys.first.size() != ys.second.size())
+                        ys.first.erase(name0);
+                }
+
+                typename std::list <X_Vector>::iterator x
+                    =xs.second.begin();
+                for(typename std::list <std::string>::iterator name 
+                        =xs.first.begin();
+                    name!=xs.first.end();
+                ) {
+                    // Make a copy of the current iterators.  We use these
+                    // to remove elements
+                    typename std::list <std::string>::iterator name0 = name;
+                    typename std::list <X_Vector>::iterator x0 = x;
+
+                    // Increment our primary iterators 
+                    name++; x++;
+
+                    // Determine which variable we're reading in and then splice
+                    // it in the correct location
+                    if(*name0=="dx_n")
+                        state.dx_n.splice(state.dx_n.end(),xs.second,x0);
+                    else if(*name0=="dx_t")
+                        state.dx_t.splice(state.dx_t.end(),xs.second,x0);
+                    else if(*name0=="dx_tcp")
+                        state.dx_tcp.splice(state.dx_tcp.end(),xs.second,x0);
+                    else if(*name0=="dx_tnull")
+                        state.dx_tnull.splice(
+                            state.dx_tnull.end(),xs.second,x0);
+
+                    // Remove the string corresponding to the element just
+                    // spliced if splicing occured.
+                    if(xs.first.size() != xs.second.size())
+                        xs.first.erase(name0);
                 }
             }
             
@@ -4789,7 +4885,7 @@ namespace peopt{
                 // Copy out all of the variable information
                 Unconstrained <Real,XX>::Restart::stateToVectors(state,xs);
                 EqualityConstrained <Real,XX,YY>
-                    ::Restart::stateToVectors(state,ys);
+                    ::Restart::stateToVectors(state,xs,ys);
             
                 // Copy out all of the scalar information
                 Unconstrained <Real,XX>
@@ -4818,7 +4914,7 @@ namespace peopt{
                 // Copy in the variables 
                 Unconstrained <Real,XX>::Restart::vectorsToState(state,xs);
                 EqualityConstrained <Real,XX,YY>
-                    ::Restart::vectorsToState(state,ys);
+                    ::Restart::vectorsToState(state,xs,ys);
                 
                 // Copy in all of the scalar information
                 Unconstrained <Real,XX>
@@ -4933,7 +5029,133 @@ namespace peopt{
         
         // This contains the different algorithms used for optimization 
         struct Algorithms {
+#if 0
+            void AW_orthogonalize(
+                const std::list <X_Vector>& vs,
+                const std::list <X_Vector>& Wvs,
+                const std::list <X_Vector>& AWvs,
+                X_Vector& x,
+                X_Vector& Wx,
+                X_Vector& AWx
+            ) {
+                // Orthogonalize the vectors
+                for(typename std::list <X_Vector>::const_iterator
+                        v=vs.begin(),
+                        Wv=Wvs.begin(),
+                        AWv=AWvs.begin();
+                    v!=vs.end();
+                    v++,Wv++,AWv++
+                ) {
+                    Real beta=X::innr(*AWv,Wx);
+                    X::axpy(Real(-1.)*beta,*v,x);
+                    X::axpy(Real(-1.)*beta,*Wv,Wx);
+                    X::axpy(Real(-1.)*beta,*AWv,AWx);
+                }
+            }
 
+            // Computes the truncated, projected conjugate direction algorithm 
+            // in order to solve Ax=b where we restrict x to be in the
+            // range of W.
+            static void truncatedProjectedCD(
+                const Messaging& msg,
+                const StateManipulator <Unconstrained <Real,XX> >& smanip,
+                const typename Functions::t& fns,
+                typename State::t& state
+            ){
+
+                // Create shortcuts to some elements in the state
+                const AlgorithmClass::t& algorithm_class=state.algorithm_class;
+                const X_Vector& x=*(state.x.begin());
+                const X_Vector& g=*(state.g.begin());
+                const Real& delta=state.delta;
+                const Real& eps=state.eps_krylov;
+                const unsigned int& iter_max=state.krylov_iter_max;
+                X_Vector& s_k=*(state.dx.begin());
+                unsigned int& iter=state.krylov_iter;
+                unsigned int& iter_total=state.krylov_iter_total;
+                KrylovStop::t& krylov_stop=state.krylov_stop;
+                Real& rel_err=state.krylov_rel_err;
+
+                // Create shortcuts to the functions that we need
+                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
+                const Operator <Real,XX,XX>& Minv=*(fns.Minv);
+
+                // Create some type shortcuts
+                typedef XX <Real> X;
+                typedef typename X::Vector X_Vector;
+
+                // Allocate memory for the search direction, its projection, and the
+                // the operator applied to the projection
+                X_Vector p; X::init(x,p);
+                X_Vector Wp; X::init(x,Wp);
+                X_Vector AWp; X::init(x,AWp);
+
+                // Allocate memory for the previous search directions
+                std::list <X_Vector> ps;
+                std::list <X_Vector> Wps;
+                std::list <X_Vector> AWps;
+
+                // Allocate memory for and find the initial residual, A*x-b
+                X_Vector r; X::init(x,r);
+                A(x,r);
+                X::axpy(Real(-1.),b,r);
+
+                // Find the norm of the residual and save the original residual
+                Real norm_r = sqrt(X::innr(r,r));
+                Real norm_r0 = norm_r;
+
+                // Loop until the maximum iteration
+                int iter;
+                for(iter=1;iter<=iter_max;iter++){
+                
+                    // If the norm of the residual is small relative to the starting
+                    // residual, exit
+                    if(norm_r < eps*norm_r0) break;
+
+                    // Find the steepest descent search direction
+                    X::copy(r,p);
+                    X::scal(Real(-1.),p);	
+
+                    // Find the Wp and AWp applications 
+                    W(p,Wp);
+                    A(Wp,AWp);
+
+                    // Orthogonalize this direction to the previous directions
+                    AW_orthogonalize <Real,XX> (ps,Wps,AWps,p,Wp,AWp); 
+
+                    // Store the previous directions
+                    Real innr_Wp_AWp = X::innr(Wp,AWp);
+                    Real one_over_sqrt_innr_Wp_AWp = Real(1.)/sqrt(innr_Wp_AWp);
+
+                    ps.push_back(X_Vector()); X::init(x,ps.back());
+                    X::copy(p,ps.back());
+                    X::scal(one_over_sqrt_innr_Wp_AWp,ps.back());
+                    
+                    Wps.push_back(X_Vector()); X::init(x,Wps.back());
+                    X::copy(Wp,Wps.back());
+                    X::scal(one_over_sqrt_innr_Wp_AWp,Wps.back());
+                    
+                    AWps.push_back(X_Vector()); X::init(x,AWps.back());
+                    X::copy(AWp,AWps.back());
+                    X::scal(one_over_sqrt_innr_Wp_AWp,AWps.back());
+
+                    // Do an exact linesearch in the computed direction
+                    Real alpha = -X::innr(r,Wp) / innr_Wp_AWp;
+
+                    // Take a step in this direction
+                    X::axpy(alpha,p,x);
+
+                    // Find the new residual
+                    X::axpy(alpha,AWp,r);
+
+                    // Compute the norm of the residual
+                    norm_r=sqrt(X::innr(r,r));
+                }
+
+                // Return the norm of the residual and the iteration number we completed at
+                return std::pair <Real,unsigned int> (norm_r,iter);
+            }
+#endif
         };
     };
         
@@ -5274,22 +5496,31 @@ namespace peopt{
                 typename State::t& state,
                 Z_Vectors& zs
             ) {
-                for(std::list <std::string>::iterator name=zs.first.begin();
+                typename std::list <X_Vector>::iterator z
+                    =zs.second.begin();
+                for(typename std::list <std::string>::iterator name 
+                        =zs.first.begin();
                     name!=zs.first.end();
-                    name++
                 ) {
-                    // Since we're using a splice operation, we slowly empty
-                    // the multiplier list.  Hence, we always take the first
-                    // element.
-                    typename std::list <Z_Vector>::iterator zz
-                        =zs.second.begin();
+                    // Make a copy of the current iterators.  We use these
+                    // to remove elements
+                    typename std::list <std::string>::iterator name0 = name;
+                    typename std::list <Z_Vector>::iterator z0 = z;
+
+                    // Increment our primary iterators 
+                    name++; z++;
 
                     // Determine which variable we're reading in and then splice
                     // it in the correct location
-                    if(*name=="z")
-                        state.z.splice(state.z.end(),zs.second,zz);
-                    else if(*name=="h_x")
-                        state.h_x.splice(state.h_x.end(),zs.second,zz);
+                    if(*name0=="z")
+                        state.z.splice(state.z.end(),zs.second,z0);
+                    else if(*name0=="h_x")
+                        state.h_x.splice(state.h_x.end(),zs.second,z0);
+
+                    // Remove the string corresponding to the element just
+                    // spliced if slicing occured.
+                    if(zs.first.size() != zs.second.size())
+                        zs.first.erase(name0);
                 }
             }
             
@@ -6141,7 +6372,8 @@ namespace peopt{
                 const Z_Vector& z
             ) {
                 Unconstrained <Real,XX>::State::init_vectors_(state,x); 
-                EqualityConstrained <Real,XX,YY>::State::init_vectors_(state,y);
+                EqualityConstrained <Real,XX,YY>::State
+                    ::init_vectors_(state,x,y);
                 InequalityConstrained <Real,XX,ZZ>::State
                     ::init_vectors_(state,x,z); 
             }
@@ -6321,7 +6553,7 @@ namespace peopt{
                 // Copy out all of the variable information
                 Unconstrained <Real,XX>::Restart::stateToVectors(state,xs);
                 EqualityConstrained <Real,XX,YY>
-                    ::Restart::stateToVectors(state,ys);
+                    ::Restart::stateToVectors(state,xs,ys);
                 InequalityConstrained <Real,XX,ZZ>
                     ::Restart::stateToVectors(state,zs);
             
@@ -6355,7 +6587,7 @@ namespace peopt{
                 // Copy in the variables 
                 Unconstrained <Real,XX>::Restart::vectorsToState(state,xs);
                 EqualityConstrained <Real,XX,YY>
-                    ::Restart::vectorsToState(state,ys);
+                    ::Restart::vectorsToState(state,xs,ys);
                 InequalityConstrained <Real,XX,ZZ>
                     ::Restart::vectorsToState(state,zs);
                 
