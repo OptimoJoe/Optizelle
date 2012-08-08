@@ -603,6 +603,166 @@ BOOST_AUTO_TEST_CASE(tpcd_nullspace_solve) {
     BOOST_CHECK(err > 1e-4);
 }
 
+BOOST_AUTO_TEST_CASE(tpcd_starting_solution) {
+    // Create a type shortcut
+    typedef peopt::Rm <double> X;
+    typedef X::Vector X_Vector;
+
+    // Set the size of the problem
+    unsigned int m = 5;
+
+    // Set the stopping tolerance
+    double eps_krylov = 1e-12;
+
+    // Set the maximum number of iterations
+    unsigned int iter_max = 200;
+
+    // Set the trust-reregion radius 
+    double delta = 100.;
+
+    // Create some operator 
+    BasicOperator <double> A(m);
+    for(int j=1;j<=m;j++)
+        for(int i=1;i<=m;i++) {
+            unsigned I = j+(i-1)*m;
+            unsigned J = i+(j-1)*m;
+            if(i>j) {
+                A.A[I-1]=cos(pow(I,m-1));
+                A.A[J-1]=A.A[I-1];
+            } else if(i==j)
+                A.A[I-1]=cos(pow(I,m-1))+10;
+        }
+    
+    // Create some right hand side
+    std::vector <double> b(m);
+    for(unsigned int i=1;i<=m;i++) b[i-1] = cos(i+25); 
+    
+    // Create some empty null-space projection 
+    IdentityOperator <double> W;
+    
+    // Create an initial guess at the solution
+    std::vector <double> x(m);
+    for(int i=1;i<=m;i++) x[i-1]=1.;
+
+    // Create a vector for the Cauchy point
+    std::vector <double> x_cp(m);
+
+    // Solve this linear system
+    std::pair <double,unsigned int> err_iter
+        = peopt::truncated_pcd <double,peopt::Rm>
+            (A,b,W,eps_krylov,iter_max,delta,x,x_cp);
+
+    // Check the error is less than our tolerance 
+    BOOST_CHECK(err_iter.first < eps_krylov);
+
+    // Check that we ran to the maximum number of iterations
+    BOOST_CHECK(err_iter.second == m);
+    
+    // Check the relative error between the true solution and that
+    // returned from TPCG 
+    std::vector <double> x_star(5);
+    x_star[0] = 0.062210523692158425;
+    x_star[1] = -0.027548098303754341;
+    x_star[2] = -0.11729291808469694;
+    x_star[3] = -0.080812473373141375;
+    x_star[4] = 0.032637688404329734;
+    std::vector <double> residual = x_star;
+    peopt::Rm <double>::axpy(-1,x,residual);
+    double err=std::sqrt(peopt::Rm <double>::innr(residual,residual))
+        /(1+sqrt(peopt::Rm <double>::innr(x_star,x_star)));
+    BOOST_CHECK(err < 1e-14);
+
+    // Check that the returned solution is different than the Cauchy point
+    peopt::Rm <double>::copy(x_cp,residual);
+    peopt::Rm <double>::axpy(-1,x,residual);
+    err=std::sqrt(peopt::Rm <double>::innr(residual,residual))
+        /(1+sqrt(peopt::Rm <double>::innr(x_cp,x_cp)));
+    BOOST_CHECK(err > 1e-4);
+}
+
+BOOST_AUTO_TEST_CASE(tpcd_optimal_starting_solution) {
+    // Create a type shortcut
+    typedef peopt::Rm <double> X;
+    typedef X::Vector X_Vector;
+
+    // Set the size of the problem
+    unsigned int m = 5;
+
+    // Set the stopping tolerance
+    double eps_krylov = 1e-12;
+
+    // Set the maximum number of iterations
+    unsigned int iter_max = 200;
+
+    // Set the trust-reregion radius 
+    double delta = 100.;
+
+    // Create some operator 
+    BasicOperator <double> A(m);
+    for(int j=1;j<=m;j++)
+        for(int i=1;i<=m;i++) {
+            unsigned I = j+(i-1)*m;
+            unsigned J = i+(j-1)*m;
+            if(i>j) {
+                A.A[I-1]=cos(pow(I,m-1));
+                A.A[J-1]=A.A[I-1];
+            } else if(i==j)
+                A.A[I-1]=cos(pow(I,m-1))+10;
+        }
+    
+    // Create some right hand side
+    std::vector <double> b(m);
+    for(unsigned int i=1;i<=m;i++) b[i-1] = cos(i+25); 
+    
+    // Create some empty null-space projection 
+    IdentityOperator <double> W;
+    
+    // Create an initial guess at the solution
+    std::vector <double> x(m);
+    x[0] = 0.062210523692158425;
+    x[1] = -0.027548098303754341;
+    x[2] = -0.11729291808469694;
+    x[3] = -0.080812473373141375;
+    x[4] = 0.032637688404329734;
+
+    // Create a vector for the Cauchy point
+    std::vector <double> x_cp(m);
+
+    // Solve this linear system
+    std::pair <double,unsigned int> err_iter
+        = peopt::truncated_pcd <double,peopt::Rm>
+            (A,b,W,eps_krylov,iter_max,delta,x,x_cp);
+
+    // Check the error is less than our tolerance 
+    BOOST_CHECK(err_iter.first < eps_krylov);
+
+    // This one is tricky.  Ideally, we shouldn't do any work, but since
+    // we only check for relative improvement in the residual, we'll actually
+    // do full iterations since the residual isn't going to drop.
+    BOOST_CHECK(err_iter.second == m);
+    
+    // Check the relative error between the true solution and that
+    // returned from TPCG 
+    std::vector <double> x_star(5);
+    x_star[0] = 0.062210523692158425;
+    x_star[1] = -0.027548098303754341;
+    x_star[2] = -0.11729291808469694;
+    x_star[3] = -0.080812473373141375;
+    x_star[4] = 0.032637688404329734;
+    std::vector <double> residual = x_star;
+    peopt::Rm <double>::axpy(-1,x,residual);
+    double err=std::sqrt(peopt::Rm <double>::innr(residual,residual))
+        /(1+sqrt(peopt::Rm <double>::innr(x_star,x_star)));
+    BOOST_CHECK(err < 1e-14);
+
+    // Check that the returned solution and the Cauchy point are the same
+    residual = x_cp;
+    peopt::Rm <double>::axpy(-1,x,residual);
+    err=std::sqrt(peopt::Rm <double>::innr(residual,residual))
+        /(1+sqrt(peopt::Rm <double>::innr(x_cp,x_cp)));
+    BOOST_CHECK(err < 1e-14);
+}
+
 
 
 
