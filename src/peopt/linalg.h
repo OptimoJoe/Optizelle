@@ -404,8 +404,7 @@ namespace peopt {
         typename Real,
         template <typename> class XX
     >
-    class GMRESManipulator {
-    public:
+    struct GMRESManipulator {
         // Application
         virtual void operator () (
             const typename XX <Real>::Vector& b,

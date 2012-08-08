@@ -4336,11 +4336,14 @@ namespace peopt{
 
                 // Normal step
                 std::list <X_Vector> dx_n;
+                
+                // Cauchy point for normal step
+                std::list <X_Vector> dx_ncp;
 
                 // Tangential step
                 std::list <X_Vector> dx_t;
                 
-                // Cauchy point 
+                // Cauchy point for tangential step
                 std::list <X_Vector> dx_tcp;
                 
                 // Tangential step after applying the nullspace projection 
@@ -4397,6 +4400,10 @@ namespace peopt{
                 state.dx_n.clear();
                     state.dx_n.push_back(X_Vector());
                     X::init(state.x.back(),state.dx_n.back());
+                
+                state.dx_ncp.clear();
+                    state.dx_ncp.push_back(X_Vector());
+                    X::init(state.x.back(),state.dx_ncp.back());
                 
                 state.dx_t.clear();
                     state.dx_t.push_back(X_Vector());
@@ -4609,6 +4616,7 @@ namespace peopt{
                     if( typename Unconstrained <Real,XX>::Restart
                             ::is_x()(name) ||
                         name == "dx_n" ||
+                        name == "dx_ncp" ||
                         name == "dx_t" ||
                         name == "dx_tcp" ||
                         name == "dx_tnull" 
@@ -4702,6 +4710,8 @@ namespace peopt{
                 ys.second.splice(ys.second.end(),state.y);
                 xs.first.push_back("dx_n");
                 xs.second.splice(xs.second.end(),state.dx_n);
+                xs.first.push_back("dx_ncp");
+                xs.second.splice(xs.second.end(),state.dx_ncp);
                 xs.first.push_back("dx_t");
                 xs.second.splice(xs.second.end(),state.dx_t);
                 xs.first.push_back("dx_tcp");
@@ -4808,6 +4818,8 @@ namespace peopt{
                     // it in the correct location
                     if(*name0=="dx_n")
                         state.dx_n.splice(state.dx_n.end(),xs.second,x0);
+                    else if(*name0=="dx_ncp")
+                        state.dx_ncp.splice(state.dx_ncp.end(),xs.second,x0);
                     else if(*name0=="dx_t")
                         state.dx_t.splice(state.dx_t.end(),xs.second,x0);
                     else if(*name0=="dx_tcp")
@@ -5029,133 +5041,43 @@ namespace peopt{
         
         // This contains the different algorithms used for optimization 
         struct Algorithms {
-#if 0
-            void AW_orthogonalize(
-                const std::list <X_Vector>& vs,
-                const std::list <X_Vector>& Wvs,
-                const std::list <X_Vector>& AWvs,
-                X_Vector& x,
-                X_Vector& Wx,
-                X_Vector& AWx
-            ) {
-                // Orthogonalize the vectors
-                for(typename std::list <X_Vector>::const_iterator
-                        v=vs.begin(),
-                        Wv=Wvs.begin(),
-                        AWv=AWvs.begin();
-                    v!=vs.end();
-                    v++,Wv++,AWv++
-                ) {
-                    Real beta=X::innr(*AWv,Wx);
-                    X::axpy(Real(-1.)*beta,*v,x);
-                    X::axpy(Real(-1.)*beta,*Wv,Wx);
-                    X::axpy(Real(-1.)*beta,*AWv,AWx);
+            // Sets the tolerances for the quasi-norm Newton solve
+            struct QNManipulator : GMRESManipulator <Real,XXxYY> {
+            private:
+                const typename State::t& state;
+                const typename Functions::t& fns;
+            public:
+                QNManipulator(
+                    const typename State::t& state_,
+                    const typename Functions::t& fns_
+                ) : state(state_), fns(fns_) {}
+                void operator () (
+                    const typename XX <Real>::Vector& bb,
+                    const typename XX <Real>::Vector& xx,
+                    Real& eps
+                ) const {
+                    // Create some shortcuts
+                    const X_Vector& x=state.x;
+                    const Y_Vector& y=state.y;
+                    const X_Vector& dx_ncp=state.dx_ncp;
+                    const Real& xi_qn = state.xi_qn;
+
+
+                    // Evaluate g'(x)dx_ncp + g(x)
+                    Y_Vector gp_x_dxncp;  Y::init(y,gp_x_dxncp);
+                    (*fns.g).p(x,dx_ncp,gp_x_dxncp);
+
+                    Y_Vector gp_p_g; Y::init(y,gp_p_g);
+                    (*fns.g)(x,gp_p_g);
+                    Y::axpy(Real(1.),gp_x_dxncp,gp_p_g);
+
+                    // Find || g'(x)dx_ncp + g(x) ||
+                    Real norm_gp_p_g = sqrt(Y::innr(gp_p_g,gp_p_g));
+
+                    // Return xi_qn * || g'(x)dx_ncp + g(x) ||
+                    eps = xi_qn * norm_gp_p_g;
                 }
-            }
-
-            // Computes the truncated, projected conjugate direction algorithm 
-            // in order to solve Ax=b where we restrict x to be in the
-            // range of W.
-            static void truncatedProjectedCD(
-                const Messaging& msg,
-                const StateManipulator <Unconstrained <Real,XX> >& smanip,
-                const typename Functions::t& fns,
-                typename State::t& state
-            ){
-
-                // Create shortcuts to some elements in the state
-                const AlgorithmClass::t& algorithm_class=state.algorithm_class;
-                const X_Vector& x=*(state.x.begin());
-                const X_Vector& g=*(state.g.begin());
-                const Real& delta=state.delta;
-                const Real& eps=state.eps_krylov;
-                const unsigned int& iter_max=state.krylov_iter_max;
-                X_Vector& s_k=*(state.dx.begin());
-                unsigned int& iter=state.krylov_iter;
-                unsigned int& iter_total=state.krylov_iter_total;
-                KrylovStop::t& krylov_stop=state.krylov_stop;
-                Real& rel_err=state.krylov_rel_err;
-
-                // Create shortcuts to the functions that we need
-                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
-                const Operator <Real,XX,XX>& Minv=*(fns.Minv);
-
-                // Create some type shortcuts
-                typedef XX <Real> X;
-                typedef typename X::Vector X_Vector;
-
-                // Allocate memory for the search direction, its projection, and the
-                // the operator applied to the projection
-                X_Vector p; X::init(x,p);
-                X_Vector Wp; X::init(x,Wp);
-                X_Vector AWp; X::init(x,AWp);
-
-                // Allocate memory for the previous search directions
-                std::list <X_Vector> ps;
-                std::list <X_Vector> Wps;
-                std::list <X_Vector> AWps;
-
-                // Allocate memory for and find the initial residual, A*x-b
-                X_Vector r; X::init(x,r);
-                A(x,r);
-                X::axpy(Real(-1.),b,r);
-
-                // Find the norm of the residual and save the original residual
-                Real norm_r = sqrt(X::innr(r,r));
-                Real norm_r0 = norm_r;
-
-                // Loop until the maximum iteration
-                int iter;
-                for(iter=1;iter<=iter_max;iter++){
-                
-                    // If the norm of the residual is small relative to the starting
-                    // residual, exit
-                    if(norm_r < eps*norm_r0) break;
-
-                    // Find the steepest descent search direction
-                    X::copy(r,p);
-                    X::scal(Real(-1.),p);	
-
-                    // Find the Wp and AWp applications 
-                    W(p,Wp);
-                    A(Wp,AWp);
-
-                    // Orthogonalize this direction to the previous directions
-                    AW_orthogonalize <Real,XX> (ps,Wps,AWps,p,Wp,AWp); 
-
-                    // Store the previous directions
-                    Real innr_Wp_AWp = X::innr(Wp,AWp);
-                    Real one_over_sqrt_innr_Wp_AWp = Real(1.)/sqrt(innr_Wp_AWp);
-
-                    ps.push_back(X_Vector()); X::init(x,ps.back());
-                    X::copy(p,ps.back());
-                    X::scal(one_over_sqrt_innr_Wp_AWp,ps.back());
-                    
-                    Wps.push_back(X_Vector()); X::init(x,Wps.back());
-                    X::copy(Wp,Wps.back());
-                    X::scal(one_over_sqrt_innr_Wp_AWp,Wps.back());
-                    
-                    AWps.push_back(X_Vector()); X::init(x,AWps.back());
-                    X::copy(AWp,AWps.back());
-                    X::scal(one_over_sqrt_innr_Wp_AWp,AWps.back());
-
-                    // Do an exact linesearch in the computed direction
-                    Real alpha = -X::innr(r,Wp) / innr_Wp_AWp;
-
-                    // Take a step in this direction
-                    X::axpy(alpha,p,x);
-
-                    // Find the new residual
-                    X::axpy(alpha,AWp,r);
-
-                    // Compute the norm of the residual
-                    norm_r=sqrt(X::innr(r,r));
-                }
-
-                // Return the norm of the residual and the iteration number we completed at
-                return std::pair <Real,unsigned int> (norm_r,iter);
-            }
-#endif
+            };
         };
     };
         

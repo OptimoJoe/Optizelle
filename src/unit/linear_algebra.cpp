@@ -763,7 +763,4 @@ BOOST_AUTO_TEST_CASE(tpcd_optimal_starting_solution) {
     BOOST_CHECK(err < 1e-14);
 }
 
-
-
-
 BOOST_AUTO_TEST_SUITE_END()
