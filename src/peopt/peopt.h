@@ -5143,16 +5143,15 @@ namespace peopt{
                 ) const {
                     // Create some shortcuts
                     const X_Vector& x=state.x;
-                    const Y_Vector& y=state.y;
                     const Y_Vector& g_x=state.g_x;
                     const X_Vector& dx_ncp=state.dx_ncp;
                     const Real& xi_qn = state.xi_qn;
 
                     // Evaluate g'(x)dx_ncp + g(x)
-                    Y_Vector gp_x_dxncp;  Y::init(y,gp_x_dxncp);
+                    Y_Vector gp_x_dxncp;  Y::init(g_x,gp_x_dxncp);
                     fns.g->p(x,dx_ncp,gp_x_dxncp);
 
-                    Y_Vector gp_p_g; Y::init(y,gp_p_g);
+                    Y_Vector gp_p_g; Y::init(g_x,gp_p_g);
                     Y::copy(g_x,gp_p_g);
                     Y::axpy(Real(1.),gp_x_dxncp,gp_p_g);
 
@@ -5225,7 +5224,7 @@ namespace peopt{
                 Y::scal(Real(-1.),b0.second);
                 Y::axpy(Real(-1.),g_x,b0.second);
 
-                // Build a Schur style preconditioners
+                // Build Schur style preconditioners
                 BlockDiagonalPreconditioner Minv_l (
                     Unconstrained <Real,XX>::Functions::Identity(),
                     *(fns.Minv_left));
@@ -5269,6 +5268,189 @@ namespace peopt{
                 X::copy(dx_ncp,dx_n);
                 X::axpy(theta,dx_dnewton,dx_n);
             }
+            
+            // Sets the tolerances for projecting the gradient onto the
+            // nullspace of g'(x).
+            struct NullspaceProjForGradientManipulator
+                : GMRESManipulator <Real,XXxYY> {
+            private:
+                const typename State::t& state;
+                const typename Functions::t& fns;
+            public:
+                NullspaceProjForGradientManipulator(
+                    const typename State::t& state_,
+                    const typename Functions::t& fns_
+                ) : state(state_), fns(fns_) {}
+                void operator () (
+                    const typename XX <Real>::Vector& bb,
+                    const typename XX <Real>::Vector& xx,
+                    Real& eps
+                ) const {
+                    // Create some shortcuts
+                    const Real& xi_pg = state.xi_pg;
+                    const Real& delta = state.delta;
+
+                    // Find || xx_1 || = || Wg || 
+                    Real norm_Wg = sqrt(X::innr(xx.first,xx.first));
+
+                    // Find || bb_1 || = || g ||
+                    Real norm_g = sqrt(X::innr(bb.first,bb.first));
+
+                    // The bound is xi_pg min( || Wg ||, delta, || g || )
+                    Real min = norm_Wg < delta ? norm_Wg : delta;
+                    min = min < norm_g ? min : norm_g;
+                    return xi_pg*min; 
+                }
+            };
+            
+            // Projects the gradient onto the nullspace of g'(x) 
+            class NullspaceProjForGradient: public Operator <Real,XX,XX> {
+            private:
+                const typename State::t& state;
+                const typename Functions::t& fns;
+            public:
+                NullspaceProjForGradient(
+                    const typename State::t& state_,
+                    const typename Functions::t& fns_
+                ) : state(state_), fns(fns_) {}
+               
+                // Project dx=g into the nullspace of g'(x)
+                void operator () (
+                    const X_Vector& dx,
+                    X_Vector& result
+                ) const{
+                    // Create some shortcuts
+                    const Y_Vector& y=state.y;
+                    const unsigned int augsys_iter_max=state.augsys_iter_max;
+                    const unsigned int augsys_rst_freq=state.augsys_rst_freq;
+                    X_Vector& g=dx;
+
+                    // Create the initial guess, x0=(0,0)
+                    XxY_Vector x0; X::init(g,x0.first); Y::init(y,x0.second);
+                    XxY::zero(x0);
+
+                    // Create the rhs, b0=(g,0)
+                    XxY_Vector b0; XxY::init(x0,b0);
+                    X::copy(g,b0.first);
+                    Y::zero(b0.second);
+                
+                    // Build Schur style preconditioners
+                    BlockDiagonalPreconditioner Minv_l (
+                        Unconstrained <Real,XX>::Functions::Identity(),
+                        *(fns.Minv_left));
+                    BlockDiagonalPreconditioner Minv_r (
+                        Unconstrained <Real,XX>::Functions::Identity(),
+                        *(fns.Minv_right));
+
+                    // Solve the augmented system for the nullspace projection 
+                    peopt::gmres <Real,XXxYY> (
+                        AugmentedSystem(state,fns),
+                        b0,
+                        Real(1.), // This will be overwritten by the manipulator
+                        augsys_iter_max,
+                        augsys_rst_freq,
+                        Minv_l,
+                        Minv_r,
+                        NullspaceProjForGradientMainpulator(state,fns),
+                        x0 
+                    );
+
+                    // Copy out the solution
+                    X::copy(x0.first,result);
+                }
+            };
+            
+            // Sets the tolerances for the nullspace projector that projects
+            // the current direction in the projected conjugate direction
+            // algorithm.
+            struct NullspaceProjForDirManipulator
+                : GMRESManipulator <Real,XXxYY> {
+            private:
+                const typename State::t& state;
+                const typename Functions::t& fns;
+            public:
+                NullspaceProjForDirManipulator (
+                    const typename State::t& state_,
+                    const typename Functions::t& fns_
+                ) : state(state_), fns(fns_) {}
+                void operator () (
+                    const typename XX <Real>::Vector& bb,
+                    const typename XX <Real>::Vector& xx,
+                    Real& eps
+                ) const {
+                    // Create some shortcuts
+                    const Real& xi_proj = state.xi_proj;
+
+                    // Find || xx_1 || = || Wp || 
+                    Real norm_Wp = sqrt(X::innr(xx.first,xx.first));
+
+                    // Find || bb_1 || = || p ||
+                    Real norm_p = sqrt(X::innr(bb.first,bb.first));
+
+                    // The bound is xi_proj min( || Wp ||, || p || )
+                    Real min = norm_Wp < norm_p ? norm_Wp : norm_p;
+                    return xi_proj*min; 
+                }
+            };
+            
+            // Nullspace projector that projects the current direction in the
+            // projected conjugate direction algorithm.
+            class NullspaceProjForDir: public Operator <Real,XX,XX> {
+            private:
+                const typename State::t& state;
+                const typename Functions::t& fns;
+            public:
+                NullspaceProjForDir(
+                    const typename State::t& state_,
+                    const typename Functions::t& fns_
+                ) : state(state_), fns(fns_) {}
+               
+                // Project dx into the nullspace of g'(x)
+                void operator () (
+                    const X_Vector& dx,
+                    X_Vector& result
+                ) const{
+                    // Create some shortcuts
+                    const Y_Vector& y=state.y;
+                    const unsigned int augsys_iter_max=state.augsys_iter_max;
+                    const unsigned int augsys_rst_freq=state.augsys_rst_freq;
+                    X_Vector& p=dx;
+
+                    // Create the initial guess, x0=(0,0)
+                    XxY_Vector x0; X::init(p,x0.first); Y::init(y,x0.second);
+                    XxY::zero(x0);
+
+                    // Create the rhs, b0=(p,0)
+                    XxY_Vector b0; XxY::init(x0,b0);
+                    X::copy(p,b0.first);
+                    Y::zero(b0.second);
+                
+                    // Build Schur style preconditioners
+                    BlockDiagonalPreconditioner Minv_l (
+                        Unconstrained <Real,XX>::Functions::Identity(),
+                        *(fns.Minv_left));
+                    BlockDiagonalPreconditioner Minv_r (
+                        Unconstrained <Real,XX>::Functions::Identity(),
+                        *(fns.Minv_right));
+
+                    // Solve the augmented system for the nullspace projection 
+                    peopt::gmres <Real,XXxYY> (
+                        AugmentedSystem(state,fns),
+                        b0,
+                        Real(1.), // This will be overwritten by the manipulator
+                        augsys_iter_max,
+                        augsys_rst_freq,
+                        Minv_l,
+                        Minv_r,
+                        NullspaceProjForDirMainpulator(state,fns),
+                        x0 
+                    );
+
+                    // Copy out the solution
+                    X::copy(x0.first,result);
+                }
+            };
+
         };
     };
         
