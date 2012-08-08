@@ -477,7 +477,8 @@ namespace peopt {
 
         // Allocate memory for the R matrix in the QR factorization of H where
         // A V = V H + e_m' w_m
-        // Note, this size is restricted to be no larger than the restart frequency
+        // Note, this size is restricted to be no larger than the restart
+        // frequency
         std::vector <Real> R(rst_freq*(rst_freq+1)/2);
 
         // Allocate memory for the normalized Krylov vector
@@ -552,7 +553,8 @@ namespace peopt {
 
             // Apply the existing Givens rotations to the new column of R
             int j=1;
-            for(typename std::list <std::pair<Real,Real> >::iterator Qt=Qts.begin();
+            for(typename std::list <std::pair<Real,Real> >::iterator
+                    Qt=Qts.begin();
                 Qt!=Qts.end();
                 Qt++
             ) { 
@@ -563,15 +565,16 @@ namespace peopt {
 
             // Form the new Givens rotation
             Qts.push_back(std::pair <Real,Real> ());
-            rotg <Real> (R[(i-1)+i*(i-1)/2],norm_w,Qts.back().first,Qts.back().second);
+            rotg <Real> (R[(i-1)+i*(i-1)/2],norm_w,
+                Qts.back().first,Qts.back().second);
 
-            // Apply this new Givens rotation to the last element of R and norm(w).
-            // This fixes our system R.
+            // Apply this new Givens rotation to the last element of R and 
+            // norm(w).  This fixes our system R.
             rot <Real> (1,&(R[(i-1)+i*(i-1)/2]),1,&(norm_w),1,
                 Qts.back().first,Qts.back().second);
 
-            // Apply the new givens rotation to the RHS.  This also determines the new norm
-            // of the preconditioned residual.
+            // Apply the new givens rotation to the RHS.  This also determines
+            // the new norm of the preconditioned residual.
             rot <Real> (1,&(Qt_e1[i-1]),1,&(Qt_e1[i]),1,
                 Qts.back().first,Qts.back().second);
             norm_r = fabs(Qt_e1[i]);
@@ -616,8 +619,8 @@ namespace peopt {
         // Adjust the iteration number if we ran out of iterations
         iter = iter > iter_max ? iter_max : iter;
 
-        // As long as we didn't just solve for our new ierate, go ahead and solve
-        // for it now.
+        // As long as we didn't just solve for our new ierate, go ahead and
+        // solve for it now.
         if(i > 0){ 
             solveInKrylov <Real,XX> (i,&(R[0]),&(Qt_e1[0]),vs,Mr_inv,x,dx);
             X::axpy(Real(1.),dx,x);
@@ -625,6 +628,203 @@ namespace peopt {
 
         // Return the norm and the residual
         return std::pair <Real,unsigned int> (norm_rtrue,iter);
+    }
+
+    // A B orthogonalizes a vector x to a list of other xs.  
+    template <
+        typename Real,
+        template <typename> class XX
+    >
+    void ABorthogonalize(
+        const std::list <typename XX <Real>::Vector>& vs,
+        const std::list <typename XX <Real>::Vector>& Bvs,
+        const std::list <typename XX <Real>::Vector>& ABvs,
+        typename XX <Real>::Vector& x,
+        typename XX <Real>::Vector& Bx,
+        typename XX <Real>::Vector& ABx
+    ) {
+        // Create some type shortcuts
+        typedef XX <Real> X;
+        typedef typename X::Vector X_Vector;
+
+        // Orthogonalize the vectors
+        int i=0;
+        for(typename std::list <X_Vector>::const_iterator
+                v=vs.begin(),
+                Bv=Bvs.begin(),
+                ABv=ABvs.begin();
+            v!=vs.end();
+            v++,Bv++,ABv++
+        ) {
+            Real beta=X::innr(*ABv,Bx);
+            X::axpy(Real(-1.)*beta,*v,x);
+            X::axpy(Real(-1.)*beta,*Bv,Bx);
+            X::axpy(Real(-1.)*beta,*ABv,ABx);
+        }
+    }
+
+    // Computes the truncated projected conjugate direction algorithm in order
+    // to solve Ax=b where we restrict x to be in the range of B and that
+    // || x || <= delta.  The parameters are as follows.
+    // 
+    // (input) A : Operator in the system A B x = b
+    // (input) b : Right hand side in the system A B x = b
+    // (input) B : Projection in the system A B x = b
+    // (input) eps : Stopping tolerance
+    // (input) iter_max :  Maximum number of iterations
+    // (input) delta : Trust region radius
+    // (input/output) x : Initial guess and final solution x.  We assume that
+    //     the initial guess satisfies norm(x) <= delta.
+    // (output) x_cp : The Cauchy-Point, which is defined as the solution x
+    //     after a single iteration.
+    template <
+        typename Real,
+        template <typename> class XX
+    >
+    std::pair <Real,int> truncated_pcd(
+        const Operator <Real,XX,XX>& A,
+        const typename XX <Real>::Vector& b,
+        const Operator <Real,XX,XX>& B,
+        const Real eps,
+        const unsigned int iter_max,
+        const Real delta,
+        typename XX <Real>::Vector& x,
+        typename XX <Real>::Vector& x_cp
+    ){
+
+        // Create some type shortcuts
+        typedef XX <Real> X;
+        typedef typename X::Vector X_Vector;
+
+        // Allocate memory for the search direction, its projection, and the
+        // the operator applied to the projection
+        X_Vector p; X::init(x,p);
+        X_Vector Bp; X::init(x,Bp);
+        X_Vector ABp; X::init(x,ABp);
+
+        // Allocate memory for the previous search directions
+        std::list <X_Vector> ps;
+        std::list <X_Vector> Bps;
+        std::list <X_Vector> ABps;
+
+        // Allocate memory for and find the initial residual, A*x-b
+        X_Vector r; X::init(x,r);
+        A(x,r);
+        X::axpy(Real(-1.),b,r);
+
+        // Find the norm of the residual and save the original residual
+        Real norm_r = sqrt(X::innr(r,r));
+        Real norm_r0 = norm_r;
+
+        // Find the norm of x
+        Real norm_x = sqrt(X::innr(x,x));
+
+        // Loop until the maximum iteration
+        int iter;
+        for(iter=1;iter<=iter_max;iter++){
+        
+            // If the norm of the residual is small relative to the starting
+            // residual, exit
+            if(norm_r < eps*norm_r0) {
+                iter--;
+                break;
+            }
+
+            // Find the steepest descent search direction
+            X::copy(r,p);
+            X::scal(Real(-1.),p);	
+
+            // Find the Bp and ABp applications 
+            B(p,Bp);
+            A(Bp,ABp);
+
+            // Orthogonalize this direction to the previous directions
+            ABorthogonalize <Real,XX> (ps,Bps,ABps,p,Bp,ABp); 
+
+            // Check if this direction is a descent direction.  If it is not,
+            // flip it so that it is.
+            if(X::innr(Bp,r) >=0) {
+                X::scal(Real(-1.),p);
+                X::scal(Real(-1.),Bp);
+                X::scal(Real(-1.),ABp);
+            }
+
+            // Store the previous directions
+            Real innr_Bp_ABp = X::innr(Bp,ABp);
+            Real one_over_sqrt_innr_Bp_ABp = Real(1.)/sqrt(innr_Bp_ABp);
+
+            ps.push_back(X_Vector()); X::init(x,ps.back());
+            X::copy(p,ps.back());
+            X::scal(one_over_sqrt_innr_Bp_ABp,ps.back());
+            
+            Bps.push_back(X_Vector()); X::init(x,Bps.back());
+            X::copy(Bp,Bps.back());
+            X::scal(one_over_sqrt_innr_Bp_ABp,Bps.back());
+            
+            ABps.push_back(X_Vector()); X::init(x,ABps.back());
+            X::copy(ABp,ABps.back());
+            X::scal(one_over_sqrt_innr_Bp_ABp,ABps.back());
+
+            // Do an exact linesearch in the computed direction
+            Real alpha = -X::innr(r,Bp) / innr_Bp_ABp;
+
+            // Find the norm at the trial step
+            Real innr_p_x = X::innr(p,x);
+            Real innr_p_p = X::innr(p,p);
+            Real norm_xpap = sqrt(norm_x*norm_x + Real(2.)*alpha*innr_p_x
+                + alpha*alpha*innr_p_p);
+
+            // If we have negative curvature or our trial point is outside the
+            // trust-region radius, terminate truncated-PCD and find our final
+            // step.  We have the <Bp,ABp> != <Bp,ABp> check in order to trap
+            // NaNs.
+            if( innr_Bp_ABp <= Real(0.) ||
+                norm_xpap >= delta ||
+                innr_Bp_ABp != innr_Bp_ABp 
+            ) {
+                // Find sigma so that || x + sigma p || = delta.  This can be
+                // found by finding the positive root of the quadratic
+                // || x + sigma p ||^2 = delta^2.  Specifically, we want the
+                // positive root of
+                // sigma^2<p,p> + sigma(2 <p,x>) + (<x,x>-delta^2).
+                Real aa = innr_p_p;
+                Real bb = Real(2.)*innr_p_x; 
+                Real cc = norm_x*norm_x-delta*delta;
+                Real sigma = (-bb + sqrt(bb*bb-Real(4.)*aa*cc))/(2*aa);
+
+                // Take the step, find its residual, and compute the 
+                // residual's norm
+                X::axpy(sigma,p,x);
+                X::axpy(sigma,ABp,r);
+                norm_r=sqrt(X::innr(r,r));
+
+                // If this is the first iteration, save the Cauchy-Point
+                if(iter==1) X::copy(x,x_cp);
+                break;
+            }
+
+            // Take a step in this direction
+            X::axpy(alpha,p,x);
+
+            // If this is the first iteration, save the Cauchy-Point
+            if(iter==1) X::copy(x,x_cp);
+
+            // Update the norm of x
+            norm_x = norm_xpap;
+
+            // Find the new residual
+            X::axpy(alpha,ABp,r);
+
+            // Compute the norm of the residual
+            norm_r=sqrt(X::innr(r,r));
+        }
+
+        // Adjust the iteration number if we ran out of iterations
+        iter = iter > iter_max ? iter_max : iter;
+
+        // Return the norm of the residual and the iteration number we
+        // completed at
+        return std::pair <Real,unsigned int> (norm_r,iter);
     }
 }
 

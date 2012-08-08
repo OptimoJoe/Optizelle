@@ -77,7 +77,7 @@ BOOST_AUTO_TEST_CASE(gmres_full) {
     for(int i=1;i<=m*m;i++)
         A.A[i-1]=cos(pow(i,m-1));
     
-    // Create someright hand side
+    // Create some right hand side
     std::vector <double> b(m);
     for(unsigned int i=1;i<=m;i++) b[i-1] = cos(i+25); 
     
@@ -147,7 +147,7 @@ BOOST_AUTO_TEST_CASE(gmres_left_preconditioner) {
     A.A[2+2*m]=3.;
     A.A[4+4*m]=4.;
     
-    // Create someright hand side with ones in the places that correspond
+    // Create some right hand side with ones in the places that correspond
     // to the operator above.  In this case, we have them at 1, 3, and 5.
     std::vector <double> b(m);
     for(unsigned int i=0;i<m;i++) b[i] = 0.;
@@ -222,7 +222,7 @@ BOOST_AUTO_TEST_CASE(gmres_right_preconditioner) {
     A.A[2+2*m]=3.;
     A.A[4+4*m]=4.;
     
-    // Create someright hand side with ones in the places that correspond
+    // Create some right hand side with ones in the places that correspond
     // to the operator above.  In this case, we have them at 1, 3, and 5.
     std::vector <double> b(m);
     for(unsigned int i=0;i<m;i++) b[i] = 0.;
@@ -295,7 +295,7 @@ BOOST_AUTO_TEST_CASE(gmres_restart) {
     for(int i=1;i<=m*m;i++)
         A.A[i-1]=cos(pow(i,2));
     
-    // Create someright hand side
+    // Create some right hand side
     std::vector <double> b(m);
     for(unsigned int i=1;i<=m;i++) b[i-1] = cos(i+25); 
     
@@ -322,6 +322,287 @@ BOOST_AUTO_TEST_CASE(gmres_restart) {
     // Check that we ran to the maximum number of iterations
     BOOST_CHECK(err_iter.second == 242);
 }
+
+BOOST_AUTO_TEST_CASE(tpcd_basic_solve) {
+    // Create a type shortcut
+    typedef peopt::Rm <double> X;
+    typedef X::Vector X_Vector;
+
+    // Set the size of the problem
+    unsigned int m = 5;
+
+    // Set the stopping tolerance
+    double eps_krylov = 1e-12;
+
+    // Set the maximum number of iterations
+    unsigned int iter_max = 200;
+
+    // Set the trust-reregion radius 
+    double delta = 100.;
+
+    // Create some operator 
+    BasicOperator <double> A(m);
+    for(int j=1;j<=m;j++)
+        for(int i=1;i<=m;i++) {
+            unsigned I = j+(i-1)*m;
+            unsigned J = i+(j-1)*m;
+            if(i>j) {
+                A.A[I-1]=cos(pow(I,m-1));
+                A.A[J-1]=A.A[I-1];
+            } else if(i==j)
+                A.A[I-1]=cos(pow(I,m-1))+10;
+        }
+    
+    // Create some right hand side
+    std::vector <double> b(m);
+    for(unsigned int i=1;i<=m;i++) b[i-1] = cos(i+25); 
+    
+    // Create some empty null-space projection 
+    IdentityOperator <double> W;
+    
+    // Create an initial guess at the solution
+    std::vector <double> x(m);
+    X::zero (x);
+
+    // Create a vector for the Cauchy point
+    std::vector <double> x_cp(m);
+
+    // Solve this linear system
+    std::pair <double,unsigned int> err_iter
+        = peopt::truncated_pcd <double,peopt::Rm>
+            (A,b,W,eps_krylov,iter_max,delta,x,x_cp);
+
+    // Check the error is less than our tolerance 
+    BOOST_CHECK(err_iter.first < eps_krylov);
+
+    // Check that we ran to the maximum number of iterations
+    BOOST_CHECK(err_iter.second == m);
+    
+    // Check the relative error between the true solution and that
+    // returned from TPCG 
+    std::vector <double> x_star(5);
+    x_star[0] = 0.062210523692158425;
+    x_star[1] = -0.027548098303754341;
+    x_star[2] = -0.11729291808469694;
+    x_star[3] = -0.080812473373141375;
+    x_star[4] = 0.032637688404329734;
+    std::vector <double> residual = x_star;
+    peopt::Rm <double>::axpy(-1,x,residual);
+    double err=std::sqrt(peopt::Rm <double>::innr(residual,residual))
+        /(1+sqrt(peopt::Rm <double>::innr(x_star,x_star)));
+    BOOST_CHECK(err < 1e-14);
+
+    // Check that the returned solution is different than the Cauchy point
+    peopt::Rm <double>::copy(x_cp,residual);
+    peopt::Rm <double>::axpy(-1,x,residual);
+    err=std::sqrt(peopt::Rm <double>::innr(residual,residual))
+        /(1+sqrt(peopt::Rm <double>::innr(x_cp,x_cp)));
+    BOOST_CHECK(err > 1e-4);
+}
+
+BOOST_AUTO_TEST_CASE(tpcd_tr_stopping) {
+    // Create a type shortcut
+    typedef peopt::Rm <double> X;
+    typedef X::Vector X_Vector;
+
+    // Set the size of the problem
+    unsigned int m = 5;
+
+    // Set the stopping tolerance
+    double eps_krylov = 1e-12;
+
+    // Set the maximum number of iterations
+    unsigned int iter_max = 200;
+
+    // Set the trust-reregion radius 
+    double delta = 0.1;
+
+    // Create some operator 
+    BasicOperator <double> A(m);
+    for(int j=1;j<=m;j++)
+        for(int i=1;i<=m;i++) {
+            unsigned I = j+(i-1)*m;
+            unsigned J = i+(j-1)*m;
+            if(i>j) {
+                A.A[I-1]=cos(pow(I,m-1));
+                A.A[J-1]=A.A[I-1];
+            } else if(i==j)
+                A.A[I-1]=cos(pow(I,m-1))+10;
+        }
+    
+    // Create some right hand side
+    std::vector <double> b(m);
+    for(unsigned int i=1;i<=m;i++) b[i-1] = cos(i+25); 
+    
+    // Create some empty null-space projection 
+    IdentityOperator <double> W;
+    
+    // Create an initial guess at the solution
+    std::vector <double> x(m);
+    X::zero (x);
+
+    // Create a vector for the Cauchy point
+    std::vector <double> x_cp(m);
+
+    // Solve this linear system
+    std::pair <double,unsigned int> err_iter
+        = peopt::truncated_pcd <double,peopt::Rm>
+            (A,b,W,eps_krylov,iter_max,delta,x,x_cp);
+
+    // Check that the size of x is just the trust-region radius
+    double norm_x = sqrt(X::innr(x,x));
+    BOOST_CHECK_CLOSE(norm_x,delta,1e-8);
+}
+
+BOOST_AUTO_TEST_CASE(tpcd_cp) {
+    // Create a type shortcut
+    typedef peopt::Rm <double> X;
+    typedef X::Vector X_Vector;
+
+    // Set the size of the problem
+    unsigned int m = 5;
+
+    // Set the stopping tolerance
+    double eps_krylov = 1e-12;
+
+    // Set the maximum number of iterations
+    unsigned int iter_max = 1;
+
+    // Set the trust-reregion radius 
+    double delta = 100.;
+
+    // Create some operator 
+    BasicOperator <double> A(m);
+    for(int j=1;j<=m;j++)
+        for(int i=1;i<=m;i++) {
+            unsigned I = j+(i-1)*m;
+            unsigned J = i+(j-1)*m;
+            if(i>j) {
+                A.A[I-1]=cos(pow(I,m-1));
+                A.A[J-1]=A.A[I-1];
+            } else if(i==j)
+                A.A[I-1]=cos(pow(I,m-1))+10;
+        }
+    
+    // Create some right hand side
+    std::vector <double> b(m);
+    for(unsigned int i=1;i<=m;i++) b[i-1] = cos(i+25); 
+    
+    // Create some empty null-space projection 
+    IdentityOperator <double> W;
+    
+    // Create an initial guess at the solution
+    std::vector <double> x(m);
+    X::zero (x);
+
+    // Create a vector for the Cauchy point
+    std::vector <double> x_cp(m);
+
+    // Solve this linear system
+    std::pair <double,unsigned int> err_iter
+        = peopt::truncated_pcd <double,peopt::Rm>
+            (A,b,W,eps_krylov,iter_max,delta,x,x_cp);
+
+    // Check that we ran to the maximum number of iterations
+    BOOST_CHECK(err_iter.second == 1);
+    
+    // Check that the returned solution and the Cauchy point are the same
+    std::vector <double> residual = x_cp;
+    peopt::Rm <double>::axpy(-1,x,residual);
+    double err=std::sqrt(peopt::Rm <double>::innr(residual,residual))
+        /(1+sqrt(peopt::Rm <double>::innr(x_cp,x_cp)));
+    BOOST_CHECK(err < 1e-14);
+}
+
+BOOST_AUTO_TEST_CASE(tpcd_nullspace_solve) {
+    // Create a type shortcut
+    typedef peopt::Rm <double> X;
+    typedef X::Vector X_Vector;
+
+    // Set the size of the problem
+    unsigned int m = 5;
+
+    // Set the stopping tolerance
+    double eps_krylov = 1e-12;
+
+    // Set the maximum number of iterations
+    unsigned int iter_max = 200;
+
+    // Set the trust-reregion radius 
+    double delta = 100.;
+
+    // Create some operator 
+    BasicOperator <double> A(m);
+    for(int j=1;j<=m;j++)
+        for(int i=1;i<=m;i++) {
+            unsigned I = j+(i-1)*m;
+            unsigned J = i+(j-1)*m;
+            if(i>j) {
+                A.A[I-1]=cos(pow(I,m-1));
+                A.A[J-1]=A.A[I-1];
+            } else if(i==j)
+                A.A[I-1]=cos(pow(I,m-1))+10;
+        }
+    
+    // Create a simple nullspace projector.  This projects out the first
+    // two elements
+    BasicOperator <double> W(m);
+    for(int j=1;j<=m;j++)
+        for(int i=1;i<=m;i++) {
+            unsigned I = j+(i-1)*m;
+            W.A[I-1]=(i==j && i<=2) ? 1. : 0.;
+        }
+
+    
+    // Create some right hand side.  Make sure that this is in the range
+    // of A*W.
+    std::vector <double> b(m);
+    for(unsigned int i=1;i<=m;i++) b[i-1] = A.A[i-1]+A.A[i-1+m];
+    
+    // Create an initial guess at the solution
+    std::vector <double> x(m);
+    X::zero (x);
+
+    // Create a vector for the Cauchy point
+    std::vector <double> x_cp(m);
+
+    // Solve this linear system
+    std::pair <double,unsigned int> err_iter
+        = peopt::truncated_pcd <double,peopt::Rm>
+            (A,b,W,eps_krylov,iter_max,delta,x,x_cp);
+
+    // Check the error is less than our tolerance 
+    BOOST_CHECK(err_iter.first < eps_krylov);
+
+    // Check that we completed in two iterations.  This is due to the
+    // nullspace projection
+    BOOST_CHECK(err_iter.second == 2);
+    
+    // Check the relative error between the true solution and that
+    // returned from TPCG.  Technically, these may not match exactly,
+    // but Wx should equal x_star.
+    std::vector <double> x_star(5);
+    x_star[0] = 1.0; 
+    x_star[1] = 1.0; 
+    x_star[2] = 0.0;
+    x_star[3] = 0.0;
+    x_star[4] = 0.0;
+    std::vector <double> residual = x_star;
+    std::vector <double> Wx(m);
+    W(x,Wx);
+    peopt::Rm <double>::axpy(-1,Wx,residual);
+    double err=std::sqrt(peopt::Rm <double>::innr(residual,residual))
+        /(1+sqrt(peopt::Rm <double>::innr(x_star,x_star)));
+    BOOST_CHECK(err < 1e-14);
+
+    // Check that the returned solution is different than the Cauchy point
+    peopt::Rm <double>::copy(x_cp,residual);
+    peopt::Rm <double>::axpy(-1,x,residual);
+    err=std::sqrt(peopt::Rm <double>::innr(residual,residual))
+        /(1+sqrt(peopt::Rm <double>::innr(x_cp,x_cp)));
+    BOOST_CHECK(err > 1e-4);
+}
+
 
 
 
