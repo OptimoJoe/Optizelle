@@ -2337,7 +2337,7 @@ namespace peopt{
                 const std::list<X_Vector>& oldY;
                 const std::list<X_Vector>& oldS;
 
-                // Messaging device in case the qusi-Newton information is bad
+                // Messaging device in case the quasi-Newton information is bad
                 const Messaging& msg;
             public:
                 BFGS(
@@ -2509,7 +2509,7 @@ namespace peopt{
                 const std::list<X_Vector>& oldY;
                 const std::list<X_Vector>& oldS;
 
-                // Messaging device in case the qusi-Newton information is bad
+                // Messaging device in case the quasi-Newton information is bad
                 const Messaging& msg;
             public:
                 SR1(
@@ -2663,7 +2663,7 @@ namespace peopt{
                 const std::list<X_Vector>& oldY;
                 const std::list<X_Vector>& oldS;
 
-                // Messaging device in case the qusi-Newton information is bad
+                // Messaging device in case the quasi-Newton information is bad
                 const Messaging& msg;
             public:
                 InvBFGS(
@@ -4334,6 +4334,12 @@ namespace peopt{
                 // system
                 unsigned int augsys_iter_max;
 
+                // How often we restart the augmented system solve
+                unsigned int augsys_rst_freq;
+                
+                // Equality constraint evaluated at x 
+                std::list <Y_Vector> g_x;
+
                 // Normal step
                 std::list <X_Vector> dx_n;
                 
@@ -4379,6 +4385,7 @@ namespace peopt{
                 state.Minv_left_type=Operators::Identity;
                 state.Minv_right_type=Operators::Identity;
                 state.augsys_iter_max = 100;
+                state.augsys_rst_freq = 0;
             }
             static void init_params(t& state) {
                 Unconstrained <Real,XX>::State::init_params_(state); 
@@ -4397,25 +4404,29 @@ namespace peopt{
                     Y::init(y,state.y.back());
                     Y::copy(y,state.y.back());
                 
+                state.g_x.clear();
+                    state.g_x.push_back(Y_Vector());
+                    Y::init(y,state.g_x.back());
+                
                 state.dx_n.clear();
                     state.dx_n.push_back(X_Vector());
-                    X::init(state.x.back(),state.dx_n.back());
+                    X::init(x,state.dx_n.back());
                 
                 state.dx_ncp.clear();
                     state.dx_ncp.push_back(X_Vector());
-                    X::init(state.x.back(),state.dx_ncp.back());
+                    X::init(x,state.dx_ncp.back());
                 
                 state.dx_t.clear();
                     state.dx_t.push_back(X_Vector());
-                    X::init(state.x.back(),state.dx_t.back());
+                    X::init(x,state.dx_t.back());
                 
                 state.dx_tcp.clear();
                     state.dx_tcp.push_back(X_Vector());
-                    X::init(state.x.back(),state.dx_tcp.back());
+                    X::init(x,state.dx_tcp.back());
                 
                 state.dx_tnull.clear();
                     state.dx_tnull.push_back(X_Vector());
-                    X::init(state.x.back(),state.dx_tnull.back());
+                    X::init(x,state.dx_tnull.back());
             }
             static void init_vectors(
                 t& state,
@@ -4588,7 +4599,8 @@ namespace peopt{
                 bool operator () (const std::string& name) const {
                     if( typename Unconstrained <Real,XX>::Restart
                         ::is_nat()(name) ||
-                        name == "augsys_iter_max"
+                        name == "augsys_iter_max" ||
+                        name == "augsys_rst_freq"
                     )
                         return true;
                     else
@@ -4630,7 +4642,9 @@ namespace peopt{
             // Checks whether we have a valid equality multiplier label
             struct is_y : public std::unary_function<std::string, bool> {
                 bool operator () (const std::string& name) const {
-                    if( name == "y") 
+                    if( name == "y" ||
+                        name == "g_x"
+                    ) 
                         return true;
                     else
                         return false;
@@ -4708,6 +4722,8 @@ namespace peopt{
             ) {
                 ys.first.push_back("y");
                 ys.second.splice(ys.second.end(),state.y);
+                ys.first.push_back("g_x");
+                ys.second.splice(ys.second.end(),state.g_x);
                 xs.first.push_back("dx_n");
                 xs.second.splice(xs.second.end(),state.dx_n);
                 xs.first.push_back("dx_ncp");
@@ -4758,6 +4774,8 @@ namespace peopt{
                 // Copy in all the natural numbers
                 nats.first.push_back("augsys_iter_max");
                 nats.second.push_back(state.augsys_iter_max);
+                nats.first.push_back("augsys_rst_freq");
+                nats.second.push_back(state.augsys_rst_freq);
 
                 // Copy in all the parameters
                 params.first.push_back("Minv_left_type");
@@ -4792,7 +4810,10 @@ namespace peopt{
 
                     // Determine which variable we're reading in and then splice
                     // it in the correct location
-                    if(*name0=="y") state.y.splice(state.y.end(),ys.second,y0);
+                    if(*name0=="y")
+                        state.y.splice(state.y.end(),ys.second,y0);
+                    else if(*name0=="g_x")
+                        state.g_x.splice(state.g_x.end(),ys.second,y0);
                     
                     // Remove the string corresponding to the element just
                     // spliced if splicing occured.
@@ -4824,7 +4845,7 @@ namespace peopt{
                         state.dx_t.splice(state.dx_t.end(),xs.second,x0);
                     else if(*name0=="dx_tcp")
                         state.dx_tcp.splice(state.dx_tcp.end(),xs.second,x0);
-                    else if(*name0=="dx_tnull")
+                        else if(*name0=="dx_tnull")
                         state.dx_tnull.splice(
                             state.dx_tnull.end(),xs.second,x0);
 
@@ -4870,6 +4891,7 @@ namespace peopt{
                     name++,nat++
                 ){
                     if(*name=="augsys_iter_max") state.augsys_iter_max=*nat;
+                    else if(*name=="augsys_rst_freq")state.augsys_rst_freq=*nat;
                 }
                 
                 // Next, copy in any parameters 
@@ -5041,7 +5063,70 @@ namespace peopt{
         
         // This contains the different algorithms used for optimization 
         struct Algorithms {
-            // Sets the tolerances for the quasi-norm Newton solve
+            // The operator for the augmented system,
+            //
+            // [ I      g'(x)* ]
+            // [ g'(x)  0      ]
+            //
+            class AugmentedSystem: public Operator <Real,XXxYY,XXxYY> {
+            private:
+                const typename State::t& state;
+                const typename Functions::t& fns;
+            public:
+                AugmentedSystem(
+                    const typename State::t& state_,
+                    const typename Functions::t& fns_
+                ) : state(state_), fns(fns_) {}
+                
+                // Operator interface
+                void operator () (
+                    const XxY_Vector& dx_dy,
+                    XxY_Vector& result
+                ) const{
+                    // Create some shortcuts
+                    const X_Vector& x=state.x;
+
+                    // g'(x)* dy
+                    fns.g->ps(x,dx_dy.second,result.first);
+
+                    // dx + g'(x)* dy 
+                    XxY::axpy(Real(1.),dx_dy.first,result.first);
+
+                    // g'(x)* dx
+                    fns.g->p(x,dx_dy.first,result.second);
+                }
+            };
+            
+            // The block diagonal preconditioner 
+            //
+            // [ Mx^{-1}    0       ]
+            // [ 0          My^{-1} ]
+            //
+            class BlockDiagonalPreconditioner:
+                public Operator <Real,XXxYY,XXxYY> {
+            private:
+                const Operator <Real,XX,XX>& Minv_x;
+                const Operator <Real,YY,YY>& Minv_y;
+            public:
+                BlockDiagonalPreconditioner(
+                    const Operator <Real,XX,XX>& Minv_x_,
+                    const Operator <Real,YY,YY>& Minv_y_ 
+                ) : Minv_x(Minv_x_), Minv_y(Minv_y_) {}
+                
+                // Operator interface
+                void operator () (
+                    const XxY_Vector& dx_dy,
+                    XxY_Vector& result
+                ) const{
+                    // Minv_x dx
+                    Minv_x(dx_dy.first,result.first);
+                    
+                    // Minv_y dy
+                    Minv_y(dx_dy.first,result.second);
+                }
+            };
+
+            // Sets the tolerances for the quasi-normal Newton solve
             struct QNManipulator : GMRESManipulator <Real,XXxYY> {
             private:
                 const typename State::t& state;
@@ -5059,16 +5144,16 @@ namespace peopt{
                     // Create some shortcuts
                     const X_Vector& x=state.x;
                     const Y_Vector& y=state.y;
+                    const Y_Vector& g_x=state.g_x;
                     const X_Vector& dx_ncp=state.dx_ncp;
                     const Real& xi_qn = state.xi_qn;
 
-
                     // Evaluate g'(x)dx_ncp + g(x)
                     Y_Vector gp_x_dxncp;  Y::init(y,gp_x_dxncp);
-                    (*fns.g).p(x,dx_ncp,gp_x_dxncp);
+                    fns.g->p(x,dx_ncp,gp_x_dxncp);
 
                     Y_Vector gp_p_g; Y::init(y,gp_p_g);
-                    (*fns.g)(x,gp_p_g);
+                    Y::copy(g_x,gp_p_g);
                     Y::axpy(Real(1.),gp_x_dxncp,gp_p_g);
 
                     // Find || g'(x)dx_ncp + g(x) ||
@@ -5078,6 +5163,112 @@ namespace peopt{
                     eps = xi_qn * norm_gp_p_g;
                 }
             };
+
+            // Finds the quasi-normal step
+            void quasinormalStep(
+                const Messaging& msg,
+                const StateManipulator <Unconstrained <Real,XX> >& smanip,
+                const typename Functions::t& fns,
+                typename State::t& state
+            ) {
+                // Create some shortcuts
+                const X_Vector& x=state.x;
+                const Y_Vector& g_x=state.g_x;
+                const unsigned int augsys_iter_max=state.augsys_iter_max;
+                const unsigned int augsys_rst_freq=state.augsys_rst_freq;
+                const Real& delta = state.delta;
+                const Real& zeta = state.zeta;
+                X_Vector& dx_ncp=state.dx_ncp;
+                X_Vector& dx_n=state.dx_n;
+
+
+                // Find the Cauchy point.
+
+                // Find g'(x)*g(x)
+                X_Vector gps_g; X::init(x,gps_g);
+                fns.g->ps(x,g_x,gps_g);
+
+                // Find g'(x)g'(x)*g(x)
+                Y_Vector gp_gps_g; Y::init(g_x,gp_gps_g);
+                fns.g->p(x,gps_g,gp_gps_g);
+
+                // Find || g'(x)*g(x) ||^2
+                Real norm_gpsg_2 = X::innr(gps_g,gps_g);
+
+                // Find || g'(x)g'(x)*g(x) ||^2
+                Real norm_gpgpsg_2 = X::innr(gp_gps_g,gp_gps_g);
+
+                // Find the Cauchy point,
+                // || g'(x)*g(x) ||^2/|| g'(x)g'(x)*g(x) ||^2 g'(x)*g(x)
+                X::copy(gps_g,dx_ncp);
+                X::scal(norm_gpsg_2/norm_gpgpsg_2,dx_ncp);
+
+                // If || dx_ncp || >= zeta delta, scale it back to zeta delta
+                // and return
+                Real norm_dxncp = sqrt(X::innr(dx_ncp,dx_ncp));
+                if(norm_dxncp >= zeta*delta) {
+                    X::scal(zeta*delta/norm_dxncp,dx_ncp);
+                    X::copy(dx_ncp,dx_n);
+                }
+
+                // Find the Newton step
+
+                // Create the initial guess, x0=(0,0)
+                XxY_Vector x0; X::init(x,x0.first); Y::init(g_x,x0.second);
+                XxY::zero(x0);
+
+                // Create the rhs, b0=(-dx_ncp,-g'(x)dx_ncp-g(x)) 
+                XxY_Vector b0; XxY::init(x0,b0);
+                X::copy(dx_ncp,b0.first);
+                X::scal(Real(-1.),b0.first);
+                fns.g->p(x,dx_ncp,b0.second);
+                Y::scal(Real(-1.),b0.second);
+                Y::axpy(Real(-1.),g_x,b0.second);
+
+                // Build a Schur style preconditioners
+                BlockDiagonalPreconditioner Minv_l (
+                    Unconstrained <Real,XX>::Functions::Identity(),
+                    *(fns.Minv_left));
+                BlockDiagonalPreconditioner Minv_r (
+                    Unconstrained <Real,XX>::Functions::Identity(),
+                    *(fns.Minv_right));
+
+                // Solve the augmented system for the Newton step
+                peopt::gmres <Real,XXxYY> (
+                    AugmentedSystem(state,fns),
+                    b0,
+                    Real(1.), // This will be overwritten by the manipulator
+                    augsys_iter_max,
+                    augsys_rst_freq,
+                    Minv_l,
+                    Minv_r,
+                    QNMainpulator(state,fns),
+                    x0 
+                );
+
+                // Find the Newton shift, dx_dnewton = dx_newton-dx_ncp
+                X_Vector& dx_dnewton = x0.first;
+
+                // Find the Newton step
+                X::copy(dx_ncp,dx_n);
+                X::axpy(Real(1.),dx_dnewton,dx_n);
+
+                // If the Newton step is smaller than zeta deta, then return
+                // it as the quasi-normal step
+                Real norm_dxnewton = sqrt(X::innr(dx_n,dx_n));
+                if(norm_dxnewton <= zeta*delta) return;
+
+                // Otherwise, compute the dogleg step.  In order to accomplish
+                // this, we need to find theta so that
+                // || dx_ncp + theta dx_dnewton || = zeta*delta
+                // and then set dx_n = dx_ncp + theta dx_dnewton.
+                Real aa = X::innr(dx_dnewton,dx_dnewton);
+                Real bb = Real(2.) * X::innr(dx_dnewton,dx_ncp);
+                Real cc = norm_dxncp*norm_dxncp - zeta*zeta*delta*delta; 
+                Real theta = (-bb + sqrt(bb*bb-Real(4.)*aa*cc))/(2*aa);
+                X::copy(dx_ncp,dx_n);
+                X::axpy(theta,dx_dnewton,dx_n);
+            }
         };
     };
         
