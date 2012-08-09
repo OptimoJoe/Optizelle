@@ -579,8 +579,7 @@ BOOST_AUTO_TEST_CASE(tpcd_nullspace_solve) {
     BOOST_CHECK(err_iter.second == 2);
     
     // Check the relative error between the true solution and that
-    // returned from TPCG.  Technically, these may not match exactly,
-    // but Wx should equal x_star.
+    // returned from TPCG. 
     std::vector <double> x_star(5);
     x_star[0] = 1.0; 
     x_star[1] = 1.0; 
@@ -588,9 +587,7 @@ BOOST_AUTO_TEST_CASE(tpcd_nullspace_solve) {
     x_star[3] = 0.0;
     x_star[4] = 0.0;
     std::vector <double> residual = x_star;
-    std::vector <double> Wx(m);
-    W(x,Wx);
-    peopt::Rm <double>::axpy(-1,Wx,residual);
+    peopt::Rm <double>::axpy(-1,x,residual);
     double err=std::sqrt(peopt::Rm <double>::innr(residual,residual))
         /(1+sqrt(peopt::Rm <double>::innr(x_star,x_star)));
     BOOST_CHECK(err < 1e-14);

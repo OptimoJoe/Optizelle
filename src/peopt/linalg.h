@@ -793,7 +793,7 @@ namespace peopt {
 
                 // Take the step, find its residual, and compute the 
                 // residual's norm
-                X::axpy(sigma,p,x);
+                X::axpy(sigma,Bp,x);
                 X::axpy(sigma,ABp,r);
                 norm_r=sqrt(X::innr(r,r));
 
@@ -803,7 +803,7 @@ namespace peopt {
             }
 
             // Take a step in this direction
-            X::axpy(alpha,p,x);
+            X::axpy(alpha,Bp,x);
 
             // If this is the first iteration, save the Cauchy-Point
             if(iter==1) X::copy(x,x_cp);

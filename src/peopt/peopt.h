@@ -5270,7 +5270,7 @@ namespace peopt{
             }
             
             // Sets the tolerances for projecting the gradient onto the
-            // nullspace of g'(x).
+            // nullspate of g'(x).
             struct NullspaceProjForGradientManipulator
                 : GMRESManipulator <Real,XXxYY> {
             private:
@@ -5450,7 +5450,23 @@ namespace peopt{
                     X::copy(x0.first,result);
                 }
             };
-
+            
+            // Solves the tangential subproblem 
+            void tangentialSubProblem(
+                const Messaging& msg,
+                const StateManipulator <Unconstrained <Real,XX> >& smanip,
+                const typename Functions::t& fns,
+                typename State::t& state
+            ) {
+                // Create some shortcuts
+                const X_Vector& x=state.x;
+                const Y_Vector& g_x=state.g_x;
+                const unsigned int augsys_iter_max=state.augsys_iter_max;
+                const unsigned int augsys_rst_freq=state.augsys_rst_freq;
+                const Real& delta = state.delta;
+                const Real& zeta = state.zeta;
+                const X_Vector& dx_n=state.dx_n;
+            }
         };
     };
         
