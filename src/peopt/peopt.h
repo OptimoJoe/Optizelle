@@ -5991,7 +5991,8 @@ namespace peopt{
                     X::axpy(-mu,ip3,g);
                 }
 
-                // H_dx = hess f(x) dx + h'(x)* inv(L(h(x))) (z o (h'(x) dx))
+                // H_dx = hess f(x) dx + h'(x)* (inv(L(h(x))) (z o h'(x) dx)
+                //                             + z o (inv L(h(x)) h'(x) dx))/2
                 // This adds on the interior point piece to the Hessian. 
                 virtual void hessvec(
                     const X_Vector& x,
@@ -6036,7 +6037,8 @@ namespace peopt{
                     //                    + z o (inv L(h(x)) h'(x) dx))/2
                     h->ps(x,z_tmp1,hess_mod);
 
-                    // H_dx = hess f(x) dx + h'(x)* inv(L(h(x))) (z o h'(x) dx) 
+                    // H_dx = hess f(x) dx + h'(x)* (inv(L(h(x))) (z o h'(x) dx)
+                    //                           + z o (inv L(h(x)) h'(x) dx))/2
                     X::axpy(Real(1.),hess_mod,H_dx);
                 }
             };
