@@ -4,7 +4,7 @@ MEXFILES = getProblemClass.$(MEXEXT)
 SUFFIXES = .$(MEXEXT)
 pkgdata_DATA = ${MEXFILES}
 .cpp.$(MEXEXT) : 
-	$(MEX) $(MEXOPTS) $(MEXFLAGS) -I.. $< -L../peopt -lpeopt \
+	$(MEX) $(MEXOPTS) $(MEXFLAGS) -I.. $< ../peopt/.libs/libpeopt.a \
             ${BLAS_LIBS} $(MEXLDADD)
 all: ${MEXFILES}
 mostlyclean-local:

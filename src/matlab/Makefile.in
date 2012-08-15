@@ -468,7 +468,7 @@ uninstall-am: uninstall-pkgdataDATA
 	pdf-am ps ps-am uninstall uninstall-am uninstall-pkgdataDATA
 
 .cpp.$(MEXEXT) : 
-	$(MEX) $(MEXOPTS) $(MEXFLAGS) -I.. $< -L../peopt -lpeopt \
+	$(MEX) $(MEXOPTS) $(MEXFLAGS) -I.. $< ../peopt/.libs/libpeopt.a \
             ${BLAS_LIBS} $(MEXLDADD)
 all: ${MEXFILES}
 mostlyclean-local:
