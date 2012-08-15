@@ -571,6 +571,60 @@ namespace peopt{
             }
         };
     };
+  
+    struct ProblemClass{
+        // Different problem classes that we allow 
+        enum t{
+            Unconstrained,         // Unconstrained optimization 
+            EqualityConstrained,   // Equality constrained optimization 
+            InequalityConstrained, // Inequality constrained optimization 
+            Constrained            // Fully constrained optimization 
+        };
+
+        // Converts the problem class to a string
+        static std::string to_string(t problem_class){
+            switch(problem_class){
+            case Unconstrained:
+                return "Unconstrained";
+            case EqualityConstrained:
+                return "EqualityConstrained";
+            case InequalityConstrained:
+                return "InequalityConstrained";
+            case Constrained:
+                return "Constrained";
+            default:
+                    throw;
+            }
+        }
+
+        // Converts a string to a problem class 
+        static t from_string(std::string problem_class){
+            if(problem_class=="Unconstrained")
+                return Unconstrained;
+            else if(problem_class=="EqualityConstrained")
+                return EqualityConstrained;
+            else if(problem_class=="InequalityConstrained")
+                return InequalityConstrained;
+            else if(problem_class=="Constrained")
+                return Constrained;
+            else
+                throw;
+        }
+
+        // Checks whether or not a string is valid
+        struct is_valid : public std::unary_function<std::string, bool> {
+            bool operator () (const std::string& name) const {
+                if( name=="Unconstrained" ||
+                    name=="EqualityConstrained" ||
+                    name=="InequalityConstrained" ||
+                    name=="Constrained" 
+                )
+                    return true;
+                else
+                    return false;
+            }
+        };
+    };
 
     // A collection of short routines that are only required locally
     namespace {
@@ -3071,6 +3125,20 @@ namespace peopt{
                 const unsigned int& linesearch_iter=state.linesearch_iter;
                 const AlgorithmClass::t& algorithm_class=state.algorithm_class;
                 const LineSearchDirection::t& dir=state.dir;
+                const unsigned int& rejected_trustregion
+                    =state.rejected_trustregion;
+
+                // Figure out if we're at the absolute beginning of the
+                // optimization.  We have to be a little saavy about this
+                // since we could be on the first iteration, but in the
+                // middle of a line-search or trust-region method and
+                // still want to output things
+                bool opt_begin = (iter==1) &&
+                    ((algorithm_class == AlgorithmClass::LineSearch && 
+                        linesearch_iter==0) ||
+                    (algorithm_class == AlgorithmClass::TrustRegion && 
+                        rejected_trustregion == 0));
+
 
                 // Get a iterator to the last element prior to inserting
                 // elements
@@ -3083,20 +3151,29 @@ namespace peopt{
                     out.push_back(atos <> ("*"));
                 out.push_back(atos <> (merit_x));
                 out.push_back(atos <> (norm_g));
-                out.push_back(atos <> (norm_s));
+                if(!opt_begin)
+                    out.push_back(atos <> (norm_s));
+                else
+                    out.push_back("          ");
 
                 // In case we're using a Krylov method
                 if(    algorithm_class==AlgorithmClass::TrustRegion
                     || dir==LineSearchDirection::NewtonCG
                 ){
-                    out.push_back(atos <> (krylov_iter));
-                    out.push_back(atos <> (krylov_rel_err));
-                    out.push_back(atos <> (krylov_stop));
+                    if(!opt_begin) {
+                        out.push_back(atos <> (krylov_iter));
+                        out.push_back(atos <> (krylov_rel_err));
+                        out.push_back(atos <> (krylov_stop));
+                    } else 
+                        for(int i=0;i<3;i++) out.push_back("          ");
                 }
 
                 // In case we're using a line-search method
                 if(algorithm_class==AlgorithmClass::LineSearch) {
-                    out.push_back(atos <> (linesearch_iter));
+                    if(!opt_begin)
+                        out.push_back(atos <> (linesearch_iter));
+                    else 
+                        out.push_back("          ");
                 }
 
                 // If we needed to do blank insertions, overwrite the elements

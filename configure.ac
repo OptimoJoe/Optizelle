@@ -3,6 +3,7 @@ AC_PREREQ(2.59)
 AC_INIT(peopt, 0.3.0, josyoun@sandia.gov)
 AC_CONFIG_AUX_DIR(build-aux)
 AM_INIT_AUTOMAKE(peopt, 0.3.0, josyoun@sandia.gov)
+AC_CONFIG_MACRO_DIR([m4])
 
 # Checks for programs.
 AC_PROG_CXX       # Needed for the primary program
@@ -123,10 +124,10 @@ then
     LIBS="$LIBS $JSONCPP_LIBS"
     AC_CACHE_CHECK(
         [whether the jsoncpp library is available],
-        [jsoncpp_lib],
+        [jsoncpp_cv_lib],
         [AC_LINK_IFELSE(
             [AC_LANG_PROGRAM([#include <json/json.h>],[Json::Value dummy])],
-            [jsoncpp_lib=yes],                                           
+            [jsoncpp_cv_lib=yes],                                           
             [AC_MSG_ERROR(
                 [jsoncpp support enabled, but the library could not be found])])
         ]
@@ -135,7 +136,7 @@ then
     LDFLAGS=$old_LDFLAGS
     LIBS=$old_LIBS 
 fi
-AM_CONDITIONAL(HAVE_JSONCPP,test "x$jsoncpp_lib" = "xyes")
+AM_CONDITIONAL(HAVE_JSONCPP,test "x$jsoncpp_cv_lib" = "xyes")
 AC_LANG_POP(C++)
 
 # Checks for the Boost libraries
@@ -150,9 +151,21 @@ if test "x${headers_only}" != "xyes"; then
 fi
 AM_CONDITIONAL(HAVE_BOOST,test "x$BOOST_UNIT_TEST_FRAMEWORK_LIB" != "x")
 
+# Checks for MATLAB 
+if test "x$headers_only" != "xyes"; then
+    m4_include([m4/matlab.m4])
+    m4_include([m4/mexopt.m4])
+    m4_include([m4/mex.m4])
+    m4_include([m4/mexext.m4])
+    AX_MATLAB()
+    AX_PATH_MEX()
+    AX_MEXEXT()
+fi
+
 AC_CONFIG_FILES([Makefile
                  src/peopt/Makefile
                  src/unit/Makefile
                  src/examples/rosenbrock/Makefile
-                 src/examples/rosenbrock_easy/Makefile])
+                 src/examples/rosenbrock_easy/Makefile
+                 src/matlab/Makefile])
 AC_OUTPUT
