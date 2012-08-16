@@ -155,5 +155,6 @@ AC_CONFIG_FILES([Makefile
                  src/peopt/Makefile
                  src/unit/Makefile
                  src/examples/rosenbrock/Makefile
-                 src/examples/rosenbrock_easy/Makefile])
+                 src/examples/rosenbrock_easy/Makefile
+                 src/examples/diagnostic_checks/Makefile])
 AC_OUTPUT

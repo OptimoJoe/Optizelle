@@ -51,7 +51,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 EXTRA_PROGRAMS = run$(EXEEXT)
-subdir = src/unit
+subdir = src/examples/diagnostic_checks
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/build-aux/depcomp
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -68,13 +68,9 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 mkinstalldirs = $(install_sh) -d
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-am_run_OBJECTS = derivative_check.$(OBJEXT) quadratic_cone.$(OBJEXT) \
-	sdp_cone.$(OBJEXT) capture_and_release.$(OBJEXT) \
-	linear_cone.$(OBJEXT) rosenbrock.$(OBJEXT) run.$(OBJEXT)
+am_run_OBJECTS = run.$(OBJEXT)
 run_OBJECTS = $(am_run_OBJECTS)
-am__DEPENDENCIES_1 =
-run_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
+run_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/build-aux/depcomp
 am__depfiles_maybe = depfiles
@@ -231,15 +227,9 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = gnu
 CLEANFILES = run 
-AM_CPPFLAGS = -I.. ${BOOST_CPPFLAGS}
+AM_CPPFLAGS = -I../..
 AM_CXXFLAGS = $(OPENMP_CXXFLAGS)
-run_SOURCES = derivative_check.cpp quadratic_cone.cpp sdp_cone.cpp \
-               capture_and_release.cpp linear_cone.cpp rosenbrock.cpp \
-               run.cpp
-
-run_LDADD = -L../peopt -lpeopt ${LAPACK_LIBS} ${BLAS_LIBS} \
-             ${BOOST_UNIT_TEST_FRAMEWORK_LIB}
-
+run_SOURCES = run.cpp
 all: all-am
 
 .SUFFIXES:
@@ -253,9 +243,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/unit/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/examples/diagnostic_checks/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu src/unit/Makefile
+	  $(AUTOMAKE) --gnu src/examples/diagnostic_checks/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -284,13 +274,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/capture_and_release.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/derivative_check.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/linear_cone.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/quadratic_cone.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rosenbrock.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/run.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sdp_cone.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -535,11 +519,9 @@ uninstall-am:
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags uninstall uninstall-am
 
-unit:
-@HAVE_BOOST_TRUE@@HAVE_LAPACK_TRUE@	make run 
-@HAVE_BOOST_TRUE@@HAVE_LAPACK_FALSE@	@echo "We require LAPACK in order to compile the unit tests."
-@HAVE_BOOST_FALSE@	@echo "We require Boost in order to compile the unit tests."
-.PHONY: unit 
+example:
+	make run 
+.PHONY: example 
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
