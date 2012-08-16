@@ -101,7 +101,7 @@ h.eval_ps=@(x,dy)dy;
 h.eval_pps=@(x,dx,dy)zeros(size(x));
 
 % Create the bundle of functions
-clear f;
+clear fns;
 fns.f=f;
 fns.g=g;
 fns.h=h;
