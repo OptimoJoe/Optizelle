@@ -167,5 +167,6 @@ AC_CONFIG_FILES([Makefile
                  src/unit/Makefile
                  src/examples/rosenbrock/Makefile
                  src/examples/rosenbrock_easy/Makefile
+                 src/examples/diagnostic_checks/Makefile
                  src/matlab/Makefile])
 AC_OUTPUT

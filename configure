@@ -21477,7 +21477,7 @@ MEXEXT="$ax_cv_mexext"
 
 fi
 
-ac_config_files="$ac_config_files Makefile src/peopt/Makefile src/unit/Makefile src/examples/rosenbrock/Makefile src/examples/rosenbrock_easy/Makefile src/matlab/Makefile"
+ac_config_files="$ac_config_files Makefile src/peopt/Makefile src/unit/Makefile src/examples/rosenbrock/Makefile src/examples/rosenbrock_easy/Makefile src/examples/diagnostic_checks/Makefile src/matlab/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -22704,6 +22704,7 @@ do
     "src/unit/Makefile") CONFIG_FILES="$CONFIG_FILES src/unit/Makefile" ;;
     "src/examples/rosenbrock/Makefile") CONFIG_FILES="$CONFIG_FILES src/examples/rosenbrock/Makefile" ;;
     "src/examples/rosenbrock_easy/Makefile") CONFIG_FILES="$CONFIG_FILES src/examples/rosenbrock_easy/Makefile" ;;
+    "src/examples/diagnostic_checks/Makefile") CONFIG_FILES="$CONFIG_FILES src/examples/diagnostic_checks/Makefile" ;;
     "src/matlab/Makefile") CONFIG_FILES="$CONFIG_FILES src/matlab/Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
