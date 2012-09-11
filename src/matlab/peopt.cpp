@@ -34,6 +34,7 @@ struct name { \
     /* y <- x (Shallow.  No memory allocation.) */ \
     static void copy(const Vector& x, Vector& y) { \
         mxArray* input[2]={copy_,x.ptr}; \
+        mxDestroyArray(y.ptr); \
         mexCallMATLAB(1,&(y.ptr),2,input,"feval"); \
     } \
 \
@@ -48,7 +49,12 @@ struct name { \
         mxArray* input[3]={scal_,alpha,x.ptr}; \
 \
         /* Compute the scalar multiplication */ \
-        mexCallMATLAB(1,&(x.ptr),3,input,"feval"); \
+        mxArray* alpha_x[1]; \
+        mexCallMATLAB(1,alpha_x,3,input,"feval"); \
+\
+        /* Free the memory in x and assign the new pointer. */ \
+        mxDestroyArray(x.ptr); \
+        x.ptr=alpha_x[0]; \
 \
         /* Free memory from the scalar */ \
         mxDestroyArray(alpha); \
@@ -56,8 +62,14 @@ struct name { \
 \
     /* x <- 0 */ \
     static void zero(Vector& x) { \
+        /* Find the zero vector */ \
+        mxArray* zero[1]; \
         mxArray* input[2]={zero_,x.ptr}; \
-        mexCallMATLAB(1,&(x.ptr),2,input,"feval"); \
+        mexCallMATLAB(1,zero,2,input,"feval"); \
+\
+        /* Free memory from x and assign zero. */ \
+        mxDestroyArray(x.ptr); \
+        x.ptr=zero[0]; \
     } \
 \
     /* y <- alpha * x + y */ \
@@ -69,9 +81,14 @@ struct name { \
 \
         /* Create the inputs and outputs */ \
         mxArray* input[4]={axpy_,alpha,x.ptr,y.ptr}; \
+        mxArray* axpy[1]; \
 \
         /* Compute the addition */ \
-        mexCallMATLAB(1,&(y.ptr),4,input,"feval"); \
+        mexCallMATLAB(1,axpy,4,input,"feval"); \
+\
+        /* Assign the result to y and free memory. */ \
+        mxDestroyArray(y.ptr); \
+        y.ptr=axpy[0]; \
 \
         /* Free memory from the scalar */ \
         mxDestroyArray(alpha); \
@@ -103,6 +120,7 @@ struct name { \
     static void prod(const Vector& x, const Vector& y, Vector& z) { \
         /* Create the inputs and outputs */ \
         mxArray* input[3]={prod_,x.ptr,y.ptr}; \
+        mxDestroyArray(z.ptr); \
 \
         /* Compute the product */ \
         mexCallMATLAB(1,&(z.ptr),3,input,"feval"); \
@@ -110,14 +128,21 @@ struct name { \
 \
     /* Identity element, x <- e such that x o e = x */ \
     static void id(Vector& x) { \
+        /* Find the identity element */ \
         mxArray* input[2]={id_,x.ptr}; \
-        mexCallMATLAB(1,&(x.ptr),2,input,"feval"); \
+        mxArray* id[1]; \
+        mexCallMATLAB(1,id,2,input,"feval"); \
+\
+        /* Free memory from x and assign the identity */ \
+        mxDestroyArray(x.ptr); \
+        x.ptr=id[0]; \
     } \
 \
     /* Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y */ \
     static void linv(const Vector& x, const Vector& y, Vector& z) { \
         /* Create the inputs and outputs */ \
         mxArray* input[3]={linv_,x.ptr,y.ptr}; \
+        mxDestroyArray(z.ptr); \
 \
         /* Compute the product */ \
         mexCallMATLAB(1,&(z.ptr),3,input,"feval"); \
@@ -245,12 +270,14 @@ public:
     // g = grad f(x) 
     void grad(const Vector& x,Vector& g) const { 
         mxArray* input[2]={grad_,x.ptr}; 
+        mxDestroyArray(g.ptr);
         mexCallMATLAB(1,&(g.ptr),2,input,"feval");
     }
 
     // H_dx = hess f(x) dx 
     void hessvec(const Vector& x,const Vector& dx,Vector& H_dx) const {
         mxArray* input[3]={hessvec_,x.ptr,dx.ptr}; 
+        mxDestroyArray(H_dx.ptr);
         mexCallMATLAB(1,&(H_dx.ptr),3,input,"feval");
     }
 };
@@ -289,6 +316,7 @@ public:
     // y=f(x)
     virtual void operator () (const X_Vector& x,Y_Vector& y) const { 
         mxArray* input[2]={eval_,x.ptr}; 
+        mxDestroyArray(y.ptr);
         mexCallMATLAB(1,&(y.ptr),2,input,"feval");
     }
 
@@ -299,6 +327,7 @@ public:
          Y_Vector& y
      ) const { 
         mxArray* input[3]={eval_p_,x.ptr,dx.ptr}; 
+        mxDestroyArray(y.ptr);
         mexCallMATLAB(1,&(y.ptr),3,input,"feval");
      }
 
@@ -309,6 +338,7 @@ public:
          X_Vector& z
      ) const {
         mxArray* input[3]={eval_ps_,x.ptr,dy.ptr}; 
+        mxDestroyArray(z.ptr);
         mexCallMATLAB(1,&(z.ptr),3,input,"feval");
      }
      
@@ -320,6 +350,7 @@ public:
          X_Vector& z
      ) const { 
         mxArray* input[4]={eval_pps_,x.ptr,dx.ptr,dy.ptr}; 
+        mxDestroyArray(z.ptr);
         mexCallMATLAB(1,&(z.ptr),4,input,"feval");
      }
 };
