@@ -8,9 +8,13 @@
 #define CREATE_VS(name) \
 template <typename Real> \
 struct name { \
-    typedef mxArray* Vector; \
+    struct Vector { \
+        mxArray* ptr; \
+        Vector() : ptr(NULL) { } \
+        Vector(const mxArray* ptr_) { ptr=mxDuplicateArray(ptr_); } \
+        ~Vector() { if(ptr!=NULL) mxDestroyArray(ptr); } \
+    }; \
 \
-    static mxArray* init_; \
     static mxArray* copy_; \
     static mxArray* scal_; \
     static mxArray* zero_; \
@@ -24,13 +28,13 @@ struct name { \
 \
     /* Memory allocation and size setting */ \
     static void init(const Vector& x, Vector& y) { \
-        y=mxDuplicateArray(x); \
+        y.ptr=mxDuplicateArray(x.ptr); \
     } \
 \
     /* y <- x (Shallow.  No memory allocation.) */ \
     static void copy(const Vector& x, Vector& y) { \
-        Vector input[2]={copy_,x}; \
-        mexCallMATLAB(1,&y,2,input,"feval"); \
+        mxArray* input[2]={copy_,x.ptr}; \
+        mexCallMATLAB(1,&(y.ptr),2,input,"feval"); \
     } \
 \
     /* x <- alpha * x */ \
@@ -41,10 +45,10 @@ struct name { \
         mxGetPr(alpha)[0]=alpha_; \
 \
         /* Create the inputs and outputs */ \
-        Vector input[3]={scal_,alpha,x}; \
+        mxArray* input[3]={scal_,alpha,x.ptr}; \
 \
         /* Compute the scalar multiplication */ \
-        mexCallMATLAB(1,&x,3,input,"feval"); \
+        mexCallMATLAB(1,&(x.ptr),3,input,"feval"); \
 \
         /* Free memory from the scalar */ \
         mxDestroyArray(alpha); \
@@ -52,8 +56,8 @@ struct name { \
 \
     /* x <- 0 */ \
     static void zero(Vector& x) { \
-        Vector input[2]={zero_,x}; \
-        mexCallMATLAB(1,&x,2,input,"feval"); \
+        mxArray* input[2]={zero_,x.ptr}; \
+        mexCallMATLAB(1,&(x.ptr),2,input,"feval"); \
     } \
 \
     /* y <- alpha * x + y */ \
@@ -64,10 +68,10 @@ struct name { \
         mxGetPr(alpha)[0]=alpha_; \
 \
         /* Create the inputs and outputs */ \
-        Vector input[4]={axpy_,alpha,x,y}; \
+        mxArray* input[4]={axpy_,alpha,x.ptr,y.ptr}; \
 \
         /* Compute the addition */ \
-        mexCallMATLAB(1,&y,4,input,"feval"); \
+        mexCallMATLAB(1,&(y.ptr),4,input,"feval"); \
 \
         /* Free memory from the scalar */ \
         mxDestroyArray(alpha); \
@@ -80,7 +84,7 @@ struct name { \
         alpha=mxCreateDoubleMatrix(1,1,mxREAL); \
 \
         /* Create the inputs and outputs */ \
-        Vector input[3]={innr_,x,y}; \
+        mxArray* input[3]={innr_,x.ptr,y.ptr}; \
 \
         /* Compute the inner product */ \
         mexCallMATLAB(1,&alpha,3,input,"feval"); \
@@ -98,25 +102,25 @@ struct name { \
     /* Jordan product, z <- x o y */ \
     static void prod(const Vector& x, const Vector& y, Vector& z) { \
         /* Create the inputs and outputs */ \
-        Vector input[3]={prod_,x,y}; \
+        mxArray* input[3]={prod_,x.ptr,y.ptr}; \
 \
         /* Compute the product */ \
-        mexCallMATLAB(1,&z,3,input,"feval"); \
+        mexCallMATLAB(1,&(z.ptr),3,input,"feval"); \
     } \
 \
     /* Identity element, x <- e such that x o e = x */ \
     static void id(Vector& x) { \
-        Vector input[2]={id_,x}; \
-        mexCallMATLAB(1,&x,2,input,"feval"); \
+        mxArray* input[2]={id_,x.ptr}; \
+        mexCallMATLAB(1,&(x.ptr),2,input,"feval"); \
     } \
 \
     /* Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y */ \
     static void linv(const Vector& x, const Vector& y, Vector& z) { \
         /* Create the inputs and outputs */ \
-        Vector input[3]={linv_,x,y}; \
+        mxArray* input[3]={linv_,x.ptr,y.ptr}; \
 \
         /* Compute the product */ \
-        mexCallMATLAB(1,&z,3,input,"feval"); \
+        mexCallMATLAB(1,&(z.ptr),3,input,"feval"); \
     } \
 \
     /* Barrier function, barr <- barr(x) where x o grad barr(x) = e */ \
@@ -126,7 +130,7 @@ struct name { \
         alpha=mxCreateDoubleMatrix(1,1,mxREAL); \
 \
         /* Create the inputs and outputs */ \
-        Vector input[2]={barr_,x}; \
+        mxArray* input[2]={barr_,x.ptr}; \
 \
         /* Compute the barrier function */ \
         mexCallMATLAB(1,&alpha,2,input,"feval"); \
@@ -149,7 +153,7 @@ struct name { \
         alpha=mxCreateDoubleMatrix(1,1,mxREAL); \
 \
         /* Create the inputs and outputs */ \
-        Vector input[3]={srch_,x,y}; \
+        mxArray* input[3]={srch_,x.ptr,y.ptr}; \
 \
         /* Compute the search function */ \
         mexCallMATLAB(1,&alpha,3,input,"feval"); \
@@ -164,7 +168,6 @@ struct name { \
         return alpha_; \
     } \
 }; \
-template <typename Real> mxArray* name<Real>::init_; \
 template <typename Real> mxArray* name<Real>::copy_; \
 template <typename Real> mxArray* name<Real>::scal_; \
 template <typename Real> mxArray* name<Real>::zero_; \
@@ -177,7 +180,6 @@ template <typename Real> mxArray* name<Real>::barr_; \
 template <typename Real> mxArray* name<Real>::srch_;
 
 #define SET_VS(name,from) \
-    name <double>::init_=mxGetField(from,0,"init"); \
     name <double>::copy_=mxGetField(from,0,"copy"); \
     name <double>::scal_=mxGetField(from,0,"scal"); \
     name <double>::zero_=mxGetField(from,0,"zero"); \
@@ -225,7 +227,7 @@ public:
         alpha=mxCreateDoubleMatrix(1,1,mxREAL); 
 
         /* Create the inputs and outputs */ 
-        Vector input[2]={eval_,x}; 
+        mxArray* input[2]={eval_,x.ptr}; 
 
         /* Compute the inner product */ 
         mexCallMATLAB(1,&alpha,2,input,"feval"); 
@@ -242,14 +244,14 @@ public:
 
     // g = grad f(x) 
     void grad(const Vector& x,Vector& g) const { 
-        Vector input[2]={grad_,x}; 
-        mexCallMATLAB(1,&g,2,input,"feval");
+        mxArray* input[2]={grad_,x.ptr}; 
+        mexCallMATLAB(1,&(g.ptr),2,input,"feval");
     }
 
     // H_dx = hess f(x) dx 
     void hessvec(const Vector& x,const Vector& dx,Vector& H_dx) const {
-        Vector input[3]={hessvec_,x,dx}; 
-        mexCallMATLAB(1,&H_dx,3,input,"feval");
+        mxArray* input[3]={hessvec_,x.ptr,dx.ptr}; 
+        mexCallMATLAB(1,&(H_dx.ptr),3,input,"feval");
     }
 };
 
@@ -286,8 +288,8 @@ public:
 
     // y=f(x)
     virtual void operator () (const X_Vector& x,Y_Vector& y) const { 
-        X_Vector input[2]={eval_,x}; 
-        mexCallMATLAB(1,&y,2,input,"feval");
+        mxArray* input[2]={eval_,x.ptr}; 
+        mexCallMATLAB(1,&(y.ptr),2,input,"feval");
     }
 
      // y=f'(x)dx 
@@ -296,8 +298,8 @@ public:
          const X_Vector& dx,
          Y_Vector& y
      ) const { 
-        X_Vector input[3]={eval_p_,x,dx}; 
-        mexCallMATLAB(1,&y,3,input,"feval");
+        mxArray* input[3]={eval_p_,x.ptr,dx.ptr}; 
+        mexCallMATLAB(1,&(y.ptr),3,input,"feval");
      }
 
      // z=f'(x)*dy
@@ -306,8 +308,8 @@ public:
          const Y_Vector& dy,
          X_Vector& z
      ) const {
-        X_Vector input[3]={eval_ps_,x,dy}; 
-        mexCallMATLAB(1,&z,3,input,"feval");
+        mxArray* input[3]={eval_ps_,x.ptr,dy.ptr}; 
+        mexCallMATLAB(1,&(z.ptr),3,input,"feval");
      }
      
      // z=(f''(x)dx)*dy
@@ -317,8 +319,8 @@ public:
          const Y_Vector& dy,
          X_Vector& z
      ) const { 
-        X_Vector input[4]={eval_pps_,x,dx,dy}; 
-        mexCallMATLAB(1,&z,4,input,"feval");
+        mxArray* input[4]={eval_pps_,x.ptr,dx.ptr,dy.ptr}; 
+        mexCallMATLAB(1,&(z.ptr),4,input,"feval");
      }
 };
 
@@ -365,8 +367,8 @@ void check_fns(
 
 // Check that we have all the operations necessary for a vector space
 void check_vector_space(const mxArray* X,std::string name) {
-    std::string ops[6] = { "init", "copy", "scal", "zero", "axpy", "innr" };
-    check_fns(X,ops,6,"vector space",name);
+    std::string ops[5] = { "copy", "scal", "zero", "axpy", "innr" };
+    check_fns(X,ops,5,"vector space",name);
 }
 
 // Check that we have all the operations necessary for a Euclidean-Jordan
@@ -670,9 +672,9 @@ void mexFunction(
         checkDiagnosticPts(pInput[0],pInput[2]);
 
         // Get the points for the objective finite difference tests
-        X::Vector x=const_cast <X::Vector> (mxGetField(pInput[2],0,"x"));
-        X::Vector dx=const_cast <X::Vector> (mxGetField(pInput[2],0,"dx"));
-        X::Vector dxx=const_cast <X::Vector> (mxGetField(pInput[2],0,"dxx"));
+        X::Vector x(mxGetField(pInput[2],0,"x"));
+        X::Vector dx(mxGetField(pInput[2],0,"dx"));
+        X::Vector dxx(mxGetField(pInput[2],0,"dxx"));
 
         // Do a finite difference check and symmetric check on the objective
         MatlabMessaging().print("Diagnostics on the objective.");
@@ -691,7 +693,7 @@ void mexFunction(
                 .print("\nDiagnostics on the equality constraint.");
         
             // Get the points for the objective finite difference tests
-            Y::Vector dy=const_cast <Y::Vector> (mxGetField(pInput[2],0,"dy"));
+            Y::Vector dy(mxGetField(pInput[2],0,"dy"));
 
             // Do some finite difference tests on the constraint
             peopt::Diagnostics::derivativeCheck <double,XX,YY>
@@ -710,7 +712,7 @@ void mexFunction(
                 .print("\nDiagnostics on the inequality constraint.");
 
             // Get the points for the objective finite difference tests
-            Z::Vector dz=const_cast <Z::Vector> (mxGetField(pInput[2],0,"dz"));
+            Z::Vector dz(mxGetField(pInput[2],0,"dz"));
 
             // Do some finite difference tests on the constraint
             peopt::Diagnostics::derivativeCheck <double,XX,ZZ>
@@ -735,9 +737,10 @@ void mexFunction(
         checkOptimizationPts(pInput[0],pInput[2]);
         
         // Get the points for optimization 
-        X::Vector x=const_cast <X::Vector> (mxGetField(pInput[2],0,"x"));
+        X::Vector x(mxGetField(pInput[2],0,"x"));
 
         // Do the optimization
+        X::Vector x_sol; X::init(x,x_sol);
         switch(problem_class) {
         case peopt::ProblemClass::Unconstrained: {
             peopt::Unconstrained <double,XX>::State::t state(x);
@@ -745,18 +748,18 @@ void mexFunction(
                 ::read(MatlabMessaging(),params,state);
             peopt::Unconstrained<double,XX>::Algorithms
                 ::getMin(MatlabMessaging(),fns,state);
-            X::init(state.x.back(),pOutput[0]);
-            X::copy(state.x.back(),pOutput[0]);
+            X::init(state.x.back(),x_sol);
+            X::copy(state.x.back(),x_sol);
             break;
         } case peopt::ProblemClass::InequalityConstrained: {
-            Z::Vector z=const_cast <Z::Vector> (mxGetField(pInput[2],0,"z"));
+            Z::Vector z(mxGetField(pInput[2],0,"z"));
             peopt::InequalityConstrained <double,XX,ZZ>::State::t state(x,z);
             peopt::json::InequalityConstrained <double,XX,ZZ>
                 ::read(MatlabMessaging(),params,state);
             peopt::InequalityConstrained<double,XX,ZZ>::Algorithms
                 ::getMin(MatlabMessaging(),fns,state);
-            X::init(state.x.back(),pOutput[0]);
-            X::copy(state.x.back(),pOutput[0]);
+            X::init(state.x.back(),x_sol);
+            X::copy(state.x.back(),x_sol);
             break;
         } case peopt::ProblemClass::EqualityConstrained: {
             MatlabMessaging().error(
@@ -765,5 +768,6 @@ void mexFunction(
             MatlabMessaging().error(
                 "Fully constrained optimization not currently implemented."); 
         } }
+        pOutput[0]=mxDuplicateArray(x_sol.ptr);
     }
 }

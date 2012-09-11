@@ -12,7 +12,7 @@
 % INPUTS
 %
 % X1: Vector space for the variable x1.  This is a struct array that contains
-%     the elements init, copy, scal, zero, axpy, and innr
+%     the elements copy, scal, zero, axpy, and innr
 % X2: Vector space for the variable x2.
 % ff: Definition of the objective.  This is a struct array that contains
 %     the elements eval, grad_1, grad_2, hessvec_11, hessvec_12, hessvec_21,
@@ -35,7 +35,6 @@
 function [X1xX2 f g]=genEqualityConstrained(X1,X2,ff,gg)
 
 % Generate the composite vector space
-X1xX2.init=@(x){X1.init(x{1}),X2.init(x{2})};
 X1xX2.copy=@(x){X1.copy(x{1}),X2.copy(x{2})};
 X1xX2.scal=@(alpha,x){X1.scal(alpha,x{1}),X2.scal(alpha,x{2})};
 X1xX2.zero=@(x){X1.zero(x{1}),X2.zero(x{2})};

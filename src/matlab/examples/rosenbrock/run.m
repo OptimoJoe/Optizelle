@@ -5,7 +5,6 @@ addpath('../../');
 
 % Create the vector spaces
 clear X;
-X.init=@(x)x;
 X.copy=@(x)x;
 X.scal=@(alpha,x)alpha*x;
 X.zero=@(x)zeros(size(x));

@@ -13,7 +13,6 @@ addpath('../../');
 
 % Create the vector spaces
 clear X1;
-X1.init=@(x)x;
 X1.copy=@(x)x;
 X1.scal=@(alpha,x)alpha*x;
 X1.zero=@(x)zeros(size(x));
@@ -21,7 +20,6 @@ X1.axpy=@(alpha,x,y)alpha*x+y;
 X1.innr=@(x,y)x'*y;
 
 clear X2;
-X2.init=@(x)x;
 X2.copy=@(x)x;
 X2.scal=@(alpha,x)alpha*x;
 X2.zero=@(x)zeros(size(x));

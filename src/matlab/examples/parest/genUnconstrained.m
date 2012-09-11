@@ -14,7 +14,7 @@
 % INPUTS
 %
 % X1: Vector space for the variable x1.  This is a struct array that contains
-%     the elements init, copy, scal, zero, axpy, and innr
+%     the elements copy, scal, zero, axpy, and innr
 % X2: Vector space for the variable x2.
 % ff: Definition of the objective.  This is a struct array that contains
 %     the elements eval, grad_1, grad_2, hessvec_11, hessvec_12, hessvec_21,
