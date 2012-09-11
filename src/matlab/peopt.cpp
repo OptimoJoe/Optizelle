@@ -24,8 +24,7 @@ struct name { \
 \
     /* Memory allocation and size setting */ \
     static void init(const Vector& x, Vector& y) { \
-        Vector input[2]={init_,x}; \
-        mexCallMATLAB(1,&y,2,input,"feval"); \
+        y=mxDuplicateArray(x); \
     } \
 \
     /* y <- x (Shallow.  No memory allocation.) */ \
