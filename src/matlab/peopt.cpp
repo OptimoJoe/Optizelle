@@ -205,18 +205,30 @@ template <typename Real> mxArray* name<Real>::barr_; \
 template <typename Real> mxArray* name<Real>::srch_;
 
 #define SET_VS(name,from) \
-    name <double>::copy_=mxGetField(from,0,"copy"); \
-    name <double>::scal_=mxGetField(from,0,"scal"); \
-    name <double>::zero_=mxGetField(from,0,"zero"); \
-    name <double>::axpy_=mxGetField(from,0,"axpy"); \
-    name <double>::innr_=mxGetField(from,0,"innr"); 
+    name <double>::copy_=mxDuplicateArray(mxGetField(from,0,"copy")); \
+    name <double>::scal_=mxDuplicateArray(mxGetField(from,0,"scal")); \
+    name <double>::zero_=mxDuplicateArray(mxGetField(from,0,"zero")); \
+    name <double>::axpy_=mxDuplicateArray(mxGetField(from,0,"axpy")); \
+    name <double>::innr_=mxDuplicateArray(mxGetField(from,0,"innr")); 
+#define PERSISTENT_VS(name,from) \
+    mexMakeArrayPersistent(name <double>::copy_); \
+    mexMakeArrayPersistent(name <double>::scal_); \
+    mexMakeArrayPersistent(name <double>::zero_); \
+    mexMakeArrayPersistent(name <double>::axpy_); \
+    mexMakeArrayPersistent(name <double>::innr_);
 
 #define SET_EJA(name,from) \
-    name <double>::prod_=mxGetField(from,0,"prod"); \
-    name <double>::id_=mxGetField(from,0,"id"); \
-    name <double>::linv_=mxGetField(from,0,"linv"); \
-    name <double>::barr_=mxGetField(from,0,"barr"); \
-    name <double>::srch_=mxGetField(from,0,"srch"); 
+    name <double>::prod_=mxDuplicateArray(mxGetField(from,0,"prod")); \
+    name <double>::id_=mxDuplicateArray(mxGetField(from,0,"id")); \
+    name <double>::linv_=mxDuplicateArray(mxGetField(from,0,"linv")); \
+    name <double>::barr_=mxDuplicateArray(mxGetField(from,0,"barr")); \
+    name <double>::srch_=mxDuplicateArray(mxGetField(from,0,"srch")); 
+#define PERSISTENT_EJA(name,from) \
+    mexMakeArrayPersistent(name <double>::prod_); \
+    mexMakeArrayPersistent(name <double>::id_); \
+    mexMakeArrayPersistent(name <double>::linv_); \
+    mexMakeArrayPersistent(name <double>::barr_); \
+    mexMakeArrayPersistent(name <double>::srch_); 
 
 CREATE_VS(XX);
 CREATE_VS(YY);
@@ -554,21 +566,31 @@ void setupVS(const mxArray* VS) {
     switch(problem_class_vs) {
     case peopt::ProblemClass::Unconstrained:
         SET_VS(XX,mxGetField(VS,0,"X"));
+        PERSISTENT_VS(XX,mxGetField(VS,0,"X"));
         break;
     case peopt::ProblemClass::InequalityConstrained:
         SET_VS(XX,mxGetField(VS,0,"X"));
         SET_VS(ZZ,mxGetField(VS,0,"Z"));
         SET_EJA(ZZ,mxGetField(VS,0,"Z"));
+        PERSISTENT_VS(XX,mxGetField(VS,0,"X"));
+        PERSISTENT_VS(ZZ,mxGetField(VS,0,"X"));
+        PERSISTENT_EJA(ZZ,mxGetField(VS,0,"X"));
         break;
     case peopt::ProblemClass::EqualityConstrained:
         SET_VS(XX,mxGetField(VS,0,"X"));
         SET_VS(YY,mxGetField(VS,0,"Y"));
+        PERSISTENT_VS(XX,mxGetField(VS,0,"X"));
+        PERSISTENT_VS(YY,mxGetField(VS,0,"X"));
         break;
     case peopt::ProblemClass::Constrained:
         SET_VS(XX,mxGetField(VS,0,"X"));
         SET_VS(YY,mxGetField(VS,0,"Y"));
         SET_VS(ZZ,mxGetField(VS,0,"Z"));
         SET_EJA(ZZ,mxGetField(VS,0,"Z"));
+        PERSISTENT_VS(XX,mxGetField(VS,0,"X"));
+        PERSISTENT_VS(YY,mxGetField(VS,0,"X"));
+        PERSISTENT_VS(ZZ,mxGetField(VS,0,"X"));
+        PERSISTENT_EJA(ZZ,mxGetField(VS,0,"X"));
         break;
     }
 }
