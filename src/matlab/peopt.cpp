@@ -367,6 +367,41 @@ public:
      }
 };
 
+// An operator using Matlab provided functions 
+template <
+    typename Real,
+    template <typename> class XX,
+    template <typename> class YY 
+>
+struct MatlabOperator : peopt::Operator <Real,XX,YY> {
+private:
+    // Create some type shortcuts
+    typedef XX <Real> X;
+    typedef typename X::Vector X_Vector; 
+    typedef YY <Real> Y;
+    typedef typename Y::Vector Y_Vector; 
+   
+    // The Matlab functions
+    mxArray* eval_;
+
+    // The base point around where we evaluate the operator
+    X_Vector& x; 
+
+public:
+    // When we construct the function, we read in all the names from the
+    // Matlab structure.  We need to check the structure prior to
+    // constructing this object.
+    MatlabOperator(mxArray* f,X_Vector& x_) : x(x_) {
+        eval_=mxGetField(f,0,"eval"); 
+    }
+
+    // y=f(x)
+    virtual void operator () (const X_Vector& dx,Y_Vector& y) const { 
+        mxArray* input[3]={eval_,x.ptr,dx.ptr}; 
+        mxDestroyArray(y.ptr);
+        mexCallMATLAB(1,&(y.ptr),3,input,"feval");
+    }
+};
 
 // A messaging utility that hooks directly into Matlab
 struct MatlabMessaging : public peopt::Messaging {
@@ -797,6 +832,10 @@ void mexFunction(
         switch(problem_class) {
         case peopt::ProblemClass::Unconstrained: {
             peopt::Unconstrained <double,XX>::State::t state(x);
+            // If we have a preconditioner, add it
+            if(mxGetField(pInput[1],0,"Minv")!=NULL)
+                fns.Minv.reset(new MatlabOperator<double,XX,XX>
+                    (mxGetField(pInput[1],0,"Minv"),state.x.back()));
             peopt::json::Unconstrained <double,XX>
                 ::read(MatlabMessaging(),params,state);
             peopt::Unconstrained<double,XX>::Algorithms
@@ -807,6 +846,10 @@ void mexFunction(
         } case peopt::ProblemClass::InequalityConstrained: {
             Z::Vector z(mxGetField(pInput[2],0,"z"));
             peopt::InequalityConstrained <double,XX,ZZ>::State::t state(x,z);
+            // If we have a preconditioner, add it
+            if(mxGetField(pInput[1],0,"Minv")!=NULL)
+                fns.Minv.reset(new MatlabOperator<double,XX,XX>
+                    (mxGetField(pInput[1],0,"Minv"),state.x.back()));
             peopt::json::InequalityConstrained <double,XX,ZZ>
                 ::read(MatlabMessaging(),params,state);
             peopt::InequalityConstrained<double,XX,ZZ>::Algorithms
