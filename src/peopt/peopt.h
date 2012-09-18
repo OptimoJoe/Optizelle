@@ -2430,11 +2430,11 @@ namespace peopt{
                             "the number of stored trial step differences.");
 
                     // Allocate memory for work
-                    std::list <X_Vector> work(oldY.size(),p);
-                    for(typename std::list <X_Vector>::iterator w=work.begin();
-                        w!=work.end();
-                        w++
-                    ) X::init(p,*w);
+                    std::list <X_Vector> work;
+                    for(int i=1;i<=oldY.size();i++) {
+                        work.push_back(X_Vector()); 
+                        X::init(p,work.back());
+                    }
 
                     // If we have no vectors in our history, we return the
                     // direction
@@ -2589,11 +2589,11 @@ namespace peopt{
                             "the number of stored trial step differences.");
 
                     // Allocate memory for work
-                    std::list <X_Vector> work(oldY.size(),p);
-                    for(typename std::list <X_Vector>::iterator w=work.begin();
-                        w!=work.end();
-                        w++
-                    ) X::init(p,*w);
+                    std::list <X_Vector> work;
+                    for(int i=1;i<=oldY.size();i++) {
+                        work.push_back(X_Vector()); 
+                        X::init(p,work.back());
+                    }
 
                     // If we have no vectors in our history, we return the 
                     // direction
@@ -3526,12 +3526,12 @@ namespace peopt{
                 // Determine x+s 
                 X::copy(s,xps);
                 X::axpy(Real(1.),x,xps);
-
-                // Determine the merit function evaluated at x+s
-                merit_xps=f_merit(xps);
                 
                 // Determine the model function at s, m(s)
                 Real model_s=model(s);
+
+                // Determine the merit function evaluated at x+s
+                merit_xps=f_merit(xps);
 
                 // Add a safety check in case we don't actually minimize the TR
                 // subproblem correctly. This could happen for a variety of
@@ -3561,7 +3561,11 @@ namespace peopt{
                 } else if(rho >= eta1 && rho < eta2)
                     return true;
                 else {
-                    delta = norm_s/Real(2.);
+                    // We take the minimum between norm_s and delta since,
+                    // if the preconditioner is singular, norm_s may not be
+                    // changing since s is in the nullspace of the
+                    // preconditioner.
+                    delta = std::min(norm_s/Real(2.),delta/Real(2.));
                     return false;
                 }
             }
@@ -3578,6 +3582,7 @@ namespace peopt{
                 unsigned int& rejected_trustregion=state.rejected_trustregion;
                 X_Vector& s=*(state.s.begin());
                 Real& norm_s=state.norm_s;
+                Real& delta=state.delta;
                 std::list <X_Vector>& oldY=state.oldY; 
                 std::list <X_Vector>& oldS=state.oldS; 
                 unsigned int& history_reset=state.history_reset;
@@ -3615,8 +3620,11 @@ namespace peopt{
 
                     // Alternatively, check if the step becomes so small
                     // that we're not making progress.  In this case, take
-                    // a zero step and allow the stopping conditions to exit
-                    if(norm_s < eps_s) {
+                    // a zero step and allow the stopping conditions to exit.
+                    // We check delta rather than norm_s since s could be in
+                    // the nullspace of the preconditioner and its norm may
+                    // not be changing.
+                    if(delta < eps_s) {
                         X::scal(Real(0.),s);
                         norm_s=Real(0.);
                         break;
@@ -4111,8 +4119,13 @@ namespace peopt{
                 std::list <X_Vector>& oldS=state.oldS;
                
                 // Allocate some temp storage for y and s
-                X_Vector s; X::init(x,s);
-                X_Vector y; X::init(x,y);
+                oldS.push_front(X_Vector());
+                X_Vector& s=oldS.front();
+                X::init(x,s);
+
+                oldY.push_front(X_Vector());
+                X_Vector& y=oldY.front();
+                X::init(x,y);
 
                 // Find s = u-u_old
                 X::copy(x,s);
@@ -4125,12 +4138,12 @@ namespace peopt{
                 // If we're using BFGS, check that <y,s> > 0
                 if((Minv_type==Operators::InvBFGS || H_type==Operators::BFGS
                     || dir==LineSearchDirection::BFGS)
-                    && X::innr(y,s) <= 0)
+                    && X::innr(y,s) <= 0
+                ) {
+                    oldS.pop_front();
+                    oldY.pop_front();
                     return;
-
-                // Insert these into the quasi-Newton storage
-                oldS.push_front(s);
-                oldY.push_front(y);
+                }
 
                 // Determine if we need to free some memory
                 if(oldS.size()>state.stored_history){
