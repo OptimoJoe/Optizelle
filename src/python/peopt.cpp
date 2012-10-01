@@ -6,12 +6,20 @@ struct PyObjectPtr {
 private:
     // Internal storage of the pointer
     PyObject* ptr;
+    
 public:
     // On default construction, we just create an empty pointer 
     PyObjectPtr() : ptr(NULL) {}
 
     // On construction, just initialize the auto_ptr
     PyObjectPtr(PyObject* ptr_) : ptr(ptr_) {}
+
+    // Here, we copy both the pointer and increase the reference count
+    // as long as the pointer is seemingly valid.
+    PyObjectPtr& operator = (const PyObjectPtr& rhs) {
+        ptr=rhs.get();
+        if(ptr) Py_INCREF(ptr);
+    }
 
     // For a reset, we decrement the pointer and then assign a new
     // value.
@@ -29,7 +37,9 @@ public:
     // not delete the pointer.
     ~PyObjectPtr() {
         Py_XDECREF(ptr);
+        ptr=NULL;
     }
+
 };
 
 // A macro to alter the behavior of PyTuple_SetItem so that we don't
@@ -39,272 +49,336 @@ public:
         Py_INCREF(o); \
         PyTuple_SetItem(p,pos,o);
 
-// Define the Python vector space
-#define CREATE_VS(name) \
-template <typename Real> \
-struct name { \
-    /* Setup the vector */ \
-    typedef PyObjectPtr Vector; \
-\
-    /* Store references to the Python algebra */ \
-    static PyObjectPtr copy_; \
-    static PyObjectPtr scal_; \
-    static PyObjectPtr zero_; \
-    static PyObjectPtr axpy_; \
-    static PyObjectPtr innr_; \
-    static PyObjectPtr prod_; \
-    static PyObjectPtr id_; \
-    static PyObjectPtr linv_; \
-    static PyObjectPtr barr_; \
-    static PyObjectPtr srch_; \
-\
-    /* Memory allocation and size setting */ \
-    static void init(const Vector& x, Vector& y) { \
-        /* Acquire the global interpreter lock */  \
-        PyGILState_STATE gstate = PyGILState_Ensure(); \
-\
-        /* Grab the deepcopy function from the copy module */ \
-        PyObjectPtr module(PyImport_ImportModule("copy")); \
-        PyObjectPtr deepcopy(PyObject_GetAttrString(module.get(),"deepcopy")); \
-\
-        /* Call deepcopy on x and store the result in y */ \
-        PyObjectPtr args(PyTuple_New(1)); \
-        MyPyTuple_SetItem(args.get(),0,x.get()); \
-        y.reset(PyObject_CallObject(deepcopy.get(),args.get())); \
-\
-        /* Release the global interpretter lock */ \
-        PyGILState_Release(gstate);  \
-    } \
-\
-    /* y <- x (Shallow.  No memory allocation.) */ \
-    static void copy(const Vector& x, Vector& y) { \
-        /* Acquire the global interpreter lock */ \
-        PyGILState_STATE gstate = PyGILState_Ensure(); \
-\
-        /* Call the copy function on x */ \
-        PyObjectPtr args(PyTuple_New(1)); \
-        MyPyTuple_SetItem(args.get(),0,x.get()); \
-        y.reset(PyObject_CallObject(copy_.get(),args.get())); \
-\
-        /* Release the global interpretter lock */ \
-        PyGILState_Release(gstate); \
-    } \
-\
-    /* x <- alpha * x */ \
-    static void scal(const Real& alpha, Vector& x) { \
-        /* Acquire the global interpreter lock */ \
-        PyGILState_STATE gstate = PyGILState_Ensure(); \
-\
-        /* Call the scal function on alpha and x */ \
-        PyObjectPtr args(PyTuple_New(2)); \
-        PyTuple_SetItem(args.get(),0,PyFloat_FromDouble(alpha)); \
-        MyPyTuple_SetItem(args.get(),1,x.get()); \
-        PyObjectPtr alpha_x(PyObject_CallObject(scal_.get(),args.get())); \
-\
-        /* Copy the result back into x and free the memory associated */ \
-        /* with the temporary. */ \
-        copy(alpha_x,x); \
-\
-        /* Release the global interpretter lock */ \
-        PyGILState_Release(gstate); \
-    } \
-\
-    /* x <- 0 */ \
-    static void zero(Vector& x) { \
-        /* Acquire the global interpreter lock */ \
-        PyGILState_STATE gstate = PyGILState_Ensure(); \
-\
-        /* Call the zero function on x */ \
-        PyObjectPtr args(PyTuple_New(1)); \
-        MyPyTuple_SetItem(args.get(),0,x.get()); \
-        PyObjectPtr z(PyObject_CallObject(zero_.get(),args.get())); \
-\
-        /* Copy the result back into x and free the memory associated */ \
-        /* with the temporary. */ \
-        copy(z,x); \
-\
-        /* Release the global interpretter lock */ \
-        PyGILState_Release(gstate); \
-    } \
-\
-    /* y <- alpha * x + y */ \
-    static void axpy(const Real& alpha, const Vector& x, Vector& y) { \
-        /* Acquire the global interpreter lock */ \
-        PyGILState_STATE gstate = PyGILState_Ensure(); \
-\
-        /* Call the axpy function on alpha, x, and y */ \
-        PyObjectPtr args(PyTuple_New(3)); \
-        PyTuple_SetItem(args.get(),0,PyFloat_FromDouble(alpha)); \
-        MyPyTuple_SetItem(args.get(),1,x.get()); \
-        MyPyTuple_SetItem(args.get(),2,y.get()); \
-        PyObjectPtr z(PyObject_CallObject(axpy_.get(),args.get())); \
-\
-        /* Copy the result back into y and free the memory associated */ \
-        /* with the temporary */ \
-        copy(z,y); \
-\
-        /* Release the global interpretter lock */ \
-        PyGILState_Release(gstate); \
-    } \
-\
-    /* innr <- <x,y> */ \
-    static Real innr(const Vector& x,const Vector& y) { \
-        /* Acquire the global interpreter lock */ \
-        PyGILState_STATE gstate = PyGILState_Ensure(); \
-\
-        /* Call the innr function on x and y */ \
-        PyObjectPtr args(PyTuple_New(2)); \
-        MyPyTuple_SetItem(args.get(),0,x.get()); \
-        MyPyTuple_SetItem(args.get(),1,y.get()); \
-        PyObjectPtr zz(PyObject_CallObject(innr_.get(),args.get())); \
-\
-        /* Grab a double of the result and free the memory with the */ \
-        /* Python number. */ \
-        double z=PyFloat_AsDouble(zz.get()); \
-\
-        /* Release the global interpretter lock */ \
-        PyGILState_Release(gstate); \
-\
-        /* Return the result */ \
-        return z; \
-    } \
-\
-    /* Jordan product, z <- x o y */ \
-    static void prod(const Vector& x, const Vector& y, Vector& z) { \
-        /* Acquire the global interpreter lock */ \
-        PyGILState_STATE gstate = PyGILState_Ensure(); \
-\
-        /* Call the prod function on x and y */ \
-        PyObjectPtr args(PyTuple_New(2)); \
-        MyPyTuple_SetItem(args.get(),0,x.get()); \
-        MyPyTuple_SetItem(args.get(),1,y.get()); \
-        z.reset(PyObject_CallObject(prod_.get(),args.get())); \
-\
-        /* Release the global interpretter lock */ \
-        PyGILState_Release(gstate); \
-    } \
-\
-    /* Identity element, x <- e such that x o e = x */  \
-    static void id(Vector& x) { \
-        /* Acquire the global interpreter lock */ \
-        PyGILState_STATE gstate = PyGILState_Ensure(); \
-\
-        /* Call the id function on x */ \
-        PyObjectPtr args(PyTuple_New(1)); \
-        MyPyTuple_SetItem(args.get(),0,x.get()); \
-        PyObjectPtr z(PyObject_CallObject(id_.get(),args.get())); \
-\
-        /* Copy the result back into x and free the memory associated */ \
-        /* with the temporary. */ \
-        copy(z,x); \
-\
-        /* Release the global interpretter lock */ \
-        PyGILState_Release(gstate); \
-    } \
-\
-    /* Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y */ \
-    static void linv(const Vector& x, const Vector& y, Vector& z) { \
-        /* Acquire the global interpreter lock */ \
-        PyGILState_STATE gstate = PyGILState_Ensure(); \
-\
-        /* Call the linv function on x and y */ \
-        PyObjectPtr args(PyTuple_New(2)); \
-        MyPyTuple_SetItem(args.get(),0,x.get()); \
-        MyPyTuple_SetItem(args.get(),1,y.get()); \
-        z.reset(PyObject_CallObject(linv_.get(),args.get())); \
-\
-        /* Release the global interpretter lock */ \
-        PyGILState_Release(gstate); \
-    } \
-\
-    /* Barrier function, barr <- barr(x) where x o grad barr(x) = e */  \
-    static Real barr(const Vector& x) { \
-        /* Acquire the global interpreter lock */ \
-        PyGILState_STATE gstate = PyGILState_Ensure(); \
-\
-        /* Call the barr function on x */ \
-        PyObjectPtr args(PyTuple_New(1)); \
-        MyPyTuple_SetItem(args.get(),0,x.get()); \
-        PyObjectPtr zz(PyObject_CallObject(barr_.get(),args.get())); \
-\
-        /* Grab a double of the result and free the memory with the */ \
-        /* Python number. */ \
-        double z=PyFloat_AsDouble(zz.get()); \
-\
-        /* Release the global interpretter lock */ \
-        PyGILState_Release(gstate); \
-\
-        /* Return the result */ \
-        return z; \
-    } \
-\
-    /* Line search, srch <- argmax {alpha in Real >= 0 : alpha x + y >= 0} */ \
-    /* where y > 0.  If the argmax is infinity, then return Real(-1.). */ \
-    static Real srch(const Vector& x,const Vector& y) {  \
-        /* Acquire the global interpreter lock */ \
-        PyGILState_STATE gstate = PyGILState_Ensure(); \
-\
-        /* Call the srch function on x and y*/ \
-        PyObjectPtr args(PyTuple_New(2)); \
-        MyPyTuple_SetItem(args.get(),0,x.get()); \
-        MyPyTuple_SetItem(args.get(),1,y.get()); \
-        PyObjectPtr zz(PyObject_CallObject(srch_.get(),args.get())); \
-\
-        /* Grab a double of the result and free the memory with the */ \
-        /* Python number. */ \
-        double z=PyFloat_AsDouble(zz.get()); \
-\
-        /* Release the global interpretter lock */ \
-        PyGILState_Release(gstate); \
-\
-        /* Return the result */ \
-        return z; \
-    } \
-}; \
-\
-/* Initialize the starting pointer values for each of these classes */ \
-template <typename Real> PyObjectPtr name <Real>::copy_(NULL); \
-template <typename Real> PyObjectPtr name <Real>::scal_(NULL); \
-template <typename Real> PyObjectPtr name <Real>::zero_(NULL); \
-template <typename Real> PyObjectPtr name <Real>::axpy_(NULL); \
-template <typename Real> PyObjectPtr name <Real>::innr_(NULL); \
-template <typename Real> PyObjectPtr name <Real>::prod_(NULL); \
-template <typename Real> PyObjectPtr name <Real>::id_(NULL); \
-template <typename Real> PyObjectPtr name <Real>::linv_(NULL); \
-template <typename Real> PyObjectPtr name <Real>::barr_(NULL); \
-template <typename Real> PyObjectPtr name <Real>::srch_(NULL); 
+struct PyVector : public PyObjectPtr {
+private:
+    // References to the algebra required in Python
+    PyObjectPtr copy_; \
+    PyObjectPtr scal_; \
+    PyObjectPtr zero_; \
+    PyObjectPtr axpy_; \
+    PyObjectPtr innr_; \
+    PyObjectPtr prod_; \
+    PyObjectPtr id_; \
+    PyObjectPtr linv_; \
+    PyObjectPtr barr_; \
+    PyObjectPtr srch_; \
 
-// This is a shortcut to setup a vector space
-#define SET_VS(name,obj,str,from) \
-    PyObjectPtr obj(PyObject_GetAttrString(from,str)); \
-    name <double>::copy_.reset(PyObject_GetAttrString(obj.get(),"copy")); \
-    name <double>::scal_.reset(PyObject_GetAttrString(obj.get(),"scal")); \
-    name <double>::zero_.reset(PyObject_GetAttrString(obj.get(),"zero")); \
-    name <double>::axpy_.reset(PyObject_GetAttrString(obj.get(),"axpy")); \
-    name <double>::innr_.reset(PyObject_GetAttrString(obj.get(),"innr"));
+public:
+    // On basic initialization, just make sure that the internal storage is
+    // NULL.
+    PyVector() : PyObjectPtr(), copy_(NULL), scal_(NULL), zero_(NULL),
+        axpy_(NULL), innr_(NULL), prod_(NULL), id_(NULL), linv_(NULL),
+        barr_(NULL), srch_(NULL) {}
 
-// This is a shortcut to setup a Euclidean-Jordan algebra
-#define SET_EJA(name,obj,str,from) \
-    PyObjectPtr obj(PyObject_GetAttrString(from,str)); \
-    name <double>::prod_.reset(PyObject_GetAttrString(obj.get(),"prod")); \
-    name <double>::id_.reset(PyObject_GetAttrString(obj.get(),"id")); \
-    name <double>::linv_.reset(PyObject_GetAttrString(obj.get(),"linv")); \
-    name <double>::barr_.reset(PyObject_GetAttrString(obj.get(),"barr")); \
-    name <double>::srch_.reset(PyObject_GetAttrString(obj.get(),"srch"));
+    // On a simple vector, initialize both the internal storage as well as
+    // the basic linear algebra.
+    PyVector(
+        PyObject* vec,
+        PyObject* copy__,
+        PyObject* scal__,
+        PyObject* zero__,
+        PyObject* axpy__,
+        PyObject* innr__
+    ) : PyObjectPtr(vec), copy_(copy__), scal_(scal__), zero_(zero__),
+        axpy_(axpy__), innr_(innr__), prod_(NULL), id_(NULL), linv_(NULL),
+        barr_(NULL), srch_(NULL) {}
 
-// Creat the vector spaces
-CREATE_VS(XX);
-CREATE_VS(YY);
-CREATE_VS(ZZ);
+    // On a general vector, initialize both the internal storage as well as
+    // all the linear algebra 
+    PyVector(
+        PyObject* vec,
+        PyObject* copy__,
+        PyObject* scal__,
+        PyObject* zero__,
+        PyObject* axpy__,
+        PyObject* innr__,
+        PyObject* prod__,
+        PyObject* id__,
+        PyObject* linv__,
+        PyObject* barr__,
+        PyObject* srch__
+    ) : PyObjectPtr(vec), copy_(copy__), scal_(scal__), zero_(zero__),
+        axpy_(axpy__), innr_(innr__), prod_(prod__), id_(id__), linv_(linv__),
+        barr_(barr__), srch_(srch__) {}
+
+    // Memory allocation and size setting 
+    void init(const PyVector& vec) { 
+        // Acquire the global interpreter lock 
+        PyGILState_STATE gstate = PyGILState_Ensure(); 
+
+        // Grab the deepcopy function from the copy module 
+        PyObjectPtr module(PyImport_ImportModule("copy")); 
+        PyObjectPtr deepcopy(PyObject_GetAttrString(module.get(),"deepcopy")); 
+
+        // Call deepcopy on vec and store the result internally
+        PyObjectPtr args(PyTuple_New(1)); 
+        MyPyTuple_SetItem(args.get(),0,vec.get()); 
+        reset(PyObject_CallObject(deepcopy.get(),args.get())); 
+
+        // Now, copy out all of the algebra functions
+        copy_ = vec.copy_;
+        scal_ = vec.scal_;
+        zero_ = vec.zero_;
+        axpy_ = vec.axpy_;
+        innr_ = vec.innr_;
+        prod_ = vec.prod_;
+        id_ = vec.id_;
+        linv_ = vec.linv_;
+        barr_ = vec.barr_;
+        srch_ = vec.srch_;
+
+        // Release the global interpretter lock 
+        PyGILState_Release(gstate);  
+    } 
+    
+    // y <- x (Shallow.  No memory allocation.) 
+    void copy(const PyVector& x) { 
+        // Acquire the global interpreter lock
+        PyGILState_STATE gstate = PyGILState_Ensure(); 
+
+        // Call the copy function on x and store internally 
+        PyObjectPtr args(PyTuple_New(1)); 
+        MyPyTuple_SetItem(args.get(),0,x.get()); 
+        reset(PyObject_CallObject(copy_.get(),args.get())); 
+
+        // Release the global interpretter lock 
+        PyGILState_Release(gstate); 
+    } 
+
+    // x <- alpha * x
+    void scal(const double& alpha) { 
+        // Acquire the global interpreter lock 
+        PyGILState_STATE gstate = PyGILState_Ensure(); 
+
+        // Call the scal function on alpha and the internal storage and store
+        // in a temporary pointer.
+        PyObjectPtr args(PyTuple_New(2)); 
+        PyTuple_SetItem(args.get(),0,PyFloat_FromDouble(alpha)); 
+        MyPyTuple_SetItem(args.get(),1,get()); 
+        PyObject* alpha_x=PyObject_CallObject(scal_.get(),args.get()); 
+
+        // Copy the result back into the internal storage 
+        reset(alpha_x);
+
+        /* Release the global interpretter lock */ 
+        PyGILState_Release(gstate); 
+    } 
+
+    // x <- 0 
+    void zero() { 
+        // Acquire the global interpreter lock
+        PyGILState_STATE gstate = PyGILState_Ensure(); 
+
+        // Call the zero function on this vector.  Store in z.
+        PyObjectPtr args(PyTuple_New(1)); 
+        MyPyTuple_SetItem(args.get(),0,get()); 
+        PyObject* z=PyObject_CallObject(zero_.get(),args.get()); 
+
+        // Copy the result back internally 
+        reset(z);
+
+        /* Release the global interpretter lock */ 
+        PyGILState_Release(gstate); 
+    } 
+
+    // y <- alpha * x + y 
+    void axpy(const double& alpha, const PyVector& x) { 
+        // Acquire the global interpreter lock 
+        PyGILState_STATE gstate = PyGILState_Ensure(); 
+
+        // Call the axpy function on alpha, x, and the internal storage.
+        // Store in z.
+        PyObjectPtr args(PyTuple_New(3)); 
+        PyTuple_SetItem(args.get(),0,PyFloat_FromDouble(alpha)); 
+        MyPyTuple_SetItem(args.get(),1,x.get()); 
+        MyPyTuple_SetItem(args.get(),2,get()); 
+        PyObject* z=PyObject_CallObject(axpy_.get(),args.get()); 
+
+        // Copy the result back internally 
+        reset(z); 
+
+        /* Release the global interpretter lock */ 
+        PyGILState_Release(gstate); 
+    } 
+
+    // innr <- <x,y> 
+    double innr(const PyVector& x) const { 
+        // Acquire the global interpreter lock 
+        PyGILState_STATE gstate = PyGILState_Ensure(); 
+
+        // Call the innr function on x and the internal.  Store in zz. 
+        PyObjectPtr args(PyTuple_New(2)); 
+        MyPyTuple_SetItem(args.get(),0,x.get()); 
+        MyPyTuple_SetItem(args.get(),1,get()); 
+        PyObjectPtr zz(PyObject_CallObject(innr_.get(),args.get())); 
+
+        // Grab a double of the result
+        double z=PyFloat_AsDouble(zz.get()); 
+
+        // Release the global interpretter lock 
+        PyGILState_Release(gstate); 
+
+        // Return the result 
+        return z; 
+    } 
+
+    // Jordan product, z <- x o y
+    void prod(const PyVector& x, PyVector& z) const { 
+        // Acquire the global interpreter lock 
+        PyGILState_STATE gstate = PyGILState_Ensure(); 
+
+        // Call the prod function on x and the internal.  Store in z.
+        PyObjectPtr args(PyTuple_New(2)); 
+        MyPyTuple_SetItem(args.get(),0,x.get()); 
+        MyPyTuple_SetItem(args.get(),1,get()); 
+        z.reset(PyObject_CallObject(prod_.get(),args.get())); 
+
+        /* Release the global interpretter lock */ 
+        PyGILState_Release(gstate); 
+    } 
+
+    // Identity element, x <- e such that x o e = x 
+    void id() { 
+        // Acquire the global interpreter lock 
+        PyGILState_STATE gstate = PyGILState_Ensure(); 
+
+        // Call the id function on the internal.  Store in z.
+        PyObjectPtr args(PyTuple_New(1)); 
+        MyPyTuple_SetItem(args.get(),0,get()); 
+        PyObject* z=PyObject_CallObject(id_.get(),args.get()); 
+
+        // Copy the result back into the internal. 
+        reset(z);
+
+        // Release the global interpretter lock 
+        PyGILState_Release(gstate); 
+    } 
+
+    // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y 
+    void linv(const PyVector& x, PyVector& z) const { 
+        // Acquire the global interpreter lock 
+        PyGILState_STATE gstate = PyGILState_Ensure(); 
+
+        // Call the linv function on x and the internal.  Store in z.
+        PyObjectPtr args(PyTuple_New(2)); 
+        MyPyTuple_SetItem(args.get(),0,x.get()); 
+        MyPyTuple_SetItem(args.get(),1,get()); 
+        z.reset(PyObject_CallObject(linv_.get(),args.get())); 
+
+        // Release the global interpretter lock
+        PyGILState_Release(gstate); 
+    } 
+
+    // Barrier function, barr <- barr(x) where x o grad barr(x) = e 
+    double barr() const { 
+        // Acquire the global interpreter lock
+        PyGILState_STATE gstate = PyGILState_Ensure(); 
+
+        // Call the barr function on the internal.  Store in zz.
+        PyObjectPtr args(PyTuple_New(1)); 
+        MyPyTuple_SetItem(args.get(),0,get()); 
+        PyObjectPtr zz(PyObject_CallObject(barr_.get(),args.get())); 
+
+        // Grab a double of the result 
+        double z=PyFloat_AsDouble(zz.get()); 
+
+        // Release the global interpretter lock 
+        PyGILState_Release(gstate); 
+
+        // Return the result 
+        return z; 
+    } 
+
+    // Line search, srch <- argmax {alpha in Real >= 0 : alpha x + y >= 0} 
+    // where y > 0.  If the argmax is infinity, then return Real(-1.). 
+    double srch(const PyVector& x) const {  
+        // Acquire the global interpreter lock 
+        PyGILState_STATE gstate = PyGILState_Ensure(); 
+
+        // Call the srch function on x and the internal.  Store in zz.
+        PyObjectPtr args(PyTuple_New(2)); 
+        MyPyTuple_SetItem(args.get(),0,x.get()); 
+        MyPyTuple_SetItem(args.get(),1,get()); 
+        PyObjectPtr zz(PyObject_CallObject(srch_.get(),args.get())); 
+
+        // Grab a double of the result 
+        double z=PyFloat_AsDouble(zz.get()); 
+
+        // Release the global interpretter lock 
+        PyGILState_Release(gstate); 
+
+        // Return the result 
+        return z; 
+    } 
+};
+
+template <typename Real=double> 
+struct PythonVS { 
+    // Setup the vector 
+    typedef PyVector Vector; 
+
+    // Memory allocation and size setting 
+    static void init(const Vector& x, Vector& y) { 
+        y.init(x);
+    } 
+
+    // y <- x (Shallow.  No memory allocation.) 
+    static void copy(const Vector& x, Vector& y) { 
+        y.copy(x);
+    } 
+
+    // x <- alpha * x 
+    static void scal(const Real& alpha, Vector& x) { 
+        x.scal(alpha);
+    } 
+
+    // x <- 0 
+    static void zero(Vector& x) { 
+        x.zero();
+    } 
+
+    // y <- alpha * x + y 
+    static void axpy(const Real& alpha, const Vector& x, Vector& y) { 
+        y.axpy(alpha,x);
+    } 
+
+    // innr <- <x,y> 
+    static Real innr(const Vector& x,const Vector& y) { 
+        return y.innr(x);
+    } 
+
+    // Jordan product, z <- x o y 
+    static void prod(const Vector& x, const Vector& y, Vector& z) { 
+        y.prod(x,z);
+    } 
+
+    // Identity element, x <- e such that x o e = x 
+    static void id(Vector& x) { 
+        x.id();
+    } 
+
+    // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y 
+    static void linv(const Vector& x, const Vector& y, Vector& z) { 
+        y.linv(x,z);
+    } 
+
+    // Barrier function, barr <- barr(x) where x o grad barr(x) = e 
+    static Real barr(const Vector& x) { 
+        return x.barr();
+    } 
+
+    // Line search, srch <- argmax {alpha in Real >= 0 : alpha x + y >= 0} 
+    // where y > 0.  If the argmax is infinity, then return Real(-1.). 
+    static Real srch(const Vector& x,const Vector& y) {  
+        return y.srch(x);
+    } 
+}; 
 
 // A simple scalar valued function interface, f : X -> R
-template <typename Real,template <typename> class XX>
-struct PythonScalarValuedFunction : peopt::ScalarValuedFunction <double,XX> {
+struct PythonScalarValuedFunction
+    : peopt::ScalarValuedFunction <double,PythonVS>
+{
 private:
-    // Create some type shortcuts
-    typedef XX <Real> X;
-    typedef typename X::Vector Vector;
-
     // Python functions
     PyObjectPtr eval_;
     PyObjectPtr grad_;
@@ -326,7 +400,7 @@ public:
     }
 
     // <- f(x) 
-    Real operator () (const Vector& x) const { 
+    double operator () (const PyVector& x) const { 
         // Acquire the global interpreter lock 
         PyGILState_STATE gstate = PyGILState_Ensure();
 
@@ -347,7 +421,7 @@ public:
     }
 
     // g = grad f(x) 
-    void grad(const Vector& x,Vector& g) const { 
+    void grad(const PyVector& x,PyVector& g) const { 
         // Acquire the global interpreter lock 
         PyGILState_STATE gstate = PyGILState_Ensure();
 
@@ -361,7 +435,7 @@ public:
     }
 
     // H_dx = hess f(x) dx 
-    void hessvec(const Vector& x,const Vector& dx,Vector& H_dx) const {
+    void hessvec(const PyVector& x,const PyVector& dx,PyVector& H_dx) const {
         // Acquire the global interpreter lock 
         PyGILState_STATE gstate = PyGILState_Ensure();
 
@@ -377,19 +451,12 @@ public:
 };
 
 // A simple vector valued function interface, f : X -> Y
-template <
-    typename Real,
-    template <typename> class XX,
-    template <typename> class YY 
->  
 struct PythonVectorValuedFunction
-    : public peopt::VectorValuedFunction<Real,XX,YY> {
+    : public peopt::VectorValuedFunction<double,PythonVS,PythonVS> {
 private:
     // Create some type shortcuts
-    typedef XX <Real> X;
-    typedef typename X::Vector X_Vector; 
-    typedef YY <Real> Y;
-    typedef typename Y::Vector Y_Vector; 
+    typedef PythonVS <>::Vector X_Vector; 
+    typedef PythonVS <>::Vector Y_Vector; 
 
     // Python functions
     PyObjectPtr eval_;
@@ -519,75 +586,98 @@ extern "C" void finite_difference_test(
         // Determine the type of optimization
         long opt_type = PyInt_AsLong(opt_type_);
 
-        // Create the vector space X
-        SET_VS(XX,X,"X",vs_);
-        
         // Create the bundle of functions and add f
-        peopt::Constrained <double,XX,YY,ZZ>::Functions::t fns;
-        fns.f.reset(new PythonScalarValuedFunction <double,XX> (
+        peopt::Constrained <double,PythonVS,PythonVS,PythonVS>::Functions::t
+            fns;
+        fns.f.reset(new PythonScalarValuedFunction (
             PyObject_GetAttrString(fns_,"f")));
 
+        // Grab the point x for the finite difference tests.  This involves
+        // embedding information about the vector space operations.
+        PyObjectPtr X(PyObject_GetAttrString(vs_,"X"));
+        PyVector x(
+            PyObject_GetAttrString(pts_,"x"),
+            PyObject_GetAttrString(X.get(),"copy"),
+            PyObject_GetAttrString(X.get(),"scal"),
+            PyObject_GetAttrString(X.get(),"zero"),
+            PyObject_GetAttrString(X.get(),"axpy"),
+            PyObject_GetAttrString(X.get(),"innr"));
+
         // Create the points for the finite difference test for the objective
-        typedef XX <double>::Vector X_Vector;
-        X_Vector x(PyObject_GetAttrString(pts_,"x"));
-        X_Vector dx(PyObject_GetAttrString(pts_,"dx"));
-        X_Vector dxx(PyObject_GetAttrString(pts_,"dxx"));
+        PyVector dx; dx.init(x); dx.reset(PyObject_GetAttrString(pts_,"dx"));
+        PyVector dxx;dxx.init(x); dxx.reset(PyObject_GetAttrString(pts_,"dxx"));
 
         // Do a finite difference check and symmetric check on the objective
         PythonMessaging().print("Diagnostics on the objective.");
-        peopt::Diagnostics::gradientCheck<double,XX>
+        peopt::Diagnostics::gradientCheck<double,PythonVS>
             (PythonMessaging(),*(fns.f),x,dx);
-        peopt::Diagnostics::hessianCheck <double,XX>
+        peopt::Diagnostics::hessianCheck <double,PythonVS>
             (PythonMessaging(),*(fns.f),x,dx);
-        peopt::Diagnostics::hessianSymmetryCheck <double,XX>
+        peopt::Diagnostics::hessianSymmetryCheck <double,PythonVS>
             (PythonMessaging(),*(fns.f),x,dx,dxx);
 
         // Next, check if we have a equality constrained problem
         if(opt_type == 1 || opt_type == 3) {
-            // Create the vector space Y
-            SET_VS(YY,Y,"Y",vs_);
-        
             // Add g to the bundle of functions
-            fns.g.reset(new PythonVectorValuedFunction <double,XX,YY> (
+            fns.g.reset(new PythonVectorValuedFunction (
                 PyObject_GetAttrString(fns_,"g")));
+
+            // Grab the point y for the finite difference tests.  This involves
+            // embedding information about the vector space operations.
+            PyObjectPtr Y(PyObject_GetAttrString(vs_,"Y"));
+            PyVector y(
+                PyObject_GetAttrString(pts_,"y"),
+                PyObject_GetAttrString(Y.get(),"copy"),
+                PyObject_GetAttrString(Y.get(),"scal"),
+                PyObject_GetAttrString(Y.get(),"zero"),
+                PyObject_GetAttrString(Y.get(),"axpy"),
+                PyObject_GetAttrString(Y.get(),"innr"));
         
             // Create the points for the finite difference test for the
             // constraint.
-            typedef YY <double>::Vector Y_Vector;
-            Y_Vector y(PyObject_GetAttrString(pts_,"y"));
-            Y_Vector dy(PyObject_GetAttrString(pts_,"dy"));
+            PyVector dy;dy.init(x); dy.reset(PyObject_GetAttrString(pts_,"dy"));
 
             // Do some finite difference tests on the constraint
-            peopt::Diagnostics::derivativeCheck <double,XX,YY>
+            peopt::Diagnostics::derivativeCheck <double,PythonVS,PythonVS>
                 (PythonMessaging(),*(fns.g),x,dx,dy);
-            peopt::Diagnostics::derivativeAdjointCheck <double,XX,YY>
+            peopt::Diagnostics::derivativeAdjointCheck<double,PythonVS,PythonVS>
                 (PythonMessaging(),*(fns.g),x,dx,dy);
-            peopt::Diagnostics::secondDerivativeCheck <double,XX,YY>
+            peopt::Diagnostics::secondDerivativeCheck <double,PythonVS,PythonVS>
                 (PythonMessaging(),*(fns.g),x,dx,dy);
         }
 
         // Finally, check if we have an inequality constrained problem
         if(opt_type == 2 || opt_type == 3) {
-            // Create the vector space Z
-            SET_VS(ZZ,Z,"Z",vs_);
-            SET_EJA(ZZ,Z0,"Z",vs_);
-        
-            // Add g to the bundle of functions
-            fns.h.reset(new PythonVectorValuedFunction <double,XX,ZZ> (
+            // Add h to the bundle of functions.
+            fns.h.reset(new PythonVectorValuedFunction(
                 PyObject_GetAttrString(fns_,"h")));
+
+            // Grab the point z for the finite difference tests.  This involves
+            // embedding information about the vector space operations.
+            PyObjectPtr Z(PyObject_GetAttrString(vs_,"Z"));
+            PyVector z(
+                PyObject_GetAttrString(pts_,"z"),
+                PyObject_GetAttrString(Z.get(),"copy"),
+                PyObject_GetAttrString(Z.get(),"scal"),
+                PyObject_GetAttrString(Z.get(),"zero"),
+                PyObject_GetAttrString(Z.get(),"axpy"),
+                PyObject_GetAttrString(Z.get(),"innr"),
+                PyObject_GetAttrString(Z.get(),"prod"),
+                PyObject_GetAttrString(Z.get(),"id"),
+                PyObject_GetAttrString(Z.get(),"linv"),
+                PyObject_GetAttrString(Z.get(),"barr"),
+                PyObject_GetAttrString(Z.get(),"srch"));
         
             // Create the points for the finite difference test for the
             // constraint.
-            typedef ZZ <double>::Vector Z_Vector;
-            Z_Vector z(PyObject_GetAttrString(pts_,"z"));
-            Z_Vector dz(PyObject_GetAttrString(pts_,"dz"));
+            PyVector dz;dz.init(x); dz.reset(PyObject_GetAttrString(pts_,"dz"));
 
-            // Do some finite difference tests on the constraint
-            peopt::Diagnostics::derivativeCheck <double,XX,ZZ>
+            // Do some finite difference tests on the constraint.
+            peopt::Diagnostics::derivativeCheck <double,PythonVS,PythonVS>
                 (PythonMessaging(),*(fns.h),x,dx,dz);
-            peopt::Diagnostics::derivativeAdjointCheck <double,XX,ZZ>
+            peopt::Diagnostics::derivativeAdjointCheck<double,PythonVS,PythonVS>
                 (PythonMessaging(),*(fns.h),x,dx,dz);
-            peopt::Diagnostics::secondDerivativeCheck <double,XX,ZZ>
+            peopt::Diagnostics::secondDerivativeCheck <double,PythonVS,PythonVS>
                 (PythonMessaging(),*(fns.h),x,dx,dz);
         }
     } catch (...) {}
