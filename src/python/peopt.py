@@ -7,14 +7,18 @@ import inspect
 # Load in the math functions
 from math import *
 
+# Make sure we have access to the copy functions
+import copy
+
 # Load in our extension
 import ctypes
 ctypes.cdll.LoadLibrary("libpeopt.so")
 libpeopt=ctypes.CDLL("libpeopt.so")
 
-libpeopt.finite_difference_test.argtypes= \
-    [ctypes.py_object,ctypes.py_object,ctypes.py_object,ctypes.py_object]
-libpeopt.finite_difference_test.restype = None
+libpeopt.pypeopt.argtypes= \
+    [ctypes.py_object,ctypes.py_object,ctypes.py_object,ctypes.py_object,
+    ctypes.py_object]
+libpeopt.pypeopt.restype = ctypes.py_object 
 
 # Define an exception in the case that we have difficulty with the problem
 # setup or running peopt
@@ -250,9 +254,11 @@ def validate_fd_pts(pts):
             'test.\n\n' + e.value + '\n\n' +
             'We require the collection of points to be a class of the form:\n'+
             msg)
+        raise
 
-# Run a finite difference check on the functions
-def fd_check(vs,fns,pts):
+# Run a series of finite difference checks and other diagnostics on the
+# functions
+def diagnostics(vs,fns,pts):
     # First, validate the vector space, functions, and points
     validate_vector_spaces(vs)
     validate_functions(fns)
@@ -270,6 +276,34 @@ def fd_check(vs,fns,pts):
         print msg + '\n'
         raise PeoptError(msg)
 
-    # If they are all the same, run the finite difference check
+    # If they are all the same, run the diagnostics 
     else:
-        libpeopt.finite_difference_test(vs_class,vs,fns,pts)
+        libpeopt.pypeopt(vs_class,vs,fns,pts,None)
+
+# Solve the optimization problem
+def getMin(vs,fns,pts,fname):
+    # First, validate the vector space, functions, and points
+    validate_vector_spaces(vs)
+    validate_functions(fns)
+
+    # Next, get the problem class determined by each of these structions
+    vs_class = type_from_vs(vs)
+    fns_class = type_from_fns(fns)
+    pts_class = type_from_pts(pts)
+
+    # Throw an exception if the problem class is not all the same
+    if not(vs_class == fns_class and fns_class == pts_class):
+        msg = 'The problem class differs between the vector space, ' + \
+            'functions, and points.'
+        print msg + '\n'
+        raise PeoptError(msg)
+
+    # Throw an exception if fname is not a string
+    if not isinstance(fname,str):
+        msg = 'Parameter number 4 to the solve function must be a string'
+        print msg + '\n'
+        raise PeoptError(msg)
+
+    # If they are all the same, run the solver
+    else:
+        return libpeopt.pypeopt(vs_class,vs,fns,pts,fname)

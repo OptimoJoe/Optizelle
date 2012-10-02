@@ -1,9 +1,9 @@
-INCLUDE = -I/home/josyoun/usr/include/python2.7 -I../peopt
-LDFLAGS = -L/home/josyoun/usr/lib/python2.7/config -lpython2.7 -lpthread -ldl -lutil
+INCLUDE = -I/home/josyoun/usr/include/python2.7 -I.. -I/home/josyoun/usr/include
+LDFLAGS = ../peopt/.libs/libpeopt.a -L/home/josyoun/usr/lib -ljson
 CFLAGS = -fPIC -g
 .cpp.o:
 	g++ -c ${CFLAGS} ${INCLUDE} $< 
 all: peopt.o 
-	g++ -shared -Wl,-soname,libpeopt.so -o libpeopt.so peopt.o 
+	g++ -shared -Wl,-soname,libpeopt.so -o libpeopt.so peopt.o ${LDFLAGS}
 clean:
 	rm peopt.o libpeopt.so peopt.pyc

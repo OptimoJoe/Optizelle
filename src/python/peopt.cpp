@@ -1,5 +1,7 @@
+#include <string>
 #include <Python.h>
-#include "peopt.h"
+#include "peopt/peopt.h"
+#include "peopt/json.h"
 
 // A custom PyObject pointer that does proper clean-up on termination
 struct PyObjectPtr { 
@@ -31,6 +33,14 @@ public:
     // On a get, we simply return the pointer.
     PyObject* get() const {
         return ptr;
+    }
+
+    // On a release, we return the underlying pointer and then clear
+    // the vector.  This will prevent a decrement later.
+    PyObject* release() {
+        PyObject* ptr_;
+        ptr=NULL;
+        return ptr_;
     }
 
     // On destruction, decrement the Python reference counter and do
@@ -573,89 +583,98 @@ struct PythonMessaging : public peopt::Messaging {
 
 // A finite difference test based on the vector space vs, functions fns, and
 // points pts.
-extern "C" void finite_difference_test(
+extern "C" PyObject* pypeopt(
     PyObject* opt_type_,
     PyObject* vs_,
     PyObject* fns_,
-    PyObject* pts_
+    PyObject* pts_,
+    PyObject* fname_
 ) {
     // Acquire the global interpreter lock 
     PyGILState_STATE gstate = PyGILState_Ensure();
-
+            
     try {
+        // Try to read in a file name for the peopt parameters.  If it doesn't
+        // exist, we assume that we're doing a finite difference test. 
+        char* fname__ = PyString_AsString(fname_);
+        std::string fname;
+        if(fname__) fname.assign(fname__);
+            
+        // Determine the mode we're running in: 0=finite difference, 1=optimize 
+        long mode = fname.size()==0 ? 0 : 1;
+
         // Determine the type of optimization
+        // 0 = Unconstrained
+        // 1 = Equality constrained
+        // 2 = Inequality constrained
+        // 3 = Constrained
         long opt_type = PyInt_AsLong(opt_type_);
 
-        // Create the bundle of functions and add f
+        // Create the bundle of functions.
         peopt::Constrained <double,PythonVS,PythonVS,PythonVS>::Functions::t
             fns;
+
+        // Add f, then see if we need to add g and h
         fns.f.reset(new PythonScalarValuedFunction (
             PyObject_GetAttrString(fns_,"f")));
+        if(opt_type == 1 || opt_type == 3) 
+            fns.g.reset(new PythonVectorValuedFunction (
+                PyObject_GetAttrString(fns_,"g")));
+        if(opt_type == 2 || opt_type == 3) 
+            fns.h.reset(new PythonVectorValuedFunction(
+                PyObject_GetAttrString(fns_,"h")));
 
-        // Grab the point x for the finite difference tests.  This involves
-        // embedding information about the vector space operations.
+        // Initialize points for x, y, and z when required.  In addition,
+        // initialize points for dx, dxx, dy, and dz when doing the finite
+        // difference tests
         PyObjectPtr X(PyObject_GetAttrString(vs_,"X"));
-        PyVector x(
+        std::auto_ptr <PyVector> x;
+        std::auto_ptr <PyVector> dx;
+        std::auto_ptr <PyVector> dxx;
+        std::auto_ptr <PyVector> y;
+        std::auto_ptr <PyVector> dy;
+        std::auto_ptr <PyVector> z;
+        std::auto_ptr <PyVector> dz;
+
+        // Always initialize x
+        x.reset(new PyVector(
             PyObject_GetAttrString(pts_,"x"),
             PyObject_GetAttrString(X.get(),"copy"),
             PyObject_GetAttrString(X.get(),"scal"),
             PyObject_GetAttrString(X.get(),"zero"),
             PyObject_GetAttrString(X.get(),"axpy"),
-            PyObject_GetAttrString(X.get(),"innr"));
+            PyObject_GetAttrString(X.get(),"innr")));
 
-        // Create the points for the finite difference test for the objective
-        PyVector dx; dx.init(x); dx.reset(PyObject_GetAttrString(pts_,"dx"));
-        PyVector dxx;dxx.init(x); dxx.reset(PyObject_GetAttrString(pts_,"dxx"));
+        // If we need to do a finite difference, initialize dx and dxx
+        if(mode == 0) {
+            dx.reset(new PyVector()); 
+                dx->init(*x);
+                dx->reset(PyObject_GetAttrString(pts_,"dx"));
+            dxx.reset(new PyVector());
+                dxx->init(*x);
+                dxx->reset(PyObject_GetAttrString(pts_,"dxx"));
+        }
 
-        // Do a finite difference check and symmetric check on the objective
-        PythonMessaging().print("Diagnostics on the objective.");
-        peopt::Diagnostics::gradientCheck<double,PythonVS>
-            (PythonMessaging(),*(fns.f),x,dx);
-        peopt::Diagnostics::hessianCheck <double,PythonVS>
-            (PythonMessaging(),*(fns.f),x,dx);
-        peopt::Diagnostics::hessianSymmetryCheck <double,PythonVS>
-            (PythonMessaging(),*(fns.f),x,dx,dxx);
-
-        // Next, check if we have a equality constrained problem
+        // Possibly initialize y and dy
         if(opt_type == 1 || opt_type == 3) {
-            // Add g to the bundle of functions
-            fns.g.reset(new PythonVectorValuedFunction (
-                PyObject_GetAttrString(fns_,"g")));
-
-            // Grab the point y for the finite difference tests.  This involves
-            // embedding information about the vector space operations.
             PyObjectPtr Y(PyObject_GetAttrString(vs_,"Y"));
-            PyVector y(
+            y.reset(new PyVector(
                 PyObject_GetAttrString(pts_,"y"),
                 PyObject_GetAttrString(Y.get(),"copy"),
                 PyObject_GetAttrString(Y.get(),"scal"),
                 PyObject_GetAttrString(Y.get(),"zero"),
                 PyObject_GetAttrString(Y.get(),"axpy"),
-                PyObject_GetAttrString(Y.get(),"innr"));
-        
-            // Create the points for the finite difference test for the
-            // constraint.
-            PyVector dy;dy.init(x); dy.reset(PyObject_GetAttrString(pts_,"dy"));
-
-            // Do some finite difference tests on the constraint
-            peopt::Diagnostics::derivativeCheck <double,PythonVS,PythonVS>
-                (PythonMessaging(),*(fns.g),x,dx,dy);
-            peopt::Diagnostics::derivativeAdjointCheck<double,PythonVS,PythonVS>
-                (PythonMessaging(),*(fns.g),x,dx,dy);
-            peopt::Diagnostics::secondDerivativeCheck <double,PythonVS,PythonVS>
-                (PythonMessaging(),*(fns.g),x,dx,dy);
+                PyObject_GetAttrString(Y.get(),"innr")));
+            if(mode == 0) 
+                dy.reset(new PyVector()); 
+                    dy->init(*y);
+                    dy->reset(PyObject_GetAttrString(pts_,"dy"));
         }
-
-        // Finally, check if we have an inequality constrained problem
+        
+        // Possibly initialize z and dz
         if(opt_type == 2 || opt_type == 3) {
-            // Add h to the bundle of functions.
-            fns.h.reset(new PythonVectorValuedFunction(
-                PyObject_GetAttrString(fns_,"h")));
-
-            // Grab the point z for the finite difference tests.  This involves
-            // embedding information about the vector space operations.
             PyObjectPtr Z(PyObject_GetAttrString(vs_,"Z"));
-            PyVector z(
+            y.reset(new PyVector(
                 PyObject_GetAttrString(pts_,"z"),
                 PyObject_GetAttrString(Z.get(),"copy"),
                 PyObject_GetAttrString(Z.get(),"scal"),
@@ -666,22 +685,115 @@ extern "C" void finite_difference_test(
                 PyObject_GetAttrString(Z.get(),"id"),
                 PyObject_GetAttrString(Z.get(),"linv"),
                 PyObject_GetAttrString(Z.get(),"barr"),
-                PyObject_GetAttrString(Z.get(),"srch"));
-        
-            // Create the points for the finite difference test for the
-            // constraint.
-            PyVector dz;dz.init(x); dz.reset(PyObject_GetAttrString(pts_,"dz"));
-
-            // Do some finite difference tests on the constraint.
-            peopt::Diagnostics::derivativeCheck <double,PythonVS,PythonVS>
-                (PythonMessaging(),*(fns.h),x,dx,dz);
-            peopt::Diagnostics::derivativeAdjointCheck<double,PythonVS,PythonVS>
-                (PythonMessaging(),*(fns.h),x,dx,dz);
-            peopt::Diagnostics::secondDerivativeCheck <double,PythonVS,PythonVS>
-                (PythonMessaging(),*(fns.h),x,dx,dz);
+                PyObject_GetAttrString(Z.get(),"srch")));
+            if(mode == 0) 
+                dz.reset(new PyVector()); 
+                    dz->init(*z);
+                    dz->reset(PyObject_GetAttrString(pts_,"dz"));
         }
-    } catch (...) {}
+
+        // Next, do the finite difference tests if required
+        if(mode == 0) {
+            // Do a finite difference check and symmetric check on the objective
+            PythonMessaging().print("Diagnostics on the objective.");
+            peopt::Diagnostics::gradientCheck<double,PythonVS>
+                (PythonMessaging(),*(fns.f),*x,*dx);
+            peopt::Diagnostics::hessianCheck <double,PythonVS>
+                (PythonMessaging(),*(fns.f),*x,*dx);
+            peopt::Diagnostics::hessianSymmetryCheck <double,PythonVS>
+                (PythonMessaging(),*(fns.f),*x,*dx,*dxx);
         
-    // Release the global interpretter lock 
-    PyGILState_Release(gstate); 
+            // Next, check if we have a equality constrained problem
+            if(opt_type == 1 || opt_type == 3) {
+                // Do some finite difference tests on the constraint
+                peopt::Diagnostics::derivativeCheck <double,PythonVS,PythonVS>
+                    (PythonMessaging(),*(fns.g),*x,*dx,*dy);
+                peopt::Diagnostics::derivativeAdjointCheck
+                    <double,PythonVS,PythonVS>
+                    (PythonMessaging(),*(fns.g),*x,*dx,*dy);
+                peopt::Diagnostics::secondDerivativeCheck
+                    <double,PythonVS,PythonVS>
+                    (PythonMessaging(),*(fns.g),*x,*dx,*dy);
+            }
+
+            // Finally, check if we have a inequality constrained problem
+            if(opt_type == 2 || opt_type == 3) {
+                // Do some finite difference tests on the constraint.
+                peopt::Diagnostics::derivativeCheck
+                    <double,PythonVS,PythonVS>
+                    (PythonMessaging(),*(fns.h),*x,*dx,*dz);
+                peopt::Diagnostics::derivativeAdjointCheck
+                    <double,PythonVS,PythonVS>
+                    (PythonMessaging(),*(fns.h),*x,*dx,*dz);
+                peopt::Diagnostics::secondDerivativeCheck
+                    <double,PythonVS,PythonVS>
+                    (PythonMessaging(),*(fns.h),*x,*dx,*dz);
+            }
+        
+            // Release the global interpretter lock 
+            PyGILState_Release(gstate); 
+
+            // Return none
+            return Py_None;
+
+        // Alternatively, optimize if required
+        } else if(mode==1) {
+            // Initialize memory for the solution
+            PyObject* sol;
+
+            // Optimize the unconstrained problem
+            if(opt_type==0) {
+                peopt::Unconstrained <double,PythonVS>::State::t state(*x);
+                peopt::json::Unconstrained <double,PythonVS>::read(
+                    PythonMessaging(),fname,state);
+                peopt::Unconstrained <double,PythonVS>::Algorithms
+                    ::getMin(PythonMessaging(),fns,state);
+                sol = state.x.front().release();
+
+            } else if(opt_type==1) {
+                peopt::EqualityConstrained <double,PythonVS,PythonVS>::State::t
+                    state(*x,*y);
+                peopt::json::EqualityConstrained <double,PythonVS,PythonVS>
+                    ::read(PythonMessaging(),fname,state);
+                #if 0
+                peopt::EqualityConstrained <double,PythonVS,PythonVS>
+                    ::Algorithms::getMin(PythonMessaging(),fns,state);
+                #endif
+                sol = state.x.front().release();
+
+            } else if(opt_type==2) {
+                peopt::InequalityConstrained<double,PythonVS,PythonVS>::State::t
+                    state(*x,*z);
+                peopt::json::InequalityConstrained <double,PythonVS,PythonVS>
+                    ::read(PythonMessaging(),fname,state);
+                peopt::InequalityConstrained <double,PythonVS,PythonVS>
+                    ::Algorithms::getMin(PythonMessaging(),fns,state);
+                sol = state.x.front().release();
+
+            } else if(opt_type==3) {
+                peopt::Constrained<double,PythonVS,PythonVS,PythonVS>::State::t
+                    state(*x,*y,*z);
+                peopt::json::Constrained <double,PythonVS,PythonVS,PythonVS>
+                    ::read(PythonMessaging(),fname,state);
+                #if 0
+                peopt::Constrained <double,PythonVS,PythonVS,PythonVS>
+                    ::Algorithms::getMin(PythonMessaging(),fns,state);
+                #endif
+                sol = state.x.front().release();
+            }
+
+            // Release the global interpretter lock and return the solution
+            PyGILState_Release(gstate); 
+            return sol;
+        }
+
+    // In the case of an exception, the correct code should already be
+    // set, so just exit.
+    } catch (...) {
+        // Release the global interpretter lock 
+        PyGILState_Release(gstate); 
+
+        // Return nothing
+        return Py_None;
+    }
 }

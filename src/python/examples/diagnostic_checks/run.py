@@ -1,3 +1,8 @@
+# In this example, we demonstrate how to set up the functions and vector spaces
+# required to optimize in peopt.  Then, we run a series of diagnostic tests
+# that help us debug whether or not our functions are correctly implemented.
+# These tests include finite difference tests in addition to other checks.
+
 # Load in peopt
 import peopt
 from math import *
@@ -109,4 +114,4 @@ class pts:
     y = [7,8,9]
     dy = [9,10,11]
 
-peopt.fd_check(vs(),fns(),pts())
+peopt.diagnostics(vs(),fns(),pts())
