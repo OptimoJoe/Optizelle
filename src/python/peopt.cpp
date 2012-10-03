@@ -38,7 +38,7 @@ public:
     // On a release, we return the underlying pointer and then clear
     // the vector.  This will prevent a decrement later.
     PyObject* release() {
-        PyObject* ptr_;
+        PyObject* ptr_=ptr;
         ptr=NULL;
         return ptr_;
     }
