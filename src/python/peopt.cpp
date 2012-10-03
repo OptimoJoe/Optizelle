@@ -665,16 +665,17 @@ extern "C" PyObject* pypeopt(
                 PyObject_GetAttrString(Y.get(),"zero"),
                 PyObject_GetAttrString(Y.get(),"axpy"),
                 PyObject_GetAttrString(Y.get(),"innr")));
-            if(mode == 0) 
+            if(mode == 0) {
                 dy.reset(new PyVector()); 
                     dy->init(*y);
                     dy->reset(PyObject_GetAttrString(pts_,"dy"));
+            }
         }
         
         // Possibly initialize z and dz
         if(opt_type == 2 || opt_type == 3) {
             PyObjectPtr Z(PyObject_GetAttrString(vs_,"Z"));
-            y.reset(new PyVector(
+            z.reset(new PyVector(
                 PyObject_GetAttrString(pts_,"z"),
                 PyObject_GetAttrString(Z.get(),"copy"),
                 PyObject_GetAttrString(Z.get(),"scal"),
@@ -686,10 +687,11 @@ extern "C" PyObject* pypeopt(
                 PyObject_GetAttrString(Z.get(),"linv"),
                 PyObject_GetAttrString(Z.get(),"barr"),
                 PyObject_GetAttrString(Z.get(),"srch")));
-            if(mode == 0) 
+            if(mode == 0) {
                 dz.reset(new PyVector()); 
                     dz->init(*z);
                     dz->reset(PyObject_GetAttrString(pts_,"dz"));
+            }
         }
 
         // Next, do the finite difference tests if required

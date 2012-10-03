@@ -250,6 +250,8 @@ namespace peopt {
                 // Read in the parameters
                 state.mu_tol=Real(root["peopt"]
                     .get("mu_tol",state.mu_tol).asDouble());
+                state.mu_trg=Real(root["peopt"]
+                    .get("mu_trg",state.mu_trg).asDouble());
                 state.sigma=Real(root["peopt"]
                     .get("sigma",state.sigma).asDouble());
                 state.gamma=Real(root["peopt"]
@@ -278,6 +280,7 @@ namespace peopt {
                 
                 // Write the optimization parameters
                 root["peopt"]["mu_tol"]=state.mu_tol;
+                root["peopt"]["mu_trg"]=state.mu_trg;
                 root["peopt"]["sigma"]=state.sigma;
                 root["peopt"]["gamma"]=state.gamma;
 
