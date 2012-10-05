@@ -4,6 +4,6 @@ CFLAGS = -fPIC -g
 .cpp.o:
 	g++ -c ${CFLAGS} ${INCLUDE} $< 
 all: peopt.o 
-	g++ -shared -Wl,-soname,libpeopt.so -o libpeopt.so peopt.o ${LDFLAGS}
+	g++ -shared -o libpeopt.so peopt.o ${LDFLAGS}
 clean:
 	rm peopt.o libpeopt.so peopt.pyc
