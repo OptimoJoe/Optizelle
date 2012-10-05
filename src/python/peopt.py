@@ -278,7 +278,11 @@ def diagnostics(vs,fns,pts):
 
     # If they are all the same, run the diagnostics 
     else:
-        libpeopt.pypeopt(vs_class,vs,fns,pts,None)
+        ret = libpeopt.pypeopt(vs_class,vs,fns,pts,None)
+        
+        # Check for an exception
+        if ret[1]!=None:
+            raise PeoptError(ret[1]);
 
 # Solve the optimization problem
 def getMin(vs,fns,pts,fname):
@@ -306,4 +310,10 @@ def getMin(vs,fns,pts,fname):
 
     # If they are all the same, run the solver
     else:
-        return libpeopt.pypeopt(vs_class,vs,fns,pts,fname)
+        ret = libpeopt.pypeopt(vs_class,vs,fns,pts,fname)
+        
+        # Check for an exception
+        if ret[1]!=None:
+            raise PeoptError(ret[1]);
+        else:
+            return ret[0]

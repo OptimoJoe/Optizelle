@@ -3,6 +3,20 @@
 #include "peopt/peopt.h"
 #include "peopt/json.h"
 
+// A messaging utility that hooks directly into Matlab
+struct PythonMessaging : public peopt::Messaging {
+    // Prints a message
+    void print(const std::string msg) const {
+        PySys_WriteStdout((msg + '\n').c_str());
+    }
+
+    // Prints an error
+    void error(const std::string msg) const {
+        PySys_WriteStderr((msg + '\n').c_str());
+        throw msg;
+    }
+};
+
 // A custom PyObject pointer that does proper clean-up on termination
 struct PyObjectPtr { 
 private:
@@ -153,6 +167,11 @@ public:
 
         // Release the global interpretter lock 
         PyGILState_Release(gstate); 
+       
+        // Check errors
+        if(get()==NULL)
+            PythonMessaging().
+                error("Evaluation of the vector space function copy failed.");
     } 
 
     // x <- alpha * x
@@ -160,18 +179,21 @@ public:
         // Acquire the global interpreter lock 
         PyGILState_STATE gstate = PyGILState_Ensure(); 
 
-        // Call the scal function on alpha and the internal storage and store
-        // in a temporary pointer.
+        // Call the scal function on alpha and the internal storage and
+        // then overwrrite the internal storage.
         PyObjectPtr args(PyTuple_New(2)); 
         PyTuple_SetItem(args.get(),0,PyFloat_FromDouble(alpha)); 
         MyPyTuple_SetItem(args.get(),1,get()); 
-        PyObject* alpha_x=PyObject_CallObject(scal_.get(),args.get()); 
+        reset(PyObject_CallObject(scal_.get(),args.get())); 
 
-        // Copy the result back into the internal storage 
-        reset(alpha_x);
-
-        /* Release the global interpretter lock */ 
+        // Release the global interpretter lock 
         PyGILState_Release(gstate); 
+        
+        // Check errors
+        if(get()==NULL)
+            PythonMessaging().
+                error("Evaluation of the vector space function scal failed.");
+
     } 
 
     // x <- 0 
@@ -179,16 +201,18 @@ public:
         // Acquire the global interpreter lock
         PyGILState_STATE gstate = PyGILState_Ensure(); 
 
-        // Call the zero function on this vector.  Store in z.
+        // Call the zero function on this vector.  Store in in the internal. 
         PyObjectPtr args(PyTuple_New(1)); 
         MyPyTuple_SetItem(args.get(),0,get()); 
-        PyObject* z=PyObject_CallObject(zero_.get(),args.get()); 
+        reset(PyObject_CallObject(zero_.get(),args.get())); 
 
-        // Copy the result back internally 
-        reset(z);
-
-        /* Release the global interpretter lock */ 
+        // Release the global interpretter lock 
         PyGILState_Release(gstate); 
+       
+        // Check errors
+        if(get()==NULL)
+            PythonMessaging().
+                error("Evaluation of the vector space function zero failed.");
     } 
 
     // y <- alpha * x + y 
@@ -197,18 +221,21 @@ public:
         PyGILState_STATE gstate = PyGILState_Ensure(); 
 
         // Call the axpy function on alpha, x, and the internal storage.
-        // Store in z.
+        // Store in the internal. 
         PyObjectPtr args(PyTuple_New(3)); 
         PyTuple_SetItem(args.get(),0,PyFloat_FromDouble(alpha)); 
         MyPyTuple_SetItem(args.get(),1,x.get()); 
         MyPyTuple_SetItem(args.get(),2,get()); 
-        PyObject* z=PyObject_CallObject(axpy_.get(),args.get()); 
-
-        // Copy the result back internally 
-        reset(z); 
-
-        /* Release the global interpretter lock */ 
+        reset(PyObject_CallObject(axpy_.get(),args.get())); 
+        
+        // Release the global interpretter lock 
         PyGILState_Release(gstate); 
+       
+        // Check errors
+        if(get()==NULL)
+            PythonMessaging().
+                error("Evaluation of the vector space function axpy failed.");
+
     } 
 
     // innr <- <x,y> 
@@ -227,24 +254,34 @@ public:
 
         // Release the global interpretter lock 
         PyGILState_Release(gstate); 
+       
+        // Check errors
+        if(zz.get()==NULL)
+            PythonMessaging().
+                error("Evaluation of the vector space function innr failed.");
 
         // Return the result 
         return z; 
     } 
 
     // Jordan product, z <- x o y
-    void prod(const PyVector& x, PyVector& z) const { 
+    void prod(const PyVector& x, const PyVector& y) { 
         // Acquire the global interpreter lock 
         PyGILState_STATE gstate = PyGILState_Ensure(); 
 
-        // Call the prod function on x and the internal.  Store in z.
+        // Call the prod function on x and y.  Store in the internal 
         PyObjectPtr args(PyTuple_New(2)); 
         MyPyTuple_SetItem(args.get(),0,x.get()); 
-        MyPyTuple_SetItem(args.get(),1,get()); 
-        z.reset(PyObject_CallObject(prod_.get(),args.get())); 
+        MyPyTuple_SetItem(args.get(),1,y.get()); 
+        reset(PyObject_CallObject(prod_.get(),args.get())); 
 
-        /* Release the global interpretter lock */ 
+        // Release the global interpretter lock 
         PyGILState_Release(gstate); 
+       
+        // Check errors
+        if(get()==NULL)
+            PythonMessaging().
+                error("Evaluation of the vector space function prod failed.");
     } 
 
     // Identity element, x <- e such that x o e = x 
@@ -252,31 +289,39 @@ public:
         // Acquire the global interpreter lock 
         PyGILState_STATE gstate = PyGILState_Ensure(); 
 
-        // Call the id function on the internal.  Store in z.
+        // Call the id function on the internal.  Store in the internal.
         PyObjectPtr args(PyTuple_New(1)); 
         MyPyTuple_SetItem(args.get(),0,get()); 
-        PyObject* z=PyObject_CallObject(id_.get(),args.get()); 
-
-        // Copy the result back into the internal. 
-        reset(z);
+        reset(PyObject_CallObject(id_.get(),args.get())); 
 
         // Release the global interpretter lock 
         PyGILState_Release(gstate); 
+
+        // Check errors
+        if(get()==NULL)
+            PythonMessaging().
+                error("Evaluation of the vector space function id failed.");
+
     } 
 
     // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y 
-    void linv(const PyVector& x, PyVector& z) const { 
+    void linv(const PyVector& x, const PyVector& y) { 
         // Acquire the global interpreter lock 
         PyGILState_STATE gstate = PyGILState_Ensure(); 
 
-        // Call the linv function on x and the internal.  Store in z.
+        // Call the linv function on x and y.  Store in the internal. 
         PyObjectPtr args(PyTuple_New(2)); 
         MyPyTuple_SetItem(args.get(),0,x.get()); 
-        MyPyTuple_SetItem(args.get(),1,get()); 
-        z.reset(PyObject_CallObject(linv_.get(),args.get())); 
+        MyPyTuple_SetItem(args.get(),1,y.get()); 
+        reset(PyObject_CallObject(linv_.get(),args.get())); 
 
         // Release the global interpretter lock
         PyGILState_Release(gstate); 
+       
+        // Check errors
+        if(get()==NULL)
+            PythonMessaging().
+                error("Evaluation of the vector space function linv failed.");
     } 
 
     // Barrier function, barr <- barr(x) where x o grad barr(x) = e 
@@ -294,6 +339,11 @@ public:
 
         // Release the global interpretter lock 
         PyGILState_Release(gstate); 
+       
+        // Check errors
+        if(zz.get()==NULL)
+            PythonMessaging().
+                error("Evaluation of the vector space function barr failed.");
 
         // Return the result 
         return z; 
@@ -316,6 +366,11 @@ public:
 
         // Release the global interpretter lock 
         PyGILState_Release(gstate); 
+       
+        // Check errors
+        if(zz.get()==NULL)
+            PythonMessaging().
+                error("Evaluation of the vector space function srch failed.");
 
         // Return the result 
         return z; 
@@ -359,7 +414,7 @@ struct PythonVS {
 
     // Jordan product, z <- x o y 
     static void prod(const Vector& x, const Vector& y, Vector& z) { 
-        y.prod(x,z);
+        z.prod(x,y);
     } 
 
     // Identity element, x <- e such that x o e = x 
@@ -369,7 +424,7 @@ struct PythonVS {
 
     // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y 
     static void linv(const Vector& x, const Vector& y, Vector& z) { 
-        y.linv(x,z);
+        z.linv(x,y);
     } 
 
     // Barrier function, barr <- barr(x) where x o grad barr(x) = e 
@@ -425,6 +480,10 @@ public:
        
         // Release the global interpretter lock 
         PyGILState_Release(gstate); 
+       
+        // Check errors
+        if(zz.get()==NULL)
+            PythonMessaging().error("Evaluation of the objective f failed.");
 
         // Return the result
         return z;
@@ -442,6 +501,10 @@ public:
 
         // Release the global interpretter lock 
         PyGILState_Release(gstate); 
+       
+        // Check errors
+        if(g.get()==NULL)
+            PythonMessaging().error("Evaluation of the gradient of f failed.");
     }
 
     // H_dx = hess f(x) dx 
@@ -457,6 +520,11 @@ public:
 
         // Release the global interpretter lock 
         PyGILState_Release(gstate); 
+       
+        // Check errors
+        if(H_dx.get()==NULL)
+            PythonMessaging().error(
+                "Evaluation of the Hessian-vector product of f failed.");
     }
 };
 
@@ -468,6 +536,9 @@ private:
     typedef PythonVS <>::Vector X_Vector; 
     typedef PythonVS <>::Vector Y_Vector; 
 
+    // Name of this function
+    const char name;
+
     // Python functions
     PyObjectPtr eval_;
     PyObjectPtr p_;
@@ -476,14 +547,14 @@ private:
 
     // Prevent the default constructor from being called
     PythonVectorValuedFunction() : 
-        eval_(NULL), p_(NULL), ps_(NULL), pps_(NULL) {}
+        name('-'), eval_(NULL), p_(NULL), ps_(NULL), pps_(NULL) {}
 
 public:
     // When we construct the function, we read in all the names from
     // the Python class.  Make sure that all of these functions are
     // valid prior to constructing this class.
-    PythonVectorValuedFunction(PyObject* g) :
-        eval_(NULL), p_(NULL), ps_(NULL), pps_(NULL)
+    PythonVectorValuedFunction(const char name_,PyObject* g) :
+        name(name_), eval_(NULL), p_(NULL), ps_(NULL), pps_(NULL)
     {
         eval_.reset(PyObject_GetAttrString(g,"eval"));
         p_.reset(PyObject_GetAttrString(g,"p"));
@@ -503,6 +574,13 @@ public:
 
         // Release the global interpretter lock 
         PyGILState_Release(gstate); 
+       
+        // Check errors
+        if(y.get()==NULL) {
+            std::stringstream ss;
+            ss << "Evaluation of the constraint " << name << "failed.";
+            PythonMessaging().error(ss.str());
+        }
     }
 
     // y=f'(x)dx 
@@ -522,6 +600,14 @@ public:
 
         // Release the global interpretter lock 
         PyGILState_Release(gstate); 
+       
+        // Check errors
+        if(y.get()==NULL) {
+            std::stringstream ss;
+            ss << "Evaluation of the derivative of the constraint "
+                << name << "failed.";
+            PythonMessaging().error(ss.str());
+        }
     }
 
     // z=f'(x)*dy
@@ -541,6 +627,14 @@ public:
 
         // Release the global interpretter lock 
         PyGILState_Release(gstate); 
+      
+        // Check errors
+        if(z.get()==NULL) {
+            std::stringstream ss;
+            ss << "Evaluation of the derivative-adjoint of the constraint "
+                << name << "failed.";
+            PythonMessaging().error(ss.str());
+        }
     }
      
     // z=(f''(x)dx)*dy
@@ -563,21 +657,14 @@ public:
 
         // Release the global interpretter lock 
         PyGILState_Release(gstate); 
-    }
-};
-
-// A messaging utility that hooks directly into Matlab
-struct PythonMessaging : public peopt::Messaging {
-    // Prints a message
-    void print(const std::string msg) const {
-        PySys_WriteStdout((msg + '\n').c_str());
-    }
-
-    // Prints an error
-    void error(const std::string msg) const {
-        PySys_WriteStderr((msg + '\n').c_str());
-        PyErr_SetString(PyExc_RuntimeError,msg.c_str());
-        throw -1;
+       
+        // Check errors
+        if(z.get()==NULL) {
+            std::stringstream ss;
+            ss << "Evaluation of the second derivative-adjoint of the "
+                "constraint " << name << "failed.";
+            PythonMessaging().error(ss.str());
+        }
     }
 };
 
@@ -619,10 +706,10 @@ extern "C" PyObject* pypeopt(
             PyObject_GetAttrString(fns_,"f")));
         if(opt_type == 1 || opt_type == 3) 
             fns.g.reset(new PythonVectorValuedFunction (
-                PyObject_GetAttrString(fns_,"g")));
+                'g',PyObject_GetAttrString(fns_,"g")));
         if(opt_type == 2 || opt_type == 3) 
             fns.h.reset(new PythonVectorValuedFunction(
-                PyObject_GetAttrString(fns_,"h")));
+                'h',PyObject_GetAttrString(fns_,"h")));
 
         // Initialize points for x, y, and z when required.  In addition,
         // initialize points for dx, dxx, dy, and dz when doing the finite
@@ -735,8 +822,14 @@ extern "C" PyObject* pypeopt(
             // Release the global interpretter lock 
             PyGILState_Release(gstate); 
 
-            // Return none
-            return Py_None;
+            // Return the tuple (None,None).  The second element in the tuple
+            // tells us if there was an error, so this needs to be None.  We
+            // don't really need the first element, so we make this None as
+            // well.
+            PyObject* ret=PyTuple_New(2); 
+            PyTuple_SetItem(ret,0,Py_None);
+            PyTuple_SetItem(ret,1,Py_None);
+            return ret;
 
         // Alternatively, optimize if required
         } else if(mode==1) {
@@ -784,18 +877,30 @@ extern "C" PyObject* pypeopt(
                 sol = state.x.front().release();
             }
 
-            // Release the global interpretter lock and return the solution
-            PyGILState_Release(gstate); 
-            return sol;
+            // Release the global interpretter lock and return the solution.
+            // When we return the solution, we actually put it in a tuple
+            // with the first element being the solution and the second
+            // element being none.  This tells us that an exception did
+            // not occur.
+            PyGILState_Release(gstate);
+            PyObject* ret=PyTuple_New(2); 
+            PyTuple_SetItem(ret,0,sol);
+            PyTuple_SetItem(ret,1,Py_None);
+            return ret;
         }
 
     // In the case of an exception, the correct code should already be
     // set, so just exit.
-    } catch (...) {
+    } catch (std::string msg) {
         // Release the global interpretter lock 
         PyGILState_Release(gstate); 
 
-        // Return nothing
-        return Py_None;
+        // Return a string of what went on.  Like the solution above, we return
+        // this in a tuple where the first element is none and the second
+        // element is the error.  This is how we know there's a problem.
+        PyObject* ret=PyTuple_New(2); 
+        PyTuple_SetItem(ret,0,Py_None);
+        PyTuple_SetItem(ret,1,PyString_FromString(msg.c_str()));
+        return ret;
     }
 }
