@@ -53,5 +53,5 @@ class fns:
 class pts:
     x = [-1.2,1]
 
-x_sol = peopt.getMin(vs(),fns(),pts(),'run.peopt')
-print x_sol
+sol = peopt.getMin(vs(),fns(),pts(),'run.peopt')
+print sol[0]

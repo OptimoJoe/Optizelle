@@ -1,5 +1,8 @@
+""" The pretty efficient optimization library. """
+__author__ = "Joseph Young <josyoun@sandia.gov>"
+
 # Set the exposed functions
-__all__ = ['peopt_fd']
+__all__ = ['diagnostics','getMin','PeoptError']
 
 # Make sure that we can inspect our functions
 import inspect
@@ -23,6 +26,10 @@ libpeopt.pypeopt.restype = ctypes.py_object
 # Define an exception in the case that we have difficulty with the problem
 # setup or running peopt
 class PeoptError(Exception):
+    """
+    The general exception for any errors peopt related.  Its value is
+    always a string.
+    """
     def __init__(self,value):
         self.value=value
     def __str__(self):
@@ -55,7 +62,7 @@ def validate_vector_space(v,name):
     try:               
         validate_object(v,req_fns)  
     except PeoptError as e:
-        print('Error in the vector space ' + name + '.\n\n' + e.value + '\n\n' + 
+        print('Error in the vector space ' + name + '.\n\n' + e.value + '\n\n' +
             'We require the vector space to be a class of the form:\n' + 
             'class ' + name + ':\n' +
             '    copy(self,x): ...\n' +
@@ -317,3 +324,179 @@ def getMin(vs,fns,pts,fname):
             raise PeoptError(ret[1]);
         else:
             return ret[0]
+
+# Setup some documentation
+diagnostics_summary="""
+SUMMARY
+Function diagnostics for peopt.
+
+This function performs a number of diagnostics on the functions that
+peopt uses for optimization.  On the objective function f, it performs a
+
+Finite difference test on grad(f) using f,
+Finite difference test on hess(f) using grad(f),
+Symmetry test on hess(f) that verifies <hess(f)dx,dxx>=<dx,hess(f)dxx>.
+
+On the constraints g and h, it performs a
+
+Finite difference test on g'(x) using g,
+Symmetry test that verifies <g'(x)dx,dy>=<dx,g'(x)*dy>,
+Finite difference test on (g''(x)dx)*dy using g'(x)*.
+"""
+
+getMin_summary="""
+SUMMARY
+Minimization using the optimization algorithms inside of peopt.
+
+This function solve problems of the form
+
+Unconstrained:          min f(x),
+Equality constrained:   min f(x) st g(x) = 0,
+Inequality constrained: min f(x) st h(x) >= 0,
+Constrained:            min f(x) st g(x) = 0, h(x) >= 0. 
+
+where >= denotes general symmetric cone constraint.  This includes
+linear inequalities.  In order to minimize these problems, we use a
+variety of gradient based algorithms, which includes second-order
+methods based on Newton's method, but also includes first-order methods
+such as BFGS, and SR1 as well as simple methods such as steepest
+descent.  For the inequality constraints, we use a primal-dual interior
+point method.
+"""
+
+both_args="""
+ARGUMENTS
+vs: A class instance of the form
+    class vs:
+        X =  # Must be equality to an instance of a vector space. 
+        Y =  # Required only if the problem is equality constrained.
+        Z =  # Required only if the problem is inequality constrained.
+
+    class SomeVectorSpace:       # Includes X, Y, and Z.
+        def copy(self,x):        # copy <- x (Shallow.  No memory 
+                                 # allocation.)
+        def scal(self,alpha,x):  # scal <- alpha * x 
+        def zero(self,x):        # zero <- 0 
+        def axpy(self,alpha,x,y):# axpy <- alpha * x + y
+        def innr(self,x,y):      # innr <- <x,y>
+
+        # The rest are required for vector spaces used in Z 
+        def prod(self,x,y):  # Jordan product, prod <- x o y
+        def id(self,x):      # Identity element, id <- e such that
+                             # x o e = x
+        def linv(self,x,y):  # Jordan product inverse, linv<-inv(L(x)) y
+                             # where L(x) y = x o y
+        def barr(self,x):    # Barrier function, barr <- barr(x) where
+                             # x o grad barr(x) = e 
+        def srch(self,x,y):  # Line search, srch<-argmax {alpha in Real
+                             # >= 0 : alpha x + y >= 0} where y > 0.
+                             # If the argmax is infinity, then return
+                             # -1.0.
+
+fns: A class instance of the form
+    class fns:    
+        f = Objective()
+        g = EqualityConstraint()   # Optional
+        h = InequalityConstraint() # Optional
+
+    class Objective:
+        def eval(self,x):       # eval <- f(x)
+        def grad(self,x):       # grad <- grad(f)(x)
+        def hessvec(self,x,dx): # hessvec <- hess(f)(x)dx
+
+    # Applies to both EqualityConstraint and InequalityConstraint.  For
+    # InequalityConstraint, the function must be affine.  This means
+    # that (h''(x)dx)*dy must be 0.
+    class Constraint:
+        def eval(self,x):       # eval <- g(x) 
+        def p(self,x,dx):       # p <- g'(x)dx
+        def ps(self,x,dy):      # ps <- g'(x)*dy
+        def pps(self,x,dx,dy):  # pps <- (g''(x)dx)*dy
+"""
+
+diagnostics_pts = """ 
+pts: A class instance of the form
+    class pts:
+        x= 
+        dx= 
+        dxx= 
+        y=    # Required only if the problem is equality constrained. 
+        dy=   # Required only if the problem is equality constrained. 
+        z=    # Required only if the problem is inequality constrained. 
+        dz=   # Required only if the problem is inequality constrained.
+"""
+
+getMin_pts = """ 
+pts: A class instance of the form
+    class pts:
+        x= 
+        y=    # Required only if the problem is equality constrained. 
+        z=    # Required only if the problem is inequality constrained. 
+"""
+
+getMin_fname= """
+fname: A string denoting the location and name of the .peopt parameter
+       file.
+"""
+
+both_args_note = """
+Note: This function automatically determines whether the problem is
+unconstrained, equality constrained, inequality constrained, or fully
+constrained from its arguments.  Specifically, if the optional class
+members above are missing, then the function assumes that the problem
+class is restricted.  For example, if we define the class fns above as
+    class fns:    
+        f = Objective()
+        g = EqualityConstraint()
+then we assume that the problem is equality constrained.  Alternatively,
+if we define the class vs above as
+    class vs:
+        X = MyVectorSpace()
+        Z = MyVectorSpace()
+then we assume that the problem is inequality constrained.  The classes
+vs, fns, and pts must have a compatible structure otherwise the
+exception PeoptError will be thrown.  In order to be compatible, see the
+comments in the definition of the classes above. 
+"""
+
+diagnostics_return="""
+RETURN VALUE
+None
+"""
+
+getMin_return="""
+RETURN VALUE
+sol: A triple of the form (x,y,z) that contains the solution of the
+     optimization as well as the optimal Lagrange multipliers (dual
+     variables).  In this triple, x denotes the optimal solution, y
+     denotes the optimal dual variable in an equality constrained
+     problem, and z denotes the optimal dual variable in an inequality
+     constrained problem.  When the problem is not equality constrained,
+     y is set None.  Similarly, when the problem is not inequality
+     constrained, z is set to None.  Finally, the returned variables x,
+     y, and z are guaranteed to have the same struture as the points 
+     pts.x, pts.y, and pts.z.
+"""
+both_exceptions="""
+EXCEPTIONS
+As mentioned above, if the classes vs, pts, and fns are not compatible,
+the exception PeoptError will be thrown.  In addition, if one of the 
+functions defined in the vector space, the objective, or the constraints
+fails, the the exception PeoptError will also be thrown with a message
+indicating where.  Note, sometimes this message is deceptive.  For 
+example, if we forget to return a value in the copy function inside the
+vector space, then we may see an error thrown by the gradient.  This is
+problematic, but difficult to detect.  Due to the differences in the
+type systems between C++ and Python, there's not a good way to tell that
+a value returned by, say copy, is invalid until we use it.  As such, 
+systematic testing of all of these functions is recommended.  In
+addition, we do not report any exceptions thrown by these functions.
+If an exception is thrown inside of the vector space or one of the 
+function definitions, it is treated as though these functions returned 
+an invalid value and a PeoptError exception will be thrown.
+"""
+
+diagnostics.__doc__ = diagnostics_summary + both_args + diagnostics_pts + \
+    both_args_note + diagnostics_return + both_exceptions
+getMin.__doc__ = getMin_summary + both_args + getMin_pts + getMin_fname + \
+    both_args_note + getMin_return + both_exceptions

@@ -111,5 +111,5 @@ class pts:
     dz = [9.,10.]
 
 #peopt.diagnostics(vs(),fns(),pts())
-x_sol = peopt.getMin(vs(),fns(),pts(),'run.peopt')
-print x_sol
+sol = peopt.getMin(vs(),fns(),pts(),'run.peopt')
+print sol[0]

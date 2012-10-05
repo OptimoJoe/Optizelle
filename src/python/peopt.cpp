@@ -834,7 +834,7 @@ extern "C" PyObject* pypeopt(
         // Alternatively, optimize if required
         } else if(mode==1) {
             // Initialize memory for the solution
-            PyObject* sol;
+            PyObjectPtr sol(PyTuple_New(3));
 
             // Optimize the unconstrained problem
             if(opt_type==0) {
@@ -843,7 +843,9 @@ extern "C" PyObject* pypeopt(
                     PythonMessaging(),fname,state);
                 peopt::Unconstrained <double,PythonVS>::Algorithms
                     ::getMin(PythonMessaging(),fns,state);
-                sol = state.x.front().release();
+                PyTuple_SetItem(sol.get(),0,state.x.front().release());
+                PyTuple_SetItem(sol.get(),1,Py_None);
+                PyTuple_SetItem(sol.get(),2,Py_None);
 
             } else if(opt_type==1) {
                 peopt::EqualityConstrained <double,PythonVS,PythonVS>::State::t
@@ -854,7 +856,9 @@ extern "C" PyObject* pypeopt(
                 peopt::EqualityConstrained <double,PythonVS,PythonVS>
                     ::Algorithms::getMin(PythonMessaging(),fns,state);
                 #endif
-                sol = state.x.front().release();
+                PyTuple_SetItem(sol.get(),0,state.x.front().release());
+                PyTuple_SetItem(sol.get(),1,state.y.front().release());
+                PyTuple_SetItem(sol.get(),2,Py_None);
 
             } else if(opt_type==2) {
                 peopt::InequalityConstrained<double,PythonVS,PythonVS>::State::t
@@ -863,7 +867,9 @@ extern "C" PyObject* pypeopt(
                     ::read(PythonMessaging(),fname,state);
                 peopt::InequalityConstrained <double,PythonVS,PythonVS>
                     ::Algorithms::getMin(PythonMessaging(),fns,state);
-                sol = state.x.front().release();
+                PyTuple_SetItem(sol.get(),0,state.x.front().release());
+                PyTuple_SetItem(sol.get(),1,Py_None);
+                PyTuple_SetItem(sol.get(),2,state.z.front().release());
 
             } else if(opt_type==3) {
                 peopt::Constrained<double,PythonVS,PythonVS,PythonVS>::State::t
@@ -874,7 +880,9 @@ extern "C" PyObject* pypeopt(
                 peopt::Constrained <double,PythonVS,PythonVS,PythonVS>
                     ::Algorithms::getMin(PythonMessaging(),fns,state);
                 #endif
-                sol = state.x.front().release();
+                PyTuple_SetItem(sol.get(),0,state.x.front().release());
+                PyTuple_SetItem(sol.get(),1,state.y.front().release());
+                PyTuple_SetItem(sol.get(),2,state.z.front().release());
             }
 
             // Release the global interpretter lock and return the solution.
@@ -884,7 +892,7 @@ extern "C" PyObject* pypeopt(
             // not occur.
             PyGILState_Release(gstate);
             PyObject* ret=PyTuple_New(2); 
-            PyTuple_SetItem(ret,0,sol);
+            PyTuple_SetItem(ret,0,sol.release());
             PyTuple_SetItem(ret,1,Py_None);
             return ret;
         }
