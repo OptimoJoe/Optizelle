@@ -1,0 +1,87 @@
+cmake_minimum_required(VERSION 2.8.9)
+project(peopt)
+
+# Add a module directory in case we need to find some packages
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
+    "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+
+# If we don't compile anything, install the basic headers
+install(FILES
+    ${CMAKE_SOURCE_DIR}/cpp/peopt/peopt.h
+    ${CMAKE_SOURCE_DIR}/cpp/peopt/json.h
+    DESTINATION include/peopt)
+        
+# First, figure out if we're doing a barebones header only installation
+# or if we build the library.
+set(ENABLE_CPP_LIBRARY OFF CACHE BOOL "Enable libraries for C++?")
+if(ENABLE_CPP_LIBRARY)
+    # In order to build the library, find the required dependencies 
+    enable_language(Fortran)
+    find_package(JsonCpp REQUIRED)
+    mark_as_advanced(CLEAR ENABLE_CPP_EXAMPLES ENABLE_CPP_UNIT ENABLE_PYTHON)
+        
+    # Figure out if we need to look for BLAS and LAPACK
+    if(ENABLE_CPP_EXAMPLES OR ENABLE_CPP_UNIT)
+        find_package(BLAS REQUIRED)
+        find_package(LAPACK REQUIRED)
+    endif()
+
+    # Figure out if we should look for OpenMP
+    set(ENABLE_OPENMP OFF CACHE BOOL "Enable OpenMP?")
+    if(ENABLE_OPENMP)
+        # If we enable OpenMP, go ahead and make it required and find the
+        # library.
+        find_package(OpenMP REQUIRED)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
+    endif()
+
+    # Add in the directory with the library sources
+    add_subdirectory(cpp/peopt)
+
+    # Set the include path to include cpp since we will likely need the
+    # peopt header file
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/cpp)
+
+    # Check if we want to build the C++ examples
+    set(ENABLE_CPP_EXAMPLES OFF CACHE BOOL "Enable examples for C++?")
+    if(ENABLE_CPP_EXAMPLES)
+        add_subdirectory(cpp/examples/diagnostic_checks)
+        add_subdirectory(cpp/examples/rosenbrock)
+        add_subdirectory(cpp/examples/rosenbrock_easy)
+    endif()
+    
+    # Check if we want to build the unit tests
+    set(ENABLE_CPP_UNIT OFF CACHE BOOL "Enable unit tests for C++?")
+    if(ENABLE_CPP_UNIT)
+        # Assuming we enable the unit tests, we require the
+        # boost_unit_test_framework library and headers
+        find_package(BoostUnitTest REQUIRED)
+        add_subdirectory(cpp/unit)
+    endif()
+    
+    # Check if we want to build the Python libraries
+    set(ENABLE_PYTHON OFF CACHE BOOL "Enable the Python build?")
+    if(ENABLE_PYTHON)
+        # Add in the directory with the library sources
+        add_subdirectory(python/core)
+    endif()
+
+    # Build the library
+    add_library(peopt
+        $<TARGET_OBJECTS:peopt_cpp>)
+#        $<TARGET_OBJECTS:peopt_python>)
+
+# Hide some options if the library is not enabled
+else()
+    set(ENABLE_CPP_EXAMPLES OFF CACHE BOOL "Enable examples for C++?" FORCE)
+    set(ENABLE_CPP_UNIT OFF CACHE BOOL "Enable unit tests for C++?" FORCE)
+    set(ENABLE_PYTHON OFF CACHE BOOL "Enable the Python build?" FORCE)
+    set(ENABLE_OPENMP OFF CACHE BOOL "Enable OpenMP?" FORCE)
+    mark_as_advanced(FORCE
+        ENABLE_CPP_EXAMPLES
+        ENABLE_CPP_UNIT
+        ENABLE_PYTHON
+        ENABLE_OPENMP)
+endif()

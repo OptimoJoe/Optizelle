@@ -69,7 +69,7 @@ int main(){
 
     // Read the parameters from file
     peopt::json::Unconstrained <double,peopt::Rm>::read(peopt::Messaging(),
-        "run.peopt",state);
+        "rosenbrock_easy.peopt",state);
 
     // Create the bundle of functions 
     peopt::Unconstrained <double,peopt::Rm>::Functions::t fns;
