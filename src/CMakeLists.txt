@@ -15,16 +15,23 @@ install(FILES
 # or if we build the library.
 set(ENABLE_CPP_LIBRARY OFF CACHE BOOL "Enable libraries for C++?")
 if(ENABLE_CPP_LIBRARY)
-    # In order to build the library, find the required dependencies 
+    # Show the available options once the library is enabled
+    mark_as_advanced(CLEAR
+        ENABLE_CPP_EXAMPLES
+        ENABLE_CPP_UNIT
+        ENABLE_PYTHON
+        ENABLE_OPENMP)
+
+    # Turn on position independent code immediately.  This simplifies
+    # building both static and shared libraries.
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+    # In order to build the library, especially the complete library with
+    # all dependencies, find the required dependencies 
     enable_language(Fortran)
     find_package(JsonCpp REQUIRED)
-    mark_as_advanced(CLEAR ENABLE_CPP_EXAMPLES ENABLE_CPP_UNIT ENABLE_PYTHON)
-        
-    # Figure out if we need to look for BLAS and LAPACK
-    if(ENABLE_CPP_EXAMPLES OR ENABLE_CPP_UNIT)
-        find_package(BLAS REQUIRED)
-        find_package(LAPACK REQUIRED)
-    endif()
+    find_package(BLAS REQUIRED)
+    find_package(LAPACK REQUIRED)
 
     # Figure out if we should look for OpenMP
     set(ENABLE_OPENMP OFF CACHE BOOL "Enable OpenMP?")
@@ -64,24 +71,70 @@ if(ENABLE_CPP_LIBRARY)
     # Check if we want to build the Python libraries
     set(ENABLE_PYTHON OFF CACHE BOOL "Enable the Python build?")
     if(ENABLE_PYTHON)
-        # Add in the directory with the library sources
-        add_subdirectory(python/core)
+        # Make sure we can find the Python libraries and then add the
+        # directory with the sources.
+        find_package(PythonLibs)
+        add_subdirectory(python/peopt)
+        
+        # Check if we want to add examples for Python
+        set(ENABLE_PYTHON_EXAMPLES OFF CACHE BOOL "Enable examples for Python?")
+        mark_as_advanced(CLEAR ENABLE_PYTHON_EXAMPLES)
+        if(ENABLE_PYTHON_EXAMPLES)
+            add_subdirectory(python/examples/diagnostic_checks)
+            add_subdirectory(python/examples/rosenbrock)
+            add_subdirectory(python/examples/simple_inequality)
+        endif()
+    else()
+        set(ENABLE_PYTHON_EXAMPLES OFF CACHE BOOL "Enable examples for Python?"
+            FORCE)
+        mark_as_advanced(FORCE ENABLE_PYTHON_EXAMPLES)
     endif()
 
     # Build the library
-    add_library(peopt
-        $<TARGET_OBJECTS:peopt_cpp>)
-#        $<TARGET_OBJECTS:peopt_python>)
+    if(ENABLE_PYTHON)
+        add_library(peopt_shared SHARED
+            $<TARGET_OBJECTS:peopt_cpp>
+            $<TARGET_OBJECTS:peopt_python>)
+        add_library(peopt_shared_complete SHARED
+            $<TARGET_OBJECTS:peopt_cpp>
+            $<TARGET_OBJECTS:peopt_python>)
+        add_library(peopt_static STATIC 
+            $<TARGET_OBJECTS:peopt_cpp>
+            $<TARGET_OBJECTS:peopt_python>)
+    else()
+        add_library(peopt_shared SHARED
+            $<TARGET_OBJECTS:peopt_cpp>)
+        add_library(peopt_shared_complete SHARED
+            $<TARGET_OBJECTS:peopt_cpp>)
+        add_library(peopt_static STATIC 
+            $<TARGET_OBJECTS:peopt_cpp>)
+    endif()
+        target_link_libraries(peopt_shared_complete
+            ${JSONCPP_LIBRARIES}
+            ${LAPACK_LIBRARIES}
+            ${BLAS_LIBRARIES})
+    set_target_properties(peopt_shared peopt_static
+        PROPERTIES OUTPUT_NAME peopt)
+    set_target_properties(peopt_shared_complete 
+        PROPERTIES OUTPUT_NAME peopt_complete)
+    install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/libpeopt.a
+        ${CMAKE_CURRENT_BINARY_DIR}/libpeopt.so
+        ${CMAKE_CURRENT_BINARY_DIR}/libpeopt_complete.so
+        DESTINATION lib)
 
 # Hide some options if the library is not enabled
 else()
     set(ENABLE_CPP_EXAMPLES OFF CACHE BOOL "Enable examples for C++?" FORCE)
     set(ENABLE_CPP_UNIT OFF CACHE BOOL "Enable unit tests for C++?" FORCE)
     set(ENABLE_PYTHON OFF CACHE BOOL "Enable the Python build?" FORCE)
+    set(ENABLE_PYTHON_EXAMPLES OFF CACHE BOOL "Enable examples for Python?"
+        FORCE)
     set(ENABLE_OPENMP OFF CACHE BOOL "Enable OpenMP?" FORCE)
     mark_as_advanced(FORCE
         ENABLE_CPP_EXAMPLES
         ENABLE_CPP_UNIT
         ENABLE_PYTHON
+        ENABLE_PYTHON_EXAMPLES
         ENABLE_OPENMP)
 endif()

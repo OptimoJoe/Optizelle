@@ -111,5 +111,5 @@ class pts:
     dz = [9.,10.]
 
 #peopt.diagnostics(vs(),fns(),pts())
-sol = peopt.getMin(vs(),fns(),pts(),'run.peopt')
+sol = peopt.getMin(vs(),fns(),pts(),'simple_inequality.peopt')
 print sol[0]

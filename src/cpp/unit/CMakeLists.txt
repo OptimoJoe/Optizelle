@@ -8,11 +8,11 @@ set(unit_srcs
     "sdp_cone.cpp"
     "derivative_check.cpp"
     "quadratic_cone.cpp"
-    "run.cpp")
+    "unit.cpp")
 include_directories(${BOOST_UNIT_TEST_INCLUDE_DIRS})
 add_executable(unit ${unit_srcs})
 target_link_libraries(unit
-    peopt
+    peopt_static
     ${BOOST_UNIT_TEST_LIBRARIES}
     ${LAPACK_LIBRARIES}
     ${BLAS_LIBRARIES})

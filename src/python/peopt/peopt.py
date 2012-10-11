@@ -15,16 +15,12 @@ import copy
 
 # Load in our extension
 import ctypes
-ctypes.cdll.LoadLibrary("libpeopt.so")
-libpeopt=ctypes.CDLL("libpeopt.so")
+ctypes.cdll.LoadLibrary("libpeopt_complete.so")
+libpeopt=ctypes.CDLL("libpeopt_complete.so")
 libpeopt.pypeopt.argtypes= \
     [ctypes.py_object,ctypes.py_object,ctypes.py_object,ctypes.py_object,
     ctypes.py_object]
 libpeopt.pypeopt.restype = ctypes.py_object 
-
-#cdef extern from "peopt_cython.h":
-#    cdef struct PyObject
-#    cdef PyObject* pypeopt(PyObject*,PyObject*,PyObject*,PyObject*,PyObject*)
 
 # Define an exception in the case that we have difficulty with the problem
 # setup or running peopt
@@ -289,7 +285,6 @@ def diagnostics(vs,fns,pts):
     # If they are all the same, run the diagnostics 
     else:
         ret = libpeopt.pypeopt(vs_class,vs,fns,pts,None)
-        #ret = pypeopt(<PyObject*>vs_class,<PyObject*>vs,<PyObject*>fns,<PyObject*>pts,<PyObject*>None)
         
         # Check for an exception
         if ret[1]!=None:
@@ -322,7 +317,6 @@ def getMin(vs,fns,pts,fname):
     # If they are all the same, run the solver
     else:
         ret = libpeopt.pypeopt(vs_class,vs,fns,pts,fname)
-        #ret = pypeopt(<PyObject*>vs_class,<PyObject*>vs,<PyObject*>fns,<PyObject*>pts,<PyObject*>fname)
         
         # Check for an exception
         if ret[1]!=None:

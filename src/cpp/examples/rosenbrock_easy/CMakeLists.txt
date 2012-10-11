@@ -3,7 +3,7 @@ set(rosenbrock_easy_srcs "driver.cpp")
 include_directories(${JSONCPP_INCLUDE_DIRS})
 add_executable(rosenbrock_easy ${rosenbrock_easy_srcs})
 target_link_libraries(rosenbrock_easy
-    peopt
+    peopt_static
     ${JSONCPP_LIBRARIES}
     ${LAPACK_LIBRARIES}
     ${BLAS_LIBRARIES})

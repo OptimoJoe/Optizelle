@@ -3,4 +3,10 @@ constrained optimization problem
 
 min (x+1)^2+(y+1)^2 st x + 2y >= 1, 2x + y >=1
 
-In order to run the problem, call ./run.sh.
+In order to run the problem, call
+
+    python2.7 driver.py
+    
+Alternatively, if the PYTHONPATH does not include peopt, call
+
+    PYTHONPATH="../.." python2.7 driver.py
