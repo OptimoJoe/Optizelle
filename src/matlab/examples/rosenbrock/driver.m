@@ -38,4 +38,5 @@ fns.f=f;
 pts.x=[-1.2;0.5];
 
 % Optimize the problem 
-x=peopt(VS,fns,pts,'rosenbrock.peopt');
+sol=peopt(VS,fns,pts,'rosenbrock.peopt');
+sol.x

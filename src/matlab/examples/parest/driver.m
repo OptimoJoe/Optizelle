@@ -55,16 +55,16 @@ ff.hessvec_22=@(x,dx) dx;
 % gg is the expanded constraint where we split up the variable into two
 % pieces x{1} and x{2}.
 gg.eval=@(x) g_eval(A,b,x); 
-gg.eval_p_1=@(x,dx1) gp_x1(A,x,dx1); 
-gg.eval_p_2=@(x,dx2) gp_x2(A,x,dx2); % Need inverse
-gg.eval_p_2_inv=@(x,dx2) gp_x2_inv(A,x,dx2); 
-gg.eval_ps_1=@(x,dy) gps_x1(A,x,dy); 
-gg.eval_ps_2=@(x,dy) gps_x2(A,x,dy); % Need inverse
-gg.eval_ps_2_inv=@(x,dy) gps_x2_inv(A,x,dy); 
-gg.eval_pps_11=@(x,dx,dy) zeros(m,1);
-gg.eval_pps_21=@(x,dx,dy) gps_x2(A,{dx,zeros(n,1)},dy); 
-gg.eval_pps_12=@(x,dx,dy) gps_x1(A,{zeros(m,1),dx},dy); 
-gg.eval_pps_22=@(x,dx,dy) zeros(n,1);
+gg.p_1=@(x,dx1) gp_x1(A,x,dx1); 
+gg.p_2=@(x,dx2) gp_x2(A,x,dx2); % Need inverse
+gg.p_2_inv=@(x,dx2) gp_x2_inv(A,x,dx2); 
+gg.ps_1=@(x,dy) gps_x1(A,x,dy); 
+gg.ps_2=@(x,dy) gps_x2(A,x,dy); % Need inverse
+gg.ps_2_inv=@(x,dy) gps_x2_inv(A,x,dy); 
+gg.pps_11=@(x,dx,dy) zeros(m,1);
+gg.pps_21=@(x,dx,dy) gps_x2(A,{dx,zeros(n,1)},dy); 
+gg.pps_12=@(x,dx,dy) gps_x1(A,{zeros(m,1),dx},dy); 
+gg.pps_22=@(x,dx,dy) zeros(n,1);
 
 % Create the equality constrained problem
 [X1xX2 f g]=genEqualityConstrained(X1,X2,ff,gg);
@@ -83,6 +83,7 @@ fns.g=g;
 pts.x={randn(m,1),randn(n,1)};
 pts.dx={randn(m,1),randn(n,1)};
 pts.dxx={randn(m,1),randn(n,1)};
+pts.y=randn(n,1);
 pts.dy=randn(n,1);
 
 % Test the full-space functions 
@@ -115,7 +116,7 @@ peopt(VS,fns,pts);
 
 % Solve the reduced-space problem 
 fprintf('\n------------Solving the reduced-space problem------------\n');
-x=peopt(VS,fns,pts,'parest.peopt');
+sol=peopt(VS,fns,pts,'parest.peopt');
 end
 
 % Create the functions for the constraint

@@ -18,9 +18,9 @@
 %     the elements eval, grad_1, grad_2, hessvec_11, hessvec_12, hessvec_21,
 %     and hessvec_22. 
 % gg: Definition of the constraint.  This is a struct array that contains
-%     the elements eval, eval_p_1, eval_p_2, eval_p_2_inv, eval_ps_1,
-%     eval_ps_2, eval_ps_2_inv, eval_pps_11, eval_pps_21, eval_pps_12, and
-%     eval_pps_22.  Note, for the inverse operators, only approximate inverses
+%     the elements eval, p_1, p_2, p_2_inv, ps_1,
+%     ps_2, ps_2_inv, pps_11, pps_21, pps_12, and
+%     pps_22.  Note, for the inverse operators, only approximate inverses
 %     are required.
 %
 % OUTPUTS
@@ -50,8 +50,8 @@ f.hessvec=@(x,dx){ ...
 
 % g is the composite constraint built from gg. 
 g.eval=@(x)gg.eval(x);
-g.eval_p=@(x,dx)gg.eval_p_1(x,dx{1}) + gg.eval_p_2(x,dx{2});
-g.eval_ps=@(x,dy){gg.eval_ps_1(x,dy),gg.eval_ps_2(x,dy)};
-g.eval_pps=@(x,dx,dy)X1xX2.axpy(1.0, ...
-            {gg.eval_pps_11(x,dx{1},dy),gg.eval_pps_21(x,dx{1},dy)}, ...
-            {gg.eval_pps_12(x,dx{2},dy),gg.eval_pps_22(x,dx{2},dy)});
+g.p=@(x,dx)gg.p_1(x,dx{1}) + gg.p_2(x,dx{2});
+g.ps=@(x,dy){gg.ps_1(x,dy),gg.ps_2(x,dy)};
+g.pps=@(x,dx,dy)X1xX2.axpy(1.0, ...
+            {gg.pps_11(x,dx{1},dy),gg.pps_21(x,dx{1},dy)}, ...
+            {gg.pps_12(x,dx{2},dy),gg.pps_22(x,dx{2},dy)});

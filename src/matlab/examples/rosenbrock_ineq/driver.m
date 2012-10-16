@@ -50,9 +50,9 @@ f.hessvec=@(x,dx) ...
 %
 clear h
 h.eval=@(x)x;
-h.eval_p=@(x,dx)dx;
-h.eval_ps=@(x,dy)dy;
-h.eval_pps=@(x,dx,dy)zeros(size(x));
+h.p=@(x,dx)dx;
+h.ps=@(x,dy)dy;
+h.pps=@(x,dx,dy)zeros(size(x));
 
 % Create the bundle of functions
 clear fns;
@@ -64,4 +64,5 @@ pts.x=[2;2.1];
 pts.z=[1;1];
 
 % Test the mex file
-x=peopt(VS,fns,pts,'rosenbrock_ineq.peopt');
+sol=peopt(VS,fns,pts,'rosenbrock_ineq.peopt');
+sol.x
