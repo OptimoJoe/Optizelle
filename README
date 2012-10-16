@@ -91,6 +91,26 @@ Description:  Enables the build and installation of examples that use the
               Python wrappers for peopt.  These examples are installed into
               the directory ${CMAKE_INSTALL_PREFIX}/share/peopt/python/examples.
 
+Flag:         ENABLE_MATLAB
+Type:         Bool
+Default:      Off
+Dependencies: ENABLE_CPP_LIBRARY, MATLAB_INCLUDE_DIR, MATLAB_LIBRARY,
+              MATLAB_MEX_EXTENSION
+Autodetect?:  No
+Description:  Enables the build and installation of the MATLAB wrappers for
+              peopt.  The resulting MATLAB mex file is installed to
+              ${CMAKE_INSTALL_PREFIX}/share/peopt/matlab.  As such, make
+              sure that the MATLAB path includes this directory. 
+
+Flag:         ENABLE_MATLAB_EXAMPLES
+Type:         Bool
+Default:      Off
+Dependencies: ENABLE_MATLAB_LIBRARY
+Autodetect?:  No
+Description:  Enables the build and installation of examples that use the
+              MATLAB wrappers for peopt.  These examples are installed into
+              the directory ${CMAKE_INSTALL_PREFIX}/share/peopt/matlab/examples.
+
 Flag:         BLAS_LIBRARY 
 Type:         Path 
 Default:      None 
@@ -161,3 +181,29 @@ Default:      None
 Dependencies: ENABLE_PYTHON
 Autodetect?:  Yes 
 Description:  The complete path and library for Python 2.7. 
+
+Flag:         MATLAB_INCLUDE_DIR 
+Type:         Path 
+Default:      None 
+Dependencies: ENABLE_MATLAB
+Autodetect?:  Yes 
+Description:  A path that indicates where the MATLAB headers have been 
+              installed.  We do not prefix these headers, so we look directly
+              in the directory provided here.
+
+Flag:         MATLAB_LIBRARY
+Type:         Path 
+Default:      None 
+Dependencies: ENABLE_MATLAB
+Autodetect?:  Yes 
+Description:  The complete path and library for the mex library.  Typically,
+              this is libmex.so on Linux.
+
+Flag:         MATLAB_MEX_EXTENSION
+Type:         String 
+Default:      None 
+Dependencies: ENABLE_MATLAB
+Autodetect?:  No 
+Description:  The extension of mex files on the system.  This can be found
+              by typing in the command 'mexext' inside of MATLAB.  Note, copy
+              the output from 'mexext' directly and do not add a '.'.
