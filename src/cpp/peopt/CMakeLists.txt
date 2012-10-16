@@ -1,4 +1,3 @@
-cmake_minimum_required(VERSION 2.8.9)
 project(peopt_cpp)
 
 set(peopt_cpp_srcs "linalg.cpp")

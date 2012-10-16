@@ -571,6 +571,61 @@ namespace peopt{
             }
         };
     };
+    
+    struct ProblemClass{
+        // Different problem classes that we allow 
+        enum t{
+            Unconstrained,         // Unconstrained optimization 
+            EqualityConstrained,   // Equality constrained optimization 
+            InequalityConstrained, // Inequality constrained optimization 
+            Constrained            // Fully constrained optimization 
+        };
+
+        // Converts the problem class to a string
+        static std::string to_string(t problem_class){
+            switch(problem_class){
+            case Unconstrained:
+                return "Unconstrained";
+            case EqualityConstrained:
+                return "EqualityConstrained";
+            case InequalityConstrained:
+                return "InequalityConstrained";
+            case Constrained:
+                return "Constrained";
+            default:
+                    throw;
+            }
+        }
+
+        // Converts a string to a problem class 
+        static t from_string(std::string problem_class){
+            if(problem_class=="Unconstrained")
+                return Unconstrained;
+            else if(problem_class=="EqualityConstrained")
+                return EqualityConstrained;
+            else if(problem_class=="InequalityConstrained")
+                return InequalityConstrained;
+            else if(problem_class=="Constrained")
+                return Constrained;
+            else
+                throw;
+        }
+
+        // Checks whether or not a string is valid
+        struct is_valid : public std::unary_function<std::string, bool> {
+            bool operator () (const std::string& name) const {
+                if( name=="Unconstrained" ||
+                    name=="EqualityConstrained" ||
+                    name=="InequalityConstrained" ||
+                    name=="Constrained" 
+                )
+                    return true;
+                else
+                    return false;
+            }
+        };
+    };
+
 
     // A collection of short routines that are only required locally
     namespace {

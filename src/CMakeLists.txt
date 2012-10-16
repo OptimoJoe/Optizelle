@@ -20,6 +20,7 @@ if(ENABLE_CPP_LIBRARY)
         ENABLE_CPP_EXAMPLES
         ENABLE_CPP_UNIT
         ENABLE_PYTHON
+        ENABLE_MATLAB
         ENABLE_OPENMP)
 
     # Turn on position independent code immediately.  This simplifies
@@ -89,6 +90,29 @@ if(ENABLE_CPP_LIBRARY)
             FORCE)
         mark_as_advanced(FORCE ENABLE_PYTHON_EXAMPLES)
     endif()
+    
+    # Check if we want to build the MATLAB interface 
+    set(ENABLE_MATLAB OFF CACHE BOOL "Enable the MATLAB build?")
+    if(ENABLE_MATLAB)
+        # Make sure we can find the MATLAB libraries and then add the
+        # directory with the sources.
+        find_package(MATLAB)
+        add_subdirectory(matlab/peopt)
+
+        # Check if we want to add examples for MATLAB 
+        set(ENABLE_MATLAB_EXAMPLES OFF CACHE BOOL "Enable examples for MATLAB?")
+        mark_as_advanced(CLEAR ENABLE_MATLAB_EXAMPLES)
+        if(ENABLE_MATLAB_EXAMPLES)
+            add_subdirectory(matlab/examples/diagnostic_checks)
+            add_subdirectory(matlab/examples/rosenbrock)
+            add_subdirectory(matlab/examples/rosenbrock_ineq)
+            add_subdirectory(matlab/examples/parest)
+        endif()
+    else()
+        set(ENABLE_MATLAB_EXAMPLES OFF CACHE BOOL "Enable examples for MATLAB?"
+            FORCE)
+        mark_as_advanced(FORCE ENABLE_MATLAB_EXAMPLES)
+    endif()
 
     # Build the library
     if(ENABLE_PYTHON)
@@ -109,18 +133,15 @@ if(ENABLE_CPP_LIBRARY)
         add_library(peopt_static STATIC 
             $<TARGET_OBJECTS:peopt_cpp>)
     endif()
-        target_link_libraries(peopt_shared_complete
-            ${JSONCPP_LIBRARIES}
-            ${LAPACK_LIBRARIES}
-            ${BLAS_LIBRARIES})
+    target_link_libraries(peopt_shared_complete
+        ${JSONCPP_LIBRARIES}
+        ${LAPACK_LIBRARIES}
+        ${BLAS_LIBRARIES})
     set_target_properties(peopt_shared peopt_static
         PROPERTIES OUTPUT_NAME peopt)
     set_target_properties(peopt_shared_complete 
         PROPERTIES OUTPUT_NAME peopt_complete)
-    install(FILES
-        ${CMAKE_CURRENT_BINARY_DIR}/libpeopt.a
-        ${CMAKE_CURRENT_BINARY_DIR}/libpeopt.so
-        ${CMAKE_CURRENT_BINARY_DIR}/libpeopt_complete.so
+    install(TARGETS peopt_shared peopt_shared_complete peopt_static
         DESTINATION lib)
 
 # Hide some options if the library is not enabled
@@ -130,11 +151,16 @@ else()
     set(ENABLE_PYTHON OFF CACHE BOOL "Enable the Python build?" FORCE)
     set(ENABLE_PYTHON_EXAMPLES OFF CACHE BOOL "Enable examples for Python?"
         FORCE)
+    set(ENABLE_MATLAB OFF CACHE BOOL "Enable the MATLAB build?" FORCE)
+    set(ENABLE_MATLAB_EXAMPLES OFF CACHE BOOL "Enable examples for MATLAB?"
+        FORCE)
     set(ENABLE_OPENMP OFF CACHE BOOL "Enable OpenMP?" FORCE)
     mark_as_advanced(FORCE
         ENABLE_CPP_EXAMPLES
         ENABLE_CPP_UNIT
         ENABLE_PYTHON
         ENABLE_PYTHON_EXAMPLES
+        ENABLE_MATLAB
+        ENABLE_MATLAB_EXAMPLES
         ENABLE_OPENMP)
 endif()
