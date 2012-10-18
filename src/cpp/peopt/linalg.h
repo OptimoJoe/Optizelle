@@ -381,7 +381,7 @@ namespace peopt {
         typename Real,
         template <typename> class XX
     >
-    std::pair <Real,int> truncated_pcd(
+    void truncated_pcd(
         const Operator <Real,XX,XX>& A,
         const typename XX <Real>::Vector& b,
         const Operator <Real,XX,XX>& B,
@@ -561,10 +561,6 @@ namespace peopt {
 
         // Adjust the iteration number if we ran out of iterations
         iter = iter > iter_max ? iter_max : iter;
-
-        // Return the norm of the residual and the iteration number we
-        // completed at
-        return std::pair <Real,unsigned int> (norm_r,iter);
     }
 }
 

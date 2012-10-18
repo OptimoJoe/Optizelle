@@ -3389,7 +3389,7 @@ namespace peopt{
                     X_Vector minus_g; X::init(x,minus_g);
                     X::copy(g,minus_g); X::scal(Real(-1.),minus_g);
                     X::zero(s);
-                    std::pair <Real,int> norm_iter = truncated_pcd(
+                    truncated_pcd(
                         H,
                         minus_g,
                         Minv,
@@ -3403,7 +3403,6 @@ namespace peopt{
                         krylov_iter,
                         krylov_stop);
                     krylov_rel_err = krylov_rel_err / (Real(1e-16)+norm_g);
-                    krylov_iter=norm_iter.second;
 
                     // Manipulate the state if required
                     smanip(fns,state,
@@ -3794,7 +3793,7 @@ namespace peopt{
                     X_Vector minus_g; X::init(x,minus_g);
                     X::copy(g,minus_g); X::scal(Real(-1.),minus_g);
                     X::zero(s);
-                    std::pair <Real,int> norm_iter = truncated_pcd(
+                    truncated_pcd(
                         H,
                         minus_g,
                         Minv,
@@ -3808,7 +3807,6 @@ namespace peopt{
                         krylov_iter,
                         krylov_stop);
                     krylov_rel_err = krylov_rel_err / (Real(1e-16)+norm_g);
-                    krylov_iter=norm_iter.second;
                     break;
                 }}
                     
