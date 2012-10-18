@@ -12,6 +12,7 @@
 #include<functional>
 #include<algorithm>
 #include<numeric>
+#include<peopt/linalg.h>
 
 namespace peopt{
 
@@ -191,60 +192,6 @@ namespace peopt{
                     name=="RelativeStepSmall" ||
                     name=="MaxItersExceeded" ||
                     name=="External"
-                )
-                    return true;
-                else
-                    return false;
-            }
-        };
-    };
-
-    // Reasons we stop the Krylov method
-    struct KrylovStop{
-        enum t{
-            NegativeCurvature,        // Negative curvature detected
-            RelativeErrorSmall,       // Relative error is small
-            MaxItersExceeded,         // Maximum number of iterations exceeded
-            TrustRegionViolated       // Trust-region radius violated
-        };
-
-        // Converts the Krylov stopping condition to a string 
-        static std::string to_string(t krylov_stop){
-            switch(krylov_stop){
-            case NegativeCurvature:
-                return "NegativeCurvature";
-            case RelativeErrorSmall:
-                return "RelativeErrorSmall";
-            case MaxItersExceeded:
-                return "MaxItersExceeded";
-            case TrustRegionViolated:
-                return "TrustRegionViolated";
-            default:
-                throw;
-            }
-        }
-        
-        // Converts a string to a Krylov stopping condition
-        static t from_string(std::string krylov_stop){
-            if(krylov_stop=="NegativeCurvature")
-                return NegativeCurvature;
-            else if(krylov_stop=="RelativeErrorSmall")
-                return RelativeErrorSmall;
-            else if(krylov_stop=="MaxItersExceeded")
-                return MaxItersExceeded;
-            else if(krylov_stop=="TrustRegionViolated")
-                return TrustRegionViolated;
-            else
-                throw;
-        }
-
-        // Checks whether or not a string is valid
-        struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (const std::string& name) const {
-                if( name=="NegativeCurvature" ||
-                    name=="RelativeErrorSmall" ||
-                    name=="MaxItersExceeded" ||
-                    name=="TrustRegionViolated" 
                 )
                     return true;
                 else
@@ -1440,26 +1387,6 @@ namespace peopt{
             smanip(fns,state,loc);
         }
     };
-
-    // A simple operator specification, A : X->Y
-    template <
-        typename Real,
-        template <typename> class X,
-        template <typename> class Y
-    >
-    struct Operator {
-    private:
-        // Create some type shortcuts
-        typedef typename X <Real>::Vector X_Vector;
-        typedef typename Y <Real>::Vector Y_Vector;
-    public:
-        // Basic application
-        virtual void operator () (const X_Vector& x,Y_Vector &y) const = 0;
-
-        // Allow a derived class to deallocate memory 
-        virtual ~Operator() {}
-    };
-
        
     // Routines that manipulate and support problems of the form
     // 
@@ -1520,6 +1447,10 @@ namespace peopt{
 
                 // Total number of Krylov iterations taken
                 unsigned int krylov_iter_total;
+
+                // The maximum number of vectors we orthogonalize against in 
+                // the Krylov method.  For something like CG, this is 1.
+                unsigned int krylov_orthog_max;
 
                 // Why the Krylov method was last stopped
                 KrylovStop::t krylov_stop;
@@ -1654,6 +1585,7 @@ namespace peopt{
                 state.krylov_iter=1;
                 state.krylov_iter_max=10;
                 state.krylov_iter_total=0;
+                state.krylov_orthog_max=1;
                 state.krylov_stop=KrylovStop::RelativeErrorSmall;
                 state.krylov_rel_err=Real(0.);
                 state.eps_krylov=Real(1e-2);
@@ -1755,6 +1687,13 @@ namespace peopt{
                 else if(state.krylov_iter_max <= 0) 
                     ss << "The maximum Krylov iteration must be "
                         "positive: krylov_iter_max = " << state.krylov_iter_max;
+
+                // Check that the number of vectors we orthogonalize against
+                // is at least 1.
+                else if(state.krylov_orthog_max <= 0) 
+                    ss << "The maximum number of vectors the Krylov method"
+                    "orthogonalizes against must be positive: "
+                    "krylov_orthog_max = " << state.krylov_orthog_max;
 
                 // Check that relative error in the Krylov method is nonnegative
                 else if(state.krylov_rel_err < Real(0.)) 
@@ -1914,6 +1853,7 @@ namespace peopt{
                         name == "krylov_iter" || 
                         name == "krylov_iter_max" ||
                         name == "krylov_iter_total" || 
+                        name == "krylov_orthog_max" ||
                         name == "msg_level" ||
                         name == "rejected_trustregion" || 
                         name == "linesearch_iter" || 
@@ -2136,6 +2076,8 @@ namespace peopt{
                 nats.second.push_back(state.krylov_iter_max);
                 nats.first.push_back("krylov_iter_total");
                 nats.second.push_back(state.krylov_iter_total);
+                nats.first.push_back("krylov_orthog_max");
+                nats.second.push_back(state.krylov_orthog_max);
                 nats.first.push_back("msg_level");
                 nats.second.push_back(state.msg_level);
                 nats.first.push_back("rejected_trustregion");
@@ -2257,6 +2199,8 @@ namespace peopt{
                         state.krylov_iter_max=*nat;
                     else if(*name=="krylov_iter_total")
                         state.krylov_iter_total=*nat;
+                    else if(*name=="krylov_orthog_max")
+                        state.krylov_orthog_max=*nat;
                     else if(*name=="msg_level")
                         state.msg_level=*nat;
                     else if(*name=="rejected_trustregion")
@@ -3300,206 +3244,29 @@ namespace peopt{
                 // Otherwise, return that we're not converged 
                 return StoppingCondition::NotConverged;
             }
+
+            // Sets up the Hessian operator for use in the Krylov methods.  In
+            // other words, this sets up the application H(x)dx.
+            struct HessianOperator : public Operator <Real,XX,XX> {
+            private:
+                // Store the objective
+                const ScalarValuedFunction <Real,XX>& f;
+
+                // Store a reference to the base of the Hessian-vector product
+                const X_Vector& x;
+
+            public:
+                // Take in the objective and the base point during construction 
+                HessianOperator(
+                    const ScalarValuedFunction <Real,XX>& f_,
+                    const X_Vector& x_) : f(f_), x(x_) {}
+
+                // Basic application
+                void operator () (const X_Vector& dx,X_Vector &y) const {
+                    f.hessvec(x,dx,y);
+                }
+            };
         
-            // Computes the truncated-CG (Steihaug-Toint) trial step for
-            // trust-region and line-search algorithms
-            static void truncatedCG(
-                const Messaging& msg,
-                const StateManipulator <Unconstrained <Real,XX> >& smanip,
-                const typename Functions::t& fns,
-                typename State::t& state
-            ){
-
-                // Create shortcuts to some elements in the state
-                // Create some shortcuts
-                const AlgorithmClass::t& algorithm_class=state.algorithm_class;
-                const X_Vector& x=*(state.x.begin());
-                const X_Vector& g=*(state.g.begin());
-                const Real& delta=state.delta;
-                const Real& eps_cg=state.eps_krylov;
-                const unsigned int& iter_max=state.krylov_iter_max;
-                X_Vector& s_k=*(state.s.begin());
-                unsigned int& iter=state.krylov_iter;
-                unsigned int& iter_total=state.krylov_iter_total;
-                KrylovStop::t& krylov_stop=state.krylov_stop;
-                Real& rel_err=state.krylov_rel_err;
-
-                // Create shortcuts to the functions that we need
-                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
-                const Operator <Real,XX,XX>& Minv=*(fns.Minv);
-
-                // Allocate memory for temporaries that we need
-                X_Vector g_k; X::init(x,g_k);
-                X_Vector v_k; X::init(x,v_k);
-                X_Vector p_k; X::init(x,p_k);
-                X_Vector H_pk; X::init(x,H_pk);
-
-                // Allocate memory for a few constants that we need to track 
-                Real kappa(0.);
-                Real sigma;
-                Real alpha(0.);
-                Real beta;
-                Real norm_sk_M2,norm_skp1_M2(0.),norm_pk_M2,norm_g;
-                Real inner_sk_M_pk,inner_gk_vk,inner_gkp1_vkp1;
-
-                // Initialize our variables
-                X::scal(Real(0.),s_k);       // s_0=0
-                X::copy(g,g_k);              // g_0=g
-                Minv(g_k,v_k);               // v_0=inv(M)*g_0
-                X::copy(v_k,p_k);            // p_0=-v_0
-                X::scal(Real(-1.),p_k);
-                norm_sk_M2=Real(0.);         // || s_0 ||_M^2 = 0
-                norm_pk_M2=X::innr(g_k,v_k); // || p_0 ||_M^2 = <g_0,v_0>
-                inner_sk_M_pk=Real(0.);      // <s_0,M p_0>=0
-                inner_gk_vk=norm_pk_M2;      // <g_0,v_0> = || p_0 ||_M^2
-                norm_g=X::innr(g,g);         // || g ||
-
-                // Run truncated CG until we hit our max iteration or we
-                // converge
-                iter_total++;
-                for(iter=1;iter<=iter_max;iter++,iter_total++){
-                    // H_pk=H p_k
-                    f.hessvec(x,p_k,H_pk);
-
-                    // Compute the curvature for this direction.
-                    // kappa=<p_k,H p_k>
-                    kappa=X::innr(p_k,H_pk);
-
-                    // If we have negative curvature, don't bother with the
-                    // next two steps since we're going to exit and we won't
-                    // need them.  
-                    if(kappa > 0){
-                        // Determine a trial point
-                        alpha = X::innr(g_k,v_k)/kappa;
-
-                        // || s_k+alpha_k p_k ||
-                        norm_skp1_M2=norm_sk_M2+Real(2.)*alpha*inner_sk_M_pk
-                            +alpha*alpha*norm_pk_M2;
-                    }
-
-                    // If we have negative curvature or our trial point is
-                    // outside the trust region radius, terminate truncated-CG
-                    // and find our final step.  We ignore the trust-region
-                    // radius in the case of a line-search algorithm. We have
-                    // the kappa!=kappa check in order to trap NaNs.
-                    if( kappa <= 0 ||
-                        (algorithm_class==AlgorithmClass::TrustRegion
-                            && norm_skp1_M2 >= delta*delta) ||
-                        kappa!=kappa
-                    ){
-                        switch(algorithm_class){
-                        // In the case of a trust-region algorithm, take the
-                        // last trial step and extend it all of the way to the
-                        // trust-region radius.
-                        case AlgorithmClass::TrustRegion:
-                            // sigma=positive root of
-                            // || s_k + sigma p_k ||_M=delta
-                            sigma=(-inner_sk_M_pk
-                                + sqrt(inner_sk_M_pk*inner_sk_M_pk
-                                + norm_pk_M2*(delta*delta-norm_sk_M2)))
-                                / norm_pk_M2;
-
-                            // s_kp1=s_k+sigma p_k
-                            X::axpy(sigma,p_k,s_k);
-
-                            // Update the residual error for out output,
-                            // g_k=g_k+sigma Hp_k
-                            X::axpy(sigma,H_pk,g_k);
-                            break;
-                            
-                        // In the case of a line-search algorithm, do nothing
-                        // unless we're on the first iteration.  In this case,
-                        // take the steepest descent direction. 
-                        case AlgorithmClass::LineSearch:
-                            if(iter==1){
-                                X::copy(g,s_k);
-                                X::scal(Real(-1.),s_k);
-                            }
-                            break;
-                        }
-
-                        // Return a message as to why we exited
-                        if(kappa<=0 || kappa!=kappa)
-                            krylov_stop = KrylovStop::NegativeCurvature;
-                        else
-                            krylov_stop = KrylovStop::TrustRegionViolated;
-
-                        // Exit the loop
-                        break;
-                    }
-
-                    // Take a step in the computed direction. s_k=s_k+alpha p_k
-                    X::axpy(alpha,p_k,s_k);
-
-                    // Update the norm of sk
-                    norm_sk_M2=norm_skp1_M2;
-                    
-                    // g_k=g_k+alpha H p_k
-                    X::axpy(alpha,H_pk,g_k);
-
-                    // Test whether we've converged CG
-                    rel_err=sqrt(X::innr(g_k,g_k)) / (Real(1e-16)+norm_g);
-                    if(rel_err <= eps_cg){
-                        krylov_stop = KrylovStop::RelativeErrorSmall;
-                        break;
-                    }
-
-                    // v_k = Minv g_k
-                    Minv(g_k,v_k);
-
-                    // Compute the new <g_kp1,v_kp1>
-                    inner_gkp1_vkp1=X::innr(g_k,v_k);
-
-                    // beta = <g_kp1,v_kp1> / <g_k,v_k>
-                    beta= inner_gkp1_vkp1 / inner_gk_vk;
-
-                    // Store the new inner product between g_k and p_k
-                    inner_gk_vk=inner_gkp1_vkp1;
-                    
-                    // Find the new search direction.  p_k=-v_k + beta p_k
-                    X::scal(beta,p_k);
-                    X::axpy(Real(-1.),v_k,p_k);
-
-                    // Update the inner product between s_k and M p_k
-                    inner_sk_M_pk=beta*(inner_sk_M_pk+alpha*norm_pk_M2);
-
-                    // Update the norm of p_k
-                    norm_pk_M2=inner_gk_vk+beta*beta*norm_pk_M2; 
-
-                    // Manipulate the state if required 
-                    smanip(fns,state,
-                        OptimizationLocation::EndOfKrylovIteration);
-                }
-
-                // Check if we've exceeded the maximum iteration
-                if(iter>iter_max){
-                    krylov_stop=KrylovStop::MaxItersExceeded;
-                    iter--; iter_total--;
-                }
-               
-                // Grab the relative error in the CG solution.
-                // If we're running a line-search algorithm and we exit on the
-                // first iteration due to negative curvature, then this doesn't
-                // make sense since we took the steepest descent direction 
-                // without the preconditioner.  Hence, we return a NaN.
-                if( algorithm_class==AlgorithmClass::LineSearch &&
-                    iter==1 &&
-                    kappa < 0
-                )
-                    rel_err= Real(std::numeric_limits<double>::quiet_NaN()); 
-
-                // Otherwise, we calculate the current relative error.
-                else
-                    rel_err=sqrt(X::innr(g_k,g_k)) / (Real(1e-16)+norm_g);
-                    
-                // If we don't exit because of iterations, this is sort
-                // of like the end of a Krylov iteration
-                if(iter!=iter_max) 
-                    smanip(fns,state,
-                        OptimizationLocation::EndOfKrylovIteration);
-
-            }
-
             // Checks whether we accept or reject a step
             static bool checkStep(
                 const typename Functions::t& fns,
@@ -3576,12 +3343,27 @@ namespace peopt{
             ){
                 // Create some shortcuts
                 const Real& eps_s=state.eps_s;
+                const Real& eps_krylov=state.eps_krylov;
+                const Real& krylov_iter_max=state.krylov_iter_max;
+                const Real& krylov_orthog_max=state.krylov_orthog_max;
+                const Real& delta=state.delta;
+                const X_Vector& x=state.x.back();
+                const X_Vector& g=state.g.back();
+                const Real& norm_g=state.norm_g;
+                const Real& norm_styp=state.norm_styp;
                 unsigned int& rejected_trustregion=state.rejected_trustregion;
-                X_Vector& s=*(state.s.begin());
+                X_Vector& s=state.s.back();
                 Real& norm_s=state.norm_s;
+                unsigned int& krylov_iter=state.krylov_iter;
+                Real& krylov_rel_err=state.krylov_rel_err;
+                KrylovStop::t& krylov_stop=state.krylov_stop;
                 std::list <X_Vector>& oldY=state.oldY; 
                 std::list <X_Vector>& oldS=state.oldS; 
                 unsigned int& history_reset=state.history_reset;
+                
+                // Create shortcuts to the functions that we need
+                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
+                const Operator <Real,XX,XX>& Minv=*(fns.Minv);
 
                 // Continue to look for a step until one comes back as valid
                 for(rejected_trustregion=0;
@@ -3601,8 +3383,27 @@ namespace peopt{
                         smanip(fns,state,
                             OptimizationLocation::AfterRejectedTrustRegion);
 
-                    // Use truncated-CG to find a new trial step
-                    truncatedCG(msg,smanip,fns,state);
+                    // Use truncated-cd to find a new trial step
+                    HessianOperator H(f,x);
+                    X_Vector s_cp; X::init(x,s_cp);
+                    X_Vector minus_g; X::init(x,minus_g);
+                    X::copy(g,minus_g); X::scal(Real(-1.),minus_g);
+                    X::zero(s);
+                    std::pair <Real,int> norm_iter = truncated_pcd(
+                        H,
+                        minus_g,
+                        Minv,
+                        eps_krylov,
+                        krylov_iter_max,
+                        krylov_orthog_max,
+                        delta,
+                        s,
+                        s_cp,
+                        krylov_rel_err,
+                        krylov_iter,
+                        krylov_stop);
+                    krylov_rel_err = krylov_rel_err / (Real(1e-16)+norm_g);
+                    krylov_iter=norm_iter.second;
 
                     // Manipulate the state if required
                     smanip(fns,state,
@@ -3615,9 +3416,10 @@ namespace peopt{
                     if(checkStep(fns,state)) break;
 
                     // Alternatively, check if the step becomes so small
-                    // that we're not making progress.  In this case, take
-                    // a zero step and allow the stopping conditions to exit
-                    if(norm_s < eps_s) {
+                    // that we're not making progress.  In this case, break
+                    // and allow the stopping conditions to terminate
+                    // optimization.
+                    if(norm_s < eps_s*norm_styp) {
                         X::scal(Real(0.),s);
                         norm_s=Real(0.);
                         break;
@@ -3943,16 +3745,31 @@ namespace peopt{
                 typename State::t& state
             ){
                 // Create some shortcuts
+                const X_Vector& x=state.x.back();
+                const X_Vector& g=state.g.back();
                 const LineSearchDirection::t& dir=state.dir;
                 const LineSearchKind::t& kind=state.kind;
                 const int& iter=state.iter;
                 const int& linesearch_iter_max=state.linesearch_iter_max;
                 const Real& merit_x=state.merit_x;
                 const Real& eps_s=state.eps_s;
+                const Real& norm_styp=state.norm_styp;
+                const Real& eps_krylov=state.eps_krylov;
+                const Real& krylov_iter_max=state.krylov_iter_max;
+                const Real& krylov_orthog_max=state.krylov_orthog_max;
+                const Real& norm_g=state.norm_g;
+                X_Vector& s=state.s.back();
                 Real& merit_xps=state.merit_xps;
-                X_Vector& s=*(state.s.begin());
                 Real& norm_s=state.norm_s;
                 Real& alpha=state.alpha;
+                Real& krylov_rel_err=state.krylov_rel_err;
+                unsigned int& krylov_iter=state.krylov_iter;
+                KrylovStop::t& krylov_stop=state.krylov_stop;
+                
+                // Create shortcuts to the functions that we need
+                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
+                const Operator <Real,XX,XX>& Minv=*(fns.Minv);
+
 
                 // Find the line-search direction
                 switch(dir){
@@ -3971,10 +3788,29 @@ namespace peopt{
                 case LineSearchDirection::BFGS:
                     BFGS(msg,state);
                     break;
-                case LineSearchDirection::NewtonCG:
-                    truncatedCG(msg,smanip,fns,state);
+                case LineSearchDirection::NewtonCG: {
+                    HessianOperator H(f,x);
+                    X_Vector s_cp; X::init(x,s_cp);
+                    X_Vector minus_g; X::init(x,minus_g);
+                    X::copy(g,minus_g); X::scal(Real(-1.),minus_g);
+                    X::zero(s);
+                    std::pair <Real,int> norm_iter = truncated_pcd(
+                        H,
+                        minus_g,
+                        Minv,
+                        eps_krylov,
+                        krylov_iter_max,
+                        krylov_orthog_max,
+                        std::numeric_limits <Real>::infinity(),
+                        s,
+                        s_cp,
+                        krylov_rel_err,
+                        krylov_iter,
+                        krylov_stop);
+                    krylov_rel_err = krylov_rel_err / (Real(1e-16)+norm_g);
+                    krylov_iter=norm_iter.second;
                     break;
-                }
+                }}
                     
                 // Manipulate the state if required
                 smanip(fns,state,OptimizationLocation::BeforeLineSearch);
@@ -3998,7 +3834,7 @@ namespace peopt{
                             // Check if the step becomes so small that we're not
                             // making progress.  In this case, take a zero step 
                             // and allow the stopping conditions to exit
-                            if(norm_s < eps_s) {
+                            if(norm_s < eps_s*norm_styp) {
                                 alpha=0.;
                                 break;
                             }
@@ -4035,7 +3871,7 @@ namespace peopt{
                             // Check if the step becomes so small that we're not
                             // making progress.  In this case, take a zero step 
                             // and allow the stopping conditions to exit
-                            if(norm_s < eps_s) {
+                            if(norm_s < eps_s*norm_styp) {
                                 alpha=0.;
                                 break;
                             }
@@ -6091,9 +5927,5 @@ namespace peopt{
         };
 
     };
-
-#if 0
-        
-#endif
 }
 #endif

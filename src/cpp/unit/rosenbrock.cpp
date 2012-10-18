@@ -75,6 +75,7 @@ BOOST_AUTO_TEST_CASE(newton_cg) {
     state.H_type = peopt::Operators::External;
     state.eps_krylov = 1e-2;
     state.iter_max = 100;
+    state.eps_g = 1e-8;
     
     // Create the bundle of functions 
     peopt::Unconstrained <double,Rm>::Functions::t fns;
@@ -95,7 +96,7 @@ BOOST_AUTO_TEST_CASE(newton_cg) {
     BOOST_CHECK(err < 1e-6);
 
     // Check that the number of iterations is 22
-    BOOST_CHECK(state.iter == 22);
+    BOOST_CHECK(state.iter == 18);
 }
 
 BOOST_AUTO_TEST_CASE(tr_newton) {

@@ -499,8 +499,9 @@ public:
     // y=f(x)
     virtual void operator () (const X_Vector& dx,Y_Vector& y) const { 
         mxArray* input[3]={eval_.get(),x.get(),dx.get()}; 
-        mxArray* output[1]={y.get()};
+        mxArray* output[1];
         mexCallMATLAB(1,output,3,input,"feval");
+        y.reset(output[0]);
     }
 };
 

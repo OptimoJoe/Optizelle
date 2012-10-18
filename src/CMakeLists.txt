@@ -9,6 +9,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
 install(FILES
     ${CMAKE_SOURCE_DIR}/cpp/peopt/peopt.h
     ${CMAKE_SOURCE_DIR}/cpp/peopt/json.h
+    ${CMAKE_SOURCE_DIR}/cpp/peopt/linalg.h
     DESTINATION include/peopt)
         
 # First, figure out if we're doing a barebones header only installation

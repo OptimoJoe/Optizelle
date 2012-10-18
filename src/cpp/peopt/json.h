@@ -54,6 +54,8 @@ namespace peopt {
                     .get("iter_max",state.iter_max).asInt();
                 state.krylov_iter_max=root["peopt"]
                     .get("krylov_iter_max",state.krylov_iter_max).asInt();
+                state.krylov_orthog_max=root["peopt"]
+                    .get("krylov_orthog_max",state.krylov_orthog_max).asInt();
                 state.eps_krylov=Real(root["peopt"]
                     .get("eps_krylov",state.eps_krylov).asDouble());
 
@@ -144,6 +146,7 @@ namespace peopt {
                 root["peopt"]["history_reset"]=state.history_reset;
                 root["peopt"]["iter_max"]=state.iter_max;
                 root["peopt"]["krylov_iter_max"]=state.krylov_iter_max;
+                root["peopt"]["krylov_orthog_max"]=state.krylov_orthog_max;
                 root["peopt"]["eps_krylov"]=state.eps_krylov;
                 root["peopt"]["algorithm_class"]=
                     AlgorithmClass::to_string(state.algorithm_class);

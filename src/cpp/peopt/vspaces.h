@@ -70,7 +70,7 @@ namespace peopt {
             Real z=0;
             #pragma omp parallel for reduction(+:z) schedule(static)
             for(unsigned int i=0;i<x.size();i++)
-                z+=log <Real> (x[i]);
+                z+=log(x[i]);
             return z;
         }
 
@@ -271,9 +271,9 @@ namespace peopt {
 
             // Find the relative error between the current iterate
             // and the base
-            Real norm_xk = sqrt <Real> (dot <Real>
+            Real norm_xk = sqrt(dot <Real>
                 (m,&(X.data[X.offsets[k]]),1,&(X.data[X.offsets[k]]),1));
-            Real rel_err = sqrt <Real> (dot <Real> (m,&(tmp[0]),1,&(tmp[0]),1))
+            Real rel_err = sqrt(dot <Real> (m,&(tmp[0]),1,&(tmp[0]),1))
                 / (Real(1e-16)+norm_xk);
 
             // If the relative error is large, refresh the cached decomposition.
@@ -579,12 +579,12 @@ namespace peopt {
                 case Cone::Linear:
                     #pragma omp parallel for reduction(+:z) schedule(static)
                     for(unsigned int i=1;i<=m;i++)
-                        z+=log <Real> (x(blk,i));
+                        z+=log(x(blk,i));
                     break;
 
                 // z += 0.5 * log(x0^2-<xbar,xbar))
                 case Cone::Quadratic:
-                    z+=Real(0.5) * log <Real> (x(blk,1)*x(blk,1)
+                    z+=Real(0.5) * log(x(blk,1)*x(blk,1)
                         -dot <Real> (m-1,&(x(blk,2)),1,&(x(blk,2)),1));
                     break;
 
@@ -606,7 +606,7 @@ namespace peopt {
                         det*=U[peopt::ijtok(i,i,m)];
                     
                     // Complete the barrier computation by taking the log
-                    z+= Real(2.) * log <Real> (det);
+                    z+= Real(2.) * log(det);
                     
                     break;
                 } }
@@ -687,9 +687,9 @@ namespace peopt {
                         - dot <Real> (m-1,&(x(blk,2)),1,&(y(blk,2)),1));
                     Real c = y(blk,1)*y(blk,1)
                         - dot <Real> (m-1,&(y(blk,2)),1,&(y(blk,2)),1);
-                    Real alpha1 = (-b + sqrt <Real> (b*b-Real(4.)*a*c))
+                    Real alpha1 = (-b + sqrt(b*b-Real(4.)*a*c))
                         / (Real(2.)*a);
-                    Real alpha2 = (-b - sqrt <Real> (b*b-Real(4.)*a*c))
+                    Real alpha2 = (-b - sqrt(b*b-Real(4.)*a*c))
                         / (Real(2.)*a);
                     Real alpha3 = -c/b;
 

@@ -2,7 +2,11 @@
 #define LINALG_H 
 
 #include <vector>
+#include <list>
 #include <cmath>
+#include <limits>
+#include <utility>
+#include <string>
 
 namespace peopt {
     template <typename T>
@@ -59,20 +63,27 @@ namespace peopt {
     template <typename T>
     void trtri(char uplo,char diag,int n,T* A,int lda,int& info);
 
-    // Absolute value
-    template <typename T>
-    T abs(T alpha);
-
-    // Square root
-    template <typename T>
-    T sqrt(T alpha);
-
-    // Logarithm
-    template <typename T>
-    T log(T alpha);
-    
     // Indexing function for matrices
     unsigned int ijtok(unsigned int i,unsigned int j,unsigned int m);
+
+    // A simple operator specification, A : X->Y
+    template <
+        typename Real,
+        template <typename> class X,
+        template <typename> class Y
+    >
+    struct Operator {
+    private:
+        // Create some type shortcuts
+        typedef typename X <Real>::Vector X_Vector;
+        typedef typename Y <Real>::Vector Y_Vector;
+    public:
+        // Basic application
+        virtual void operator () (const X_Vector& x,Y_Vector &y) const = 0;
+
+        // Allow a derived class to deallocate memory 
+        virtual ~Operator() {}
+    };
 
     /* Given a Schur decomposition of A, A=V D V', solve the Sylvester equation
     
@@ -245,18 +256,315 @@ namespace peopt {
             // going to converge first, but they'll both be the first two.
             // Hence, we converge until these errors estimates are accurate
             // enough.
-            T err_est_min = abs <T> (Z[ijtok(k,1,k)])*beta[i+1];
-            T err_est_max = abs <T> (Z[ijtok(k,k,k)])*beta[i+1];
+            T err_est_min = fabs(Z[ijtok(k,1,k)])*beta[i+1];
+            T err_est_max = fabs(Z[ijtok(k,k,k)])*beta[i+1];
 
             // Stop of the error estimates are small
-            if(    err_est_min < abs <T> (W[0]) * tol
-                && err_est_max < abs <T> (W[i]) * tol
+            if(    err_est_min < fabs(W[0]) * tol
+                && err_est_max < fabs(W[i]) * tol
             )
                 break;
         }
 
         // Return the smallest Ritz value
         return W[0];
+    }
+
+    // Reasons we stop the Krylov method
+    struct KrylovStop{
+        enum t{
+            NegativeCurvature,        // Negative curvature detected
+            RelativeErrorSmall,       // Relative error is small
+            MaxItersExceeded,         // Maximum number of iterations exceeded
+            TrustRegionViolated       // Trust-region radius violated
+        };
+
+        // Converts the Krylov stopping condition to a string 
+        static std::string to_string(t krylov_stop){
+            switch(krylov_stop){
+            case NegativeCurvature:
+                return "NegativeCurvature";
+            case RelativeErrorSmall:
+                return "RelativeErrorSmall";
+            case MaxItersExceeded:
+                return "MaxItersExceeded";
+            case TrustRegionViolated:
+                return "TrustRegionViolated";
+            default:
+                throw;
+            }
+        }
+        
+        // Converts a string to a Krylov stopping condition
+        static t from_string(std::string krylov_stop){
+            if(krylov_stop=="NegativeCurvature")
+                return NegativeCurvature;
+            else if(krylov_stop=="RelativeErrorSmall")
+                return RelativeErrorSmall;
+            else if(krylov_stop=="MaxItersExceeded")
+                return MaxItersExceeded;
+            else if(krylov_stop=="TrustRegionViolated")
+                return TrustRegionViolated;
+            else
+                throw;
+        }
+
+        // Checks whether or not a string is valid
+        struct is_valid : public std::unary_function<std::string, bool> {
+            bool operator () (const std::string& name) const {
+                if( name=="NegativeCurvature" ||
+                    name=="RelativeErrorSmall" ||
+                    name=="MaxItersExceeded" ||
+                    name=="TrustRegionViolated" 
+                )
+                    return true;
+                else
+                    return false;
+            }
+        };
+    };
+
+    // A B orthogonalizes a vector x to a list of other xs.  
+    template <
+        typename Real,
+        template <typename> class XX
+    >
+    void ABorthogonalize(
+        const std::list <typename XX <Real>::Vector>& vs,
+        const std::list <typename XX <Real>::Vector>& Bvs,
+        const std::list <typename XX <Real>::Vector>& ABvs,
+        typename XX <Real>::Vector& x,
+        typename XX <Real>::Vector& Bx,
+        typename XX <Real>::Vector& ABx
+    ) {
+        // Create some type shortcuts
+        typedef XX <Real> X;
+        typedef typename X::Vector X_Vector;
+
+        // Orthogonalize the vectors
+        int i=0;
+        for(typename std::list <X_Vector>::const_iterator
+                v=vs.begin(),
+                Bv=Bvs.begin(),
+                ABv=ABvs.begin();
+            v!=vs.end();
+            v++,Bv++,ABv++
+        ) {
+            Real beta=X::innr(*ABv,Bx);
+            X::axpy(Real(-1.)*beta,*v,x);
+            X::axpy(Real(-1.)*beta,*Bv,Bx);
+            X::axpy(Real(-1.)*beta,*ABv,ABx);
+        }
+    }
+
+    // Computes the truncated projected conjugate direction algorithm in order
+    // to solve Ax=b where we restrict x to be in the range of B and that
+    // || x || <= delta.  The parameters are as follows.
+    // 
+    // (input) A : Operator in the system A B x = b
+    // (input) b : Right hand side in the system A B x = b
+    // (input) B : Projection in the system A B x = b
+    // (input) eps : Stopping tolerance
+    // (input) iter_max :  Maximum number of iterations
+    // (input) orthog_max : Maximum number of orthgonalizations.  If this
+    //     number is 1, then we do the conjugate gradient algorithm.
+    // (input) delta : Trust region radius.  If this number is infinity, we
+    //     do not scale the final step if we detect negative curvature.
+    // (input/output) x : Initial guess and final solution x.  We assume that
+    //     the initial guess satisfies norm(x) <= delta.
+    // (output) x_cp : The Cauchy-Point, which is defined as the solution x
+    //     after a single iteration.
+    // (output) norm_r : The norm of the final residual.
+    // (output) iter : The number of iterations required to converge. 
+    // (output) krylov_stop : The reason why the Krylov method was terminated.
+    template <
+        typename Real,
+        template <typename> class XX
+    >
+    std::pair <Real,int> truncated_pcd(
+        const Operator <Real,XX,XX>& A,
+        const typename XX <Real>::Vector& b,
+        const Operator <Real,XX,XX>& B,
+        const Real eps,
+        const unsigned int iter_max,
+        const unsigned int orthog_max,
+        const Real delta,
+        typename XX <Real>::Vector& x,
+        typename XX <Real>::Vector& x_cp,
+        Real& norm_r,
+        unsigned int& iter,
+        KrylovStop::t& krylov_stop
+    ){
+
+        // Create some type shortcuts
+        typedef XX <Real> X;
+        typedef typename X::Vector X_Vector;
+
+        // Allocate memory for the search direction, its projection, and the
+        // the operator applied to the projection
+        X_Vector p; X::init(x,p);
+        X_Vector Bp; X::init(x,Bp);
+        X_Vector ABp; X::init(x,ABp);
+
+        // Allocate memory for the previous search directions
+        std::list <X_Vector> ps;
+        std::list <X_Vector> Bps;
+        std::list <X_Vector> ABps;
+
+        // Find the norm of x
+        Real norm_x = sqrt(X::innr(x,x));
+
+        // Allocate memory for and find the initial residual, A*x-b
+        X_Vector r; X::init(x,r);
+        if(norm_x!=Real(0.)) {
+            A(x,r);
+            X::axpy(Real(-1.),b,r);
+
+        // Frequently, we start with an initial guess of zero.  In this case,
+        // let us save some work.
+        } else {
+            X::copy(b,r);
+            X::scal(Real(-1.),r);
+        }
+
+        // Find the norm of the residual and save the original residual
+        norm_r = sqrt(X::innr(r,r));
+        Real norm_r0 = norm_r;
+
+        // Loop until the maximum iteration
+        for(iter=1;iter<=iter_max;iter++){
+        
+            // If the norm of the residual is small relative to the starting
+            // residual, exit
+            if(norm_r < eps*norm_r0) {
+                iter--;
+                krylov_stop = KrylovStop::RelativeErrorSmall;
+                break;
+            }
+
+            // Find the steepest descent search direction
+            X::copy(r,p);
+            X::scal(Real(-1.),p);	
+
+            // Find the Bp and ABp applications 
+            B(p,Bp);
+            A(Bp,ABp);
+
+            // Orthogonalize this direction to the previous directions
+            ABorthogonalize <Real,XX> (ps,Bps,ABps,p,Bp,ABp); 
+
+            // Check if this direction is a descent direction.  If it is not,
+            // flip it so that it is.
+            if(X::innr(Bp,r) > 0) {
+                X::scal(Real(-1.),p);
+                X::scal(Real(-1.),Bp);
+                X::scal(Real(-1.),ABp);
+            }
+
+            // Check if we need to eliminate any vectors for orthogonalization.
+            if(ps.size()==orthog_max) {
+                ps.pop_front();
+                Bps.pop_front();
+                ABps.pop_front();
+            }
+
+            // Store the previous directions
+            Real innr_Bp_ABp = X::innr(Bp,ABp);
+            Real one_over_sqrt_innr_Bp_ABp = Real(1.)/sqrt(innr_Bp_ABp);
+
+            ps.push_back(X_Vector()); X::init(x,ps.back());
+            X::copy(p,ps.back());
+            X::scal(one_over_sqrt_innr_Bp_ABp,ps.back());
+            
+            Bps.push_back(X_Vector()); X::init(x,Bps.back());
+            X::copy(Bp,Bps.back());
+            X::scal(one_over_sqrt_innr_Bp_ABp,Bps.back());
+            
+            ABps.push_back(X_Vector()); X::init(x,ABps.back());
+            X::copy(ABp,ABps.back());
+            X::scal(one_over_sqrt_innr_Bp_ABp,ABps.back());
+
+            // Do an exact linesearch in the computed direction
+            Real alpha = -X::innr(r,Bp) / innr_Bp_ABp;
+
+            // Find the norm at the trial step
+            Real innr_Bp_x = X::innr(Bp,x);
+            Real innr_Bp_Bp = X::innr(Bp,Bp);
+            Real norm_xpaBp = sqrt(norm_x*norm_x + Real(2.)*alpha*innr_Bp_x
+                + alpha*alpha*innr_Bp_Bp);
+
+            // If we have negative curvature or our trial point is outside the
+            // trust-region radius, terminate truncated-PCD and find our final
+            // step.  We have the <Bp,ABp> != <Bp,ABp> check in order to trap
+            // NaNs.
+            if( innr_Bp_ABp <= Real(0.) ||
+                norm_xpaBp >= delta ||
+                innr_Bp_ABp != innr_Bp_ABp 
+            ) {
+                // If we're paying attention to the trust-region, scale the
+                // step appropriately.
+                if(delta < std::numeric_limits <Real>::infinity()) {
+                    // Find sigma so that || x + sigma p || = delta.  This can
+                    // be found by finding the positive root of the quadratic
+                    // || x + sigma Bp ||^2 = delta^2.  Specifically, we want
+                    // the positive root of
+                    // sigma^2<Bp,Bp> + sigma(2 <Bp,x>) + (<x,x>-delta^2).
+                    Real aa = innr_Bp_Bp;
+                    Real bb = Real(2.)*innr_Bp_x; 
+                    Real cc = norm_x*norm_x-delta*delta;
+                    Real sigma = (-bb + sqrt(bb*bb-Real(4.)*aa*cc))/(2*aa);
+
+                    // Take the step, find its residual, and compute the 
+                    // residual's norm
+                    X::axpy(sigma,Bp,x);
+                    X::axpy(sigma,ABp,r);
+                    norm_r=sqrt(X::innr(r,r));
+
+                // Otherwise, just take a step with a unit scale
+                } else {
+                    X::axpy(Real(1.),Bp,x);
+                    X::axpy(Real(1.),ABp,r);
+                    norm_r=sqrt(X::innr(r,r));
+                }
+
+                // Determine why we stopped
+                if(innr_Bp_ABp<=0 || innr_Bp_ABp != innr_Bp_ABp)
+                    krylov_stop = KrylovStop::NegativeCurvature;
+                else
+                    krylov_stop = KrylovStop::TrustRegionViolated;
+ 
+
+                // If this is the first iteration, save the Cauchy-Point
+                if(iter==1) X::copy(x,x_cp);
+                break;
+            }
+
+            // Take a step in this direction
+            X::axpy(alpha,Bp,x);
+
+            // If this is the first iteration, save the Cauchy-Point
+            if(iter==1) X::copy(x,x_cp);
+
+            // Update the norm of x
+            norm_x = norm_xpaBp;
+
+            // Find the new residual
+            X::axpy(alpha,ABp,r);
+
+            // Compute the norm of the residual
+            norm_r=sqrt(X::innr(r,r));
+        }
+
+        // If we've exceeded the maximum iteration, make sure to denote this
+        if(iter > iter_max)
+            krylov_stop=KrylovStop::MaxItersExceeded;
+
+        // Adjust the iteration number if we ran out of iterations
+        iter = iter > iter_max ? iter_max : iter;
+
+        // Return the norm of the residual and the iteration number we
+        // completed at
+        return std::pair <Real,unsigned int> (norm_r,iter);
     }
 }
 
