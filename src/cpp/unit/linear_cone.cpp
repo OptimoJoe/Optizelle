@@ -96,18 +96,6 @@ namespace {
             X::zero(z);
         }
     };
-
-    // Does not output anything to the user unless its an error 
-    struct SilentMessaging : public peopt::Messaging {
-        // Prints a message
-        void print(const std::string msg) const { }
-
-        // Prints an error
-        void error(const std::string msg) const {
-            std::cerr << msg << std::endl;
-            exit(EXIT_FAILURE);
-        }
-    };
 }
 
 BOOST_AUTO_TEST_SUITE(linear_cone)
@@ -137,16 +125,17 @@ BOOST_AUTO_TEST_CASE(newton_cg) {
     state.dir = peopt::LineSearchDirection::NewtonCG;
     state.H_type = peopt::Operators::External;
     state.eps_krylov = 1e-10;
-    state.iter_max = 300;
+    state.iter_max = 100;
+    state.msg_level = 0;
     state.eps_s = 1e-16;
-    state.eps_g = 1e-6;
-    state.mu_trg=1e-6;
-    state.sigma=0.05;
+    state.eps_g = 1e-8;
+    state.eps_mu=1e-8;
+    state.sigma=0.01;
     state.gamma=.995;
 
     // Solve the optimization problem
     peopt::InequalityConstrained <double,Rm,Rm>::Algorithms
-        ::getMin(SilentMessaging(),fns,state);
+        ::getMin(peopt::Messaging(),fns,state);
 
     // Check the relative error between the true solution, (1/3,1/3), and that
     // found in the state
@@ -159,7 +148,7 @@ BOOST_AUTO_TEST_CASE(newton_cg) {
     BOOST_CHECK(err < 1e-6);
 
     // Check the number of iterations 
-    BOOST_CHECK(state.iter == 28);
+    BOOST_CHECK(state.iter == 8);
 }
 
 BOOST_AUTO_TEST_CASE(tr_newton) {
@@ -185,16 +174,17 @@ BOOST_AUTO_TEST_CASE(tr_newton) {
     // Setup some parameters 
     state.H_type = peopt::Operators::External;
     state.iter_max = 100;
+    state.msg_level = 0;
     state.eps_krylov = 1e-10;
     state.eps_s = 1e-16;
-    state.eps_g = 1e-10;
-    state.mu_trg=1e-6;
-    state.sigma=0.05;
+    state.eps_g = 1e-8;
+    state.eps_mu=1e-8;
+    state.sigma=0.01;
     state.gamma=.995;
 
     // Solve the optimization problem
     peopt::InequalityConstrained <double,Rm,Rm>::Algorithms
-        ::getMin(SilentMessaging(),fns,state);
+        ::getMin(peopt::Messaging(),fns,state);
 
     // Check the relative error between the true solution, (1/3,1/3), and that
     // found in the state
@@ -207,10 +197,10 @@ BOOST_AUTO_TEST_CASE(tr_newton) {
     BOOST_CHECK(err < 1e-6);
 
     // Check the number of iterations 
-    BOOST_CHECK(state.iter == 17);
+    BOOST_CHECK(state.iter == 7);
 }
 
-BOOST_AUTO_TEST_CASE(bfgs) {
+BOOST_AUTO_TEST_CASE(sr1) {
     // Create a type shortcut
     using peopt::Rm;
 
@@ -231,18 +221,20 @@ BOOST_AUTO_TEST_CASE(bfgs) {
     fns.h.reset(new MyIneq);
     
     // Setup some parameters 
-    state.algorithm_class = peopt::AlgorithmClass::LineSearch;
-    state.dir = peopt::LineSearchDirection::BFGS;
-    state.stored_history = 10;
+    state.algorithm_class = peopt::AlgorithmClass::TrustRegion;
+    state.H_type = peopt::Operators::SR1;
+    state.stored_history = 2;
     state.iter_max = 300;
+    state.msg_level = 0;
     state.eps_s = 1e-16;
-    state.mu_trg=1e-6;
-    state.sigma=0.05;
+    state.eps_g = 1e-8;
+    state.eps_mu = 1e-8;
+    state.sigma=0.01;
     state.gamma=.995;
 
     // Solve the optimization problem
     peopt::InequalityConstrained <double,Rm,Rm>::Algorithms
-        ::getMin(SilentMessaging(),fns,state);
+        ::getMin(peopt::Messaging(),fns,state);
 
     // Check the relative error between the true solution, (1/3,1/3), and that
     // found in the state
@@ -255,7 +247,7 @@ BOOST_AUTO_TEST_CASE(bfgs) {
     BOOST_CHECK(err < 1e-6);
 
     // Check the number of iterations 
-    BOOST_CHECK(state.iter == 54);
+    BOOST_CHECK(state.iter == 8);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

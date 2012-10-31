@@ -99,18 +99,6 @@ namespace {
             X::zero(z);
         }
     };
-    
-    // Does not output anything to the user unless its an error 
-    struct SilentMessaging : public peopt::Messaging {
-        // Prints a message
-        void print(const std::string msg) const { }
-
-        // Prints an error
-        void error(const std::string msg) const {
-            std::cerr << msg << std::endl;
-            exit(EXIT_FAILURE);
-        }
-    };
 }
 
 
@@ -149,15 +137,17 @@ BOOST_AUTO_TEST_CASE(newton_cg) {
     state.dir = peopt::LineSearchDirection::NewtonCG;
     state.H_type = peopt::Operators::External;
     state.eps_krylov = 1e-10;
-    state.iter_max = 300;
+    state.iter_max = 100;
+    state.msg_level = 0;
     state.eps_s = 1e-16;
-    state.eps_g = 1e-10;
-    state.sigma = 0.10;
+    state.eps_g = 1e-9;
+    state.eps_mu = 1e-8;
+    state.sigma = 0.2;
     state.gamma = 0.95;
 
     // Solve the optimization problem
     peopt::InequalityConstrained <double,peopt::Rm,peopt::SQL>::Algorithms
-        ::getMin(SilentMessaging(),fns,state);
+        ::getMin(peopt::Messaging(),fns,state);
 
     // Check the relative error between the true solution, (0.5,0.25), and that
     // found in the state
@@ -167,10 +157,10 @@ BOOST_AUTO_TEST_CASE(newton_cg) {
     peopt::Rm <double>::axpy(-1,state.x.front(),residual);
     double err=std::sqrt(peopt::Rm <double>::innr(residual,residual))
         /(1+sqrt(peopt::Rm <double>::innr(x_star,x_star)));
-    BOOST_CHECK(err < 4e-5);
+    BOOST_CHECK(err < 1e-6);
 
     // Check the number of iterations 
-    BOOST_CHECK(state.iter == 25);
+    BOOST_CHECK(state.iter == 14);
 }
 
 BOOST_AUTO_TEST_CASE(tr_newton) {
@@ -204,15 +194,17 @@ BOOST_AUTO_TEST_CASE(tr_newton) {
     // Setup the optimization problem
     state.H_type = peopt::Operators::External;
     state.iter_max = 100;
+    state.msg_level = 0;
     state.eps_krylov = 1e-10;
     state.eps_s = 1e-16;
     state.eps_g = 1e-10;
-    state.sigma = 0.10;
+    state.eps_mu = 1e-8;
+    state.sigma = 0.2;
     state.gamma = 0.95;
 
     // Solve the optimization problem
     peopt::InequalityConstrained <double,peopt::Rm,peopt::SQL>::Algorithms
-        ::getMin(SilentMessaging(),fns,state);
+        ::getMin(peopt::Messaging(),fns,state);
 
     // Check the relative error between the true solution, (0.5,0.25), and that
     // found in the state
@@ -225,10 +217,10 @@ BOOST_AUTO_TEST_CASE(tr_newton) {
     BOOST_CHECK(err < 1e-6);
 
     // Check the number of iterations 
-    BOOST_CHECK(state.iter == 11);
+    BOOST_CHECK(state.iter == 13);
 }
 
-BOOST_AUTO_TEST_CASE(bfgs) {
+BOOST_AUTO_TEST_CASE(sr1) {
     
     // Create some type shortcuts
     typedef peopt::Rm <double> X;
@@ -244,7 +236,6 @@ BOOST_AUTO_TEST_CASE(bfgs) {
     std::vector <unsigned int> sizes(1); sizes[0]=2;
     std::vector <peopt::Cone::t> types(1); types[0]=peopt::Cone::Semidefinite;
     Z_Vector z(peopt::Messaging(),types,sizes);
-    Z::id(z);
 
     // Create an optimization state
     peopt::InequalityConstrained <double,peopt::Rm,peopt::SQL>::State::t
@@ -257,17 +248,20 @@ BOOST_AUTO_TEST_CASE(bfgs) {
     fns.h.reset(new MyIneq);
 
     // Setup the optimization problem
-    state.algorithm_class = peopt::AlgorithmClass::LineSearch;
-    state.dir = peopt::LineSearchDirection::BFGS;
-    state.stored_history = 10;
-    state.iter_max = 300;
-    state.sigma = 0.10;
+    state.algorithm_class = peopt::AlgorithmClass::TrustRegion;
+    state.H_type = peopt::Operators::SR1;
+    state.stored_history = 2;
+    state.eps_krylov=1e-10;
+    state.iter_max = 100;
+    state.msg_level = 0;
+    state.sigma = 0.2;
     state.gamma = 0.95;
     state.eps_s = 1e-16;
+    state.eps_g = 1e-9;
     
     // Solve the optimization problem
     peopt::InequalityConstrained <double,peopt::Rm,peopt::SQL>::Algorithms
-        ::getMin(SilentMessaging(),fns,state);
+        ::getMin(peopt::Messaging(),fns,state);
 
     // Check the relative error between the true solution, (0.5,0.25), and that
     // found in the state
@@ -277,10 +271,10 @@ BOOST_AUTO_TEST_CASE(bfgs) {
     peopt::Rm <double>::axpy(-1,state.x.front(),residual);
     double err=std::sqrt(peopt::Rm <double>::innr(residual,residual))
         /(1+sqrt(peopt::Rm <double>::innr(x_star,x_star)));
-    BOOST_CHECK(err < 4e-6);
+    BOOST_CHECK(err < 1e-6);
 
     // Check the number of iterations 
-    BOOST_CHECK(state.iter == 53);
+    BOOST_CHECK(state.iter == 9);
 }
 
 

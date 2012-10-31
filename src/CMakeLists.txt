@@ -59,6 +59,9 @@ if(ENABLE_CPP_LIBRARY)
         add_subdirectory(cpp/examples/diagnostic_checks)
         add_subdirectory(cpp/examples/rosenbrock)
         add_subdirectory(cpp/examples/rosenbrock_easy)
+        add_subdirectory(cpp/examples/simple_inequality)
+        add_subdirectory(cpp/examples/simple_quadratic_cone)
+        add_subdirectory(cpp/examples/simple_sdp_cone)
     endif()
     
     # Check if we want to build the unit tests

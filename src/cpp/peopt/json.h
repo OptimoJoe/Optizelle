@@ -114,7 +114,7 @@ namespace peopt {
                 if(LineSearchDirection::is_valid()(dir))
                     state.dir=LineSearchDirection::from_string(dir); 
                 else
-                    msg.error(base + dir + " is not a valid dir");
+                    msg.error(base + dir + " is not a valid dir.");
                 
                 std::string kind=root["peopt"]
                     .get("kind",LineSearchKind::to_string(state.kind))
@@ -122,7 +122,7 @@ namespace peopt {
                 if(LineSearchKind::is_valid()(kind))
                     state.kind=LineSearchKind::from_string(kind); 
                 else
-                    msg.error(base + kind + " is not a valid kind");
+                    msg.error(base + kind + " is not a valid kind.");
             }
             static void read(
                 const peopt::Messaging& msg,
@@ -152,8 +152,7 @@ namespace peopt {
                     AlgorithmClass::to_string(state.algorithm_class);
                 root["peopt"]["Minv_type"]=
                     Operators::to_string(state.Minv_type);
-                root["peopt"]["H_type"]=
-                    Operators::to_string(state.H_type);
+                root["peopt"]["H_type"]=Operators::to_string(state.H_type);
                 root["peopt"]["msg_level"]=state.msg_level;
                 root["peopt"]["delta"]=state.delta;
                 root["peopt"]["delta_max"]=state.delta_max;
@@ -162,10 +161,8 @@ namespace peopt {
                 root["peopt"]["alpha"]=state.alpha;
                 root["peopt"]["linesearch_iter_max"]=state.linesearch_iter_max;
                 root["peopt"]["eps_ls"]=state.eps_ls;
-                root["peopt"]["dir"]=
-                    LineSearchDirection::to_string(state.dir);
-                root["peopt"]["kind"]=
-                    LineSearchKind::to_string(state.kind);
+                root["peopt"]["dir"]=LineSearchDirection::to_string(state.dir);
+                root["peopt"]["kind"]=LineSearchKind::to_string(state.kind);
 
                 // Create a string with the above output
                 Json::StyledWriter writer;
@@ -247,18 +244,29 @@ namespace peopt {
                 typename peopt::InequalityConstrained <Real,XX,ZZ>::State::t&
                     state
             ) {
+                // Base error message
+                const std::string base = "Invalid JSON parameter: ";
+
                 // Read in the input file
                 Json::Value root=parse(msg,fname);
 
                 // Read in the parameters
-                state.mu_tol=Real(root["peopt"]
-                    .get("mu_tol",state.mu_tol).asDouble());
-                state.mu_trg=Real(root["peopt"]
-                    .get("mu_trg",state.mu_trg).asDouble());
+                state.mu=Real(root["peopt"]
+                    .get("mu",state.mu).asDouble());
+                state.eps_mu=Real(root["peopt"]
+                    .get("eps_mu",state.eps_mu).asDouble());
                 state.sigma=Real(root["peopt"]
                     .get("sigma",state.sigma).asDouble());
                 state.gamma=Real(root["peopt"]
                     .get("gamma",state.gamma).asDouble());
+                
+                std::string ipm=root["peopt"]
+                    .get("ipm",InteriorPointMethod::to_string(state.ipm))
+                    .asString();
+                if(InteriorPointMethod::is_valid()(ipm))
+                    state.ipm=InteriorPointMethod::from_string(ipm); 
+                else
+                    msg.error(base + ipm + " is not a valid ipm.");
             }
             static void read(
                 const peopt::Messaging& msg,
@@ -282,10 +290,11 @@ namespace peopt {
                 Json::StyledWriter writer;
                 
                 // Write the optimization parameters
-                root["peopt"]["mu_tol"]=state.mu_tol;
-                root["peopt"]["mu_trg"]=state.mu_trg;
+                root["peopt"]["mu"]=state.mu;
+                root["peopt"]["eps_mu"]=state.eps_mu;
                 root["peopt"]["sigma"]=state.sigma;
                 root["peopt"]["gamma"]=state.gamma;
+                root["peopt"]["ipm"]=InteriorPointMethod::to_string(state.ipm);
 
                 return writer.write(root);
             }

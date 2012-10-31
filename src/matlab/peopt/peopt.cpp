@@ -160,7 +160,6 @@ public:
         mxArray* output[1];
 
         // Compute the scalar multiplication and store the result
-        mxArray* alpha_x[1];
         mexCallMATLAB(1,output,3,input,"feval");
         reset(output[0]);
     }
@@ -386,8 +385,6 @@ public:
         mxArray* input[2]={grad_.get(),x.get()}; 
         mxArray* output[1];
         mexCallMATLAB(1,output,2,input,"feval");
-        double* foo=mxGetPr(output[0]);
-        double* bar=mxGetPr(x.get());
         g.reset(output[0]);
     }
 
@@ -669,7 +666,7 @@ peopt::ProblemClass::t get_problem_class_from_fns(const mxArray* fns) {
 // Check that we have a valid vector space.
 void checkVS(const mxArray* VS) {
     // This implicitly checks that the vector space is valid
-    peopt::ProblemClass::t problem_class_vs=get_problem_class_from_vs(VS);
+    get_problem_class_from_vs(VS);
 }
 
 // Check that we have a valid function bundle.

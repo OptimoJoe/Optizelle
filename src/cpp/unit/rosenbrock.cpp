@@ -42,18 +42,6 @@ namespace {
             H_dx[1]= -400*x[0]*dx[0] + 200*dx[1];
         }
     };
-
-    // Does not output anything to the user unless its an error 
-    struct SilentMessaging : public peopt::Messaging {
-        // Prints a message
-        void print(const std::string msg) const { }
-
-        // Prints an error
-        void error(const std::string msg) const {
-            std::cerr << msg << std::endl;
-            exit(EXIT_FAILURE);
-        }
-    };
 }
 
 BOOST_AUTO_TEST_SUITE(rosenbrock)
@@ -76,6 +64,8 @@ BOOST_AUTO_TEST_CASE(newton_cg) {
     state.eps_krylov = 1e-2;
     state.iter_max = 100;
     state.eps_g = 1e-8;
+    state.eps_s = 1e-8;
+    state.msg_level = 0;
     
     // Create the bundle of functions 
     peopt::Unconstrained <double,Rm>::Functions::t fns;
@@ -83,7 +73,7 @@ BOOST_AUTO_TEST_CASE(newton_cg) {
 
     // Solve the optimization problem
     peopt::Unconstrained <double,Rm>::Algorithms
-        ::getMin(SilentMessaging(),fns,state);
+        ::getMin(peopt::Messaging(),fns,state);
     
     // Check the relative error between the true solution, (1,1), and that
     // found in the state
@@ -95,7 +85,7 @@ BOOST_AUTO_TEST_CASE(newton_cg) {
         /(1+sqrt(Rm <double>::innr(x_star,x_star)));
     BOOST_CHECK(err < 1e-6);
 
-    // Check that the number of iterations is 22
+    // Check that the number of iterations is 18 
     BOOST_CHECK(state.iter == 18);
 }
 
@@ -114,6 +104,7 @@ BOOST_AUTO_TEST_CASE(tr_newton) {
     state.H_type = peopt::Operators::External;
     state.iter_max = 100;
     state.eps_krylov = 1e-10;
+    state.msg_level = 0;
     
     // Create the bundle of functions 
     peopt::Unconstrained <double,Rm>::Functions::t fns;
@@ -121,7 +112,7 @@ BOOST_AUTO_TEST_CASE(tr_newton) {
 
     // Solve the optimization problem
     peopt::Unconstrained <double,Rm>::Algorithms
-        ::getMin(SilentMessaging(),fns,state);
+        ::getMin(peopt::Messaging(),fns,state);
     
     // Check the relative error between the true solution, (1,1), and that
     // found in the state
@@ -153,6 +144,8 @@ BOOST_AUTO_TEST_CASE(bfgs) {
     state.dir = peopt::LineSearchDirection::BFGS;
     state.stored_history = 10;
     state.iter_max = 300;
+    state.msg_level = 0;
+    state.eps_s = 1e-16;
     
     // Create the bundle of functions 
     peopt::Unconstrained <double,Rm>::Functions::t fns;
@@ -160,7 +153,7 @@ BOOST_AUTO_TEST_CASE(bfgs) {
 
     // Solve the optimization problem
     peopt::Unconstrained <double,Rm>::Algorithms
-        ::getMin(SilentMessaging(),fns,state);
+        ::getMin(peopt::Messaging(),fns,state);
     
     // Check the relative error between the true solution, (1,1), and that
     // found in the state

@@ -342,7 +342,6 @@ namespace peopt {
         typedef typename X::Vector X_Vector;
 
         // Orthogonalize the vectors
-        int i=0;
         for(typename std::list <X_Vector>::const_iterator
                 v=vs.begin(),
                 Bv=Bvs.begin(),
@@ -359,19 +358,19 @@ namespace peopt {
 
     // Computes the truncated projected conjugate direction algorithm in order
     // to solve Ax=b where we restrict x to be in the range of B and that
-    // || x || <= delta.  The parameters are as follows.
+    // || C x || <= delta.  The parameters are as follows.
     // 
-    // (input) A : Operator in the system A B x = b
-    // (input) b : Right hand side in the system A B x = b
-    // (input) B : Projection in the system A B x = b
-    // (input) eps : Stopping tolerance
-    // (input) iter_max :  Maximum number of iterations
+    // (input) A : Operator in the system A B x = b.
+    // (input) b : Right hand side in the system A B x = b.
+    // (input) B : Projection in the system A B x = b.
+    // (input) C : Operator that modifies the shape of the trust-region.
+    // (input) eps : Stopping tolerance.
+    // (input) iter_max :  Maximum number of iterations.
     // (input) orthog_max : Maximum number of orthgonalizations.  If this
     //     number is 1, then we do the conjugate gradient algorithm.
     // (input) delta : Trust region radius.  If this number is infinity, we
     //     do not scale the final step if we detect negative curvature.
-    // (input/output) x : Initial guess and final solution x.  We assume that
-    //     the initial guess satisfies norm(x) <= delta.
+    // (output) x : Final solution x.
     // (output) x_cp : The Cauchy-Point, which is defined as the solution x
     //     after a single iteration.
     // (output) norm_r : The norm of the final residual.
@@ -385,6 +384,7 @@ namespace peopt {
         const Operator <Real,XX,XX>& A,
         const typename XX <Real>::Vector& b,
         const Operator <Real,XX,XX>& B,
+        const Operator <Real,XX,XX>& C,
         const Real eps,
         const unsigned int iter_max,
         const unsigned int orthog_max,
@@ -411,25 +411,28 @@ namespace peopt {
         std::list <X_Vector> Bps;
         std::list <X_Vector> ABps;
 
-        // Find the norm of x
-        Real norm_x = sqrt(X::innr(x,x));
+        // Initialize x to zero. 
+        X::zero(x);
+        Real norm_Cx = Real(0.);
 
-        // Allocate memory for and find the initial residual, A*x-b
+        // Allocate memory for and find the initial residual, A*x-b = -b
         X_Vector r; X::init(x,r);
-        if(norm_x!=Real(0.)) {
-            A(x,r);
-            X::axpy(Real(-1.),b,r);
-
-        // Frequently, we start with an initial guess of zero.  In this case,
-        // let us save some work.
-        } else {
-            X::copy(b,r);
-            X::scal(Real(-1.),r);
-        }
+        X::copy(b,r);
+        X::scal(Real(-1.),r);
 
         // Find the norm of the residual and save the original residual
         norm_r = sqrt(X::innr(r,r));
         Real norm_r0 = norm_r;
+
+        // Allocate memory for two additional work vectors.  We use these
+        // when calcuating the norm of the operator C applied to the
+        // trial step.  In theory, we could get rid of at least one of these
+        // work vectors.  However, by doing so, we have to calculate this
+        // norm implicitely, which involves additional inner products and adding
+        // the results together.  This can have some numerical difficulties,
+        // so we just sacrifice the additional memory.
+        X_Vector x_tmp1; X::init(x,x_tmp1); 
+        X_Vector x_tmp2; X::init(x,x_tmp2); 
 
         // Loop until the maximum iteration
         for(iter=1;iter<=iter_max;iter++){
@@ -487,31 +490,47 @@ namespace peopt {
             // Do an exact linesearch in the computed direction
             Real alpha = -X::innr(r,Bp) / innr_Bp_ABp;
 
-            // Find the norm at the trial step
-            Real innr_Bp_x = X::innr(Bp,x);
-            Real innr_Bp_Bp = X::innr(Bp,Bp);
-            Real norm_xpaBp = sqrt(norm_x*norm_x + Real(2.)*alpha*innr_Bp_x
-                + alpha*alpha*innr_Bp_Bp);
+            // Find the trial step and the norm || C(x+alpha Bp) || 
+
+            // x_tmp1 <- x + alpha Bp
+            X::copy(x,x_tmp1);
+            X::axpy(alpha,Bp,x_tmp1);
+
+            // x_tmp2 <- C(x+alpha Bp)
+            C(x_tmp1,x_tmp2);
+
+            // norm_CxpaBp <- || C(x+alpha Bp) ||
+            Real norm_CxpaBp = sqrt(X::innr(x_tmp2,x_tmp2));
 
             // If we have negative curvature or our trial point is outside the
             // trust-region radius, terminate truncated-PCD and find our final
             // step.  We have the <Bp,ABp> != <Bp,ABp> check in order to trap
             // NaNs.
             if( innr_Bp_ABp <= Real(0.) ||
-                norm_xpaBp >= delta ||
+                norm_CxpaBp >= delta ||
                 innr_Bp_ABp != innr_Bp_ABp 
             ) {
                 // If we're paying attention to the trust-region, scale the
                 // step appropriately.
                 if(delta < std::numeric_limits <Real>::infinity()) {
-                    // Find sigma so that || x + sigma p || = delta.  This can
+                    // Find sigma so that || C(x + sigma p) || =delta.  This can
                     // be found by finding the positive root of the quadratic
-                    // || x + sigma Bp ||^2 = delta^2.  Specifically, we want
-                    // the positive root of
-                    // sigma^2<Bp,Bp> + sigma(2 <Bp,x>) + (<x,x>-delta^2).
-                    Real aa = innr_Bp_Bp;
-                    Real bb = Real(2.)*innr_Bp_x; 
-                    Real cc = norm_x*norm_x-delta*delta;
+                    // || C(x) + sigma C(Bp) ||^2 = delta^2.  Specifically, we
+                    // want the positive root of
+                    // sigma^2<C(Bp),C(Bp)>
+                    //     + sigma(2 <C(Bp),C(x)>)
+                    //     + (<C(x),C(x)>-delta^2).
+
+                    // x_tmp1 <- C(Bp)
+                    C(Bp,x_tmp1);
+
+                    // x_tmp2 <- C(x)
+                    C(x,x_tmp2);
+
+                    // Solve the quadratic equation
+                    Real aa = X::innr(x_tmp1,x_tmp1);
+                    Real bb = Real(2.)*X::innr(x_tmp1,x_tmp2);
+                    Real cc = norm_Cx*norm_Cx-delta*delta;
                     Real sigma = (-bb + sqrt(bb*bb-Real(4.)*aa*cc))/(2*aa);
 
                     // Take the step, find its residual, and compute the 
@@ -546,7 +565,7 @@ namespace peopt {
             if(iter==1) X::copy(x,x_cp);
 
             // Update the norm of x
-            norm_x = norm_xpaBp;
+            norm_Cx = norm_CxpaBp;
 
             // Find the new residual
             X::axpy(alpha,ABp,r);
@@ -561,6 +580,181 @@ namespace peopt {
 
         // Adjust the iteration number if we ran out of iterations
         iter = iter > iter_max ? iter_max : iter;
+    }
+
+    // Indexing for packed storage
+    template <typename Natural>
+    Natural ijtokp(Natural i,Natural j) {
+        return i+j*(j-1)/2-1;
+    }
+
+    // Indexing for vectors 
+    template <typename Natural>
+    Natural itok(Natural i) {
+        return i-1;
+    }
+
+    // Solve a 2x2 linear system in packed storage.  This is done through
+    // Gaussian elimination with complete pivoting.  In addition, this assumes
+    // that the system is nonsingular.
+    //
+    // (input) A : 2x2 matrix in packed storage.  That's a length 3 vector.
+    //    Note, we pass this in by value, which initiates a copy.  This is
+    //    because we modify the matrix, so we were going to need a copy
+    //    anyway.
+    // (input) b : Vector of length 2.
+    // (output) x : Solution to the linear system.
+    template <typename Natural,typename Real>
+    void solve2x2(
+        std::vector <Real> A,
+        std::vector <Real> b,
+        std::vector <Real>& x
+    ) {
+        // Find the largest element of A in absolute value.  Store in i.
+        Natural i=0;  Real val=fabs(A[0]);
+        for(Natural j=1;j<=2;j++) {
+            if(fabs(A[j]) < val) {
+                i=j;
+                val=fabs(A[j]);
+            }
+        }
+
+        // Determine the row and column pivots
+        std::vector <Natural> p(3);
+        std::vector <Natural> q(3);
+        if(i==0) {
+            p[1]=1; p[2]=2;
+            q[1]=1; q[2]=2;
+        } else if(i==1) {
+            p[1]=2; p[2]=1;
+            q[1]=1; q[2]=2;
+        } else {
+            p[1]=2; p[2]=1;
+            q[1]=2; q[2]=1;
+        }
+
+        // Do a step of Gaussian elimination
+        Real alpha = -A[ijtokp<>(p[2],q[1])] / A[ijtokp<>(p[1],q[1])];
+        A[ijtokp<>(p[2],q[2])] = A[ijtokp<>(p[2],q[2])]
+            + alpha*A[ijtokp<>(p[1],q[2])];
+        b[itok<>(p[2])] = b[itok<>(p[2])] + alpha * b[itok<>(p[1])];
+
+        // Do back subsitutition
+        x.resize(2);
+        x[itok<>(p[2])] = b[itok<>(p[2])] / A[ijtokp<>(p[2],q[2])];
+        x[itok<>(p[1])] =
+            (b[itok<>(p[1])] - A[ijtokp<>(p[1],q[2])] * x[itok<>(p[2])])
+            / A[ijtokp(p[1],q[1])];
+    }
+
+    // Evaluate a two variable objective function of the form
+    //
+    // f(x) = x'*A*x + a'*x
+    //
+    // where A is held in packed storage.
+    //
+    // (input) A : 2x2 matrix in packed storage.  That's a length 3 vector.
+    // (input) a : Vector of length 2.
+    // (input) x : Vector of length 2.
+    // (return) objective value
+    template <typename Natural, typename Real>
+    Real obj2x2(
+        const std::vector <Real>& A,
+        const std::vector <Real>& a,
+        const std::vector <Real>& x
+    ) {
+        return (A[0]*x[0]+a[0])*x[0] + (A[2]*x[1]+a[1])*x[1]
+            + Real(2.)*A[1]*x[0]*x[1];
+    }
+
+    // Optimize a two variable, box constrained, quadratic program of the form
+    //
+    // min <Ax,x> + <a,x> st lb <= x <= ub
+    //
+    // This is accomplished through brute force.  Namely, an active set method
+    // where we just check all possible combinations of active sets.
+    //
+    // (input) A : 2x2 matrix in packed storage.  That's a length 3 vector.
+    // (input) a : Vector of length 2.
+    // (input) x : Vector of length 2.
+    // (input) lb : Vector of length 2.
+    // (input) ub : Vector of length 2.
+    // (output) x : The optimal solution.
+    template <typename Natural, typename Real>
+    void quad2x2(
+        const std::vector <Real>& A,
+        const std::vector <Real>& a,
+        const std::vector <Real>& lb,
+        const std::vector <Real>& ub,
+        std::vector <Real>& x
+    ) {
+
+        // Store the best objective function up until this point
+        Real f_x = std::numeric_limits <Real>::infinity();
+        
+        // List all of the points to check for feasibility and optimality
+        std::list <std::vector <Real> > zs;
+        std::vector <Real> z(2);
+
+        // Unconstrained minimum
+        std::vector <Real> minus_a(2); minus_a[0]=-a[0]; minus_a[1]=-a[1];
+        solve2x2 <Natural,Real> (A,minus_a,z);
+        zs.push_back(z);  
+
+        // z1 to the lower bound
+        z[0] = lb[0];
+        z[1] = -(a[1]+2*A[0]*A[1]*z[0])/(2*A[2]);
+        zs.push_back(z);
+       
+        // z2 to the lower bound
+        z[1] = lb[1];
+        z[0] = -(a[0]+2*A[0]*A[1]*z[1])/(2*A[0]); 
+        zs.push_back(z);
+        
+        // z1 to the upper bound 
+        z[0] = ub[0];
+        z[1] = -(a[1]+2*A[0]*A[1]*z[0])/(2*A[2]);
+        zs.push_back(z);
+        
+        // z2 to the upper bound
+        z[1] = ub[1];
+        z[0] = -(a[0]+2*A[0]*A[1]*z[1])/(2*A[0]); 
+        zs.push_back(z);
+       
+        // Lower left corner
+        z[0] = lb[0];
+        z[1] = lb[1]; 
+        zs.push_back(z);
+        
+        // Lower right corner
+        z[0] = ub[0];
+        z[1] = lb[1]; 
+        zs.push_back(z);
+
+        // Upper right corner
+        z[0] = ub[0];
+        z[1] = ub[1]; 
+        zs.push_back(z);
+
+        // Upper left corner
+        z[0] = lb[0];
+        z[1] = ub[1]; 
+        zs.push_back(z);
+
+        // Find the feasible point with the lowest objective value
+        for(typename std::list <std::vector <Real> >::iterator zp=zs.begin();
+            zp!=zs.end();
+            zp++
+        ) {
+            Real f_z = obj2x2 <Natural,Real> (A,a,*zp);
+            if((*zp)[0]>=lb[0] && (*zp)[1]>=lb[1] &&
+               (*zp)[0]<=ub[0] && (*zp)[1]<=ub[1] &&
+               f_z<f_x
+           ){
+                x = *zp;
+                f_x = f_z;
+            }
+        }
     }
 }
 

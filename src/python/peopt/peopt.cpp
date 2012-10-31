@@ -32,7 +32,8 @@ public:
 
     // Here, we copy both the pointer and increase the reference count
     // as long as the pointer is seemingly valid.
-    PyObjectPtr& operator = (const PyObjectPtr& rhs) {
+    //PyObjectPtr& operator = (const PyObjectPtr& rhs) {
+    void operator = (const PyObjectPtr& rhs) {
         ptr=rhs.get();
         if(ptr) Py_INCREF(ptr);
     }
@@ -911,4 +912,10 @@ extern "C" PyObject* pypeopt(
         PyTuple_SetItem(ret,1,PyString_FromString(msg.c_str()));
         return ret;
     }
+
+    // In theory, we should never hit this code
+    PyObject* ret=PyTuple_New(2); 
+    PyTuple_SetItem(ret,0,Py_None);
+    PyTuple_SetItem(ret,1,Py_None);
+    return ret;
 }

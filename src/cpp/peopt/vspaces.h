@@ -687,29 +687,42 @@ namespace peopt {
                         - dot <Real> (m-1,&(x(blk,2)),1,&(y(blk,2)),1));
                     Real c = y(blk,1)*y(blk,1)
                         - dot <Real> (m-1,&(y(blk,2)),1,&(y(blk,2)),1);
-                    Real alpha1 = (-b + sqrt(b*b-Real(4.)*a*c))
-                        / (Real(2.)*a);
-                    Real alpha2 = (-b - sqrt(b*b-Real(4.)*a*c))
-                        / (Real(2.)*a);
+
+                    // Solve the quadratic equation.
+                    Real alpha1; Real alpha2;
+                    if(b < Real(0.)) {
+                        alpha1 = (-b + sqrt(b*b-Real(4.)*a*c)) / (Real(2.)*a);
+                        alpha2 = (Real(2)*c) / (-b + sqrt(b*b-Real(4.)*a*c));
+                    } else {
+                        alpha2 = (-b - sqrt(b*b-Real(4.)*a*c)) / (Real(2.)*a);
+                        alpha1 = (Real(2)*c) / (-b - sqrt(b*b-Real(4.)*a*c));
+                    }
+
+                    // Solve the linear equation
                     Real alpha3 = -c/b;
 
+                    // Default solution in case we have a constant 
                     if(alpha0 >= Real(0.) && (alpha==Real(-1.) || alpha0<alpha))
                         alpha=alpha0;
-                    if( a != Real(0.) ) {
+
+                    // In the case we have a quadratic.
+                    if( a != Real(0.) ) { 
                         if(alpha1>=Real(0.)&&(alpha==Real(-1.) || alpha1<alpha))
                             alpha=alpha1;
                         if(alpha2>=Real(0.)&&(alpha==Real(-1.) || alpha2<alpha))
                             alpha=alpha2;
-                    } else if( b != Real(0.) ) {
+
+                    // In the case we have a linear 
+                    } else if( b != Real(0.)) {
                         if(alpha3>=Real(0.)&&(alpha==Real(-1.) || alpha3<alpha))
                             alpha=alpha3;
                     }
                 }
                 break;
 
-                // Here, if the solution to the generalized Eigenvalue problem
+                // Here, if the solution to the generalized eigenvalue problem
                 //
-                // X v = lambda Y v
+                // Y v = lambda Y v
                 //
                 // has a negative eigenvalue, we use the negative of that.  Now,
                 // sometimes we have cached a Schur decomposition of Y.  In this
@@ -735,13 +748,19 @@ namespace peopt {
 
                     // invU <- inv(chol(Y))
                     peopt::trtri <Real> ('U','N',m,&(invU[0]),m,info);
+                    
+                    // Fill in the bottom half of invU with zeros 
+                    #pragma omp parallel for schedule(guided)
+                    for(unsigned int j=1;j<=m;j++)
+                        for(unsigned int i=j+1;i<=m;i++)
+                            invU[ijtok(i,j,m)]=Real(0.);
 
                     // Find inv(chol(Y))' X inv(chol(Y))
                     tmp.resize(m*m);
                     invUtXinvU.resize(m*m);
         
                     // tmp <- X inv(chol(Y)) 
-                    peopt::symm <Real> ('L','U',m,m,Real(1.),&(x(blk,1,1)),m,
+                    peopt::gemm <Real> ('N','N',m,m,m,Real(1.),&(x(blk,1,1)),m,
                         &(invU[0]),m,Real(0.),&(tmp[0]),m); 
 
                     // invUtXinvU <- inv(chol(Y))' X inv(chol(Y))

@@ -147,6 +147,7 @@ namespace peopt{
             RelativeGradientSmall,   // Relative gradient was sufficiently small
             RelativeStepSmall,       // Relative change in the step is small
             MaxItersExceeded,        // Maximum number of iterations exceeded
+            InteriorPointInstability,// Instability in the interior point method
             External                 // Some external stopping condition 
         };
 
@@ -161,6 +162,8 @@ namespace peopt{
                 return "RelativeStepSmall";
             case MaxItersExceeded:
                 return "MaxItersExceeded";
+            case InteriorPointInstability:
+                return "InteriorPointInstability";
             case External:
                 return "External";
             default:
@@ -178,6 +181,8 @@ namespace peopt{
                 return RelativeStepSmall;
             else if(opt_stop=="MaxItersExceeded")
                 return MaxItersExceeded;
+            else if(opt_stop=="InteriorPointInstability")
+                return InteriorPointInstability; 
             else if(opt_stop=="External")
                 return External;
             else
@@ -191,6 +196,7 @@ namespace peopt{
                     name=="RelativeGradientSmall" ||
                     name=="RelativeStepSmall" ||
                     name=="MaxItersExceeded" ||
+                    name=="InteriorPointInstability" ||
                     name=="External"
                 )
                     return true;
@@ -405,14 +411,26 @@ namespace peopt{
             // Occurs after the initial function and gradient evaluation 
             AfterInitialFuncAndGrad,
 
-            // Occurs just before we take the optimization step u+s
+            // Occurs just before we take the optimization step x+s
+            BeforeSaveOld,
+
+            // Occurs just before we take the optimization step x+s
             BeforeStep,
+
+            // Occurs before we calculate our new step.
+            BeforeGetStep,
 
             // Occurs after we take the optimization step u+s, but before
             // we calculate the gradient based on this new step.  In addition,
             // after this point we set the merit value, merit_x, to be
             // merit_xps.
             AfterStepBeforeGradient,
+
+            // Occurs before we update our quasi-Newton information. 
+            BeforeQuasi,
+
+            // Occurs after we update our quasi-Newton information. 
+            AfterQuasi,
 
             // This occurs last in the optimization loop.  At this point,
             // we have already incremented our optimization iteration and
@@ -446,10 +464,18 @@ namespace peopt{
                 return "BeforeInitialFuncAndGrad";
             case AfterInitialFuncAndGrad:
                 return "AfterInitialFuncAndGrad";
+            case BeforeSaveOld:
+                return "BeforeSaveOld";
             case BeforeStep:
                 return "BeforeStep";
+            case BeforeGetStep:
+                return "BeforeGetStep";
             case AfterStepBeforeGradient:
                 return "AfterStepBeforeGradient";
+            case BeforeQuasi:
+                return "BeforeQuasi";
+            case AfterQuasi:
+                return "AfterQuasi";
             case EndOfOptimizationIteration:
                 return "EndOfOptimizationIteration";
             case BeforeLineSearch:
@@ -475,10 +501,18 @@ namespace peopt{
                 return BeforeInitialFuncAndGrad;
             else if(loc=="AfterInitialFuncAndGrad")
                 return AfterInitialFuncAndGrad;
+            else if(loc=="BeforeSaveOld")
+                return BeforeSaveOld; 
             else if(loc=="BeforeStep")
                 return BeforeStep; 
+            else if(loc=="BeforeGetStep")
+                return BeforeGetStep; 
             else if(loc=="AfterStepBeforeGradient")
                 return AfterStepBeforeGradient; 
+            else if(loc=="BeforeQuasi")
+                return BeforeQuasi;
+            else if(loc=="AfterQuasi")
+                return AfterQuasi;
             else if(loc=="EndOfOptimizationIteration")
                 return EndOfOptimizationIteration; 
             else if(loc=="BeforeLineSearch")
@@ -502,8 +536,12 @@ namespace peopt{
             bool operator () (const std::string& name) const {
                 if( name=="BeforeInitialFuncAndGrad" ||
                     name=="AfterInitialFuncAndGrad" ||
+                    name=="BeforeSaveOld" || 
                     name=="BeforeStep" || 
+                    name=="BeforeGetStep" || 
                     name=="AfterStepBeforeGradient" ||
+                    name=="BeforeQuasi" ||
+                    name=="AfterQuasi" ||
                     name=="EndOfOptimizationIteration" ||
                     name=="BeforeLineSearch" ||
                     name=="AfterRejectedTrustRegion" ||
@@ -572,7 +610,55 @@ namespace peopt{
             }
         };
     };
+    
+    // Different kinds of interior point methods
+    struct InteriorPointMethod{
+        enum t{
+            PrimalDual,          // Standard primal-dual interior point method 
+            PrimalDualLinked,    // A primal dual IPM, but the primal and dual
+                                 // variables are kept in lock step.
+            LogBarrier,          // Primal log-barrier method 
+        };
+        
+        // Converts the line-search direction to a string 
+        static std::string to_string(t dir){
+            switch(dir){
+            case PrimalDual:
+                return "PrimalDual";
+            case PrimalDualLinked:
+                return "PrimalDualLinked";
+            case LogBarrier:
+                return "LogBarrier";
+            default:
+                throw;
+            }
+        }
+        
+        // Converts a string to a line-search direction 
+        static t from_string(std::string dir){
+            if(dir=="PrimalDual")
+                return PrimalDual; 
+            else if(dir=="PrimalDualLinked")
+                return PrimalDualLinked; 
+            else if(dir=="LogBarrier")
+                return LogBarrier; 
+            else
+                throw;
+        }
 
+        // Checks whether or not a string is valid
+        struct is_valid : public std::unary_function<std::string, bool> {
+            bool operator () (const std::string& name) const {
+                if( name=="PrimalDual" ||
+                    name=="PrimalDualLinked" ||
+                    name=="LogBarrier"
+                )
+                    return true;
+                else
+                    return false;
+            }
+        };
+    };
 
     // A collection of short routines that are only required locally
     namespace {
@@ -2119,35 +2205,43 @@ namespace peopt{
                 typename State::t& state,
                 X_Vectors& xs
             ) {
-
-                for(std::list <std::string>::iterator name=xs.first.begin();
+                typename std::list <X_Vector>::iterator x
+                    =xs.second.begin();
+                for(typename std::list <std::string>::iterator name
+                        =xs.first.begin();
                     name!=xs.first.end();
-                    name++
                 ) {
-                    // Since we're using a splice operation, we slowly empty
-                    // the variable list.  Hence, we always take the first
-                    // element.
-                    typename std::list <X_Vector>::iterator xx
-                        =xs.second.begin();
+                    // Make a copy of the current iterators.  We use these
+                    // to remove elements
+                    typename std::list <std::string>::iterator name0 = name;
+                    typename std::list <X_Vector>::iterator x0 = x;
 
-                    // Determine which xxiable we're reading in and then splice
+                    // Increment our primary iterators 
+                    name++; x++;
+
+                    // Determine which variable we're reading in and then splice
                     // it in the correct location
-                    if(*name=="x")
-                        state.x.splice(state.x.end(),xs.second,xx);
-                    else if(*name=="g")
-                        state.g.splice(state.g.end(),xs.second,xx);
-                    else if(*name=="s")
-                        state.s.splice(state.s.end(),xs.second,xx); 
-                    else if(*name=="x_old")
-                        state.x_old.splice(state.x_old.end(),xs.second,xx);
-                    else if(*name=="g_old")
-                        state.g_old.splice(state.g_old.end(),xs.second,xx);
-                    else if(*name=="s_old")
-                        state.s_old.splice(state.s_old.end(),xs.second,xx);
-                    else if(name->substr(0,5)=="oldY_")
-                        state.oldY.splice(state.oldY.end(),xs.second,xx);
-                    else if(name->substr(0,5)=="oldS_")
-                        state.oldS.splice(state.oldS.end(),xs.second,xx);
+                    if(*name0=="x")
+                        state.x.splice(state.x.end(),xs.second,x0);
+                    else if(*name0=="g")
+                        state.g.splice(state.g.end(),xs.second,x0);
+                    else if(*name0=="s")
+                        state.s.splice(state.s.end(),xs.second,x0);
+                    else if(*name0=="x_old")
+                        state.x_old.splice(state.x_old.end(),xs.second,x0);
+                    else if(*name0=="g_old")
+                        state.g_old.splice(state.g_old.end(),xs.second,x0);
+                    else if(*name0=="s_old")
+                        state.s_old.splice(state.s_old.end(),xs.second,x0);
+                    else if(*name0=="oldY_")
+                        state.oldY.splice(state.oldY.end(),xs.second,x0);
+                    else if(*name0=="oldS_")
+                        state.oldS.splice(state.oldS.end(),xs.second,x0);
+
+                    // Remove the string corresponding to the element just
+                    // spliced if splicing occured.
+                    if(xs.first.size() != xs.second.size())
+                        xs.first.erase(name0);
                 }
             }
 
@@ -2302,6 +2396,10 @@ namespace peopt{
 
                 // Merit function used for the model of the problem
                 std::auto_ptr <ScalarValuedFunction <Real,XX> > model;
+
+                // Symmetric, positive definite operator that changes the
+                // shape of the trust-region.
+                std::auto_ptr <Operator <Real,XX,XX> > TR_op;
                 
                 // A trick to allow dynamic casting later
                 virtual ~t() {}
@@ -2985,6 +3083,11 @@ namespace peopt{
                         break;
                 }
 
+                // If a trust-region operator has not been provided, use the
+                // identity.
+                if(fns.TR_op.get()==NULL)
+                    fns.TR_op.reset(new Identity());
+
                 // Check that all functions are defined (namely, the 
                 // objective).
                 check(msg,fns);
@@ -3364,24 +3467,17 @@ namespace peopt{
                 // Create shortcuts to the functions that we need
                 const ScalarValuedFunction <Real,XX>& f=*(fns.f);
                 const Operator <Real,XX,XX>& Minv=*(fns.Minv);
+                const Operator <Real,XX,XX>& TR_op=*(fns.TR_op);
+
+                // Allocate some memory for the scaled trial step
+                X_Vector x_tmp1; X::init(x,x_tmp1);
 
                 // Continue to look for a step until one comes back as valid
                 for(rejected_trustregion=0;
                     true; 
-                    rejected_trustregion++
                 ) {
-                    // If the number of rejected steps is above the
-                    // history_reset threshold, destroy the quasi-Newton
-                    // information
-                    if(rejected_trustregion > history_reset){
-                        oldY.clear();
-                        oldS.clear();
-                    }
-
                     // Manipulate the state if required
-                    if(rejected_trustregion > 0)
-                        smanip(fns,state,
-                            OptimizationLocation::AfterRejectedTrustRegion);
+                    smanip(fns,state,OptimizationLocation::BeforeGetStep);
 
                     // Use truncated-cd to find a new trial step
                     HessianOperator H(f,x);
@@ -3393,6 +3489,7 @@ namespace peopt{
                         H,
                         minus_g,
                         Minv,
+                        TR_op,
                         eps_krylov,
                         krylov_iter_max,
                         krylov_orthog_max,
@@ -3408,16 +3505,33 @@ namespace peopt{
                     smanip(fns,state,
                         OptimizationLocation::BeforeActualVersusPredicted);
 
-                    // Save the length of the trial step
-                    norm_s=sqrt(X::innr(s,s));
+                    // Save the length of the scaled trial step
+                    TR_op(s,x_tmp1);
+                    norm_s=sqrt(X::innr(x_tmp1,x_tmp1));
 
                     // Check whether the step is good
-                    if(checkStep(fns,state)) break;
+                    if(checkStep(fns,state))
+                        break;
+                    else
+                        rejected_trustregion++;
+                    
+                    // If the number of rejected steps is above the
+                    // history_reset threshold, destroy the quasi-Newton
+                    // information
+                    if(rejected_trustregion > history_reset){
+                        oldY.clear();
+                        oldS.clear();
+                    }
+
+                    // Manipulate the state if required
+                    smanip(fns,state,
+                        OptimizationLocation::AfterRejectedTrustRegion);
 
                     // Alternatively, check if the step becomes so small
                     // that we're not making progress.  In this case, break
                     // and allow the stopping conditions to terminate
-                    // optimization.
+                    // optimization.  We use a zero length step so that we
+                    // do not modify the current iterate.
                     if(norm_s < eps_s*norm_styp) {
                         X::scal(Real(0.),s);
                         norm_s=Real(0.);
@@ -3768,7 +3882,10 @@ namespace peopt{
                 // Create shortcuts to the functions that we need
                 const ScalarValuedFunction <Real,XX>& f=*(fns.f);
                 const Operator <Real,XX,XX>& Minv=*(fns.Minv);
-
+                const Operator <Real,XX,XX>& TR_op=*(fns.TR_op);
+                    
+                // Manipulate the state if required
+                smanip(fns,state,OptimizationLocation::BeforeGetStep);
 
                 // Find the line-search direction
                 switch(dir){
@@ -3797,6 +3914,7 @@ namespace peopt{
                         H,
                         minus_g,
                         Minv,
+                        TR_op,
                         eps_krylov,
                         krylov_iter_max,
                         krylov_orthog_max,
@@ -4012,6 +4130,16 @@ namespace peopt{
                     merit_x=f_merit(x);
                     norm_g=sqrt(X::innr(g,g));
                     norm_gtyp=norm_g;
+
+                    // This one is a little funny.  Sometimes, we run into
+                    // trouble trying to calculate the initial step.  In this
+                    // case, we don't know when to exit due to the relative
+                    // step size being small since we've not calculated the
+                    // typical step yet.  This safeguards this case.  Basically,
+                    // it initially sets the norm of a typical step to be the
+                    // norm of the gradient, which is akin to taking a
+                    // steepest descent step without globalization.
+                    norm_styp=norm_g;
                 }
 
                 // Manipulate the state if required
@@ -4019,13 +4147,15 @@ namespace peopt{
 
                 // Primary optimization loop
                 do{
-
                     // Get a new optimization iterate.  
                     getStep(msg,smanip,fns,state);
 
                     // If we've not calculated it already, save the size of
                     // the step
                     if(norm_styp!=norm_styp) norm_styp=norm_s;
+                    
+                    // Manipulate the state if required
+                    smanip(fns,state,OptimizationLocation::BeforeSaveOld);
 
                     // Save the old variable, gradient, and trial step.  This
                     // is useful for both CG and quasi-Newton methods.
@@ -4047,13 +4177,19 @@ namespace peopt{
                     merit_x=merit_xps;
                     f.grad(x,g);
                     norm_g=sqrt(X::innr(g,g));
+                    
+                    // Manipulate the state if required
+                    smanip(fns,state,OptimizationLocation::BeforeQuasi);
 
                     // Update the quasi-Newton information
                     updateQuasi(state);
+                    
+                    // Manipulate the state if required
+                    smanip(fns,state,OptimizationLocation::AfterQuasi);
 
                     // Increase the iteration
                     iter++;
-
+                    
                     // Check the stopping condition
                     opt_stop=checkStop(state);
 
@@ -4484,9 +4620,21 @@ namespace peopt{
 
             // The actual internal state of the optimization
             struct t: public virtual Unconstrained <Real,XX>::State::t {
-                // The Lagrange multiplier (dual variable) for the
-                // inequality constraints 
+                // Original gradient (possibly of a Lagrangian) 
+                std::list <X_Vector> g_orig;
+
+                // Gradient used in the Schur complement system. 
+                std::list <X_Vector> g_schur;
+
+                // Gradient of the inequality Lagrangian.
+                std::list <X_Vector> g_lag;
+
+                // Lagrange multiplier (dual variable) for the inequality
+                // constraints 
                 std::list <Z_Vector> z;
+                
+                // Step in the Lagrange multiplier 
+                std::list <Z_Vector> dz;
 
                 // The inequality constraint evaluated at x.  In theory,
                 // we can always just evaluate this when we need it.  However,
@@ -4501,15 +4649,12 @@ namespace peopt{
                 // Interior point parameter
                 Real mu;
 
-                // Current estimate of the interior point parameter
-                Real mu_est;
+                // Typical value for mu.  Generally, the first estimated
+                // value for mu.
+                Real mu_typ;
 
-                // The tolerance how how close we need to be to the central
-                // path with respect to mu
-                Real mu_tol;
-
-                // The target mu that we aim for
-                Real mu_trg;
+                // Relative stopping criteria for the interior point parameter
+                Real eps_mu;
 
                 // The amount that we reduce the interior point parameter by
                 // everytime we approach the central path
@@ -4517,6 +4662,9 @@ namespace peopt{
 
                 // How close we move to the boundary during a single step
                 Real gamma;
+
+                // Type of interior point method
+                InteriorPointMethod::t ipm;
 
                 // Initialization constructors
                 t() {
@@ -4535,11 +4683,11 @@ namespace peopt{
             // constrained optimization.  
             static void init_params_(t& state) {
                 state.mu = Real(std::numeric_limits<double>::quiet_NaN());
-                state.mu_est = Real(std::numeric_limits<double>::quiet_NaN());
-                state.mu_tol = Real(1e-2);
-                state.mu_trg = Real(1e-6);
+                state.mu_typ = Real(std::numeric_limits<double>::quiet_NaN());
+                state.eps_mu= Real(1e-6);
                 state.sigma = Real(0.5);
                 state.gamma = Real(0.95);
+                state.ipm = InteriorPointMethod::PrimalDual;
             }
             static void init_params(t& state) {
                 Unconstrained <Real,XX>::State::init_params_(state); 
@@ -4553,11 +4701,31 @@ namespace peopt{
                 const X_Vector& x,
                 const Z_Vector& z
             ) {
+                // Allocate memory for g_orig
+                state.g_orig.clear();
+                    state.g_orig.push_back(X_Vector());
+                    X::init(x,state.g_orig.back());
+
+                // Allocate memory for g_schur 
+                state.g_schur.clear();
+                    state.g_schur.push_back(X_Vector());
+                    X::init(x,state.g_schur.back());
+
+                // Allocate memory for g_lag
+                state.g_lag.clear();
+                    state.g_lag.push_back(X_Vector());
+                    X::init(x,state.g_lag.back());
+
                 // Allocate memory for z
                 state.z.clear();
                     state.z.push_back(Z_Vector());
                     Z::init(z,state.z.back());
                     Z::copy(z,state.z.back());
+
+                // Allocate memory for dz
+                state.dz.clear();
+                    state.dz.push_back(Z_Vector());
+                    Z::init(z,state.dz.back());
 
                 // Allocate memory for h(x)
                 state.h_x.clear();
@@ -4595,20 +4763,15 @@ namespace peopt{
                     ss << "The interior point parameter must be positive: " 
                         "mu = " << state.mu;
 
-                // Check that the interior point parameter estimate is positive
-                if(state.mu_est <= Real(0.)) 
-                    ss << "The interior point parameter estimate must be "
-                        "positive:  mu_est = " << state.mu;
+                // Check that the typical interior point parameter is positive 
+                if(state.mu_typ <= Real(0.)) 
+                    ss << "The typical interior point parameter must be "
+                        "positive:  mu_typ = " << state.mu_typ;
 
-                // Check that the interior point tolerance is positive 
-                else if(state.mu_tol <= Real(0.)) 
-                    ss << "The interior point tolerance must be positive: " 
-                        "mu_tol = " << state.mu_tol;
-
-                // Check that the target mu is positive
-                else if(state.mu_trg <= Real(0.)) 
-                    ss << "The target interior point parameter "
-                        "must be positive: mu_trg = " << state.mu_trg;
+                // Check that the interior point stopping tolerance is positive 
+                else if(state.eps_mu <= Real(0.)) 
+                    ss << "The interior point stopping tolerance must be "
+                        "positive: eps_mu = " << state.eps_mu;
 
                 // Check that the reduction in the interior point parameter
                 // is between 0 and 1.
@@ -4638,9 +4801,8 @@ namespace peopt{
                     if( typename Unconstrained <Real,XX>::Restart
                             ::is_real()(name) ||
                         name == "mu" ||
-                        name == "mu_est" ||
-                        name == "mu_tol" ||
-                        name == "mu_trg" ||
+                        name == "mu_typ" ||
+                        name == "eps_mu" ||
                         name == "sigma" ||
                         name == "gamma" 
                     )
@@ -4666,7 +4828,8 @@ namespace peopt{
             struct is_param : public std::unary_function<std::string, bool> {
                 bool operator () (const std::string& name) const {
                     if( typename Unconstrained <Real,XX>::Restart
-                        ::is_param()(name)
+                            ::is_param()(name) ||
+                        name == "ipm"
                     ) 
                         return true;
                     else
@@ -4678,7 +4841,10 @@ namespace peopt{
             struct is_x : public std::unary_function<std::string, bool> {
                 bool operator () (const std::string& name) const {
                     if( typename Unconstrained <Real,XX>::Restart
-                        ::is_x()(name)
+                            ::is_x()(name) ||
+                        name == "g_orig" ||
+                        name == "g_schur" ||
+                        name == "g_lag"
                     ) 
                         return true;
                     else
@@ -4690,6 +4856,7 @@ namespace peopt{
             struct is_z : public std::unary_function<std::string, bool> {
                 bool operator () (const std::string& name) const {
                     if( name == "z" ||
+                        name == "dz" ||
                         name == "h_x"
                     )
                         return true;
@@ -4743,6 +4910,11 @@ namespace peopt{
                     ) {
                         ss << typename Unconstrained <Real,XX>::Restart
                             ::checkParamVal()(label,val);
+
+                    // Check the interior point method type
+                    } else if(label=="ipm") {
+                        if(!InteriorPointMethod::is_valid()(val))
+                            ss << base << "interior point method type: " << val;
                     }
                     return ss.str();
                 }
@@ -4751,10 +4923,20 @@ namespace peopt{
             // Copy out the inequality multipliers 
             static void stateToVectors(
                 typename State::t& state, 
+                X_Vectors& xs,
                 Z_Vectors& zs
             ) {
+                xs.first.push_back("g_orig");
+                xs.second.splice(xs.second.end(),state.g_orig);
+                xs.first.push_back("g_schur");
+                xs.second.splice(xs.second.end(),state.g_schur);
+                xs.first.push_back("g_lag");
+                xs.second.splice(xs.second.end(),state.g_lag);
+
                 zs.first.push_back("z");
                 zs.second.splice(zs.second.end(),state.z);
+                zs.first.push_back("dz");
+                zs.second.splice(zs.second.end(),state.dz);
                 zs.first.push_back("h_x");
                 zs.second.splice(zs.second.end(),state.h_x);
             }
@@ -4769,39 +4951,83 @@ namespace peopt{
                 // Copy in all the real numbers
                 reals.first.push_back("mu");
                 reals.second.push_back(state.mu);
-                reals.first.push_back("mu_est");
-                reals.second.push_back(state.mu_est);
-                reals.first.push_back("mu_tol");
-                reals.second.push_back(state.mu_tol);
-                reals.first.push_back("mu_trg");
-                reals.second.push_back(state.mu_trg);
+                reals.first.push_back("mu_typ");
+                reals.second.push_back(state.mu_typ);
+                reals.first.push_back("eps_mu");
+                reals.second.push_back(state.eps_mu);
                 reals.first.push_back("sigma");
                 reals.second.push_back(state.sigma);
                 reals.first.push_back("gamma");
                 reals.second.push_back(state.gamma);
+
+                // Copy in all of the parameters
+                params.first.push_back("ipm");
+                params.second.push_back(
+                    InteriorPointMethod::to_string(state.ipm));
             }
             
             // Copy in inequality multipliers 
             static void vectorsToState(
                 typename State::t& state,
+                X_Vectors& xs,
                 Z_Vectors& zs
             ) {
-                for(std::list <std::string>::iterator name=zs.first.begin();
-                    name!=zs.first.end();
-                    name++
+                typename std::list <X_Vector>::iterator x
+                    =xs.second.begin();
+                for(typename std::list <std::string>::iterator name
+                        =xs.first.begin();
+                    name!=xs.first.end();
                 ) {
-                    // Since we're using a splice operation, we slowly empty
-                    // the multiplier list.  Hence, we always take the first
-                    // element.
-                    typename std::list <Z_Vector>::iterator zz
-                        =zs.second.begin();
+                    // Make a copy of the current iterators.  We use these
+                    // to remove elements
+                    typename std::list <std::string>::iterator name0 = name;
+                    typename std::list <X_Vector>::iterator x0 = x;
+
+                    // Increment our primary iterators 
+                    name++; x++;
 
                     // Determine which variable we're reading in and then splice
                     // it in the correct location
-                    if(*name=="z")
-                        state.z.splice(state.z.end(),zs.second,zz);
-                    else if(*name=="h_x")
-                        state.h_x.splice(state.h_x.end(),zs.second,zz);
+                    if(*name0=="g_orig")
+                        state.g_orig.splice(state.g_orig.end(),xs.second,x0);
+                    else if(*name0=="g_schur")
+                        state.g_schur.splice(state.g_schur.end(),xs.second,x0);
+                    else if(*name0=="g_lag")
+                        state.g_lag.splice(state.g_lag.end(),xs.second,x0);
+
+                    // Remove the string corresponding to the element just
+                    // spliced if splicing occured.
+                    if(xs.first.size() != xs.second.size())
+                        xs.first.erase(name0);
+                }
+
+                typename std::list <X_Vector>::iterator z
+                    =zs.second.begin();
+                for(typename std::list <std::string>::iterator name
+                        =zs.first.begin();
+                    name!=zs.first.end();
+                ) {
+                    // Make a copy of the current iterators.  We use these
+                    // to remove elements
+                    typename std::list <std::string>::iterator name0 = name;
+                    typename std::list <Z_Vector>::iterator z0 = z;
+
+                    // Increment our primary iterators 
+                    name++; z++;
+
+                    // Determine which variable we're reading in and then splice
+                    // it in the correct location
+                    if(*name0=="z")
+                        state.z.splice(state.z.end(),zs.second,z0);
+                    else if(*name0=="h_x")
+                        state.h_x.splice(state.h_x.end(),zs.second,z0);
+                    else if(*name0=="dz")
+                        state.dz.splice(state.dz.end(),zs.second,z0);
+
+                    // Remove the string corresponding to the element just
+                    // spliced if slicing occured.
+                    if(zs.first.size() != zs.second.size())
+                        zs.first.erase(name0);
                 }
             }
             
@@ -4819,12 +5045,21 @@ namespace peopt{
                     name++,real++
                 ){
                     if(*name=="mu") state.mu=*real;
-                    else if(*name=="mu_est") state.mu_est=*real;
-                    else if(*name=="mu_tol") state.mu_tol=*real;
-                    else if(*name=="mu_trg") state.mu_trg=*real;
+                    else if(*name=="mu_typ") state.mu_typ=*real;
+                    else if(*name=="eps_mu") state.eps_mu=*real;
                     else if(*name=="sigma") state.sigma=*real;
                     else if(*name=="gamma") state.gamma=*real;
                 } 
+                    
+                // Next, copy in any parameters 
+                std::list <std::string>::iterator param=params.second.begin();
+                for(std::list <std::string>::iterator name=params.first.begin();
+                    name!=params.first.end();
+                    name++,param++
+                ){
+                    if(*name=="ipm")
+                        state.ipm=InteriorPointMethod::from_string(*param);
+                }
             }
 
             // Release the data into structures controlled by the user 
@@ -4839,7 +5074,7 @@ namespace peopt{
                 // Copy out all of the variable information
                 Unconstrained <Real,XX>::Restart::stateToVectors(state,xs);
                 InequalityConstrained <Real,XX,ZZ>
-                    ::Restart::stateToVectors(state,zs);
+                    ::Restart::stateToVectors(state,xs,zs);
             
                 // Copy out all of the scalar information
                 Unconstrained <Real,XX>
@@ -4867,7 +5102,7 @@ namespace peopt{
                 // Copy in the variables 
                 Unconstrained <Real,XX>::Restart::vectorsToState(state,xs);
                 InequalityConstrained <Real,XX,ZZ>
-                    ::Restart::vectorsToState(state,zs);
+                    ::Restart::vectorsToState(state,xs,zs);
                 
                 // Copy in all of the scalar information
                 Unconstrained <Real,XX>
@@ -4905,13 +5140,25 @@ namespace peopt{
                     h;
 
                 // Inequality Lagrange multiplier
-                const std::list <Z_Vector>& zz;
+                const Z_Vector& z;
 
                 // Interior point parameter
                 const Real& mu;
 
+                // Centering paramter 
+                const Real& sigma;
+
                 // Inequality constraint evaluated at x
-                const std::list <Z_Vector>& h_xx;
+                const Z_Vector& h_x;
+
+                // Original version of the gradient
+                mutable X_Vector& g_orig;
+
+                // Schur complement version of the gradient
+                mutable X_Vector& g_schur;
+
+                // True gradient of the Lagrangian 
+                mutable X_Vector& g_lag;
 
                 // This forces derived classes to call the constructor that
                 // depends on the state
@@ -4923,55 +5170,86 @@ namespace peopt{
                 // approximation
                 InequalityModifiedFunction(
                     const Messaging& msg,
-                    const typename State::t& state,
+                    typename State::t& state,
                     typename Functions::t& fns
-                ) : f(fns.f), h(fns.h), zz(state.z), mu(state.mu),
-                    h_xx(state.h_x) { }
+                ) : f(fns.f), h(fns.h), z(state.z.front()), mu(state.mu),
+                    sigma(state.sigma), h_x(state.h_x.front()),
+                    g_orig(state.g_orig.front()),
+                    g_schur(state.g_schur.front()),
+                    g_lag(state.g_lag.front())
+                { }
 
                 // <- f(x) 
                 Real operator () (const X_Vector& x) const {
                     return (*f)(x);
                 }
 
-                // g = grad f(x) - mu h'(x)* (inv(L(h(x))) e)
+                // g = grad f(x) - sigma mu h'(x)* (inv(L(h(x))) e)
                 void grad(const X_Vector& x,X_Vector& g) const {
-                    // Get access to z and h(x)
-                    const Z_Vector& z=zz.front();
-                    const Z_Vector& h_x=h_xx.front();
-
                     // Create work elements for accumulating the
                     // interior point pieces
-                    Z_Vector ip1; Z::init(z,ip1);
-                    Z_Vector ip2; Z::init(z,ip2);
-                    X_Vector ip3; X::init(x,ip3);
+                    Z_Vector z_tmp1; Z::init(z,z_tmp1);
+                    Z_Vector z_tmp2; Z::init(z,z_tmp2);
+                    X_Vector x_tmp1; X::init(x,x_tmp1);
 
                     // g <- grad f(x)
                     f->grad(x,g);
 
-                    // ip1 <- e
-                    Z::id(ip1);
+                    // g_orig <- grad f(x)
+                    X::copy(g,g_orig);
 
-                    // ip2 <- inv(L(h(x))) e 
-                    Z::linv(h_x,ip1,ip2);
+                    // Calculate the Schur complement version of the gradient
 
-                    // ip3 <- h'(x)* (inv(L(h(x))) e)
-                    h->ps(x,ip2,ip3);
+                    // g_schur <- grad f(x)
+                    X::copy(g,g_schur);
 
-                    // g <- grad f(x) - mu h'(x)* (inv(L(h(x))) e)
-                    X::axpy(-mu,ip3,g);
+                    // z_tmp1 <- e
+                    Z::id(z_tmp1);
+
+                    // z_tmp2 <- inv(L(h(x))) e 
+                    Z::linv(h_x,z_tmp1,z_tmp2);
+
+                    // x_tmp1 <- h'(x)* (inv(L(h(x))) e)
+                    h->ps(x,z_tmp2,x_tmp1);
+
+                    // g_schur <- grad f(x) - sigma mu h'(x)* (inv(L(h(x))) e)
+                    X::axpy(-sigma*mu,x_tmp1,g_schur);
+
+                    // Calculate the true gradient of the Lagrangian
+
+                    // g_lag <- grad f(x)
+                    X::copy(g,g_lag);
+
+                    // x_tmp1 <- h'(x)*z
+                    h->ps(x,z,x_tmp1);
+
+                    // g_lag <- grad f(x) - h'(x)*z
+                    X::axpy(-Real(1.0),x_tmp1,g_lag);
+
+                    // Finally, return the Schur complement gradient
+                    X::copy(g_schur,g);
                 }
 
-                // H_dx = hess f(x) dx + h'(x)* inv(L(h(x))) (z o (h'(x) dx))
-                // This adds on the interior point piece to the Hessian. 
+                // Adds on the interior point piece to the Hessian. 
+                //
+                // Primal-dual
+                // H_dx
+                // = hess f(x)dx + h'(x)* (inv(L(h(x))) (z o h'(x) dx)
+                //                        + z o (inv L(h(x)) h'(x) dx))/2
+                // ~= hess f(x) dx + h'(x)* inv(L(h(x))) (z o (h'(x) dx))
+                //  = hess f(x) dx + h'(x)* inv(L(h(x))) L(z) h'(x) dx
+                //
+                // Log-barrier
+                // Replace z with sigma mu inv(L(h(x)) e.  This comes from
+                // the equation h(x) o z = sigma mu e.
+                // 
+                // Note, we symmetrize the interior point piece added since,
+                // for SDP, this piece is likely not symmetric.
                 virtual void hessvec(
                     const X_Vector& x,
                     const X_Vector& dx,
                     X_Vector& H_dx 
                 ) const {
-                    // Get access to z and h(x)
-                    const Z_Vector& z=zz.front();
-                    const Z_Vector& h_x=h_xx.front();
-
                     // Create work elements for accumulating the
                     // interior point pieces
                     Z_Vector z_tmp1; Z::init(z,z_tmp1);
@@ -5006,7 +5284,9 @@ namespace peopt{
                     //                    + z o (inv L(h(x)) h'(x) dx))/2
                     h->ps(x,z_tmp1,hess_mod);
 
-                    // H_dx = hess f(x) dx + h'(x)* inv(L(h(x))) (z o h'(x) dx) 
+                    // H_dx 
+                    //  = hess f(x) dx + h'(x)* (inv(L(h(x))) (z o h'(x) dx)
+                    //                          + z o (inv L(h(x)) h'(x) dx))/2
                     X::axpy(Real(1.),hess_mod,H_dx);
                 }
             };
@@ -5028,8 +5308,11 @@ namespace peopt{
                 // Interior point parameter
                 const Real& mu;
 
+                // Interior point centering parameter
+                const Real& sigma;
+
                 // Inequality Lagrange multiplier
-                const std::list <Z_Vector>& zz;
+                const Z_Vector& z;
                 
                 // Make sure we call the constructor below
                 Merit () {}
@@ -5039,19 +5322,18 @@ namespace peopt{
                     const typename State::t& state,
                     typename Functions::t& fns
                 ) : msg(msg_), f_merit(fns.f_merit), h(fns.h), mu(state.mu),
-                    zz(state.z) {}
+                    sigma(state.sigma), z(state.z.back()) {}
 
-                // <- f_merit(x) - mu barr(h(x))
+                // <- f_merit(x) - sigma mu barr(h(x))
                 Real operator () (const X_Vector& x) const {
                     // Calculate h(x).  Funny enough, we don't use the cached
                     // value of h(x) here since we evaluate this function at
                     // points such as x+s.  Be careful of this.
-                    const Z_Vector& z=zz.front();
                     Z_Vector h_x; Z::init(z,h_x);
                     (*h)(x,h_x);
 
                     // Return f_merit(x) - mu barr(h(x))
-                    return (*f_merit)(x) - mu * Z::barr(h_x); 
+                    return (*f_merit)(x) - sigma*mu * Z::barr(h_x); 
                 }
 
                 // Throw an error 
@@ -5086,7 +5368,7 @@ namespace peopt{
             // optimization.
             static void init_(
                 const Messaging& msg,
-                const typename State::t& state,
+                typename State::t& state,
                 t& fns
             ) {
                 // Modify the objective 
@@ -5100,7 +5382,7 @@ namespace peopt{
             // Initialize any missing functions 
             static void init(
                 const Messaging& msg,
-                const typename State::t& state,
+                typename State::t& state,
                 t& fns
             ) {
                 Unconstrained <Real,XX>
@@ -5120,7 +5402,6 @@ namespace peopt{
             ) {
 
                 // Interior point pieces of the state 
-                out.push_back(atos <> ("mu_est"));
                 out.push_back(atos <> ("mu"));
             }
 
@@ -5143,7 +5424,6 @@ namespace peopt{
 
                 // Create some shortcuts
                 const Real& mu=state.mu; 
-                const Real& mu_est=state.mu_est; 
 
                 // Get a iterator to the last element prior to inserting
                 // elements
@@ -5151,7 +5431,6 @@ namespace peopt{
 
                 // Interior point information
                 // Estimate the interior-point parameter
-                out.push_back(atos <> (mu_est));
                 out.push_back(atos <> (mu));
 
                 // If we needed to do blank insertions, overwrite the elements
@@ -5214,9 +5493,48 @@ namespace peopt{
 
         // This contains the different algorithms used for optimization 
         struct Algorithms {
+
+            // An operator to reshape the trust-region radius and, hopefully,
+            // keep us away from the boundary.
+            struct TrustRegionScaling : public Operator <Real,XX,XX> {
+            private:
+                // The function h 
+                const VectorValuedFunction <Real,XX,ZZ>& h;
+
+                // The value h(x) 
+                const Z_Vector& h_x;
+
+                // The current iterate
+                const X_Vector& x;
+
+                // Work vectors
+                mutable Z_Vector z_tmp1;
+                mutable Z_Vector z_tmp2;
+
+            public:
+                TrustRegionScaling(
+                    const typename Functions::t& fns,
+                    const typename State::t& state
+                ) : h(*(fns.h)), h_x(state.h_x.back()), x(state.x.back()) {
+                    Z::init(h_x,z_tmp1); 
+                    Z::init(h_x,z_tmp2);    
+                }
+
+                void operator () (const X_Vector& dx,X_Vector& result) const{
+                    // z_tmp1 <- h'(x) dx
+                    h.p(x,dx,z_tmp1); 
+
+                    // z_tmp2 <- inv L(h(x)) h'(x) dx
+                    Z::linv(h_x,z_tmp1,z_tmp2);
+
+                    // result <- h'(x)* inv L(h(x)) h'(x) dx
+                    h.ps(x,z_tmp2,result);
+                }
+            };
+
             // Finds the new inequality Lagrange multiplier
-            // z = inv L(h(x)) (-z o h'(x)s + mu e)
-            static void findInequalityMultiplier(
+            // z = inv L(h(x)) (-z o h'(x)s + sigma mu e)
+            static void findInequalityMultiplierLinked(
                 const typename Functions::t& fns,
                 typename State::t& state
             ) {
@@ -5225,6 +5543,7 @@ namespace peopt{
                 const X_Vector& x=state.x.front();
                 const X_Vector& s=state.s.front();
                 const Real& mu=state.mu;
+                const Real& sigma=state.sigma;
                 const VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
                 Z_Vector& z=state.z.front();
 
@@ -5242,15 +5561,79 @@ namespace peopt{
                 // z_tmp1 <- e
                 Z::id(z_tmp1);
 
-                // z_tmp2 <- -z o h'(x)s + mu e
-                Z::axpy(mu,z_tmp1,z_tmp2);
+                // z_tmp2 <- -z o h'(x)s + sigma mu e
+                Z::axpy(sigma*mu,z_tmp1,z_tmp2);
 
-                // z <- inv L(h(x)) (-z o h'(x)s + mu e)
+                // z <- inv L(h(x)) (-z o h'(x)s + sigma mu e)
                 Z::linv(h_x,z_tmp2,z);
             }
 
+            // Finds the new inequality Lagrange multiplier
+            // z = sigma mu inv L(h(x)) e 
+            static void findInequalityMultiplierLogBarrier(
+                const typename Functions::t& fns,
+                typename State::t& state
+            ) {
+                // Create some shortcuts
+                const Z_Vector& h_x=state.h_x.front();
+                const Real& mu=state.mu;
+                const Real& sigma=state.sigma;
+                Z_Vector& z=state.z.front();
+
+                // z_tmp1 <- e 
+                Z_Vector z_tmp1; Z::init(z,z_tmp1);
+                Z::id(z_tmp1);
+
+                // z <- inv(L(h(x))) e 
+                Z::linv(h_x,z_tmp1,z);
+
+                // z <- sigma mu inv(L(h(x))) e 
+                Z::scal(sigma*mu,z);
+            }
+
+
+            // Finds the new inequality Lagrange multiplier step
+            // dz = -z + inv L(h(x)) (-z o h'(x)s + sigma mu e)
+            static void findInequalityMultiplierStep(
+                const typename Functions::t& fns,
+                typename State::t& state
+            ) {
+                // Create some shortcuts
+                const Z_Vector& z=state.z.front();
+                const Z_Vector& h_x=state.h_x.front();
+                const X_Vector& x=state.x.front();
+                const X_Vector& s=state.s.front();
+                const Real& mu=state.mu;
+                const Real& sigma=state.sigma;
+                const VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
+                Z_Vector& dz=state.dz.front();
+
+                // z_tmp1 <- h'(x)s
+                Z_Vector z_tmp1; Z::init(z,z_tmp1);
+                h.p(x,s,z_tmp1);
+
+                // z_tmp2 <- z o h'(x)s
+                Z_Vector z_tmp2; Z::init(z,z_tmp2);
+                Z::prod(z,z_tmp1,z_tmp2);
+
+                // z_tmp2 <- - z o h'(x)s
+                Z::scal(Real(-1.),z_tmp2);
+
+                // z_tmp1 <- e
+                Z::id(z_tmp1);
+
+                // z_tmp2 <- -z o h'(x)s + sigma mu e
+                Z::axpy(sigma*mu,z_tmp1,z_tmp2);
+
+                // dz <- inv L(h(x)) (-z o h'(x)s + sigma mu e)
+                Z::linv(h_x,z_tmp2,dz);
+
+                // dz <- -z + inv L(h(x)) (-z o h'(x)s + sigma mu e)
+                Z::axpy(Real(-1.),z,dz);
+            }
+
             // Estimates the interior point parameter with the formula
-            // mu_est = <z,h(x)>/m
+            // mu = <z,h(x)>/m
             static Real estimateInteriorPointParameter(
                 const typename Functions::t& fns,
                 const typename State::t& state
@@ -5269,63 +5652,27 @@ namespace peopt{
                 return Z::innr(z,h_x) / m;
             }
            
-            // Adjusts the interior point parameter, mu, based on the progress
-            // of the algorithm.
-            static void adjustInteriorPointParameter(
-                const typename Functions::t& fns,
-                typename State::t& state
-            ) {
-                // Create some shortcuts
-                const Real& mu_est=state.mu_est;
-                const Real& mu_trg=state.mu_trg;
-                const Real& mu_tol=state.mu_tol;
-                const Real& sigma=state.sigma;
-                const X_Vector& x=state.x.front();
-                const ScalarValuedFunction <Real,XX>& f_merit=*(fns.f_merit);
-                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
-                X_Vector& g=state.g.front();
-                Real& mu=state.mu;
-                Real& merit_x=state.merit_x;
-                Real& norm_g=state.norm_g;
-
-                // Determine if we should reduce mu
-                if( fabs(mu-mu_est) < mu_tol*mu &&
-                    mu > mu_trg &&
-                    norm_g < mu
-                ) {
-                    // Reduce mu
-                    mu = mu*sigma < mu_trg ? mu_trg : mu*sigma;
-
-                    // Recalculate the merit function since it 
-                    // depends on mu.
-                    merit_x=f_merit(x);
-
-                    // Recalculate the gradient since it depends on mu
-                    f.grad(x,g); 
-                    norm_g=sqrt(X::innr(g,g));
-                }
-            }
-
-            // Adjust the stopping conditions unless mu=mu_trg and the
-            // estimated mu, mu_est, is close to mu.
+            // Adjust the stopping conditions unless mu < mu_typ*eps_mu 
             static void adjustStoppingConditions(
                 const typename Functions::t& fns,
                 typename State::t& state
             ) {
                 // Create some shortcuts
                 const Real& mu=state.mu;
-                const Real& mu_est=state.mu_est;
-                const Real& mu_trg=state.mu_trg;
-                const Real& mu_tol=state.mu_tol;
+                const Real& mu_typ=state.mu_typ;
+                const Real& eps_mu=state.eps_mu;
                 StoppingCondition::t& opt_stop=state.opt_stop;
                 
-                // Prevent convergence unless the mu is mu_trg and
-                // mu_est is close to mu;
+                // Prevent convergence unless mu has been reduced to
+                // eps_mu times mu_typ.
                 if( opt_stop==StoppingCondition::RelativeGradientSmall &&
-                    (mu!=mu_trg || 
-                    fabs(mu-mu_est) >= mu_tol*mu)
+                    !(mu < mu_typ*eps_mu) 
                 )
                     opt_stop=StoppingCondition::NotConverged;
+
+                // If the interior point paramter is negative, exit
+                if(mu < Real(0.))
+                    opt_stop=StoppingCondition::InteriorPointInstability;
             }
 
             // Conduct a line search that preserves positivity of both the
@@ -5334,15 +5681,94 @@ namespace peopt{
             // step.  For a line-search algorithm, we modify the line-search
             // step length so that the farthest the line-search will look
             // is within the safe region for positivity.
-            static void positivityLineSearch(
+            static void positivityLineSearchPrimalDual(
+                const typename Functions::t& fns,
+                typename State::t& state
+            ) {
+                // Create some shortcuts 
+                const Real& gamma=state.gamma;
+                const AlgorithmClass::t& algorithm_class
+                    =state.algorithm_class;
+                const Z_Vector& z=state.z.front();
+                const X_Vector& x=state.x.front();
+                const Z_Vector& h_x=state.h_x.front();
+                const VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
+                X_Vector& s=state.s.front();
+                Z_Vector& dz=state.dz.front();
+                Real& alpha=state.alpha;
+
+                // Create a fake step.  In the case of a trust-region
+                // method this is just the step.  In the case of
+                // a line-search method this is 2 alpha s.  This represents
+                // the farthest either method will attempt to step.
+                X_Vector ss; X::init(x,ss);
+                X::copy(s,ss);
+                if(algorithm_class==AlgorithmClass::LineSearch)
+                    X::scal(Real(2.)*alpha,ss);
+                
+                // Determine how far we can go in the primal variable
+                
+                // x_tmp1=x+s
+                X_Vector x_tmp1; X::init(x,x_tmp1);
+                X::copy(x,x_tmp1);
+                X::axpy(Real(1.),ss,x_tmp1);
+
+                // z_tmp1=h(x+s)
+                Z_Vector z_tmp1; Z::init(z,z_tmp1);
+                h(x_tmp1,z_tmp1);
+
+                // z_tmp1=h(x+s)-h(x)
+                Z::axpy(Real(-1.),h_x,z_tmp1);
+
+                // Find the largest alpha such that
+                // alpha (h(x+s)-h(x)) + h(x) >=0
+                Real alpha_x=Z::srch(z_tmp1,h_x);
+
+                // Determine how far we can go in the dual variable 
+
+                // Find the largest alpha such that
+                // alpha dz + z >=0
+                Real alpha_z=Z::srch(dz,z); 
+
+                // Figure out how much to shorten the steps, if at all
+                Real beta_x = alpha_x<Real(0.) || alpha_x*gamma>Real(1.)
+                    ? Real(1.) : alpha_x*gamma;
+                Real beta_z = alpha_z<Real(0.) || alpha_z*gamma>Real(1.)
+                    ? Real(1.) : alpha_z*gamma;
+
+                // Shorten the inequality multiplier step
+                Z::scal(beta_z,dz);
+
+                // If we're doing a trust-region method, shorten the
+                // step length accordingly
+                if(algorithm_class==AlgorithmClass::TrustRegion) 
+
+                    // Shorten the step
+                    X::scal(beta_x,s);
+
+                // If we're doing a line-search method, make sure
+                // we can't line-search past this point
+                else
+                    alpha *= beta_x;
+            }
+            
+            // Conduct a line search that preserves positivity of both the
+            // primal and dual variables.  For trust-region methods, this
+            // is pretty straightforward since we only need to modify our
+            // step.  For a line-search algorithm, we modify the line-search
+            // step length so that the farthest the line-search will look
+            // is within the safe region for positivity.  This differs from
+            // the function above since it assumes that primal and dual
+            // variables are linked.
+            static void positivityLineSearchPrimalDualLinked(
                 const typename Functions::t& fns,
                 typename State::t& state
             ) {
                 // Create some shortcuts 
                 const Real& gamma=state.gamma;
                 const Real& mu=state.mu;
-                const AlgorithmClass::t& algorithm_class
-                    =state.algorithm_class;
+                const Real& sigma=state.sigma;
+                const AlgorithmClass::t& algorithm_class =state.algorithm_class;
                 const Z_Vector& z=state.z.front();
                 const X_Vector& x=state.x.front();
                 const Z_Vector& h_x=state.h_x.front();
@@ -5392,11 +5818,11 @@ namespace peopt{
                 // z_tmp1 = e
                 Z::id(z_tmp1);
 
-                // z_tmp1 = mu e
-                Z::scal(mu,z_tmp1);
+                // z_tmp1 = sigma mu e
+                Z::scal(sigma*mu,z_tmp1);
 
                 // Find the largest alpha such that
-                // alpha (- z o h'(x)s) + mu e >=0
+                // alpha (- z o h'(x)s) + sigma mu e >=0
                 Real alpha2=Z::srch(z_tmp2,z_tmp1);
 
                 // Determine the farthest we can go in both variables
@@ -5441,6 +5867,66 @@ namespace peopt{
                     alpha *= alpha0;
 
             }
+            // Conduct a line search that preserves positivity of the
+            // primal variable. 
+            static void positivityLineSearchLogBarrier(
+                const typename Functions::t& fns,
+                typename State::t& state
+            ) {
+                // Create some shortcuts 
+                const Real& gamma=state.gamma;
+                const AlgorithmClass::t& algorithm_class
+                    =state.algorithm_class;
+                const X_Vector& x=state.x.front();
+                const Z_Vector& z=state.z.front();
+                const Z_Vector& h_x=state.h_x.front();
+                const VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
+                X_Vector& s=state.s.front();
+                Real& alpha=state.alpha;
+
+                // Create a fake step.  In the case of a trust-region
+                // method this is just the step.  In the case of
+                // a line-search method this is 2 alpha s.  This represents
+                // the farthest either method will attempt to step.
+                X_Vector ss; X::init(x,ss);
+                X::copy(s,ss);
+                if(algorithm_class==AlgorithmClass::LineSearch)
+                    X::scal(Real(2.)*alpha,ss);
+                
+                // Determine how far we can go in the primal variable
+                
+                // x_tmp1=x+s
+                X_Vector x_tmp1; X::init(x,x_tmp1);
+                X::copy(x,x_tmp1);
+                X::axpy(Real(1.),ss,x_tmp1);
+
+                // z_tmp1=h(x+s)
+                Z_Vector z_tmp1; Z::init(z,z_tmp1);
+                h(x_tmp1,z_tmp1);
+
+                // z_tmp1=h(x+s)-h(x)
+                Z::axpy(Real(-1.),h_x,z_tmp1);
+
+                // Find the largest alpha such that
+                // alpha (h(x+s)-h(x)) + h(x) >=0
+                Real alpha_x=Z::srch(z_tmp1,h_x);
+
+                // Figure out how much to shorten the steps, if at all
+                Real beta_x = alpha_x<Real(0.) || alpha_x*gamma>Real(1.)
+                    ? Real(1.) : alpha_x*gamma;
+
+                // If we're doing a trust-region method, shorten the
+                // step length accordingly
+                if(algorithm_class==AlgorithmClass::TrustRegion) 
+
+                    // Shorten the step
+                    X::scal(beta_x,s);
+
+                // If we're doing a line-search method, make sure
+                // we can't line-search past this point
+                else
+                    alpha *= beta_x;
+            }
 
             // This adds the interior point through use of a state manipulator.
             template <typename ProblemClass>
@@ -5478,20 +5964,67 @@ namespace peopt{
                     typename State::t& state 
                         =dynamic_cast <typename State::t&> (state_);
 
-                    // Call the user define manipulator
-                    smanip(fns,state,loc);
-                    
                     // Create some shorcuts
                     const VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
                     const X_Vector& x=state.x.front();
+                    const X_Vector& g_orig=state.g_orig.front();
+                    const X_Vector& g_lag=state.g_lag.front();
+                    const X_Vector& g_schur=state.g_schur.front();
+                    const InteriorPointMethod::t& ipm=state.ipm;
+                    X_Vector& g=state.g.front();
+                    Z_Vector& z=state.z.front();
                     Z_Vector& h_x=state.h_x.front();
-                    Real& mu_est = state.mu_est;
+                    Z_Vector& dz=state.dz.front();
+                    Real& mu = state.mu;
+                    Real& merit_xps= state.merit_xps;
+                    Real& norm_g = state.norm_g;
+                    const ScalarValuedFunction<Real,XX>& f_merit=*(fns.f_merit);
+
+                    // Call the user define manipulator
+                    smanip(fns,state,loc);
 
                     switch(loc){
+                    // In a log-barrier method, find the initial Lagrange
+                    // multiplier.
+                    case OptimizationLocation::BeforeInitialFuncAndGrad:
+                        if(ipm==InteriorPointMethod::LogBarrier)
+                            findInequalityMultiplierLogBarrier(fns,state);
+                        break;
+
+                    // After we rejecte a step, get the gradient of the
+                    // Lagrangian for the output.  In addition, make sure
+                    // we specify that we take a zero step in the Lagrange
+                    // multiplier.  This is important in case we exit early
+                    // due to small steps.
+                    case OptimizationLocation::AfterRejectedTrustRegion:
+                    case OptimizationLocation::AfterRejectedLineSearch:
+                        X::copy(g_lag,g);
+                        norm_g=sqrt(X::innr(g_lag,g_lag));
+
+                        Z::zero(dz);
+                        break;
+
+                    // Make sure we use the Schur complement gradient when
+                    // we get the step
+                    case OptimizationLocation::BeforeGetStep:
+                        X::copy(g_schur,g);
+                        norm_g=sqrt(X::innr(g_schur,g_schur));
+                        break;
                     
-                    // Find the new inequality multiplier
+                    // Find the new inequality multiplier or step
                     case OptimizationLocation::BeforeStep:
-                        findInequalityMultiplier(fns,state);
+                        switch(ipm){
+                        case InteriorPointMethod::PrimalDual:
+                            Z::axpy(Real(1.),dz,z);
+                            break;
+                        case InteriorPointMethod::PrimalDualLinked:
+                            findInequalityMultiplierLinked(fns,state);
+                            break;
+                        case InteriorPointMethod::LogBarrier:
+                            // Wait until after we update the interior
+                            // point parameter to find the multiplier.
+                            break;
+                        }
                         break;
 
                     // Update our cached copy of h(x) and find the new 
@@ -5501,21 +6034,57 @@ namespace peopt{
                         h(x,h_x);
 
                         // Update the interior point estimate
-                        mu_est = estimateInteriorPointParameter(fns,state);
+                        mu = estimateInteriorPointParameter(fns,state);
+
+                        // Update the inequality multiplier in a log-barrier
+                        // method
+                        if(ipm==InteriorPointMethod::LogBarrier)
+                            findInequalityMultiplierLogBarrier(fns,state);
+
+                        // Calculate the new merit function based on this
+                        // interior point paramter
+                        merit_xps=f_merit(x);
                         break; 
+
+                    // Copy in the original gradient for the quasi-Newton method
+                    // or a CG-style algorithm.
+                    case OptimizationLocation::BeforeSaveOld:
+                    case OptimizationLocation::BeforeQuasi:
+                        X::copy(g_orig,g);
+                        norm_g=sqrt(X::innr(g_orig,g_orig));
+                        break;
+
+                    // Copy in the gradient of the Lagrangian for the
+                    // stopping conditions.
+                    case OptimizationLocation::AfterQuasi:
+                        X::copy(g_lag,g);
+                        norm_g=sqrt(X::innr(g_lag,g_lag));
+                        break;
 
                     // Adjust the interior point parameter and insure that
                     // we do not converge unless the interior point parameter
                     // is small.
                     case OptimizationLocation::EndOfOptimizationIteration:
-                        adjustInteriorPointParameter(fns,state);
                         adjustStoppingConditions(fns,state);
                         break;
 
                     // Adjust our step or potential step to preserve positivity
                     case OptimizationLocation::BeforeLineSearch:
                     case OptimizationLocation::BeforeActualVersusPredicted:
-                        positivityLineSearch(fns,state);
+                        switch(ipm){
+                        case InteriorPointMethod::PrimalDual:
+                            findInequalityMultiplierStep(fns,state);
+                            positivityLineSearchPrimalDual(fns,state);
+                            break;
+
+                        case InteriorPointMethod::PrimalDualLinked:
+                            positivityLineSearchPrimalDualLinked(fns,state);
+                            break;
+                        
+                        case InteriorPointMethod::LogBarrier:
+                            positivityLineSearchLogBarrier(fns,state);
+                            break;
+                        }
                         break;
                     default:
                         break;
@@ -5567,12 +6136,13 @@ namespace peopt{
                 (*fns.h)(state.x.back(),state.h_x.back());
 
                 // Estimate the interior point parameter
-                state.mu_est=estimateInteriorPointParameter(fns,state);
+                state.mu=estimateInteriorPointParameter(fns,state);
 
-                // If it has not been set, modify the interior point parameter
-                // to be the estimated parameter
-                if(state.mu!=state.mu)
-                    state.mu=state.mu_est;
+                // Set the typical value for mu
+                state.mu_typ=state.mu;
+
+                // Set the trust-region scaling
+                fns.TR_op.reset(new TrustRegionScaling(fns,state));
                 
                 // Minimize the problem
                 Unconstrained <Real,XX>::Algorithms
@@ -5835,7 +6405,7 @@ namespace peopt{
                 EqualityConstrained <Real,XX,YY>
                     ::Restart::stateToVectors(state,ys);
                 InequalityConstrained <Real,XX,ZZ>
-                    ::Restart::stateToVectors(state,zs);
+                    ::Restart::stateToVectors(state,xs,zs);
             
                 // Copy out all of the scalar information
                 Unconstrained <Real,XX>
@@ -5869,7 +6439,7 @@ namespace peopt{
                 EqualityConstrained <Real,XX,YY>
                     ::Restart::vectorsToState(state,ys);
                 InequalityConstrained <Real,XX,ZZ>
-                    ::Restart::vectorsToState(state,zs);
+                    ::Restart::vectorsToState(state,xs,zs);
                 
                 // Copy in all of the scalar information
                 Unconstrained <Real,XX>
@@ -5904,7 +6474,7 @@ namespace peopt{
             // optimization.
             static void init_(
                 const Messaging& msg,
-                const typename State::t& state,
+                typename State::t& state,
                 t& fns
             ) {
             }
@@ -5912,7 +6482,7 @@ namespace peopt{
             // Initialize any missing functions 
             static void init(
                 const Messaging& msg,
-                const typename State::t& state,
+                typename State::t& state,
                 t& fns
             ) {
                 Unconstrained <Real,XX>
