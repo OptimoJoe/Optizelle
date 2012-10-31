@@ -6077,6 +6077,9 @@ namespace peopt{
                     case OptimizationLocation::BeforeStep:
                         // Do predictor corrector if need be
                         if(cstrat==CentralityStrategy::PredictorCorrector)
+                            // We have a iter+1 here since we haven't updated
+                            // our iteration yet and we need to set sigma
+                            // for the next iteration.
                             sigma = (iter+1) % 2 ? Real(0.) : Real(1.);
 
                         // Find the new inequality multiplier or step
