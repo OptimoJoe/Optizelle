@@ -620,9 +620,9 @@ namespace peopt{
             LogBarrier,          // Primal log-barrier method 
         };
         
-        // Converts the line-search direction to a string 
-        static std::string to_string(t dir){
-            switch(dir){
+        // Converts the interior point method to a string 
+        static std::string to_string(t ipm){
+            switch(ipm){
             case PrimalDual:
                 return "PrimalDual";
             case PrimalDualLinked:
@@ -634,13 +634,13 @@ namespace peopt{
             }
         }
         
-        // Converts a string to a line-search direction 
-        static t from_string(std::string dir){
-            if(dir=="PrimalDual")
+        // Converts a string to an interior point method 
+        static t from_string(std::string ipm){
+            if(ipm=="PrimalDual")
                 return PrimalDual; 
-            else if(dir=="PrimalDualLinked")
+            else if(ipm=="PrimalDualLinked")
                 return PrimalDualLinked; 
-            else if(dir=="LogBarrier")
+            else if(ipm=="LogBarrier")
                 return LogBarrier; 
             else
                 throw;
@@ -659,6 +659,49 @@ namespace peopt{
             }
         };
     };
+    
+    // Different schemes for adjusting the interior point centrality 
+    struct CentralityStrategy{
+        enum t{
+            Constant,           // We keep sigma fixed at each iteration.
+            PredictorCorrector, // On odd iterations, sigma=1, on even, sigma=0.
+        };
+        
+        // Converts the centrality strategy to a string
+        static std::string to_string(t cstrat){
+            switch(cstrat){
+            case Constant:
+                return "Constant";
+            case PredictorCorrector:
+                return "PredictorCorrector";
+            default:
+                throw;
+            }
+        }
+        
+        // Converts a string to the cstrat
+        static t from_string(std::string cstrat){
+            if(cstrat=="Constant")
+                return Constant; 
+            else if(cstrat=="PredictorCorrector")
+                return PredictorCorrector; 
+            else
+                throw;
+        }
+
+        // Checks whether or not a string is valid
+        struct is_valid : public std::unary_function<std::string, bool> {
+            bool operator () (const std::string& name) const {
+                if( name=="Constant" ||
+                    name=="PredictorCorrector" 
+                )
+                    return true;
+                else
+                    return false;
+            }
+        };
+    };
+
 
     // A collection of short routines that are only required locally
     namespace {
@@ -3447,8 +3490,8 @@ namespace peopt{
                 // Create some shortcuts
                 const Real& eps_s=state.eps_s;
                 const Real& eps_krylov=state.eps_krylov;
-                const Real& krylov_iter_max=state.krylov_iter_max;
-                const Real& krylov_orthog_max=state.krylov_orthog_max;
+                const unsigned int& krylov_iter_max=state.krylov_iter_max;
+                const unsigned int& krylov_orthog_max=state.krylov_orthog_max;
                 const Real& delta=state.delta;
                 const X_Vector& x=state.x.back();
                 const X_Vector& g=state.g.back();
@@ -3868,8 +3911,8 @@ namespace peopt{
                 const Real& eps_s=state.eps_s;
                 const Real& norm_styp=state.norm_styp;
                 const Real& eps_krylov=state.eps_krylov;
-                const Real& krylov_iter_max=state.krylov_iter_max;
-                const Real& krylov_orthog_max=state.krylov_orthog_max;
+                const unsigned int& krylov_iter_max=state.krylov_iter_max;
+                const unsigned int& krylov_orthog_max=state.krylov_orthog_max;
                 const Real& norm_g=state.norm_g;
                 X_Vector& s=state.s.back();
                 Real& merit_xps=state.merit_xps;
@@ -4666,6 +4709,9 @@ namespace peopt{
                 // Type of interior point method
                 InteriorPointMethod::t ipm;
 
+                // Centrality strategy
+                CentralityStrategy::t cstrat;
+
                 // Initialization constructors
                 t() {
                     InequalityConstrained <Real,XX,ZZ>::State
@@ -4688,6 +4734,7 @@ namespace peopt{
                 state.sigma = Real(0.5);
                 state.gamma = Real(0.95);
                 state.ipm = InteriorPointMethod::PrimalDual;
+                state.cstrat = CentralityStrategy::Constant; 
             }
             static void init_params(t& state) {
                 Unconstrained <Real,XX>::State::init_params_(state); 
@@ -4829,7 +4876,8 @@ namespace peopt{
                 bool operator () (const std::string& name) const {
                     if( typename Unconstrained <Real,XX>::Restart
                             ::is_param()(name) ||
-                        name == "ipm"
+                        name == "ipm" ||
+                        name == "cstrat"
                     ) 
                         return true;
                     else
@@ -4915,6 +4963,9 @@ namespace peopt{
                     } else if(label=="ipm") {
                         if(!InteriorPointMethod::is_valid()(val))
                             ss << base << "interior point method type: " << val;
+                    } else if(label=="cstrat") {
+                        if(!CentralityStrategy::is_valid()(val))
+                            ss << base << "centrality strategy: " << val;
                     }
                     return ss.str();
                 }
@@ -4964,6 +5015,9 @@ namespace peopt{
                 params.first.push_back("ipm");
                 params.second.push_back(
                     InteriorPointMethod::to_string(state.ipm));
+                params.first.push_back("cstrat");
+                params.second.push_back(
+                    CentralityStrategy::to_string(state.cstrat));
             }
             
             // Copy in inequality multipliers 
@@ -5059,6 +5113,8 @@ namespace peopt{
                 ){
                     if(*name=="ipm")
                         state.ipm=InteriorPointMethod::from_string(*param);
+                    else if(*name=="cstrat")
+                        state.cstrat=CentralityStrategy::from_string(*param);
                 }
             }
 
@@ -5971,11 +6027,14 @@ namespace peopt{
                     const X_Vector& g_lag=state.g_lag.front();
                     const X_Vector& g_schur=state.g_schur.front();
                     const InteriorPointMethod::t& ipm=state.ipm;
+                    const CentralityStrategy::t& cstrat=state.cstrat;
+                    const unsigned int& iter=state.iter;
                     X_Vector& g=state.g.front();
                     Z_Vector& z=state.z.front();
                     Z_Vector& h_x=state.h_x.front();
                     Z_Vector& dz=state.dz.front();
                     Real& mu = state.mu;
+                    Real& sigma = state.sigma;
                     Real& merit_xps= state.merit_xps;
                     Real& norm_g = state.norm_g;
                     const ScalarValuedFunction<Real,XX>& f_merit=*(fns.f_merit);
@@ -5984,14 +6043,18 @@ namespace peopt{
                     smanip(fns,state,loc);
 
                     switch(loc){
-                    // In a log-barrier method, find the initial Lagrange
-                    // multiplier.
                     case OptimizationLocation::BeforeInitialFuncAndGrad:
+                        // Do predictor corrector if need be
+                        if(cstrat==CentralityStrategy::PredictorCorrector)
+                            sigma = iter % 2 ? Real(0.) : Real(1.);
+
+                        // In a log-barrier method, find the initial Lagrange
+                        // multiplier.
                         if(ipm==InteriorPointMethod::LogBarrier)
                             findInequalityMultiplierLogBarrier(fns,state);
                         break;
 
-                    // After we rejecte a step, get the gradient of the
+                    // After we reject a step, get the gradient of the
                     // Lagrangian for the output.  In addition, make sure
                     // we specify that we take a zero step in the Lagrange
                     // multiplier.  This is important in case we exit early
@@ -6011,8 +6074,12 @@ namespace peopt{
                         norm_g=sqrt(X::innr(g_schur,g_schur));
                         break;
                     
-                    // Find the new inequality multiplier or step
                     case OptimizationLocation::BeforeStep:
+                        // Do predictor corrector if need be
+                        if(cstrat==CentralityStrategy::PredictorCorrector)
+                            sigma = (iter+1) % 2 ? Real(0.) : Real(1.);
+
+                        // Find the new inequality multiplier or step
                         switch(ipm){
                         case InteriorPointMethod::PrimalDual:
                             Z::axpy(Real(1.),dz,z);
@@ -6027,10 +6094,8 @@ namespace peopt{
                         }
                         break;
 
-                    // Update our cached copy of h(x) and find the new 
-                    // interior point estimate.
                     case OptimizationLocation::AfterStepBeforeGradient:
-                        // Calculate h(x)
+                        // Updated our cached copy of h(x)
                         h(x,h_x);
 
                         // Update the interior point estimate

@@ -267,6 +267,14 @@ namespace peopt {
                     state.ipm=InteriorPointMethod::from_string(ipm); 
                 else
                     msg.error(base + ipm + " is not a valid ipm.");
+
+                std::string cstrat=root["peopt"]
+                    .get("cstrat",CentralityStrategy::to_string(state.cstrat))
+                    .asString();
+                if(CentralityStrategy::is_valid()(cstrat))
+                    state.cstrat=CentralityStrategy::from_string(cstrat); 
+                else
+                    msg.error(base + cstrat + " is not a valid cstrat.");
             }
             static void read(
                 const peopt::Messaging& msg,
@@ -295,6 +303,8 @@ namespace peopt {
                 root["peopt"]["sigma"]=state.sigma;
                 root["peopt"]["gamma"]=state.gamma;
                 root["peopt"]["ipm"]=InteriorPointMethod::to_string(state.ipm);
+                root["peopt"]["cstrat"]
+                    =CentralityStrategy::to_string(state.cstrat);
 
                 return writer.write(root);
             }

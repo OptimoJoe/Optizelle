@@ -212,6 +212,62 @@ BOOST_AUTO_TEST_CASE(tr_newton) {
     BOOST_CHECK(state.iter == 7);
 }
 
+BOOST_AUTO_TEST_CASE(tr_newton_predictor_corrector) {
+    // Create some type shortcuts
+    typedef peopt::Rm <double> X;
+    typedef peopt::SQL <double> Z;
+    typedef X::Vector X_Vector;
+    typedef Z::Vector Z_Vector;
+
+    // Generate an initial guess for the primal
+    X_Vector x(2);
+    x[0]=1.2; x[1]=3.1;
+
+    // Generate an initial guess for the dual
+    std::vector <unsigned int> sizes(1); sizes[0]=2;
+    std::vector <peopt::Cone::t> types(1); types[0]=peopt::Cone::Quadratic;
+    Z_Vector z(peopt::Messaging(),types,sizes);
+
+    // Create an optimization state
+    peopt::InequalityConstrained <double,peopt::Rm,peopt::SQL>::State::t
+        state(x,z);
+
+    // Create a bundle of functions
+    peopt::InequalityConstrained <double,peopt::Rm,peopt::SQL>::Functions::t
+        fns;
+    fns.f.reset(new MyObj);
+    fns.h.reset(new MyIneq);
+
+    // Setup the optimization problem
+    state.H_type = peopt::Operators::External;
+    state.iter_max = 100;
+    state.msg_level = 0;
+    state.eps_krylov = 1e-10;
+    state.eps_s = 1e-16;
+    state.eps_g = 1e-10;
+    state.eps_mu = 1e-8;
+    state.gamma = 0.995;
+    state.cstrat = peopt::CentralityStrategy::PredictorCorrector;
+
+    // Solve the optimization problem
+    peopt::InequalityConstrained <double,peopt::Rm,peopt::SQL>::Algorithms
+        ::getMin(peopt::Messaging(),fns,state);
+
+    // Check the relative error between the true solution, (2.5,2.5) and that
+    // found in the state
+    std::vector <double> x_star(2);
+    x_star[0] = 2.5; x_star[1]=2.5;
+    std::vector <double> residual = x_star;
+    peopt::Rm <double>::axpy(-1,state.x.front(),residual);
+    double err=std::sqrt(peopt::Rm <double>::innr(residual,residual))
+        /(1+sqrt(peopt::Rm <double>::innr(x_star,x_star)));
+    BOOST_CHECK(err < 1e-6);
+
+    // Check the number of iterations 
+    BOOST_CHECK(state.iter == 10);
+}
+
+
 BOOST_AUTO_TEST_CASE(sr1) {
     // Create some type shortcuts
     typedef peopt::Rm <double> X;
