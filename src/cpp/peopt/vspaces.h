@@ -680,43 +680,50 @@ namespace peopt {
                 // and a is zero, then there's no limit to the line search
                 case Cone::Quadratic: {
 
+                    // Now, first we have to insure that the leading coefficient
+                    // of the second order cone problem remains nonnegative.
+                    // This number tells us how far we can step before this
+                    // is not true.
                     Real alpha0 = -y(blk,1)/x(blk,1);
+
+                    // Next, assuming that the leading coefficient is fine,
+                    // figure out how far we can step before we violate the
+                    // rest of the SOCP constraint.  This involves solving
+                    // the quadratic equation from above.
                     Real a = x(blk,1)*x(blk,1)
                         - dot <Real> (m-1,&(x(blk,2)),1,&(x(blk,2)),1);
                     Real b = Real(2.)*(x(blk,1)*y(blk,1)
                         - dot <Real> (m-1,&(x(blk,2)),1,&(y(blk,2)),1));
                     Real c = y(blk,1)*y(blk,1)
                         - dot <Real> (m-1,&(y(blk,2)),1,&(y(blk,2)),1);
+                    unsigned int nroots(0);
+                    Real alpha1(-1.);
+                    Real alpha2(-1.);
+                    quad_equation(a,b,c,nroots,alpha1,alpha2);
 
-                    // Solve the quadratic equation.
-                    Real alpha1; Real alpha2;
-                    if(b < Real(0.)) {
-                        alpha1 = (-b + sqrt(b*b-Real(4.)*a*c)) / (Real(2.)*a);
-                        alpha2 = (Real(2)*c) / (-b + sqrt(b*b-Real(4.)*a*c));
-                    } else {
-                        alpha2 = (-b - sqrt(b*b-Real(4.)*a*c)) / (Real(2.)*a);
-                        alpha1 = (Real(2)*c) / (-b - sqrt(b*b-Real(4.)*a*c));
-                    }
+                    // Now, determine the step length.
 
-                    // Solve the linear equation
-                    Real alpha3 = -c/b;
-
-                    // Default solution in case we have a constant 
+                    // If we have a restriction on alpha based on the leading
+                    // coefficient.
                     if(alpha0 >= Real(0.) && (alpha==Real(-1.) || alpha0<alpha))
                         alpha=alpha0;
 
-                    // In the case we have a quadratic.
-                    if( a != Real(0.) ) { 
-                        if(alpha1>=Real(0.)&&(alpha==Real(-1.) || alpha1<alpha))
+                    // Next, if we have two roots, determine the restriction 
+                    if(nroots==2) { 
+                        if(alpha1>=Real(0.) && (alpha==Real(-1.)||alpha1<alpha))
                             alpha=alpha1;
-                        if(alpha2>=Real(0.)&&(alpha==Real(-1.) || alpha2<alpha))
+                        if(alpha2>=Real(0.) && (alpha==Real(-1.)||alpha2<alpha))
                             alpha=alpha2;
 
-                    // In the case we have a linear 
-                    } else if( b != Real(0.)) {
-                        if(alpha3>=Real(0.)&&(alpha==Real(-1.) || alpha3<alpha))
-                            alpha=alpha3;
+                    // If we have a single root 
+                    } else if(nroots==1) {
+                        if(alpha1>=Real(0.) && (alpha==Real(-1.)||alpha1<alpha))
+                            alpha=alpha1;
                     }
+
+                    // If we no roots, there's no additional restriction.
+                    // This can't happen since we assume that y is strictly
+                    // feasible.
                 }
                 break;
 

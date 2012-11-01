@@ -270,6 +270,58 @@ namespace peopt {
         return W[0];
     }
 
+    // Solves a quadratic equation
+    //
+    // a x^2 + b x + c = 0
+    //
+    // Here, we assume that a, b, and c are not all zero.
+    //
+    // (input) a, b, c : Coefficients of the quadratic
+    // (output) nroots : Number of roots
+    // (output) r1 : First root, if it exists
+    // (output) r2 : Second root, if it exists
+    template <typename Natural,typename Real>
+    void quad_equation(
+        const Real& a,
+        const Real& b,
+        const Real& c,
+        Natural& nroots,
+        Real& r1,
+        Real& r2
+    ) {
+
+        // It's sort of hard to tell if we have a quadratic or a linear since
+        // we don't have a good way with the information provided to tell if
+        // the quadratic coefficient is small.  As such, we do a bad, hard
+        // check if the leading coefficient is zero.  If it is not the case,
+        // we assume that we have a quadratic and we use the most stable
+        // equation that we can for the root.
+        if( a != Real(0.) ) { 
+            if(b < Real(0.)) {
+                r1 = (-b + sqrt(b*b-Real(4.)*a*c)) / (Real(2.)*a);
+                r2 = (Real(2.)*c) / (-b + sqrt(b*b-Real(4.)*a*c));
+            } else {
+                r1 = (Real(2)*c) / (-b - sqrt(b*b-Real(4.)*a*c));
+                r2 = (-b - sqrt(b*b-Real(4.)*a*c)) / (Real(2.)*a);
+            }
+            nroots = Natural(2);
+
+        // Now, in the case that a is zero, but b is not, we have a linear
+        // function and we can solve for the root.
+        } else if( b != Real(0.)) {
+            r1 = -c/b;
+            nroots = Natural(1);
+
+        // Here, we have a constant function.  Now, we could have no roots
+        // if c is zero.  Alternatively, we could have an infinity number of
+        // roots if c is zero.  There's not really a good way to denote all
+        // of these cases, so we just assume that c is not zero and return
+        // zero roots.
+        } else {
+            nroots = Natural(0);
+        }
+    }
+
     // Reasons we stop the Krylov method
     struct KrylovStop{
         enum t{
@@ -527,11 +579,15 @@ namespace peopt {
                     // x_tmp2 <- C(x)
                     C(x,x_tmp2);
 
-                    // Solve the quadratic equation
+                    // Solve the quadratic equation for the positive root 
                     Real aa = X::innr(x_tmp1,x_tmp1);
                     Real bb = Real(2.)*X::innr(x_tmp1,x_tmp2);
                     Real cc = norm_Cx*norm_Cx-delta*delta;
-                    Real sigma = (-bb + sqrt(bb*bb-Real(4.)*aa*cc))/(2*aa);
+                    unsigned int nroots;
+                    Real r1;
+                    Real r2;
+                    quad_equation(aa,bb,cc,nroots,r1,r2);
+                    Real sigma = r1 > r2 ? r1 : r2;
 
                     // Take the step, find its residual, and compute the 
                     // residual's norm
