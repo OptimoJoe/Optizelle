@@ -9,6 +9,7 @@ set(unit_srcs
     "sdp_cone.cpp"
     "derivative_check.cpp"
     "quadratic_cone.cpp"
+    "linear_algebra.cpp"
     "unit.cpp")
 include_directories(${BOOST_UNIT_TEST_INCLUDE_DIRS})
 add_executable(unit ${unit_srcs})

@@ -4311,8 +4311,1265 @@ namespace peopt{
             }
         };
     };
-
+    
+    // Routines that manipulate and support problems of the form
+    // 
+    // min_{x \in X} f(x) st g(x) = 0
+    //
+    // where f : X -> R and g : X -> Y
+    template <
+        typename Real,
+        template <typename> class XX,
+        template <typename> class YY
+    > 
+    struct EqualityConstrained {
+        // Create some shortcuts for some type names
+        typedef XX <Real> X;
+        typedef typename X::Vector X_Vector;
+        typedef YY <Real> Y;
+        typedef typename Y::Vector Y_Vector;
         
+        typedef std::pair < std::list <std::string>,
+                            std::list <Real> > Reals;
+        typedef std::pair < std::list <std::string>,
+                            std::list <Natural> > Nats;
+        typedef std::pair < std::list <std::string>,
+                            std::list <std::string> > Params; 
+        typedef std::pair < std::list <std::string>,
+                            std::list <X_Vector> > X_Vectors;
+        typedef std::pair < std::list <std::string>,
+                            std::list <Y_Vector> > Y_Vectors;
+
+        // This defines a product space between X and Y
+        template <typename Real_>
+        struct XXxYY {
+            typedef std::pair <X_Vector,Y_Vector> Vector;
+
+            // Memory allocation and size setting
+            static void init(const Vector& x, Vector& y) {
+                X::init(x.first,y.first);
+                Y::init(x.second,y.second);
+            }
+
+            // y <- x (Shallow.  No memory allocation.)
+            static void copy(const Vector& x, Vector& y) {
+                X::copy(x.first,y.first);
+                Y::copy(x.second,y.second);
+            }
+
+            // x <- alpha * x
+            static void scal(const Real_& alpha, Vector& x) {
+                X::copy(alpha,x.first);
+                Y::copy(alpha,x.second);
+            }
+
+            // x <- 0 
+            static void zero(Vector& x) {
+                X::zero(x.first);
+                Y::zero(x.second);
+            }
+
+            // y <- alpha * x + y
+            static void axpy(const Real_& alpha, const Vector& x, Vector& y) {
+                X::axpy(alpha,x.first,y.first);
+                Y::axpy(alpha,x.second,y.second);
+            }
+
+            // innr <- <x,y>
+            static Real_ innr(const Vector& x,const Vector& y) {
+                return X::innr(x.first,y.first) + Y::innr(x.second,y.second);
+            }
+        };
+        typedef XXxYY <Real> XxY;
+        typedef typename XxY::Vector XxY_Vector;
+
+        // Routines that manipulate the internal state of the optimization 
+        // algorithm.
+        struct State {
+
+            // The actual internal state of the optimization
+            struct t: public virtual Unconstrained <Real,XX>::State::t {
+
+                // The Lagrange multiplier (dual variable) for the equality
+                // constraints
+                std::list <Y_Vector> y;
+
+                // The fraction of the total trust-region used for the
+                // quasi-norm step
+                Real zeta;
+
+                // Trust-region parameter that bounds the error in the
+                // predicted reduction
+                Real eta0;
+
+                // Penalty parameter for the augmented-Lagrangian
+                Real rho;
+
+                // Fixed increase in the penalty parameter
+                Real rho_bar;
+
+                // Stopping tolerance for the norm of the constraints
+                Real eps_constr;
+
+                // Inexactness tolerances
+                Real xi_all;    // General inexactness tolerance
+                Real xi_qn;     // Quasi-Newton step
+                Real xi_pg;     // Projection of the gradient
+                Real xi_proj;   // Null-space projection
+                Real xi_tang;   // Tangential step
+                Real xi_lmh;    // Lagrange multiplier
+
+                // Absolute tolerance on the residual of the Lagrange
+                // multiplier solve.
+                Real xi_lmg;
+
+                // Tolerance for how much error is acceptable after computing
+                // the tangential step given the result from the tangential
+                // subproblem;
+                Real xi_4;
+
+                // Preconditioners for the augmented system
+                Operators::t Minv_left_type;
+                Operators::t Minv_right_type;
+
+                // Maximum number of iterations used when solving the augmented
+                // system
+                Natural augsys_iter_max;
+
+                // How often we restart the augmented system solve
+                Natural augsys_rst_freq;
+                
+                // Equality constraint evaluated at x 
+                std::list <Y_Vector> g_x;
+
+                // Normal step
+                std::list <X_Vector> dx_n;
+                
+                // Cauchy point for normal step
+                std::list <X_Vector> dx_ncp;
+
+                // Tangential step
+                std::list <X_Vector> dx_t;
+                
+                // Cauchy point for tangential step
+                std::list <X_Vector> dx_tcp;
+                
+                // Tangential step after applying the nullspace projection 
+                std::list <X_Vector> dx_tnull;
+
+                // Initialization constructors
+                t() {
+                    EqualityConstrained <Real,XX,YY>::State::init_params(*this);
+                }
+                t(const X_Vector& x,const Y_Vector& y) {
+                    EqualityConstrained <Real,XX,YY>::State::init_params(*this);
+                    EqualityConstrained <Real,XX,YY>::State
+                        ::init_vectors(*this,x,y);
+                }
+            };
+            
+            // This initializes all the parameters required for equality
+            // constrained optimization.  
+            static void init_params_(t& state) {
+                state.zeta = Real(0.8);
+                state.eta0 = Real(0.5);;
+                state.rho = Real(1.0);;
+                state.rho_bar = Real(1e-8);
+                state.eps_constr = Real(1e-6);
+                state.xi_all = Real(1e-4);
+                state.xi_qn = state.xi_all;
+                state.xi_pg = state.xi_all;
+                state.xi_proj = state.xi_all;
+                state.xi_tang = state.xi_all;
+                state.xi_lmh = state.xi_all;
+                state.xi_lmg = Real(1e4);
+                state.xi_4 = Real(2.);
+                state.Minv_left_type=Operators::Identity;
+                state.Minv_right_type=Operators::Identity;
+                state.augsys_iter_max = Natural(100);
+                state.augsys_rst_freq = Natural(0);
+            }
+            static void init_params(t& state) {
+                Unconstrained <Real,XX>::State::init_params_(state); 
+                EqualityConstrained <Real,XX,YY>::State::init_params_(state);
+            }
+
+            // This initializes all the variables required for equality
+            // constrained optimization.  
+            static void init_vectors_(
+                t& state,
+                const X_Vector& x,
+                const Y_Vector& y
+            ) {
+                state.y.clear();
+                    state.y.push_back(Y_Vector());
+                    Y::init(y,state.y.front());
+                    Y::copy(y,state.y.front());
+                
+                state.g_x.clear();
+                    state.g_x.push_back(Y_Vector());
+                    Y::init(y,state.g_x.front());
+                
+                state.dx_n.clear();
+                    state.dx_n.push_back(X_Vector());
+                    X::init(x,state.dx_n.front());
+                
+                state.dx_ncp.clear();
+                    state.dx_ncp.push_back(X_Vector());
+                    X::init(x,state.dx_ncp.front());
+                
+                state.dx_t.clear();
+                    state.dx_t.push_back(X_Vector());
+                    X::init(x,state.dx_t.front());
+                
+                state.dx_tcp.clear();
+                    state.dx_tcp.push_back(X_Vector());
+                    X::init(x,state.dx_tcp.front());
+                
+                state.dx_tnull.clear();
+                    state.dx_tnull.push_back(X_Vector());
+                    X::init(x,state.dx_tnull.front());
+            }
+            static void init_vectors(
+                t& state,
+                const X_Vector& x,
+                const Y_Vector& y
+            ) {
+                Unconstrained <Real,XX>::State::init_vectors_(state,x); 
+                EqualityConstrained <Real,XX,YY>::State
+                    ::init_vectors_(state,x,y);
+            }
+           
+            // Initializes everything
+            static void init(t& state, const X_Vector& x, const Y_Vector& y) {
+                init_params(state);
+                init_vectors(state,x,y);
+            }
+
+            // Check that we have a valid set of parameters.  
+            static void check_(const Messaging& msg,const t& state) {
+                   
+                // Use this to build an error message
+                std::stringstream ss;
+                
+                // Check that the fraction of the trust-region used for the
+                // quasi-Newton step is between 0 and 1
+                // is positive
+                if(state.zeta <= Real(0.) || state.zeta >= Real(1.)) 
+                    ss << "The fraction of the trust-region used for the "
+                        "quasi-Newton step must lie in the interval (0,1): "
+                        "zeta = " << state.zeta;
+                
+                // Check that the trust-region parameter that bounds the
+                // error in the preduction reduction lies between 0 and 1-eta1.
+                else if(state.eta0 <= Real(0.)
+                    || state.eta0 >= Real(1.)-state.eta1) 
+                    ss << "The trust-region parameter that bounds the error "
+                        "in the predicted reduction must lie in the interval "
+                        "(0,1-eta1): eta0 = " << state.eta0;
+
+                // Check that the augmented Lagrangian penalty parameter is
+                // greater than or equal to 1
+                else if(state.rho < Real(1.))
+                    ss << "The augmented Lagrangian penalty paramter must be "
+                        "greater than or equal to 1: rho = " << state.rho;
+
+                // Check that the fixed increased to the augmented Lagrangian
+                // penalty parameter is positive 
+                else if(state.rho_bar <= Real(0.))
+                    ss << "The fixed increase to the augmented Lagrangian "
+                        "penalty paramter must be positive: rho_bar = " 
+                        << state.rho_bar;
+
+                // Check that the stopping tolerance for the norm of the
+                // constraints is positive
+                else if(state.eps_constr <= Real(0.))
+                    ss << "The tolerance used in the norm of the constraints "
+                        "stopping condition must be positive: eps_constr = "
+                        << state.eps_constr;
+
+                // Check that the default inexactness tolerance lies in the
+                // interval (0,1)
+                else if(state.xi_all <= Real(0.) || state.xi_all >= Real(1.))
+                    ss << "The default inexactness tolerance must lie in the "
+                        "interval (0,1): xi_all = " << state.xi_all;
+                
+                // Check that the quasi-Newton step inexactness tolerance lies 
+                // in the interval (0,1) 
+                else if(state.xi_qn <= Real(0.) || state.xi_qn >= Real(1.))
+                    ss << "The quasi-Newton step inexactness tolerance must "
+                        "lie in the interval (0,1): xi_qn = " << state.xi_qn;
+                
+                // Check that the projected gradient inexactness tolerance lies 
+                // in the interval (0,1) 
+                else if(state.xi_pg <= Real(0.) || state.xi_pg >= Real(1.))
+                    ss << "The projected gradient inexactness tolerance must "
+                        "lie in the interval (0,1): xi_pg = " << state.xi_pg;
+                
+                // Check that the nullspace projection inexactness tolerance
+                // lies in the interval (0,1) 
+                else if(state.xi_proj <= Real(0.) || state.xi_proj >= Real(1.))
+                    ss << "The nullspace projection inexactness tolerance must "
+                        "lie in the interval (0,1): xi_proj = "<< state.xi_proj;
+                
+                // Check that the tangential step inexactness tolerance
+                // lies in the interval (0,1) 
+                else if(state.xi_tang <= Real(0.) || state.xi_tang >= Real(1.))
+                    ss << "The tangential step inexactness tolerance must "
+                        "lie in the interval (0,1): xi_tang = "<< state.xi_tang;
+                
+                // Check that the Lagrange multiplier inexactness tolerance
+                // lies in the interval (0,1) 
+                else if(state.xi_lmh <= Real(0.) || state.xi_lmh >= Real(1.))
+                    ss << "The Lagrange multiplier inexactness tolerance must "
+                        "lie in the interval (0,1): xi_lmh = " << state.xi_lmh;
+
+                // Check that the absolute tolerance on the residual of the
+                // Lagrange multiplier solve is positive
+                else if(state.xi_lmg <= Real(0.))
+                    ss << "The Lagrange multiplier residual tolerance must "
+                        "be positive: xi_lmg = " << state.xi_lmg;
+
+                // Check that the tolerance for the error acceptable in
+                // the tangential step is greater than 1.
+                else if(state.xi_4 <= Real(1.))
+                    ss << "The tolerance on the acceptable error in the "
+                        "tangential step must be greater than or equal to 1: "
+                        "xi4 = " << state.xi_4;
+                
+                // Check that the left preconditioner for the augmented system
+                // is either defined by the user or the identity.
+                else if(state.Minv_left_type != Operators::Identity &&
+                    state.Minv_left_type != Operators::External)
+                    ss << "The left preconditioner for the augmented system "
+                        "must be either user defined or the identity: "
+                        "Minv_left_type = "
+                        << Operators::to_string(state.Minv_left_type);
+                
+                // Check that the right preconditioner for the augmented system
+                // is either defined by the user or the identity.
+                else if(state.Minv_right_type != Operators::Identity &&
+                    state.Minv_right_type != Operators::External)
+                    ss << "The right preconditioner for the augmented system "
+                        "must be either user defined or the identity: "
+                        "Minv_right_type = "
+                        << Operators::to_string(state.Minv_right_type);
+
+                // Check that the number of iterations used when solving the
+                // augmented system is positive
+                else if(state.augsys_iter_max <= Natural(0))
+                    ss << "The number of iterations used when solving the "
+                        "augmented system must be positive: augsys_iter_max = "
+                        << state.augsys_iter_max;
+            }
+            static void check(const Messaging& msg,const t& state) {
+                Unconstrained <Real,XX>::State::check_(msg,state);
+                EqualityConstrained <Real,XX,YY>::State::check_(msg,state);
+            }
+        };
+        
+        // Utilities for restarting the optimization
+        struct Restart {
+
+            // Checks whether we have a valid real label.
+            struct is_real : public std::unary_function<std::string, bool> {
+                bool operator () (const std::string& name) const {
+                    if( typename Unconstrained <Real,XX>::Restart
+                            ::is_real()(name) ||
+                        name == "zeta" ||
+                        name == "eta0" ||
+                        name == "rho" ||
+                        name == "rho_bar" ||
+                        name == "eps_constr" ||
+                        name == "xi_all" ||
+                        name == "xi_qn" || 
+                        name == "xi_pg" ||
+                        name == "xi_proj" ||
+                        name == "xi_tang" ||
+                        name == "xi_lmh" ||
+                        name == "xi_lmg" ||
+                        name == "xi_4"
+                    )
+                        return true;
+                    else
+                        return false;
+                    }
+            };
+            
+            // Checks whether we have a valid natural number label.
+            struct is_nat : public std::unary_function<std::string, bool> {
+                bool operator () (const std::string& name) const {
+                    if( typename Unconstrained <Real,XX>::Restart
+                        ::is_nat()(name) ||
+                        name == "augsys_iter_max" ||
+                        name == "augsys_rst_freq"
+                    )
+                        return true;
+                    else
+                        return false;
+                }
+            };
+           
+            // Checks whether we have a valid parameter label.
+            struct is_param : public std::unary_function<std::string, bool> {
+                bool operator () (const std::string& name) const {
+                    if( typename Unconstrained <Real,XX>::Restart
+                            ::is_param()(name) ||
+                        name == "Minv_right_type" ||
+                        name == "Minv_left_type" 
+                    ) 
+                        return true;
+                    else
+                        return false;
+                }
+            };
+            
+            // Checks whether we have a valid variable label
+            struct is_x : public std::unary_function<std::string, bool> {
+                bool operator () (const std::string& name) const {
+                    if( typename Unconstrained <Real,XX>::Restart
+                            ::is_x()(name) ||
+                        name == "dx_n" ||
+                        name == "dx_ncp" ||
+                        name == "dx_t" ||
+                        name == "dx_tcp" ||
+                        name == "dx_tnull" 
+                    ) 
+                        return true;
+                    else
+                        return false;
+                }
+            };
+            
+            // Checks whether we have a valid equality multiplier label
+            struct is_y : public std::unary_function<std::string, bool> {
+                bool operator () (const std::string& name) const {
+                    if( name == "y" ||
+                        name == "g_x"
+                    ) 
+                        return true;
+                    else
+                        return false;
+                }
+            };
+
+            // Checks whether we have valid labels
+            static void checkLabels(
+                const Messaging& msg,
+                const Reals& reals,
+                const Nats& nats,
+                const Params& params,
+                const X_Vectors& xs,
+                const Y_Vectors& ys
+            ) {
+                peopt::checkLabels <is_real>
+                    (msg,reals.first," real name: ");
+                peopt::checkLabels <is_nat>
+                    (msg,nats.first," natural name: ");
+                peopt::checkLabels <is_param>
+                    (msg,params.first," paramater name: ");
+                peopt::checkLabels <is_x>
+                    (msg,xs.first," variable name: ");
+                peopt::checkLabels <is_y>
+                    (msg,ys.first," equality multiplier name: ");
+            }
+            
+            // Checks whether or not the value used to represent a parameter
+            // is valid.  This function returns a string with the error
+            // if there is one.  Otherwise, it returns an empty string.
+            struct checkParamVal : public std::binary_function
+                <std::string,std::string,std::string>
+            {
+                std::string operator() (
+                    std::string label,
+                    std::string val
+                ) {
+
+                    // Create a base message
+                    const std::string base
+                        ="During serialization, found an invalid ";
+
+                    // Used to build the message 
+                    std::stringstream ss;
+
+                    // Check the unconstrained parameters
+                    if(typename Unconstrained <Real,XX>::Restart
+                        ::is_param()(label)
+                    ) {
+                        ss << typename Unconstrained <Real,XX>::Restart
+                            ::checkParamVal()(label,val);
+
+                    // Check the type of the left preconditioner to the
+                    // augmented system
+                    } else if(label=="Minv_left_type"){
+                        if(!Operators::is_valid()(val))
+                            ss << base << "preconditioner type: " << val;
+                    
+                    // Check the type of the right preconditioner to the
+                    // augmented system
+                    } else if(label=="Minv_right_type"){
+                        if(!Operators::is_valid()(val))
+                            ss << base << "preconditioner type: " << val;
+                    }
+
+                    return ss.str();
+                }
+            };
+            
+            // Copy out all equality multipliers 
+            static void stateToVectors(
+                typename State::t& state, 
+                X_Vectors& xs,
+                Y_Vectors& ys
+            ) {
+                ys.first.push_back("y");
+                ys.second.splice(ys.second.end(),state.y);
+                ys.first.push_back("g_x");
+                ys.second.splice(ys.second.end(),state.g_x);
+                xs.first.push_back("dx_n");
+                xs.second.splice(xs.second.end(),state.dx_n);
+                xs.first.push_back("dx_ncp");
+                xs.second.splice(xs.second.end(),state.dx_ncp);
+                xs.first.push_back("dx_t");
+                xs.second.splice(xs.second.end(),state.dx_t);
+                xs.first.push_back("dx_tcp");
+                xs.second.splice(xs.second.end(),state.dx_tcp);
+                xs.first.push_back("dx_tnull");
+                xs.second.splice(xs.second.end(),state.dx_tnull);
+            }
+
+            // Copy out all the scalar information
+            static void stateToScalars(
+                typename State::t& state,
+                Reals& reals,
+                Nats& nats,
+                Params& params
+            ) { 
+                // Copy in all the real numbers
+                reals.first.push_back("zeta");
+                reals.second.push_back(state.zeta);
+                reals.first.push_back("eta0");
+                reals.second.push_back(state.eta0);
+                reals.first.push_back("rho");
+                reals.second.push_back(state.rho);
+                reals.first.push_back("rho_bar");
+                reals.second.push_back(state.rho_bar);
+                reals.first.push_back("eps_constr");
+                reals.second.push_back(state.eps_constr);
+                reals.first.push_back("xi_all");
+                reals.second.push_back(state.xi_all);
+                reals.first.push_back("xi_qn");
+                reals.second.push_back(state.xi_qn);
+                reals.first.push_back("xi_pg");
+                reals.second.push_back(state.xi_pg);
+                reals.first.push_back("xi_proj");
+                reals.second.push_back(state.xi_proj);
+                reals.first.push_back("xi_tang");
+                reals.second.push_back(state.xi_tang);
+                reals.first.push_back("xi_lmh");
+                reals.second.push_back(state.xi_lmh);
+                reals.first.push_back("xi_lmg");
+                reals.second.push_back(state.xi_lmg);
+                reals.first.push_back("xi_4");
+                reals.second.push_back(state.xi_4);
+
+                // Copy in all the natural numbers
+                nats.first.push_back("augsys_iter_max");
+                nats.second.push_back(state.augsys_iter_max);
+                nats.first.push_back("augsys_rst_freq");
+                nats.second.push_back(state.augsys_rst_freq);
+
+                // Copy in all the parameters
+                params.first.push_back("Minv_left_type");
+                params.second.push_back(
+                    Operators::to_string(state.Minv_left_type));
+                params.first.push_back("Minv_right_type");
+                params.second.push_back(
+                    Operators::to_string(state.Minv_right_type));
+            }
+            
+            // Copy in all equality multipliers 
+            static void vectorsToState(
+                typename State::t& state,
+                X_Vectors& xs,
+                Y_Vectors& ys
+            ) {
+                typename std::list <X_Vector>::iterator y
+                    =ys.second.begin();
+                for(typename std::list <std::string>::iterator name 
+                        =ys.first.begin();
+                    name!=ys.first.end();
+                ) {
+                    // Make a copy of the current iterators.  We use these
+                    // to remove elements
+                    typename std::list <std::string>::iterator name0 = name;
+                    typename std::list <Y_Vector>::iterator y0 = y;
+
+                    // Increment our primary iterators 
+                    name++; y++;
+
+                    // Determine which variable we're reading in and then splice
+                    // it in the correct location
+                    if(*name0=="y")
+                        state.y.splice(state.y.end(),ys.second,y0);
+                    else if(*name0=="g_x")
+                        state.g_x.splice(state.g_x.end(),ys.second,y0);
+                    
+                    // Remove the string corresponding to the element just
+                    // spliced if splicing occured.
+                    if(ys.first.size() != ys.second.size())
+                        ys.first.erase(name0);
+                }
+
+                typename std::list <X_Vector>::iterator x
+                    =xs.second.begin();
+                for(typename std::list <std::string>::iterator name 
+                        =xs.first.begin();
+                    name!=xs.first.end();
+                ) {
+                    // Make a copy of the current iterators.  We use these
+                    // to remove elements
+                    typename std::list <std::string>::iterator name0 = name;
+                    typename std::list <X_Vector>::iterator x0 = x;
+
+                    // Increment our primary iterators 
+                    name++; x++;
+
+                    // Determine which variable we're reading in and then splice
+                    // it in the correct location
+                    if(*name0=="dx_n")
+                        state.dx_n.splice(state.dx_n.end(),xs.second,x0);
+                    else if(*name0=="dx_ncp")
+                        state.dx_ncp.splice(state.dx_ncp.end(),xs.second,x0);
+                    else if(*name0=="dx_t")
+                        state.dx_t.splice(state.dx_t.end(),xs.second,x0);
+                    else if(*name0=="dx_tcp")
+                        state.dx_tcp.splice(state.dx_tcp.end(),xs.second,x0);
+                    else if(*name0=="dx_tnull")
+                        state.dx_tnull.splice(
+                            state.dx_tnull.end(),xs.second,x0);
+
+                    // Remove the string corresponding to the element just
+                    // spliced if splicing occured.
+                    if(xs.first.size() != xs.second.size())
+                        xs.first.erase(name0);
+                }
+            }
+            
+            // Copy in all the scalar information
+            static void scalarsToState(
+                typename State::t& state,
+                Reals& reals,
+                Nats& nats,
+                Params& params
+            ) { 
+                // Copy in any reals 
+                typename std::list <Real>::iterator real=reals.second.begin();
+                for(std::list <std::string>::iterator name=reals.first.begin();
+                    name!=reals.first.end();
+                    name++,real++
+                ){
+                    if(*name=="zeta") state.zeta=*real;
+                    else if(*name=="eta0") state.eta0=*real;
+                    else if(*name=="rho") state.rho=*real;
+                    else if(*name=="rho_bar") state.rho_bar=*real;
+                    else if(*name=="eps_constr") state.eps_constr=*real;
+                    else if(*name=="xi_all") state.xi_all=*real;
+                    else if(*name=="xi_qn") state.xi_qn=*real;
+                    else if(*name=="xi_pg") state.xi_pg=*real;
+                    else if(*name=="xi_proj") state.xi_proj=*real;
+                    else if(*name=="xi_tang") state.xi_tang=*real;
+                    else if(*name=="xi_lmh") state.xi_lmh=*real;
+                    else if(*name=="xi_lmg") state.xi_lmg=*real;
+                    else if(*name=="xi_4") state.xi_4=*real;
+                }
+                
+                // Next, copy in any naturals
+                std::list <Natural>::iterator nat=nats.second.begin();
+                for(std::list <std::string>::iterator name=nats.first.begin();
+                    name!=nats.first.end();
+                    name++,nat++
+                ){
+                    if(*name=="augsys_iter_max") state.augsys_iter_max=*nat;
+                    else if(*name=="augsys_rst_freq")state.augsys_rst_freq=*nat;
+                }
+                
+                // Next, copy in any parameters 
+                std::list <std::string>::iterator param=params.second.begin();
+                for(std::list <std::string>::iterator name=params.first.begin();
+                    name!=params.first.end();
+                    name++,param++
+                ){
+                    if(*name=="Minv_left_type")
+                        state.Minv_left_type=Operators::from_string(*param);
+                    else if(*name=="Minv_right_type")
+                        state.Minv_right_type=Operators::from_string(*param);
+                }
+            }
+
+            // Release the data into structures controlled by the user 
+            static void release(
+                typename State::t& state,
+                X_Vectors& xs,
+                Y_Vectors& ys,
+                Reals& reals,
+                Nats& nats,
+                Params& params
+            ) {
+                // Copy out all of the variable information
+                Unconstrained <Real,XX>::Restart::stateToVectors(state,xs);
+                EqualityConstrained <Real,XX,YY>
+                    ::Restart::stateToVectors(state,xs,ys);
+            
+                // Copy out all of the scalar information
+                Unconstrained <Real,XX>
+                    ::Restart::stateToScalars(state,reals,nats,params);
+                EqualityConstrained <Real,XX,YY>
+                    ::Restart::stateToScalars(state,reals,nats,params);
+            }
+
+            // Capture data from structures controlled by the user.  
+            static void capture(
+                const Messaging& msg,
+                typename State::t& state,
+                X_Vectors& xs,
+                Y_Vectors& ys,
+                Reals& reals,
+                Nats& nats,
+                Params& params
+            ) {
+
+                // Check the labels on the user input
+                checkLabels(msg,reals,nats,params,xs,ys);
+
+                // Check the strings used to represent parameters
+                checkParams <checkParamVal> (msg,params);
+
+                // Copy in the variables 
+                Unconstrained <Real,XX>::Restart::vectorsToState(state,xs);
+                EqualityConstrained <Real,XX,YY>
+                    ::Restart::vectorsToState(state,xs,ys);
+                
+                // Copy in all of the scalar information
+                Unconstrained <Real,XX>
+                    ::Restart::scalarsToState(state,reals,nats,params);
+                EqualityConstrained <Real,XX,YY>
+                    ::Restart::scalarsToState(state,reals,nats,params);
+
+                // Check that we have a valid state 
+                State::check(msg,state);
+            }
+        };
+        
+        // All the functions required by an optimization algorithm.  Note, this
+        // routine owns the memory for these operations.  
+        struct Functions {
+
+            // Actual storage of the functions required
+            struct t: public virtual Unconstrained <Real,XX>::Functions::t {
+                // Equality constraints 
+                std::auto_ptr <VectorValuedFunction <Real,XX,YY> > g;
+
+                // Left preconditioner for the augmented system
+                std::auto_ptr <Operator <Real,YY,YY> > Minv_left;
+
+                // Right preconditioner for the augmented system
+                std::auto_ptr <Operator <Real,YY,YY> > Minv_right;
+            };
+            
+            // The identity operator 
+            struct Identity : public Operator <Real,YY,YY> {
+                void operator () (const Y_Vector& dy,Y_Vector& result) const{
+                    Y::copy(dy,result);
+                }
+            };
+
+            // Check that all the functions are defined
+            static void check(const Messaging& msg,const t& fns) {
+
+                // Check the unconstrained pieces
+                Unconstrained <Real,XX>::Functions::check(msg,fns);
+                
+                // Check that the equality constraints exist 
+                if(fns.g.get()==NULL)
+                    msg.error("Missing the equality constraint definition.");
+
+                // Check that preconditioners exist
+                if(fns.Minv_left.get()==NULL)
+                    msg.error("Missing a left preconditioner for the "
+                        "augmented system.");
+                if(fns.Minv_right.get()==NULL)
+                    msg.error("Missing a right preconditioner for the "
+                        "augmented system.");
+            }
+
+            // Initialize any missing functions for just equality constrained 
+            // optimization.
+            static void init_(
+                const Messaging& msg,
+                const typename State::t& state,
+                t& fns
+            ) {
+                // Determine the left preconditioner for the augmented system
+                switch(state.Minv_left_type){
+                    case Operators::Identity:
+                        fns.Minv_left.reset(new Identity());
+                        break;
+                    case Operators::External:
+                        if(fns.Minv_left.get()==NULL)
+                            msg.error("An externally defined left "
+                                "preconditioner for the augmented system must "
+                                "be provided explicitely.");
+                        break;
+                    default:
+                        msg.error("Not a valid left preconditioner for the "
+                            "augmented system.");
+                        break;
+                }
+                
+                // Determine the right preconditioner for the augmented system
+                switch(state.Minv_right_type){
+                    case Operators::Identity:
+                        fns.Minv_right.reset(new Identity());
+                        break;
+                    case Operators::External:
+                        if(fns.Minv_right.get()==NULL)
+                            msg.error("An externally defined right "
+                                "preconditioner for the augmented system must "
+                                "be provided explicitely.");
+                        break;
+                    default:
+                        msg.error("Not a valid right preconditioner for the "
+                            "augmented system.");
+                        break;
+                }
+                
+                // Check that all functions are defined 
+                check(msg,fns);
+            }
+
+            // Initialize any missing functions 
+            static void init(
+                const Messaging& msg,
+                const typename State::t& state,
+                t& fns
+            ) {
+                Unconstrained <Real,XX>
+                    ::Functions::init_(msg,state,fns);
+                EqualityConstrained <Real,XX,YY>
+                    ::Functions::init_(msg,state,fns);
+            }
+        };
+        
+        // This contains the different algorithms used for optimization 
+        struct Algorithms {
+            // The operator for the augmented system,
+            //
+            // [ I      g'(x)* ]
+            // [ g'(x)  0      ]
+            //
+            class AugmentedSystem: public Operator <Real,XXxYY,XXxYY> {
+            private:
+                const typename State::t& state;
+                const typename Functions::t& fns;
+            public:
+                AugmentedSystem(
+                    const typename State::t& state_,
+                    const typename Functions::t& fns_
+                ) : state(state_), fns(fns_) {}
+                
+                // Operator interface
+                void operator () (
+                    const XxY_Vector& dx_dy,
+                    XxY_Vector& result
+                ) const{
+                    // Create some shortcuts
+                    const X_Vector& x=state.x;
+
+                    // g'(x)* dy
+                    fns.g->ps(x,dx_dy.second,result.first);
+
+                    // dx + g'(x)* dy 
+                    XxY::axpy(Real(1.),dx_dy.first,result.first);
+
+                    // g'(x)* dx
+                    fns.g->p(x,dx_dy.first,result.second);
+                }
+            };
+            
+            // The block diagonal preconditioner 
+            //
+            // [ Mx^{-1}    0       ]
+            // [ 0          My^{-1} ]
+            //
+            class BlockDiagonalPreconditioner:
+                public Operator <Real,XXxYY,XXxYY> {
+            private:
+                const Operator <Real,XX,XX>& Minv_x;
+                const Operator <Real,YY,YY>& Minv_y;
+            public:
+                BlockDiagonalPreconditioner(
+                    const Operator <Real,XX,XX>& Minv_x_,
+                    const Operator <Real,YY,YY>& Minv_y_ 
+                ) : Minv_x(Minv_x_), Minv_y(Minv_y_) {}
+                
+                // Operator interface
+                void operator () (
+                    const XxY_Vector& dx_dy,
+                    XxY_Vector& result
+                ) const{
+                    // Minv_x dx
+                    Minv_x(dx_dy.first,result.first);
+                    
+                    // Minv_y dy
+                    Minv_y(dx_dy.first,result.second);
+                }
+            };
+
+            // Sets the tolerances for the quasi-normal Newton solve
+            struct QNManipulator : GMRESManipulator <Real,XXxYY> {
+            private:
+                const typename State::t& state;
+                const typename Functions::t& fns;
+            public:
+                QNManipulator(
+                    const typename State::t& state_,
+                    const typename Functions::t& fns_
+                ) : state(state_), fns(fns_) {}
+                void operator () (
+                    const typename XX <Real>::Vector& bb,
+                    const typename XX <Real>::Vector& xx,
+                    Real& eps
+                ) const {
+                    // Create some shortcuts
+                    const X_Vector& x=state.x;
+                    const Y_Vector& g_x=state.g_x;
+                    const X_Vector& dx_ncp=state.dx_ncp;
+                    const Real& xi_qn = state.xi_qn;
+
+                    // Evaluate g'(x)dx_ncp + g(x)
+                    Y_Vector gp_x_dxncp;  Y::init(g_x,gp_x_dxncp);
+                    fns.g->p(x,dx_ncp,gp_x_dxncp);
+
+                    Y_Vector gp_p_g; Y::init(g_x,gp_p_g);
+                    Y::copy(g_x,gp_p_g);
+                    Y::axpy(Real(1.),gp_x_dxncp,gp_p_g);
+
+                    // Find || g'(x)dx_ncp + g(x) ||
+                    Real norm_gp_p_g = sqrt(Y::innr(gp_p_g,gp_p_g));
+
+                    // Return xi_qn * || g'(x)dx_ncp + g(x) ||
+                    eps = xi_qn * norm_gp_p_g;
+                }
+            };
+
+            // Finds the quasi-normal step
+            void quasinormalStep(
+                const Messaging& msg,
+                const StateManipulator <Unconstrained <Real,XX> >& smanip,
+                const typename Functions::t& fns,
+                typename State::t& state
+            ) {
+                // Create some shortcuts
+                const X_Vector& x=state.x;
+                const Y_Vector& g_x=state.g_x;
+                const Natural& augsys_iter_max=state.augsys_iter_max;
+                const Natural& augsys_rst_freq=state.augsys_rst_freq;
+                const Real& delta = state.delta;
+                const Real& zeta = state.zeta;
+                X_Vector& dx_ncp=state.dx_ncp;
+                X_Vector& dx_n=state.dx_n;
+
+                // Find the Cauchy point.
+
+                // Find g'(x)*g(x)
+                X_Vector gps_g; X::init(x,gps_g);
+                fns.g->ps(x,g_x,gps_g);
+
+                // Find g'(x)g'(x)*g(x)
+                Y_Vector gp_gps_g; Y::init(g_x,gp_gps_g);
+                fns.g->p(x,gps_g,gp_gps_g);
+
+                // Find || g'(x)*g(x) ||^2
+                Real norm_gpsg_2 = X::innr(gps_g,gps_g);
+
+                // Find || g'(x)g'(x)*g(x) ||^2
+                Real norm_gpgpsg_2 = X::innr(gp_gps_g,gp_gps_g);
+
+                // Find the Cauchy point,
+                // || g'(x)*g(x) ||^2/|| g'(x)g'(x)*g(x) ||^2 g'(x)*g(x)
+                X::copy(gps_g,dx_ncp);
+                X::scal(norm_gpsg_2/norm_gpgpsg_2,dx_ncp);
+
+                // If || dx_ncp || >= zeta delta, scale it back to zeta delta
+                // and return
+                Real norm_dxncp = sqrt(X::innr(dx_ncp,dx_ncp));
+                if(norm_dxncp >= zeta*delta) {
+                    X::scal(zeta*delta/norm_dxncp,dx_ncp);
+                    X::copy(dx_ncp,dx_n);
+                }
+
+                // Find the Newton step
+
+                // Create the initial guess, x0=(0,0)
+                XxY_Vector x0; X::init(x,x0.first); Y::init(g_x,x0.second);
+                XxY::zero(x0);
+
+                // Create the rhs, b0=(-dx_ncp,-g'(x)dx_ncp-g(x)) 
+                XxY_Vector b0; XxY::init(x0,b0);
+                X::copy(dx_ncp,b0.first);
+                X::scal(Real(-1.),b0.first);
+                fns.g->p(x,dx_ncp,b0.second);
+                Y::scal(Real(-1.),b0.second);
+                Y::axpy(Real(-1.),g_x,b0.second);
+
+                // Build Schur style preconditioners
+                BlockDiagonalPreconditioner Minv_l (
+                    Unconstrained <Real,XX>::Functions::Identity(),
+                    *(fns.Minv_left));
+                BlockDiagonalPreconditioner Minv_r (
+                    Unconstrained <Real,XX>::Functions::Identity(),
+                    *(fns.Minv_right));
+
+                // Solve the augmented system for the Newton step
+                peopt::gmres <Real,XXxYY> (
+                    AugmentedSystem(state,fns),
+                    b0,
+                    Real(1.), // This will be overwritten by the manipulator
+                    augsys_iter_max,
+                    augsys_rst_freq,
+                    Minv_l,
+                    Minv_r,
+                    QNMainpulator(state,fns),
+                    x0 
+                );
+
+                // Find the Newton shift, dx_dnewton = dx_newton-dx_ncp
+                X_Vector& dx_dnewton = x0.first;
+
+                // Find the Newton step
+                X::copy(dx_ncp,dx_n);
+                X::axpy(Real(1.),dx_dnewton,dx_n);
+
+                // If the Newton step is smaller than zeta deta, then return
+                // it as the quasi-normal step
+                Real norm_dxnewton = sqrt(X::innr(dx_n,dx_n));
+                if(norm_dxnewton <= zeta*delta) return;
+
+                // Otherwise, compute the dogleg step.  In order to accomplish
+                // this, we need to find theta so that
+                // || dx_ncp + theta dx_dnewton || = zeta*delta
+                // and then set dx_n = dx_ncp + theta dx_dnewton.
+                Real aa = X::innr(dx_dnewton,dx_dnewton);
+                Real bb = Real(2.) * X::innr(dx_dnewton,dx_ncp);
+                Real cc = norm_dxncp*norm_dxncp - zeta*zeta*delta*delta; 
+                Real theta = (-bb + sqrt(bb*bb-Real(4.)*aa*cc))/(2*aa);
+                X::copy(dx_ncp,dx_n);
+                X::axpy(theta,dx_dnewton,dx_n);
+            }
+            
+            // Sets the tolerances for projecting the gradient onto the
+            // nullspate of g'(x).
+            struct NullspaceProjForGradientManipulator
+                : GMRESManipulator <Real,XXxYY> {
+            private:
+                const typename State::t& state;
+                const typename Functions::t& fns;
+            public:
+                NullspaceProjForGradientManipulator(
+                    const typename State::t& state_,
+                    const typename Functions::t& fns_
+                ) : state(state_), fns(fns_) {}
+                void operator () (
+                    const typename XX <Real>::Vector& bb,
+                    const typename XX <Real>::Vector& xx,
+                    Real& eps
+                ) const {
+                    // Create some shortcuts
+                    const Real& xi_pg = state.xi_pg;
+                    const Real& delta = state.delta;
+
+                    // Find || xx_1 || = || Wg || 
+                    Real norm_Wg = sqrt(X::innr(xx.first,xx.first));
+
+                    // Find || bb_1 || = || g ||
+                    Real norm_g = sqrt(X::innr(bb.first,bb.first));
+
+                    // The bound is xi_pg min( || Wg ||, delta, || g || )
+                    Real min = norm_Wg < delta ? norm_Wg : delta;
+                    min = min < norm_g ? min : norm_g;
+                    return xi_pg*min; 
+                }
+            };
+            
+            // Projects the gradient onto the nullspace of g'(x) 
+            class NullspaceProjForGradient: public Operator <Real,XX,XX> {
+            private:
+                const typename State::t& state;
+                const typename Functions::t& fns;
+            public:
+                NullspaceProjForGradient(
+                    const typename State::t& state_,
+                    const typename Functions::t& fns_
+                ) : state(state_), fns(fns_) {}
+               
+                // Project dx=g into the nullspace of g'(x)
+                void operator () (
+                    const X_Vector& dx,
+                    X_Vector& result
+                ) const{
+                    // Create some shortcuts
+                    const Y_Vector& y=state.y;
+                    const Natural& augsys_iter_max=state.augsys_iter_max;
+                    const Natural& augsys_rst_freq=state.augsys_rst_freq;
+                    X_Vector& g=dx;
+
+                    // Create the initial guess, x0=(0,0)
+                    XxY_Vector x0; X::init(g,x0.first); Y::init(y,x0.second);
+                    XxY::zero(x0);
+
+                    // Create the rhs, b0=(g,0)
+                    XxY_Vector b0; XxY::init(x0,b0);
+                    X::copy(g,b0.first);
+                    Y::zero(b0.second);
+                
+                    // Build Schur style preconditioners
+                    BlockDiagonalPreconditioner Minv_l (
+                        Unconstrained <Real,XX>::Functions::Identity(),
+                        *(fns.Minv_left));
+                    BlockDiagonalPreconditioner Minv_r (
+                        Unconstrained <Real,XX>::Functions::Identity(),
+                        *(fns.Minv_right));
+
+                    // Solve the augmented system for the nullspace projection 
+                    peopt::gmres <Real,XXxYY> (
+                        AugmentedSystem(state,fns),
+                        b0,
+                        Real(1.), // This will be overwritten by the manipulator
+                        augsys_iter_max,
+                        augsys_rst_freq,
+                        Minv_l,
+                        Minv_r,
+                        NullspaceProjForGradientMainpulator(state,fns),
+                        x0 
+                    );
+
+                    // Copy out the solution
+                    X::copy(x0.first,result);
+                }
+            };
+            
+            // Sets the tolerances for the nullspace projector that projects
+            // the current direction in the projected conjugate direction
+            // algorithm.
+            struct NullspaceProjForDirManipulator
+                : GMRESManipulator <Real,XXxYY> {
+            private:
+                const typename State::t& state;
+                const typename Functions::t& fns;
+            public:
+                NullspaceProjForDirManipulator (
+                    const typename State::t& state_,
+                    const typename Functions::t& fns_
+                ) : state(state_), fns(fns_) {}
+                void operator () (
+                    const typename XX <Real>::Vector& bb,
+                    const typename XX <Real>::Vector& xx,
+                    Real& eps
+                ) const {
+                    // Create some shortcuts
+                    const Real& xi_proj = state.xi_proj;
+
+                    // Find || xx_1 || = || Wp || 
+                    Real norm_Wp = sqrt(X::innr(xx.first,xx.first));
+
+                    // Find || bb_1 || = || p ||
+                    Real norm_p = sqrt(X::innr(bb.first,bb.first));
+
+                    // The bound is xi_proj min( || Wp ||, || p || )
+                    Real min = norm_Wp < norm_p ? norm_Wp : norm_p;
+                    return xi_proj*min; 
+                }
+            };
+            
+            // Nullspace projector that projects the current direction in the
+            // projected conjugate direction algorithm.
+            class NullspaceProjForDir: public Operator <Real,XX,XX> {
+            private:
+                const typename State::t& state;
+                const typename Functions::t& fns;
+            public:
+                NullspaceProjForDir(
+                    const typename State::t& state_,
+                    const typename Functions::t& fns_
+                ) : state(state_), fns(fns_) {}
+               
+                // Project dx into the nullspace of g'(x)
+                void operator () (
+                    const X_Vector& dx,
+                    X_Vector& result
+                ) const{
+                    // Create some shortcuts
+                    const Y_Vector& y=state.y;
+                    const unsigned int augsys_iter_max=state.augsys_iter_max;
+                    const unsigned int augsys_rst_freq=state.augsys_rst_freq;
+                    X_Vector& p=dx;
+
+                    // Create the initial guess, x0=(0,0)
+                    XxY_Vector x0; X::init(p,x0.first); Y::init(y,x0.second);
+                    XxY::zero(x0);
+
+                    // Create the rhs, b0=(p,0)
+                    XxY_Vector b0; XxY::init(x0,b0);
+                    X::copy(p,b0.first);
+                    Y::zero(b0.second);
+                
+                    // Build Schur style preconditioners
+                    BlockDiagonalPreconditioner Minv_l (
+                        Unconstrained <Real,XX>::Functions::Identity(),
+                        *(fns.Minv_left));
+                    BlockDiagonalPreconditioner Minv_r (
+                        Unconstrained <Real,XX>::Functions::Identity(),
+                        *(fns.Minv_right));
+
+                    // Solve the augmented system for the nullspace projection 
+                    peopt::gmres <Real,XXxYY> (
+                        AugmentedSystem(state,fns),
+                        b0,
+                        Real(1.), // This will be overwritten by the manipulator
+                        augsys_iter_max,
+                        augsys_rst_freq,
+                        Minv_l,
+                        Minv_r,
+                        NullspaceProjForDirMainpulator(state,fns),
+                        x0 
+                    );
+
+                    // Copy out the solution
+                    X::copy(x0.first,result);
+                }
+            };
+            
+            // Solves the tangential subproblem 
+            void tangentialSubProblem(
+                const Messaging& msg,
+                const StateManipulator <Unconstrained <Real,XX> >& smanip,
+                const typename Functions::t& fns,
+                typename State::t& state
+            ) {
+                // Create some shortcuts
+                const X_Vector& x=state.x;
+                const Y_Vector& g_x=state.g_x;
+                const unsigned int augsys_iter_max=state.augsys_iter_max;
+                const unsigned int augsys_rst_freq=state.augsys_rst_freq;
+                const Real& delta = state.delta;
+                const Real& zeta = state.zeta;
+                const X_Vector& dx_n=state.dx_n;
+            }
+        };
+    };
+
+#if 0        
     // Routines that manipulate and support problems of the form
     // 
     // min_{x \in X} f(x) st g(x) = 0
@@ -4656,6 +5913,7 @@ namespace peopt{
             }
         };
     };
+#endif
         
     // Routines that manipulate and support problems of the form
     // 
@@ -6320,7 +7578,8 @@ namespace peopt{
                 const Z_Vector& z
             ) {
                 Unconstrained <Real,XX>::State::init_vectors_(state,x); 
-                EqualityConstrained <Real,XX,YY>::State::init_vectors_(state,y);
+                EqualityConstrained <Real,XX,YY>::State
+                    ::init_vectors_(state,x,y);
                 InequalityConstrained <Real,XX,ZZ>::State
                     ::init_vectors_(state,x,z); 
             }
@@ -6500,7 +7759,7 @@ namespace peopt{
                 // Copy out all of the variable information
                 Unconstrained <Real,XX>::Restart::stateToVectors(state,xs);
                 EqualityConstrained <Real,XX,YY>
-                    ::Restart::stateToVectors(state,ys);
+                    ::Restart::stateToVectors(state,xs,ys);
                 InequalityConstrained <Real,XX,ZZ>
                     ::Restart::stateToVectors(state,xs,zs);
             
@@ -6534,7 +7793,7 @@ namespace peopt{
                 // Copy in the variables 
                 Unconstrained <Real,XX>::Restart::vectorsToState(state,xs);
                 EqualityConstrained <Real,XX,YY>
-                    ::Restart::vectorsToState(state,ys);
+                    ::Restart::vectorsToState(state,xs,ys);
                 InequalityConstrained <Real,XX,ZZ>
                     ::Restart::vectorsToState(state,xs,zs);
                 

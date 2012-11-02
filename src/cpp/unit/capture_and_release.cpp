@@ -93,6 +93,12 @@ BOOST_AUTO_TEST_CASE(equality_constrained) {
     BOOST_CHECK(state.oldY.size()==0);
     BOOST_CHECK(state.oldS.size()==0);
     BOOST_CHECK(state.y.size()==0);
+    BOOST_CHECK(state.g_x.size()==0);
+    BOOST_CHECK(state.dx_n.size()==0);
+    BOOST_CHECK(state.dx_ncp.size()==0);
+    BOOST_CHECK(state.dx_t.size()==0);
+    BOOST_CHECK(state.dx_tcp.size()==0);
+    BOOST_CHECK(state.dx_tnull.size()==0);
 
     // Capture the state
     peopt::EqualityConstrained <double,Rm,Rm>::Restart
@@ -106,6 +112,12 @@ BOOST_AUTO_TEST_CASE(equality_constrained) {
     BOOST_CHECK(state.g_old.size()==1);
     BOOST_CHECK(state.dx_old.size()==1);
     BOOST_CHECK(state.y.size()==1);
+    BOOST_CHECK(state.g_x.size()==1);
+    BOOST_CHECK(state.dx_n.size()==1);
+    BOOST_CHECK(state.dx_ncp.size()==1);
+    BOOST_CHECK(state.dx_t.size()==1);
+    BOOST_CHECK(state.dx_tcp.size()==1);
+    BOOST_CHECK(state.dx_tnull.size()==1);
 
     // Check the relative error between the vector created above and the one
     // left in the state
@@ -153,7 +165,7 @@ BOOST_AUTO_TEST_CASE(inequality_constrained) {
     BOOST_CHECK(state.oldS.size()==0);
     BOOST_CHECK(state.z.size()==0);
     BOOST_CHECK(state.h_x.size()==0);
-    //BOOST_CHECK(state.g_orig.size()==0);
+    BOOST_CHECK(state.g_orig.size()==0);
     BOOST_CHECK(state.g_schur.size()==0);
     BOOST_CHECK(state.g_lag.size()==0);
 
@@ -170,7 +182,7 @@ BOOST_AUTO_TEST_CASE(inequality_constrained) {
     BOOST_CHECK(state.dx_old.size()==1);
     BOOST_CHECK(state.z.size()==1);
     BOOST_CHECK(state.h_x.size()==1);
-    //BOOST_CHECK(state.g_orig.size()==1);
+    BOOST_CHECK(state.g_orig.size()==1);
     BOOST_CHECK(state.g_schur.size()==1);
     BOOST_CHECK(state.g_lag.size()==1);
 
@@ -225,9 +237,15 @@ BOOST_AUTO_TEST_CASE(constrained) {
     BOOST_CHECK(state.oldY.size()==0);
     BOOST_CHECK(state.oldS.size()==0);
     BOOST_CHECK(state.y.size()==0);
+    BOOST_CHECK(state.g_x.size()==0);
+    BOOST_CHECK(state.dx_n.size()==0);
+    BOOST_CHECK(state.dx_ncp.size()==0);
+    BOOST_CHECK(state.dx_t.size()==0);
+    BOOST_CHECK(state.dx_tcp.size()==0);
+    BOOST_CHECK(state.dx_tnull.size()==0);
     BOOST_CHECK(state.z.size()==0);
     BOOST_CHECK(state.h_x.size()==0);
-    //BOOST_CHECK(state.g_orig.size()==0);
+    BOOST_CHECK(state.g_orig.size()==0);
     BOOST_CHECK(state.g_schur.size()==0);
     BOOST_CHECK(state.g_lag.size()==0);
 
@@ -243,9 +261,15 @@ BOOST_AUTO_TEST_CASE(constrained) {
     BOOST_CHECK(state.g_old.size()==1);
     BOOST_CHECK(state.dx_old.size()==1);
     BOOST_CHECK(state.y.size()==1);
+    BOOST_CHECK(state.g_x.size()==1);
+    BOOST_CHECK(state.dx_n.size()==1);
+    BOOST_CHECK(state.dx_ncp.size()==1);
+    BOOST_CHECK(state.dx_t.size()==1);
+    BOOST_CHECK(state.dx_tcp.size()==1);
+    BOOST_CHECK(state.dx_tnull.size()==1);
     BOOST_CHECK(state.z.size()==1);
     BOOST_CHECK(state.h_x.size()==1);
-    //BOOST_CHECK(state.g_orig.size()==1);
+    BOOST_CHECK(state.g_orig.size()==1);
     BOOST_CHECK(state.g_schur.size()==1);
     BOOST_CHECK(state.g_lag.size()==1);
 
