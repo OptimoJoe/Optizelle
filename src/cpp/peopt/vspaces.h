@@ -40,28 +40,28 @@ namespace peopt {
         // x <- 0 
         static void zero(Vector& x) {
             #pragma omp parallel for schedule(static)
-            for(unsigned int i=0;i<x.size();i++) 
+            for(Natural i=0;i<x.size();i++) 
                 x[i]=Real(0.);
         }
 
         // Jordan product, z <- x o y
         static void prod(const Vector& x, const Vector& y, Vector& z) {
             #pragma omp parallel for schedule(static)
-            for(unsigned int i=0;i<x.size();i++) 
+            for(Natural i=0;i<x.size();i++) 
                 z[i]=x[i]*y[i];
         }
 
         // Identity element, x <- e such that x o e = x
         static void id(Vector& x) {
             #pragma omp parallel for schedule(static)
-            for(unsigned int i=0;i<x.size();i++) 
+            for(Natural i=0;i<x.size();i++) 
                 x[i]=Real(1.);
         }
         
         // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y
         static void linv(const Vector& x,const Vector& y,Vector& z) {
             #pragma omp parallel for schedule(static)
-            for(unsigned int i=0;i<x.size();i++) 
+            for(Natural i=0;i<x.size();i++) 
                 z[i]=y[i]/x[i];
         }
 
@@ -69,7 +69,7 @@ namespace peopt {
         static Real barr(const Vector& x) {
             Real z=0;
             #pragma omp parallel for reduction(+:z) schedule(static)
-            for(unsigned int i=0;i<x.size();i++)
+            for(Natural i=0;i<x.size();i++)
                 z+=log(x[i]);
             return z;
         }
@@ -87,7 +87,7 @@ namespace peopt {
 
                 // Search for the optimal linesearch parameter
                 #pragma omp parallel for schedule(static)
-                for(unsigned int i=0;i<x.size();i++) {
+                for(Natural i=0;i<x.size();i++) {
                     if(x[i] < 0) {
                         Real alpha0 = -y[i]/x[i];
                         if(alpha_loc==Real(-1.) || alpha0 < alpha_loc)
@@ -125,26 +125,26 @@ namespace peopt {
             std::vector <Real> data;
 
             // Offsets of each cone stored in the data
-            std::vector <unsigned int> offsets;
+            std::vector <Natural> offsets;
 
             // The type of cones stored in the data
             std::vector <Cone::t> types;
             
             // The size of the cones stored in the data
-            std::vector <unsigned int> sizes;
+            std::vector <Natural> sizes;
 
             // The stored Schur decompositions.  Once we have the offset, we
             // store the diagonal and then the matrix.
             mutable std::vector <Real> schur;
 
             // The offsets of the cached Schur decompositions
-            std::vector <unsigned int> schur_offsets;
+            std::vector <Natural> schur_offsets;
 
             // The point where we last took the Schur decomposition
             mutable std::vector <Real> schur_base;
 
             // The offsets for the bases stored for the Schur decompositions
-            std::vector <unsigned int> schur_base_offsets;
+            std::vector <Natural> schur_base_offsets;
 
             // This creates an empty, unitialized vector
             Vector () {}
@@ -152,7 +152,7 @@ namespace peopt {
             // We require a vector of cone types and their sizes
             Vector (const Messaging& msg,
                 const std::vector <Cone::t>& types_,
-                const std::vector <unsigned int>& sizes_
+                const std::vector <Natural>& sizes_
             ) : types(types_), sizes(sizes_) {
 
                 // Insure that the type of cones and their sizes lines up
@@ -168,7 +168,7 @@ namespace peopt {
                 // number of variables
                 offsets.resize(sizes.size()+1);
                 offsets[0]=0;
-                for(unsigned int i=1;i<offsets.size()+1;i++)
+                for(Natural i=1;i<offsets.size()+1;i++)
                     offsets[i] = types[i-1]==Cone::Linear ||
                                  types[i-1]==Cone::Quadratic
                                      ? offsets[i-1]+sizes[i-1]
@@ -185,7 +185,7 @@ namespace peopt {
                 // cached information is stored.
                 schur_offsets.resize(sizes.size()+1);
                 schur_base_offsets.resize(sizes.size()+1);
-                for(unsigned int i=1;i<types.size()+1;i++) {
+                for(Natural i=1;i<types.size()+1;i++) {
                     schur_offsets[i] =
                         types[i-1]==Cone::Linear ||
                         types[i-1]==Cone::Quadratic
@@ -205,42 +205,41 @@ namespace peopt {
             }
 
             // Simple indexing
-            Real& operator () (unsigned int i) {
+            Real& operator () (Natural i) {
                 return data[i-1];
             }
-            const Real& operator () (unsigned int i) const {
+            const Real& operator () (Natural i) const {
                 return data[i-1];
             }
 
             // Indexing with multiple cones
-            Real& operator () (unsigned int k,unsigned int i) {
+            Real& operator () (Natural k,Natural i) {
                 return data[offsets[k-1]+(i-1)];
             }
-            const Real& operator () (unsigned int k,unsigned int i) const {
+            const Real& operator () (Natural k,Natural i) const {
                 return data[offsets[k-1]+(i-1)];
             }
 
             // Indexing a matrix with multiple cones
-            Real& operator () (unsigned int k,unsigned int i,unsigned int j) {
+            Real& operator () (Natural k,Natural i,Natural j) {
                 return data[offsets[k-1]+ijtok(i,j,sizes[k-1])];
             }
-            const Real& operator ()(unsigned int k,unsigned int i,unsigned int j
-            ) const {
+            const Real& operator ()(Natural k,Natural i,Natural j) const {
                 return data[offsets[k-1]+ijtok(i,j,sizes[k-1])];
             }
 
             // Size of the block
-            unsigned int blkSize(unsigned int blk) const {
+            Natural blkSize(Natural blk) const {
                 return sizes[blk-1];
             }
 
             // Type of the block
-            Cone::t blkType(unsigned int blk) const {
+            Cone::t blkType(Natural blk) const {
                 return types[blk-1];
             }
 
             // Number of blocks
-            unsigned int numBlocks() const {
+            Natural numBlocks() const {
                 return types.size();
             }
         };
@@ -248,12 +247,12 @@ namespace peopt {
         // Gets the Schur decomposition of a block of the SQL vector
         static void get_schur(
             const Vector& X,
-            const unsigned int blk,
+            const Natural blk,
             std::vector <Real>& V,
             std::vector <Real>& D
         ) {
             // Fix the block index to C indexing
-            unsigned int k=blk-1;
+            Natural k=blk-1;
 
             // Get the size of the block
             const int m=X.sizes[k];
@@ -368,7 +367,7 @@ namespace peopt {
         // x <- 0 
         static void zero(Vector& x) {
             #pragma omp parallel for schedule(static)
-            for(unsigned int i=0;i<x.data.size();i++) 
+            for(Natural i=0;i<x.data.size();i++) 
                 x.data[i]=Real(0.);
         }
 
@@ -387,10 +386,10 @@ namespace peopt {
                computation on each cone one after another. 
             */
             // Loop over all the blocks
-            for(unsigned int blk=1;blk<=x.numBlocks();blk++) {
+            for(Natural blk=1;blk<=x.numBlocks();blk++) {
 
                 // Get the size of the block
-                unsigned int m=x.blkSize(blk);
+                Natural m=x.blkSize(blk);
 
                 // Depending on the block, compute a different jordan product
                 switch(x.blkType(blk)) {
@@ -398,7 +397,7 @@ namespace peopt {
                 // z = diag(x) y 
                 case Cone::Linear:
                     #pragma omp parallel for schedule(static)
-                    for(unsigned int i=1;i<=m;i++)
+                    for(Natural i=1;i<=m;i++)
                         z(blk,i)=x(blk,i)*y(blk,i);
                     break;
 
@@ -406,7 +405,7 @@ namespace peopt {
                 case Cone::Quadratic:
                     z(blk,1)=peopt::dot <Real> (m,&(x(blk,1)),1,&(y(blk,1)),1);
                     #pragma omp parallel for schedule(static)
-                    for(unsigned int i=2;i<=m;i++)
+                    for(Natural i=2;i<=m;i++)
                         z(blk,i)=x(blk,1)*y(blk,i)+x(blk,i)*y(blk,1);
                     break;
 
@@ -418,8 +417,8 @@ namespace peopt {
 
                     // Fill in the bottom half of the matrix
                     #pragma omp parallel for schedule(guided)
-                    for(unsigned int j=1;j<=m;j++)
-                        for(unsigned int i=j+1;i<=m;i++)
+                    for(Natural j=1;j<=m;j++)
+                        for(Natural i=j+1;i<=m;i++)
                             z(blk,i,j)=z(blk,j,i);
 
                     break;
@@ -430,10 +429,10 @@ namespace peopt {
         // Identity element, x <- e such that x o e = x
         static void id(Vector& x) {
             // Loop over all the blocks
-            for(unsigned int blk=1;blk<=x.numBlocks();blk++) {
+            for(Natural blk=1;blk<=x.numBlocks();blk++) {
 
                 // Get the size of the block
-                unsigned int m=x.blkSize(blk);
+                Natural m=x.blkSize(blk);
 
                 // Depending on the block, compute a different identity element
                 switch(x.blkType(blk)) {
@@ -441,14 +440,14 @@ namespace peopt {
                 // x = vector of all 1s
                 case Cone::Linear:
                     #pragma omp parallel for schedule(static)
-                    for(unsigned int i=1;i<=m;i++) 
+                    for(Natural i=1;i<=m;i++) 
                         x(blk,i)=Real(1.);
                     break;
                 // x = (1,0,...,0)
                 case Cone::Quadratic:
                     x(blk,1)=Real(1.);
                     #pragma omp parallel for schedule(static)
-                    for(unsigned int i=2;i<=m;i++)
+                    for(Natural i=2;i<=m;i++)
                         x(blk,i)=Real(0.);
                     break;
                 // x = I
@@ -456,12 +455,12 @@ namespace peopt {
                     // We write the diagonal elements twice to avoid the
                     // conditional.
                     #pragma omp parallel for schedule(static)
-                    for(unsigned int i=1;i<=m;i++) 
-                        for(unsigned int j=1;j<=m;j++) 
+                    for(Natural i=1;i<=m;i++) 
+                        for(Natural j=1;j<=m;j++) 
                             x(blk,i,j)=Real(0.);
 
                     #pragma omp parallel for schedule(static)
-                    for(unsigned int i=1;i<=m;i++) 
+                    for(Natural i=1;i<=m;i++) 
                         x(blk,i,i)=Real(1.);
                     break;
                 }
@@ -493,10 +492,10 @@ namespace peopt {
             std::vector <double> V;
 
             // Loop over all the blocks
-            for(unsigned int blk=1;blk<=x.numBlocks();blk++) {
+            for(Natural blk=1;blk<=x.numBlocks();blk++) {
 
                 // Get the size of the block
-                unsigned int m=x.blkSize(blk);
+                Natural m=x.blkSize(blk);
 
                 // Depending on the block, compute a different operator
                 switch(x.blkType(blk)) {
@@ -504,7 +503,7 @@ namespace peopt {
                 // z = inv(Diag(x)) y
                 case Cone::Linear:
                     #pragma omp parallel for schedule(static)
-                    for(unsigned int i=1;i<=m;i++) 
+                    for(Natural i=1;i<=m;i++) 
                         z(blk,i)=y(blk,i)/x(blk,i);
                     break;
 
@@ -563,10 +562,10 @@ namespace peopt {
             Real z=0;
 
             // Loop over all the blocks
-            for(unsigned int blk=1;blk<=x.numBlocks();blk++) {
+            for(Natural blk=1;blk<=x.numBlocks();blk++) {
 
                 // Get the size of the block
-                unsigned int m=x.blkSize(blk);
+                Natural m=x.blkSize(blk);
 
                 // In case we need to take a Choleski factorization for the
                 // SDP blocks
@@ -578,7 +577,7 @@ namespace peopt {
                 // z += sum_i log(x_i)
                 case Cone::Linear:
                     #pragma omp parallel for reduction(+:z) schedule(static)
-                    for(unsigned int i=1;i<=m;i++)
+                    for(Natural i=1;i<=m;i++)
                         z+=log(x(blk,i));
                     break;
 
@@ -602,7 +601,7 @@ namespace peopt {
                     // Find the deterimant of the Choleski factor
                     Real det(1.);
                     #pragma omp parallel for reduction(*:det) schedule(static)
-                    for(unsigned int i=1;i<=m;i++)
+                    for(Natural i=1;i<=m;i++)
                         det*=U[peopt::ijtok(i,i,m)];
                     
                     // Complete the barrier computation by taking the log
@@ -628,10 +627,10 @@ namespace peopt {
             std::vector <Real> invUtXinvU;
 
             // Loop over all the blocks
-            for(unsigned int blk=1;blk<=x.numBlocks();blk++) {
+            for(Natural blk=1;blk<=x.numBlocks();blk++) {
 
                 // Get the size of the block
-                unsigned int m=x.blkSize(blk);
+                Natural m=x.blkSize(blk);
 
                 // Depending on the block, compute a different barrier
                 switch(x.blkType(blk)) {
@@ -647,7 +646,7 @@ namespace peopt {
 
                         // Search for the optimal linesearch parameter
                         #pragma omp parallel for schedule(static)
-                        for(unsigned int i=1;i<=m;i++) {
+                        for(Natural i=1;i<=m;i++) {
                             if(x(blk,i) < 0) {
                                 Real alpha0 = -y(blk,i)/x(blk,i);
                                 if(alpha_loc==Real(-1.) || alpha0 < alpha_loc)
@@ -696,7 +695,7 @@ namespace peopt {
                         - dot <Real> (m-1,&(x(blk,2)),1,&(y(blk,2)),1));
                     Real c = y(blk,1)*y(blk,1)
                         - dot <Real> (m-1,&(y(blk,2)),1,&(y(blk,2)),1);
-                    unsigned int nroots(0);
+                    Natural nroots(0);
                     Real alpha1(-1.);
                     Real alpha2(-1.);
                     quad_equation(a,b,c,nroots,alpha1,alpha2);
@@ -758,8 +757,8 @@ namespace peopt {
                     
                     // Fill in the bottom half of invU with zeros 
                     #pragma omp parallel for schedule(guided)
-                    for(unsigned int j=1;j<=m;j++)
-                        for(unsigned int i=j+1;i<=m;i++)
+                    for(Natural j=1;j<=m;j++)
+                        for(Natural i=j+1;i<=m;i++)
                             invU[ijtok(i,j,m)]=Real(0.);
 
                     // Find inv(chol(Y))' X inv(chol(Y))

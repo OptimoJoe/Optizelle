@@ -9,6 +9,8 @@
 #include <string>
 
 namespace peopt {
+    typedef std::vector <double>::size_type Natural;
+
     template <typename T>
     void copy(int n,const T* x,int incx,T* y,int incy);
     
@@ -64,7 +66,13 @@ namespace peopt {
     void trtri(char uplo,char diag,int n,T* A,int lda,int& info);
 
     // Indexing function for matrices
-    unsigned int ijtok(unsigned int i,unsigned int j,unsigned int m);
+    Natural ijtok(Natural i,Natural j,Natural m);
+
+    // Indexing for packed storage
+    Natural ijtokp(Natural i,Natural j); 
+
+    // Indexing for vectors 
+    Natural itok(Natural i);
 
     // A simple operator specification, A : X->Y
     template <
@@ -92,7 +100,7 @@ namespace peopt {
     */
     template <typename T>
     void sylvester(
-        const unsigned int m,
+        const Natural m,
         const T* V,
         const T* D,
         const T* B,
@@ -110,8 +118,8 @@ namespace peopt {
         // Solve for each column of X.  In theory, we only need half of these
         // elements since X is symmetric.
         #pragma omp parallel for schedule(static)
-        for(unsigned int j=1;j<=m;j++) {
-            for(unsigned int i=1;i<=j;i++) 
+        for(Natural j=1;j<=m;j++) {
+            for(Natural i=1;i<=j;i++) 
                 X[ijtok(i,j,m)]=VtBV[ijtok(i,j,m)]/(D[i-1]+D[j-1]);
         }
 
@@ -126,9 +134,9 @@ namespace peopt {
     // that lambda_min(A) < alpha where alpha is returned from this function.
     template <typename T>
     T lanczos(
-        const unsigned int m,
+        const Natural m,
         const T* A,
-        const unsigned int max_iter,
+        const Natural max_iter,
         const T tol
     ) {
         // Create the initial Krylov vector
@@ -166,7 +174,7 @@ namespace peopt {
 
         // Start Lanczos
         std::vector <T> v_old(m);
-        for(unsigned int i=0;i<max_iter;i++) {
+        for(Natural i=0;i<max_iter;i++) {
             // Save the current Arnoldi vector
             copy <T> (m,&(v[0]),1,&(v_old[0]),1);
 
@@ -280,7 +288,7 @@ namespace peopt {
     // (output) nroots : Number of roots
     // (output) r1 : First root, if it exists
     // (output) r2 : Second root, if it exists
-    template <typename Natural,typename Real>
+    template <typename Real>
     void quad_equation(
         const Real& a,
         const Real& b,
@@ -301,7 +309,7 @@ namespace peopt {
                 r1 = (-b + sqrt(b*b-Real(4.)*a*c)) / (Real(2.)*a);
                 r2 = (Real(2.)*c) / (-b + sqrt(b*b-Real(4.)*a*c));
             } else {
-                r1 = (Real(2)*c) / (-b - sqrt(b*b-Real(4.)*a*c));
+                r1 = (Real(2.)*c) / (-b - sqrt(b*b-Real(4.)*a*c));
                 r2 = (-b - sqrt(b*b-Real(4.)*a*c)) / (Real(2.)*a);
             }
             nroots = Natural(2);
@@ -438,13 +446,13 @@ namespace peopt {
         const Operator <Real,XX,XX>& B,
         const Operator <Real,XX,XX>& C,
         const Real eps,
-        const unsigned int iter_max,
-        const unsigned int orthog_max,
+        const Natural iter_max,
+        const Natural orthog_max,
         const Real delta,
         typename XX <Real>::Vector& x,
         typename XX <Real>::Vector& x_cp,
         Real& norm_r,
-        unsigned int& iter,
+        Natural& iter,
         KrylovStop::t& krylov_stop
     ){
 
@@ -487,7 +495,7 @@ namespace peopt {
         X_Vector x_tmp2; X::init(x,x_tmp2); 
 
         // Loop until the maximum iteration
-        for(iter=1;iter<=iter_max;iter++){
+        for(iter=Natural(1);iter<=iter_max;iter++){
         
             // If the norm of the residual is small relative to the starting
             // residual, exit
@@ -510,7 +518,7 @@ namespace peopt {
 
             // Check if this direction is a descent direction.  If it is not,
             // flip it so that it is.
-            if(X::innr(Bp,r) > 0) {
+            if(X::innr(Bp,r) > Real(0.)) {
                 X::scal(Real(-1.),p);
                 X::scal(Real(-1.),Bp);
                 X::scal(Real(-1.),ABp);
@@ -583,7 +591,7 @@ namespace peopt {
                     Real aa = X::innr(x_tmp1,x_tmp1);
                     Real bb = Real(2.)*X::innr(x_tmp1,x_tmp2);
                     Real cc = norm_Cx*norm_Cx-delta*delta;
-                    unsigned int nroots;
+                    Natural nroots;
                     Real r1;
                     Real r2;
                     quad_equation(aa,bb,cc,nroots,r1,r2);
@@ -603,14 +611,14 @@ namespace peopt {
                 }
 
                 // Determine why we stopped
-                if(innr_Bp_ABp<=0 || innr_Bp_ABp != innr_Bp_ABp)
+                if(innr_Bp_ABp <= Natural(0) || innr_Bp_ABp != innr_Bp_ABp)
                     krylov_stop = KrylovStop::NegativeCurvature;
                 else
                     krylov_stop = KrylovStop::TrustRegionViolated;
  
 
                 // If this is the first iteration, save the Cauchy-Point
-                if(iter==1) X::copy(x,x_cp);
+                if(iter==Natural(1)) X::copy(x,x_cp);
                 break;
             }
 
@@ -618,7 +626,7 @@ namespace peopt {
             X::axpy(alpha,Bp,x);
 
             // If this is the first iteration, save the Cauchy-Point
-            if(iter==1) X::copy(x,x_cp);
+            if(iter==Natural(1)) X::copy(x,x_cp);
 
             // Update the norm of x
             norm_Cx = norm_CxpaBp;
@@ -638,18 +646,6 @@ namespace peopt {
         iter = iter > iter_max ? iter_max : iter;
     }
 
-    // Indexing for packed storage
-    template <typename Natural>
-    Natural ijtokp(Natural i,Natural j) {
-        return i+j*(j-1)/2-1;
-    }
-
-    // Indexing for vectors 
-    template <typename Natural>
-    Natural itok(Natural i) {
-        return i-1;
-    }
-
     // Solve a 2x2 linear system in packed storage.  This is done through
     // Gaussian elimination with complete pivoting.  In addition, this assumes
     // that the system is nonsingular.
@@ -660,7 +656,7 @@ namespace peopt {
     //    anyway.
     // (input) b : Vector of length 2.
     // (output) x : Solution to the linear system.
-    template <typename Natural,typename Real>
+    template <typename Real>
     void solve2x2(
         std::vector <Real> A,
         std::vector <Real> b,
@@ -690,16 +686,16 @@ namespace peopt {
         }
 
         // Do a step of Gaussian elimination
-        Real alpha = -A[ijtokp<>(p[2],q[1])] / A[ijtokp<>(p[1],q[1])];
-        A[ijtokp<>(p[2],q[2])] = A[ijtokp<>(p[2],q[2])]
-            + alpha*A[ijtokp<>(p[1],q[2])];
-        b[itok<>(p[2])] = b[itok<>(p[2])] + alpha * b[itok<>(p[1])];
+        Real alpha = -A[ijtokp(p[2],q[1])] / A[ijtokp(p[1],q[1])];
+        A[ijtokp(p[2],q[2])] = A[ijtokp(p[2],q[2])]
+            + alpha*A[ijtokp(p[1],q[2])];
+        b[itok(p[2])] = b[itok(p[2])] + alpha * b[itok(p[1])];
 
         // Do back subsitutition
         x.resize(2);
-        x[itok<>(p[2])] = b[itok<>(p[2])] / A[ijtokp<>(p[2],q[2])];
-        x[itok<>(p[1])] =
-            (b[itok<>(p[1])] - A[ijtokp<>(p[1],q[2])] * x[itok<>(p[2])])
+        x[itok(p[2])] = b[itok(p[2])] / A[ijtokp(p[2],q[2])];
+        x[itok(p[1])] =
+            (b[itok(p[1])] - A[ijtokp(p[1],q[2])] * x[itok(p[2])])
             / A[ijtokp(p[1],q[1])];
     }
 
@@ -713,7 +709,7 @@ namespace peopt {
     // (input) a : Vector of length 2.
     // (input) x : Vector of length 2.
     // (return) objective value
-    template <typename Natural, typename Real>
+    template <typename Real>
     Real obj2x2(
         const std::vector <Real>& A,
         const std::vector <Real>& a,
@@ -736,7 +732,7 @@ namespace peopt {
     // (input) lb : Vector of length 2.
     // (input) ub : Vector of length 2.
     // (output) x : The optimal solution.
-    template <typename Natural, typename Real>
+    template <typename Real>
     void quad2x2(
         const std::vector <Real>& A,
         const std::vector <Real>& a,

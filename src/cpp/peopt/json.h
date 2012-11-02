@@ -35,6 +35,9 @@ namespace peopt {
                 const std::string fname,
                 typename peopt::Unconstrained <Real,XX>::State::t& state
             ) {
+                // Create a type shortcut
+                typedef typename std::vector<Real>::size_type Natural;
+
                 // Base error message
                 const std::string base = "Invalid JSON parameter: ";
 
@@ -46,16 +49,22 @@ namespace peopt {
                     .get("eps_g",state.eps_g).asDouble());
                 state.eps_dx=Real(root["peopt"]
                     .get("eps_dx",state.eps_dx).asDouble());
-                state.stored_history=root["peopt"]
-                    .get("stored_history",state.stored_history).asInt();
-                state.history_reset=root["peopt"]
-                    .get("history_reset",state.history_reset).asInt();
-                state.iter_max=root["peopt"]
-                    .get("iter_max",state.iter_max).asInt();
-                state.krylov_iter_max=root["peopt"]
-                    .get("krylov_iter_max",state.krylov_iter_max).asInt();
-                state.krylov_orthog_max=root["peopt"]
-                    .get("krylov_orthog_max",state.krylov_orthog_max).asInt();
+                state.stored_history=Natural(root["peopt"]
+                    .get("stored_history",
+                        Json::Value::UInt64(state.stored_history)).asUInt64());
+                state.history_reset=Natural(root["peopt"]
+                    .get("history_reset",
+                        Json::Value::UInt64(state.history_reset)).asUInt64());
+                state.iter_max=Natural(root["peopt"]
+                    .get("iter_max",
+                        Json::Value::UInt64(state.iter_max)).asUInt64());
+                state.krylov_iter_max=Natural(root["peopt"]
+                    .get("krylov_iter_max",
+                        Json::Value::UInt64(state.krylov_iter_max)).asUInt64());
+                state.krylov_orthog_max=Natural(root["peopt"]
+                    .get("krylov_orthog_max",
+                        Json::Value::UInt64(state.krylov_orthog_max))
+                    .asUInt64());
                 state.eps_krylov=Real(root["peopt"]
                     .get("eps_krylov",state.eps_krylov).asDouble());
 
@@ -89,8 +98,9 @@ namespace peopt {
                     msg.error(base + H_type + " is not a valid H_type");
 
 
-                state.msg_level=root["peopt"]
-                    .get("msg_level",state.msg_level).asInt();
+                state.msg_level=Natural(root["peopt"]
+                    .get("msg_level",
+                        Json::Value::UInt64(state.msg_level)).asUInt64());
                 state.delta=Real(root["peopt"]
                     .get("delta",state.delta).asDouble());
                 state.delta_max=Real(root["peopt"]
@@ -102,9 +112,10 @@ namespace peopt {
                     .get("eta2",state.eta2).asDouble());
                 state.alpha=Real(root["peopt"]
                     .get("alpha",state.alpha).asDouble());
-                state.linesearch_iter_max=root["peopt"]
-                    .get("linesearch_iter_max",state.linesearch_iter_max)
-                    .asInt();
+                state.linesearch_iter_max=Natural(root["peopt"]
+                    .get("linesearch_iter_max",
+                        Json::Value::UInt64(state.linesearch_iter_max))
+                    .asUInt64());
                 state.eps_ls=Real(root["peopt"]
                     .get("eps_ls",state.eps_ls).asDouble());
                 

@@ -110,7 +110,7 @@ int main(){
     x[0]=1.2; x[1]=3.1;
 
     // Generate an initial guess for the dual
-    std::vector <unsigned int> sizes(1); sizes[0]=2;
+    std::vector <peopt::Natural> sizes(1); sizes[0]=2;
     std::vector <peopt::Cone::t> types(1); types[0]=peopt::Cone::Quadratic;
     Z_Vector z(peopt::Messaging(),types,sizes);
 

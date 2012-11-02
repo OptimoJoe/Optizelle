@@ -17,7 +17,10 @@
 namespace peopt{
 
     // A simple scalar valued function interface, f : X -> R
-    template <typename Real,template <typename> class XX>
+    template <
+        typename Real,
+        template <typename> class XX
+    >
     struct ScalarValuedFunction {
     private:
         // Create some type shortcuts
@@ -795,7 +798,7 @@ namespace peopt{
             return ss.str();
         }
         template <>
-        std::string atos <unsigned int> (unsigned int x){
+        std::string atos <Natural> (Natural x){
             std::stringstream ss;
             ss << formatInt << x;
             return ss.str();
@@ -1420,17 +1423,17 @@ namespace peopt{
             smanip(fns,state,loc);
 
             // Create some shortcuts
-            const unsigned int& msg_level=state.msg_level;
+            const Natural& msg_level=state.msg_level;
 
             switch(loc){
 
             // Output the headers for the diagonstic information
             case OptimizationLocation::AfterInitialFuncAndGrad:
-                if(msg_level >=1) {
+                if(msg_level >= Natural(1)) {
                     // Get the headers 
                     std::list <std::string> out;
                     ProblemClass::Printer::getStateHeader(state,out);
-                    if(msg_level >=2)
+                    if(msg_level >= Natural(2))
                         ProblemClass::Printer::getKrylovHeader(state,out);
 
                     // Output the result
@@ -1442,7 +1445,7 @@ namespace peopt{
             case OptimizationLocation::EndOfOptimizationIteration: 
             case OptimizationLocation::AfterRejectedTrustRegion:
             case OptimizationLocation::AfterRejectedLineSearch:
-                if(msg_level >= 1) {
+                if(msg_level >= Natural(1)) {
                     // Get the diagonstic information
                     std::list <std::string> out;
 
@@ -1468,7 +1471,7 @@ namespace peopt{
 
             // Output information at the end of each Krylov iteration
             case OptimizationLocation::EndOfKrylovIteration:
-                if(msg_level >= 2) {
+                if(msg_level >= Natural(2)) {
                     // Get the diagonstic information
                     std::list <std::string> out;
 
@@ -1521,8 +1524,11 @@ namespace peopt{
     // 
     // min_{x \in X} f(x)
     //
-    // where f : X -> R
-    template <typename Real,template <typename> class XX> 
+    // where f : X -> R.
+    template <
+        typename Real,
+        template <typename> class XX
+    > 
     struct Unconstrained {
         // Create some type shortcuts
         typedef XX <Real> X;
@@ -1531,7 +1537,7 @@ namespace peopt{
         typedef std::pair < std::list <std::string>,
                             std::list <Real> > Reals;
         typedef std::pair < std::list <std::string>,
-                            std::list <unsigned int> > Nats;
+                            std::list <Natural> > Nats;
         typedef std::pair < std::list <std::string>,
                             std::list <std::string> > Params; 
         typedef std::pair < std::list <std::string>,
@@ -1553,33 +1559,33 @@ namespace peopt{
                 Real eps_dx;
 
                 // Number of control objects to store in a quasi-Newton method
-                unsigned int stored_history;
+                Natural stored_history;
 
                 // Number of failed iterations before we reset the history for
                 // quasi-Newton methods
-                unsigned int history_reset;
+                Natural history_reset;
 
                 // Current iteration
-                unsigned int iter;
+                Natural iter;
 
                 // Maximum number of optimization iterations
-                unsigned int iter_max;
+                Natural iter_max;
 
                 // Why we've stopped the optimization
                 StoppingCondition::t opt_stop;
 
                 // Current number of Krylov iterations taken
-                unsigned int krylov_iter;
+                Natural krylov_iter;
 
                 // Maximum number of iterations in the Krylov method
-                unsigned int krylov_iter_max;
+                Natural krylov_iter_max;
 
                 // Total number of Krylov iterations taken
-                unsigned int krylov_iter_total;
+                Natural krylov_iter_total;
 
                 // The maximum number of vectors we orthogonalize against in 
                 // the Krylov method.  For something like CG, this is 1.
-                unsigned int krylov_orthog_max;
+                Natural krylov_orthog_max;
 
                 // Why the Krylov method was last stopped
                 KrylovStop::t krylov_stop;
@@ -1641,7 +1647,7 @@ namespace peopt{
                 Real merit_xpdx;
 
                 // Messaging level
-                unsigned int msg_level;
+                Natural msg_level;
                 
                 // ------------- TRUST-REGION ------------- 
 
@@ -1666,7 +1672,7 @@ namespace peopt{
                 Real pred;
 
                 // Number of rejected trust-region steps
-                unsigned int rejected_trustregion;
+                Natural rejected_trustregion;
 
                 // ------------- LINE-SEARCH ------------- 
 
@@ -1674,13 +1680,13 @@ namespace peopt{
                 Real alpha;
 
                 // Current number of iterations used in the line-search
-                unsigned int linesearch_iter;
+                Natural linesearch_iter;
 
                 // Maximum number of iterations used in the line-search
-                unsigned int linesearch_iter_max;
+                Natural linesearch_iter_max;
 
                 // Total number of line-search iterations computed
-                unsigned int linesearch_iter_total;
+                Natural linesearch_iter_total;
 
                 // Stopping tolerance for the line-search
                 Real eps_ls;
@@ -1709,15 +1715,15 @@ namespace peopt{
             static void init_params_(t& state){
                 state.eps_g=Real(1e-6);
                 state.eps_dx=Real(1e-6);
-                state.stored_history=0;
-                state.history_reset=5;
-                state.iter=1;
-                state.iter_max=10;
+                state.stored_history=Natural(0);
+                state.history_reset=Natural(5);
+                state.iter=Natural(1);
+                state.iter_max=Natural(10);
                 state.opt_stop=StoppingCondition::NotConverged;
-                state.krylov_iter=1;
-                state.krylov_iter_max=10;
-                state.krylov_iter_total=0;
-                state.krylov_orthog_max=1;
+                state.krylov_iter=Natural(1);
+                state.krylov_iter_max=Natural(10);
+                state.krylov_iter_total=Natural(0);
+                state.krylov_orthog_max=Natural(1);
                 state.krylov_stop=KrylovStop::RelativeErrorSmall;
                 state.krylov_rel_err=Real(0.);
                 state.eps_krylov=Real(1e-2);
@@ -1730,18 +1736,18 @@ namespace peopt{
                 state.norm_dxtyp=std::numeric_limits<Real>::quiet_NaN();
                 state.merit_x=std::numeric_limits<Real>::quiet_NaN();
                 state.merit_xpdx=std::numeric_limits<Real>::quiet_NaN();
-                state.msg_level=1;
+                state.msg_level=Natural(1);
                 state.delta=Real(100.);
                 state.delta_max=Real(100.);
                 state.eta1=Real(.1);
                 state.eta2=Real(.9);
                 state.ared=std::numeric_limits<Real>::quiet_NaN();
                 state.pred=std::numeric_limits<Real>::quiet_NaN();
-                state.rejected_trustregion=0;
-                state.alpha=1.;
-                state.linesearch_iter=0;
-                state.linesearch_iter_max=5;
-                state.linesearch_iter_total=0;
+                state.rejected_trustregion=Natural(0);
+                state.alpha=Real(1.);
+                state.linesearch_iter=Natural(0);
+                state.linesearch_iter_max=Natural(5);
+                state.linesearch_iter_total=Natural(0);
                 state.eps_ls=Real(1e-2);
                 state.dir=LineSearchDirection::SteepestDescent;
                 state.kind=LineSearchKind::GoldenSection;
@@ -1802,28 +1808,28 @@ namespace peopt{
                         "condition must be positive: eps_dx = " << state.eps_dx;
         
                 // Check that the current iteration is positive
-                else if(state.iter <= 0) 
+                else if(state.iter <= Natural(0)) 
                     ss << "The current optimization iteration must be "
                         "positive: iter = " << state.iter;
 
                 // Check that the maximum iteration is positive
-                else if(state.iter_max <= 0) 
+                else if(state.iter_max <= Natural(0)) 
                     ss << "The maximum optimization iteration must be "
                         "positive: iter_max = " << state.iter_max;
 
                 // Check that the current Krylov iteration is positive
-                else if(state.krylov_iter <= 0) 
+                else if(state.krylov_iter <= Natural(0)) 
                     ss << "The current Krlov iteration must be "
                         "positive: krylov_iter = " << state.krylov_iter;
 
                 // Check that the maximum Krylov iteration is positive
-                else if(state.krylov_iter_max <= 0) 
+                else if(state.krylov_iter_max <= Natural(0)) 
                     ss << "The maximum Krylov iteration must be "
                         "positive: krylov_iter_max = " << state.krylov_iter_max;
 
                 // Check that the number of vectors we orthogonalize against
                 // is at least 1.
-                else if(state.krylov_orthog_max <= 0) 
+                else if(state.krylov_orthog_max <= Natural(0)) 
                     ss << "The maximum number of vectors the Krylov method"
                     "orthogonalizes against must be positive: "
                     "krylov_orthog_max = " << state.krylov_orthog_max;
@@ -1874,13 +1880,15 @@ namespace peopt{
 
                 // Check that the merit functions's value isn't a NaN past
                 // iteration 1
-                else if(state.iter!=1 && state.merit_x!=state.merit_x)
+                else if(state.iter!=Natural(1) && state.merit_x!=state.merit_x)
                     ss<< "The merit function value must be a number: merit_x = "
                         << state.merit_x;
 
                 // Check that the merit function's value at a trial step isn't
                 // a NaN past iteration 1
-                else if(state.iter!=1 && state.merit_xpdx!=state.merit_xpdx) 
+                else if(state.iter!=Natural(1)
+                     && state.merit_xpdx != state.merit_xpdx
+                ) 
                     ss << "The objective value at the trial step must be a "
                         "number: merit_xpdx = " << state.merit_xpdx;
 
@@ -2120,7 +2128,7 @@ namespace peopt{
                 xs.second.splice(xs.second.end(),state.dx_old);
 
                 // Write out the quasi-Newton information with sequential names
-                {int i=1;
+                {Natural i=1;
                 for(typename std::list<X_Vector>::iterator y=state.oldY.begin();
                     y!=state.oldY.end();
                     y=state.oldY.begin()
@@ -2132,7 +2140,7 @@ namespace peopt{
                 }}
 
                 // Write out the quasi-Newton information with sequential names
-                {int i=1;
+                {Natural i=1;
                 for(typename std::list<X_Vector>::iterator s=state.oldS.begin();
                     s!=state.oldS.end();
                     s=state.oldS.begin()
@@ -2324,7 +2332,7 @@ namespace peopt{
                 }
             
                 // Next, copy in any naturals
-                std::list <unsigned int>::iterator nat=nats.second.begin();
+                typename std::list <Natural>::iterator nat=nats.second.begin();
                 for(std::list <std::string>::iterator name=nats.first.begin();
                     name!=nats.first.end();
                     name++,nat++
@@ -2527,7 +2535,7 @@ namespace peopt{
                     // If we have no vectors in our history, we return the
                     // direction
                     X::copy(p,result);
-                    if(oldY.size() == 0) return;
+                    if(oldY.size() == Natural(0)) return;
 
                     // As a safety check, insure that the inner product
                     // between all the (s,y) pairs is positive
@@ -2537,7 +2545,7 @@ namespace peopt{
                         = oldS.begin();
                     while(y0!=oldY.end()){
                         Real inner_y_s=X::innr(*y0++,*s0++);
-                        if(inner_y_s<=0)
+                        if(inner_y_s <= Real(0.))
                             msg.error("Detected a (s,y) pair in BFGS that "
                                 "possesed a nonpositive inner product");
                     }
@@ -2565,7 +2573,7 @@ namespace peopt{
                         =oldY.end(); yi_iter--;
                     typename std::list <X_Vector>::const_iterator sj_iter
                         =oldS.begin();
-                    while(1){
+                    while(true){
 
                         // Create some reference to our iterators that are
                         // easier to work with
@@ -2686,7 +2694,7 @@ namespace peopt{
                     // If we have no vectors in our history, we return the 
                     // direction
                     X::copy(p,result);
-                    if(oldY.size() == 0) return;
+                    if(oldY.size() == Natural(0)) return;
 
                     // Othwerwise, we copy all of the trial step differences 
                     // into the work space
@@ -2711,7 +2719,7 @@ namespace peopt{
                         =oldY.end(); yi_iter--;
                     typename std::list <X_Vector>::const_iterator sj_iter
                         =oldS.begin();
-                    while(1){
+                    while(true){
 
                         // Create some reference to our iterators that are 
                         // easier to work with
@@ -2838,7 +2846,7 @@ namespace peopt{
                         = oldS.begin();
                     while(y0!=oldY.end()){
                         Real inner_y_s=X::innr(*y0++,*s0++);
-                        if(inner_y_s<=0)
+                        if(inner_y_s <= Real(0.))
                             msg.error("Detected a (s,y) pair in the inverse "
                                 "BFGS operator that possesed a nonpositive "
                                 "inner product");
@@ -2858,7 +2866,7 @@ namespace peopt{
                         =oldY.begin();
                     typename std::list <X_Vector>::const_iterator s_iter
                         =oldS.begin();
-                    int i=0;
+                    Natural i(0);
                     while(y_iter != oldY.end()){
                         // Find y_k, s_k, and their inner product
                         const X_Vector& y_k=*(y_iter++);
@@ -3208,29 +3216,28 @@ namespace peopt{
             ) {
 
                 // Create some shortcuts
-                const unsigned int& iter=state.iter;
+                const Natural& iter=state.iter;
                 const Real& merit_x=state.merit_x;
                 const Real& norm_g=state.norm_g;
                 const Real& norm_dx=state.norm_dx;
-                const unsigned int& krylov_iter=state.krylov_iter;
+                const Natural& krylov_iter=state.krylov_iter;
                 const Real& krylov_rel_err=state.krylov_rel_err;
                 const KrylovStop::t& krylov_stop=state.krylov_stop;
-                const unsigned int& linesearch_iter=state.linesearch_iter;
+                const Natural& linesearch_iter=state.linesearch_iter;
                 const AlgorithmClass::t& algorithm_class=state.algorithm_class;
                 const LineSearchDirection::t& dir=state.dir;
-                const unsigned int& rejected_trustregion
-                    =state.rejected_trustregion;
+                const Natural& rejected_trustregion=state.rejected_trustregion;
 
                 // Figure out if we're at the absolute beginning of the
                 // optimization.  We have to be a little saavy about this
                 // since we could be on the first iteration, but in the
                 // middle of a line-search or trust-region method and
                 // still want to output things
-                bool opt_begin = (iter==1) &&
+                bool opt_begin = (iter==Natural(1)) &&
                     ((algorithm_class == AlgorithmClass::LineSearch && 
-                        linesearch_iter==0) ||
+                        linesearch_iter==Natural(0)) ||
                     (algorithm_class == AlgorithmClass::TrustRegion && 
-                        rejected_trustregion == 0));
+                        rejected_trustregion == Natural(0)));
 
 
                 // Get a iterator to the last element prior to inserting
@@ -3258,7 +3265,7 @@ namespace peopt{
                         out.push_back(atos <> (krylov_rel_err));
                         out.push_back(atos <> (krylov_stop));
                     } else 
-                        for(int i=0;i<3;i++) out.push_back("          ");
+                        for(Natural i=0;i<3;i++) out.push_back("          ");
                 }
 
                 // In case we're using a line-search method
@@ -3324,8 +3331,8 @@ namespace peopt{
                 std::list <std::string>& out
             ) {
                 // Create some shortcuts
-                const unsigned int& krylov_iter=state.krylov_iter;
-                const unsigned int& krylov_iter_total=state.krylov_iter_total;
+                const Natural& krylov_iter=state.krylov_iter;
+                const Natural& krylov_iter_total=state.krylov_iter_total;
                 const Real& krylov_rel_err=state.krylov_rel_err;
 
                 // Get a iterator to the last element prior to inserting
@@ -3370,8 +3377,8 @@ namespace peopt{
                 const Real& norm_gtyp=state.norm_gtyp;
                 const Real& norm_dx=state.norm_dx;
                 const Real& norm_dxtyp=state.norm_dxtyp;
-                const int& iter=state.iter;
-                const int& iter_max=state.iter_max;
+                const Natural& iter=state.iter;
+                const Natural& iter_max=state.iter_max;
                 const Real& eps_g=state.eps_g;
                 const Real& eps_dx=state.eps_dx;
 
@@ -3495,22 +3502,22 @@ namespace peopt{
                 // Create some shortcuts
                 const Real& eps_dx=state.eps_dx;
                 const Real& eps_krylov=state.eps_krylov;
-                const unsigned int& krylov_iter_max=state.krylov_iter_max;
-                const unsigned int& krylov_orthog_max=state.krylov_orthog_max;
+                const Natural& krylov_iter_max=state.krylov_iter_max;
+                const Natural& krylov_orthog_max=state.krylov_orthog_max;
                 const Real& delta=state.delta;
                 const X_Vector& x=state.x.front();
                 const X_Vector& g=state.g.front();
                 const Real& norm_g=state.norm_g;
                 const Real& norm_dxtyp=state.norm_dxtyp;
-                unsigned int& rejected_trustregion=state.rejected_trustregion;
+                Natural& rejected_trustregion=state.rejected_trustregion;
                 X_Vector& dx=state.dx.front();
                 Real& norm_dx=state.norm_dx;
-                unsigned int& krylov_iter=state.krylov_iter;
+                Natural& krylov_iter=state.krylov_iter;
                 Real& krylov_rel_err=state.krylov_rel_err;
                 KrylovStop::t& krylov_stop=state.krylov_stop;
                 std::list <X_Vector>& oldY=state.oldY; 
                 std::list <X_Vector>& oldS=state.oldS; 
-                unsigned int& history_reset=state.history_reset;
+                Natural& history_reset=state.history_reset;
                 
                 // Create shortcuts to the functions that we need
                 const ScalarValuedFunction <Real,XX>& f=*(fns.f);
@@ -3521,7 +3528,7 @@ namespace peopt{
                 X_Vector x_tmp1; X::init(x,x_tmp1);
 
                 // Continue to look for a step until one comes back as valid
-                for(rejected_trustregion=0;
+                for(rejected_trustregion=Natural(0);
                     true; 
                 ) {
                     // Manipulate the state if required
@@ -3609,12 +3616,12 @@ namespace peopt{
                 // Create some shortcuts 
                 const X_Vector& g=state.g.front();
                 const X_Vector& dx_old=state.dx_old.front();
-                const int& iter=state.iter;
+                Natural& iter=state.iter;
                 X_Vector& dx=state.dx.front();
 
                 // If we're on the first iterations, we take the steepest
                 // descent direction
-                if(iter==1) SteepestDescent(state);
+                if(iter==Natural(1)) SteepestDescent(state);
 
                 // On subsequent iterations, we take the specified direction
                 else {
@@ -3731,11 +3738,11 @@ namespace peopt{
             ) {
                 // Create some shortcuts
                 const X_Vector& x=state.x.front();
-                const unsigned int& iter_max=state.linesearch_iter_max;
+                const Natural& iter_max=state.linesearch_iter_max;
                 Real& alpha=state.alpha;
                 X_Vector& dx=state.dx.front();
-                unsigned int& iter_total=state.linesearch_iter_total;
-                unsigned int& iter=state.linesearch_iter;
+                Natural& iter_total=state.linesearch_iter_total;
+                Natural& iter=state.linesearch_iter;
                 Real& merit_xpdx=state.merit_xpdx;
                 
                 // Create shortcuts to the functions that we need
@@ -3826,8 +3833,8 @@ namespace peopt{
                 const LineSearchKind::t& kind=state.kind;
                 Real& alpha=state.alpha;
                 X_Vector& dx=state.dx.front();
-                unsigned int& iter_total=state.linesearch_iter_total;
-                unsigned int& iter=state.linesearch_iter;
+                Natural& iter_total=state.linesearch_iter_total;
+                Natural& iter=state.linesearch_iter;
                 Real& merit_xpdx=state.merit_xpdx;
                 
                 // Create shortcuts to the functions that we need
@@ -3860,7 +3867,7 @@ namespace peopt{
 
                 // Since we do one function evaluation, increase the linesearch
                 // iteration by one
-                iter=1; iter_total++;
+                iter=Natural(1); iter_total++;
             }
             
             // Compute a backtracking line-search. 
@@ -3870,11 +3877,11 @@ namespace peopt{
             ) {
                 // Create some shortcuts
                 const X_Vector& x=state.x.front();
-                const unsigned int& iter_max=state.linesearch_iter_max;
+                const Natural& iter_max=state.linesearch_iter_max;
                 Real& alpha=state.alpha;
                 X_Vector& dx=state.dx.front();
-                unsigned int& iter_total=state.linesearch_iter_total;
-                unsigned int& iter=state.linesearch_iter;
+                Natural& iter_total=state.linesearch_iter_total;
+                Natural& iter=state.linesearch_iter;
                 Real& merit_xpdx=state.merit_xpdx;
                 
                 // Create shortcuts to the functions that we need
@@ -3895,7 +3902,7 @@ namespace peopt{
                 // Note, we start iter at 1 since we've already done one
                 // iteration above.
                 Real alpha0=alpha;
-                for(iter=1;iter<iter_max;iter++){
+                for(iter=Natural(1);iter<iter_max;iter++){
                     // Evaluate f_merit(x+alpha*s)
                     X::copy(x,x_p_dx);
                     X::axpy(alpha0,dx,x_p_dx);
@@ -3931,21 +3938,21 @@ namespace peopt{
                 const X_Vector& g=state.g.front();
                 const LineSearchDirection::t& dir=state.dir;
                 const LineSearchKind::t& kind=state.kind;
-                const int& iter=state.iter;
-                const int& linesearch_iter_max=state.linesearch_iter_max;
+                const Natural& iter=state.iter;
+                const Natural& linesearch_iter_max=state.linesearch_iter_max;
                 const Real& merit_x=state.merit_x;
                 const Real& eps_dx=state.eps_dx;
                 const Real& norm_dxtyp=state.norm_dxtyp;
                 const Real& eps_krylov=state.eps_krylov;
-                const unsigned int& krylov_iter_max=state.krylov_iter_max;
-                const unsigned int& krylov_orthog_max=state.krylov_orthog_max;
+                const Natural& krylov_iter_max=state.krylov_iter_max;
+                const Natural& krylov_orthog_max=state.krylov_orthog_max;
                 const Real& norm_g=state.norm_g;
                 X_Vector& dx=state.dx.front();
                 Real& merit_xpdx=state.merit_xpdx;
                 Real& norm_dx=state.norm_dx;
                 Real& alpha=state.alpha;
                 Real& krylov_rel_err=state.krylov_rel_err;
-                unsigned int& krylov_iter=state.krylov_iter;
+                Natural& krylov_iter=state.krylov_iter;
                 KrylovStop::t& krylov_stop=state.krylov_stop;
                 
                 // Create shortcuts to the functions that we need
@@ -4120,7 +4127,7 @@ namespace peopt{
                 typename State::t& state
             ){
                 // Exit immediately if we're not using a quasi-Newton method
-                if(state.stored_history==0) return;
+                if(state.stored_history==Natural(0)) return;
 
                 // Create some shortcuts
                 const X_Vector& x=state.x.front();
@@ -4148,7 +4155,7 @@ namespace peopt{
                 // If we're using BFGS, check that <y,s> > 0
                 if((Minv_type==Operators::InvBFGS || H_type==Operators::BFGS
                     || dir==LineSearchDirection::BFGS)
-                    && X::innr(y,s) <= 0)
+                    && X::innr(y,s) <= Real(0.))
                     return;
 
                 // Insert these into the quasi-Newton storage
@@ -4181,7 +4188,7 @@ namespace peopt{
                 Real& norm_g=state.norm_g;
                 Real& norm_gtyp=state.norm_gtyp;
                 Real& norm_dxtyp=state.norm_dxtyp;
-                unsigned int& iter=state.iter;
+                Natural& iter=state.iter;
                 StoppingCondition::t& opt_stop=state.opt_stop;
                 
                 // Create shortcuts to the functions that we need
@@ -4326,7 +4333,7 @@ namespace peopt{
         typedef std::pair < std::list <std::string>,
                             std::list <Real> > Reals;
         typedef std::pair < std::list <std::string>,
-                            std::list <unsigned int> > Nats;
+                            std::list <Natural> > Nats;
         typedef std::pair < std::list <std::string>,
                             std::list <std::string> > Params; 
         typedef std::pair < std::list <std::string>,
@@ -4671,7 +4678,7 @@ namespace peopt{
         typedef std::pair < std::list <std::string>,
                             std::list <Real> > Reals;
         typedef std::pair < std::list <std::string>,
-                            std::list <unsigned int> > Nats;
+                            std::list <Natural> > Nats;
         typedef std::pair < std::list <std::string>,
                             std::list <std::string> > Params; 
         typedef std::pair < std::list <std::string>,
@@ -6050,7 +6057,8 @@ namespace peopt{
                     const X_Vector& g_schur=state.g_schur.front();
                     const InteriorPointMethod::t& ipm=state.ipm;
                     const CentralityStrategy::t& cstrat=state.cstrat;
-                    const unsigned int& iter=state.iter;
+                    const Natural& iter=state.iter;
+                    const ScalarValuedFunction<Real,XX>& f_merit=*(fns.f_merit);
                     X_Vector& g=state.g.front();
                     Z_Vector& z=state.z.front();
                     Z_Vector& h_x=state.h_x.front();
@@ -6059,7 +6067,6 @@ namespace peopt{
                     Real& sigma = state.sigma;
                     Real& merit_xpdx= state.merit_xpdx;
                     Real& norm_g = state.norm_g;
-                    const ScalarValuedFunction<Real,XX>& f_merit=*(fns.f_merit);
 
                     // Call the user define manipulator
                     smanip(fns,state,loc);
@@ -6068,7 +6075,7 @@ namespace peopt{
                     case OptimizationLocation::BeforeInitialFuncAndGrad:
                         // Do predictor corrector if need be
                         if(cstrat==CentralityStrategy::PredictorCorrector)
-                            sigma = iter % 2 ? Real(0.) : Real(1.);
+                            sigma = iter % Natural(2) ? Real(0.) : Real(1.);
 
                         // In a log-barrier method, find the initial Lagrange
                         // multiplier.
@@ -6102,7 +6109,7 @@ namespace peopt{
                             // We have a iter+1 here since we haven't updated
                             // our iteration yet and we need to set sigma
                             // for the next iteration.
-                            sigma = (iter+1) % 2 ? Real(0.) : Real(1.);
+                            sigma = (iter+Natural(1)) % 2 ? Real(0.) : Real(1.);
 
                         // Find the new inequality multiplier or step
                         switch(ipm){
@@ -6266,7 +6273,7 @@ namespace peopt{
         typedef std::pair < std::list <std::string>,
                             std::list <Real> > Reals;
         typedef std::pair < std::list <std::string>,
-                            std::list <unsigned int> > Nats;
+                            std::list <Natural> > Nats;
         typedef std::pair < std::list <std::string>,
                             std::list <std::string> > Params; 
         typedef std::pair < std::list <std::string>,

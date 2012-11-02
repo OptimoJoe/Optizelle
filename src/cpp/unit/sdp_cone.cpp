@@ -117,7 +117,7 @@ BOOST_AUTO_TEST_CASE(newton_cg) {
     x[0]=1.2; x[1]=3.1;
 
     // Generate an initial guess for the dual
-    std::vector <unsigned int> sizes(1); sizes[0]=2;
+    std::vector <peopt::Natural> sizes(1); sizes[0]=2;
     std::vector <peopt::Cone::t> types(1); types[0]=peopt::Cone::Semidefinite;
     Z_Vector z(peopt::Messaging(),types,sizes);
     Z::id(z);
@@ -176,7 +176,7 @@ BOOST_AUTO_TEST_CASE(tr_newton) {
     x[0]=1.2; x[1]=3.1;
 
     // Generate an initial guess for the dual
-    std::vector <unsigned int> sizes(1); sizes[0]=2;
+    std::vector <peopt::Natural> sizes(1); sizes[0]=2;
     std::vector <peopt::Cone::t> types(1); types[0]=peopt::Cone::Semidefinite;
     Z_Vector z(peopt::Messaging(),types,sizes);
     Z::id(z);
@@ -233,7 +233,7 @@ BOOST_AUTO_TEST_CASE(tr_newton_predictor_corrector) {
     x[0]=1.2; x[1]=3.1;
 
     // Generate an initial guess for the dual
-    std::vector <unsigned int> sizes(1); sizes[0]=2;
+    std::vector <peopt::Natural> sizes(1); sizes[0]=2;
     std::vector <peopt::Cone::t> types(1); types[0]=peopt::Cone::Semidefinite;
     Z_Vector z(peopt::Messaging(),types,sizes);
     Z::id(z);
@@ -291,7 +291,7 @@ BOOST_AUTO_TEST_CASE(sr1) {
     x[0]=1.2; x[1]=3.1;
 
     // Generate an initial guess for the dual
-    std::vector <unsigned int> sizes(1); sizes[0]=2;
+    std::vector <peopt::Natural> sizes(1); sizes[0]=2;
     std::vector <peopt::Cone::t> types(1); types[0]=peopt::Cone::Semidefinite;
     Z_Vector z(peopt::Messaging(),types,sizes);
 

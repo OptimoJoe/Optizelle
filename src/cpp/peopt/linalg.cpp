@@ -304,11 +304,22 @@ namespace peopt {
         strtri_fortran(&uplo,&diag,&n,A,&lda,&info);
     }
     
-    // Indexing function for matrices.  This assumes that the upper right
+    // Indexing function for matrices.  This assumes that the upper left 
     // corner has index (1,1).  Basically, we're using the indexing scheme
     // of math and Fortran and not of C.
-    unsigned int ijtok(unsigned int i,unsigned int j,unsigned int m){
+    Natural ijtok(Natural i,Natural j,Natural m){
         return (i-1)+(j-1)*m;
+    }
+
+    // Indexing for packed storage.  This assumes the upper left corner has
+    // index (1,1).
+    Natural ijtokp(Natural i,Natural j) {
+        return i+j*(j-1)/2-1;
+    }
+
+    // Indexing for vectors.  Assumes the first index is 1.
+    Natural itok(Natural i) {
+        return i-1;
     }
 
 
