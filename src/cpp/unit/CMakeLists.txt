@@ -5,6 +5,7 @@ set(unit_srcs
     "capture_and_release.cpp"
     "linear_cone.cpp"
     "rosenbrock.cpp"
+    "quadratic.cpp"
     "sdp_cone.cpp"
     "derivative_check.cpp"
     "quadratic_cone.cpp"

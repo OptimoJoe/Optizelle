@@ -423,7 +423,7 @@ namespace peopt{
             // Occurs after we take the optimization step u+s, but before
             // we calculate the gradient based on this new step.  In addition,
             // after this point we set the merit value, merit_x, to be
-            // merit_xps.
+            // merit_xpdx.
             AfterStepBeforeGradient,
 
             // Occurs before we update our quasi-Newton information. 
@@ -1550,7 +1550,7 @@ namespace peopt{
                 Real eps_g;
 
                 // Tolerance for the step length stopping criteria
-                Real eps_s;
+                Real eps_dx;
 
                 // Number of control objects to store in a quasi-Newton method
                 unsigned int stored_history;
@@ -1606,10 +1606,10 @@ namespace peopt{
                 Real norm_gtyp;
 
                 // Norm of the trial step
-                Real norm_s;
+                Real norm_dx;
 
                 // Norm of a typical trial step
-                Real norm_styp;
+                Real norm_dxtyp;
 
                 // Optimization variable 
                 std::list <X_Vector> x; 
@@ -1618,7 +1618,7 @@ namespace peopt{
                 std::list <X_Vector> g;
                 
                 // Trial step 
-                std::list <X_Vector> s;
+                std::list <X_Vector> dx;
                 
                 // Old optimization variable 
                 std::list <X_Vector> x_old; 
@@ -1627,7 +1627,7 @@ namespace peopt{
                 std::list <X_Vector> g_old;
                 
                 // Old trial step 
-                std::list <X_Vector> s_old;
+                std::list <X_Vector> dx_old;
 
                 // Contains the prior iteration information for the
                 // quasi-Newton operators
@@ -1638,7 +1638,7 @@ namespace peopt{
                 Real merit_x;
 
                 // Merit function at the trial step
-                Real merit_xps;
+                Real merit_xpdx;
 
                 // Messaging level
                 unsigned int msg_level;
@@ -1659,8 +1659,11 @@ namespace peopt{
                 // accepted
                 Real eta2;
 
-                // Ratio between the predicted and actual reduction
-                Real rho;
+                // Actual reduction 
+                Real ared;
+
+                // Predicted reduction
+                Real pred;
 
                 // Number of rejected trust-region steps
                 unsigned int rejected_trustregion;
@@ -1705,7 +1708,7 @@ namespace peopt{
             // special memory allocation such as variables.
             static void init_params_(t& state){
                 state.eps_g=Real(1e-6);
-                state.eps_s=Real(1e-6);
+                state.eps_dx=Real(1e-6);
                 state.stored_history=0;
                 state.history_reset=5;
                 state.iter=1;
@@ -1721,18 +1724,19 @@ namespace peopt{
                 state.algorithm_class=AlgorithmClass::TrustRegion;
                 state.Minv_type=Operators::Identity;
                 state.H_type=Operators::Identity;
-                state.norm_g=Real(std::numeric_limits<double>::quiet_NaN());
-                state.norm_gtyp=Real(std::numeric_limits<double>::quiet_NaN());
-                state.norm_s=Real(std::numeric_limits<double>::quiet_NaN());
-                state.norm_styp=Real(std::numeric_limits<double>::quiet_NaN());
-                state.merit_x=Real(std::numeric_limits<double>::quiet_NaN());
-                state.merit_xps=Real(std::numeric_limits<double>::quiet_NaN());
+                state.norm_g=std::numeric_limits<Real>::quiet_NaN();
+                state.norm_gtyp=std::numeric_limits<Real>::quiet_NaN();
+                state.norm_dx=std::numeric_limits<Real>::quiet_NaN();
+                state.norm_dxtyp=std::numeric_limits<Real>::quiet_NaN();
+                state.merit_x=std::numeric_limits<Real>::quiet_NaN();
+                state.merit_xpdx=std::numeric_limits<Real>::quiet_NaN();
                 state.msg_level=1;
                 state.delta=Real(100.);
                 state.delta_max=Real(100.);
                 state.eta1=Real(.1);
                 state.eta2=Real(.9);
-                state.rho=Real(0.);
+                state.ared=std::numeric_limits<Real>::quiet_NaN();
+                state.pred=std::numeric_limits<Real>::quiet_NaN();
                 state.rejected_trustregion=0;
                 state.alpha=1.;
                 state.linesearch_iter=0;
@@ -1751,23 +1755,23 @@ namespace peopt{
             static void init_vectors_(t& state,const X_Vector& x) {
                 state.x.clear();
                     state.x.push_back(X_Vector());
-                    X::init(x,state.x.back());
-                    X::copy(x,state.x.back());
+                    X::init(x,state.x.front());
+                    X::copy(x,state.x.front());
                 state.g.clear();
                     state.g.push_back(X_Vector());
-                    X::init(x,state.g.back());
-                state.s.clear();
-                    state.s.push_back(X_Vector());
-                    X::init(x,state.s.back()); 
+                    X::init(x,state.g.front());
+                state.dx.clear();
+                    state.dx.push_back(X_Vector());
+                    X::init(x,state.dx.front()); 
                 state.x_old.clear();
                     state.x_old.push_back(X_Vector());
-                    X::init(x,state.x_old.back());
+                    X::init(x,state.x_old.front());
                 state.g_old.clear();
                     state.g_old.push_back(X_Vector());
-                    X::init(x,state.g_old.back()); 
-                state.s_old.clear();
-                    state.s_old.push_back(X_Vector());
-                    X::init(x,state.s_old.back()); 
+                    X::init(x,state.g_old.front()); 
+                state.dx_old.clear();
+                    state.dx_old.push_back(X_Vector());
+                    X::init(x,state.dx_old.front()); 
             }
             static void init_vectors(t& state,const X_Vector& x) {
                 Unconstrained <Real,XX>::State::init_vectors_(state,x);
@@ -1793,9 +1797,9 @@ namespace peopt{
             
                 // Check that the tolerance for the step length stopping
                 // condition is positive
-                else if(state.eps_s <= Real(0.)) 
+                else if(state.eps_dx <= Real(0.)) 
                     ss << "The tolerance for the step length stopping "
-                        "condition must be positive: eps_s = " << state.eps_s; 
+                        "condition must be positive: eps_dx = " << state.eps_dx;
         
                 // Check that the current iteration is positive
                 else if(state.iter <= 0) 
@@ -1854,19 +1858,19 @@ namespace peopt{
 
                 // Check that the norm of the trial step is nonnegative or
                 // if we're on the first iteration, we allow a NaN
-                else if(state.norm_s < Real(0.)
-                    || (state.iter!=1 && state.norm_s!=state.norm_s)
+                else if(state.norm_dx < Real(0.)
+                    || (state.iter!=1 && state.norm_dx!=state.norm_dx)
                 ) 
                     ss << "The norm of the trial step must be nonnegative: "
-                        "norm_s = " << state.norm_s; 
+                        "norm_dx = " << state.norm_dx; 
 
                 // Check that the norm of a typical trial step is nonnegative or
                 // if we're on the first iteration, we allow a NaN
-                else if(state.norm_styp < Real(0.)
-                    || (state.iter!=1 && state.norm_styp!=state.norm_styp)
+                else if(state.norm_dxtyp < Real(0.)
+                    || (state.iter!=1 && state.norm_dxtyp!=state.norm_dxtyp)
                 ) 
                     ss << "The norm of a typical trial step must be "
-                        "nonnegative: norm_styp = " << state.norm_styp; 
+                        "nonnegative: norm_dxtyp = " << state.norm_dxtyp; 
 
                 // Check that the merit functions's value isn't a NaN past
                 // iteration 1
@@ -1876,9 +1880,9 @@ namespace peopt{
 
                 // Check that the merit function's value at a trial step isn't
                 // a NaN past iteration 1
-                else if(state.iter!=1 && state.merit_xps!=state.merit_xps) 
+                else if(state.iter!=1 && state.merit_xpdx!=state.merit_xpdx) 
                     ss << "The objective value at the trial step must be a "
-                        "number: merit_xps = " << state.merit_xps;
+                        "number: merit_xpdx = " << state.merit_xpdx;
 
                 // Check that the trust-region radius is positive
                 else if(state.delta<=Real(0.))
@@ -1917,12 +1921,6 @@ namespace peopt{
                         "must satisfy the relationship that eta1 < eta2: "
                         "eta1 = " << state.eta1 << ", eta2 = " << state.eta2;
 
-                // Check that the prediction versus actual reduction is
-                // nonnegative 
-                else if(state.rho < Real(0.)) 
-                    ss << "The predicted versus actual reduction must be "
-                        "nonnegative: rho = " << state.rho;
-
                 // Check that the line-search step length is positive 
                 else if(state.alpha <= Real(0.)) 
                     ss << "The line-search step length must be positive: "
@@ -1949,20 +1947,21 @@ namespace peopt{
             struct is_real : public std::unary_function<std::string, bool> {
                 bool operator () (const std::string& name) const {
                     if( name == "eps_g" || 
-                        name == "eps_s" || 
+                        name == "eps_dx" || 
                         name == "krylov_rel_err" || 
                         name == "eps_krylov" || 
                         name == "norm_g" || 
                         name == "norm_gtyp" || 
-                        name == "norm_s" ||
-                        name == "norm_styp" || 
+                        name == "norm_dx" ||
+                        name == "norm_dxtyp" || 
                         name == "merit_x" || 
-                        name == "merit_xps" ||
+                        name == "merit_xpdx" ||
                         name == "delta" || 
                         name == "delta_max" || 
                         name == "eta1" || 
                         name == "eta2" || 
-                        name == "rho" || 
+                        name == "ared" || 
+                        name == "pred" || 
                         name == "alpha" || 
                         name == "eps_ls"
                     ) 
@@ -2017,10 +2016,10 @@ namespace peopt{
                 bool operator () (const std::string& name) const {
                     if( name == "x" || 
                         name == "g" || 
-                        name == "s" || 
+                        name == "dx" || 
                         name == "x_old" || 
                         name == "g_old" || 
-                        name == "s_old" || 
+                        name == "dx_old" || 
                         name.substr(0,5)=="oldY_" || 
                         name.substr(0,5)=="oldS_" 
                     ) 
@@ -2111,14 +2110,14 @@ namespace peopt{
                 xs.second.splice(xs.second.end(),state.x);
                 xs.first.push_back("g");
                 xs.second.splice(xs.second.end(),state.g);
-                xs.first.push_back("s");
-                xs.second.splice(xs.second.end(),state.s);
+                xs.first.push_back("dx");
+                xs.second.splice(xs.second.end(),state.dx);
                 xs.first.push_back("x_old");
                 xs.second.splice(xs.second.end(),state.x_old);
                 xs.first.push_back("g_old");
                 xs.second.splice(xs.second.end(),state.g_old);
-                xs.first.push_back("s_old");
-                xs.second.splice(xs.second.end(),state.s_old);
+                xs.first.push_back("dx_old");
+                xs.second.splice(xs.second.end(),state.dx_old);
 
                 // Write out the quasi-Newton information with sequential names
                 {int i=1;
@@ -2157,8 +2156,8 @@ namespace peopt{
                 // Copy in all the real numbers 
                 reals.first.push_back("eps_g");
                 reals.second.push_back(state.eps_g);
-                reals.first.push_back("eps_s");
-                reals.second.push_back(state.eps_s);
+                reals.first.push_back("eps_dx");
+                reals.second.push_back(state.eps_dx);
                 reals.first.push_back("krylov_rel_err");
                 reals.second.push_back(state.krylov_rel_err);
                 reals.first.push_back("eps_krylov");
@@ -2167,14 +2166,14 @@ namespace peopt{
                 reals.second.push_back(state.norm_g);
                 reals.first.push_back("norm_gtyp");
                 reals.second.push_back(state.norm_gtyp);
-                reals.first.push_back("norm_s");
-                reals.second.push_back(state.norm_s);
-                reals.first.push_back("norm_styp");
-                reals.second.push_back(state.norm_styp);
+                reals.first.push_back("norm_dx");
+                reals.second.push_back(state.norm_dx);
+                reals.first.push_back("norm_dxtyp");
+                reals.second.push_back(state.norm_dxtyp);
                 reals.first.push_back("merit_x");
                 reals.second.push_back(state.merit_x);
-                reals.first.push_back("merit_xps");
-                reals.second.push_back(state.merit_xps);
+                reals.first.push_back("merit_xpdx");
+                reals.second.push_back(state.merit_xpdx);
                 reals.first.push_back("delta");
                 reals.second.push_back(state.delta);
                 reals.first.push_back("delta_max");
@@ -2183,8 +2182,10 @@ namespace peopt{
                 reals.second.push_back(state.eta1);
                 reals.first.push_back("eta2");
                 reals.second.push_back(state.eta2);
-                reals.first.push_back("rho");
-                reals.second.push_back(state.rho);
+                reals.first.push_back("ared");
+                reals.second.push_back(state.ared);
+                reals.first.push_back("pred");
+                reals.second.push_back(state.pred);
                 reals.first.push_back("alpha");
                 reals.second.push_back(state.alpha);
                 reals.first.push_back("eps_ls");
@@ -2268,17 +2269,17 @@ namespace peopt{
                         state.x.splice(state.x.end(),xs.second,x0);
                     else if(*name0=="g")
                         state.g.splice(state.g.end(),xs.second,x0);
-                    else if(*name0=="s")
-                        state.s.splice(state.s.end(),xs.second,x0);
+                    else if(*name0=="dx")
+                        state.dx.splice(state.dx.end(),xs.second,x0);
                     else if(*name0=="x_old")
                         state.x_old.splice(state.x_old.end(),xs.second,x0);
                     else if(*name0=="g_old")
                         state.g_old.splice(state.g_old.end(),xs.second,x0);
-                    else if(*name0=="s_old")
-                        state.s_old.splice(state.s_old.end(),xs.second,x0);
-                    else if(*name0=="oldY_")
+                    else if(*name0=="dx_old")
+                        state.dx_old.splice(state.dx_old.end(),xs.second,x0);
+                    else if(name0->substr(0,5)=="oldY_")
                         state.oldY.splice(state.oldY.end(),xs.second,x0);
-                    else if(*name0=="oldS_")
+                    else if(name0->substr(0,5)=="oldS_")
                         state.oldS.splice(state.oldS.end(),xs.second,x0);
 
                     // Remove the string corresponding to the element just
@@ -2303,20 +2304,21 @@ namespace peopt{
                     name++,real++
                 ){
                     if(*name=="eps_g") state.eps_g=*real;
-                    else if(*name=="eps_s") state.eps_s=*real;
+                    else if(*name=="eps_dx") state.eps_dx=*real;
                     else if(*name=="krylov_rel_err") state.krylov_rel_err=*real;
                     else if(*name=="eps_krylov") state.eps_krylov=*real;
                     else if(*name=="norm_g") state.norm_g=*real;
                     else if(*name=="norm_gtyp") state.norm_gtyp=*real;
-                    else if(*name=="norm_s") state.norm_s=*real;
-                    else if(*name=="norm_styp") state.norm_styp=*real;
+                    else if(*name=="norm_dx") state.norm_dx=*real;
+                    else if(*name=="norm_dxtyp") state.norm_dxtyp=*real;
                     else if(*name=="merit_x") state.merit_x=*real;
-                    else if(*name=="merit_xps") state.merit_xps=*real;
+                    else if(*name=="merit_xpdx") state.merit_xpdx=*real;
                     else if(*name=="delta") state.delta=*real;
                     else if(*name=="delta_max") state.delta_max=*real;
                     else if(*name=="eta1") state.eta1=*real;
                     else if(*name=="eta2") state.eta2=*real;
-                    else if(*name=="rho") state.rho=*real;
+                    else if(*name=="ared") state.ared=*real;
+                    else if(*name=="pred") state.pred=*real;
                     else if(*name=="alpha") state.alpha=*real;
                     else if(*name=="eps_ls") state.eps_ls=*real;
                 }
@@ -2484,7 +2486,7 @@ namespace peopt{
                 const std::list<X_Vector>& oldY;
                 const std::list<X_Vector>& oldS;
 
-                // Messaging device in case the qusi-Newton information is bad
+                // Messaging device in case the quasi-Newton information is bad
                 const Messaging& msg;
             public:
                 BFGS(
@@ -2656,7 +2658,7 @@ namespace peopt{
                 const std::list<X_Vector>& oldY;
                 const std::list<X_Vector>& oldS;
 
-                // Messaging device in case the qusi-Newton information is bad
+                // Messaging device in case the quasi-Newton information is bad
                 const Messaging& msg;
             public:
                 SR1(
@@ -2810,7 +2812,7 @@ namespace peopt{
                 const std::list<X_Vector>& oldY;
                 const std::list<X_Vector>& oldS;
 
-                // Messaging device in case the qusi-Newton information is bad
+                // Messaging device in case the quasi-Newton information is bad
                 const Messaging& msg;
             public:
                 InvBFGS(
@@ -3209,7 +3211,7 @@ namespace peopt{
                 const unsigned int& iter=state.iter;
                 const Real& merit_x=state.merit_x;
                 const Real& norm_g=state.norm_g;
-                const Real& norm_s=state.norm_s;
+                const Real& norm_dx=state.norm_dx;
                 const unsigned int& krylov_iter=state.krylov_iter;
                 const Real& krylov_rel_err=state.krylov_rel_err;
                 const KrylovStop::t& krylov_stop=state.krylov_stop;
@@ -3243,7 +3245,7 @@ namespace peopt{
                 out.push_back(atos <> (merit_x));
                 out.push_back(atos <> (norm_g));
                 if(!opt_begin)
-                    out.push_back(atos <> (norm_s));
+                    out.push_back(atos <> (norm_dx));
                 else
                     out.push_back("          ");
 
@@ -3366,12 +3368,12 @@ namespace peopt{
                 // Create some shortcuts
                 const Real& norm_g=state.norm_g;
                 const Real& norm_gtyp=state.norm_gtyp;
-                const Real& norm_s=state.norm_s;
-                const Real& norm_styp=state.norm_styp;
+                const Real& norm_dx=state.norm_dx;
+                const Real& norm_dxtyp=state.norm_dxtyp;
                 const int& iter=state.iter;
                 const int& iter_max=state.iter_max;
                 const Real& eps_g=state.eps_g;
-                const Real& eps_s=state.eps_s;
+                const Real& eps_dx=state.eps_dx;
 
                 // Check if we've exceeded the number of iterations
                 if(iter>=iter_max)
@@ -3379,7 +3381,7 @@ namespace peopt{
 
                 // Check whether the change in the step length has become too
                 // small relative to some typical step
-                if(norm_s < eps_s*norm_styp)
+                if(norm_dx < eps_dx*norm_dxtyp)
                     return StoppingCondition::RelativeStepSmall;
                 
                 // Check whether the norm is small relative to some typical
@@ -3419,33 +3421,34 @@ namespace peopt{
                 typename State::t& state
             ){
                 // Create shortcuts to some elements in the state
-                const X_Vector& s=*(state.s.begin());
-                const X_Vector& x=*(state.x.begin());
+                const X_Vector& dx=state.dx.front();
+                const X_Vector& x=state.x.front();
                 const Real& eta1=state.eta1;
                 const Real& eta2=state.eta2;
                 const Real& delta_max=state.delta_max;
                 const Real& merit_x=state.merit_x;
-                const Real& norm_s=state.norm_s;
+                const Real& norm_dx=state.norm_dx;
                 Real& delta=state.delta;
-                Real& rho=state.rho;
-                Real& merit_xps=state.merit_xps;
+                Real& ared=state.ared;
+                Real& pred=state.pred;
+                Real& merit_xpdx=state.merit_xpdx;
                 
                 // Create shortcuts to the functions that we need
                 const ScalarValuedFunction <Real,XX>& f_merit=*(fns.f_merit);
                 const ScalarValuedFunction <Real,XX>& model=*(fns.model);
 
                 // Allocate memory for temporaries that we need
-                X_Vector xps; X::init(x,xps);
+                X_Vector x_p_dx; X::init(x,x_p_dx);
 
-                // Determine x+s 
-                X::copy(s,xps);
-                X::axpy(Real(1.),x,xps);
+                // Determine x+dx 
+                X::copy(dx,x_p_dx);
+                X::axpy(Real(1.),x,x_p_dx);
 
-                // Determine the merit function evaluated at x+s
-                merit_xps=f_merit(xps);
+                // Determine the merit function evaluated at x+dx
+                merit_xpdx=f_merit(x_p_dx);
                 
-                // Determine the model function at s, m(s)
-                Real model_s=model(s);
+                // Determine the model function at dx, m(dx)
+                Real model_dx=model(dx);
 
                 // Add a safety check in case we don't actually minimize the TR
                 // subproblem correctly. This could happen for a variety of
@@ -3455,27 +3458,29 @@ namespace peopt{
                 // has an undefined result.  In the case that the actual 
                 // reduction also increases, rho could have an extraneous 
                 // positive value.  Hence, we require an extra check.
-                if(model_s > merit_x){
-                    delta = norm_s/Real(2.);
-                    rho = Real(std::numeric_limits<double>::quiet_NaN()); 
+                if(model_dx > merit_x){
+                    delta = norm_dx/Real(2.);
+                    pred = std::numeric_limits<Real>::quiet_NaN();
                     return false;
                 }
 
-                // Determine the ratio of reductions
-                rho = (merit_x - merit_xps) / (merit_x - model_s);
+                // Determine the reductions
+                ared = merit_x - merit_xpdx;
+                pred = merit_x - model_dx;
 
                 // Update the trust region radius and return whether or not we
                 // accept the step
-                if(rho >= eta2){
+                if(ared >= eta2*pred){
                     // Only increase the size of the trust region if we were
                     // close to the boundary
-                    if(fabs(norm_s-delta) < Real(1e-4)*delta)
-                        delta = std::min(delta*Real(2.),delta_max);
+                    if(fabs(norm_dx-delta) < Real(1e-4)*delta)
+                        delta = delta*Real(2.) < delta_max
+                              ? delta*Real(2.) : delta_max;
                     return true;
-                } else if(rho >= eta1 && rho < eta2)
+                } else if(ared >= eta1*pred && ared < eta2*pred)
                     return true;
                 else {
-                    delta = norm_s/Real(2.);
+                    delta = norm_dx/Real(2.);
                     return false;
                 }
             }
@@ -3488,18 +3493,18 @@ namespace peopt{
                 typename State::t& state
             ){
                 // Create some shortcuts
-                const Real& eps_s=state.eps_s;
+                const Real& eps_dx=state.eps_dx;
                 const Real& eps_krylov=state.eps_krylov;
                 const unsigned int& krylov_iter_max=state.krylov_iter_max;
                 const unsigned int& krylov_orthog_max=state.krylov_orthog_max;
                 const Real& delta=state.delta;
-                const X_Vector& x=state.x.back();
-                const X_Vector& g=state.g.back();
+                const X_Vector& x=state.x.front();
+                const X_Vector& g=state.g.front();
                 const Real& norm_g=state.norm_g;
-                const Real& norm_styp=state.norm_styp;
+                const Real& norm_dxtyp=state.norm_dxtyp;
                 unsigned int& rejected_trustregion=state.rejected_trustregion;
-                X_Vector& s=state.s.back();
-                Real& norm_s=state.norm_s;
+                X_Vector& dx=state.dx.front();
+                Real& norm_dx=state.norm_dx;
                 unsigned int& krylov_iter=state.krylov_iter;
                 Real& krylov_rel_err=state.krylov_rel_err;
                 KrylovStop::t& krylov_stop=state.krylov_stop;
@@ -3524,10 +3529,9 @@ namespace peopt{
 
                     // Use truncated-cd to find a new trial step
                     HessianOperator H(f,x);
-                    X_Vector s_cp; X::init(x,s_cp);
+                    X_Vector dx_cp; X::init(x,dx_cp);
                     X_Vector minus_g; X::init(x,minus_g);
                     X::copy(g,minus_g); X::scal(Real(-1.),minus_g);
-                    X::zero(s);
                     truncated_pcd(
                         H,
                         minus_g,
@@ -3537,8 +3541,8 @@ namespace peopt{
                         krylov_iter_max,
                         krylov_orthog_max,
                         delta,
-                        s,
-                        s_cp,
+                        dx,
+                        dx_cp,
                         krylov_rel_err,
                         krylov_iter,
                         krylov_stop);
@@ -3549,8 +3553,8 @@ namespace peopt{
                         OptimizationLocation::BeforeActualVersusPredicted);
 
                     // Save the length of the scaled trial step
-                    TR_op(s,x_tmp1);
-                    norm_s=sqrt(X::innr(x_tmp1,x_tmp1));
+                    TR_op(dx,x_tmp1);
+                    norm_dx=sqrt(X::innr(x_tmp1,x_tmp1));
 
                     // Check whether the step is good
                     if(checkStep(fns,state))
@@ -3575,9 +3579,9 @@ namespace peopt{
                     // and allow the stopping conditions to terminate
                     // optimization.  We use a zero length step so that we
                     // do not modify the current iterate.
-                    if(norm_s < eps_s*norm_styp) {
-                        X::scal(Real(0.),s);
-                        norm_s=Real(0.);
+                    if(norm_dx < eps_dx*norm_dxtyp) {
+                        X::scal(Real(0.),dx);
+                        norm_dx=Real(0.);
                         break;
                     }
                 } 
@@ -3588,12 +3592,12 @@ namespace peopt{
                 typename State::t& state
             ) {
                 // Create some shortcuts 
-                const X_Vector& g=*(state.g.begin());
-                X_Vector& s=*(state.s.begin());
+                const X_Vector& g=state.g.front();
+                X_Vector& dx=state.dx.front();
 
                 // We take the steepest descent direction
-                X::copy(g,s);
-                X::scal(Real(-1.),s);
+                X::copy(g,dx);
+                X::scal(Real(-1.),dx);
             }
     
             // Nonlinear Conjugate Gradient
@@ -3603,10 +3607,10 @@ namespace peopt{
             ) {
             
                 // Create some shortcuts 
-                const X_Vector& g=*(state.g.begin());
-                const X_Vector& s_old=*(state.s_old.begin());
+                const X_Vector& g=state.g.front();
+                const X_Vector& dx_old=state.dx_old.front();
                 const int& iter=state.iter;
-                X_Vector& s=*(state.s.begin());
+                X_Vector& dx=state.dx.front();
 
                 // If we're on the first iterations, we take the steepest
                 // descent direction
@@ -3615,7 +3619,7 @@ namespace peopt{
                 // On subsequent iterations, we take the specified direction
                 else {
                     // Find the momentum parameter
-                    double beta=0;
+                    double beta=Real(0.);
                     switch(dir) {
                     case NonlinearCGDirections::FletcherReeves:
                         beta=FletcherReeves(state);
@@ -3628,10 +3632,14 @@ namespace peopt{
                         break;
                     }
 
-                    // Find -g+beta*s_old
-                    X::copy(g,s);
-                    X::scal(Real(-1.),s);
-                    X::axpy(beta,s_old,s);
+                    // Find -g+beta*dx_old
+                    X::copy(g,dx);
+                    X::scal(Real(-1.),dx);
+                    X::axpy(beta,dx_old,dx);
+
+                    // We don't ever check the strong-Wolfe conditions, so
+                    // hard check that we have a descent direction
+                    if(X::innr(dx,g) > 0) X::scal(Real(-1.),dx);
                 }
             }
 
@@ -3641,8 +3649,8 @@ namespace peopt{
             ) {
 
                 // Create some shortcuts 
-                const X_Vector& g=*(state.g.begin());
-                const X_Vector& g_old=*(state.g_old.begin());
+                const X_Vector& g=state.g.front();
+                const X_Vector& g_old=state.g_old.front();
 
                 // Return the momentum parameter
                 return X::innr(g,g)/X::innr(g_old,g_old);
@@ -3654,12 +3662,16 @@ namespace peopt{
             ) {
 
                 // Create some shortcuts 
-                const X_Vector& g=*(state.g.begin());
-                const X_Vector& g_old=*(state.g_old.begin());
+                const X_Vector& g=state.g.front();
+                const X_Vector& g_old=state.g_old.front();
+
+                // Find g-g_old 
+                X_Vector g_m_gold; X::init(g,g_m_gold);
+                X::copy(g,g_m_gold);
+                X::axpy(Real(-1.),g_old,g_m_gold);
                     
                 // Return the momentum parameter
-                return (X::innr(g,g)-X::innr(g,g_old))
-                    /X::innr(g_old,g_old);
+                return X::innr(g,g_m_gold)/X::innr(g_old,g_old);
             }
             
             // Hestenes-Stiefel search direction
@@ -3668,13 +3680,27 @@ namespace peopt{
             ) {
 
                 // Create some shortcuts 
-                const X_Vector& g=*(state.g.begin());
-                const X_Vector& g_old=*(state.g_old.begin());
-                const X_Vector& s_old=*(state.s_old.begin());
+                const Real& alpha=state.alpha;
+                const X_Vector& g=state.g.front();
+                const X_Vector& g_old=state.g_old.front();
+                const X_Vector& dx_old=state.dx_old.front();
+
+                // Find g-g_old 
+                X_Vector g_m_gold; X::init(g,g_m_gold);
+                X::copy(g,g_m_gold);
+                X::axpy(Real(-1.),g_old,g_m_gold);
                     
-                // Return the momentum parameter
-                return (X::innr(g,g)-X::innr(g,g_old))
-                    /(X::innr(g,s_old)-X::innr(g_old,s_old));
+                // Return the momentum parameter.  Note, we scale things by
+                // alpha here, which is not in the standard Hestenes-Stiefel
+                // formula.  Internal to this code, we scale our search
+                // directions by alpha at every iteration.  This allows us
+                // to use the update x+dx for both trust-region and line-search
+                // methods.  Now, the formulas for Hestenes-Stiefel assume
+                // that the directions have not been scaled.  Therefore,
+                // dx_old really needs to be (1/alpha)dx_old to get rid of
+                // the scaling.  The alpha on top is just an algebraic
+                // rearrangement.
+                return alpha*X::innr(g,g_m_gold)/X::innr(dx_old,g_m_gold);
             }
 
             // BFGS search direction
@@ -3684,17 +3710,17 @@ namespace peopt{
             ) {
                 
                 // Create some shortcuts 
-                const X_Vector& g=*(state.g.begin());
-                X_Vector& s=*(state.s.begin());
+                const X_Vector& g=state.g.front();
+                X_Vector& dx=state.dx.front();
 
                 // Create the inverse BFGS operator
                 typename Functions::InvBFGS Hinv(msg,state); 
 
                 // Apply the inverse BFGS operator to the gradient
-                Hinv(g,s);
+                Hinv(g,dx);
 
                 // Negate the result
-                X::scal(Real(-1.),s);
+                X::scal(Real(-1.),dx);
             }
 
             // Compute a Golden-Section search between eps and 2*alpha where
@@ -3704,19 +3730,19 @@ namespace peopt{
                 typename State::t& state
             ) {
                 // Create some shortcuts
-                const X_Vector& x=*(state.x.begin());
+                const X_Vector& x=state.x.front();
                 const unsigned int& iter_max=state.linesearch_iter_max;
                 Real& alpha=state.alpha;
-                X_Vector& s=*(state.s.begin());
+                X_Vector& dx=state.dx.front();
                 unsigned int& iter_total=state.linesearch_iter_total;
                 unsigned int& iter=state.linesearch_iter;
-                Real& merit_xps=state.merit_xps;
+                Real& merit_xpdx=state.merit_xpdx;
                 
                 // Create shortcuts to the functions that we need
                 const ScalarValuedFunction <Real,XX>& f_merit=*(fns.f_merit);
 
-                // Create one work element that holds x+mu s or x+lambda s
-                X_Vector x_p_s; X::init(x,x_p_s);
+                // Create one work element that holds x+mu dx or x+lambda dx 
+                X_Vector x_p_dx; X::init(x,x_p_dx);
 
                 // Find 1 over the golden ratio
                 Real beta=Real(2./(1.+sqrt(5.)));
@@ -3733,14 +3759,14 @@ namespace peopt{
                 // Find the merit value at mu and labmda 
 
                 // mu 
-                X::copy(x,x_p_s);
-                X::axpy(mu,s,x_p_s);
-                Real merit_mu=f_merit(x_p_s);
+                X::copy(x,x_p_dx);
+                X::axpy(mu,dx,x_p_dx);
+                Real merit_mu=f_merit(x_p_dx);
 
                 // lambda
-                X::copy(x,x_p_s);
-                X::axpy(lambda,s,x_p_s);
-                Real merit_lambda=f_merit(x_p_s);
+                X::copy(x,x_p_dx);
+                X::axpy(lambda,dx,x_p_dx);
+                Real merit_lambda=f_merit(x_p_dx);
 
                 // Search for a fixed number of iterations 
                 for(iter=0;iter<iter_max;iter++){
@@ -3757,9 +3783,9 @@ namespace peopt{
                         merit_lambda=merit_mu;
                         mu=a+beta*(b-a);
 
-                        X::copy(x,x_p_s);
-                        X::axpy(mu,s,x_p_s);
-                        merit_mu=f_merit(x_p_s);
+                        X::copy(x,x_p_dx);
+                        X::axpy(mu,dx,x_p_dx);
+                        merit_mu=f_merit(x_p_dx);
 
                     // Otherwise, the objective is greater on the right, so
                     // bracket on the left
@@ -3769,9 +3795,9 @@ namespace peopt{
                         merit_mu=merit_lambda;
                         lambda=a+(1-beta)*(b-a);
                 
-                        X::copy(x,x_p_s);
-                        X::axpy(lambda,s,x_p_s);
-                        merit_lambda=f_merit(x_p_s);
+                        X::copy(x,x_p_dx);
+                        X::axpy(lambda,dx,x_p_dx);
+                        merit_lambda=f_merit(x_p_dx);
                     }
                 }
 
@@ -3783,7 +3809,7 @@ namespace peopt{
                 alpha=merit_lambda < merit_mu ? lambda : mu;
 
                 // Save the objective value at this step
-                merit_xps=merit_lambda < merit_mu ? merit_lambda : merit_mu;
+                merit_xpdx=merit_lambda < merit_mu ? merit_lambda : merit_mu;
             }
 
             // Find the line search parameter based on the 2-point approximation
@@ -3793,16 +3819,16 @@ namespace peopt{
                 typename State::t& state
             ) {
                 // Create some shortcuts
-                const X_Vector& x=*(state.x.begin());
-                const X_Vector& g=*(state.g.begin());
-                const X_Vector& x_old=*(state.x_old.begin());
-                const X_Vector& g_old=*(state.g_old.begin());
+                const X_Vector& x=state.x.front();
+                const X_Vector& g=state.g.front();
+                const X_Vector& x_old=state.x_old.front();
+                const X_Vector& g_old=state.g_old.front();
                 const LineSearchKind::t& kind=state.kind;
                 Real& alpha=state.alpha;
-                X_Vector& s=*(state.s.begin());
+                X_Vector& dx=state.dx.front();
                 unsigned int& iter_total=state.linesearch_iter_total;
                 unsigned int& iter=state.linesearch_iter;
-                Real& merit_xps=state.merit_xps;
+                Real& merit_xpdx=state.merit_xpdx;
                 
                 // Create shortcuts to the functions that we need
                 const ScalarValuedFunction <Real,XX>& f_merit=*(fns.f_merit);
@@ -3811,7 +3837,7 @@ namespace peopt{
                 // element for storing x+alpha s
                 X_Vector delta_x; X::init(x,delta_x);
                 X_Vector delta_g; X::init(x,delta_g);
-                X_Vector x_p_s; X::init(x,x_p_s);
+                X_Vector x_p_dx; X::init(x,x_p_dx);
 
                 // Find delta_x
                 X::copy(x,delta_x);
@@ -3828,9 +3854,9 @@ namespace peopt{
                     alpha=X::innr(delta_x,delta_x)/X::innr(delta_x,delta_g);
 
                 // Save the merit value at this step
-                X::copy(x,x_p_s);
-                X::axpy(alpha,s,x_p_s);
-                merit_xps=f_merit(x_p_s);
+                X::copy(x,x_p_dx);
+                X::axpy(alpha,dx,x_p_dx);
+                merit_xpdx=f_merit(x_p_dx);
 
                 // Since we do one function evaluation, increase the linesearch
                 // iteration by one
@@ -3843,26 +3869,26 @@ namespace peopt{
                 typename State::t& state
             ) {
                 // Create some shortcuts
-                const X_Vector& x=*(state.x.begin());
+                const X_Vector& x=state.x.front();
                 const unsigned int& iter_max=state.linesearch_iter_max;
                 Real& alpha=state.alpha;
-                X_Vector& s=*(state.s.begin());
+                X_Vector& dx=state.dx.front();
                 unsigned int& iter_total=state.linesearch_iter_total;
                 unsigned int& iter=state.linesearch_iter;
-                Real& merit_xps=state.merit_xps;
+                Real& merit_xpdx=state.merit_xpdx;
                 
                 // Create shortcuts to the functions that we need
                 const ScalarValuedFunction <Real,XX>& f_merit=*(fns.f_merit);
 
                 // Create one work element for holding x+alpha s
-                X_Vector x_p_s; X::init(x,x_p_s);
+                X_Vector x_p_dx; X::init(x,x_p_dx);
 
                 // Store the best merit value and alpha that we used to find it.
                 // Our initial guess will be at alpha*2.
                 Real alpha_best=Real(2.)*alpha;
-                X::copy(x,x_p_s);
-                X::axpy(alpha_best,s,x_p_s);
-                Real merit_best=f_merit(x_p_s);
+                X::copy(x,x_p_dx);
+                X::axpy(alpha_best,dx,x_p_dx);
+                Real merit_best=f_merit(x_p_dx);
 
                 // Evaluate the merit iter_max times at a distance of
                 // 2*alpha, alpha, alpha/2, ....  Then, pick the best one.
@@ -3871,9 +3897,9 @@ namespace peopt{
                 Real alpha0=alpha;
                 for(iter=1;iter<iter_max;iter++){
                     // Evaluate f_merit(x+alpha*s)
-                    X::copy(x,x_p_s);
-                    X::axpy(alpha0,s,x_p_s);
-                    Real merit=f_merit(x_p_s);
+                    X::copy(x,x_p_dx);
+                    X::axpy(alpha0,dx,x_p_dx);
+                    Real merit=f_merit(x_p_dx);
 
                     // If this is better than our best guess so far, save it
                     if(merit<merit_best){
@@ -3887,7 +3913,7 @@ namespace peopt{
 
                 // Save the best merit value and alpha found
                 alpha=alpha_best;
-                merit_xps=merit_best;
+                merit_xpdx=merit_best;
 
                 // Indicate how many iterations we used to find this value
                 iter_total+=iter;
@@ -3901,22 +3927,22 @@ namespace peopt{
                 typename State::t& state
             ){
                 // Create some shortcuts
-                const X_Vector& x=state.x.back();
-                const X_Vector& g=state.g.back();
+                const X_Vector& x=state.x.front();
+                const X_Vector& g=state.g.front();
                 const LineSearchDirection::t& dir=state.dir;
                 const LineSearchKind::t& kind=state.kind;
                 const int& iter=state.iter;
                 const int& linesearch_iter_max=state.linesearch_iter_max;
                 const Real& merit_x=state.merit_x;
-                const Real& eps_s=state.eps_s;
-                const Real& norm_styp=state.norm_styp;
+                const Real& eps_dx=state.eps_dx;
+                const Real& norm_dxtyp=state.norm_dxtyp;
                 const Real& eps_krylov=state.eps_krylov;
                 const unsigned int& krylov_iter_max=state.krylov_iter_max;
                 const unsigned int& krylov_orthog_max=state.krylov_orthog_max;
                 const Real& norm_g=state.norm_g;
-                X_Vector& s=state.s.back();
-                Real& merit_xps=state.merit_xps;
-                Real& norm_s=state.norm_s;
+                X_Vector& dx=state.dx.front();
+                Real& merit_xpdx=state.merit_xpdx;
+                Real& norm_dx=state.norm_dx;
                 Real& alpha=state.alpha;
                 Real& krylov_rel_err=state.krylov_rel_err;
                 unsigned int& krylov_iter=state.krylov_iter;
@@ -3949,10 +3975,9 @@ namespace peopt{
                     break;
                 case LineSearchDirection::NewtonCG: {
                     HessianOperator H(f,x);
-                    X_Vector s_cp; X::init(x,s_cp);
+                    X_Vector dx_cp; X::init(x,dx_cp);
                     X_Vector minus_g; X::init(x,minus_g);
                     X::copy(g,minus_g); X::scal(Real(-1.),minus_g);
-                    X::zero(s);
                     truncated_pcd(
                         H,
                         minus_g,
@@ -3962,8 +3987,8 @@ namespace peopt{
                         krylov_iter_max,
                         krylov_orthog_max,
                         std::numeric_limits <Real>::infinity(),
-                        s,
-                        s_cp,
+                        dx,
+                        dx_cp,
                         krylov_rel_err,
                         krylov_iter,
                         krylov_stop);
@@ -3985,15 +4010,15 @@ namespace peopt{
 
                         // If we have no reduction in the merit, print
                         // some diagnostic information.
-                        if(merit_xps > merit_x || merit_xps!=merit_xps) {
+                        if(merit_xpdx > merit_x || merit_xpdx!=merit_xpdx) {
 
                             // Determine the size of the step
-                            norm_s=alpha*sqrt(X::innr(s,s));
+                            norm_dx=alpha*sqrt(X::innr(dx,dx));
 
                             // Check if the step becomes so small that we're not
                             // making progress.  In this case, take a zero step 
                             // and allow the stopping conditions to exit
-                            if(norm_s < eps_s*norm_styp) {
+                            if(norm_dx < eps_dx*norm_dxtyp) {
                                 alpha=0.;
                                 break;
                             }
@@ -4012,7 +4037,7 @@ namespace peopt{
                         }
 
                     // If we don't decrease the merit , try again 
-                    } while(merit_x < merit_xps || merit_xps!=merit_xps);
+                    } while(merit_x < merit_xpdx || merit_xpdx!=merit_xpdx);
                     break;
                 case LineSearchKind::BackTracking:
                     // Continue doing a line-search until we get a reduction
@@ -4023,14 +4048,14 @@ namespace peopt{
 
                         // If we have no reduction in the merit, print
                         // some diagnostic information.
-                        if(merit_xps > merit_x || merit_xps!=merit_xps) {
+                        if(merit_xpdx > merit_x || merit_xpdx!=merit_xpdx) {
                             // Determine the size of the step
-                            norm_s=alpha*sqrt(X::innr(s,s));
+                            norm_dx=alpha*sqrt(X::innr(dx,dx));
 
                             // Check if the step becomes so small that we're not
                             // making progress.  In this case, take a zero step 
                             // and allow the stopping conditions to exit
-                            if(norm_s < eps_s*norm_styp) {
+                            if(norm_dx < eps_dx*norm_dxtyp) {
                                 alpha=0.;
                                 break;
                             }
@@ -4047,12 +4072,14 @@ namespace peopt{
                         }
 
                     // If we don't decrease the merit, try again 
-                    } while(merit_x < merit_xps || merit_xps!=merit_xps);
+                    } while(merit_x < merit_xpdx || merit_xpdx!=merit_xpdx);
                     break;
                 case LineSearchKind::TwoPointA:
                 case LineSearchKind::TwoPointB:
-                    if(iter>1) twoPoint(fns,state);
-                    else goldenSection(fns,state);
+                    if(iter>1)
+                        twoPoint(fns,state);
+                    else
+                        goldenSection(fns,state);
                     break;
                 case LineSearchKind::Brents:
                     msg.error(
@@ -4061,10 +4088,10 @@ namespace peopt{
                 }
             
                 // Scale the line-search direction by the line search parameter 
-                X::scal(alpha,s);
+                X::scal(alpha,dx);
 
                 // Save the length of the trial step
-                norm_s=sqrt(X::innr(s,s));
+                norm_dx=sqrt(X::innr(dx,dx));
             }
 
             // Finds a new trial step
@@ -4096,10 +4123,10 @@ namespace peopt{
                 if(state.stored_history==0) return;
 
                 // Create some shortcuts
-                const X_Vector& x=*(state.x.begin());
-                const X_Vector& g=*(state.g.begin());
-                const X_Vector& x_old=*(state.x_old.begin());
-                const X_Vector& g_old=*(state.g_old.begin());
+                const X_Vector& x=state.x.front();
+                const X_Vector& g=state.g.front();
+                const X_Vector& x_old=state.x_old.front();
+                const X_Vector& g_old=state.g_old.front();
                 const Operators::t& Minv_type=state.Minv_type;
                 const Operators::t& H_type=state.H_type;
                 const LineSearchDirection::t& dir=state.dir;
@@ -4110,7 +4137,7 @@ namespace peopt{
                 X_Vector s; X::init(x,s);
                 X_Vector y; X::init(x,y);
 
-                // Find s = u-u_old
+                // Find s = x-x_old
                 X::copy(x,s);
                 X::axpy(Real(-1.),x_old,s);
 
@@ -4143,18 +4170,17 @@ namespace peopt{
                 typename State::t& state
             ){
                 // Create some shortcuts
-                X_Vector& x=*(state.x.begin());
-                X_Vector& g=*(state.g.begin());
-                X_Vector& s=*(state.s.begin());
-                X_Vector& x_old=*(state.x_old.begin());
-                X_Vector& g_old=*(state.g_old.begin());
-                X_Vector& s_old=*(state.s_old.begin());
+                X_Vector& x=state.x.front();
+                X_Vector& g=state.g.front();
+                X_Vector& dx=state.dx.front();
+                X_Vector& x_old=state.x_old.front();
+                X_Vector& g_old=state.g_old.front();
+                X_Vector& dx_old=state.dx_old.front();
                 Real& merit_x=state.merit_x;
-                Real& merit_xps=state.merit_xps;
-                Real& norm_s=state.norm_s;
+                Real& merit_xpdx=state.merit_xpdx;
                 Real& norm_g=state.norm_g;
                 Real& norm_gtyp=state.norm_gtyp;
-                Real& norm_styp=state.norm_styp;
+                Real& norm_dxtyp=state.norm_dxtyp;
                 unsigned int& iter=state.iter;
                 StoppingCondition::t& opt_stop=state.opt_stop;
                 
@@ -4182,7 +4208,7 @@ namespace peopt{
                     // it initially sets the norm of a typical step to be the
                     // norm of the gradient, which is akin to taking a
                     // steepest descent step without globalization.
-                    norm_styp=norm_g;
+                    norm_dxtyp=norm_g;
                 }
 
                 // Manipulate the state if required
@@ -4193,10 +4219,6 @@ namespace peopt{
                     // Get a new optimization iterate.  
                     getStep(msg,smanip,fns,state);
 
-                    // If we've not calculated it already, save the size of
-                    // the step
-                    if(norm_styp!=norm_styp) norm_styp=norm_s;
-                    
                     // Manipulate the state if required
                     smanip(fns,state,OptimizationLocation::BeforeSaveOld);
 
@@ -4204,20 +4226,20 @@ namespace peopt{
                     // is useful for both CG and quasi-Newton methods.
                     X::copy(x,x_old);
                     X::copy(g,g_old);
-                    X::copy(s,s_old);
+                    X::copy(dx,dx_old);
 
                     // Manipulate the state if required
                     smanip(fns,state,OptimizationLocation::BeforeStep);
 
                     // Move to the new iterate
-                    X::axpy(Real(1.),s,x);
+                    X::axpy(Real(1.),dx,x);
 
                     // Manipulate the state if required
                     smanip(fns,state,
                         OptimizationLocation::AfterStepBeforeGradient);
 
                     // Find the new merit value and gradient
-                    merit_x=merit_xps;
+                    merit_x=merit_xpdx;
                     f.grad(x,g);
                     norm_g=sqrt(X::innr(g,g));
                     
@@ -4728,8 +4750,8 @@ namespace peopt{
             // This initializes all the parameters required for inequality
             // constrained optimization.  
             static void init_params_(t& state) {
-                state.mu = Real(std::numeric_limits<double>::quiet_NaN());
-                state.mu_typ = Real(std::numeric_limits<double>::quiet_NaN());
+                state.mu = std::numeric_limits<Real>::quiet_NaN();
+                state.mu_typ = std::numeric_limits<Real>::quiet_NaN();
                 state.eps_mu= Real(1e-6);
                 state.sigma = Real(0.5);
                 state.gamma = Real(0.95);
@@ -5597,30 +5619,30 @@ namespace peopt{
                 // Create some shortcuts
                 const Z_Vector& h_x=state.h_x.front();
                 const X_Vector& x=state.x.front();
-                const X_Vector& s=state.s.front();
+                const X_Vector& dx=state.dx.front();
                 const Real& mu=state.mu;
                 const Real& sigma=state.sigma;
                 const VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
                 Z_Vector& z=state.z.front();
 
-                // z_tmp1 <- h'(x)s
+                // z_tmp1 <- h'(x)dx
                 Z_Vector z_tmp1; Z::init(z,z_tmp1);
-                h.p(x,s,z_tmp1);
+                h.p(x,dx,z_tmp1);
 
-                // z_tmp2 <- z o h'(x)s
+                // z_tmp2 <- z o h'(x)dx
                 Z_Vector z_tmp2; Z::init(z,z_tmp2);
                 Z::prod(z,z_tmp1,z_tmp2);
 
-                // z_tmp2 <- - z o h'(x)s
+                // z_tmp2 <- - z o h'(x)dx
                 Z::scal(Real(-1.),z_tmp2);
 
                 // z_tmp1 <- e
                 Z::id(z_tmp1);
 
-                // z_tmp2 <- -z o h'(x)s + sigma mu e
+                // z_tmp2 <- -z o h'(x)dx + sigma mu e
                 Z::axpy(sigma*mu,z_tmp1,z_tmp2);
 
-                // z <- inv L(h(x)) (-z o h'(x)s + sigma mu e)
+                // z <- inv L(h(x)) (-z o h'(x)dx + sigma mu e)
                 Z::linv(h_x,z_tmp2,z);
             }
 
@@ -5658,33 +5680,33 @@ namespace peopt{
                 const Z_Vector& z=state.z.front();
                 const Z_Vector& h_x=state.h_x.front();
                 const X_Vector& x=state.x.front();
-                const X_Vector& s=state.s.front();
+                const X_Vector& dx=state.dx.front();
                 const Real& mu=state.mu;
                 const Real& sigma=state.sigma;
                 const VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
                 Z_Vector& dz=state.dz.front();
 
-                // z_tmp1 <- h'(x)s
+                // z_tmp1 <- h'(x)dx
                 Z_Vector z_tmp1; Z::init(z,z_tmp1);
-                h.p(x,s,z_tmp1);
+                h.p(x,dx,z_tmp1);
 
-                // z_tmp2 <- z o h'(x)s
+                // z_tmp2 <- z o h'(x)dx
                 Z_Vector z_tmp2; Z::init(z,z_tmp2);
                 Z::prod(z,z_tmp1,z_tmp2);
 
-                // z_tmp2 <- - z o h'(x)s
+                // z_tmp2 <- - z o h'(x)dx
                 Z::scal(Real(-1.),z_tmp2);
 
                 // z_tmp1 <- e
                 Z::id(z_tmp1);
 
-                // z_tmp2 <- -z o h'(x)s + sigma mu e
+                // z_tmp2 <- -z o h'(x)dx + sigma mu e
                 Z::axpy(sigma*mu,z_tmp1,z_tmp2);
 
-                // dz <- inv L(h(x)) (-z o h'(x)s + sigma mu e)
+                // dz <- inv L(h(x)) (-z o h'(x)dx + sigma mu e)
                 Z::linv(h_x,z_tmp2,dz);
 
-                // dz <- -z + inv L(h(x)) (-z o h'(x)s + sigma mu e)
+                // dz <- -z + inv L(h(x)) (-z o h'(x)dx + sigma mu e)
                 Z::axpy(Real(-1.),z,dz);
             }
 
@@ -5749,7 +5771,7 @@ namespace peopt{
                 const X_Vector& x=state.x.front();
                 const Z_Vector& h_x=state.h_x.front();
                 const VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
-                X_Vector& s=state.s.front();
+                X_Vector& dx=state.dx.front();
                 Z_Vector& dz=state.dz.front();
                 Real& alpha=state.alpha;
 
@@ -5757,17 +5779,17 @@ namespace peopt{
                 // method this is just the step.  In the case of
                 // a line-search method this is 2 alpha s.  This represents
                 // the farthest either method will attempt to step.
-                X_Vector ss; X::init(x,ss);
-                X::copy(s,ss);
+                X_Vector dx_; X::init(x,dx_);
+                X::copy(dx,dx_);
                 if(algorithm_class==AlgorithmClass::LineSearch)
-                    X::scal(Real(2.)*alpha,ss);
+                    X::scal(Real(2.)*alpha,dx_);
                 
                 // Determine how far we can go in the primal variable
                 
                 // x_tmp1=x+s
                 X_Vector x_tmp1; X::init(x,x_tmp1);
                 X::copy(x,x_tmp1);
-                X::axpy(Real(1.),ss,x_tmp1);
+                X::axpy(Real(1.),dx_,x_tmp1);
 
                 // z_tmp1=h(x+s)
                 Z_Vector z_tmp1; Z::init(z,z_tmp1);
@@ -5800,7 +5822,7 @@ namespace peopt{
                 if(algorithm_class==AlgorithmClass::TrustRegion) 
 
                     // Shorten the step
-                    X::scal(beta_x,s);
+                    X::scal(beta_x,dx);
 
                 // If we're doing a line-search method, make sure
                 // we can't line-search past this point
@@ -5829,24 +5851,24 @@ namespace peopt{
                 const X_Vector& x=state.x.front();
                 const Z_Vector& h_x=state.h_x.front();
                 const VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
-                X_Vector& s=state.s.front();
+                X_Vector& dx=state.dx.front();
                 Real& alpha=state.alpha;
 
                 // Create a fake step.  In the case of a trust-region
                 // method this is just the step.  In the case of
                 // a line-search method this is 2 alpha s.  This represents
                 // the farthest either method will attempt to step.
-                X_Vector ss; X::init(x,ss);
-                X::copy(s,ss);
+                X_Vector dx_; X::init(x,dx_);
+                X::copy(dx,dx_);
                 if(algorithm_class==AlgorithmClass::LineSearch)
-                    X::scal(Real(2.)*alpha,ss);
+                    X::scal(Real(2.)*alpha,dx_);
                 
                 // Determine how far we can go in the primal variable
                 
                 // x_tmp1=x+s
                 X_Vector x_tmp1; X::init(x,x_tmp1);
                 X::copy(x,x_tmp1);
-                X::axpy(Real(1.),ss,x_tmp1);
+                X::axpy(Real(1.),dx_,x_tmp1);
 
                 // z_tmp1=h(x+s)
                 Z_Vector z_tmp1; Z::init(z,z_tmp1);
@@ -5862,7 +5884,7 @@ namespace peopt{
                 // Determine how far we can go in the dual variable
 
                 // z_tmp1=h'(x)s
-                h.p(x,ss,z_tmp1);
+                h.p(x,dx_,z_tmp1);
                 
                 // z_tmp2 = z o h'(x)s
                 Z_Vector z_tmp2; Z::init(z,z_tmp2);
@@ -5915,7 +5937,7 @@ namespace peopt{
                 if(algorithm_class==AlgorithmClass::TrustRegion) 
 
                     // Shorten the step
-                    X::scal(alpha0,s);
+                    X::scal(alpha0,dx);
 
                 // If we're doing a line-search method, make sure
                 // we can't line-search past this point
@@ -5937,24 +5959,24 @@ namespace peopt{
                 const Z_Vector& z=state.z.front();
                 const Z_Vector& h_x=state.h_x.front();
                 const VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
-                X_Vector& s=state.s.front();
+                X_Vector& dx=state.dx.front();
                 Real& alpha=state.alpha;
 
                 // Create a fake step.  In the case of a trust-region
                 // method this is just the step.  In the case of
                 // a line-search method this is 2 alpha s.  This represents
                 // the farthest either method will attempt to step.
-                X_Vector ss; X::init(x,ss);
-                X::copy(s,ss);
+                X_Vector dx_; X::init(x,dx_);
+                X::copy(dx,dx_);
                 if(algorithm_class==AlgorithmClass::LineSearch)
-                    X::scal(Real(2.)*alpha,ss);
+                    X::scal(Real(2.)*alpha,dx_);
                 
                 // Determine how far we can go in the primal variable
                 
                 // x_tmp1=x+s
                 X_Vector x_tmp1; X::init(x,x_tmp1);
                 X::copy(x,x_tmp1);
-                X::axpy(Real(1.),ss,x_tmp1);
+                X::axpy(Real(1.),dx_,x_tmp1);
 
                 // z_tmp1=h(x+s)
                 Z_Vector z_tmp1; Z::init(z,z_tmp1);
@@ -5976,7 +5998,7 @@ namespace peopt{
                 if(algorithm_class==AlgorithmClass::TrustRegion) 
 
                     // Shorten the step
-                    X::scal(beta_x,s);
+                    X::scal(beta_x,dx);
 
                 // If we're doing a line-search method, make sure
                 // we can't line-search past this point
@@ -6035,7 +6057,7 @@ namespace peopt{
                     Z_Vector& dz=state.dz.front();
                     Real& mu = state.mu;
                     Real& sigma = state.sigma;
-                    Real& merit_xps= state.merit_xps;
+                    Real& merit_xpdx= state.merit_xpdx;
                     Real& norm_g = state.norm_g;
                     const ScalarValuedFunction<Real,XX>& f_merit=*(fns.f_merit);
 
@@ -6111,7 +6133,7 @@ namespace peopt{
 
                         // Calculate the new merit function based on this
                         // interior point paramter
-                        merit_xps=f_merit(x);
+                        merit_xpdx=f_merit(x);
                         break; 
 
                     // Copy in the original gradient for the quasi-Newton method

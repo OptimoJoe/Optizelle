@@ -64,7 +64,7 @@ BOOST_AUTO_TEST_CASE(newton_cg) {
     state.eps_krylov = 1e-2;
     state.iter_max = 100;
     state.eps_g = 1e-8;
-    state.eps_s = 1e-8;
+    state.eps_dx = 1e-8;
     state.msg_level = 0;
     
     // Create the bundle of functions 
@@ -145,7 +145,7 @@ BOOST_AUTO_TEST_CASE(bfgs) {
     state.stored_history = 10;
     state.iter_max = 300;
     state.msg_level = 0;
-    state.eps_s = 1e-16;
+    state.eps_dx = 1e-16;
     
     // Create the bundle of functions 
     peopt::Unconstrained <double,Rm>::Functions::t fns;

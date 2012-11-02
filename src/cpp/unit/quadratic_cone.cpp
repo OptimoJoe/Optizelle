@@ -133,7 +133,7 @@ BOOST_AUTO_TEST_CASE(newton_cg) {
     state.eps_krylov = 1e-10;
     state.iter_max = 300;
     state.msg_level = 0;
-    state.eps_s = 1e-16;
+    state.eps_dx = 1e-16;
     state.eps_g = 1e-9;
     state.eps_mu  = 1e-8;
     state.sigma = 0.01;
@@ -188,7 +188,7 @@ BOOST_AUTO_TEST_CASE(tr_newton) {
     state.iter_max = 100;
     state.msg_level = 0;
     state.eps_krylov = 1e-10;
-    state.eps_s = 1e-16;
+    state.eps_dx = 1e-16;
     state.eps_g = 1e-10;
     state.eps_mu = 1e-8;
     state.sigma = 0.01;
@@ -243,7 +243,7 @@ BOOST_AUTO_TEST_CASE(tr_newton_predictor_corrector) {
     state.iter_max = 100;
     state.msg_level = 0;
     state.eps_krylov = 1e-10;
-    state.eps_s = 1e-16;
+    state.eps_dx = 1e-16;
     state.eps_g = 1e-10;
     state.eps_mu = 1e-8;
     state.gamma = 0.995;
@@ -303,7 +303,7 @@ BOOST_AUTO_TEST_CASE(sr1) {
     state.msg_level = 0;
     state.sigma = 0.10;
     state.gamma = 0.95;
-    state.eps_s = 1e-16;
+    state.eps_dx = 1e-16;
     state.eps_mu = 1e-8;
 
     // Solve the optimization problem

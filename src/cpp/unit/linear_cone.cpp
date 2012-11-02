@@ -127,7 +127,7 @@ BOOST_AUTO_TEST_CASE(newton_cg) {
     state.eps_krylov = 1e-10;
     state.iter_max = 100;
     state.msg_level = 0;
-    state.eps_s = 1e-16;
+    state.eps_dx = 1e-16;
     state.eps_g = 1e-8;
     state.eps_mu=1e-8;
     state.sigma=0.01;
@@ -176,7 +176,7 @@ BOOST_AUTO_TEST_CASE(tr_newton) {
     state.iter_max = 100;
     state.msg_level = 0;
     state.eps_krylov = 1e-10;
-    state.eps_s = 1e-16;
+    state.eps_dx = 1e-16;
     state.eps_g = 1e-8;
     state.eps_mu=1e-8;
     state.sigma=0.01;
@@ -225,7 +225,7 @@ BOOST_AUTO_TEST_CASE(tr_newton_predictor_corrector) {
     state.iter_max = 100;
     state.msg_level = 0;
     state.eps_krylov = 1e-10;
-    state.eps_s = 1e-16;
+    state.eps_dx = 1e-16;
     state.eps_g = 1e-8;
     state.eps_mu=1e-8;
     state.gamma=.995;
@@ -275,7 +275,7 @@ BOOST_AUTO_TEST_CASE(sr1) {
     state.stored_history = 2;
     state.iter_max = 300;
     state.msg_level = 0;
-    state.eps_s = 1e-16;
+    state.eps_dx = 1e-16;
     state.eps_g = 1e-8;
     state.eps_mu = 1e-8;
     state.sigma=0.01;

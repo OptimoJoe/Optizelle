@@ -29,10 +29,10 @@ BOOST_AUTO_TEST_CASE(unconstrained) {
     // Check that the state has empty slots for the variables
     BOOST_CHECK(state.x.size()==0);
     BOOST_CHECK(state.g.size()==0);
-    BOOST_CHECK(state.s.size()==0);
+    BOOST_CHECK(state.dx.size()==0);
     BOOST_CHECK(state.x_old.size()==0);
     BOOST_CHECK(state.g_old.size()==0);
-    BOOST_CHECK(state.s_old.size()==0);
+    BOOST_CHECK(state.dx_old.size()==0);
     BOOST_CHECK(state.oldY.size()==0);
     BOOST_CHECK(state.oldS.size()==0);
 
@@ -43,10 +43,10 @@ BOOST_AUTO_TEST_CASE(unconstrained) {
     // Check that we actually have memory in these slots
     BOOST_CHECK(state.x.size()==1);
     BOOST_CHECK(state.g.size()==1);
-    BOOST_CHECK(state.s.size()==1);
+    BOOST_CHECK(state.dx.size()==1);
     BOOST_CHECK(state.x_old.size()==1);
     BOOST_CHECK(state.g_old.size()==1);
-    BOOST_CHECK(state.s_old.size()==1);
+    BOOST_CHECK(state.dx_old.size()==1);
 
     // Check the relative error between the vector created above and the one
     // left in the state
@@ -86,10 +86,10 @@ BOOST_AUTO_TEST_CASE(equality_constrained) {
     // Check that the state has empty slots for the variables
     BOOST_CHECK(state.x.size()==0);
     BOOST_CHECK(state.g.size()==0);
-    BOOST_CHECK(state.s.size()==0);
+    BOOST_CHECK(state.dx.size()==0);
     BOOST_CHECK(state.x_old.size()==0);
     BOOST_CHECK(state.g_old.size()==0);
-    BOOST_CHECK(state.s_old.size()==0);
+    BOOST_CHECK(state.dx_old.size()==0);
     BOOST_CHECK(state.oldY.size()==0);
     BOOST_CHECK(state.oldS.size()==0);
     BOOST_CHECK(state.y.size()==0);
@@ -101,10 +101,10 @@ BOOST_AUTO_TEST_CASE(equality_constrained) {
     // Check that we actually have memory in these slots
     BOOST_CHECK(state.x.size()==1);
     BOOST_CHECK(state.g.size()==1);
-    BOOST_CHECK(state.s.size()==1);
+    BOOST_CHECK(state.dx.size()==1);
     BOOST_CHECK(state.x_old.size()==1);
     BOOST_CHECK(state.g_old.size()==1);
-    BOOST_CHECK(state.s_old.size()==1);
+    BOOST_CHECK(state.dx_old.size()==1);
     BOOST_CHECK(state.y.size()==1);
 
     // Check the relative error between the vector created above and the one
@@ -145,10 +145,10 @@ BOOST_AUTO_TEST_CASE(inequality_constrained) {
     // Check that the state has empty slots for the variables
     BOOST_CHECK(state.x.size()==0);
     BOOST_CHECK(state.g.size()==0);
-    BOOST_CHECK(state.s.size()==0);
+    BOOST_CHECK(state.dx.size()==0);
     BOOST_CHECK(state.x_old.size()==0);
     BOOST_CHECK(state.g_old.size()==0);
-    BOOST_CHECK(state.s_old.size()==0);
+    BOOST_CHECK(state.dx_old.size()==0);
     BOOST_CHECK(state.oldY.size()==0);
     BOOST_CHECK(state.oldS.size()==0);
     BOOST_CHECK(state.z.size()==0);
@@ -164,10 +164,10 @@ BOOST_AUTO_TEST_CASE(inequality_constrained) {
     // Check that we actually have memory in these slots
     BOOST_CHECK(state.x.size()==1);
     BOOST_CHECK(state.g.size()==1);
-    BOOST_CHECK(state.s.size()==1);
+    BOOST_CHECK(state.dx.size()==1);
     BOOST_CHECK(state.x_old.size()==1);
     BOOST_CHECK(state.g_old.size()==1);
-    BOOST_CHECK(state.s_old.size()==1);
+    BOOST_CHECK(state.dx_old.size()==1);
     BOOST_CHECK(state.z.size()==1);
     BOOST_CHECK(state.h_x.size()==1);
     //BOOST_CHECK(state.g_orig.size()==1);
@@ -218,10 +218,10 @@ BOOST_AUTO_TEST_CASE(constrained) {
     // Check that the state has empty slots for the variables
     BOOST_CHECK(state.x.size()==0);
     BOOST_CHECK(state.g.size()==0);
-    BOOST_CHECK(state.s.size()==0);
+    BOOST_CHECK(state.dx.size()==0);
     BOOST_CHECK(state.x_old.size()==0);
     BOOST_CHECK(state.g_old.size()==0);
-    BOOST_CHECK(state.s_old.size()==0);
+    BOOST_CHECK(state.dx_old.size()==0);
     BOOST_CHECK(state.oldY.size()==0);
     BOOST_CHECK(state.oldS.size()==0);
     BOOST_CHECK(state.y.size()==0);
@@ -238,10 +238,10 @@ BOOST_AUTO_TEST_CASE(constrained) {
     // Check that we actually have memory in these slots
     BOOST_CHECK(state.x.size()==1);
     BOOST_CHECK(state.g.size()==1);
-    BOOST_CHECK(state.s.size()==1);
+    BOOST_CHECK(state.dx.size()==1);
     BOOST_CHECK(state.x_old.size()==1);
     BOOST_CHECK(state.g_old.size()==1);
-    BOOST_CHECK(state.s_old.size()==1);
+    BOOST_CHECK(state.dx_old.size()==1);
     BOOST_CHECK(state.y.size()==1);
     BOOST_CHECK(state.z.size()==1);
     BOOST_CHECK(state.h_x.size()==1);

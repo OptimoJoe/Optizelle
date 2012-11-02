@@ -4,7 +4,7 @@
       "H_type" : "External",
       "iter_max" : 100,
       "eps_krylov" : 1e-10,
-      "eps_s" : 1e-16,
+      "eps_dx" : 1e-16,
       "eps_g" : 1e-10,
       "eps_mu" : 1e-8,
       "sigma" : 0.2,

@@ -44,8 +44,8 @@ namespace peopt {
                 // Read in the parameters
                 state.eps_g=Real(root["peopt"]
                     .get("eps_g",state.eps_g).asDouble());
-                state.eps_s=Real(root["peopt"]
-                    .get("eps_s",state.eps_s).asDouble());
+                state.eps_dx=Real(root["peopt"]
+                    .get("eps_dx",state.eps_dx).asDouble());
                 state.stored_history=root["peopt"]
                     .get("stored_history",state.stored_history).asInt();
                 state.history_reset=root["peopt"]
@@ -141,7 +141,7 @@ namespace peopt {
 
                 // Write the optimization parameters
                 root["peopt"]["eps_g"]=state.eps_g;
-                root["peopt"]["eps_s"]=state.eps_s;
+                root["peopt"]["eps_dx"]=state.eps_dx;
                 root["peopt"]["stored_history"]=state.stored_history;
                 root["peopt"]["history_reset"]=state.history_reset;
                 root["peopt"]["iter_max"]=state.iter_max;
