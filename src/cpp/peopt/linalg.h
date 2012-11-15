@@ -7,73 +7,80 @@
 #include <limits>
 #include <utility>
 #include <string>
+#include <cstddef>
 
 namespace peopt {
-    typedef std::vector <double>::size_type Natural;
-
-    template <typename T>
-    void copy(int n,const T* x,int incx,T* y,int incy);
-    
-    template <typename T>
-    void axpy(int n,T alpha,const T* x,int incx,T* y,int incy);
-    
-    template <typename T>
-    void scal(int n,const T alpha,T* x,int incx);
-    
-    template <typename T>
-    T dot(int n,const T* x,int incx,const T* y,int incy);
-    
-    template <typename T>
-    void syr2k(char uplo,char trans,int n,int k,T alpha,const T* A,int lda,
-        const T* B,int ldb,T beta,T* C,int ldc);
-
-    template <typename T>
-    void syevr(char jobz,char range,char uplo,int n,T *A,int lda,
-        T vl,T vu,int il,int iu,T abstol,int& m,
-        T* w,T* z,int ldz,int* isuppz,T* work,int lwork,
-        int* iwork,int liwork,int& info);
-    
-    template <typename T>
-    void stemr(char jobz,char range,int n,T *D,T *E,T vl,T vu,int il,int iu,
-        int& m,T* w,T* z,int ldz,int nzc,int* isuppz,int& tryrac,T* work,
-        int lwork,int* iwork,int liwork,int& info);
-    
-    template <typename T>
-    void stevr(char jobz,char range,int n,T *D,T *E,T vl,T vu,int il,int iu,
-        T abstol, int& m,T* w,T* z,int ldz,int* isuppz,T* work,
-        int lwork,int* iwork,int liwork,int& info);
-
-    template <typename T>
-    T lamch(char cmach);
-
-    template <typename T>
-    void gemm(char transa,char transb,int m,int n,int k,T alpha,
-        const T* A,int lda,const T* B,int ldb,T beta,
-        T* C,int ldc);
-    
-    template <typename T>
-    void symm(char side,char uplo,int m,int n,T alpha,const T* A,
-        int lda,const T* B,int ldb,T beta,T* C,int ldc);
-    
-    template <typename T>
-    void symv(char uplo,int n,T alpha,const T* A,int lda,const T* x,int incx,
-        T beta,T* y,int incy);
-
-    template <typename T>
-    void potrf(char uplo,int n,T* A,int lda,int& info);
-
-    template <typename T>
-    void trtri(char uplo,char diag,int n,T* A,int lda,int& info);
-
-    template <typename T>
-    void rotg(T a,T b,T& c,T& s);
-
-    template <typename T>
-    void rot(int n,const T* x,int incx,T* y,int incy,T c,T s);
+    typedef size_t Natural;
+    typedef ptrdiff_t Integer;
 
     template <typename Real>
-    void tpsv(char uplo,char trans,char diag,int n,const Real* Ap,Real* x,
-        int incx);
+    void copy(Integer n,const Real* x,Integer incx,Real* y,Integer incy);
+    
+    template <typename Real>
+    void axpy(Integer n,Real alpha,const Real* x,Integer incx,
+        Real* y,Integer incy);
+    
+    template <typename Real>
+    void scal(Integer n,const Real alpha,Real* x,Integer incx);
+    
+    template <typename Real>
+    Real dot(Integer n,const Real* x,Integer incx,const Real* y,Integer incy);
+    
+    template <typename Real>
+    void syr2k(char uplo,char trans,Integer n,Integer k,Real alpha,
+        const Real* A,Integer lda,const Real* B,Integer ldb,
+        Real beta,Real* C,Integer ldc);
+
+    template <typename Real>
+    void syevr(char jobz,char range,char uplo,Integer n,Real *A,Integer lda,
+        Real vl,Real vu,Integer il,Integer iu,Real abstol,Integer& m,
+        Real* w,Real* z,Integer ldz,Integer* isuppz,Real* work,Integer lwork,
+        Integer* iwork,Integer liwork,Integer& info);
+    
+    template <typename Real>
+    void stemr(char jobz,char range,Integer n,Real *D,Real *E,Real vl,Real vu,
+        Integer il,Integer iu,Integer& m,Real* w,Real* z,Integer ldz,
+        Integer nzc,Integer* isuppz,Integer& tryrac,Real* work,
+        Integer lwork,Integer* iwork,Integer liwork,Integer& info);
+    
+    template <typename Real>
+    void stevr(char jobz,char range,Integer n,Real *D,Real *E,Real vl,Real vu,
+        Integer il,Integer iu,Real abstol, Integer& m,Real* w,Real* z,
+        Integer ldz,Integer* isuppz,Real* work,Integer lwork,Integer* iwork,
+        Integer liwork,Integer& info);
+
+    template <typename Real>
+    Real lamch(char cmach);
+
+    template <typename Real>
+    void gemm(char transa,char transb,Integer m,Integer n,Integer k,Real alpha,
+        const Real* A,Integer lda,const Real* B,Integer ldb,Real beta,
+        Real* C,Integer ldc);
+    
+    template <typename Real>
+    void symm(char side,char uplo,Integer m,Integer n,Real alpha,const Real* A,
+        Integer lda,const Real* B,Integer ldb,Real beta,Real* C,Integer ldc);
+    
+    template <typename Real>
+    void symv(char uplo,Integer n,Real alpha,const Real* A,Integer lda,
+        const Real* x,Integer incx,Real beta,Real* y,Integer incy);
+
+    template <typename Real>
+    void potrf(char uplo,Integer n,Real* A,Integer lda,Integer& info);
+
+    template <typename Real>
+    void trtri(char uplo,char diag,Integer n,Real* A,Integer lda,Integer& info);
+
+    template <typename Real>
+    void rotg(Real a,Real b,Real& c,Real& s);
+
+    template <typename Real>
+    void rot(Integer n,const Real* x,Integer incx,Real* y,Integer incy,
+        Real c,Real s);
+
+    template <typename Real>
+    void tpsv(char uplo,char trans,char diag,Integer n,const Real* Ap,Real* x,
+        Integer incx);
 
     // Indexing function for matrices
     Natural ijtok(Natural i,Natural j,Natural m);
@@ -108,22 +115,24 @@ namespace peopt {
        A X + X A = B
 
     */
-    template <typename T>
+    template <typename Real>
     void sylvester(
         const Natural m,
-        const T* V,
-        const T* D,
-        const T* B,
-        T* X
+        const Real* V,
+        const Real* D,
+        const Real* B,
+        Real* X
     ) {
 
         // Find V' B V
-        std::vector <T> tmp(m*m);
-        std::vector <T> VtBV(m*m);
+        std::vector <Real> tmp(m*m);
+        std::vector <Real> VtBV(m*m);
         // tmp <- B V
-        symm <T> ('L','U',m,m,T(1.),&(B[0]),m,&(V[0]),m,T(0.),&(tmp[0]),m); 
+        symm <Real> ('L','U',Integer(m),Integer(m),Real(1.),&(B[0]),Integer(m),
+            &(V[0]),Integer(m),Real(0.),&(tmp[0]),Integer(m)); 
         // VtBV <- V' B V
-        gemm <T> ('T','N',m,m,m,T(1.),&(V[0]),m,&(tmp[0]),m,T(0.),&(VtBV[0]),m);
+        gemm <Real> ('T','N',Integer(m),Integer(m),Integer(m),Real(1.),&(V[0]),
+            Integer(m),&(tmp[0]),Integer(m),Real(0.),&(VtBV[0]),Integer(m));
 
         // Solve for each column of X.  In theory, we only need half of these
         // elements since X is symmetric.
@@ -133,94 +142,105 @@ namespace peopt {
                 X[ijtok(i,j,m)]=VtBV[ijtok(i,j,m)]/(D[i-1]+D[j-1]);
         }
 
-        // Transform the solution back, X = V X V'
+        // Realransform the solution back, X = V X V'
         // tmp <- V X
-        symm <T> ('R','U',m,m,T(1.),&(X[0]),m,&(V[0]),m,T(0.),&(tmp[0]),m);
+        symm <Real> ('R','U',Integer(m),Integer(m),Real(1.),&(X[0]),Integer(m),
+            &(V[0]),Integer(m),Real(0.),&(tmp[0]),Integer(m));
         // X <- V X V'
-        gemm <T> ('N','T',m,m,m,T(1.),&(tmp[0]),m,&(V[0]),m,T(0.),&(X[0]),m);
+        gemm <Real> ('N','T',Integer(m),Integer(m),Integer(m),Real(1.),
+            &(tmp[0]),Integer(m),&(V[0]),Integer(m),Real(0.),&(X[0]),
+            Integer(m));
     }
 
     // Find a bound on the smallest eigenvalue of the given matrix A such
     // that lambda_min(A) < alpha where alpha is returned from this function.
-    template <typename T>
-    T lanczos(
+    template <typename Real>
+    Real lanczos(
         const Natural m,
-        const T* A,
+        const Real* A,
         const Natural max_iter,
-        const T tol
+        const Real tol
     ) {
         // Create the initial Krylov vector
-        std::vector <T> v(m,T(1./std::sqrt(m)));
+        std::vector <Real> v(m,Real(1./std::sqrt(m)));
 
         // Get the next Krylov vector and orthgonalize it
-        std::vector <T> w(m);
+        std::vector <Real> w(m);
         // w <- A v
-        symv <T> ('U',m,T(1.),&(A[0]),m,&(v[0]),1,T(0.),&(w[0]),1);
+        symv <Real> ('U',Integer(m),Real(1.),&(A[0]),Integer(m),&(v[0]),
+            Integer(1),Real(0.),&(w[0]),Integer(1));
         // alpha[0] <- <Av,v>
-        std::vector <T> alpha;
-        alpha.push_back(dot <T> (m,&(w[0]),1,&(v[0]),1));
+        std::vector <Real> alpha;
+        alpha.push_back(dot <Real> (Integer(m),&(w[0]),Integer(1),&(v[0]),
+            Integer(1)));
         // w <- Av - <Av,v> v
-        axpy <T> (m,-alpha[0],&(v[0]),1,&(w[0]),1);
+        axpy <Real> (Integer(m),-alpha[0],&(v[0]),Integer(1),&(w[0]),
+            Integer(1));
 
         // Store the norm of the Arnoldi vector w in the off diagonal part of T.
         // By T, we mean the triagonal matrix such that A = Q T Q'.
-        std::vector <T> beta;
-        beta.push_back(std::sqrt(dot <T> (m,&(w[0]),1,&(w[0]),1)));
+        std::vector <Real> beta;
+        beta.push_back(std::sqrt(dot <Real> (m,&(w[0]),1,&(w[0]),1)));
 
         // Allocate memory for solving an eigenvalue problem for the Ritz
         // values and vectors later.
-        std::vector <int> isuppz;
-        std::vector <T> work(1);
-        std::vector <int> iwork(1);
-        int lwork=-1;
-        int liwork=-1;
-        int info;
-        int nevals;
-        //int nzc=0;
-        std::vector <T> W;
-        std::vector <T> Z;
-        std::vector <T> D;
-        std::vector <T> E;
+        std::vector <Integer> isuppz;
+        std::vector <Real> work(1);
+        std::vector <Integer> iwork(1);
+        Integer lwork=-1;
+        Integer liwork=-1;
+        Integer info;
+        Integer nevals;
+        //Integer nzc=0;
+        std::vector <Real> W;
+        std::vector <Real> Z;
+        std::vector <Real> D;
+        std::vector <Real> E;
 
         // Start Lanczos
-        std::vector <T> v_old(m);
+        std::vector <Real> v_old(m);
         for(Natural i=0;i<max_iter;i++) {
             // Save the current Arnoldi vector
-            copy <T> (m,&(v[0]),1,&(v_old[0]),1);
+            copy <Real> (Integer(m),&(v[0]),Integer(1),&(v_old[0]),Integer(1));
 
             // Copy the candidate Arnoldi vector to the current Arnoldi vector
-            copy <T> (m,&(w[0]),1,&(v[0]),1);
+            copy <Real> (Integer(m),&(w[0]),Integer(1),&(v[0]),Integer(1));
 
-            // Get the normalized version of this vector.  This is now a real
+            // Get the normalized version of this vector.  Realhis is now a real
             // Arnoldi vector.
-            scal <T> (m,T(1.)/beta[i],&(v[0]),1);
+            scal <Real> (Integer(m),Real(1.)/beta[i],&(v[0]),Integer(1));
 
             // Get the new Arnoldi vector, w <- A v
-            symv <T> ('U',m,T(1.),&(A[0]),m,&(v[0]),1,T(0.),&(w[0]),1);
+            symv <Real> ('U',Integer(m),Real(1.),&(A[0]),Integer(m),&(v[0]),
+                Integer(1),Real(0.),&(w[0]),Integer(1));
 
             // Orthogonalize against v_old and v using modified Gram-Schdmit.
 
             // First, we orthogonalize against v_old
             // w <- Av - <Av,v_old> v_old.  Due to symmetry, <Av,v_old>=beta.
-            axpy <T> (m,-beta[i],&(v_old[0]),1,&(w[0]),1);
+            axpy <Real> (Integer(m),-beta[i],&(v_old[0]),Integer(1),&(w[0]),
+                Integer(1));
 
             // Now, we orthogonalize against v
             // Find the Gram-Schmidt coefficient
-            alpha.push_back(dot <T> (m,&(w[0]),1,&(v[0]),1));
+            alpha.push_back(dot <Real> (Integer(m),&(w[0]),Integer(1),&(v[0]),
+                Integer(1)));
             // Orthogonlize w to v
-            axpy <T> (m,-alpha[i+1],&(v[0]),1,&(w[0]),1);
+            axpy <Real> (Integer(m),-alpha[i+1],&(v[0]),Integer(1),&(w[0]),
+                Integer(1));
 
             // Store the norm of the Arnoldi vector w in the off diagonal part
-            // of T.
-            beta.push_back(std::sqrt(dot <T> (m,&(w[0]),1,&(w[0]),1)));
+            // of Real.
+            beta.push_back(std::sqrt(dot <Real> (Integer(m),&(w[0]),Integer(1),
+                &(w[0]),Integer(1))));
    
-   #if 0
+#if 0
             // Figure out the workspaces for the eigenvalues and eigenvectors
-            int k=alpha.size();  // Size of the eigenvalue subproblem
+            Integer k=alpha.size();  // Size of the eigenvalue subproblem
             D.resize(alpha.size());
-            copy <T> (k,&(alpha[0]),1,&(D[0]),1);
+            copy <Real> (k,&(alpha[0]),1,&(D[0]),1);
             E.resize(beta.size());
-            copy <T> (k,&(beta[0]),1,&(E[0]),1);
+            copy <Real> (k,&(beta[0]),1,&(E[0]),1);
             isuppz.resize(2*k);
             lwork=-1;
             liwork=-1;
@@ -231,7 +251,7 @@ namespace peopt {
                 nzc,&(work[0]),lwork,&(iwork[0]),liwork,info);
 
             // Resize the workspace 
-            lwork = int(work[0])+1;
+            lwork = Integer(work[0])+Integer(1);
             work.resize(lwork);
             liwork = iwork[0];
             iwork.resize(liwork);
@@ -242,30 +262,32 @@ namespace peopt {
                 nzc,&(work[0]),lwork,&(iwork[0]),liwork,info);
 #else
             // Figure out the workspaces for the eigenvalues and eigenvectors
-            int k=alpha.size();  // Size of the eigenvalue subproblem
+            Natural k=alpha.size();  // Size of the eigenvalue subproblem
             D.resize(alpha.size());
-            copy <T> (k,&(alpha[0]),1,&(D[0]),1);
+            copy <Real> (Integer(k),&(alpha[0]),Integer(1),&(D[0]),Integer(1));
             E.resize(beta.size());
-            copy <T> (k,&(beta[0]),1,&(E[0]),1);
-            isuppz.resize(2*k);
+            copy <Real> (Integer(k),&(beta[0]),Integer(1),&(E[0]),Integer(1));
+            isuppz.resize(Natural(2)*k);
             lwork=-1;
             liwork=-1;
             W.resize(k);
             Z.resize(k*k);
-            peopt::stevr <T> ('V','A',k,&(D[0]),&(E[0]),T(0.),
-                T(0.),0,0,peopt::lamch <T> ('S'),nevals,&(W[0]),&(Z[0]),k,
-                &(isuppz[0]),&(work[0]),lwork,&(iwork[0]),liwork,info);
+            peopt::stevr <Real> ('V','A',Integer(k),&(D[0]),&(E[0]),Real(0.),
+                Real(0.),Integer(0),Integer(0),peopt::lamch <Real> ('S'),
+                nevals,&(W[0]),&(Z[0]),Integer(k),&(isuppz[0]),&(work[0]),
+                lwork,&(iwork[0]),liwork,info);
 
             // Resize the workspace 
-            lwork = int(work[0])+1;
-            work.resize(lwork);
+            lwork = Integer(work[0])+Integer(1);
+            work.resize(Natural(lwork));
             liwork = iwork[0];
             iwork.resize(liwork);
 
             // Find the eigenvalues and vectors 
-            peopt::stevr <T> ('V','A',k,&(D[0]),&(E[0]),T(0.),
-                T(0.),0,0,peopt::lamch <T> ('S'),nevals,&(W[0]),&(Z[0]),k,
-                &(isuppz[0]),&(work[0]),lwork,&(iwork[0]),liwork,info);
+            peopt::stevr <Real> ('V','A',Integer(k),&(D[0]),&(E[0]),Real(0.),
+                Real(0.),Integer(0),Integer(0),peopt::lamch <Real> ('S'),
+                nevals,&(W[0]),&(Z[0]),Integer(k),&(isuppz[0]),&(work[0]),
+                lwork,&(iwork[0]),liwork,info);
 #endif
 
             // Find beta_i |s_{ik}| where s_{ik} is the ith (last) element
@@ -274,8 +296,8 @@ namespace peopt {
             // going to converge first, but they'll both be the first two.
             // Hence, we converge until these errors estimates are accurate
             // enough.
-            T err_est_min = fabs(Z[ijtok(k,1,k)])*beta[i+1];
-            T err_est_max = fabs(Z[ijtok(k,k,k)])*beta[i+1];
+            Real err_est_min = fabs(Z[ijtok(k,1,k)])*beta[i+1];
+            Real err_est_max = fabs(Z[ijtok(k,k,k)])*beta[i+1];
 
             // Stop of the error estimates are small
             if(    err_est_min < fabs(W[0]) * tol
@@ -685,14 +707,14 @@ namespace peopt {
         std::vector <Natural> p(3);
         std::vector <Natural> q(3);
         if(i==0) {
-            p[1]=1; p[2]=2;
-            q[1]=1; q[2]=2;
+            p[1]=Natural(1); p[2]=Natural(2);
+            q[1]=Natural(1); q[2]=Natural(2);
         } else if(i==1) {
-            p[1]=2; p[2]=1;
-            q[1]=1; q[2]=2;
+            p[1]=Natural(2); p[2]=Natural(1);
+            q[1]=Natural(1); q[2]=Natural(2);
         } else {
-            p[1]=2; p[2]=1;
-            q[1]=2; q[2]=1;
+            p[1]=Natural(2); p[2]=Natural(1);
+            q[1]=Natural(2); q[2]=Natural(1);
         }
 
         // Do a step of Gaussian elimination
@@ -765,22 +787,22 @@ namespace peopt {
 
         // z1 to the lower bound
         z[0] = lb[0];
-        z[1] = -(a[1]+2*A[0]*A[1]*z[0])/(2*A[2]);
+        z[1] = -(a[1]+Real(2.)*A[0]*A[1]*z[0])/(Real(2.)*A[2]);
         zs.push_back(z);
        
         // z2 to the lower bound
         z[1] = lb[1];
-        z[0] = -(a[0]+2*A[0]*A[1]*z[1])/(2*A[0]); 
+        z[0] = -(a[0]+Real(2.)*A[0]*A[1]*z[1])/(2*A[0]); 
         zs.push_back(z);
         
         // z1 to the upper bound 
         z[0] = ub[0];
-        z[1] = -(a[1]+2*A[0]*A[1]*z[0])/(2*A[2]);
+        z[1] = -(a[1]+Real(2.)*A[0]*A[1]*z[0])/(2*A[2]);
         zs.push_back(z);
         
         // z2 to the upper bound
         z[1] = ub[1];
-        z[0] = -(a[0]+2*A[0]*A[1]*z[1])/(2*A[0]); 
+        z[0] = -(a[0]+Real(2.)*A[0]*A[1]*z[1])/(2*A[0]); 
         zs.push_back(z);
        
         // Lower left corner
@@ -834,7 +856,7 @@ namespace peopt {
         typedef typename X::Vector X_Vector;
 
         // Orthogonalize the vectors
-        int i=0;
+        Natural i=0;
         for(typename std::list <X_Vector>::const_iterator v=vs.begin();
             v!=vs.end();
             v++
@@ -871,8 +893,8 @@ namespace peopt {
         X_Vector V_y; X::init(x,V_y);
 
         // Solve the system for y
-        copy <Real> (m,&(Qt_e1[0]),1,&(y[0]),1);
-        tpsv <Real> ('U','N','N',m,&(R[0]),&(y[0]),1);
+        copy <Real> (Integer(m),&(Qt_e1[0]),Integer(1),&(y[0]),Integer(1));
+        tpsv <Real> ('U','N','N',Integer(m),&(R[0]),&(y[0]),Integer(1));
 
         // Compute tmp = V y
         X::zero(V_y);
@@ -997,7 +1019,7 @@ namespace peopt {
         rst_freq = rst_freq > iter_max ? iter_max : rst_freq;
 
         // Adjust the restart frequency if none is desired.
-        rst_freq = rst_freq == 0 ? iter_max : rst_freq;
+        rst_freq = rst_freq == Natural(0) ? iter_max : rst_freq;
 
         // Allocate memory for the residual
         X_Vector r; X::init(x,r);
@@ -1020,7 +1042,7 @@ namespace peopt {
         // A V = V H + e_m' w_m
         // Note, this size is restricted to be no larger than the restart
         // frequency
-        std::vector <Real> R(rst_freq*(rst_freq+1)/2);
+        std::vector <Real> R(rst_freq*(rst_freq+Natural(1))/Natural(2));
 
         // Allocate memory for the normalized Krylov vector
         X_Vector v; X::init(x,v);
@@ -1035,7 +1057,7 @@ namespace peopt {
         // Q' norm(w1) e1.  Since we have a problem overdetermined by a single
         // index at each step, the size of this vector is the restart frequency
         // plus 1.
-        std::vector <Real> Qt_e1(rst_freq+1);
+        std::vector <Real> Qt_e1(rst_freq+Natural(1));
 
         // Allocoate memory for the Givens rotations
         std::list <std::pair<Real,Real> > Qts;
@@ -1063,7 +1085,7 @@ namespace peopt {
 
         // Iterate until the maximum iteration
         Natural iter;
-        for(iter = 1; iter <= iter_max;iter++) {
+        for(iter = Natural(1); iter <= iter_max;iter++) {
 
             // Find the current iterate taking into account restarting
             i = iter % rst_freq;
@@ -1072,7 +1094,7 @@ namespace peopt {
             // before restarting.  However, the iterate in this case is equal to
             // the restart frequency and not zero since our factorization has
             // size rst_freq x rst_freq.
-            if(i == 0) i = rst_freq;
+            if(i == Natural(0)) i = rst_freq;
 
             // Find the next Krylov vector
             Mr_inv(v,w);
@@ -1093,31 +1115,32 @@ namespace peopt {
             X::copy(v,vs.back());
 
             // Apply the existing Givens rotations to the new column of R
-            int j=1;
+            Natural j=1;
             for(typename std::list <std::pair<Real,Real> >::iterator
                     Qt=Qts.begin();
                 Qt!=Qts.end();
                 Qt++
             ) { 
-                rot <Real> (1,&(R[(j-1)+(i-1)*i/2]),1,&(R[j+(i-1)*i/2]),1,
+                rot <Real> (Integer(1),&(R[(j-1)+(i-1)*i/Natural(2)]),
+                    Integer(1),&(R[j+(i-1)*i/Natural(2)]),Integer(1),
                     Qt->first,Qt->second);
                 j++;
             }
 
             // Form the new Givens rotation
             Qts.push_back(std::pair <Real,Real> ());
-            rotg <Real> (R[(i-1)+i*(i-1)/2],norm_w,
+            rotg <Real> (R[(i-1)+i*(i-1)/Natural(2)],norm_w,
                 Qts.back().first,Qts.back().second);
 
             // Apply this new Givens rotation to the last element of R and 
             // norm(w).  This fixes our system R.
-            rot <Real> (1,&(R[(i-1)+i*(i-1)/2]),1,&(norm_w),1,
-                Qts.back().first,Qts.back().second);
+            rot <Real> (Integer(1),&(R[(i-1)+i*(i-1)/Natural(2)]),Integer(1),
+                &(norm_w),Integer(1),Qts.back().first,Qts.back().second);
 
             // Apply the new givens rotation to the RHS.  This also determines
             // the new norm of the preconditioned residual.
-            rot <Real> (1,&(Qt_e1[i-1]),1,&(Qt_e1[i]),1,
-                Qts.back().first,Qts.back().second);
+            rot <Real> (Integer(1),&(Qt_e1[i-1]),Integer(1),&(Qt_e1[i]),
+                Integer(1),Qts.back().first,Qts.back().second);
             norm_r = fabs(Qt_e1[i]);
                 
             // Solve for the new iterate update 
@@ -1140,7 +1163,7 @@ namespace peopt {
 
             // If we've hit the restart frequency, reset the Krylov spaces and
             // factorizations
-            if(i%rst_freq==0) {
+            if(i%rst_freq==Natural(0)) {
 
                 // Move to the new iterate
                 X::copy(x_p_dx,x);
@@ -1153,7 +1176,7 @@ namespace peopt {
                 // iteration 0 of the next round of GMRES.  If we exit
                 // immediately thereafter, we use this check to make sure we
                 // don't do any additional solves for x.
-                i = 0;
+                i = Natural(0);
             }
         }
 
@@ -1162,7 +1185,7 @@ namespace peopt {
 
         // As long as we didn't just solve for our new ierate, go ahead and
         // solve for it now.
-        if(i > 0){ 
+        if(i > Natural(0)){ 
             solveInKrylov <Real,XX> (i,&(R[0]),&(Qt_e1[0]),vs,Mr_inv,x,dx);
             X::axpy(Real(1.),dx,x);
         }

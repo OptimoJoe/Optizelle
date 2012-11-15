@@ -12,64 +12,68 @@ namespace peopt {
     struct Rm { 
         typedef std::vector <Real> Vector;
 
-        // Memory allocation and size setting
+        // Memory allocation and size setting.
         static void init(const Vector& x, Vector& y) {
             y.resize(x.size());
         }
         
         // y <- x (Shallow.  No memory allocation.)
         static void copy(const Vector& x, Vector& y) {
-            peopt::copy <Real> (x.size(),&(x[0]),1,&(y[0]),1);
+            peopt::copy <Real> (Integer(x.size()),&(x.front()),Integer(1),
+                &(y.front()),Integer(1));
         }
 
-        // x <- alpha * x
+        // x <- alpha * x.
         static void scal(const Real& alpha, Vector& x) {
-            peopt::scal <Real> (x.size(),alpha,&(x[0]),1);
+            peopt::scal <Real> (Integer(x.size()),alpha,&(x.front()),
+                Integer(1));
         }
 
-        // y <- alpha * x + y
+        // y <- alpha * x + y.
         static void axpy(const Real& alpha, const Vector& x, Vector& y) {
-            peopt::axpy <Real> (x.size(),alpha,&(x[0]),1,&(y[0]),1);
+            peopt::axpy <Real> (Integer(x.size()),alpha,&(x.front()),Integer(1),
+                &(y.front()),Integer(1));
         }
 
-        // innr <- <x,y>
+        // innr <- <x,y>.
         static Real innr(const Vector& x,const Vector& y) {
-            return peopt::dot <Real> (x.size(),&(x[0]),1,&(y[0]),1);
+            return peopt::dot <Real> (Integer(x.size()),&(x.front()),Integer(1),
+                &(y.front()),Integer(1));
         }
 
-        // x <- 0 
+        // x <- 0.
         static void zero(Vector& x) {
             #pragma omp parallel for schedule(static)
-            for(Natural i=0;i<x.size();i++) 
+            for(Natural i=Natural(0);i<x.size();i++) 
                 x[i]=Real(0.);
         }
 
-        // Jordan product, z <- x o y
+        // Jordan product, z <- x o y.
         static void prod(const Vector& x, const Vector& y, Vector& z) {
             #pragma omp parallel for schedule(static)
-            for(Natural i=0;i<x.size();i++) 
+            for(Natural i=Natural(0);i<x.size();i++) 
                 z[i]=x[i]*y[i];
         }
 
-        // Identity element, x <- e such that x o e = x
+        // Identity element, x <- e such that x o e = x.
         static void id(Vector& x) {
             #pragma omp parallel for schedule(static)
-            for(Natural i=0;i<x.size();i++) 
+            for(Natural i=Natural(0);i<x.size();i++) 
                 x[i]=Real(1.);
         }
         
-        // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y
+        // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y.
         static void linv(const Vector& x,const Vector& y,Vector& z) {
             #pragma omp parallel for schedule(static)
-            for(Natural i=0;i<x.size();i++) 
+            for(Natural i=Natural(0);i<x.size();i++) 
                 z[i]=y[i]/x[i];
         }
 
-        // Barrier function, barr <- barr(x) where x o grad barr(x) = e
+        // Barrier function, barr <- barr(x) where x o grad barr(x) = e.
         static Real barr(const Vector& x) {
-            Real z=0;
+            Real z=Real(0.);
             #pragma omp parallel for reduction(+:z) schedule(static)
-            for(Natural i=0;i<x.size();i++)
+            for(Natural i=Natural(0);i<x.size();i++)
                 z+=log(x[i]);
             return z;
         }
@@ -82,13 +86,13 @@ namespace peopt {
 
             #pragma omp parallel
             {
-                // Create a local version of alpha
+                // Create a local version of alpha.
                 Real alpha_loc=Real(-1.);
 
-                // Search for the optimal linesearch parameter
+                // Search for the optimal linesearch parameter.
                 #pragma omp parallel for schedule(static)
-                for(Natural i=0;i<x.size();i++) {
-                    if(x[i] < 0) {
+                for(Natural i=Natural(0);i<x.size();i++) {
+                    if(x[i] < Real(0.)) {
                         Real alpha0 = -y[i]/x[i];
                         if(alpha_loc==Real(-1.) || alpha0 < alpha_loc)
                             alpha_loc=alpha0;
@@ -121,60 +125,61 @@ namespace peopt {
     template <typename Real>
     struct SQL {
         struct Vector {
-            // The overall variable data
+            // Overall variable data.
             std::vector <Real> data;
 
-            // Offsets of each cone stored in the data
+            // Offsets of each cone stored in the data.
             std::vector <Natural> offsets;
 
-            // The type of cones stored in the data
+            // Type of cones stored in the data.
             std::vector <Cone::t> types;
             
-            // The size of the cones stored in the data
+            // Size of the cones stored in the data.
             std::vector <Natural> sizes;
 
-            // The stored Schur decompositions.  Once we have the offset, we
+            // Stored Schur decompositions.  Once we have the offset, we
             // store the diagonal and then the matrix.
             mutable std::vector <Real> schur;
 
-            // The offsets of the cached Schur decompositions
+            // Offsets of the cached Schur decompositions.
             std::vector <Natural> schur_offsets;
 
-            // The point where we last took the Schur decomposition
+            // Point where we last took the Schur decomposition.
             mutable std::vector <Real> schur_base;
 
-            // The offsets for the bases stored for the Schur decompositions
+            // Offsets for the bases stored for the Schur decompositions.
             std::vector <Natural> schur_base_offsets;
 
-            // This creates an empty, unitialized vector
+            // Creates an empty, unitialized vector.
             Vector () {}
 
-            // We require a vector of cone types and their sizes
+            // We require a vector of cone types and their sizes.
             Vector (const Messaging& msg,
                 const std::vector <Cone::t>& types_,
                 const std::vector <Natural>& sizes_
             ) : types(types_), sizes(sizes_) {
 
-                // Insure that the type of cones and their sizes lines up
+                // Insure that the type of cones and their sizes lines up.
                 if(types.size()!=sizes.size())
                     msg.error("The vector containing the type of cones must "
                         "be the same size as the vector with the cone sizes.");
 
-                // Make sure we have at least one cone
-                if(types.size() == 0)
+                // Make sure we have at least one cone.
+                if(types.size() == Natural(0))
                     msg.error("A SQL vector requires at least one cone.");
 
                 // Initialize the offsets.  The last element has the total
-                // number of variables
-                offsets.resize(sizes.size()+1);
-                offsets[0]=0;
-                for(Natural i=1;i<offsets.size()+1;i++)
-                    offsets[i] = types[i-1]==Cone::Linear ||
-                                 types[i-1]==Cone::Quadratic
-                                     ? offsets[i-1]+sizes[i-1]
-                                     : offsets[i-1]+sizes[i-1]*sizes[i-1];
+                // number of variables.
+                offsets.resize(sizes.size()+Natural(1));
+                offsets.front()=Natural(0);
+                for(Natural i=Natural(1);i<offsets.size()+Natural(1);i++)
+                    offsets[i] = types[itok(i)]==Cone::Linear ||
+                                 types[itok(i)]==Cone::Quadratic
+                                     ? offsets[itok(i)]+sizes[itok(i)]
+                                     : offsets[itok(i)]+sizes[itok(i)]
+                                         *sizes[itok(i)];
 
-                // Create the data
+                // Create the data.
                 data.resize(offsets.back());
 
                 // Calculate offsets for the Schur decompositions.  Basically,
@@ -183,97 +188,126 @@ namespace peopt {
                 // we don't have an SDP block, we simply use the last offset.
                 // This makes it easy to index to the correct place where the
                 // cached information is stored.
-                schur_offsets.resize(sizes.size()+1);
-                schur_base_offsets.resize(sizes.size()+1);
-                for(Natural i=1;i<types.size()+1;i++) {
+                schur_offsets.resize(sizes.size()+Natural(1));
+                schur_offsets.front()=Natural(0);
+                schur_base_offsets.resize(sizes.size()+Natural(1));
+                schur_base_offsets.front()=Natural(0);
+                for(Natural i=Natural(1);i<types.size()+Natural(1);i++) {
                     schur_offsets[i] =
-                        types[i-1]==Cone::Linear ||
-                        types[i-1]==Cone::Quadratic
-                            ? schur_offsets[i-1]
-                            : schur_offsets[i-1]+(sizes[i-1]+1)*sizes[i-1];
+                        types[itok(i)]==Cone::Linear ||
+                        types[itok(i)]==Cone::Quadratic
+                            ? schur_offsets[itok(i)]
+                            : schur_offsets[itok(i)]+(sizes[itok(i)]+Natural(1))
+                                *sizes[itok(i)];
                     schur_base_offsets[i] =
-                        types[i-1]==Cone::Linear ||
-                        types[i-1]==Cone::Quadratic
-                            ? schur_base_offsets[i-1]
-                            : schur_base_offsets[i-1]+sizes[i-1]*sizes[i-1];
+                        types[itok(i)]==Cone::Linear ||
+                        types[itok(i)]==Cone::Quadratic
+                            ? schur_base_offsets[itok(i)]
+                            : schur_base_offsets[itok(i)]
+                                +sizes[itok(i)]*sizes[itok(i)];
                 }
 
                 // Create the memory required for the cached Schur
-                // decompositions
+                // decompositions.
                 schur.resize(schur_offsets.back());
                 schur_base.resize(schur_base_offsets.back());
             }
 
-            // Simple indexing
+            // Simple indexing.
             Real& operator () (Natural i) {
-                return data[i-1];
+                return data[itok(i)];
             }
             const Real& operator () (Natural i) const {
-                return data[i-1];
+                return data[itok(i)];
             }
 
-            // Indexing with multiple cones
+            // Indexing with multiple cones.
             Real& operator () (Natural k,Natural i) {
-                return data[offsets[k-1]+(i-1)];
+                return data[offsets[itok(k)]+itok(i)];
             }
             const Real& operator () (Natural k,Natural i) const {
-                return data[offsets[k-1]+(i-1)];
+                return data[offsets[itok(k)]+itok(i)];
             }
 
-            // Indexing a matrix with multiple cones
+            // Indexing a matrix with multiple cones.
             Real& operator () (Natural k,Natural i,Natural j) {
-                return data[offsets[k-1]+ijtok(i,j,sizes[k-1])];
+                return data[offsets[itok(k)]+ijtok(i,j,sizes[itok(k)])];
             }
             const Real& operator ()(Natural k,Natural i,Natural j) const {
-                return data[offsets[k-1]+ijtok(i,j,sizes[k-1])];
+                return data[offsets[itok(k)]+ijtok(i,j,sizes[itok(k)])];
             }
 
-            // Size of the block
+            // First element of the block
+            const Real& front(Natural blk) const {
+                return (*this)(blk,Natural(1),Natural(1));
+            }
+            Real& front(Natural blk) {
+                return (*this)(blk,Natural(1),Natural(1));
+            }
+
+            // These are really shortcuts for second-order cone blocks, which
+            // are typically structured as x=[x0;xbar].  The naught function
+            // gives the first element whereas the bar function gives the
+            // first element of the xbar portion.
+            const Real& naught(Natural blk) const {
+                return this->front(blk);
+            }
+            Real& naught(Natural blk) {
+                return this->front(blk);
+            }
+            const Real& bar(Natural blk) const {
+                return (*this)(blk,Natural(2));
+            }
+            Real& bar(Natural blk) {
+                return (*this)(blk,Natural(2));
+            }
+
+            // Size of the block.
             Natural blkSize(Natural blk) const {
-                return sizes[blk-1];
+                return sizes[itok(blk)];
             }
 
-            // Type of the block
+            // Type of the block.
             Cone::t blkType(Natural blk) const {
-                return types[blk-1];
+                return types[itok(blk)];
             }
 
-            // Number of blocks
+            // Number of blocks.
             Natural numBlocks() const {
                 return types.size();
             }
         };
 
-        // Gets the Schur decomposition of a block of the SQL vector
+        // Gets the Schur decomposition of a block of the SQL vector.
         static void get_schur(
             const Vector& X,
             const Natural blk,
             std::vector <Real>& V,
             std::vector <Real>& D
         ) {
-            // Fix the block index to C indexing
-            Natural k=blk-1;
-
             // Get the size of the block
-            const int m=X.sizes[k];
+            const Natural m=X.sizes[itok(blk)];
 
             // Next, check if we've already calculated the Schur decomposition.
 
             // Copy out the the base of the last decomposition
             std::vector <Real> tmp(m*m);
             peopt::copy <Real>
-                (m*m,&(X.schur_base[X.schur_base_offsets[k]]),1,&(tmp[0]),1);
+                (Integer(m*m),&(X.schur_base[X.schur_base_offsets[itok(blk)]]),
+                Integer(1),&(tmp.front()),Integer(1));
 
             // tmp <- Base_k - X_k
             peopt::axpy <Real>
-                (m*m,Real(-1.),&(X.data[X.offsets[k]]),1,&(tmp[0]),1);
+                (Integer(m*m),Real(-1.),&(X.data[X.offsets[itok(blk)]]),
+                Integer(1),&(tmp.front()),Integer(1));
 
             // Find the relative error between the current iterate
             // and the base
             Real norm_xk = sqrt(dot <Real>
-                (m,&(X.data[X.offsets[k]]),1,&(X.data[X.offsets[k]]),1));
-            Real rel_err = sqrt(dot <Real> (m,&(tmp[0]),1,&(tmp[0]),1))
-                / (Real(1e-16)+norm_xk);
+                (Integer(m),&(X.data[X.offsets[itok(blk)]]),Integer(1),
+                &(X.data[X.offsets[itok(blk)]]),Integer(1)));
+            Real rel_err = sqrt(dot <Real> (Integer(m),&(tmp.front()),
+                Integer(1),&(tmp.front()),Integer(1))) / (Real(1e-16)+norm_xk);
 
             // If the relative error is large, refresh the cached decomposition.
             // To be sure, I'm not really sure what this tolerance should be
@@ -283,8 +317,9 @@ namespace peopt {
             if(rel_err > Real(1e-7)) {
 
                 // Store X_k as the new base
-                peopt::copy <Real> (m*m,&(X.data[X.offsets[k]]),1,
-                    &(X.schur_base[X.schur_base_offsets[k]]),1);
+                peopt::copy<Real> (Integer(m*m),&(X.data[X.offsets[itok(blk)]]),
+                    Integer(1),&(X.schur_base[X.schur_base_offsets[itok(blk)]]),
+                    Integer(1));
 
                 // Find the Schur decomposition of X_k 
 
@@ -292,42 +327,48 @@ namespace peopt {
                 // lower triangular portion of the matrix, make a copy for
                 // computation
                 std::vector <Real> Xk(m*m);
-                peopt::copy <Real> (m*m,&(X.data[X.offsets[k]]),1,&(Xk[0]),1);
+                peopt::copy<Real> (Integer(m*m),&(X.data[X.offsets[itok(blk)]]),
+                    Integer(1),&(Xk.front()),Integer(1));
 
                 // Query the size of the workplaces
-                std::vector <int> isuppz(2*m);
+                std::vector <Integer> isuppz(Natural(2)*m);
                 std::vector <Real> work(1);
-                std::vector <int> iwork(1);
-                int lwork=-1;
-                int liwork=-1;
-                int info;
-                int nevals;
-                peopt::syevr <Real> ('V','A','U',m,&(Xk[0]),m,Real(0.),
-                    Real(0.),0,0,Real(-1.),nevals,
-                    &(X.schur[X.schur_offsets[k]]),
-                    &(X.schur[X.schur_offsets[k]+m]),m,&(isuppz[0]),
-                    &(work[0]),lwork,&(iwork[0]),liwork,info);
+                std::vector <Integer> iwork(1);
+                Integer lwork(-1);
+                Integer liwork(-1);
+                Integer info;
+                Integer nevals;
+                peopt::syevr <Real> ('V','A','U',Integer(m),&(Xk[0]),Integer(m),
+                    Real(0.),Real(0.),Integer(0),Integer(0),Real(-1.),nevals,
+                    &(X.schur[X.schur_offsets[itok(blk)]]),
+                    &(X.schur[X.schur_offsets[itok(blk)]+m]),Integer(m),
+                    &(isuppz.front()),&(work.front()),lwork,&(iwork[0]),
+                    liwork,info);
 
                 // Resize the workplaces
-                lwork = int(work[0])+1;
+                lwork = Integer(work[0])+Natural(1);
                 work.resize(lwork);
                 liwork = iwork[0];
                 iwork.resize(liwork);
 
                 // Find the decomposition
-                peopt::syevr <Real> ('V','A','U',m,&(Xk[0]),m,Real(0.),
-                    Real(0.),0,0,Real(-1.),nevals,
-                    &(X.schur[X.schur_offsets[k]]),
-                    &(X.schur[X.schur_offsets[k]+m]),m,&(isuppz[0]),
-                    &(work[0]),lwork,&(iwork[0]),liwork,info);
+                peopt::syevr <Real> ('V','A','U',Integer(m),&(Xk[0]),Integer(m),
+                    Real(0.),Real(0.),Integer(0),Integer(0),Real(-1.),nevals,
+                    &(X.schur[X.schur_offsets[itok(blk)]]),
+                    &(X.schur[X.schur_offsets[itok(blk)]+m]),Integer(m),
+                    &(isuppz.front()),&(work.front()),lwork,&(iwork.front()),
+                    liwork,info);
             }
 
             // Copy out the decomposition from the cached copy
             D.resize(m);
-            peopt::copy <Real> (m,&(X.schur[X.schur_offsets[k]]),1,&(D[0]),1);
+            peopt::copy <Real> (
+                Integer(m),&(X.schur[X.schur_offsets[itok(blk)]]),
+                Integer(1),&(D.front()),Integer(1));
             V.resize(m*m);
             peopt::copy <Real>
-                (m*m,&(X.schur[X.schur_offsets[k]+m]),1,&(V[0]),1);
+                (Integer(m*m),&(X.schur[X.schur_offsets[itok(blk)]+m]),
+                Integer(1),&(V.front()),Integer(1));
         }
         
         // Memory allocation and size setting
@@ -344,30 +385,32 @@ namespace peopt {
         
         // y <- x (Shallow.  No memory allocation.)
         static void copy(const Vector& x, Vector& y) {
-            peopt::copy <Real> (x.data.size(),&(x.data[0]),1,&(y.data[0]),1);
+            peopt::copy <Real> (Integer(x.data.size()),&(x.data.front()),
+                Integer(1),&(y.data.front()),Integer(1));
         }
 
         // x <- alpha * x
         static void scal(const Real& alpha, Vector& x) {
-            peopt::scal <Real> (x.data.size(),alpha,&(x.data[0]),1);
+            peopt::scal <Real> (Integer(x.data.size()),alpha,&(x.data.front()),
+                Integer(1));
         }
 
         // y <- alpha * x + y
         static void axpy(const Real& alpha, const Vector& x, Vector& y) {
-            peopt::axpy <Real> (x.data.size(),alpha,&(x.data[0]),1,
-                &(y.data[0]),1);
+            peopt::axpy <Real> (Integer(x.data.size()),alpha,&(x.data.front()),
+                Integer(1),&(y.data.front()),Integer(1));
         }
 
         // innr <- <x,y>
         static Real innr(const Vector& x,const Vector& y) {
-            return peopt::dot <Real> (x.data.size(),&(x.data[0]),1,
-                &(y.data[0]),1);
+            return peopt::dot<Real> (x.data.size(),&(x.data.front()),Integer(1),
+                &(y.data.front()),Integer(1));
         }
 
         // x <- 0 
         static void zero(Vector& x) {
             #pragma omp parallel for schedule(static)
-            for(Natural i=0;i<x.data.size();i++) 
+            for(Natural i=Natural(0);i<x.data.size();i++) 
                 x.data[i]=Real(0.);
         }
 
@@ -385,40 +428,57 @@ namespace peopt {
                controls the parallelism, which means doing parallel
                computation on each cone one after another. 
             */
-            // Loop over all the blocks
-            for(Natural blk=1;blk<=x.numBlocks();blk++) {
+            // Loop over all the blocks.
+            for(Natural blk=Natural(1);blk<=x.numBlocks();blk++) {
 
-                // Get the size of the block
+                // Get the size of the block.
                 Natural m=x.blkSize(blk);
 
-                // Depending on the block, compute a different jordan product
+                // Depending on the block, compute a different jordan product.
                 switch(x.blkType(blk)) {
 
-                // z = diag(x) y 
+                // z = diag(x) y.
                 case Cone::Linear:
                     #pragma omp parallel for schedule(static)
-                    for(Natural i=1;i<=m;i++)
+                    for(Natural i=Natural(1);i<=m;i++)
                         z(blk,i)=x(blk,i)*y(blk,i);
                     break;
 
-                // z = [x'y ; x0 ybar + y0 xbar]
-                case Cone::Quadratic:
-                    z(blk,1)=peopt::dot <Real> (m,&(x(blk,1)),1,&(y(blk,1)),1);
-                    #pragma omp parallel for schedule(static)
-                    for(Natural i=2;i<=m;i++)
-                        z(blk,i)=x(blk,1)*y(blk,i)+x(blk,i)*y(blk,1);
+                // z = [x'y ; x0 ybar + y0 xbar].
+                case Cone::Quadratic: {
+                    // Get the size of the bar section.
+                    Natural mbar=m-Natural(1);
+
+                    // Find the first element
+                    z.naught(blk)=
+                        peopt::dot <Real> (Integer(m),&(x.front(blk)),
+                            Integer(1),&(y.front(blk)),Integer(1));
+
+                    // zbar = ybar
+                    peopt::copy <Real> (Integer(mbar),&(y.bar(blk)),Integer(1),
+                        &(z.bar(blk)),Integer(1));
+                        
+                    // zbar = x0 ybar
+                    peopt::scal <Real> (Integer(mbar),x.naught(blk),
+                        &(z.bar(blk)),Integer(1));
+
+                    // zbar = x0 ybar + y0 xbar
+                    peopt::axpy <Real> (Integer(mbar),
+                        y.naught(blk),&(x.bar(blk)),Integer(1),
+                        &(z.bar(blk)),Integer(1));
                     break;
+                }
 
                 // z = (xy + yx ) /2
                 case Cone::Semidefinite:
-                    peopt::syr2k <Real> ('U','N',int(m),int(m),Real(0.5),
-                        &(x(blk,1,1)),int(m),&(y(blk,1,1)),int(m),
-                        Real(0.),&(z(blk,1,1)),int(m));
+                    peopt::syr2k <Real> ('U','N',Integer(m),Integer(m),
+                        Real(0.5),&(x.front(blk)),Integer(m),&(y.front(blk)),
+                        Integer(m),Real(0.),&(z.front(blk)),Integer(m));
 
                     // Fill in the bottom half of the matrix
                     #pragma omp parallel for schedule(guided)
-                    for(Natural j=1;j<=m;j++)
-                        for(Natural i=j+1;i<=m;i++)
+                    for(Natural j=Natural(1);j<=m;j++)
+                        for(Natural i=j+Natural(1);i<=m;i++)
                             z(blk,i,j)=z(blk,j,i);
 
                     break;
@@ -429,7 +489,7 @@ namespace peopt {
         // Identity element, x <- e such that x o e = x
         static void id(Vector& x) {
             // Loop over all the blocks
-            for(Natural blk=1;blk<=x.numBlocks();blk++) {
+            for(Natural blk=Natural(1);blk<=x.numBlocks();blk++) {
 
                 // Get the size of the block
                 Natural m=x.blkSize(blk);
@@ -440,14 +500,14 @@ namespace peopt {
                 // x = vector of all 1s
                 case Cone::Linear:
                     #pragma omp parallel for schedule(static)
-                    for(Natural i=1;i<=m;i++) 
+                    for(Natural i=Natural(1);i<=m;i++) 
                         x(blk,i)=Real(1.);
                     break;
                 // x = (1,0,...,0)
                 case Cone::Quadratic:
-                    x(blk,1)=Real(1.);
+                    x(blk,Natural(1))=Real(1.);
                     #pragma omp parallel for schedule(static)
-                    for(Natural i=2;i<=m;i++)
+                    for(Natural i=Natural(2);i<=m;i++)
                         x(blk,i)=Real(0.);
                     break;
                 // x = I
@@ -455,12 +515,12 @@ namespace peopt {
                     // We write the diagonal elements twice to avoid the
                     // conditional.
                     #pragma omp parallel for schedule(static)
-                    for(Natural i=1;i<=m;i++) 
-                        for(Natural j=1;j<=m;j++) 
+                    for(Natural i=Natural(1);i<=m;i++) 
+                        for(Natural j=Natural(1);j<=m;j++) 
                             x(blk,i,j)=Real(0.);
 
                     #pragma omp parallel for schedule(static)
-                    for(Natural i=1;i<=m;i++) 
+                    for(Natural i=Natural(1);i<=m;i++) 
                         x(blk,i,i)=Real(1.);
                     break;
                 }
@@ -470,19 +530,22 @@ namespace peopt {
         // This applies the inverse of the Schur complement of the Arw
         // operator to a vector.  Note, y has size one less than x.
         // Hence, m is the length of y and m+1 is the length of x.
-        static void invSchur(const int m,const Real* x,Real* y) {
+        static void invSchur(const Natural m,const Real* x,Real* y) {
 
             // innr_xbar_y <- <xbar,y>
-            Real innr_xbar_y = dot <Real> (m,&(x[1]),1,&(y[0]),1);
+            Real innr_xbar_y = dot <Real> (Integer(m),&(x[1]),Integer(1),
+                &(y[0]),Integer(1));
 
             // denom <- x0 ( x0^2 - <xbar,xbar> )
-            Real denom = x[0]*( x[0]*x[0] - dot <Real> (m,&(x[1]),1,&(x[1]),1));
+            Real denom = x[0]*( x[0]*x[0] - dot <Real> (Integer(m),&(x[1]),
+                Integer(1),&(x[1]),Integer(1)));
 
             // y <- 1/x0 y
-            peopt::scal <Real> (m,Real(1.)/x[0],&(y[0]),1);
+            peopt::scal <Real> (Integer(m),Real(1.)/x[0],&(y[0]),Integer(1));
 
             // y <- 1/x0 y + <xbar,y> / (x0 ( x0^2 - <xbar,xbar> )) xbar
-            peopt::axpy <Real> (m,innr_xbar_y/denom,&(x[1]),1,&(y[0]),1);
+            peopt::axpy <Real> (Integer(m),innr_xbar_y/denom,&(x[1]),
+                Integer(1),&(y[0]),Integer(1));
         }
         
         // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y
@@ -492,7 +555,7 @@ namespace peopt {
             std::vector <double> V;
 
             // Loop over all the blocks
-            for(Natural blk=1;blk<=x.numBlocks();blk++) {
+            for(Natural blk=Natural(1);blk<=x.numBlocks();blk++) {
 
                 // Get the size of the block
                 Natural m=x.blkSize(blk);
@@ -503,39 +566,52 @@ namespace peopt {
                 // z = inv(Diag(x)) y
                 case Cone::Linear:
                     #pragma omp parallel for schedule(static)
-                    for(Natural i=1;i<=m;i++) 
+                    for(Natural i=Natural(1);i<=m;i++) 
                         z(blk,i)=y(blk,i)/x(blk,i);
                     break;
 
                 // z = inv(Arw(x)) y
                 case Cone::Quadratic: {
+                    // Get the size of the bar piece
+                    Natural mbar=m-Natural(1);
+
                     // invSchur_ybar <- invSchur(x)(y_bar) 
-                    std::vector <Real> invSchur_ybar(m-1);
-                    peopt::copy <Real>(m-1,&(y(blk,2)),1,&(invSchur_ybar[0]),1);
-                    invSchur(m-1,&(x(blk,1)),&(invSchur_ybar[0]));
+                    std::vector <Real> invSchur_ybar(mbar);
+                    peopt::copy <Real>(Integer(mbar),&(y.bar(blk)),Integer(1),
+                        &(invSchur_ybar.front()),Integer(1));
+                    invSchur(mbar,&(x.front(blk)),&(invSchur_ybar[0]));
 
                     // a <- 1 / (x0 - (1/x0) <x_bar,x_bar>) * y0
-                    Real a = y(blk,1) / (x(blk,1) - (Real(1.)/x(blk,1)) *
-                        peopt::dot <Real> (m-1,&(x(blk,2)),1,&(x(blk,2)),1));
+                    Real a = y.naught(blk) / (
+                        x.naught(blk) - (Real(1.)/x.naught(blk)) *
+                        peopt::dot <Real> (Integer(mbar),
+                            &(x.bar(blk)),Integer(1),
+                            &(x.bar(blk)),Integer(1)));
 
                     // b <- - (1/x0) <xbar,invSchur(x)(y_bar)>
-                    Real b = Real(-1.)/x(blk,1) * peopt::dot <Real>
-                        (m-1,&(x(blk,2)),1,&(invSchur_ybar[0]),1);
+                    Real b = peopt::dot <Real> (Integer(mbar),
+                            &(x.bar(blk)),Integer(1),
+                            &(invSchur_ybar.front()),Integer(1))
+                        / x.naught(blk);
                     
                     // z0 <- 1 / (x0 - (1/x0) <x_bar,x_bar>) y0
                     //       - (1/x0) <x_bar,invSchur(x)(y_bar)> 
-                    z(blk,1) = a + b;
+                    z(blk,Natural(1)) = a + b;
                     
                     // z_bar <- invSchur(x)(x_bar)
-                    peopt::copy <Real> (m-1,&(x(blk,2)),1,&(z(blk,2)),1);
-                    invSchur(m-1,&(x(blk,1)),&(z(blk,2)));
+                    peopt::copy <Real> (Integer(mbar),
+                        &(x.bar(blk)),Integer(1),&(z.bar(blk)),Integer(1));
+                    invSchur(mbar,&(x.front(blk)),&(z.bar(blk)));
 
                     // zbar <- (-y0/x0) invSchur(x)(x_bar)
-                    peopt::scal <Real> (m-1,-y(blk,1)/x(blk,1),&(z(blk,2)),1);
+                    peopt::scal <Real> (Integer(mbar),
+                        -y.naught(blk)/x.naught(blk),&(z.bar(blk)),
+                        Integer(1));
 
                     // z_bar <- (-y0/x0) invSchur(x)(x_bar) + invSchur(x)(y_bar)
-                    peopt::axpy <Real> (m-1,Real(1.),&(invSchur_ybar[0]),1,
-                        &(z(blk,2)),1);
+                    peopt::axpy <Real> (Integer(mbar),Real(1.),
+                        &(invSchur_ybar.front()),Integer(1),&(z.bar(blk)),
+                        Integer(1));
                     break;
 
                 // (xz + zx)/2 = y.  This is an implicit definition of z.
@@ -547,10 +623,12 @@ namespace peopt {
                     peopt::SQL <double>::get_schur(x,blk,V,D);
 
                     // Solve the Sylvester equation
-                    sylvester(m,&(V[0]),&(D[0]),&(y(blk,1,1)),&(z(blk,1,1)));
+                    sylvester(m,&(V.front()),&(D.front()),&(y.front(blk)),
+                        &(z.front(blk)));
 
                     // Scale the result by 2
-                    peopt::scal <Real> (m*m,Real(2.),&(z(blk,1,1)),1);
+                    peopt::scal <Real> (
+                        Integer(m*m),Real(2.),&(z.front(blk)),Integer(1));
                     break;
                 }}
             }
@@ -559,10 +637,10 @@ namespace peopt {
         // Barrier function, barr <- barr(x) where x o grad barr(x) = e
         static Real barr(const Vector& x) {
             // This accumulates the barrier's value
-            Real z=0;
+            Real z(0.);
 
             // Loop over all the blocks
-            for(Natural blk=1;blk<=x.numBlocks();blk++) {
+            for(Natural blk=Natural(1);blk<=x.numBlocks();blk++) {
 
                 // Get the size of the block
                 Natural m=x.blkSize(blk);
@@ -577,15 +655,20 @@ namespace peopt {
                 // z += sum_i log(x_i)
                 case Cone::Linear:
                     #pragma omp parallel for reduction(+:z) schedule(static)
-                    for(Natural i=1;i<=m;i++)
+                    for(Natural i=Natural(1);i<=m;i++)
                         z+=log(x(blk,i));
                     break;
 
                 // z += 0.5 * log(x0^2-<xbar,xbar))
-                case Cone::Quadratic:
-                    z+=Real(0.5) * log(x(blk,1)*x(blk,1)
-                        -dot <Real> (m-1,&(x(blk,2)),1,&(x(blk,2)),1));
+                case Cone::Quadratic: {
+                    // Get the size of the bar part.
+                    Natural mbar=m-Natural(1);
+
+                    z+=Real(0.5) * log(x.naught(blk)*x.naught(blk)
+                        -dot <Real> (Integer(mbar),&(x.bar(blk)),
+                            Integer(1),&(x.bar(blk)),Integer(1)));
                     break;
+                }
 
                 // z += log(det(x)).  We compute this by noting that
                 // log(det(x)) = log(det(u'u)) = log(det(u')det(u))
@@ -594,14 +677,16 @@ namespace peopt {
 
                     // Find the Choleski factorization of X
                     U.resize(m*m);
-                    int info;
-                    peopt::copy <Real> (m*m,&(x(blk,1,1)),1,&(U[0]),1);
-                    peopt::potrf <Real> ('U',m,&(U[0]),m,info);
+                    Integer info;
+                    peopt::copy <Real> (Integer(m*m),&(x.front(blk)),Integer(1),
+                        &(U.front()),Integer(1));
+                    peopt::potrf <Real> ('U',Integer(m),&(U.front()),Integer(m),
+                        info);
 
                     // Find the deterimant of the Choleski factor
                     Real det(1.);
                     #pragma omp parallel for reduction(*:det) schedule(static)
-                    for(Natural i=1;i<=m;i++)
+                    for(Natural i=Natural(1);i<=m;i++)
                         det*=U[peopt::ijtok(i,i,m)];
                     
                     // Complete the barrier computation by taking the log
@@ -627,7 +712,7 @@ namespace peopt {
             std::vector <Real> invUtXinvU;
 
             // Loop over all the blocks
-            for(Natural blk=1;blk<=x.numBlocks();blk++) {
+            for(Natural blk=Natural(1);blk<=x.numBlocks();blk++) {
 
                 // Get the size of the block
                 Natural m=x.blkSize(blk);
@@ -646,8 +731,8 @@ namespace peopt {
 
                         // Search for the optimal linesearch parameter
                         #pragma omp parallel for schedule(static)
-                        for(Natural i=1;i<=m;i++) {
-                            if(x(blk,i) < 0) {
+                        for(Natural i=Natural(1);i<=m;i++) {
+                            if(x(blk,i) < Real(0.)) {
                                 Real alpha0 = -y(blk,i)/x(blk,i);
                                 if(alpha_loc==Real(-1.) || alpha0 < alpha_loc)
                                     alpha_loc=alpha0;
@@ -679,22 +764,28 @@ namespace peopt {
                 // and a is zero, then there's no limit to the line search
                 case Cone::Quadratic: {
 
+                    // Get the size of the bar block.
+                    Natural mbar=m-Natural(1);
+
                     // Now, first we have to insure that the leading coefficient
                     // of the second order cone problem remains nonnegative.
                     // This number tells us how far we can step before this
                     // is not true.
-                    Real alpha0 = -y(blk,1)/x(blk,1);
+                    Real alpha0 = -y.naught(blk)/x.naught(blk);
 
                     // Next, assuming that the leading coefficient is fine,
                     // figure out how far we can step before we violate the
                     // rest of the SOCP constraint.  This involves solving
                     // the quadratic equation from above.
-                    Real a = x(blk,1)*x(blk,1)
-                        - dot <Real> (m-1,&(x(blk,2)),1,&(x(blk,2)),1);
-                    Real b = Real(2.)*(x(blk,1)*y(blk,1)
-                        - dot <Real> (m-1,&(x(blk,2)),1,&(y(blk,2)),1));
-                    Real c = y(blk,1)*y(blk,1)
-                        - dot <Real> (m-1,&(y(blk,2)),1,&(y(blk,2)),1);
+                    Real a = x.naught(blk)*x.naught(blk)
+                        - dot <Real> (Integer(mbar),&(x.bar(blk)),Integer(1),
+                            &(x.bar(blk)),Integer(1));
+                    Real b = Real(2.)*(x.naught(blk)*y.naught(blk)
+                        - dot <Real> (mbar,&(x.bar(blk)),Integer(1),
+                            &(y.bar(blk)),Integer(1)));
+                    Real c = y.naught(blk)*y.naught(blk)
+                        - dot <Real> (mbar,&(y.bar(blk)),Integer(1),
+                            &(y.bar(blk)),Integer(1));
                     Natural nroots(0);
                     Real alpha1(-1.);
                     Real alpha2(-1.);
@@ -746,19 +837,22 @@ namespace peopt {
 
                     // First, make a copy of Y and store it in invU
                     invU.resize(m*m);
-                    peopt::copy <Real> (m*m,&(y(blk,1,1)),1,&(invU[0]),1);
+                    peopt::copy <Real> (Integer(m*m),&(y(blk,1,1)),Integer(1),
+                        &(invU.front()),Integer(1));
 
                     // invU <- chol(Y)
-                    int info;
-                    peopt::potrf <Real> ('U',m,&(invU[0]),m,info);
+                    Integer info;
+                    peopt::potrf <Real> ('U',Integer(m),&(invU.front()),
+                        Integer(m),info);
 
                     // invU <- inv(chol(Y))
-                    peopt::trtri <Real> ('U','N',m,&(invU[0]),m,info);
+                    peopt::trtri <Real> ('U','N',Integer(m),&(invU.front()),
+                        Integer(m),info);
                     
                     // Fill in the bottom half of invU with zeros 
                     #pragma omp parallel for schedule(guided)
-                    for(Natural j=1;j<=m;j++)
-                        for(Natural i=j+1;i<=m;i++)
+                    for(Natural j=Natural(1);j<=m;j++)
+                        for(Natural i=j+Natural(1);i<=m;i++)
                             invU[ijtok(i,j,m)]=Real(0.);
 
                     // Find inv(chol(Y))' X inv(chol(Y))
@@ -766,17 +860,21 @@ namespace peopt {
                     invUtXinvU.resize(m*m);
         
                     // tmp <- X inv(chol(Y)) 
-                    peopt::gemm <Real> ('N','N',m,m,m,Real(1.),&(x(blk,1,1)),m,
-                        &(invU[0]),m,Real(0.),&(tmp[0]),m); 
+                    peopt::gemm <Real> ('N','N',Integer(m),Integer(m),
+                        Integer(m),Real(1.),&(x(blk,1,1)),Integer(m),
+                        &(invU.front()),Integer(m),Real(0.),
+                        &(tmp.front()),Integer(m)); 
 
                     // invUtXinvU <- inv(chol(Y))' X inv(chol(Y))
-                    peopt::gemm <Real> ('T','N',m,m,m,Real(1.),&(invU[0]),m,
-                        &(tmp[0]),m,Real(0.),&(invUtXinvU[0]),m);
+                    peopt::gemm <Real> ('T','N',Integer(m),Integer(m),
+                        Integer(m),Real(1.),&(invU.front()),Integer(m),
+                        &(tmp.front()),Integer(m),Real(0.),
+                        &(invUtXinvU.front()),Integer(m));
 
                     // Find the smallest eigenvalue of invUtXinvU.  The
                     // negative of this is the line search parameter.
                     Real alpha0=-Real(1.)/peopt::lanczos<Real>
-                        (m,&(invUtXinvU[0]),m,Real(1e-1));
+                        (m,&(invUtXinvU.front()),m,Real(1e-1));
 
                     // Adjust the line search step if necessary
                     if(alpha0 >= Real(0.) && (alpha==Real(-1.) || alpha0<alpha))

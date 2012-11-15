@@ -620,7 +620,7 @@ namespace peopt{
             PrimalDual,          // Standard primal-dual interior point method 
             PrimalDualLinked,    // A primal dual IPM, but the primal and dual
                                  // variables are kept in lock step.
-            LogBarrier,          // Primal log-barrier method 
+            LogBarrier           // Primal log-barrier method 
         };
         
         // Converts the interior point method to a string 
@@ -667,7 +667,7 @@ namespace peopt{
     struct CentralityStrategy{
         enum t{
             Constant,           // We keep sigma fixed at each iteration.
-            PredictorCorrector, // On odd iterations, sigma=1, on even, sigma=0.
+            PredictorCorrector  // On odd iterations, sigma=1, on even, sigma=0.
         };
         
         // Converts the centrality strategy to a string
@@ -1078,7 +1078,7 @@ namespace peopt{
             // Compute an ensemble of finite difference tests in a linear manner
             msg.print("Finite difference test on the gradient.");
             Real min_rel_err = Real(std::numeric_limits<double>::quiet_NaN());
-            for(int i=-2;i<=5;i++){
+            for(Integer i=-2;i<=5;i++){
                 Real epsilon=pow(Real(.1),i);
                 Real dd=directionalDerivative <> (f,x,dx,epsilon);
 
@@ -1128,7 +1128,7 @@ namespace peopt{
             // Compute an ensemble of finite difference tests in a linear manner
             msg.print("Finite difference test on the Hessian.");
             Real min_rel_err = Real(std::numeric_limits<double>::quiet_NaN());
-            for(int i=-2;i<=5;i++){
+            for(Integer i=-2;i<=5;i++){
 
                 // Calculate the directional derivative
                 Real epsilon=pow(Real(.1),i);
@@ -1235,7 +1235,7 @@ namespace peopt{
             msg.print("Finite difference test on the derivative of a "
                 "vector-valued function.");
             Real min_rel_err = Real(std::numeric_limits<double>::quiet_NaN());
-            for(int i=-2;i<=5;i++){
+            for(Integer i=-2;i<=5;i++){
 
                 // Calculate the directional derivative
                 Real epsilon=pow(Real(.1),i);
@@ -1347,7 +1347,7 @@ namespace peopt{
             msg.print("Finite difference test on the 2nd-derivative adj. "
                 "of a vector-valued function.");
             Real min_rel_err = Real(std::numeric_limits<double>::quiet_NaN());
-            for(int i=-2;i<=5;i++){
+            for(Integer i=-2;i<=5;i++){
 
                 // Calculate the directional derivative
                 Real epsilon=pow(Real(.1),i);
@@ -5307,6 +5307,7 @@ namespace peopt{
                 if(norm_dxncp >= zeta*delta) {
                     X::scal(zeta*delta/norm_dxncp,dx_ncp);
                     X::copy(dx_ncp,dx_n);
+                    return;
                 }
 
                 // Find the Newton step
@@ -5363,7 +5364,11 @@ namespace peopt{
                 Real aa = X::innr(dx_dnewton,dx_dnewton);
                 Real bb = Real(2.) * X::innr(dx_dnewton,dx_ncp);
                 Real cc = norm_dxncp*norm_dxncp - zeta*zeta*delta*delta; 
-                Real theta = (-bb + sqrt(bb*bb-Real(4.)*aa*cc))/(2*aa);
+                Natural nroots;
+                Real r1;
+                Real r2;
+                quad_equation(aa,bb,cc,nroots,r1,r2);
+                Real theta = r1 > r2 ? r1 : r2;
                 X::copy(dx_ncp,dx_n);
                 X::axpy(theta,dx_dnewton,dx_n);
             }
