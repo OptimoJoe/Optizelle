@@ -162,7 +162,7 @@ namespace peopt {
         const Real tol
     ) {
         // Create the initial Krylov vector
-        std::vector <Real> v(m,Real(1./std::sqrt(m)));
+        std::vector <Real> v(m,Real(1./std::sqrt(Real(m))));
 
         // Get the next Krylov vector and orthgonalize it
         std::vector <Real> w(m);
@@ -1121,8 +1121,8 @@ namespace peopt {
                 Qt!=Qts.end();
                 Qt++
             ) { 
-                rot <Real> (Integer(1),&(R[(j-1)+(i-1)*i/Natural(2)]),
-                    Integer(1),&(R[j+(i-1)*i/Natural(2)]),Integer(1),
+                rot <Real> (Integer(1),&(R[(j-1)+(i-1)*i/2]),
+                    Integer(1),&(R[j+(i-1)*i/2]),Integer(1),
                     Qt->first,Qt->second);
                 j++;
             }
@@ -1134,7 +1134,7 @@ namespace peopt {
 
             // Apply this new Givens rotation to the last element of R and 
             // norm(w).  This fixes our system R.
-            rot <Real> (Integer(1),&(R[(i-1)+i*(i-1)/Natural(2)]),Integer(1),
+            rot <Real> (Integer(1),&(R[(i-1)+i*(i-1)/2]),Integer(1),
                 &(norm_w),Integer(1),Qts.back().first,Qts.back().second);
 
             // Apply the new givens rotation to the RHS.  This also determines
