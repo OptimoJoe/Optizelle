@@ -8,111 +8,202 @@ abstractions for users who require control of the underlying linear algebra
 and communication structure.  As such, it is particularly well suited for
 large scale optimization.
 
--------------------------BUILDING AND INSTALLATION--------------------------
-In order to see a full list of build options, run:
+-------------------------HEADERS ONLY INSTALLATION--------------------------
+In order to install a headers only installation with no examples or unit tests,
 
-        ./configure --help
+    mkdir build
+    cd build
+    cmake -DCMAKE_INSTALL_PREFIX=/dir/to/install/location ../src
+    make install
 
-In the simplest case, building and installing is as simple as:
+This installs the appropriate peopt headers to the directory
 
-        ./configure && make && make install
+    /dir/to/install/location/include/peopt
 
-The core of the library consists of only headers, so if certain libraries are
-not found, it's likely that only the headers will be installed to
-${PREFIX}/include/peopt.  In the case that BLAS and LAPACK are found, a small
-library is installed to ${PREFIX}/lib.  There are particular flags that are
-useful to be mindful of.  First, is the headers only installation:
+---------------------------ADVANCED INSTALLATION----------------------------
+The following flags can be configured inside of cmake.  We recommend using
+ccmake or a graphical utility in order to manage the dependencies between
+options.  In this case, we build with the following:
 
-        --with-headers-only=<ARG>
+    mkdir build
+    cd build
+    ccmake ../src
+    make
+    make install
 
-where <ARG> can either be yes or is left blank.  When <ARG> is yes, no
-compilation is completed and the rest of the flags below are ignored.  This is
-used in the case where we do not intend to use any of the predefined vector
-spaces.  In this case, building and installing is as simple as
+For a detailed description of the peopt specific flags, see below
 
-        ./configure --with-headers-only=yes && make install
+Flag:         ENABLE_CPP_LIBRARY
+Type:         Bool
+Default:      Off
+Dependencies: BLAS_LIBRARY, LAPACK_LIBRARY, JSONCPP_INCLUDE_DIR, JSONCPP_LIBRARY
+Autodetect?:  No
+Description:  Enables the the library build for peopt.  This includes the
+              built-in vector spaces for real vectors or cone programming.
 
-Next, we can specify the BLAS libraries:
+Flag:         ENABLE_CPP_EXAMPLES
+Type:         Bool
+Default:      Off
+Dependencies: ENABLE_CPP_LIBRARY
+Autodetect?:  No
+Description:  Enables the build and installation of simple examples that
+              demonstrate the use of peopt.  These examples are installed to
+              the directory ${CMAKE_INSTALL_PREFIX}/share/peopt/cpp/examples.
 
-        --with-blas=<lib>
+Flag:         ENABLE_CPP_UNIT
+Type:         Bool
+Default:      Off
+Dependencies: ENABLE_CPP_LIBRARY, BOOST_UNIT_TEST_INCLUDE_DIR,
+              BOOST_UNIT_TEST_LIBRARY
+Autodetect?:  No
+Description:  Enables the build and installation of unit tests that help
+              validate the peopt code.  These tests are installed to the
+              directory ${CMAKE_INSTALL_PREFIX}/share/peopt/cpp/unit.
 
-The tag <lib> needs to be the complete set of LDFLAGS required to build BLAS.
-This may also include any Fortran libraries required.  For example, a common
-set of flags would are
+Flag:         ENABLE_OPENMP
+Type:         Bool
+Default:      Off
+Dependencies: ENABLE_CPP_LIBRARY
+Autodetect?:  No
+Description:  Toggles whether or not the peopt library should be compiled
+              using OpenMP.  This primarily affect whether or not the
+              prepackaged vector spaces are coded to run in parallel using
+              threads.
 
-        --with-blas="-L/home/xxx/usr/lib/ -lf77blas -lcblas -latlas -lgfortran"
+Flag:         ENABLE_PYTHON
+Type:         Bool
+Default:      Off
+Dependencies: ENABLE_CPP_LIBRARY, PYTHON_INCLUDE_DIR, PYTHON_LIBRARY
+Autodetect?:  No
+Description:  Enables the build and installation of the Python wrappers for
+              peopt.  The resulting Python module is installed to
+              ${CMAKE_INSTALL_PREFIX}/share/peopt/python.  As such, make
+              sure that the PYTHONPATH includes this directory.  In addition,
+              using this module assumes that libpeopt_complete.so can be found
+              in the LD_LIBRARY_PATH.
 
-Alternatively, we can set <lib>=no.  In this case, we do not compile the
-peopt vector spaces, no library is installed, no headers associated with
-the peopt vector spaces are installed, and we do not check for the LAPACK
-libraries.  Next, is the LAPACK library:
+Flag:         ENABLE_PYTHON_EXAMPLES
+Type:         Bool
+Default:      Off
+Dependencies: ENABLE_PYTHON_LIBRARY
+Autodetect?:  No
+Description:  Enables the build and installation of examples that use the
+              Python wrappers for peopt.  These examples are installed into
+              the directory ${CMAKE_INSTALL_PREFIX}/share/peopt/python/examples.
 
-        --with-lapack=<lib>
+Flag:         ENABLE_MATLAB
+Type:         Bool
+Default:      Off
+Dependencies: ENABLE_CPP_LIBRARY, MATLAB_INCLUDE_DIR, MATLAB_LIBRARY,
+              MATLAB_MEX_EXTENSION
+Autodetect?:  No
+Description:  Enables the build and installation of the MATLAB wrappers for
+              peopt.  The resulting MATLAB mex file is installed to
+              ${CMAKE_INSTALL_PREFIX}/share/peopt/matlab.  As such, make
+              sure that the MATLAB path includes this directory. 
 
-Similar to BLAS, this needs to be a full set of LDFLAGS.  Now, typically, if
-autoconfig can find BLAS, there's no need to add this library.  The build
-system automatically includes the set of BLAS flags and will look for lapack
-in the same location.  Next, comes jsoncpp:
+Flag:         ENABLE_MATLAB_EXAMPLES
+Type:         Bool
+Default:      Off
+Dependencies: ENABLE_MATLAB_LIBRARY
+Autodetect?:  No
+Description:  Enables the build and installation of examples that use the
+              MATLAB wrappers for peopt.  These examples are installed into
+              the directory ${CMAKE_INSTALL_PREFIX}/share/peopt/matlab/examples.
 
-        --with-jsoncpp[=ARG]
+Flag:         BLAS_LIBRARY 
+Type:         Path 
+Default:      None 
+Dependencies: ENABLE_CPP_LIBRARY
+Autodetect?:  Yes 
+Description:  A semicolon separated list of the complete path and library used
+              to provide BLAS.  This must include all required libraries in
+              order to successfully compile a BLAS dependent application.  For
+              example, using ATLAS BLAS, one possible entry is:
+              /usr/lib/libf77blas.a;/usr/lib/libatlas.a
 
-The argument can either be "yes" or blank, where the build system will attempt
-to find jsoncpp in the typical library path.  Alternatively, the argument
-can be a directory.  Note, this is different from BLAS and LAPACK above
-where the LDFLAGS are specified.  Here, the build system will look in the
-directory ARG/include/json and ARG/lib for the appropriate headers and
-libraries.  For example, the following is a valid flag:
+Flag:         LAPACK_LIBRARY 
+Type:         Path 
+Default:      None 
+Dependencies: ENABLE_CPP_LIBRARY
+Autodetect?:  Yes 
+Description:  A semicolon separated list of the complete path and library used
+              to provide LAPACK.  This must include all required libraries,
+              except for BLAS libraries above in BLAS_LIBRARY, in order to
+              successfully compile a LAPACK dependent application.  For example,
+              using ATLAS LAPACK, one possible entry is:
+              /usr/lib/liblapack.a;/usr/lib/libcblas.a;/usr/lib/libgfortran.so.3
+              
+Flag:         BOOST_UNIT_TEST_INCLUDE_DIR 
+Type:         Path 
+Default:      None 
+Dependencies: ENABLE_CPP_UNIT
+Autodetect?:  Yes 
+Description:  A path that indicates where the boost headers for unit testing
+              have been installed.  The actual header must be found at
+              ${BOOST_UNIT_TEST_INCLUDE_DIR}/boost/test/unit_test.hpp.
 
-        --with-jsoncpp="/home/xxx/usr"
+Flag:         BOOST_UNIT_TEST_LIBRARY
+Type:         Path 
+Default:      None 
+Dependencies: ENABLE_CPP_UNIT
+Autodetect?:  Yes 
+Description:  The complete path and library for the boost unit test framework. 
 
-If the argument is set to "no", we still install the peopt json header, but
-do not compile any example that depends on json.  Next comes the flags for
-Boost:
+Flag:         JSONCPP_INCLUDE_DIR 
+Type:         Path 
+Default:      None 
+Dependencies: ENABLE_CPP_LIBRARY
+Autodetect?:  Yes 
+Description:  A path that indicates where the jsoncpp headers have been 
+              installed.  The actual headers must be found in 
+              ${BOOST_UNIT_TEST_INCLUDE_DIR}/json/.
 
-        --with-boost[=ARG]
-        --with-boost-libdir=LIB_DIR
-        --with-boost-unit-test-framework[=special-lib]
+Flag:         JSONCPP_LIBRARY
+Type:         Path 
+Default:      None 
+Dependencies: ENABLE_CPP_LIBRARY
+Autodetect?:  Yes 
+Description:  The complete path and library for jsoncpp. 
 
-The --with--boost argument can either be "yes", "no", or a path.  By default,
-this flag will look for boost in typical locations.  Alternatively, a path
-can be given whereupon boost will look in ARG/include, ARG/lib, ARG/lib64 and
-so on.  For example, the following is a valid flag:
+Flag:         PYTHON_INCLUDE_DIR 
+Type:         Path 
+Default:      None 
+Dependencies: ENABLE_PYTHON
+Autodetect?:  Yes 
+Description:  A path that indicates where the Python 2.7 headers have been 
+              installed.  We do not prefix these headers, so we look directly
+              in the directory provided here.
 
-        --with-boost="/home/xxx/usr"
+Flag:         PYTHON_LIBRARY
+Type:         Path 
+Default:      None 
+Dependencies: ENABLE_PYTHON
+Autodetect?:  Yes 
+Description:  The complete path and library for Python 2.7. 
 
-Similarly, --with-bost-libdir looks for the directory where the Boost library
-files are contained.  The build system tries to deduce this, but can frequently
-have trouble.  In the case that it does, it can be specified manually.  For
-example, the follow is a valid flag:
+Flag:         MATLAB_INCLUDE_DIR 
+Type:         Path 
+Default:      None 
+Dependencies: ENABLE_MATLAB
+Autodetect?:  Yes 
+Description:  A path that indicates where the MATLAB headers have been 
+              installed.  We do not prefix these headers, so we look directly
+              in the directory provided here.
 
-        --with-boost-libdir="/home/xxx/usr/lib"
+Flag:         MATLAB_LIBRARY
+Type:         Path 
+Default:      None 
+Dependencies: ENABLE_MATLAB
+Autodetect?:  Yes 
+Description:  The complete path and library for the mex library.  Typically,
+              this is libmex.so on Linux.
 
-Finally, the last flag --with-boost-unit-test-framework is used with the unit
-test framework library has an abnormal name.  It is rare that this flag needs
-to be specified, but in the case that it does, just give the name of the
-library, not the full path.  For example, the following is a valid flag:
-
-        --with-boost-unit-test-framework="my_boost_unit_test_framework"
-
-Note, when searching for the unit test framework, the build system will look
-in the directory specified by --with-boost-libdir.
-
-----------------------------------UNIT TESTS-----------------------------------
-The unit tests do not build by default.  In order to build and run them,
-enter the directory src/unit and execute the commands
-
-        make unit && ./run
-
-The unit tests require both LAPACK and Boost in order to run.
-
------------------------------------EXAMPLES------------------------------------
-The examples also do not build by default.  In order to build an run them,
-enter the individual directories in src/examples and execute the commands
-
-        make example && ./run
-
-The requirements for each of these examples is different.  Sometimes
-they require nothing.  Sometimes they require LAPACK and jsoncpp.  In
-general, if the build requirements are not met, the build system will
-notify why.
-
+Flag:         MATLAB_MEX_EXTENSION
+Type:         String 
+Default:      None 
+Dependencies: ENABLE_MATLAB
+Autodetect?:  No 
+Description:  The extension of mex files on the system.  This can be found
+              by typing in the command 'mexext' inside of MATLAB.  Note, copy
+              the output from 'mexext' directly and do not add a '.'.

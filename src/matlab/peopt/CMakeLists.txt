@@ -1,0 +1,10 @@
+project(peopt_matlab)
+
+set(peopt_matlab_srcs "peopt.cpp")
+include_directories(${MATLAB_INCLUDE_DIRS} ${JSONCPP_INCLUDE_DIRS})
+add_library(peopt_matlab SHARED ${peopt_matlab_srcs})
+target_link_libraries(peopt_matlab ${MATLAB_LIBRARIES} ${JSONCPP_LIBRARIES})
+set_target_properties(peopt_matlab PROPERTIES OUTPUT_NAME peopt)
+set_target_properties(peopt_matlab PROPERTIES PREFIX "") 
+set_target_properties(peopt_matlab PROPERTIES SUFFIX .${MATLAB_MEX_EXTENSION}) 
+install(TARGETS peopt_matlab DESTINATION share/peopt/matlab)
