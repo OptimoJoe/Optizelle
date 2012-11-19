@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.9)
+#cmake_minimum_required(VERSION 2.8.9)
 project(peopt)
 
 # Add a module directory in case we need to find some packages
