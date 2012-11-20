@@ -153,24 +153,30 @@ namespace peopt {
                 // Write the optimization parameters
                 root["peopt"]["eps_g"]=state.eps_g;
                 root["peopt"]["eps_dx"]=state.eps_dx;
-                root["peopt"]["stored_history"]=state.stored_history;
-                root["peopt"]["history_reset"]=state.history_reset;
-                root["peopt"]["iter_max"]=state.iter_max;
-                root["peopt"]["krylov_iter_max"]=state.krylov_iter_max;
-                root["peopt"]["krylov_orthog_max"]=state.krylov_orthog_max;
+                root["peopt"]["stored_history"]
+                    =Json::Value::UInt64(state.stored_history);
+                root["peopt"]["history_reset"]
+                    =Json::Value::UInt64(state.history_reset);
+                root["peopt"]["iter_max"]
+                    =Json::Value::UInt64(state.iter_max);
+                root["peopt"]["krylov_iter_max"]
+                    =Json::Value::UInt64(state.krylov_iter_max);
+                root["peopt"]["krylov_orthog_max"]
+                    =Json::Value::UInt64(state.krylov_orthog_max);
                 root["peopt"]["eps_krylov"]=state.eps_krylov;
-                root["peopt"]["algorithm_class"]=
-                    AlgorithmClass::to_string(state.algorithm_class);
-                root["peopt"]["Minv_type"]=
-                    Operators::to_string(state.Minv_type);
+                root["peopt"]["algorithm_class"]
+                    =AlgorithmClass::to_string(state.algorithm_class);
+                root["peopt"]["Minv_type"]
+                    =Operators::to_string(state.Minv_type);
                 root["peopt"]["H_type"]=Operators::to_string(state.H_type);
-                root["peopt"]["msg_level"]=state.msg_level;
+                root["peopt"]["msg_level"]=Json::Value::UInt64(state.msg_level);
                 root["peopt"]["delta"]=state.delta;
                 root["peopt"]["delta_max"]=state.delta_max;
                 root["peopt"]["eta1"]=state.eta1;
                 root["peopt"]["eta2"]=state.eta2;
                 root["peopt"]["alpha"]=state.alpha;
-                root["peopt"]["linesearch_iter_max"]=state.linesearch_iter_max;
+                root["peopt"]["linesearch_iter_max"]
+                    =Json::Value::UInt64(state.linesearch_iter_max);
                 root["peopt"]["eps_ls"]=state.eps_ls;
                 root["peopt"]["dir"]=LineSearchDirection::to_string(state.dir);
                 root["peopt"]["kind"]=LineSearchKind::to_string(state.kind);
