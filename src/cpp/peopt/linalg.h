@@ -136,7 +136,9 @@ namespace peopt {
 
         // Solve for each column of X.  In theory, we only need half of these
         // elements since X is symmetric.
+        #ifdef _OPENMP
         #pragma omp parallel for schedule(static)
+        #endif
         for(Natural j=1;j<=m;j++) {
             for(Natural i=1;i<=j;i++) 
                 X[ijtok(i,j,m)]=VtBV[ijtok(i,j,m)]/(D[i-1]+D[j-1]);

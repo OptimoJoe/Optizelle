@@ -43,28 +43,36 @@ namespace peopt {
 
         // x <- 0.
         static void zero(Vector& x) {
+            #ifdef _OPENMP
             #pragma omp parallel for schedule(static)
+            #endif
             for(Natural i=Natural(0);i<x.size();i++) 
                 x[i]=Real(0.);
         }
 
         // Jordan product, z <- x o y.
         static void prod(const Vector& x, const Vector& y, Vector& z) {
+            #ifdef _OPENMP
             #pragma omp parallel for schedule(static)
+            #endif
             for(Natural i=Natural(0);i<x.size();i++) 
                 z[i]=x[i]*y[i];
         }
 
         // Identity element, x <- e such that x o e = x.
         static void id(Vector& x) {
+            #ifdef _OPENMP
             #pragma omp parallel for schedule(static)
+            #endif
             for(Natural i=Natural(0);i<x.size();i++) 
                 x[i]=Real(1.);
         }
         
         // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y.
         static void linv(const Vector& x,const Vector& y,Vector& z) {
+            #ifdef _OPENMP
             #pragma omp parallel for schedule(static)
+            #endif
             for(Natural i=Natural(0);i<x.size();i++) 
                 z[i]=y[i]/x[i];
         }
@@ -72,7 +80,9 @@ namespace peopt {
         // Barrier function, barr <- barr(x) where x o grad barr(x) = e.
         static Real barr(const Vector& x) {
             Real z=Real(0.);
+            #ifdef _OPENMP
             #pragma omp parallel for reduction(+:z) schedule(static)
+            #endif
             for(Natural i=Natural(0);i<x.size();i++)
                 z+=log(x[i]);
             return z;
@@ -84,13 +94,17 @@ namespace peopt {
             // Line search parameter
             Real alpha=Real(-1.);
 
+            #ifdef _OPENMP
             #pragma omp parallel
+            #endif
             {
                 // Create a local version of alpha.
                 Real alpha_loc=Real(-1.);
 
                 // Search for the optimal linesearch parameter.
+                #ifdef _OPENMP
                 #pragma omp parallel for schedule(static)
+                #endif
                 for(Natural i=Natural(0);i<x.size();i++) {
                     if(x[i] < Real(0.)) {
                         Real alpha0 = -y[i]/x[i];
@@ -101,7 +115,9 @@ namespace peopt {
 
                 // After we're through with the local search, accumulate the
                 // result
+                #ifdef _OPENMP
                 #pragma omp critical
+                #endif
                 {
                    if(alpha==Real(-1.) || alpha_loc < alpha)
                        alpha=alpha_loc;
@@ -409,7 +425,9 @@ namespace peopt {
 
         // x <- 0 
         static void zero(Vector& x) {
+            #ifdef _OPENMP
             #pragma omp parallel for schedule(static)
+            #endif
             for(Natural i=Natural(0);i<x.data.size();i++) 
                 x.data[i]=Real(0.);
         }
@@ -439,7 +457,9 @@ namespace peopt {
 
                 // z = diag(x) y.
                 case Cone::Linear:
+                    #ifdef _OPENMP
                     #pragma omp parallel for schedule(static)
+                    #endif
                     for(Natural i=Natural(1);i<=m;i++)
                         z(blk,i)=x(blk,i)*y(blk,i);
                     break;
@@ -476,7 +496,9 @@ namespace peopt {
                         Integer(m),Real(0.),&(z.front(blk)),Integer(m));
 
                     // Fill in the bottom half of the matrix
+                    #ifdef _OPENMP
                     #pragma omp parallel for schedule(guided)
+                    #endif
                     for(Natural j=Natural(1);j<=m;j++)
                         for(Natural i=j+Natural(1);i<=m;i++)
                             z(blk,i,j)=z(blk,j,i);
@@ -499,14 +521,18 @@ namespace peopt {
 
                 // x = vector of all 1s
                 case Cone::Linear:
+                    #ifdef _OPENMP
                     #pragma omp parallel for schedule(static)
+                    #endif
                     for(Natural i=Natural(1);i<=m;i++) 
                         x(blk,i)=Real(1.);
                     break;
                 // x = (1,0,...,0)
                 case Cone::Quadratic:
                     x(blk,Natural(1))=Real(1.);
+                    #ifdef _OPENMP
                     #pragma omp parallel for schedule(static)
+                    #endif
                     for(Natural i=Natural(2);i<=m;i++)
                         x(blk,i)=Real(0.);
                     break;
@@ -514,12 +540,16 @@ namespace peopt {
                 case Cone::Semidefinite:
                     // We write the diagonal elements twice to avoid the
                     // conditional.
+                    #ifdef _OPENMP
                     #pragma omp parallel for schedule(static)
+                    #endif
                     for(Natural i=Natural(1);i<=m;i++) 
                         for(Natural j=Natural(1);j<=m;j++) 
                             x(blk,i,j)=Real(0.);
 
+                    #ifdef _OPENMP
                     #pragma omp parallel for schedule(static)
+                    #endif
                     for(Natural i=Natural(1);i<=m;i++) 
                         x(blk,i,i)=Real(1.);
                     break;
@@ -565,7 +595,9 @@ namespace peopt {
 
                 // z = inv(Diag(x)) y
                 case Cone::Linear:
+                    #ifdef _OPENMP
                     #pragma omp parallel for schedule(static)
+                    #endif
                     for(Natural i=Natural(1);i<=m;i++) 
                         z(blk,i)=y(blk,i)/x(blk,i);
                     break;
@@ -654,7 +686,9 @@ namespace peopt {
 
                 // z += sum_i log(x_i)
                 case Cone::Linear:
+                    #ifdef _OPENMP
                     #pragma omp parallel for reduction(+:z) schedule(static)
+                    #endif
                     for(Natural i=Natural(1);i<=m;i++)
                         z+=log(x(blk,i));
                     break;
@@ -685,7 +719,9 @@ namespace peopt {
 
                     // Find the deterimant of the Choleski factor
                     Real det(1.);
+                    #ifdef _OPENMP
                     #pragma omp parallel for reduction(*:det) schedule(static)
+                    #endif
                     for(Natural i=Natural(1);i<=m;i++)
                         det*=U[peopt::ijtok(i,i,m)];
                     
@@ -724,13 +760,17 @@ namespace peopt {
                 // then we need to restrict how far we travel.
                 case Cone::Linear:
 
+                    #ifdef _OPENMP
                     #pragma omp parallel
+                    #endif
                     {
                         // Create a local version of alpha
                         Real alpha_loc=Real(-1.);
 
                         // Search for the optimal linesearch parameter
+                        #ifdef _OPENMP
                         #pragma omp parallel for schedule(static)
+                        #endif
                         for(Natural i=Natural(1);i<=m;i++) {
                             if(x(blk,i) < Real(0.)) {
                                 Real alpha0 = -y(blk,i)/x(blk,i);
@@ -741,7 +781,9 @@ namespace peopt {
 
                         // After we're through with the local search,
                         // accumulate the result
+                        #ifdef _OPENMP
                         #pragma omp critical
+                        #endif
                         {
                            if(alpha==Real(-1.) || alpha_loc < alpha)
                                alpha=alpha_loc;
@@ -850,7 +892,9 @@ namespace peopt {
                         Integer(m),info);
                     
                     // Fill in the bottom half of invU with zeros 
+                    #ifdef _OPENMP
                     #pragma omp parallel for schedule(guided)
+                    #endif
                     for(Natural j=Natural(1);j<=m;j++)
                         for(Natural i=j+Natural(1);i<=m;i++)
                             invU[ijtok(i,j,m)]=Real(0.);
