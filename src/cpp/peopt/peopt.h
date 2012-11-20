@@ -6507,13 +6507,13 @@ namespace peopt{
                 const Z_Vector& h_x;
 
                 // Original version of the gradient
-                mutable X_Vector& g_orig;
+                X_Vector& g_orig;
 
                 // Schur complement version of the gradient
-                mutable X_Vector& g_schur;
+                X_Vector& g_schur;
 
                 // True gradient of the Lagrangian 
-                mutable X_Vector& g_lag;
+                X_Vector& g_lag;
 
                 // This forces derived classes to call the constructor that
                 // depends on the state
