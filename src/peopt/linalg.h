@@ -4,6 +4,7 @@
 #include <vector>
 #include <cmath>
 #include <list>
+#include <limits>
 
 namespace peopt {
     template <typename T>
