@@ -1079,7 +1079,7 @@ namespace peopt{
             msg.print("Finite difference test on the gradient.");
             Real min_rel_err = Real(std::numeric_limits<double>::quiet_NaN());
             for(Integer i=-2;i<=5;i++){
-                Real epsilon=pow(Real(.1),i);
+                Real epsilon=pow(Real(.1),int(i));
                 Real dd=directionalDerivative <> (f,x,dx,epsilon);
 
                 // Calculate the relative error
@@ -1131,7 +1131,7 @@ namespace peopt{
             for(Integer i=-2;i<=5;i++){
 
                 // Calculate the directional derivative
-                Real epsilon=pow(Real(.1),i);
+                Real epsilon=pow(Real(.1),int(i));
                 directionalDerivative <> (f,x,dx,epsilon,res);
 
                 // Determine the residual.  Store in res.
@@ -1238,7 +1238,7 @@ namespace peopt{
             for(Integer i=-2;i<=5;i++){
 
                 // Calculate the directional derivative
-                Real epsilon=pow(Real(.1),i);
+                Real epsilon=pow(Real(.1),int(i));
                 directionalDerivative <> (f,x,dx,epsilon,res);
 
                 // Determine the residual.  Store in res.
@@ -1350,7 +1350,7 @@ namespace peopt{
             for(Integer i=-2;i<=5;i++){
 
                 // Calculate the directional derivative
-                Real epsilon=pow(Real(.1),i);
+                Real epsilon=pow(Real(.1),int(i));
                 directionalDerivative <> (f,x,dx,dy,epsilon,res);
 
                 // Determine the residual.  Store in res.
@@ -4074,8 +4074,15 @@ namespace peopt{
                             // We set alpha to be four times less than the
                             // minimimum alpha we searched before.  We do this
                             // since the line-search always looks twice alpha
-                            // out in the beginning of the search.
-                            alpha = alpha/pow(Real(2.),linesearch_iter_max+1);
+                            // out in the beginning of the search.  In addition,
+                            // we use a loop here instead of the pow routine
+                            // since the cmath pow routine requires an integer
+                            // second argument and, depending on the
+                            // architecture, our internally defined integer
+                            // may be too large for the routine.  This is
+                            // unlikely, but some versions of gcc complain.
+                            for(Natural i=1;i<=linesearch_iter_max+1;i++)
+                                alpha = alpha/Real(2.);
                         }
 
                     // If we don't decrease the merit, try again 

@@ -589,7 +589,7 @@ namespace peopt {
                             &(x.bar(blk)),Integer(1)));
 
                     // b <- - (1/x0) <xbar,invSchur(x)(y_bar)>
-                    Real b = peopt::dot <Real> (Integer(mbar),
+                    Real b = -peopt::dot <Real> (Integer(mbar),
                             &(x.bar(blk)),Integer(1),
                             &(invSchur_ybar.front()),Integer(1))
                         / x.naught(blk);
