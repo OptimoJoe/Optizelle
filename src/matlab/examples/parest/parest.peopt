@@ -4,7 +4,7 @@
       "H_type" : "External",
       "iter_max" : 200,
       "eps_krylov" : 1e-12,
-      "eps_s" : 1e-16,
+      "eps_dx" : 1e-16,
       "eps_g" : 1e-16
    },
    "peopt_TR_Newton" : {

@@ -117,6 +117,7 @@ peopt(VS,fns,pts);
 % Solve the reduced-space problem 
 fprintf('\n------------Solving the reduced-space problem------------\n');
 sol=peopt(VS,fns,pts,'parest.peopt');
+fprintf('\nWe converged due to: %s\n',sol.opt_stop);
 end
 
 % Create the functions for the constraint
