@@ -8,20 +8,35 @@
 #include <utility>
 #include <string>
 #include <cstddef>
+#include <iostream>
 
 namespace peopt {
     typedef size_t Natural;
     typedef ptrdiff_t Integer;
 
     template <typename Real>
-    void copy(Integer n,const Real* x,Integer incx,Real* y,Integer incy);
+    void copy(Integer n,const Real* x,Integer incx,Real* y,Integer incy) {
+        if(n<=0) return;
+        for(Integer i=0,ix=0,iy=0;
+            i<n;
+            i++,ix+=incx,iy+=incy
+        )
+            y[iy]=x[ix];
+    }
     
     template <typename Real>
     void axpy(Integer n,Real alpha,const Real* x,Integer incx,
         Real* y,Integer incy);
     
     template <typename Real>
-    void scal(Integer n,const Real alpha,Real* x,Integer incx);
+    void scal(Integer n,const Real alpha,Real* x,Integer incx) {
+        if(n<=0) return;
+        for(int i=0,ix=0;
+            i<n;
+            i++,ix+=incx
+        )
+            x[ix]*=alpha;
+    }
     
     template <typename Real>
     Real dot(Integer n,const Real* x,Integer incx,const Real* y,Integer incy);
@@ -72,15 +87,131 @@ namespace peopt {
     void trtri(char uplo,char diag,Integer n,Real* A,Integer lda,Integer& info);
 
     template <typename Real>
-    void rotg(Real a,Real b,Real& c,Real& s);
+    Real sq(Real x) {
+        return x*x;
+    }
 
     template <typename Real>
-    void rot(Integer n,const Real* x,Integer incx,Real* y,Integer incy,
-        Real c,Real s);
+    int sgn(Real val) {
+        return (Real(0) < val) - (val < Real(0));
+    }
 
+    template <typename Real>
+    void rotg(Real a,Real b,Real& c,Real& s) {
+        Real r,z;
+        Real roe = b;
+        if(fabs(a) > fabs(b)) roe = a;
+        Real scale = fabs(a) + fabs(b);
+        if(scale == Real(0.)) {
+            c = Real(1.0);
+            s = Real(0.0);
+            r = Real(0.0);
+            z = Real(0.0);
+        } else {
+            r = scale*sqrt(sq <Real> (a/scale) + sq <Real> (b/scale));
+            r = sgn <Real> (roe)*r;
+            c = a/r;
+            s = b/r;
+            z = Real(1.0);
+            if(fabs(a) > fabs(b)) z=s;
+            if(fabs(b) >= fabs(a) && c!=Real(0.)) z=Real(1.0)/c;
+        }
+        a=r;
+        b=z;
+    }
+
+    template <typename Real>
+    void rot(Integer n,Real* x,Integer incx,Real* y,Integer incy,Real c,Real s){
+        if(n<=0) return;
+        for(Integer i=0,ix=0,iy=0;
+            i<n;
+            i++,ix+=incx,iy+=incy
+        ) {
+            Real temp = c*x[ix] + s*y[iy];
+            y[iy] = c*y[iy] - s*x[ix];
+            x[ix] = temp;
+        }
+    }
+
+    template <typename Real>
+    void xerbla(std::string srname,Integer info) {
+        std::cout << " ** On entry to " << srname << " parameter number "
+            << info << " had an illegal value" << std::endl;
+    }
+
+    // NOTE: this routine is not fully general.  It only implements what we
+    // need.
     template <typename Real>
     void tpsv(char uplo,char trans,char diag,Integer n,const Real* Ap,Real* x,
-        Integer incx);
+        Integer incx
+    ) {
+        // Test the input parameters.
+        Integer info=0;
+        if(uplo != 'U')
+            info = 1;
+        else if(trans != 'N')
+            info = 2;
+        else if(diag != 'U' && diag!= 'N')
+            info = 3;
+        else if(n<0)
+            info = 4;
+        else if(incx==0)
+            info = 7;
+        if(info !=0) {
+            xerbla <Real> ("TPSV",info);
+            return;
+        }
+
+        // Quick return if possible.
+        if(n==0) return;
+
+        bool nounit = diag == 'N';
+
+        // Set up the start point in X if the increment is not unity. This
+        // will be  ( N - 1 )*INCX  too small for descending loops.
+        Integer kx = 0;
+        if(incx < 0) kx = 0 - (n-1)*incx;
+        else if(incx !=1) kx=0;
+
+        // Start the operations. In this version the elements of AP are
+        // accessed sequentially with one pass through AP.
+        if(trans == 'N') {
+
+            // Form  x := inv( A )*x.
+            if(uplo=='U') {
+                Integer kk = (n*(n+1))/2;
+                if(incx==1) {
+                    for(Integer j=n;j>=1;j--) {
+                        if(x[j-1]!=Real(0.)) {
+                            if(nounit) x[j-1] = x[j-1]/Ap[kk-1];
+                            Real temp = x[j-1];
+                            Integer k = kk-1;
+                            for(Integer i=j-1;i>=1;i--) {
+                                x[i-1] = x[i-1] - temp * Ap[k-1];
+                                k--;
+                            }
+                        }
+                        kk -= j;
+                    }
+                } else {
+                    Integer jx = kx + (n-1)*incx;
+                    for(Integer j=1;j>=1;j--) {
+                        if(x[jx-1]!=Real(0.)) {
+                            if(nounit) x[jx-1] = x[jx-1]/Ap[kk-1];
+                            Real temp = x[jx-1];
+                            Integer ix=jx;
+                            for(Integer k=kk-1;k>=kk-j+1;k--) {
+                                ix = ix - incx;
+                                x[ix-1] = x[ix-1] - temp*Ap[k-1];
+                            }
+                        }
+                        jx -= incx;
+                        kk -= j;
+                    }
+                }
+            }
+        }
+    }
 
     // Indexing function for matrices
     Natural ijtok(Natural i,Natural j,Natural m);
@@ -1194,6 +1325,333 @@ namespace peopt {
 
         // Return the norm and the residual
         return std::pair <Real,Natural> (norm_rtrue,iter);
+    }
+    
+    // Computes the truncated GMRES algorithm in order to solve A(x)=b.
+    // (input) A : Operator that computes A(x)
+    // (input) b : Right hand side
+    // (input) Bl: Operator that computes the left preconditioner
+    // (input) Br: Operator that computes the right preconditioner
+    // (input) C : Operator that modifies the shape of the trust-region.
+    // (input) eps : Relative stopping tolerance.  We check the relative 
+    //    difference between the current and original preconditioned
+    //    norm of the residual.
+    // (input) iter_max : Maximum number of iterations
+    // (input) rst_freq : Restarts GMRES every rst_freq iterations.  If we don't
+    //    want restarting, set this to zero. 
+    // (input) delta : Trust region radius.  
+    // (output) x : Final solution.
+    // (output) x_cp : The Cauchy-Point, which is defined as the solution x
+    //     after a single iteration.
+    // (output) norm_rtrue : Final norm of the true residual
+    // (output) iter : Number of iterations computed
+    template <
+        typename Real,
+        template <typename> class XX
+    >
+    void truncated_gmres(
+        const Operator <Real,XX,XX>& A,
+        const typename XX <Real>::Vector& b,
+        const Operator <Real,XX,XX>& Bl,
+        const Operator <Real,XX,XX>& Br,
+        const Operator <Real,XX,XX>& C,
+        Real eps,
+        Natural iter_max,
+        Natural rst_freq,
+        Natural orthog_max,
+        const Real delta,
+        typename XX <Real>::Vector& x,
+        typename XX <Real>::Vector& x_cp,
+        Real& norm_rtrue,
+        Natural& iter,
+        KrylovStop::t& krylov_stop
+    ){
+
+        // Create some type shortcuts
+        typedef XX <Real> X;
+        typedef typename X::Vector X_Vector;
+
+        // Adjust the restart frequency if it is too big
+        rst_freq = rst_freq > iter_max ? iter_max : rst_freq;
+
+        // Adjust the restart frequency if none is desired.
+        rst_freq = rst_freq == Natural(0) ? iter_max : rst_freq;
+
+        // Adjust the number of vectors we orthogonalize against
+        orthog_max = orthog_max > rst_freq ? orthog_max : rst_freq;
+        
+        // Initialize x and the Cauchy point to zero. 
+        X::zero(x);
+        X::zero(x_cp);
+        Real norm_Cx = Real(0.);
+
+        // Allocate memory for the residual
+        X_Vector r; X::init(x,r);
+        
+        // Allocate memory for the iterate update 
+        X_Vector dx; X::init(x,dx); X::zero(dx);
+
+        // Allocate memory for the previous iterate update
+        X_Vector dx_old; X::init(x,dx_old);
+        
+        // Allocate memory for x + dx 
+        X_Vector x_p_dx; X::init(x,x_p_dx);
+        
+        // Allocate memory for a few more temps 
+        X_Vector x_tmp1; X::init(x,x_tmp1);
+        X_Vector x_tmp2; X::init(x,x_tmp2);
+        X_Vector x_tmp3; X::init(x,x_tmp3);
+        
+        // Allocate memory for the true residual
+        X_Vector rtrue; X::init(x,rtrue);
+        
+        // Allocate memory for the norm of the preconditioned residual
+        Real norm_r;
+
+        // Allocate memory for the R matrix in the QR factorization of H where
+        // A V = V H + e_m' w_m
+        // Note, this size is restricted to be no larger than the restart
+        // frequency
+        std::vector <Real> R(rst_freq*(rst_freq+Natural(1))/Natural(2));
+
+        // Allocate memory for the normalized Krylov vector
+        X_Vector v; X::init(x,v);
+
+        // Allocate memory for w, the orthogonalized, but not normalized vector
+        X_Vector w; X::init(x,w);
+
+        // Allocate memory for the list of Krylov vectors
+        std::list <X_Vector> vs;
+
+        // Allocate memory for right hand side of the linear system, the vector
+        // Q' norm(w1) e1.  Since we have a problem overdetermined by a single
+        // index at each step, the size of this vector is the restart frequency
+        // plus 1.
+        std::vector <Real> Qt_e1(rst_freq+Natural(1));
+
+        // Allocoate memory for the Givens rotations
+        std::list <std::pair<Real,Real> > Qts;
+
+        // Allocate a temporary work element
+        X_Vector A_Br_v; X::init(x,A_Br_v);
+
+        // Allocate memory for the subiteration number of GMRES taking into
+        // account restarting
+        Natural i;
+
+        // Find the true residual and its norm
+        A(x,rtrue);
+        X::scal(Real(-1.),rtrue);
+        X::axpy(Real(1.),b,rtrue);
+        norm_rtrue = sqrt(X::innr(rtrue,rtrue));
+        Real norm_rtrue0 = norm_rtrue;
+
+        // Initialize the GMRES algorithm
+        resetGMRES<Real,XX> (rtrue,Bl,rst_freq,v,vs,r,norm_r,Qt_e1,Qts);
+            
+        // Iterate until the maximum iteration
+        for(iter = Natural(1); iter <= iter_max;iter++) {
+
+            // Find the current iterate taking into account restarting
+            i = iter % rst_freq;
+
+            // We the above remainder is zero, we're on our final iteration
+            // before restarting.  However, the iterate in this case is equal to
+            // the restart frequency and not zero since our factorization has
+            // size rst_freq x rst_freq.
+            if(i == Natural(0)) i = rst_freq;
+
+            // Find the next Krylov vector
+            Br(v,w);
+            A(w,A_Br_v);
+            Bl(A_Br_v,w);
+
+            // Orthogonalize this Krylov vector with respect to the rest
+            orthogonalize <Real,XX> (vs,w,&(R[(i-1)*i/2+(i-vs.size())]));
+
+            // Find the norm of the remaining, orthogonalized vector
+            Real norm_w = sqrt(X::innr(w,w));
+
+            // Normalize the orthogonalized Krylov vector and insert it into the
+            // list of Krylov vectros
+            X::copy(w,v);
+            X::scal(Real(1.)/norm_w,v);
+            vs.push_back(X_Vector()); X::init(x,vs.back());
+            X::copy(v,vs.back());
+            
+            // Check if we need to eliminate any vectors for orthogonalization.
+            if(vs.size()==orthog_max) {
+                vs.pop_front();
+                Qts.pop_front();
+            }
+
+            // Apply the existing Givens rotations to the new column of R
+            Natural j=i-Qts.size();
+            for(typename std::list <std::pair<Real,Real> >::iterator
+                    Qt=Qts.begin();
+                Qt!=Qts.end();
+                Qt++
+            ) {
+                rot <Real> (Integer(1),&(R[(j-1)+(i-1)*i/2]),
+                    Integer(1),&(R[j+(i-1)*i/2]),Integer(1),
+                    Qt->first,Qt->second);
+                j++;
+            }
+
+            // Form the new Givens rotation
+            Qts.push_back(std::pair <Real,Real> ());
+            rotg <Real> (R[(i-1)+i*(i-1)/Natural(2)],norm_w,
+                Qts.back().first,Qts.back().second);
+
+            // Apply this new Givens rotation to the last element of R and 
+            // norm(w).  This fixes our system R.
+            rot <Real> (Integer(1),&(R[(i-1)+i*(i-1)/2]),Integer(1),
+                &(norm_w),Integer(1),Qts.back().first,Qts.back().second);
+
+            // Apply the new givens rotation to the RHS.  This also determines
+            // the new norm of the preconditioned residual.
+            rot <Real> (Integer(1),&(Qt_e1[i-1]),Integer(1),&(Qt_e1[i]),
+                Integer(1),Qts.back().first,Qts.back().second);
+            norm_r = fabs(Qt_e1[i]);
+                
+            // Solve for the new iterate update 
+            X::copy(dx,dx_old);
+            solveInKrylov <Real,XX> (i,&(R[0]),&(Qt_e1[0]),vs,Br,x,dx);
+
+            // Find the current iterate, its residual, the residual's norm
+            X::copy(x,x_p_dx);
+            X::axpy(Real(1.),dx,x_p_dx);
+            A(x_p_dx,rtrue);
+            X::scal(Real(-1.),rtrue);
+            X::axpy(Real(1.),b,rtrue);
+            norm_rtrue = sqrt(X::innr(rtrue,rtrue));
+                
+            // Find || C(x+dx) ||
+            C(x_p_dx,x_tmp1);
+            norm_Cx = sqrt(X::innr(x_tmp1,x_tmp1));
+
+            // Determine if we should exit since we exceeded our trust-region
+            if(norm_Cx >= delta) {
+
+                // Find sigma so that
+                //
+                // || C(x + dx_old + sigma (dx-dx_old)) ||=delta.
+                //
+                // This can be found by finding the positive root of the 
+                // quadratic
+                //
+                // || C(x + dx_old + sigma (dx-dx_old)) ||^2 = delta^2.
+                //
+                // Specifically, we want the positive root of
+                // 
+                // sigma^2<C(dx-dx_old),C(dx-dx_old)>
+                //     + sigma(2 <C(dx-dx_old),C(x+dx_old)>)
+                //     + (<C(x+dx_old),C(x+dx_old)>-delta^2).
+
+                // x_tmp1 <- dx-dx_old
+                X::copy(dx,x_tmp1);
+                X::axpy(Real(-1.),dx_old,x_tmp1);
+
+                // x_tmp2 <- C(dx-dx_old)
+                C(x_tmp1,x_tmp2);
+
+                // x_tmp1 <- x+dx_old
+                X::copy(x,x_tmp1);
+                X::axpy(Real(1.),dx_old,x_tmp1);
+
+                // x_tmp3 <- C(x+dx_old)
+                C(x_tmp1,x_tmp3);
+
+                // Solve the quadratic equation for the positive root 
+                Real aa = X::innr(x_tmp2,x_tmp2);
+                Real bb = Real(2.)*X::innr(x_tmp2,x_tmp3);
+                Real cc = X::innr(x_tmp3,x_tmp3)-delta*delta;
+                Natural nroots;
+                Real r1;
+                Real r2;
+                quad_equation(aa,bb,cc,nroots,r1,r2);
+                Real sigma = r1 > r2 ? r1 : r2;
+
+                // Take the step, find its residual, and compute the 
+                // residual's norm
+
+                // x_p_dx <- x+dx_old
+                X::copy(x,x_p_dx);
+                X::axpy(Real(1.),dx_old,x_p_dx);
+
+                // x_tmp1 <- dx-dx_old
+                X::copy(dx,x_tmp1);
+                X::axpy(Real(-1.),dx_old,x_tmp1);
+
+                // x_p_dx <- x+dx_old + sigma (dx-dx_old)
+                X::axpy(sigma,x_tmp1,x_p_dx);
+
+                // rtrue <- b - A(x+dx_old + sigma (dx-dx_old))
+                A(x_p_dx,rtrue);
+                X::scal(Real(-1.),rtrue);
+                X::axpy(Real(1.),b,rtrue);
+                norm_rtrue = sqrt(X::innr(rtrue,rtrue));
+
+                // Set why we stopped
+                krylov_stop = KrylovStop::TrustRegionViolated;
+ 
+                // If this is the first iteration, save the Cauchy-Point
+                if(iter==Natural(1)) {
+                    X::copy(x_p_dx,x_cp);
+
+                    // Force the Cauchy point to be a descent direction
+                    if(X::innr(x_cp,b)<0)
+                        X::scal(Real(-1.),x_cp);
+                }
+                break;
+            }
+            
+            // If this is the first iteration, save the Cauchy-Point
+            if(iter==Natural(1)) {
+                X::copy(x_p_dx,x_cp);
+
+                // Force the Cauchy point to be a descent direction
+                if(X::innr(x_cp,b)<0)
+                    X::scal(Real(-1.),x_cp);
+            }
+
+            // Determine if we should exit since the norm of the true residual
+            // is small
+            if(norm_rtrue < eps*norm_rtrue0) {
+                krylov_stop = KrylovStop::RelativeErrorSmall;
+                break;	
+            }
+
+            // If we've hit the restart frequency, reset the Krylov spaces and
+            // factorizations
+            if(i%rst_freq==Natural(0)) {
+
+                // Move to the new iterate
+                X::copy(x_p_dx,x);
+
+                // Reset the GMRES algorithm
+                resetGMRES<Real,XX> (rtrue,Bl,rst_freq,v,vs,r,norm_r,Qt_e1,Qts);
+
+                // Make sure to correctly indicate that we're now working on
+                // iteration 0 of the next round of GMRES.  If we exit
+                // immediately thereafter, we use this check to make sure we
+                // don't do any additional solves for x.
+                i = Natural(0);
+            }
+        }
+        
+        // If we've exceeded the maximum iteration, make sure to denote this
+        if(iter > iter_max) {
+            krylov_stop=KrylovStop::MaxItersExceeded;
+            iter = iter_max;
+        }
+        
+        // As long as we didn't just solve for our new iterate, go ahead and
+        // solve for it now.
+        if(i > Natural(0)) X::copy(x_p_dx,x);
+
+        // If we're on the first iteration, use the Cauchy point
+        if(iter == Natural(1)) X::copy(x_cp,x);
     }
 }
 

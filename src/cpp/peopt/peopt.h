@@ -560,8 +560,8 @@ namespace peopt{
         };
     };
     
+    // Different problem classes that we allow 
     struct ProblemClass{
-        // Different problem classes that we allow 
         enum t{
             Unconstrained,         // Unconstrained optimization 
             EqualityConstrained,   // Equality constrained optimization 
@@ -613,6 +613,49 @@ namespace peopt{
             }
         };
     };
+    
+    // Different truncated Krylov solvers 
+    struct KrylovSolverTruncated{
+        enum t{
+            ConjugateDirection,         // Conjugate direction 
+            GMRES                       // GMRES 
+        };
+
+        // Converts the problem class to a string
+        static std::string to_string(t truncated_krylov){
+            switch(truncated_krylov){
+            case ConjugateDirection:
+                return "ConjugateDirection";
+            case GMRES:
+                return "GMRES";
+            default:
+                    throw;
+            }
+        }
+
+        // Converts a string to a problem class 
+        static t from_string(std::string truncated_krylov){
+            if(truncated_krylov=="ConjugateDirection")
+                return ConjugateDirection;
+            else if(truncated_krylov=="GMRES")
+                return GMRES;
+            else
+                throw;
+        }
+
+        // Checks whether or not a string is valid
+        struct is_valid : public std::unary_function<std::string, bool> {
+            bool operator () (const std::string& name) const {
+                if( name=="ConjugateDirection" ||
+                    name=="GMRES" 
+                )
+                    return true;
+                else
+                    return false;
+            }
+        };
+    };
+    
     
     // Different kinds of interior point methods
     struct InteriorPointMethod{
@@ -1587,6 +1630,9 @@ namespace peopt{
                 // the Krylov method.  For something like CG, this is 1.
                 Natural krylov_orthog_max;
 
+                // How often we restart the Krylov solver 
+                Natural krylov_rst_freq;
+
                 // Why the Krylov method was last stopped
                 KrylovStop::t krylov_stop;
 
@@ -1595,6 +1641,9 @@ namespace peopt{
 
                 // Stopping tolerance for the Krylov method
                 Real eps_krylov;
+
+                // Truncated Krylov solver
+                KrylovSolverTruncated::t krylov_solver;
 
                 // Algorithm class
                 AlgorithmClass::t algorithm_class;
@@ -1720,13 +1769,16 @@ namespace peopt{
                 state.iter=Natural(1);
                 state.iter_max=Natural(10);
                 state.opt_stop=StoppingCondition::NotConverged;
-                state.krylov_iter=Natural(1);
+                state.krylov_iter=Natural(0);
                 state.krylov_iter_max=Natural(10);
                 state.krylov_iter_total=Natural(0);
                 state.krylov_orthog_max=Natural(1);
+                state.krylov_rst_freq=Natural(0);
                 state.krylov_stop=KrylovStop::RelativeErrorSmall;
                 state.krylov_rel_err=Real(0.);
                 state.eps_krylov=Real(1e-2);
+                state.krylov_solver
+                    =KrylovSolverTruncated::ConjugateDirection;
                 state.algorithm_class=AlgorithmClass::TrustRegion;
                 state.Minv_type=Operators::Identity;
                 state.H_type=Operators::Identity;
@@ -1808,28 +1860,23 @@ namespace peopt{
                         "condition must be positive: eps_dx = " << state.eps_dx;
         
                 // Check that the current iteration is positive
-                else if(state.iter <= Natural(0)) 
+                else if(state.iter == Natural(0)) 
                     ss << "The current optimization iteration must be "
                         "positive: iter = " << state.iter;
 
                 // Check that the maximum iteration is positive
-                else if(state.iter_max <= Natural(0)) 
+                else if(state.iter_max == Natural(0)) 
                     ss << "The maximum optimization iteration must be "
                         "positive: iter_max = " << state.iter_max;
 
-                // Check that the current Krylov iteration is positive
-                else if(state.krylov_iter <= Natural(0)) 
-                    ss << "The current Krlov iteration must be "
-                        "positive: krylov_iter = " << state.krylov_iter;
-
                 // Check that the maximum Krylov iteration is positive
-                else if(state.krylov_iter_max <= Natural(0)) 
+                else if(state.krylov_iter_max == Natural(0)) 
                     ss << "The maximum Krylov iteration must be "
                         "positive: krylov_iter_max = " << state.krylov_iter_max;
 
                 // Check that the number of vectors we orthogonalize against
                 // is at least 1.
-                else if(state.krylov_orthog_max <= Natural(0)) 
+                else if(state.krylov_orthog_max == Natural(0)) 
                     ss << "The maximum number of vectors the Krylov method"
                     "orthogonalizes against must be positive: "
                     "krylov_orthog_max = " << state.krylov_orthog_max;
@@ -1990,6 +2037,7 @@ namespace peopt{
                         name == "krylov_iter_max" ||
                         name == "krylov_iter_total" || 
                         name == "krylov_orthog_max" ||
+                        name == "krylov_rst_freq" ||
                         name == "msg_level" ||
                         name == "rejected_trustregion" || 
                         name == "linesearch_iter" || 
@@ -2005,7 +2053,8 @@ namespace peopt{
             // Checks whether we have a valid parameter label.
             struct is_param : public std::unary_function<std::string, bool> {
                 bool operator () (const std::string& name) const {
-                    if( name == "algorithm_class" || 
+                    if( name == "krylov_solver" ||
+                        name == "algorithm_class" || 
                         name == "opt_stop" || 
                         name == "krylov_stop" ||
                         name == "H_type" || 
@@ -2069,8 +2118,13 @@ namespace peopt{
                     // Used to build the message 
                     std::stringstream ss;
 
+                    // Check the truncated Krylov solver 
+                    if(label=="krylov_solver") {
+                        if(!KrylovSolverTruncated::is_valid()(val))
+                            ss << base << "truncated Krylov solver: " << val;
+
                     // Check the algorithm class
-                    if(label=="algorithm_class") {
+                    } else if(label=="algorithm_class") {
                         if(!AlgorithmClass::is_valid()(val))
                             ss << base << "algorithm class: " << val;
 
@@ -2216,6 +2270,8 @@ namespace peopt{
                 nats.second.push_back(state.krylov_iter_total);
                 nats.first.push_back("krylov_orthog_max");
                 nats.second.push_back(state.krylov_orthog_max);
+                nats.first.push_back("krylov_rst_freq");
+                nats.second.push_back(state.krylov_rst_freq);
                 nats.first.push_back("msg_level");
                 nats.second.push_back(state.msg_level);
                 nats.first.push_back("rejected_trustregion");
@@ -2228,6 +2284,10 @@ namespace peopt{
                 nats.second.push_back(state.linesearch_iter_total);
 
                 // Copy in all the parameters
+                params.first.push_back("krylov_solver");
+                params.second.push_back(
+                    KrylovSolverTruncated::to_string(
+                        state.krylov_solver));
                 params.first.push_back("algorithm_class");
                 params.second.push_back(
                     AlgorithmClass::to_string(state.algorithm_class));
@@ -2348,6 +2408,8 @@ namespace peopt{
                         state.krylov_iter_total=*nat;
                     else if(*name=="krylov_orthog_max")
                         state.krylov_orthog_max=*nat;
+                    else if(*name=="krylov_rst_freq")
+                        state.krylov_rst_freq=*nat;
                     else if(*name=="msg_level")
                         state.msg_level=*nat;
                     else if(*name=="rejected_trustregion")
@@ -2366,7 +2428,10 @@ namespace peopt{
                     name!=params.first.end();
                     name++,param++
                 ){
-                    if(*name=="algorithm_class")
+                    if(*name=="krylov_solver")
+                        state.krylov_solver
+                            =KrylovSolverTruncated::from_string(*param);
+                    else if(*name=="algorithm_class")
                         state.algorithm_class
                             =AlgorithmClass::from_string(*param);
                     else if(*name=="opt_stop")
@@ -3504,15 +3569,19 @@ namespace peopt{
                 const Real& eps_krylov=state.eps_krylov;
                 const Natural& krylov_iter_max=state.krylov_iter_max;
                 const Natural& krylov_orthog_max=state.krylov_orthog_max;
+                const Natural& krylov_rst_freq=state.krylov_rst_freq;
                 const Real& delta=state.delta;
                 const X_Vector& x=state.x.front();
                 const X_Vector& g=state.g.front();
                 const Real& norm_g=state.norm_g;
                 const Real& norm_dxtyp=state.norm_dxtyp;
+                const KrylovSolverTruncated::t& krylov_solver
+                    = state.krylov_solver;
                 Natural& rejected_trustregion=state.rejected_trustregion;
                 X_Vector& dx=state.dx.front();
                 Real& norm_dx=state.norm_dx;
                 Natural& krylov_iter=state.krylov_iter;
+                Natural& krylov_iter_total=state.krylov_iter_total;
                 Real& krylov_rel_err=state.krylov_rel_err;
                 KrylovStop::t& krylov_stop=state.krylov_stop;
                 std::list <X_Vector>& oldY=state.oldY; 
@@ -3534,26 +3603,55 @@ namespace peopt{
                     // Manipulate the state if required
                     smanip(fns,state,OptimizationLocation::BeforeGetStep);
 
-                    // Use truncated-cd to find a new trial step
+                    // Use truncated the truncated Krylov solver to find a 
+                    // new trial step
                     HessianOperator H(f,x);
                     X_Vector dx_cp; X::init(x,dx_cp);
                     X_Vector minus_g; X::init(x,minus_g);
                     X::copy(g,minus_g); X::scal(Real(-1.),minus_g);
-                    truncated_pcd(
-                        H,
-                        minus_g,
-                        Minv,
-                        TR_op,
-                        eps_krylov,
-                        krylov_iter_max,
-                        krylov_orthog_max,
-                        delta,
-                        dx,
-                        dx_cp,
-                        krylov_rel_err,
-                        krylov_iter,
-                        krylov_stop);
+                    typename Functions::Identity identity;
+
+                    switch(krylov_solver) {
+                    // Truncated conjugate direction
+                    case KrylovSolverTruncated::ConjugateDirection:
+                        truncated_pcd(
+                            H,
+                            minus_g,
+                            Minv,
+                            TR_op,
+                            eps_krylov,
+                            krylov_iter_max,
+                            krylov_orthog_max,
+                            delta,
+                            dx,
+                            dx_cp,
+                            krylov_rel_err,
+                            krylov_iter,
+                            krylov_stop);
+                            break;
+
+                    // Truncated GMRES 
+                    case KrylovSolverTruncated::GMRES:
+                        truncated_gmres(
+                            H,
+                            minus_g,
+                            Minv,
+                            identity,
+                            TR_op,
+                            eps_krylov,
+                            krylov_iter_max,
+                            krylov_rst_freq,
+                            krylov_orthog_max,
+                            delta,
+                            dx,
+                            dx_cp,
+                            krylov_rel_err,
+                            krylov_iter,
+                            krylov_stop);
+                            break;
+                    }
                     krylov_rel_err = krylov_rel_err / (Real(1e-16)+norm_g);
+                    krylov_iter_total += krylov_iter;
 
                     // Manipulate the state if required
                     smanip(fns,state,
@@ -3946,6 +4044,9 @@ namespace peopt{
                 const Real& eps_krylov=state.eps_krylov;
                 const Natural& krylov_iter_max=state.krylov_iter_max;
                 const Natural& krylov_orthog_max=state.krylov_orthog_max;
+                const Natural& krylov_rst_freq=state.krylov_rst_freq;
+                const KrylovSolverTruncated::t& krylov_solver
+                    = state.krylov_solver;
                 const Real& norm_g=state.norm_g;
                 X_Vector& dx=state.dx.front();
                 Real& merit_xpdx=state.merit_xpdx;
@@ -3953,6 +4054,7 @@ namespace peopt{
                 Real& alpha=state.alpha;
                 Real& krylov_rel_err=state.krylov_rel_err;
                 Natural& krylov_iter=state.krylov_iter;
+                Natural& krylov_iter_total=state.krylov_iter_total;
                 KrylovStop::t& krylov_stop=state.krylov_stop;
                 
                 // Create shortcuts to the functions that we need
@@ -3981,25 +4083,52 @@ namespace peopt{
                     BFGS(msg,state);
                     break;
                 case LineSearchDirection::NewtonCG: {
+                    typename Functions::Identity identity;
                     HessianOperator H(f,x);
                     X_Vector dx_cp; X::init(x,dx_cp);
                     X_Vector minus_g; X::init(x,minus_g);
                     X::copy(g,minus_g); X::scal(Real(-1.),minus_g);
-                    truncated_pcd(
-                        H,
-                        minus_g,
-                        Minv,
-                        TR_op,
-                        eps_krylov,
-                        krylov_iter_max,
-                        krylov_orthog_max,
-                        std::numeric_limits <Real>::infinity(),
-                        dx,
-                        dx_cp,
-                        krylov_rel_err,
-                        krylov_iter,
-                        krylov_stop);
+                    switch(krylov_solver) {
+                    // Truncated conjugate direction
+                    case KrylovSolverTruncated::ConjugateDirection:
+                        truncated_pcd(
+                            H,
+                            minus_g,
+                            Minv,
+                            TR_op,
+                            eps_krylov,
+                            krylov_iter_max,
+                            krylov_orthog_max,
+                            std::numeric_limits <Real>::infinity(),
+                            dx,
+                            dx_cp,
+                            krylov_rel_err,
+                            krylov_iter,
+                            krylov_stop);
+                            break;
+
+                    // Truncated GMRES 
+                    case KrylovSolverTruncated::GMRES:
+                        truncated_gmres(
+                            H,
+                            minus_g,
+                            Minv,
+                            identity,
+                            TR_op,
+                            eps_krylov,
+                            krylov_iter_max,
+                            krylov_rst_freq,
+                            krylov_orthog_max,
+                            std::numeric_limits <Real>::infinity(),
+                            dx,
+                            dx_cp,
+                            krylov_rel_err,
+                            krylov_iter,
+                            krylov_stop);
+                            break;
+                    }
                     krylov_rel_err = krylov_rel_err / (Real(1e-16)+norm_g);
+                    krylov_iter_total += krylov_iter;
                     break;
                 }}
                     

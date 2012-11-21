@@ -353,18 +353,18 @@ namespace peopt {
     
     template <>
     void rot <double> (
-        Integer n,const double* x,Integer incx,double* y,Integer incy,
+        Integer n,double* x,Integer incx,double* y,Integer incy,
         double c,double s
     ){
-        drot_fortran(&n,const_cast <double*> (x),&incx,y,&incy,&c,&s);
+        drot_fortran(&n,x,&incx,y,&incy,&c,&s);
     }
     
     template <>
     void rot <float> (
-        Integer n,const float* x,Integer incx,float* y,Integer incy,
+        Integer n,float* x,Integer incx,float* y,Integer incy,
         float c,float s
     ){
-        srot_fortran(&n,const_cast <float*> (x),&incx,y,&incy,&c,&s);
+        srot_fortran(&n,x,&incx,y,&incy,&c,&s);
     }
     
     template <>
