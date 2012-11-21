@@ -941,8 +941,8 @@ void mexFunction(
         std::string params(params_.begin(),params_.end());
 
         // Create something to hold the solution
-        const char* pnames[3]={"x","y","z"};
-        pOutput[0]=mxCreateStructMatrix(1,1,3,pnames);
+        const char* pnames[4]={"x","y","z","opt_stop"};
+        pOutput[0]=mxCreateStructMatrix(1,1,4,pnames);
         
         // Do the optimization
         switch(problem_class) {
@@ -963,6 +963,8 @@ void mexFunction(
 
             // Save the answer
             mxSetField(pOutput[0],0,"x",state.x.back().release());
+            mxSetField(pOutput[0],0,"opt_stop",mxCreateString(
+                peopt::StoppingCondition::to_string(state.opt_stop).c_str()));
             break;
         } case peopt::ProblemClass::InequalityConstrained: {
             // Allocate memory for the state
@@ -983,6 +985,8 @@ void mexFunction(
             // Save the answer
             mxSetField(pOutput[0],0,"x",state.x.back().release());
             mxSetField(pOutput[0],0,"z",state.z.back().release());
+            mxSetField(pOutput[0],0,"opt_stop",mxCreateString(
+                peopt::StoppingCondition::to_string(state.opt_stop).c_str()));
             break;
         } case peopt::ProblemClass::EqualityConstrained: {
             MatlabMessaging().error(
