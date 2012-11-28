@@ -716,4 +716,310 @@ BOOST_AUTO_TEST_CASE(tpcd_starting_solution) {
     BOOST_CHECK(err > 1e-4);
 }
 
+BOOST_AUTO_TEST_CASE(tminres_basic_solve) {
+    // Create a type shortcut
+    typedef peopt::Rm <double> X;
+    typedef X::Vector X_Vector;
+
+    // Set the size of the problem
+    Natural m = 5;
+
+    // Set the stopping tolerance
+    double eps_krylov = 1e-12;
+
+    // Set the maximum number of iterations
+    Natural iter_max = 200;
+
+    // Set the trust-reregion radius 
+    double delta = 100.;
+
+    // Create some operator 
+    BasicOperator <double> A(m);
+    for(Natural j=1;j<=m;j++)
+        for(Natural i=1;i<=m;i++) {
+            Natural I = j+(i-1)*m;
+            Natural J = i+(j-1)*m;
+            if(i>j) {
+                A.A[I-1]=cos(pow(I,m-1));
+                A.A[J-1]=A.A[I-1];
+            } else if(i==j)
+                A.A[I-1]=cos(pow(I,m-1))+10;
+        }
+    
+    // Create some right hand side
+    std::vector <double> b(m);
+    for(Natural i=1;i<=m;i++) b[i-1] = cos(i+25); 
+
+    // Get the norm of the RHS
+    double norm_b = std::sqrt(X::innr(b,b));
+    
+    // Create some empty null-space projection 
+    IdentityOperator <double> W;
+
+    // Create some empty trust-region shape operator
+    IdentityOperator <double> TR_op;
+    
+    // Create an initial guess at the solution
+    std::vector <double> x(m);
+    X::zero (x);
+
+    // Create a vector for the Cauchy point
+    std::vector <double> x_cp(m);
+
+    // Solve this linear system
+    double norm_r;
+    Natural iter;
+    peopt::KrylovStop::t krylov_stop;
+    peopt::truncated_minres <double,peopt::Rm>
+        (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x,x_cp,
+            norm_r,iter,krylov_stop);
+
+    // Check the error is less than our tolerance 
+    BOOST_CHECK(norm_r < eps_krylov*norm_b);
+
+    // Check that we ran to the maximum number of iterations
+    BOOST_CHECK(iter == m);
+    
+    // Check the relative error between the true solution and that
+    // returned from TPCG 
+    std::vector <double> x_star(5);
+    x_star[0] = 0.062210523692158425;
+    x_star[1] = -0.027548098303754341;
+    x_star[2] = -0.11729291808469694;
+    x_star[3] = -0.080812473373141375;
+    x_star[4] = 0.032637688404329734;
+    std::vector <double> residual = x_star;
+    peopt::Rm <double>::axpy(-1,x,residual);
+    double err=std::sqrt(peopt::Rm <double>::innr(residual,residual))
+        /(1+sqrt(peopt::Rm <double>::innr(x_star,x_star)));
+    BOOST_CHECK(err < 1e-14);
+
+    // Check that the returned solution is different than the Cauchy point
+    peopt::Rm <double>::copy(x_cp,residual);
+    peopt::Rm <double>::axpy(-1,x,residual);
+    err=std::sqrt(peopt::Rm <double>::innr(residual,residual))
+        /(1+sqrt(peopt::Rm <double>::innr(x_cp,x_cp)));
+    BOOST_CHECK(err > 1e-4);
+}
+
+BOOST_AUTO_TEST_CASE(tminres_tr_stopping) {
+    // Create a type shortcut
+    typedef peopt::Rm <double> X;
+    typedef X::Vector X_Vector;
+
+    // Set the size of the problem
+    Natural m = 5;
+
+    // Set the stopping tolerance
+    double eps_krylov = 1e-12;
+
+    // Set the maximum number of iterations
+    Natural iter_max = 200;
+
+    // Set the trust-reregion radius 
+    double delta = 0.1;
+
+    // Create some operator 
+    BasicOperator <double> A(m);
+    for(Natural j=1;j<=m;j++)
+        for(Natural i=1;i<=m;i++) {
+            Natural I = j+(i-1)*m;
+            Natural J = i+(j-1)*m;
+            if(i>j) {
+                A.A[I-1]=cos(pow(I,m-1));
+                A.A[J-1]=A.A[I-1];
+            } else if(i==j)
+                A.A[I-1]=cos(pow(I,m-1))+10;
+        }
+    
+    // Create some right hand side
+    std::vector <double> b(m);
+    for(Natural i=1;i<=m;i++) b[i-1] = cos(i+25); 
+    
+    // Create some empty null-space projection 
+    IdentityOperator <double> W;
+
+    // Create some empty trust-region shape operator
+    IdentityOperator <double> TR_op;
+    
+    // Create an initial guess at the solution
+    std::vector <double> x(m);
+    X::zero (x);
+
+    // Create a vector for the Cauchy point
+    std::vector <double> x_cp(m);
+
+    // Solve this linear system
+    double norm_r;
+    Natural iter;
+    peopt::KrylovStop::t krylov_stop;
+    peopt::truncated_minres <double,peopt::Rm>
+        (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x,x_cp,
+            norm_r,iter,krylov_stop);
+
+    // Check that the size of x is just the trust-region radius
+    double norm_x = sqrt(X::innr(x,x));
+    BOOST_CHECK_CLOSE(norm_x,delta,1e-8);
+}
+
+BOOST_AUTO_TEST_CASE(tminres_cp) {
+    // Create a type shortcut
+    typedef peopt::Rm <double> X;
+    typedef X::Vector X_Vector;
+
+    // Set the size of the problem
+    Natural m = 5;
+
+    // Set the stopping tolerance
+    double eps_krylov = 1e-12;
+
+    // Set the maximum number of iterations
+    Natural iter_max = 1;
+
+    // Set the trust-reregion radius 
+    double delta = 100.;
+
+    // Create some operator 
+    BasicOperator <double> A(m);
+    for(Natural j=1;j<=m;j++)
+        for(Natural i=1;i<=m;i++) {
+            Natural I = j+(i-1)*m;
+            Natural J = i+(j-1)*m;
+            if(i>j) {
+                A.A[I-1]=cos(pow(I,m-1));
+                A.A[J-1]=A.A[I-1];
+            } else if(i==j)
+                A.A[I-1]=cos(pow(I,m-1))+10;
+        }
+    
+    // Create some right hand side
+    std::vector <double> b(m);
+    for(Natural i=1;i<=m;i++) b[i-1] = cos(i+25); 
+
+    // Create some empty null-space projection 
+    IdentityOperator <double> W;
+
+    // Create some empty trust-region shape operator
+    IdentityOperator <double> TR_op;
+    
+    // Create an initial guess at the solution
+    std::vector <double> x(m);
+    X::zero (x);
+
+    // Create a vector for the Cauchy point
+    std::vector <double> x_cp(m);
+
+    // Solve this linear system
+    double norm_r;
+    Natural iter;
+    peopt::KrylovStop::t krylov_stop;
+    peopt::truncated_minres <double,peopt::Rm>
+        (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x,x_cp,
+            norm_r,iter,krylov_stop);
+
+    // Check that we ran to a single iteration 
+    BOOST_CHECK(iter == 1);
+    
+    // Check that the returned solution and the Cauchy point are the same
+    std::vector <double> residual = x_cp;
+    peopt::Rm <double>::axpy(-1,x,residual);
+    double err=std::sqrt(peopt::Rm <double>::innr(residual,residual))
+        /(1+sqrt(peopt::Rm <double>::innr(x_cp,x_cp)));
+    BOOST_CHECK(err < 1e-14);
+}
+
+BOOST_AUTO_TEST_CASE(tminres_nullspace_solve) {
+    // Create a type shortcut
+    typedef peopt::Rm <double> X;
+    typedef X::Vector X_Vector;
+
+    // Set the size of the problem
+    Natural m = 5;
+
+    // Set the stopping tolerance
+    double eps_krylov = 1e-12;
+
+    // Set the maximum number of iterations
+    Natural iter_max = 200;
+
+    // Set the trust-reregion radius 
+    double delta = 100.;
+
+    // Create some operator 
+    BasicOperator <double> A(m);
+    for(Natural j=1;j<=m;j++)
+        for(Natural i=1;i<=m;i++) {
+            Natural I = j+(i-1)*m;
+            Natural J = i+(j-1)*m;
+            if(i>j) {
+                A.A[I-1]=cos(pow(I,m-1));
+                A.A[J-1]=A.A[I-1];
+            } else if(i==j)
+                A.A[I-1]=cos(pow(I,m-1))+10;
+        }
+    
+    // Create a simple nullspace projector.  This projects out the first
+    // two elements
+    BasicOperator <double> W(m);
+    for(Natural j=1;j<=m;j++)
+        for(Natural i=1;i<=m;i++) {
+            Natural I = j+(i-1)*m;
+            W.A[I-1]=(i==j && i<=2) ? 1. : 0.;
+        }
+
+    // Create some empty trust-region shape operator
+    IdentityOperator <double> TR_op;
+    
+    // Create some right hand side.  Make sure that this is in the range
+    // of A*W.
+    std::vector <double> b(m);
+    for(Natural i=1;i<=m;i++) b[i-1] = A.A[i-1]+A.A[i-1+m];
+
+    // Get the norm of the RHS
+    double norm_b = std::sqrt(X::innr(b,b));
+    
+    // Create an initial guess at the solution
+    std::vector <double> x(m);
+    X::zero (x);
+
+    // Create a vector for the Cauchy point
+    std::vector <double> x_cp(m);
+
+    // Solve this linear system
+    double norm_r;
+    Natural iter;
+    peopt::KrylovStop::t krylov_stop;
+    peopt::truncated_minres <double,peopt::Rm>
+        (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x,x_cp,
+            norm_r,iter,krylov_stop);
+
+    // Check the error is less than our tolerance 
+    BOOST_CHECK(norm_r < eps_krylov*norm_b);
+
+    // Check that we completed in two iterations.  This is due to the
+    // nullspace projection
+    BOOST_CHECK(iter == 2);
+    
+    // Check the relative error between the true solution and that
+    // returned from TPCG. 
+    std::vector <double> x_star(5);
+    x_star[0] = 1.0; 
+    x_star[1] = 1.0; 
+    x_star[2] = 0.0;
+    x_star[3] = 0.0;
+    x_star[4] = 0.0;
+    std::vector <double> residual = x_star;
+    peopt::Rm <double>::axpy(-1,x,residual);
+    double err=std::sqrt(peopt::Rm <double>::innr(residual,residual))
+        /(1+sqrt(peopt::Rm <double>::innr(x_star,x_star)));
+    BOOST_CHECK(err < 1e-14);
+
+    // Check that the returned solution is different than the Cauchy point
+    peopt::Rm <double>::copy(x_cp,residual);
+    peopt::Rm <double>::axpy(-1,x,residual);
+    err=std::sqrt(peopt::Rm <double>::innr(residual,residual))
+        /(1+sqrt(peopt::Rm <double>::innr(x_cp,x_cp)));
+    BOOST_CHECK(err > 1e-4);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

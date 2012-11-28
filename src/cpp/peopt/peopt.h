@@ -618,7 +618,7 @@ namespace peopt{
     struct KrylovSolverTruncated{
         enum t{
             ConjugateDirection,         // Conjugate direction 
-            GMRES                       // GMRES 
+            MINRES                      // MINRES 
         };
 
         // Converts the problem class to a string
@@ -626,8 +626,8 @@ namespace peopt{
             switch(truncated_krylov){
             case ConjugateDirection:
                 return "ConjugateDirection";
-            case GMRES:
-                return "GMRES";
+            case MINRES:
+                return "MINRES";
             default:
                     throw;
             }
@@ -637,8 +637,8 @@ namespace peopt{
         static t from_string(std::string truncated_krylov){
             if(truncated_krylov=="ConjugateDirection")
                 return ConjugateDirection;
-            else if(truncated_krylov=="GMRES")
-                return GMRES;
+            else if(truncated_krylov=="MINRES")
+                return MINRES;
             else
                 throw;
         }
@@ -647,7 +647,7 @@ namespace peopt{
         struct is_valid : public std::unary_function<std::string, bool> {
             bool operator () (const std::string& name) const {
                 if( name=="ConjugateDirection" ||
-                    name=="GMRES" 
+                    name=="MINRES" 
                 )
                     return true;
                 else
@@ -1630,9 +1630,6 @@ namespace peopt{
                 // the Krylov method.  For something like CG, this is 1.
                 Natural krylov_orthog_max;
 
-                // How often we restart the Krylov solver 
-                Natural krylov_rst_freq;
-
                 // Why the Krylov method was last stopped
                 KrylovStop::t krylov_stop;
 
@@ -1773,7 +1770,6 @@ namespace peopt{
                 state.krylov_iter_max=Natural(10);
                 state.krylov_iter_total=Natural(0);
                 state.krylov_orthog_max=Natural(1);
-                state.krylov_rst_freq=Natural(0);
                 state.krylov_stop=KrylovStop::RelativeErrorSmall;
                 state.krylov_rel_err=Real(0.);
                 state.eps_krylov=Real(1e-2);
@@ -2037,7 +2033,6 @@ namespace peopt{
                         name == "krylov_iter_max" ||
                         name == "krylov_iter_total" || 
                         name == "krylov_orthog_max" ||
-                        name == "krylov_rst_freq" ||
                         name == "msg_level" ||
                         name == "rejected_trustregion" || 
                         name == "linesearch_iter" || 
@@ -2270,8 +2265,6 @@ namespace peopt{
                 nats.second.push_back(state.krylov_iter_total);
                 nats.first.push_back("krylov_orthog_max");
                 nats.second.push_back(state.krylov_orthog_max);
-                nats.first.push_back("krylov_rst_freq");
-                nats.second.push_back(state.krylov_rst_freq);
                 nats.first.push_back("msg_level");
                 nats.second.push_back(state.msg_level);
                 nats.first.push_back("rejected_trustregion");
@@ -2408,8 +2401,6 @@ namespace peopt{
                         state.krylov_iter_total=*nat;
                     else if(*name=="krylov_orthog_max")
                         state.krylov_orthog_max=*nat;
-                    else if(*name=="krylov_rst_freq")
-                        state.krylov_rst_freq=*nat;
                     else if(*name=="msg_level")
                         state.msg_level=*nat;
                     else if(*name=="rejected_trustregion")
@@ -3569,7 +3560,6 @@ namespace peopt{
                 const Real& eps_krylov=state.eps_krylov;
                 const Natural& krylov_iter_max=state.krylov_iter_max;
                 const Natural& krylov_orthog_max=state.krylov_orthog_max;
-                const Natural& krylov_rst_freq=state.krylov_rst_freq;
                 const Real& delta=state.delta;
                 const X_Vector& x=state.x.front();
                 const X_Vector& g=state.g.front();
@@ -3609,7 +3599,6 @@ namespace peopt{
                     X_Vector dx_cp; X::init(x,dx_cp);
                     X_Vector minus_g; X::init(x,minus_g);
                     X::copy(g,minus_g); X::scal(Real(-1.),minus_g);
-                    typename Functions::Identity identity;
 
                     switch(krylov_solver) {
                     // Truncated conjugate direction
@@ -3628,19 +3617,17 @@ namespace peopt{
                             krylov_rel_err,
                             krylov_iter,
                             krylov_stop);
-                            break;
+                        break;
 
-                    // Truncated GMRES 
-                    case KrylovSolverTruncated::GMRES:
-                        truncated_gmres(
+                    // Truncated MINRES 
+                    case KrylovSolverTruncated::MINRES:
+                        truncated_minres(
                             H,
                             minus_g,
                             Minv,
-                            identity,
                             TR_op,
                             eps_krylov,
                             krylov_iter_max,
-                            krylov_rst_freq,
                             krylov_orthog_max,
                             delta,
                             dx,
@@ -3648,7 +3635,11 @@ namespace peopt{
                             krylov_rel_err,
                             krylov_iter,
                             krylov_stop);
-                            break;
+
+                        // Force a descent direction
+                        if(X::innr(dx,g) > 0) X::scal(Real(-1.),dx);
+                        if(X::innr(dx_cp,g) > 0) X::scal(Real(-1.),dx_cp);
+                        break;
                     }
                     krylov_rel_err = krylov_rel_err / (Real(1e-16)+norm_g);
                     krylov_iter_total += krylov_iter;
@@ -4044,7 +4035,6 @@ namespace peopt{
                 const Real& eps_krylov=state.eps_krylov;
                 const Natural& krylov_iter_max=state.krylov_iter_max;
                 const Natural& krylov_orthog_max=state.krylov_orthog_max;
-                const Natural& krylov_rst_freq=state.krylov_rst_freq;
                 const KrylovSolverTruncated::t& krylov_solver
                     = state.krylov_solver;
                 const Real& norm_g=state.norm_g;
@@ -4083,7 +4073,6 @@ namespace peopt{
                     BFGS(msg,state);
                     break;
                 case LineSearchDirection::NewtonCG: {
-                    typename Functions::Identity identity;
                     HessianOperator H(f,x);
                     X_Vector dx_cp; X::init(x,dx_cp);
                     X_Vector minus_g; X::init(x,minus_g);
@@ -4105,19 +4094,17 @@ namespace peopt{
                             krylov_rel_err,
                             krylov_iter,
                             krylov_stop);
-                            break;
+                        break;
 
-                    // Truncated GMRES 
-                    case KrylovSolverTruncated::GMRES:
-                        truncated_gmres(
+                    // Truncated MINRES 
+                    case KrylovSolverTruncated::MINRES:
+                        truncated_minres(
                             H,
                             minus_g,
                             Minv,
-                            identity,
                             TR_op,
                             eps_krylov,
                             krylov_iter_max,
-                            krylov_rst_freq,
                             krylov_orthog_max,
                             std::numeric_limits <Real>::infinity(),
                             dx,
@@ -4125,7 +4112,11 @@ namespace peopt{
                             krylov_rel_err,
                             krylov_iter,
                             krylov_stop);
-                            break;
+
+                        // Force a descent direction
+                        if(X::innr(dx,g) > 0) X::scal(Real(-1.),dx);
+                        if(X::innr(dx_cp,g) > 0) X::scal(Real(-1.),dx_cp);
+                        break;
                     }
                     krylov_rel_err = krylov_rel_err / (Real(1e-16)+norm_g);
                     krylov_iter_total += krylov_iter;

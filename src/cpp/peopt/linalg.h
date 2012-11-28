@@ -698,19 +698,18 @@ namespace peopt {
 
             // Store the previous directions
             Real innr_Bp_ABp = X::innr(Bp,ABp);
-            Real one_over_sqrt_innr_Bp_ABp = Real(1.)/sqrt(innr_Bp_ABp);
 
             ps.push_back(X_Vector()); X::init(x,ps.back());
             X::copy(p,ps.back());
-            X::scal(one_over_sqrt_innr_Bp_ABp,ps.back());
+            X::scal(Real(1.)/sqrt(innr_Bp_ABp),ps.back());
             
             Bps.push_back(X_Vector()); X::init(x,Bps.back());
             X::copy(Bp,Bps.back());
-            X::scal(one_over_sqrt_innr_Bp_ABp,Bps.back());
+            X::scal(Real(1.)/sqrt(innr_Bp_ABp),Bps.back());
             
             ABps.push_back(X_Vector()); X::init(x,ABps.back());
             X::copy(ABp,ABps.back());
-            X::scal(one_over_sqrt_innr_Bp_ABp,ABps.back());
+            X::scal(Real(1.)/sqrt(innr_Bp_ABp),ABps.back());
 
             // Do an exact linesearch in the computed direction
             Real alpha = -X::innr(r,Bp) / innr_Bp_ABp;
@@ -1327,42 +1326,70 @@ namespace peopt {
         return std::pair <Real,Natural> (norm_rtrue,iter);
     }
     
-    // Computes the truncated GMRES algorithm in order to solve A(x)=b.
+    // B orthogonalizes a vector x to a list of other xs.  
+    template <
+        typename Real,
+        template <typename> class XX
+    >
+    void Borthogonalize(
+        const std::list <typename XX <Real>::Vector>& vs,
+        const std::list <typename XX <Real>::Vector>& Bvs,
+        typename XX <Real>::Vector& x,
+        typename XX <Real>::Vector& Bx,
+        std::list <Real>& R
+    ) {
+        // Create some type shortcuts
+        typedef XX <Real> X;
+        typedef typename X::Vector X_Vector;
+
+        // Orthogonalize the vectors
+        R.clear();
+        typename std::list <Real>::iterator beta=R.begin();
+        for(typename std::list <X_Vector>::const_iterator
+                v=vs.begin(),
+                Bv=Bvs.begin();
+            v!=vs.end();
+            v++,Bv++,beta++
+        ) {
+            Real beta=X::innr(*Bv,x);
+            X::axpy(Real(-1.)*beta,*v,x);
+            X::axpy(Real(-1.)*beta,*Bv,Bx);
+            R.push_back(beta);
+        }
+    }
+    
+    // Computes the truncated MINRES algorithm in order to solve A(x)=b.
     // (input) A : Operator that computes A(x)
     // (input) b : Right hand side
-    // (input) Bl: Operator that computes the left preconditioner
-    // (input) Br: Operator that computes the right preconditioner
+    // (input) B: Operator that computes the symmetric positive definite
+    //    preconditioner
     // (input) C : Operator that modifies the shape of the trust-region.
     // (input) eps : Relative stopping tolerance.  We check the relative 
     //    difference between the current and original preconditioned
     //    norm of the residual.
     // (input) iter_max : Maximum number of iterations
-    // (input) rst_freq : Restarts GMRES every rst_freq iterations.  If we don't
-    //    want restarting, set this to zero. 
     // (input) delta : Trust region radius.  
     // (output) x : Final solution.
     // (output) x_cp : The Cauchy-Point, which is defined as the solution x
     //     after a single iteration.
-    // (output) norm_rtrue : Final norm of the true residual
+    // (output) norm_r : Final norm of the residual
     // (output) iter : Number of iterations computed
     template <
         typename Real,
         template <typename> class XX
     >
-    void truncated_gmres(
+    void truncated_minres(
         const Operator <Real,XX,XX>& A,
         const typename XX <Real>::Vector& b,
-        const Operator <Real,XX,XX>& Bl,
-        const Operator <Real,XX,XX>& Br,
+        const Operator <Real,XX,XX>& B,
         const Operator <Real,XX,XX>& C,
-        Real eps,
-        Natural iter_max,
-        Natural rst_freq,
+        const Real eps,
+        const Natural iter_max,
         Natural orthog_max,
         const Real delta,
         typename XX <Real>::Vector& x,
         typename XX <Real>::Vector& x_cp,
-        Real& norm_rtrue,
+        Real& norm_r,
         Natural& iter,
         KrylovStop::t& krylov_stop
     ){
@@ -1371,15 +1398,9 @@ namespace peopt {
         typedef XX <Real> X;
         typedef typename X::Vector X_Vector;
 
-        // Adjust the restart frequency if it is too big
-        rst_freq = rst_freq > iter_max ? iter_max : rst_freq;
+        // Adjust orthog_max if it's too big
+        orthog_max = orthog_max > iter_max ? iter_max : orthog_max;
 
-        // Adjust the restart frequency if none is desired.
-        rst_freq = rst_freq == Natural(0) ? iter_max : rst_freq;
-
-        // Adjust the number of vectors we orthogonalize against
-        orthog_max = orthog_max > rst_freq ? orthog_max : rst_freq;
-        
         // Initialize x and the Cauchy point to zero. 
         X::zero(x);
         X::zero(x_cp);
@@ -1388,184 +1409,192 @@ namespace peopt {
         // Allocate memory for the residual
         X_Vector r; X::init(x,r);
         
+        // Allocate memory for the norm of the preconditioned residual
+        Real Bnorm_r;
+        
         // Allocate memory for the iterate update 
         X_Vector dx; X::init(x,dx); X::zero(dx);
 
-        // Allocate memory for the previous iterate update
-        X_Vector dx_old; X::init(x,dx_old);
-        
-        // Allocate memory for x + dx 
-        X_Vector x_p_dx; X::init(x,x_p_dx);
-        
         // Allocate memory for a few more temps 
         X_Vector x_tmp1; X::init(x,x_tmp1);
         X_Vector x_tmp2; X::init(x,x_tmp2);
-        X_Vector x_tmp3; X::init(x,x_tmp3);
-        
-        // Allocate memory for the true residual
-        X_Vector rtrue; X::init(x,rtrue);
-        
-        // Allocate memory for the norm of the preconditioned residual
-        Real norm_r;
 
-        // Allocate memory for the R matrix in the QR factorization of H where
-        // A V = V H + e_m' w_m
-        // Note, this size is restricted to be no larger than the restart
-        // frequency
-        std::vector <Real> R(rst_freq*(rst_freq+Natural(1))/Natural(2));
+        // Allocate memory for the final column of the R matrix in the
+        // QR factorization of T where
+        // A V = V T + e_m' w_m
+        std::list <Real> R;
 
-        // Allocate memory for the normalized Krylov vector
+        // Allocate memory for the normalized Krylov vector and its projection.
         X_Vector v; X::init(x,v);
-
-        // Allocate memory for w, the orthogonalized, but not normalized vector
-        X_Vector w; X::init(x,w);
+        X_Vector Bv; X::init(x,Bv);
 
         // Allocate memory for the list of Krylov vectors
         std::list <X_Vector> vs;
+        std::list <X_Vector> Bvs;
+                    
+        // Allocate memory for the vectors that compose V inv(R)            
+        std::list <X_Vector> V_Rinvs;
 
-        // Allocate memory for right hand side of the linear system, the vector
-        // Q' norm(w1) e1.  Since we have a problem overdetermined by a single
-        // index at each step, the size of this vector is the restart frequency
-        // plus 1.
-        std::vector <Real> Qt_e1(rst_freq+Natural(1));
+        // Allocate memory for the last two elements of the right hand side of
+        // the linear system, the vector  Q' norm(w1) e1.  
+        std::vector <Real> Qt_e1(2);
 
         // Allocoate memory for the Givens rotations
         std::list <std::pair<Real,Real> > Qts;
 
-        // Allocate a temporary work element
-        X_Vector A_Br_v; X::init(x,A_Br_v);
+        // Find the residual and its norm
+        X::copy(b,r);
+        norm_r = sqrt(X::innr(r,r));
+        Real norm_r0 = norm_r;
 
-        // Allocate memory for the subiteration number of GMRES taking into
-        // account restarting
-        Natural i;
+        // Find the preconditioned residual
+        B(b,x_tmp1);
+        Bnorm_r = sqrt(X::innr(x_tmp1,b));
 
-        // Find the true residual and its norm
-        A(x,rtrue);
-        X::scal(Real(-1.),rtrue);
-        X::axpy(Real(1.),b,rtrue);
-        norm_rtrue = sqrt(X::innr(rtrue,rtrue));
-        Real norm_rtrue0 = norm_rtrue;
+        // Find the initial Krylov vector. 
+        X::copy(r,v);
+        X::scal(Real(1.)/Bnorm_r,v);
 
-        // Initialize the GMRES algorithm
-        resetGMRES<Real,XX> (rtrue,Bl,rst_freq,v,vs,r,norm_r,Qt_e1,Qts);
-            
+        // Insert the first Krylov vector
+        vs.push_back(X_Vector());
+        X::init(v,vs.back());
+        X::copy(v,vs.back());
+        
+        Bvs.push_back(X_Vector());
+        X::init(Bv,Bvs.back());
+        B(v,Bvs.back());
+
+        // Find the initial right hand side for the vector Q' norm(w1) e1.  
+        Qt_e1[0] = Bnorm_r;
+        Qt_e1[1] = Real(0.);
+
         // Iterate until the maximum iteration
         for(iter = Natural(1); iter <= iter_max;iter++) {
 
-            // Find the current iterate taking into account restarting
-            i = iter % rst_freq;
-
-            // We the above remainder is zero, we're on our final iteration
-            // before restarting.  However, the iterate in this case is equal to
-            // the restart frequency and not zero since our factorization has
-            // size rst_freq x rst_freq.
-            if(i == Natural(0)) i = rst_freq;
-
-            // Find the next Krylov vector
-            Br(v,w);
-            A(w,A_Br_v);
-            Bl(A_Br_v,w);
+            // Find the next Krylov vector, v <- ABv_last, Bv <- B(ABv_last)
+            A(Bvs.back(),v);
+            B(v,Bv);
 
             // Orthogonalize this Krylov vector with respect to the rest
-            orthogonalize <Real,XX> (vs,w,&(R[(i-1)*i/2+(i-vs.size())]));
-
-            // Find the norm of the remaining, orthogonalized vector
-            Real norm_w = sqrt(X::innr(w,w));
-
-            // Normalize the orthogonalized Krylov vector and insert it into the
-            // list of Krylov vectros
-            X::copy(w,v);
-            X::scal(Real(1.)/norm_w,v);
-            vs.push_back(X_Vector()); X::init(x,vs.back());
-            X::copy(v,vs.back());
+            Borthogonalize <Real,XX> (vs,Bvs,v,Bv,R); 
             
             // Check if we need to eliminate any vectors for orthogonalization.
-            if(vs.size()==orthog_max) {
+            if(vs.size()==orthog_max+Natural(1)) {
                 vs.pop_front();
-                Qts.pop_front();
+                Bvs.pop_front();
             }
+            
+            // Store the Krylov vector 
+            Real Bnorm_v = sqrt(X::innr(Bv,v));
 
+            vs.push_back(X_Vector()); X::init(x,vs.back());
+            X::copy(v,vs.back());
+            X::scal(Real(1.)/Bnorm_v,vs.back());
+            
+            Bvs.push_back(X_Vector()); X::init(x,Bvs.back());
+            X::copy(Bv,Bvs.back());
+            X::scal(Real(1.)/Bnorm_v,Bvs.back());
+            
+            // At this point, R only contains the Gram-Schmidt coefficients
+            // from the orthogonalization.  In theory, we only need two
+            // coefficients.  However, if we over orthogonalize, we may
+            // have more.  Depending on the situation, we may have a
+            // column of R that looks like
+            // [ * * * * * ].  Alternatively, we may have a column that
+            // looks like [ 0 0 * * * ].  In the latter case, we need
+            // to pad the vector R with a zero in the front.
+            if(iter - R.size() > 0) 
+                R.push_front(Real(0.));
+            
             // Apply the existing Givens rotations to the new column of R
-            Natural j=i-Qts.size();
-            for(typename std::list <std::pair<Real,Real> >::iterator
-                    Qt=Qts.begin();
+            typename std::list <Real>::iterator beta=R.begin();
+            typename std::list <Real>::iterator beta_next=beta; beta_next++;
+            for(typename std::list <std::pair<Real,Real> >::iterator Qt
+                    =Qts.begin();
                 Qt!=Qts.end();
-                Qt++
-            ) {
-                rot <Real> (Integer(1),&(R[(j-1)+(i-1)*i/2]),
-                    Integer(1),&(R[j+(i-1)*i/2]),Integer(1),
-                    Qt->first,Qt->second);
-                j++;
-            }
+                Qt++,beta++,beta_next++
+            )
+                rot <Real> (Integer(1),&(*beta),Integer(1),&(*beta_next),
+                    Integer(1),Qt->first,Qt->second);
+           
+            // Remove unneeded Givens rotations
+            if(Qts.size()==orthog_max+Natural(1))
+                Qts.pop_front();
 
             // Form the new Givens rotation
             Qts.push_back(std::pair <Real,Real> ());
-            rotg <Real> (R[(i-1)+i*(i-1)/Natural(2)],norm_w,
-                Qts.back().first,Qts.back().second);
+            rotg <Real> (R.back(),Bnorm_v,Qts.back().first,Qts.back().second);
 
             // Apply this new Givens rotation to the last element of R and 
             // norm(w).  This fixes our system R.
-            rot <Real> (Integer(1),&(R[(i-1)+i*(i-1)/2]),Integer(1),
-                &(norm_w),Integer(1),Qts.back().first,Qts.back().second);
+            rot <Real> (Integer(1),&(R.back()),Integer(1),
+                &(Bnorm_v),Integer(1),Qts.back().first,Qts.back().second);
 
             // Apply the new givens rotation to the RHS.  This also determines
-            // the new norm of the preconditioned residual.
-            rot <Real> (Integer(1),&(Qt_e1[i-1]),Integer(1),&(Qt_e1[i]),
+            // the new B-norm of the residual.
+            rot <Real> (Integer(1),&(Qt_e1[0]),Integer(1),&(Qt_e1[1]),
                 Integer(1),Qts.back().first,Qts.back().second);
-            norm_r = fabs(Qt_e1[i]);
-                
-            // Solve for the new iterate update 
-            X::copy(dx,dx_old);
-            solveInKrylov <Real,XX> (i,&(R[0]),&(Qt_e1[0]),vs,Br,x,dx);
+            Bnorm_r = fabs(Qt_e1[1]);
 
-            // Find the current iterate, its residual, the residual's norm
-            X::copy(x,x_p_dx);
-            X::axpy(Real(1.),dx,x_p_dx);
-            A(x_p_dx,rtrue);
-            X::scal(Real(-1.),rtrue);
-            X::axpy(Real(1.),b,rtrue);
-            norm_rtrue = sqrt(X::innr(rtrue,rtrue));
-                
+            // Determine V inv(R)
+            typename std::list <X_Vector>::const_reverse_iterator Bv_iter_m_1
+                =Bvs.rbegin(); Bv_iter_m_1++;
+            X::copy(*(Bv_iter_m_1),x_tmp1);
+            beta=R.begin();
+            for(typename std::list <X_Vector>::const_iterator
+                    V_Rinv=V_Rinvs.begin();
+                V_Rinv!=V_Rinvs.end();
+                V_Rinv++,beta++
+            ) 
+                X::axpy(-(*beta),*V_Rinv,x_tmp1);
+            X::scal(Real(1.)/R.back(),x_tmp1);
+           
+            // Remove unneeded vectors in V inv(R) .
+            if(V_Rinvs.size()==orthog_max+Natural(1)) 
+                V_Rinvs.pop_front();
+
+            // Add in the new V inv(R) vector
+            V_Rinvs.push_back(X_Vector()); X::init(x_tmp1,V_Rinvs.back());
+            X::copy(x_tmp1,V_Rinvs.back());
+
+            // Solve for the new iterate update
+            X::copy(V_Rinvs.back(),dx);
+            X::scal(Qt_e1[0],dx);
+
             // Find || C(x+dx) ||
-            C(x_p_dx,x_tmp1);
-            norm_Cx = sqrt(X::innr(x_tmp1,x_tmp1));
+            X::copy(x,x_tmp1);
+            X::axpy(Real(1.),dx,x_tmp1);
+            C(x_tmp1,x_tmp2);
+            norm_Cx = sqrt(X::innr(x_tmp2,x_tmp2));
 
             // Determine if we should exit since we exceeded our trust-region
             if(norm_Cx >= delta) {
 
                 // Find sigma so that
                 //
-                // || C(x + dx_old + sigma (dx-dx_old)) ||=delta.
+                // || C(x + sigma dx) ||=delta.
                 //
                 // This can be found by finding the positive root of the 
                 // quadratic
                 //
-                // || C(x + dx_old + sigma (dx-dx_old)) ||^2 = delta^2.
+                // || C(x + sigma dx) ||^2 = delta^2.
                 //
                 // Specifically, we want the positive root of
                 // 
-                // sigma^2<C(dx-dx_old),C(dx-dx_old)>
-                //     + sigma(2 <C(dx-dx_old),C(x+dx_old)>)
-                //     + (<C(x+dx_old),C(x+dx_old)>-delta^2).
+                // sigma^2<C(dx),C(dx)>
+                //     + sigma(2 <C(dx),C(x)>)
+                //     + (<C(x),C(x)>-delta^2).
 
-                // x_tmp1 <- dx-dx_old
-                X::copy(dx,x_tmp1);
-                X::axpy(Real(-1.),dx_old,x_tmp1);
+                // x_tmp1 <- C(dx)
+                C(dx,x_tmp1);
 
-                // x_tmp2 <- C(dx-dx_old)
-                C(x_tmp1,x_tmp2);
-
-                // x_tmp1 <- x+dx_old
-                X::copy(x,x_tmp1);
-                X::axpy(Real(1.),dx_old,x_tmp1);
-
-                // x_tmp3 <- C(x+dx_old)
-                C(x_tmp1,x_tmp3);
+                // x_tmp2 <- C(x);
+                C(x,x_tmp2);
 
                 // Solve the quadratic equation for the positive root 
-                Real aa = X::innr(x_tmp2,x_tmp2);
-                Real bb = Real(2.)*X::innr(x_tmp2,x_tmp3);
-                Real cc = X::innr(x_tmp3,x_tmp3)-delta*delta;
+                Real aa = X::innr(x_tmp1,x_tmp1);
+                Real bb = Real(2.)*X::innr(x_tmp1,x_tmp2);
+                Real cc = X::innr(x_tmp2,x_tmp2)-delta*delta;
                 Natural nroots;
                 Real r1;
                 Real r2;
@@ -1575,68 +1604,47 @@ namespace peopt {
                 // Take the step, find its residual, and compute the 
                 // residual's norm
 
-                // x_p_dx <- x+dx_old
-                X::copy(x,x_p_dx);
-                X::axpy(Real(1.),dx_old,x_p_dx);
+                // x <- x + sigma dx
+                X::axpy(sigma,dx,x);
 
-                // x_tmp1 <- dx-dx_old
-                X::copy(dx,x_tmp1);
-                X::axpy(Real(-1.),dx_old,x_tmp1);
+                // r <- A(x) - b
+                A(x,r);
+                X::axpy(Real(-1.),b,r);
 
-                // x_p_dx <- x+dx_old + sigma (dx-dx_old)
-                X::axpy(sigma,x_tmp1,x_p_dx);
-
-                // rtrue <- b - A(x+dx_old + sigma (dx-dx_old))
-                A(x_p_dx,rtrue);
-                X::scal(Real(-1.),rtrue);
-                X::axpy(Real(1.),b,rtrue);
-                norm_rtrue = sqrt(X::innr(rtrue,rtrue));
+                // norm_r = || A(x) - b ||
+                norm_r = sqrt(X::innr(r,r));
 
                 // Set why we stopped
                 krylov_stop = KrylovStop::TrustRegionViolated;
  
                 // If this is the first iteration, save the Cauchy-Point
-                if(iter==Natural(1)) {
-                    X::copy(x_p_dx,x_cp);
-
-                    // Force the Cauchy point to be a descent direction
-                    if(X::innr(x_cp,b)<0)
-                        X::scal(Real(-1.),x_cp);
-                }
+                if(iter==Natural(1)) 
+                    X::copy(x,x_cp);
                 break;
             }
+
+            // Shift the elements of Qt_e1
+            Qt_e1[0]=Qt_e1[1];
+            Qt_e1[1]=Real(0.);
+
+            // Move to the new iterate, x <- x + sigma dx
+            X::axpy(Real(1.),dx,x);
+
+            // Calculate the new norm of the residual, r <- A(x) - b, 
+            // norm_r = || A(x) - b ||
+            A(x,r);
+            X::axpy(Real(-1.),b,r);
+            norm_r = sqrt(X::innr(r,r));
             
             // If this is the first iteration, save the Cauchy-Point
-            if(iter==Natural(1)) {
-                X::copy(x_p_dx,x_cp);
-
-                // Force the Cauchy point to be a descent direction
-                if(X::innr(x_cp,b)<0)
-                    X::scal(Real(-1.),x_cp);
-            }
+            if(iter==Natural(1)) 
+                X::copy(x,x_cp);
 
             // Determine if we should exit since the norm of the true residual
             // is small
-            if(norm_rtrue < eps*norm_rtrue0) {
+            if(norm_r < eps*norm_r0) {
                 krylov_stop = KrylovStop::RelativeErrorSmall;
                 break;	
-            }
-
-            // If we've hit the restart frequency, reset the Krylov spaces and
-            // factorizations
-            if(i%rst_freq==Natural(0)) {
-
-                // Move to the new iterate
-                X::copy(x_p_dx,x);
-
-                // Reset the GMRES algorithm
-                resetGMRES<Real,XX> (rtrue,Bl,rst_freq,v,vs,r,norm_r,Qt_e1,Qts);
-
-                // Make sure to correctly indicate that we're now working on
-                // iteration 0 of the next round of GMRES.  If we exit
-                // immediately thereafter, we use this check to make sure we
-                // don't do any additional solves for x.
-                i = Natural(0);
             }
         }
         
@@ -1645,13 +1653,6 @@ namespace peopt {
             krylov_stop=KrylovStop::MaxItersExceeded;
             iter = iter_max;
         }
-        
-        // As long as we didn't just solve for our new iterate, go ahead and
-        // solve for it now.
-        if(i > Natural(0)) X::copy(x_p_dx,x);
-
-        // If we're on the first iteration, use the Cauchy point
-        if(iter == Natural(1)) X::copy(x_cp,x);
     }
 }
 

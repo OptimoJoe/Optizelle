@@ -65,10 +65,6 @@ namespace peopt {
                     .get("krylov_orthog_max",
                         Json::Value::UInt64(state.krylov_orthog_max))
                     .asUInt64());
-                state.krylov_rst_freq=Natural(root["peopt"]
-                    .get("krylov_rst_freq",
-                        Json::Value::UInt64(state.krylov_rst_freq))
-                    .asUInt64());
                 state.eps_krylov=Real(root["peopt"]
                     .get("eps_krylov",state.eps_krylov).asDouble());
 
@@ -178,8 +174,6 @@ namespace peopt {
                     =Json::Value::UInt64(state.krylov_iter_max);
                 root["peopt"]["krylov_orthog_max"]
                     =Json::Value::UInt64(state.krylov_orthog_max);
-                root["peopt"]["krylov_rst_freq"]
-                    =Json::Value::UInt64(state.krylov_rst_freq);
                 root["peopt"]["eps_krylov"]=state.eps_krylov;
                 root["peopt"]["krylov_solver"]
                     =KrylovSolverTruncated::to_string(state.krylov_solver);
