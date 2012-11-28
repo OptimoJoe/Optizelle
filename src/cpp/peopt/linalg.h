@@ -1478,134 +1478,149 @@ namespace peopt {
             // Orthogonalize this Krylov vector with respect to the rest
             Borthogonalize <Real,XX> (vs,Bvs,v,Bv,R); 
             
-            // Check if we need to eliminate any vectors for orthogonalization.
-            if(vs.size()==orthog_max+Natural(1)) {
-                vs.pop_front();
-                Bvs.pop_front();
-            }
-            
-            // Store the Krylov vector 
+            // Determine the normalizing factor 
             Real Bnorm_v = sqrt(X::innr(Bv,v));
 
-            vs.push_back(X_Vector()); X::init(x,vs.back());
-            X::copy(v,vs.back());
-            X::scal(Real(1.)/Bnorm_v,vs.back());
+            // Note, it is possible that the normalizing factor is NaN if
+            // either the operator or the preconditioner has a null-space or
+            // is some piece of code that fails to compute properly.  In
+            // the case that it is invalid, we skip many steps in the algorithm
+            // and procede to the truncated part.
+            if(Bnorm_v==Bnorm_v) {
             
-            Bvs.push_back(X_Vector()); X::init(x,Bvs.back());
-            X::copy(Bv,Bvs.back());
-            X::scal(Real(1.)/Bnorm_v,Bvs.back());
-            
-            // At this point, R only contains the Gram-Schmidt coefficients
-            // from the orthogonalization.  In theory, we only need two
-            // coefficients.  However, if we over orthogonalize, we may
-            // have more.  Depending on the situation, we may have a
-            // column of R that looks like
-            // [ * * * * * ].  Alternatively, we may have a column that
-            // looks like [ 0 0 * * * ].  In the latter case, we need
-            // to pad the vector R with a zero in the front.
-            if(iter - R.size() > 0) 
-                R.push_front(Real(0.));
-            
-            // Apply the existing Givens rotations to the new column of R
-            typename std::list <Real>::iterator beta=R.begin();
-            typename std::list <Real>::iterator beta_next=beta; beta_next++;
-            for(typename std::list <std::pair<Real,Real> >::iterator Qt
-                    =Qts.begin();
-                Qt!=Qts.end();
-                Qt++,beta++,beta_next++
-            )
-                rot <Real> (Integer(1),&(*beta),Integer(1),&(*beta_next),
-                    Integer(1),Qt->first,Qt->second);
-           
-            // Remove unneeded Givens rotations
-            if(Qts.size()==orthog_max+Natural(1))
-                Qts.pop_front();
+                // Check if we need to eliminate any vectors for
+                // orthogonalization.
+                if(vs.size()==orthog_max+Natural(1)) {
+                    vs.pop_front();
+                    Bvs.pop_front();
+                }
 
-            // Form the new Givens rotation
-            Qts.push_back(std::pair <Real,Real> ());
-            rotg <Real> (R.back(),Bnorm_v,Qts.back().first,Qts.back().second);
+                // Store the Krylov vector 
+                vs.push_back(X_Vector()); X::init(x,vs.back());
+                X::copy(v,vs.back());
+                X::scal(Real(1.)/Bnorm_v,vs.back());
+                
+                Bvs.push_back(X_Vector()); X::init(x,Bvs.back());
+                X::copy(Bv,Bvs.back());
+                X::scal(Real(1.)/Bnorm_v,Bvs.back());
+                
+                // At this point, R only contains the Gram-Schmidt coefficients
+                // from the orthogonalization.  In theory, we only need two
+                // coefficients.  However, if we over orthogonalize, we may
+                // have more.  Depending on the situation, we may have a
+                // column of R that looks like
+                // [ * * * * * ].  Alternatively, we may have a column that
+                // looks like [ 0 0 * * * ].  In the latter case, we need
+                // to pad the vector R with a zero in the front.
+                if(iter - R.size() > 0) 
+                    R.push_front(Real(0.));
+                
+                // Apply the existing Givens rotations to the new column of R
+                typename std::list <Real>::iterator beta=R.begin();
+                typename std::list <Real>::iterator beta_next=beta; beta_next++;
+                for(typename std::list <std::pair<Real,Real> >::iterator Qt
+                        =Qts.begin();
+                    Qt!=Qts.end();
+                    Qt++,beta++,beta_next++
+                )
+                    rot <Real> (Integer(1),&(*beta),Integer(1),&(*beta_next),
+                        Integer(1),Qt->first,Qt->second);
+               
+                // Remove unneeded Givens rotations
+                if(Qts.size()==orthog_max+Natural(1))
+                    Qts.pop_front();
 
-            // Apply this new Givens rotation to the last element of R and 
-            // norm(w).  This fixes our system R.
-            rot <Real> (Integer(1),&(R.back()),Integer(1),
-                &(Bnorm_v),Integer(1),Qts.back().first,Qts.back().second);
+                // Form the new Givens rotation
+                Qts.push_back(std::pair <Real,Real> ());
+                rotg <Real> (
+                    R.back(),Bnorm_v,Qts.back().first,Qts.back().second);
 
-            // Apply the new givens rotation to the RHS.  This also determines
-            // the new B-norm of the residual.
-            rot <Real> (Integer(1),&(Qt_e1[0]),Integer(1),&(Qt_e1[1]),
-                Integer(1),Qts.back().first,Qts.back().second);
-            Bnorm_r = fabs(Qt_e1[1]);
+                // Apply this new Givens rotation to the last element of R and 
+                // norm(w).  This fixes our system R.
+                rot <Real> (Integer(1),&(R.back()),Integer(1),
+                    &(Bnorm_v),Integer(1),Qts.back().first,Qts.back().second);
 
-            // Determine V inv(R)
-            typename std::list <X_Vector>::const_reverse_iterator Bv_iter_m_1
-                =Bvs.rbegin(); Bv_iter_m_1++;
-            X::copy(*(Bv_iter_m_1),x_tmp1);
-            beta=R.begin();
-            for(typename std::list <X_Vector>::const_iterator
-                    V_Rinv=V_Rinvs.begin();
-                V_Rinv!=V_Rinvs.end();
-                V_Rinv++,beta++
-            ) 
-                X::axpy(-(*beta),*V_Rinv,x_tmp1);
-            X::scal(Real(1.)/R.back(),x_tmp1);
-           
-            // Remove unneeded vectors in V inv(R) .
-            if(V_Rinvs.size()==orthog_max+Natural(1)) 
-                V_Rinvs.pop_front();
+                // Apply the new givens rotation to the RHS.  This also 
+                // determines the new B-norm of the residual.
+                rot <Real> (Integer(1),&(Qt_e1[0]),Integer(1),&(Qt_e1[1]),
+                    Integer(1),Qts.back().first,Qts.back().second);
+                Bnorm_r = fabs(Qt_e1[1]);
 
-            // Add in the new V inv(R) vector
-            V_Rinvs.push_back(X_Vector()); X::init(x_tmp1,V_Rinvs.back());
-            X::copy(x_tmp1,V_Rinvs.back());
+                // Determine V inv(R)
+                typename std::list <X_Vector>::const_reverse_iterator
+                    Bv_iter_m_1=Bvs.rbegin(); Bv_iter_m_1++;
+                X::copy(*(Bv_iter_m_1),x_tmp1);
+                beta=R.begin();
+                for(typename std::list <X_Vector>::const_iterator
+                        V_Rinv=V_Rinvs.begin();
+                    V_Rinv!=V_Rinvs.end();
+                    V_Rinv++,beta++
+                ) 
+                    X::axpy(-(*beta),*V_Rinv,x_tmp1);
+                X::scal(Real(1.)/R.back(),x_tmp1);
+               
+                // Remove unneeded vectors in V inv(R) .
+                if(V_Rinvs.size()==orthog_max+Natural(1)) 
+                    V_Rinvs.pop_front();
 
-            // Solve for the new iterate update
-            X::copy(V_Rinvs.back(),dx);
-            X::scal(Qt_e1[0],dx);
+                // Add in the new V inv(R) vector
+                V_Rinvs.push_back(X_Vector()); X::init(x_tmp1,V_Rinvs.back());
+                X::copy(x_tmp1,V_Rinvs.back());
 
-            // Find || C(x+dx) ||
-            X::copy(x,x_tmp1);
-            X::axpy(Real(1.),dx,x_tmp1);
-            C(x_tmp1,x_tmp2);
-            norm_Cx = sqrt(X::innr(x_tmp2,x_tmp2));
+                // Solve for the new iterate update
+                X::copy(V_Rinvs.back(),dx);
+                X::scal(Qt_e1[0],dx);
 
-            // Determine if we should exit since we exceeded our trust-region
-            if(norm_Cx >= delta) {
+                // Find || C(x+dx) ||
+                X::copy(x,x_tmp1);
+                X::axpy(Real(1.),dx,x_tmp1);
+                C(x_tmp1,x_tmp2);
+                norm_Cx = sqrt(X::innr(x_tmp2,x_tmp2));
+            }
 
-                // Find sigma so that
-                //
-                // || C(x + sigma dx) ||=delta.
-                //
-                // This can be found by finding the positive root of the 
-                // quadratic
-                //
-                // || C(x + sigma dx) ||^2 = delta^2.
-                //
-                // Specifically, we want the positive root of
-                // 
-                // sigma^2<C(dx),C(dx)>
-                //     + sigma(2 <C(dx),C(x)>)
-                //     + (<C(x),C(x)>-delta^2).
+            // Exit early if we have either exceeded our trust-region or
+            // if we have detected a NaN.
+            if(norm_Cx >= delta || Bnorm_v != Bnorm_v) {
+                // If we're paying attention to the trust-region, scale the
+                // step appropriately.
+                if(delta < std::numeric_limits <Real>::infinity()) {
+                    // Find sigma so that
+                    //
+                    // || C(x + sigma dx) ||=delta.
+                    //
+                    // This can be found by finding the positive root of the 
+                    // quadratic
+                    //
+                    // || C(x + sigma dx) ||^2 = delta^2.
+                    //
+                    // Specifically, we want the positive root of
+                    // 
+                    // sigma^2<C(dx),C(dx)>
+                    //     + sigma(2 <C(dx),C(x)>)
+                    //     + (<C(x),C(x)>-delta^2).
 
-                // x_tmp1 <- C(dx)
-                C(dx,x_tmp1);
+                    // x_tmp1 <- C(dx)
+                    C(dx,x_tmp1);
 
-                // x_tmp2 <- C(x);
-                C(x,x_tmp2);
+                    // x_tmp2 <- C(x);
+                    C(x,x_tmp2);
 
-                // Solve the quadratic equation for the positive root 
-                Real aa = X::innr(x_tmp1,x_tmp1);
-                Real bb = Real(2.)*X::innr(x_tmp1,x_tmp2);
-                Real cc = X::innr(x_tmp2,x_tmp2)-delta*delta;
-                Natural nroots;
-                Real r1;
-                Real r2;
-                quad_equation(aa,bb,cc,nroots,r1,r2);
-                Real sigma = r1 > r2 ? r1 : r2;
+                    // Solve the quadratic equation for the positive root 
+                    Real aa = X::innr(x_tmp1,x_tmp1);
+                    Real bb = Real(2.)*X::innr(x_tmp1,x_tmp2);
+                    Real cc = X::innr(x_tmp2,x_tmp2)-delta*delta;
+                    Natural nroots;
+                    Real r1;
+                    Real r2;
+                    quad_equation(aa,bb,cc,nroots,r1,r2);
+                    Real sigma = r1 > r2 ? r1 : r2;
 
-                // Take the step, find its residual, and compute the 
-                // residual's norm
+                    // Take the step, find its residual, and compute the 
+                    // residual's norm
 
-                // x <- x + sigma dx
-                X::axpy(sigma,dx,x);
+                    // x <- x + sigma dx
+                    X::axpy(sigma,dx,x);
+                }
 
                 // r <- A(x) - b
                 A(x,r);
@@ -1614,8 +1629,11 @@ namespace peopt {
                 // norm_r = || A(x) - b ||
                 norm_r = sqrt(X::innr(r,r));
 
-                // Set why we stopped
-                krylov_stop = KrylovStop::TrustRegionViolated;
+                // Determine why we stopped
+                if(Bnorm_v != Bnorm_v)
+                    krylov_stop = KrylovStop::NegativeCurvature;
+                else
+                    krylov_stop = KrylovStop::TrustRegionViolated;
  
                 // If this is the first iteration, save the Cauchy-Point
                 if(iter==Natural(1)) 
