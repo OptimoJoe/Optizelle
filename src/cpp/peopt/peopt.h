@@ -3506,12 +3506,12 @@ namespace peopt{
                 // Determine x+dx 
                 X::copy(dx,x_p_dx);
                 X::axpy(Real(1.),x,x_p_dx);
-
-                // Determine the merit function evaluated at x+dx
-                merit_xpdx=f_merit(x_p_dx);
                 
                 // Determine the model function at dx, m(dx)
                 Real model_dx=model(dx);
+
+                // Determine the merit function evaluated at x+dx
+                merit_xpdx=f_merit(x_p_dx);
 
                 // Add a safety check in case we don't actually minimize the TR
                 // subproblem correctly. This could happen for a variety of
