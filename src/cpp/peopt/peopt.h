@@ -865,6 +865,8 @@ namespace peopt{
                 return atos <> ("IterExcd");
             case KrylovStop::TrustRegionViolated:
                 return atos <> ("TrstReg");
+            case KrylovStop::Instability:
+                return atos <> ("Unstable");
             default:
                 throw;
             }

@@ -501,7 +501,9 @@ namespace peopt {
             NegativeCurvature,        // Negative curvature detected
             RelativeErrorSmall,       // Relative error is small
             MaxItersExceeded,         // Maximum number of iterations exceeded
-            TrustRegionViolated       // Trust-region radius violated
+            TrustRegionViolated,      // Trust-region radius violated
+            Instability               // Some sort of instability detected.
+                                      // Normally, a NaN.
         };
 
         // Converts the Krylov stopping condition to a string 
@@ -515,6 +517,8 @@ namespace peopt {
                 return "MaxItersExceeded";
             case TrustRegionViolated:
                 return "TrustRegionViolated";
+            case Instability:
+                return "Instability";
             default:
                 throw;
             }
@@ -530,6 +534,8 @@ namespace peopt {
                 return MaxItersExceeded;
             else if(krylov_stop=="TrustRegionViolated")
                 return TrustRegionViolated;
+            else if(krylov_stop=="Instability")
+                return Instability;
             else
                 throw;
         }
@@ -540,7 +546,8 @@ namespace peopt {
                 if( name=="NegativeCurvature" ||
                     name=="RelativeErrorSmall" ||
                     name=="MaxItersExceeded" ||
-                    name=="TrustRegionViolated" 
+                    name=="TrustRegionViolated" ||
+                    name=="Instability" 
                 )
                     return true;
                 else
@@ -636,6 +643,13 @@ namespace peopt {
         std::list <X_Vector> Bps;
         std::list <X_Vector> ABps;
 
+        // Allocate memory for the norm of the trust-region operator
+        // applied at the trial step, || C(x+alpha Bp) ||.  
+        Real norm_CxpaBp=Real(0.); 
+
+        // Allocate memory for the line-search used in the algorithm.
+        Real alpha;
+
         // Initialize x to zero. 
         X::zero(x);
         Real norm_Cx = Real(0.);
@@ -689,60 +703,83 @@ namespace peopt {
                 X::scal(Real(-1.),ABp);
             }
 
-            // Check if we need to eliminate any vectors for orthogonalization.
-            if(ps.size()==orthog_max) {
-                ps.pop_front();
-                Bps.pop_front();
-                ABps.pop_front();
+            // Find || Bp ||_A^2.  Note, this is how we detect negative
+            // curvature as well as instability in the algorithm due to things
+            // like NaNs in the operator calculations.
+            Real Anorm_Bp_2 = X::innr(Bp,ABp);
+
+            // If we detect negative curvature or instability, in this case
+            // that || Bp ||_A=NaN, then we don't need to compute the
+            // following steps.
+            if( Anorm_Bp_2 > Real(0.) && Anorm_Bp_2 == Anorm_Bp_2 ) {
+                // Find || Bp ||_A.
+                Real Anorm_Bp = sqrt(Anorm_Bp_2);
+
+                // Check if we need to eliminate any vectors for
+                // orthogonalization.
+                if(ps.size()==orthog_max) {
+                    ps.pop_front();
+                    Bps.pop_front();
+                    ABps.pop_front();
+                }
+
+                // Store the previous directions
+                ps.push_back(X_Vector()); X::init(x,ps.back());
+                X::copy(p,ps.back());
+                X::scal(Real(1.)/Anorm_Bp,ps.back());
+                
+                Bps.push_back(X_Vector()); X::init(x,Bps.back());
+                X::copy(Bp,Bps.back());
+                X::scal(Real(1.)/Anorm_Bp,Bps.back());
+                
+                ABps.push_back(X_Vector()); X::init(x,ABps.back());
+                X::copy(ABp,ABps.back());
+                X::scal(Real(1.)/Anorm_Bp,ABps.back());
+
+                // Do an exact linesearch in the computed direction
+                alpha = -X::innr(r,Bp) / Anorm_Bp_2;
+
+                // Find the trial step and the norm || C(x+alpha Bp) || 
+
+                // x_tmp1 <- x + alpha Bp
+                X::copy(x,x_tmp1);
+                X::axpy(alpha,Bp,x_tmp1);
+
+                // x_tmp2 <- C(x+alpha Bp)
+                C(x_tmp1,x_tmp2);
+
+                // norm_CxpaBp <- || C(x+alpha Bp) ||
+                norm_CxpaBp = sqrt(X::innr(x_tmp2,x_tmp2));
             }
-
-            // Store the previous directions
-            Real innr_Bp_ABp = X::innr(Bp,ABp);
-
-            ps.push_back(X_Vector()); X::init(x,ps.back());
-            X::copy(p,ps.back());
-            X::scal(Real(1.)/sqrt(innr_Bp_ABp),ps.back());
-            
-            Bps.push_back(X_Vector()); X::init(x,Bps.back());
-            X::copy(Bp,Bps.back());
-            X::scal(Real(1.)/sqrt(innr_Bp_ABp),Bps.back());
-            
-            ABps.push_back(X_Vector()); X::init(x,ABps.back());
-            X::copy(ABp,ABps.back());
-            X::scal(Real(1.)/sqrt(innr_Bp_ABp),ABps.back());
-
-            // Do an exact linesearch in the computed direction
-            Real alpha = -X::innr(r,Bp) / innr_Bp_ABp;
-
-            // Find the trial step and the norm || C(x+alpha Bp) || 
-
-            // x_tmp1 <- x + alpha Bp
-            X::copy(x,x_tmp1);
-            X::axpy(alpha,Bp,x_tmp1);
-
-            // x_tmp2 <- C(x+alpha Bp)
-            C(x_tmp1,x_tmp2);
-
-            // norm_CxpaBp <- || C(x+alpha Bp) ||
-            Real norm_CxpaBp = sqrt(X::innr(x_tmp2,x_tmp2));
 
             // If we have negative curvature or our trial point is outside the
             // trust-region radius, terminate truncated-PCD and find our final
-            // step.  We have the <Bp,ABp> != <Bp,ABp> check in order to trap
-            // NaNs.
-            if( innr_Bp_ABp <= Real(0.) ||
+            // step by scaling the search direction until we reach the
+            // trust-region radius.  In the case of a NaN, we can't trust
+            // our current search direction, Bp, so we take our last search
+            // direction, which is stored in the Bps.
+            if( Anorm_Bp_2 <= Real(0.) ||
                 norm_CxpaBp >= delta ||
-                innr_Bp_ABp != innr_Bp_ABp 
+                Anorm_Bp_2 != Anorm_Bp_2 
             ) {
+                // If we're on the first iteration and we have a NaN, then
+                // just terminate without taking a step.  This means that
+                // our solution will be zero
+                if(iter==1 && Anorm_Bp_2 != Anorm_Bp_2) 
+                    ;
+
                 // If we're paying attention to the trust-region, scale the
                 // step appropriately.
-                if(delta < std::numeric_limits <Real>::infinity()) {
-                    // Find sigma so that || C(x + sigma p) || =delta.  This can
+                else if(delta < std::numeric_limits <Real>::infinity()) {
+                    // If we have a NaN, take our last search direction
+                    if(Anorm_Bp_2 != Anorm_Bp_2) X::copy(Bps.back(),Bp);
+
+                    // Find sigma so that || C(x + sigma Bp) ||=delta.  This can
                     // be found by finding the positive root of the quadratic
                     // || C(x) + sigma C(Bp) ||^2 = delta^2.  Specifically, we
                     // want the positive root of
-                    // sigma^2<C(Bp),C(Bp)>
-                    //     + sigma(2 <C(Bp),C(x)>)
+                    // sigma^2 <C(Bp),C(Bp)>
+                    //     + sigma (2 <C(Bp),C(x)>)
                     //     + (<C(x),C(x)>-delta^2).
 
                     // x_tmp1 <- C(Bp)
@@ -767,20 +804,22 @@ namespace peopt {
                     X::axpy(sigma,ABp,r);
                     norm_r=sqrt(X::innr(r,r));
 
-                // Otherwise, just take a step with a unit scale
-                } else {
+                // In the case that we're ignoring the trust-region, we
+                // either take a step of unit scale if there's no NaN.
+                } else if(Anorm_Bp_2 == Anorm_Bp_2) {
                     X::axpy(Real(1.),Bp,x);
                     X::axpy(Real(1.),ABp,r);
                     norm_r=sqrt(X::innr(r,r));
                 }
 
                 // Determine why we stopped
-                if(innr_Bp_ABp <= Natural(0) || innr_Bp_ABp != innr_Bp_ABp)
+                if(Anorm_Bp_2 != Anorm_Bp_2)
+                    krylov_stop = KrylovStop::Instability;
+                else if(Anorm_Bp_2 <= Real(0.)) 
                     krylov_stop = KrylovStop::NegativeCurvature;
                 else
                     krylov_stop = KrylovStop::TrustRegionViolated;
  
-
                 // If this is the first iteration, save the Cauchy-Point
                 if(iter==Natural(1)) X::copy(x,x_cp);
                 break;
@@ -1372,7 +1411,7 @@ namespace peopt {
     // (output) x : Final solution.
     // (output) x_cp : The Cauchy-Point, which is defined as the solution x
     //     after a single iteration.
-    // (output) norm_r : Final norm of the residual
+    // (output) Bnorm_r : Final preconditioned norm of the residual
     // (output) iter : Number of iterations computed
     template <
         typename Real,
@@ -1389,7 +1428,7 @@ namespace peopt {
         const Real delta,
         typename XX <Real>::Vector& x,
         typename XX <Real>::Vector& x_cp,
-        Real& norm_r,
+        Real& Bnorm_r,
         Natural& iter,
         KrylovStop::t& krylov_stop
     ){
@@ -1401,19 +1440,12 @@ namespace peopt {
         // Adjust orthog_max if it's too big
         orthog_max = orthog_max > iter_max ? iter_max : orthog_max;
 
-        // Initialize x and the Cauchy point to zero. 
+        // Initialize x to zero. 
         X::zero(x);
-        X::zero(x_cp);
         Real norm_Cx = Real(0.);
 
-        // Allocate memory for the residual
-        X_Vector r; X::init(x,r);
-        
-        // Allocate memory for the norm of the preconditioned residual
-        Real Bnorm_r;
-        
         // Allocate memory for the iterate update 
-        X_Vector dx; X::init(x,dx); X::zero(dx);
+        X_Vector dx; X::init(x,dx);
 
         // Allocate memory for a few more temps 
         X_Vector x_tmp1; X::init(x,x_tmp1);
@@ -1424,45 +1456,35 @@ namespace peopt {
         // A V = V T + e_m' w_m
         std::list <Real> R;
 
-        // Allocate memory for the normalized Krylov vector and its projection.
-        X_Vector v; X::init(x,v);
-        X_Vector Bv; X::init(x,Bv);
-
         // Allocate memory for the list of Krylov vectors
         std::list <X_Vector> vs;
         std::list <X_Vector> Bvs;
                     
-        // Allocate memory for the vectors that compose V inv(R)            
-        std::list <X_Vector> V_Rinvs;
+        // Allocate memory for the vectors that compose B V inv(R)            
+        std::list <X_Vector> B_V_Rinvs;
+
+        // Allocoate memory for the Givens rotations
+        std::list <std::pair<Real,Real> > Qts;
 
         // Allocate memory for the last two elements of the right hand side of
         // the linear system, the vector  Q' norm(w1) e1.  
         std::vector <Real> Qt_e1(2);
 
-        // Allocoate memory for the Givens rotations
-        std::list <std::pair<Real,Real> > Qts;
-
-        // Find the residual and its norm
-        X::copy(b,r);
-        norm_r = sqrt(X::innr(r,r));
-        Real norm_r0 = norm_r;
-
         // Find the preconditioned residual
         B(b,x_tmp1);
         Bnorm_r = sqrt(X::innr(x_tmp1,b));
+        Real Bnorm_r0 = Bnorm_r;
 
         // Find the initial Krylov vector. 
-        X::copy(r,v);
-        X::scal(Real(1.)/Bnorm_r,v);
+        X::copy(b,x_tmp1);
+        X::scal(Real(1.)/Bnorm_r,x_tmp1);
 
         // Insert the first Krylov vector
-        vs.push_back(X_Vector());
-        X::init(v,vs.back());
-        X::copy(v,vs.back());
+        vs.push_back(X_Vector()); X::init(x_tmp1,vs.back());
+        X::copy(x_tmp1,vs.back());
         
-        Bvs.push_back(X_Vector());
-        X::init(Bv,Bvs.back());
-        B(v,Bvs.back());
+        Bvs.push_back(X_Vector()); X::init(x_tmp1,Bvs.back());
+        B(x_tmp1,Bvs.back());
 
         // Find the initial right hand side for the vector Q' norm(w1) e1.  
         Qt_e1[0] = Bnorm_r;
@@ -1471,21 +1493,22 @@ namespace peopt {
         // Iterate until the maximum iteration
         for(iter = Natural(1); iter <= iter_max;iter++) {
 
-            // Find the next Krylov vector, v <- ABv_last, Bv <- B(ABv_last)
-            A(Bvs.back(),v);
-            B(v,Bv);
-
-            // Orthogonalize this Krylov vector with respect to the rest
-            Borthogonalize <Real,XX> (vs,Bvs,v,Bv,R); 
+            // Find the next Krylov vector,
+            // x_tmp1 <- ABv_last,
+            // x_tmp2 <- B(ABv_last)
+            A(Bvs.back(),x_tmp1);
+            B(x_tmp1,x_tmp2);
             
-            // Determine the normalizing factor 
-            Real Bnorm_v = sqrt(X::innr(Bv,v));
+            // Orthogonalize this Krylov vector with respect to the rest
+            Borthogonalize <Real,XX> (vs,Bvs,x_tmp1,x_tmp2,R); 
+            
+            // Determine the normalizing factor, || v ||_B.
+            Real Bnorm_v = sqrt(X::innr(x_tmp2,x_tmp1));
 
             // Note, it is possible that the normalizing factor is NaN if
-            // either the operator or the preconditioner has a null-space or
-            // is some piece of code that fails to compute properly.  In
-            // the case that it is invalid, we skip many steps in the algorithm
-            // and procede to the truncated part.
+            // either A or B returned a NaN or if B is really indefinite. In
+            // this case our new Krylov vector is invalid and we proceed 
+            // to the truncated part.
             if(Bnorm_v==Bnorm_v) {
             
                 // Check if we need to eliminate any vectors for
@@ -1497,11 +1520,11 @@ namespace peopt {
 
                 // Store the Krylov vector 
                 vs.push_back(X_Vector()); X::init(x,vs.back());
-                X::copy(v,vs.back());
+                X::copy(x_tmp1,vs.back());
                 X::scal(Real(1.)/Bnorm_v,vs.back());
                 
                 Bvs.push_back(X_Vector()); X::init(x,Bvs.back());
-                X::copy(Bv,Bvs.back());
+                X::copy(x_tmp2,Bvs.back());
                 X::scal(Real(1.)/Bnorm_v,Bvs.back());
                 
                 // At this point, R only contains the Gram-Schmidt coefficients
@@ -1546,29 +1569,30 @@ namespace peopt {
                     Integer(1),Qts.back().first,Qts.back().second);
                 Bnorm_r = fabs(Qt_e1[1]);
 
-                // Determine V inv(R)
+                // Determine B V inv(R)
                 typename std::list <X_Vector>::const_reverse_iterator
                     Bv_iter_m_1=Bvs.rbegin(); Bv_iter_m_1++;
                 X::copy(*(Bv_iter_m_1),x_tmp1);
                 beta=R.begin();
                 for(typename std::list <X_Vector>::const_iterator
-                        V_Rinv=V_Rinvs.begin();
-                    V_Rinv!=V_Rinvs.end();
-                    V_Rinv++,beta++
+                        B_V_Rinv=B_V_Rinvs.begin();
+                    B_V_Rinv!=B_V_Rinvs.end();
+                    B_V_Rinv++,beta++
                 ) 
-                    X::axpy(-(*beta),*V_Rinv,x_tmp1);
+                    X::axpy(-(*beta),*B_V_Rinv,x_tmp1);
                 X::scal(Real(1.)/R.back(),x_tmp1);
                
-                // Remove unneeded vectors in V inv(R) .
-                if(V_Rinvs.size()==orthog_max+Natural(1)) 
-                    V_Rinvs.pop_front();
+                // Remove unneeded vectors in B V inv(R).
+                if(B_V_Rinvs.size()==orthog_max+Natural(1)) 
+                    B_V_Rinvs.pop_front();
 
-                // Add in the new V inv(R) vector
-                V_Rinvs.push_back(X_Vector()); X::init(x_tmp1,V_Rinvs.back());
-                X::copy(x_tmp1,V_Rinvs.back());
+                // Add in the new B V inv(R) vector.
+                B_V_Rinvs.push_back(X_Vector());
+                    X::init(x_tmp1,B_V_Rinvs.back());
+                X::copy(x_tmp1,B_V_Rinvs.back());
 
                 // Solve for the new iterate update
-                X::copy(V_Rinvs.back(),dx);
+                X::copy(B_V_Rinvs.back(),dx);
                 X::scal(Qt_e1[0],dx);
 
                 // Find || C(x+dx) ||
@@ -1615,23 +1639,13 @@ namespace peopt {
                     quad_equation(aa,bb,cc,nroots,r1,r2);
                     Real sigma = r1 > r2 ? r1 : r2;
 
-                    // Take the step, find its residual, and compute the 
-                    // residual's norm
-
-                    // x <- x + sigma dx
+                    // Take the step, x <- x + sigma dx
                     X::axpy(sigma,dx,x);
                 }
 
-                // r <- A(x) - b
-                A(x,r);
-                X::axpy(Real(-1.),b,r);
-
-                // norm_r = || A(x) - b ||
-                norm_r = sqrt(X::innr(r,r));
-
                 // Determine why we stopped
                 if(Bnorm_v != Bnorm_v)
-                    krylov_stop = KrylovStop::NegativeCurvature;
+                    krylov_stop = KrylovStop::Instability;
                 else
                     krylov_stop = KrylovStop::TrustRegionViolated;
  
@@ -1645,22 +1659,16 @@ namespace peopt {
             Qt_e1[0]=Qt_e1[1];
             Qt_e1[1]=Real(0.);
 
-            // Move to the new iterate, x <- x + sigma dx
+            // Move to the new iterate, x <- x + dx
             X::axpy(Real(1.),dx,x);
 
-            // Calculate the new norm of the residual, r <- A(x) - b, 
-            // norm_r = || A(x) - b ||
-            A(x,r);
-            X::axpy(Real(-1.),b,r);
-            norm_r = sqrt(X::innr(r,r));
-            
             // If this is the first iteration, save the Cauchy-Point
             if(iter==Natural(1)) 
                 X::copy(x,x_cp);
-
-            // Determine if we should exit since the norm of the true residual
-            // is small
-            if(norm_r < eps*norm_r0) {
+            
+            // Determine if we should exit since the norm of the preconditioned
+            // residual is small
+            if(Bnorm_r < eps*Bnorm_r0) {
                 krylov_stop = KrylovStop::RelativeErrorSmall;
                 break;	
             }
