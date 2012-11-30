@@ -3240,7 +3240,7 @@ namespace peopt{
                 out.push_back(atos <> ("Iter"));
                 out.push_back(atos <> ("Merit(x)"));
                 out.push_back(atos <> ("|| g ||"));
-                out.push_back(atos <> ("|| s ||"));
+                out.push_back(atos <> ("|| dx ||"));
 
                 // In case we're using a Krylov method
                 if(    algorithm_class==AlgorithmClass::TrustRegion
