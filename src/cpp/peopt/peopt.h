@@ -1122,7 +1122,7 @@ namespace peopt{
 
             // Compute an ensemble of finite difference tests in a linear manner
             msg.print("Finite difference test on the gradient.");
-            Real min_rel_err = Real(std::numeric_limits<double>::quiet_NaN());
+            Real min_rel_err(std::numeric_limits<Real>::quiet_NaN());
             for(Integer i=-2;i<=5;i++){
                 Real epsilon=pow(Real(.1),int(i));
                 Real dd=directionalDerivative <> (f,x,dx,epsilon);
@@ -1172,7 +1172,7 @@ namespace peopt{
 
             // Compute an ensemble of finite difference tests in a linear manner
             msg.print("Finite difference test on the Hessian.");
-            Real min_rel_err = Real(std::numeric_limits<double>::quiet_NaN());
+            Real min_rel_err(std::numeric_limits<Real>::quiet_NaN());
             for(Integer i=-2;i<=5;i++){
 
                 // Calculate the directional derivative
@@ -1279,7 +1279,7 @@ namespace peopt{
             // Compute an ensemble of finite difference tests in a linear manner
             msg.print("Finite difference test on the derivative of a "
                 "vector-valued function.");
-            Real min_rel_err = Real(std::numeric_limits<double>::quiet_NaN());
+            Real min_rel_err(std::numeric_limits<Real>::quiet_NaN());
             for(Integer i=-2;i<=5;i++){
 
                 // Calculate the directional derivative
@@ -1391,7 +1391,7 @@ namespace peopt{
             // Compute an ensemble of finite difference tests in a linear manner
             msg.print("Finite difference test on the 2nd-derivative adj. "
                 "of a vector-valued function.");
-            Real min_rel_err = Real(std::numeric_limits<double>::quiet_NaN());
+            Real min_rel_err(std::numeric_limits<Real>::quiet_NaN());
             for(Integer i=-2;i<=5;i++){
 
                 // Calculate the directional derivative
@@ -3717,7 +3717,7 @@ namespace peopt{
                 // On subsequent iterations, we take the specified direction
                 else {
                     // Find the momentum parameter
-                    double beta=Real(0.);
+                    Real beta(std::numeric_limits<Real>::quiet_NaN());
                     switch(dir) {
                     case NonlinearCGDirections::FletcherReeves:
                         beta=FletcherReeves(state);
@@ -3851,8 +3851,8 @@ namespace peopt{
 
                 // Find two new points between a and b, mu and lambda,
                 // such that lambda < mu
-                double lambda=a+(1.-beta)*(b-a);
-                double mu=a+beta*(b-a);
+                Real lambda=a+(1.-beta)*(b-a);
+                Real mu=a+beta*(b-a);
 
                 // Find the merit value at mu and labmda 
 
