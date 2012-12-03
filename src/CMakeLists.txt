@@ -1,4 +1,8 @@
+# This is the minimum required for the library install
 #cmake_minimum_required(VERSION 2.8.9)
+
+# This is the minimum required for the header only install
+cmake_minimum_required(VERSION 2.4)
 project(peopt)
 
 # Add a module directory in case we need to find some packages
