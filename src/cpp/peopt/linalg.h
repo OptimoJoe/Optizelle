@@ -648,7 +648,7 @@ namespace peopt {
         Real norm_CxpaBp=Real(0.); 
 
         // Allocate memory for the line-search used in the algorithm.
-        Real alpha(0.);
+        Real alpha(std::numeric_limits<Real>::quiet_NaN());
 
         // Initialize x to zero. 
         X::zero(x);
