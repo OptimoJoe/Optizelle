@@ -102,7 +102,7 @@ namespace peopt{
     };
 
     // Which algorithm class do we use
-    struct AlgorithmClass{
+    namespace AlgorithmClass{
         enum t{
             TrustRegion,            // Trust-Region algorithms
             LineSearch              // Line-search algorithms
@@ -144,7 +144,7 @@ namespace peopt{
     };
 
     // Reasons why we stop the algorithm
-    struct StoppingCondition{
+    namespace StoppingCondition{
         enum t{
             NotConverged,            // Algorithm did not converge
             RelativeGradientSmall,   // Relative gradient was sufficiently small
@@ -155,7 +155,7 @@ namespace peopt{
         };
 
         // Converts the stopping condition to a string 
-        static std::string to_string(t opt_stop){
+        inline std::string to_string(t opt_stop){
             switch(opt_stop){
             case NotConverged:
                 return "NotConverged";
@@ -175,7 +175,7 @@ namespace peopt{
         }
 
         // Converts a string to a stopping condition
-        static t from_string(std::string opt_stop){
+        inline t from_string(std::string opt_stop){
             if(opt_stop=="NotConverged")
                 return NotConverged;
             else if(opt_stop=="RelativeGradientSmall")
@@ -210,7 +210,7 @@ namespace peopt{
     };
 
     // Various operators for both Hessian approximations and preconditioners
-    struct Operators{
+    namespace Operators{
         enum t{
             Identity,          // Identity approximation
             ScaledIdentity,    // Scaled identity approximation
@@ -222,7 +222,7 @@ namespace peopt{
         };
         
         // Converts the operator type to a string 
-        static std::string to_string(t op){
+        inline std::string to_string(t op){
             switch(op){
             case Identity:
                 return "Identity";
@@ -244,7 +244,7 @@ namespace peopt{
         }
         
         // Converts a string to a operator 
-        static t from_string(std::string op){
+        inline t from_string(std::string op){
             if(op=="Identity")
                 return Identity; 
             else if(op=="ScaledIdentity")
@@ -282,7 +282,7 @@ namespace peopt{
     };
 
     // Different kinds of search directions 
-    struct LineSearchDirection{
+    namespace LineSearchDirection{
         enum t{
             SteepestDescent,          // SteepestDescent 
             FletcherReeves,           // Fletcher-Reeves CG
@@ -293,7 +293,7 @@ namespace peopt{
         };
         
         // Converts the line-search direction to a string 
-        static std::string to_string(t dir){
+        inline std::string to_string(t dir){
             switch(dir){
             case SteepestDescent:
                 return "SteepestDescent";
@@ -313,7 +313,7 @@ namespace peopt{
         }
         
         // Converts a string to a line-search direction 
-        static t from_string(std::string dir){
+        inline t from_string(std::string dir){
             if(dir=="SteepestDescent")
                 return SteepestDescent; 
             else if(dir=="FletcherReeves")
@@ -347,7 +347,7 @@ namespace peopt{
         };
     };
 
-    struct LineSearchKind{
+    namespace LineSearchKind{
         enum t{
             Brents,           // Brent's minimization
             GoldenSection,    // Golden-section search 
@@ -357,7 +357,7 @@ namespace peopt{
         };
             
         // Converts the line-search kind to a string 
-        static std::string to_string(t kind){
+        inline std::string to_string(t kind){
             switch(kind){
             case Brents:
                 return "Brents";
@@ -375,7 +375,7 @@ namespace peopt{
         }
         
         // Converts a string to a line-search kind 
-        static t from_string(std::string kind){
+        inline t from_string(std::string kind){
             if(kind=="Brents")
                 return Brents; 
             else if(kind=="GoldenSection")
@@ -406,7 +406,7 @@ namespace peopt{
         };
     };
     
-    struct OptimizationLocation{
+    namespace OptimizationLocation{
         enum t{
             // Occurs before the initial function and gradient evaluation 
             BeforeInitialFuncAndGrad,
@@ -461,7 +461,7 @@ namespace peopt{
         };
             
         // Converts the optimization location to a string 
-        static std::string to_string(t loc){
+        inline std::string to_string(t loc){
             switch(loc){
             case BeforeInitialFuncAndGrad:
                 return "BeforeInitialFuncAndGrad";
@@ -499,7 +499,7 @@ namespace peopt{
         }
         
         // Converts a string to a line-search kind 
-        static t from_string(std::string loc){
+        inline t from_string(std::string loc){
             if(loc=="BeforeInitialFuncAndGrad")
                 return BeforeInitialFuncAndGrad;
             else if(loc=="AfterInitialFuncAndGrad")
@@ -561,7 +561,7 @@ namespace peopt{
     };
     
     // Different problem classes that we allow 
-    struct ProblemClass{
+    namespace ProblemClass{
         enum t{
             Unconstrained,         // Unconstrained optimization 
             EqualityConstrained,   // Equality constrained optimization 
@@ -570,7 +570,7 @@ namespace peopt{
         };
 
         // Converts the problem class to a string
-        static std::string to_string(t problem_class){
+        inline std::string to_string(t problem_class){
             switch(problem_class){
             case Unconstrained:
                 return "Unconstrained";
@@ -586,7 +586,7 @@ namespace peopt{
         }
 
         // Converts a string to a problem class 
-        static t from_string(std::string problem_class){
+        inline t from_string(std::string problem_class){
             if(problem_class=="Unconstrained")
                 return Unconstrained;
             else if(problem_class=="EqualityConstrained")
@@ -615,14 +615,14 @@ namespace peopt{
     };
     
     // Different truncated Krylov solvers 
-    struct KrylovSolverTruncated{
+    namespace KrylovSolverTruncated{
         enum t{
             ConjugateDirection,         // Conjugate direction 
             MINRES                      // MINRES 
         };
 
         // Converts the problem class to a string
-        static std::string to_string(t truncated_krylov){
+        inline std::string to_string(t truncated_krylov){
             switch(truncated_krylov){
             case ConjugateDirection:
                 return "ConjugateDirection";
@@ -634,7 +634,7 @@ namespace peopt{
         }
 
         // Converts a string to a problem class 
-        static t from_string(std::string truncated_krylov){
+        inline t from_string(std::string truncated_krylov){
             if(truncated_krylov=="ConjugateDirection")
                 return ConjugateDirection;
             else if(truncated_krylov=="MINRES")
@@ -658,7 +658,7 @@ namespace peopt{
     
     
     // Different kinds of interior point methods
-    struct InteriorPointMethod{
+    namespace InteriorPointMethod{
         enum t{
             PrimalDual,          // Standard primal-dual interior point method 
             PrimalDualLinked,    // A primal dual IPM, but the primal and dual
@@ -667,7 +667,7 @@ namespace peopt{
         };
         
         // Converts the interior point method to a string 
-        static std::string to_string(t ipm){
+        inline std::string to_string(t ipm){
             switch(ipm){
             case PrimalDual:
                 return "PrimalDual";
@@ -681,7 +681,7 @@ namespace peopt{
         }
         
         // Converts a string to an interior point method 
-        static t from_string(std::string ipm){
+        inline t from_string(std::string ipm){
             if(ipm=="PrimalDual")
                 return PrimalDual; 
             else if(ipm=="PrimalDualLinked")
@@ -707,14 +707,14 @@ namespace peopt{
     };
     
     // Different schemes for adjusting the interior point centrality 
-    struct CentralityStrategy{
+    namespace CentralityStrategy{
         enum t{
             Constant,           // We keep sigma fixed at each iteration.
             PredictorCorrector  // On odd iterations, sigma=1, on even, sigma=0.
         };
         
         // Converts the centrality strategy to a string
-        static std::string to_string(t cstrat){
+        inline std::string to_string(t cstrat){
             switch(cstrat){
             case Constant:
                 return "Constant";
@@ -726,7 +726,7 @@ namespace peopt{
         }
         
         // Converts a string to the cstrat
-        static t from_string(std::string cstrat){
+        inline t from_string(std::string cstrat){
             if(cstrat=="Constant")
                 return Constant; 
             else if(cstrat=="PredictorCorrector")
@@ -822,38 +822,40 @@ namespace peopt{
         }
 
         // Converts a variety of basic datatypes to strings
-        std::ostream& formatReal(std::ostream& out) {
+        inline std::ostream& formatReal(std::ostream& out) {
             return out<<std::setprecision(2) << std::scientific << std::setw(10)
                 << std::left;
         }
-        std::ostream& formatInt(std::ostream& out) {
+        inline std::ostream& formatInt(std::ostream& out) {
             return out << std::setw(10) << std::left;
         }
-        std::ostream& formatString(std::ostream& out) {
+        inline std::ostream& formatString(std::ostream& out) {
             return out << std::setw(10) << std::left;
         }
+        
+        // Converts anything to a string.
         template <typename T>
         std::string atos(T x);
         template <>
-        std::string atos <double> (double x){
+        inline std::string atos <double> (double x){
             std::stringstream ss;
             ss << formatReal << x;
             return ss.str();
         }
         template <>
-        std::string atos <Natural> (Natural x){
+        inline std::string atos <Natural> (Natural x){
             std::stringstream ss;
             ss << formatInt << x;
             return ss.str();
         }
         template <>
-        std::string atos <const char*> (const char* x){
+        inline std::string atos <const char*> (const char* x){
             std::stringstream ss;
             ss << formatString << x;
             return ss.str();
         }
         template <>
-        std::string atos <KrylovStop::t> (KrylovStop::t x){
+        inline std::string atos <KrylovStop::t> (KrylovStop::t x){
             std::stringstream ss;
             // Converts the Krylov stopping condition to a shorter string 
             switch(x){
@@ -1452,7 +1454,7 @@ namespace peopt{
     public:
 
         // Create a reference to an existing manipulator 
-        DiagnosticManipulator(
+        explicit DiagnosticManipulator(
             const StateManipulator <ProblemClass>& smanip_,
             const Messaging& msg_
         ) : smanip(smanip_), msg(msg_) {}
@@ -1548,8 +1550,9 @@ namespace peopt{
         const StateManipulator<Internal>& smanip;
 
     public:
-        ConversionManipulator(const StateManipulator <Internal>& smanip_)
-            : smanip(smanip_) {}
+        explicit ConversionManipulator(
+            const StateManipulator <Internal>& smanip_
+        ) : smanip(smanip_) {}
 
         // Application
         void operator () (
@@ -1575,6 +1578,11 @@ namespace peopt{
         template <typename> class XX
     > 
     struct Unconstrained {
+    private:
+        // This is a templated namespace.  Do not allow construction.
+        Unconstrained();
+
+    public:
         // Create some type shortcuts
         typedef XX <Real> X;
         typedef typename X::Vector X_Vector;
@@ -1591,7 +1599,12 @@ namespace peopt{
         // Routines that manipulate the internal state of the optimization 
         // algorithm.
         struct State {
+        private:
+            // This is a namespace inside of a class.  Do not allow
+            // construction.
+            State();
 
+        public:
             // The actual internal state of the optimization
             struct t {
 
@@ -1746,10 +1759,10 @@ namespace peopt{
                 LineSearchKind::t kind;
 
                 // Initialization constructors
-                t() {
+                explicit t() {
                     Unconstrained <Real,XX>::State::init_params(*this);
                 }
-                t(const X_Vector& x) {
+                explicit t(const X_Vector& x) {
                     Unconstrained <Real,XX>::State::init_params(*this);
                     Unconstrained <Real,XX>::State::init_vectors(*this,x);
                 }
@@ -1995,7 +2008,12 @@ namespace peopt{
 
         // Utilities for restarting the optimization
         struct Restart {
+        private:
+            // This is a namespace inside of a class.  Do not allow
+            // construction.
+            Restart();
 
+        public:
             // Checks whether we have a valid real label.
             struct is_real : public std::unary_function<std::string, bool> {
                 bool operator () (const std::string& name) const {
@@ -2494,6 +2512,12 @@ namespace peopt{
         // All the functions required by an optimization algorithm.  Note, this
         // routine owns the memory for these operations.  
         struct Functions {
+        private:
+            // This is a namespace inside of a class.  Do not allow
+            // construction.
+            Functions();
+
+        public:
             // Actual storage of the functions required
             struct t{
                 // Objective function
@@ -3225,6 +3249,12 @@ namespace peopt{
 
         // Contains functions that assist in creating an output for diagonstics
         struct Printer {
+        private:
+            // This is a namespace inside of a class.  Do not allow
+            // construction.
+            Printer();
+
+        public:
 
             // Gets the header for the state information
             static void getStateHeader_(
@@ -3425,7 +3455,12 @@ namespace peopt{
 
         // This contains the different algorithms used for optimization 
         struct Algorithms {
+        private:
+            // This is a namespace inside of a class.  Do not allow
+            // construction.
+            Algorithms();
 
+        public:
             // Checks a set of stopping conditions
             static StoppingCondition::t checkStop(
                 const typename State::t& state
@@ -4452,6 +4487,11 @@ namespace peopt{
         template <typename> class YY
     > 
     struct EqualityConstrained {
+    private:
+        // This is a templated namespace.  Do not allow construction.
+        EqualityConstrained();
+
+    public:
         // Create some shortcuts for some type names
         typedef XX <Real> X;
         typedef typename X::Vector X_Vector;
@@ -4515,7 +4555,12 @@ namespace peopt{
         // Routines that manipulate the internal state of the optimization 
         // algorithm.
         struct State {
+        private:
+            // This is a namespace inside of a class.  Do not allow
+            // construction.
+            State();
 
+        public:
             // The actual internal state of the optimization
             struct t: public virtual Unconstrained <Real,XX>::State::t {
 
@@ -4799,7 +4844,12 @@ namespace peopt{
         
         // Utilities for restarting the optimization
         struct Restart {
+        private:
+            // This is a namespace inside of a class.  Do not allow
+            // construction.
+            Restart();
 
+        public:
             // Checks whether we have a valid real label.
             struct is_real : public std::unary_function<std::string, bool> {
                 bool operator () (const std::string& name) const {
@@ -5193,7 +5243,12 @@ namespace peopt{
         // All the functions required by an optimization algorithm.  Note, this
         // routine owns the memory for these operations.  
         struct Functions {
+        private:
+            // This is a namespace inside of a class.  Do not allow
+            // construction.
+            Functions();
 
+        public:
             // Actual storage of the functions required
             struct t: public virtual Unconstrained <Real,XX>::Functions::t {
                 // Equality constraints 
@@ -5292,6 +5347,12 @@ namespace peopt{
         
         // This contains the different algorithms used for optimization 
         struct Algorithms {
+        private:
+            // This is a namespace inside of a class.  Do not allow
+            // construction.
+            Algorithms();
+
+        public:
             // The operator for the augmented system,
             //
             // [ I      g'(x)* ]
@@ -6060,7 +6121,11 @@ namespace peopt{
         template <typename> class ZZ
     > 
     struct InequalityConstrained : public virtual Unconstrained <Real,XX> {
-        
+    private:
+        // This is a templated namespace.  Do not allow construction.
+        InequalityConstrained();
+
+    public:
         // Create some shortcuts for some type names
         typedef XX <Real> X;
         typedef typename X::Vector X_Vector;
@@ -6081,7 +6146,12 @@ namespace peopt{
         // Functions that manipulate the internal state of the optimization 
         // algorithm.
         struct State {
+        private:
+            // This is a namespace inside of a class.  Do not allow
+            // construction.
+            State();
 
+        public:
             // The actual internal state of the optimization
             struct t: public virtual Unconstrained <Real,XX>::State::t {
                 // Original gradient (possibly of a Lagrangian) 
@@ -6262,7 +6332,12 @@ namespace peopt{
         };
         // Utilities for restarting the optimization
         struct Restart {
+        private:
+            // This is a namespace inside of a class.  Do not allow
+            // construction.
+            Restart();
 
+        public:
             // Checks whether we have a valid real label.
             struct is_real : public std::unary_function<std::string, bool> {
                 bool operator () (const std::string& name) const {
@@ -6595,6 +6670,12 @@ namespace peopt{
         // All the functions required by an optimization algorithm.  Note, this
         // routine owns the memory for these operations.  
         struct Functions {
+        private:
+            // This is a namespace inside of a class.  Do not allow
+            // construction.
+            Functions();
+
+        public:
             // Actual storage of the functions required
             struct t: public virtual Unconstrained <Real,XX>::Functions::t {
                 // Inequality constraints 
@@ -6970,7 +7051,12 @@ namespace peopt{
 
         // This contains the different algorithms used for optimization 
         struct Algorithms {
+        private:
+            // This is a namespace inside of a class.  Do not allow
+            // construction.
+            Algorithms();
 
+        public:
             // An operator to reshape the trust-region radius and, hopefully,
             // keep us away from the boundary.
             struct TrustRegionScaling : public Operator <Real,XX,XX> {
@@ -7653,7 +7739,11 @@ namespace peopt{
         template <typename> class ZZ
     > 
     struct Constrained {
-        
+    private:
+        // This is a templated namespace.  Do not allow construction.
+        Constrained();
+
+    public:
         // Create some shortcuts for some type names
         typedef XX <Real> X;
         typedef typename X::Vector X_Vector;
@@ -7678,7 +7768,12 @@ namespace peopt{
         // Routines that manipulate the internal state of the optimization 
         // algorithm.
         struct State {
+        private:
+            // This is a namespace inside of a class.  Do not allow
+            // construction.
+            State();
 
+        public:
             // The actual internal state of the optimization
             struct t: 
                 public EqualityConstrained <Real,XX,YY>::State::t,
@@ -7739,6 +7834,12 @@ namespace peopt{
         
         // Utilities for restarting the optimization
         struct Restart {
+        private:
+            // This is a namespace inside of a class.  Do not allow
+            // construction.
+            Restart();
+
+        public:
             // Checks whether we have a valid real label.
             struct is_real : public std::unary_function<std::string, bool> {
                 bool operator () (const std::string& name) const {
@@ -7947,7 +8048,12 @@ namespace peopt{
         // All the functions required by an optimization algorithm.  Note, this
         // routine owns the memory for these operations.  
         struct Functions {
+        private:
+            // This is a namespace inside of a class.  Do not allow
+            // construction.
+            Functions();
 
+        public:
             // Actual storage of the functions required
             struct t: 
                 public EqualityConstrained <Real,XX,YY>::Functions::t,

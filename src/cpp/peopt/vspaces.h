@@ -10,6 +10,12 @@ namespace peopt {
     // in R^m, use this.
     template <typename Real>
     struct Rm { 
+    private:
+        // This is a templated namespace.  Do not allow construction.
+        Rm();
+
+    public:
+        // Use std::vector as our vector storage
         typedef std::vector <Real> Vector;
 
         // Memory allocation and size setting.
@@ -128,7 +134,7 @@ namespace peopt {
     };
 
     // Different cones used in SQL problems
-    struct Cone {
+    namespace Cone {
         enum t {
             Linear,             // Nonnegative orthant
             Quadratic,          // Second order cone
@@ -140,6 +146,11 @@ namespace peopt {
     // quadratic, and linear cones.
     template <typename Real>
     struct SQL {
+    private:
+        // This is a templated namespace.  Do not allow construction.
+        SQL();
+
+    public:
         struct Vector {
             // Overall variable data.
             std::vector <Real> data;
