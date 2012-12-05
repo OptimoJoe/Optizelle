@@ -1607,7 +1607,16 @@ namespace peopt{
         public:
             // The actual internal state of the optimization
             struct t {
+            private:
+                // Prevent the use of the copy constructor and the assignment
+                // operator.  Basically, the state can hold a large amount
+                // of memory and the safe way to move this memory around
+                // is through the use of the capture and release methodology
+                // inside of the restart section.
+                t& operator = (const t&);
+                t(const t&);
 
+            public:
                 // ------------- GENERIC ------------- 
 
                 // Tolerance for the gradient stopping condition
@@ -1759,7 +1768,7 @@ namespace peopt{
                 LineSearchKind::t kind;
 
                 // Initialization constructors
-                explicit t() {
+                t() {
                     Unconstrained <Real,XX>::State::init_params(*this);
                 }
                 explicit t(const X_Vector& x) {
@@ -2520,6 +2529,15 @@ namespace peopt{
         public:
             // Actual storage of the functions required
             struct t{
+            private:
+                // Prevent the use of the copy constructor and the assignment
+                // operator.  Since this class holds a number of auto_ptrs
+                // to different functions, it is not safe to allow them to
+                // be copied.
+                t& operator = (const t&);
+                t(const t&);
+
+            public:
                 // Objective function
                 std::auto_ptr <ScalarValuedFunction <Real,XX> > f;
 
@@ -2535,6 +2553,10 @@ namespace peopt{
                 // Symmetric, positive definite operator that changes the
                 // shape of the trust-region.
                 std::auto_ptr <Operator <Real,XX,XX> > TR_op;
+
+                // Initialize all of the pointers to null
+                t() : f(NULL), Minv(NULL), f_merit(NULL), model(NULL),
+                    TR_op(NULL) {}
                 
                 // A trick to allow dynamic casting later
                 virtual ~t() {}
@@ -3211,7 +3233,7 @@ namespace peopt{
                     case Operators::External:
                         if(fns.Minv.get()==NULL)
                             msg.error("An externally defined preconditioner "
-                                "must be provided explicitely.");
+                                "must be provided explicitly.");
                         break;
                     default:
                         msg.error("Not a valid Hessian approximation.");
@@ -4563,7 +4585,16 @@ namespace peopt{
         public:
             // The actual internal state of the optimization
             struct t: public virtual Unconstrained <Real,XX>::State::t {
+            private:
+                // Prevent the use of the copy constructor and the assignment
+                // operator.  Basically, the state can hold a large amount
+                // of memory and the safe way to move this memory around
+                // is through the use of the capture and release methodology
+                // inside of the restart section.
+                t& operator = (const t&);
+                t(const t&);
 
+            public:
                 // The Lagrange multiplier (dual variable) for the equality
                 // constraints
                 std::list <Y_Vector> y;
@@ -5251,6 +5282,15 @@ namespace peopt{
         public:
             // Actual storage of the functions required
             struct t: public virtual Unconstrained <Real,XX>::Functions::t {
+            private:
+                // Prevent the use of the copy constructor and the assignment
+                // operator.  Since this class holds a number of auto_ptrs
+                // to different functions, it is not safe to allow them to
+                // be copied.
+                t& operator = (const t&);
+                t(const t&);
+
+            public:
                 // Equality constraints 
                 std::auto_ptr <VectorValuedFunction <Real,XX,YY> > g;
 
@@ -5259,6 +5299,10 @@ namespace peopt{
 
                 // Right preconditioner for the augmented system
                 std::auto_ptr <Operator <Real,YY,YY> > Minv_right;
+                
+                // Initialize all of the pointers to null
+                t() : Unconstrained <Real,XX>::Functions::t(), g(NULL),
+                    Minv_left(NULL), Minv_right(NULL) {}
             };
             
             // The identity operator 
@@ -5303,7 +5347,7 @@ namespace peopt{
                         if(fns.Minv_left.get()==NULL)
                             msg.error("An externally defined left "
                                 "preconditioner for the augmented system must "
-                                "be provided explicitely.");
+                                "be provided explicitly.");
                         break;
                     default:
                         msg.error("Not a valid left preconditioner for the "
@@ -5320,7 +5364,7 @@ namespace peopt{
                         if(fns.Minv_right.get()==NULL)
                             msg.error("An externally defined right "
                                 "preconditioner for the augmented system must "
-                                "be provided explicitely.");
+                                "be provided explicitly.");
                         break;
                     default:
                         msg.error("Not a valid right preconditioner for the "
@@ -6071,6 +6115,15 @@ namespace peopt{
 
             // Actual storage of the functions required
             struct t: public virtual Unconstrained <Real,XX>::Functions::t {
+            private:
+                // Prevent the use of the copy constructor and the assignment
+                // operator.  Since this class holds a number of auto_ptrs
+                // to different functions, it is not safe to allow them to
+                // be copied.
+                t& operator = (const t&);
+                t(const t&);
+
+            public:
                 // Equality constraints 
                 std::auto_ptr <VectorValuedFunction <Real,XX,YY> > g;
             };
@@ -6154,6 +6207,16 @@ namespace peopt{
         public:
             // The actual internal state of the optimization
             struct t: public virtual Unconstrained <Real,XX>::State::t {
+            private:
+                // Prevent the use of the copy constructor and the assignment
+                // operator.  Basically, the state can hold a large amount
+                // of memory and the safe way to move this memory around
+                // is through the use of the capture and release methodology
+                // inside of the restart section.
+                t& operator = (const t&);
+                t(const t&);
+
+            public:
                 // Original gradient (possibly of a Lagrangian) 
                 std::list <X_Vector> g_orig;
 
@@ -6678,8 +6741,20 @@ namespace peopt{
         public:
             // Actual storage of the functions required
             struct t: public virtual Unconstrained <Real,XX>::Functions::t {
+            private:
+                // Prevent the use of the copy constructor and the assignment
+                // operator.  Since this class holds a number of auto_ptrs
+                // to different functions, it is not safe to allow them to
+                // be copied.
+                t& operator = (const t&);
+                t(const t&);
+
+            public:
                 // Inequality constraints 
                 std::auto_ptr <VectorValuedFunction <Real,XX,ZZ> > h;
+                
+                // Initialize all of the pointers to null
+                t() : Unconstrained <Real,XX>::Functions::t(), h(NULL) {}
             };
 
             // A function with a modified Hessian used in inequality
@@ -7779,11 +7854,23 @@ namespace peopt{
                 public EqualityConstrained <Real,XX,YY>::State::t,
                 public InequalityConstrained <Real,XX,ZZ>::State::t
             {
+            private:
+                // Prevent the use of the copy constructor and the assignment
+                // operator.  Basically, the state can hold a large amount
+                // of memory and the safe way to move this memory around
+                // is through the use of the capture and release methodology
+                // inside of the restart section.
+                t& operator = (const t&);
+                t(const t&);
+
+            public:
                 // Initialization constructors
                 t() {
                     Constrained <Real,XX,YY,ZZ>::State::init_params(*this);
                 }
-                t(const X_Vector& x,const Y_Vector& y,const Z_Vector& z) {
+                explicit t(
+                    const X_Vector& x,const Y_Vector& y,const Z_Vector& z
+                ) {
                     Constrained <Real,XX,YY,ZZ>::State::init_params(*this);
                     Constrained <Real,XX,YY,ZZ>::State
                         ::init_vectors(*this,x,y,z);
@@ -8058,7 +8145,21 @@ namespace peopt{
             struct t: 
                 public EqualityConstrained <Real,XX,YY>::Functions::t,
                 public InequalityConstrained <Real,XX,ZZ>::Functions::t
-            {};
+            {
+            private:
+                // Prevent the use of the copy constructor and the assignment
+                // operator.  Since this class holds a number of auto_ptrs
+                // to different functions, it is not safe to allow them to
+                // be copied.
+                t& operator = (const t&);
+                t(const t&);
+
+            public:
+                
+                // Initialize all of the pointers to null
+                t() : EqualityConstrained <Real,XX,YY>::Functions::t(), 
+                    InequalityConstrained <Real,XX,YY>::Functions::t() {}
+            };
 
             // Check that all the functions are defined
             static void check(const Messaging& msg,const t& fns) {
