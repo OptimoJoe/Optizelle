@@ -5466,7 +5466,7 @@ namespace peopt{
                 const typename State::t& state;
                 const typename Functions::t& fns;
             public:
-                QNManipulator(
+                explicit QNManipulator(
                     const typename State::t& state_,
                     const typename Functions::t& fns_
                 ) : state(state_), fns(fns_) {}
@@ -5575,7 +5575,7 @@ namespace peopt{
                     augsys_rst_freq,
                     Minv_l,
                     Minv_r,
-                    QNMainpulator(state,fns),
+                    QNManipulator(state,fns),
                     x0 
                 );
 
@@ -5615,7 +5615,7 @@ namespace peopt{
                 const typename State::t& state;
                 const typename Functions::t& fns;
             public:
-                NullspaceProjForGradientManipulator(
+                explicit NullspaceProjForGradientManipulator(
                     const typename State::t& state_,
                     const typename Functions::t& fns_
                 ) : state(state_), fns(fns_) {}
@@ -5642,7 +5642,7 @@ namespace peopt{
             };
             
             // Projects the gradient onto the nullspace of g'(x) 
-            class NullspaceProjForGradient: public Operator <Real,XX,XX> {
+            struct NullspaceProjForGradient: public Operator <Real,XX,XX> {
             private:
                 const typename State::t& state;
                 const typename Functions::t& fns;
@@ -5707,7 +5707,7 @@ namespace peopt{
                 const typename State::t& state;
                 const typename Functions::t& fns;
             public:
-                NullspaceProjForDirManipulator (
+                explicit NullspaceProjForDirManipulator (
                     const typename State::t& state_,
                     const typename Functions::t& fns_
                 ) : state(state_), fns(fns_) {}
@@ -5733,7 +5733,7 @@ namespace peopt{
             
             // Nullspace projector that projects the current direction in the
             // projected conjugate direction algorithm.
-            class NullspaceProjForDir: public Operator <Real,XX,XX> {
+            struct NullspaceProjForDir: public Operator <Real,XX,XX> {
             private:
                 const typename State::t& state;
                 const typename Functions::t& fns;
@@ -5805,363 +5805,97 @@ namespace peopt{
                 const Real& zeta = state.zeta;
                 const X_Vector& dx_n=state.dx_n;
             }
-        };
-    };
-
-#if 0        
-    // Routines that manipulate and support problems of the form
-    // 
-    // min_{x \in X} f(x) st g(x) = 0
-    //
-    // where f : X -> R and g : X -> Y
-    template <
-        typename Real,
-        template <typename> class XX,
-        template <typename> class YY
-    > 
-    struct EqualityConstrained {
-        // Create some shortcuts for some type names
-        typedef XX <Real> X;
-        typedef typename X::Vector X_Vector;
-        typedef YY <Real> Y;
-        typedef typename Y::Vector Y_Vector;
-        
-        typedef std::pair < std::list <std::string>,
-                            std::list <Real> > Reals;
-        typedef std::pair < std::list <std::string>,
-                            std::list <Natural> > Nats;
-        typedef std::pair < std::list <std::string>,
-                            std::list <std::string> > Params; 
-        typedef std::pair < std::list <std::string>,
-                            std::list <X_Vector> > X_Vectors;
-        typedef std::pair < std::list <std::string>,
-                            std::list <Y_Vector> > Y_Vectors;
-
-        // Routines that manipulate the internal state of the optimization 
-        // algorithm.
-        struct State {
-
-            // The actual internal state of the optimization
-            struct t: public virtual Unconstrained <Real,XX>::State::t {
-
-                // The Lagrange multiplier (dual variable) for the equality
-                // constraints
-                std::list <Y_Vector> y;
-
-                // Initialization constructors
-                t() {
-                    EqualityConstrained <Real,XX,YY>::State::init_params(*this);
-                }
-                t(const X_Vector& x,const Y_Vector& y) {
-                    EqualityConstrained <Real,XX,YY>::State::init_params(*this);
-                    EqualityConstrained <Real,XX,YY>::State
-                        ::init_vectors(*this,x,y);
-                }
-            };
             
-            // This initializes all the parameters required for equality
-            // constrained optimization.  
-            static void init_params_(t& state) { }
-            static void init_params(t& state) {
-                Unconstrained <Real,XX>::State::init_params_(state); 
-                EqualityConstrained <Real,XX,YY>::State::init_params_(state);
-            }
-
-            // This initializes all the variables required for equality
-            // constrained optimization.  
-            static void init_vectors_(t& state, const Y_Vector& y) {
-                state.y.clear();
-                    state.y.push_back(Y_Vector());
-                    Y::init(y,state.y.back());
-                    Y::copy(y,state.y.back());
-            }
-            static void init_vectors(
-                t& state,
-                const X_Vector& x,
-                const Y_Vector& y
-            ) {
-                Unconstrained <Real,XX>::State::init_vectors_(state,x); 
-                EqualityConstrained <Real,XX,YY>::State::init_vectors_(state,y);
-            }
-           
-            // Initializes everything
-            static void init(t& state, const X_Vector& x, const Y_Vector& y) {
-                init_params(state);
-                init_vectors(state,x,y);
-            }
-
-            // Check that we have a valid set of parameters.  
-            static void check_(const Messaging& msg,const t& state) { }
-            static void check(const Messaging& msg,const t& state) {
-                Unconstrained <Real,XX>::State::check_(msg,state);
-                EqualityConstrained <Real,XX,YY>::State::check_(msg,state);
-            }
-        };
-        
-        // Utilities for restarting the optimization
-        struct Restart {
-
-            // Checks whether we have a valid real label.
-            struct is_real : public std::unary_function<std::string, bool> {
-                bool operator () (const std::string& name) const {
-                    if( typename Unconstrained <Real,XX>::Restart
-                        ::is_real()(name)
-                    )
-                        return true;
-                    else
-                        return false;
-                    }
-            };
-            
-            // Checks whether we have a valid natural number label.
-            struct is_nat : public std::unary_function<std::string, bool> {
-                bool operator () (const std::string& name) const {
-                    if( typename Unconstrained <Real,XX>::Restart
-                        ::is_nat()(name)
-                    )
-                        return true;
-                    else
-                        return false;
-                }
-            };
-           
-            // Checks whether we have a valid parameter label.
-            struct is_param : public std::unary_function<std::string, bool> {
-                bool operator () (const std::string& name) const {
-                    if( typename Unconstrained <Real,XX>::Restart
-                        ::is_param()(name)
-                    ) 
-                        return true;
-                    else
-                        return false;
-                }
-            };
-            
-            // Checks whether we have a valid variable label
-            struct is_x : public std::unary_function<std::string, bool> {
-                bool operator () (const std::string& name) const {
-                    if( typename Unconstrained <Real,XX>::Restart
-                        ::is_x()(name)
-                    ) 
-                        return true;
-                    else
-                        return false;
-                }
-            };
-            
-            // Checks whether we have a valid equality multiplier label
-            struct is_y : public std::unary_function<std::string, bool> {
-                bool operator () (const std::string& name) const {
-                    if( name == "y") 
-                        return true;
-                    else
-                        return false;
-                }
-            };
-
-            // Checks whether we have valid labels
-            static void checkLabels(
-                const Messaging& msg,
-                const Reals& reals,
-                const Nats& nats,
-                const Params& params,
-                const X_Vectors& xs,
-                const Y_Vectors& ys
-            ) {
-                peopt::checkLabels <is_real>
-                    (msg,reals.first," real name: ");
-                peopt::checkLabels <is_nat>
-                    (msg,nats.first," natural name: ");
-                peopt::checkLabels <is_param>
-                    (msg,params.first," paramater name: ");
-                peopt::checkLabels <is_x>
-                    (msg,xs.first," variable name: ");
-                peopt::checkLabels <is_y>
-                    (msg,ys.first," equality multiplier name: ");
-            }
-            
-            // Checks whether or not the value used to represent a parameter
-            // is valid.  This function returns a string with the error
-            // if there is one.  Otherwise, it returns an empty string.
-            struct checkParamVal : public std::binary_function
-                <std::string,std::string,std::string>
-            {
-                std::string operator() (
-                    std::string label,
-                    std::string val
-                ) {
-
-                    // Create a base message
-                    const std::string base
-                        ="During serialization, found an invalid ";
-
-                    // Used to build the message 
-                    std::stringstream ss;
-
-                    // Check the unconstrained parameters
-                    if(typename Unconstrained <Real,XX>::Restart
-                        ::is_param()(label)
-                    ) {
-                        ss << typename Unconstrained <Real,XX>::Restart
-                            ::checkParamVal()(label,val);
-                    }
-                    return ss.str();
-                }
-            };
-            
-            // Copy out all equality multipliers 
-            static void stateToVectors(
-                typename State::t& state, 
-                Y_Vectors& ys
-            ) {
-                ys.first.push_back("y");
-                ys.second.splice(ys.second.end(),state.y);
-            }
-
-            // Copy out all the scalar information
-            static void stateToScalars(
-                typename State::t& state,
-                Reals& reals,
-                Nats& nats,
-                Params& params
-            ) { }
-            
-            // Copy in all equality multipliers 
-            static void vectorsToState(
-                typename State::t& state,
-                Y_Vectors& ys
-            ) {
-                for(std::list <std::string>::iterator name=ys.first.begin();
-                    name!=ys.first.end();
-                    name++
-                ) {
-                    // Since we're using a splice operation, we slowly empty
-                    // the multiplier list.  Hence, we always take the first
-                    // element.
-                    typename std::list <Y_Vector>::iterator yy
-                        =ys.second.begin();
-
-                    // Determine which variable we're reading in and then splice
-                    // it in the correct location
-                    if(*name=="y") state.y.splice(state.y.end(),ys.second,yy);
-                }
-            }
-            
-            // Copy in all the scalar information
-            static void scalarsToState(
-                typename State::t& state,
-                Reals& reals,
-                Nats& nats,
-                Params& params
-            ) { }
-
-            // Release the data into structures controlled by the user 
-            static void release(
-                typename State::t& state,
-                X_Vectors& xs,
-                Y_Vectors& ys,
-                Reals& reals,
-                Nats& nats,
-                Params& params
-            ) {
-                // Copy out all of the variable information
-                Unconstrained <Real,XX>::Restart::stateToVectors(state,xs);
-                EqualityConstrained <Real,XX,YY>
-                    ::Restart::stateToVectors(state,ys);
-            
-                // Copy out all of the scalar information
-                Unconstrained <Real,XX>
-                    ::Restart::stateToScalars(state,reals,nats,params);
-                EqualityConstrained <Real,XX,YY>
-                    ::Restart::stateToScalars(state,reals,nats,params);
-            }
-
-            // Capture data from structures controlled by the user.  
-            static void capture(
-                const Messaging& msg,
-                typename State::t& state,
-                X_Vectors& xs,
-                Y_Vectors& ys,
-                Reals& reals,
-                Nats& nats,
-                Params& params
-            ) {
-
-                // Check the labels on the user input
-                checkLabels(msg,reals,nats,params,xs,ys);
-
-                // Check the strings used to represent parameters
-                checkParams <checkParamVal> (msg,params);
-
-                // Copy in the variables 
-                Unconstrained <Real,XX>::Restart::vectorsToState(state,xs);
-                EqualityConstrained <Real,XX,YY>
-                    ::Restart::vectorsToState(state,ys);
-                
-                // Copy in all of the scalar information
-                Unconstrained <Real,XX>
-                    ::Restart::scalarsToState(state,reals,nats,params);
-                EqualityConstrained <Real,XX,YY>
-                    ::Restart::scalarsToState(state,reals,nats,params);
-
-                // Check that we have a valid state 
-                State::check(msg,state);
-            }
-        };
-        
-        // All the functions required by an optimization algorithm.  Note, this
-        // routine owns the memory for these operations.  
-        struct Functions {
-
-            // Actual storage of the functions required
-            struct t: public virtual Unconstrained <Real,XX>::Functions::t {
+            // Sets the tolerances for the computation of the tangential
+            // step.
+            struct TangentialStepManipulator
+                : GMRESManipulator <Real,XXxYY> {
             private:
-                // Prevent the use of the copy constructor and the assignment
-                // operator.  Since this class holds a number of auto_ptrs
-                // to different functions, it is not safe to allow them to
-                // be copied.
-                t& operator = (const t&);
-                t(const t&);
-
+                const typename State::t& state;
+                const typename Functions::t& fns;
             public:
-                // Equality constraints 
-                std::auto_ptr <VectorValuedFunction <Real,XX,YY> > g;
+                TangentialStepManipulator (
+                    const typename State::t& state_,
+                    const typename Functions::t& fns_
+                ) : state(state_), fns(fns_) {}
+                void operator () (
+                    const typename XX <Real>::Vector& bb,
+                    const typename XX <Real>::Vector& xx,
+                    Real& eps
+                ) const {
+                    // Create some shortcuts
+                    const X_Vector& dx_n=state.dx_n;
+                    const Real& xi_tang = state.xi_tang;
+                    const Real& delta = state.delta;
+
+                    // dxn_p_Wt <- dx_n + Wt
+                    X_Vector dxn_p_Wt; X::init(dx_n,dxn_p_Wt);
+                    X::copy(dx_n,dxn_p_Wt);
+                    X::axpy(Real(1.),dxn_p_Wt,xx.first);
+
+                    // Find || dx_n + Wt || 
+                    Real norm_dxnpWt = sqrt(X::innr(dxn_p_Wt,dxn_p_Wt));
+
+                    // Find || bb_1 || = || t ||
+                    Real norm_t = sqrt(X::innr(bb.first,bb.first));
+
+                    // The bound is
+                    // min( delta, || n + Wt ||, xi_tang ||t||/delta)
+                    Real min = delta < norm_dxnpWt ?  delta : norm_dxnpWt;
+                    min = min < xi_tang*norm_t/delta ? min:xi_tang*norm_t/delta;
+                    return min; 
+                }
             };
-
-            // Check that all the functions are defined
-            static void check(const Messaging& msg,const t& fns) {
-
-                // Check the unconstrained pieces
-                Unconstrained <Real,XX>::Functions::check(msg,fns);
-                
-                // Check that the equality constraints exist 
-                if(fns.g.get()==NULL)
-                    msg.error("Missing the equality constraint definition.");
-            }
-
-            // Initialize any missing functions for just equality constrained 
-            // optimization.
-            static void init_(
+            
+            // Finds the quasi-normal step
+            void tangentialStep(
                 const Messaging& msg,
-                const typename State::t& state,
-                t& fns
+                const StateManipulator <Unconstrained <Real,XX> >& smanip,
+                const typename Functions::t& fns,
+                typename State::t& state
             ) {
-            }
+                // Create some shortcuts
+                const Y_Vector& y=state.y;
+                const Natural& augsys_iter_max=state.augsys_iter_max;
+                const Natural& augsys_rst_freq=state.augsys_rst_freq;
+                const X_Vector& dx_t=state.dx_t;
+                X_Vector& dx_tnull=state.dx_tnull;
 
-            // Initialize any missing functions 
-            static void init(
-                const Messaging& msg,
-                const typename State::t& state,
-                t& fns
-            ) {
-                Unconstrained <Real,XX>
-                    ::Functions::init_(msg,state,fns);
-                EqualityConstrained <Real,XX,YY>
-                    ::Functions::init_(msg,state,fns);
+                // Create the initial guess, x0=(0,0)
+                XxY_Vector x0; X::init(dx_t,x0.first); Y::init(y,x0.second);
+                XxY::zero(x0);
+
+                // Create the rhs, b0=(dx_t,0);
+                XxY_Vector b0; XxY::init(x0,b0);
+                X::copy(dx_t,b0.first);
+                Y::zero(b0.second);
+
+                // Build Schur style preconditioners
+                BlockDiagonalPreconditioner Minv_l (
+                    Unconstrained <Real,XX>::Functions::Identity(),
+                    *(fns.Minv_left));
+                BlockDiagonalPreconditioner Minv_r (
+                    Unconstrained <Real,XX>::Functions::Identity(),
+                    *(fns.Minv_right));
+
+                // Solve the augmented system for the Newton step
+                peopt::gmres <Real,XXxYY> (
+                    AugmentedSystem(state,fns),
+                    b0,
+                    Real(1.), // This will be overwritten by the manipulator
+                    augsys_iter_max,
+                    augsys_rst_freq,
+                    Minv_l,
+                    Minv_r,
+                    TangentialStepManipulator(state,fns),
+                    x0 
+                );
+
+                // Copy out the tangential step
+                X::copy(x0.first,dx_tnull);
             }
         };
     };
-#endif
         
     // Routines that manipulate and support problems of the form
     // 
