@@ -4599,6 +4599,9 @@ namespace peopt{
                 // constraints
                 std::list <Y_Vector> y;
 
+                // The Lagrange multiplier step
+                std::list <Y_Vector> dy;
+
                 // The fraction of the total trust-region used for the
                 // quasi-norm step
                 Real zeta;
@@ -4710,6 +4713,10 @@ namespace peopt{
                     state.y.push_back(Y_Vector());
                     Y::init(y,state.y.front());
                     Y::copy(y,state.y.front());
+                
+                state.dy.clear();
+                    state.dy.push_back(Y_Vector());
+                    Y::init(y,state.dy.front());
                 
                 state.g_x.clear();
                     state.g_x.push_back(Y_Vector());
@@ -4955,6 +4962,7 @@ namespace peopt{
             struct is_y : public std::unary_function<std::string, bool> {
                 bool operator () (const std::string& name) const {
                     if( name == "y" ||
+                        name == "dy" ||
                         name == "g_x"
                     ) 
                         return true;
@@ -5034,6 +5042,8 @@ namespace peopt{
             ) {
                 ys.first.push_back("y");
                 ys.second.splice(ys.second.end(),state.y);
+                ys.first.push_back("dy");
+                ys.second.splice(ys.second.end(),state.dy);
                 ys.first.push_back("g_x");
                 ys.second.splice(ys.second.end(),state.g_x);
                 xs.first.push_back("dx_n");
@@ -5122,6 +5132,8 @@ namespace peopt{
                     // it in the correct location
                     if(*name0=="y")
                         state.y.splice(state.y.end(),ys.second,y0);
+                    else if(*name0=="dy")
+                        state.dy.splice(state.dy.end(),ys.second,y0);
                     else if(*name0=="g_x")
                         state.g_x.splice(state.g_x.end(),ys.second,y0);
                     
@@ -5894,6 +5906,83 @@ namespace peopt{
 
                 // Copy out the tangential step
                 X::copy(x0.first,dx_tnull);
+            }
+            
+            // Sets the tolerances for the computation of the Lagrange 
+            // multiplier.
+            struct LagrangeMultiplierStepManipulator
+                : GMRESManipulator <Real,XXxYY> {
+            private:
+                const typename State::t& state;
+                const typename Functions::t& fns;
+            public:
+                LagrangeMultiplierStepManipulator (
+                    const typename State::t& state_,
+                    const typename Functions::t& fns_
+                ) : state(state_), fns(fns_) {}
+                void operator () (
+                    const typename XX <Real>::Vector& bb,
+                    const typename XX <Real>::Vector& xx,
+                    Real& eps
+                ) const {
+                    // Create some shortcuts
+                    const Real& xi_lmh = state.xi_lmh;
+                    const Real& xi_lmg = state.xi_lmg;
+                    const Real& norm_g = state.norm_g;
+
+                    // The bound is
+                    // min( xi_lmg, xi_lmh || grad f(x) + g'(x)*y ||)
+                    Real min = xi_lmg < norm_g*xi_lmh ? xi_lmg : norm_g*xi_lmh;
+                    return min; 
+                }
+            };
+            
+            // Finds the Lagrange multiplier step 
+            void lagrangeMultiplierStep(
+                const Messaging& msg,
+                const StateManipulator <Unconstrained <Real,XX> >& smanip,
+                const typename Functions::t& fns,
+                typename State::t& state
+            ) {
+                // Create some shortcuts
+                const X_Vector& g=state.g;
+                const Natural& augsys_iter_max=state.augsys_iter_max;
+                const Natural& augsys_rst_freq=state.augsys_rst_freq;
+                Y_Vector& dy=state.dy;
+
+                // Create the initial guess, x0=(0,0)
+                XxY_Vector x0; X::init(g,x0.first); Y::init(dy,x0.second);
+                XxY::zero(x0);
+
+                // Create the rhs, b0=(-grad f(x)-g'(x)*y,0);
+                XxY_Vector b0; XxY::init(x0,b0);
+                X::copy(g,b0.first);
+                X::scal(Real(-1.),b0.first);
+                Y::zero(b0.second);
+
+                // Build Schur style preconditioners
+                BlockDiagonalPreconditioner Minv_l (
+                    Unconstrained <Real,XX>::Functions::Identity(),
+                    *(fns.Minv_left));
+                BlockDiagonalPreconditioner Minv_r (
+                    Unconstrained <Real,XX>::Functions::Identity(),
+                    *(fns.Minv_right));
+
+                // Solve the augmented system for the Newton step
+                peopt::gmres <Real,XXxYY> (
+                    AugmentedSystem(state,fns),
+                    b0,
+                    Real(1.), // This will be overwritten by the manipulator
+                    augsys_iter_max,
+                    augsys_rst_freq,
+                    Minv_l,
+                    Minv_r,
+                    LagrangeMultiplierStepManipulator(state,fns),
+                    x0 
+                );
+
+                // Copy out the tangential step
+                X::copy(x0.second,dy);
             }
         };
     };
