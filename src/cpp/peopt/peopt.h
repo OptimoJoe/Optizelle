@@ -5828,26 +5828,27 @@ namespace peopt{
                     const Real& xi_tang = state.xi_tang;
                     const Real& delta = state.delta;
 
-                    // dxn_p_Wt <- dx_n + Wt
-                    X_Vector dxn_p_Wt; X::init(dx_n,dxn_p_Wt);
-                    X::copy(dx_n,dxn_p_Wt);
-                    X::axpy(Real(1.),dxn_p_Wt,xx.first);
+                    // dxn_p_Wdxt <- dx_n + W dx_t
+                    X_Vector dxn_p_Wdxt; X::init(dx_n,dxn_p_Wdxt);
+                    X::copy(dx_n,dxn_p_Wdxt);
+                    X::axpy(Real(1.),dxn_p_Wdxt,xx.first);
 
-                    // Find || dx_n + Wt || 
-                    Real norm_dxnpWt = sqrt(X::innr(dxn_p_Wt,dxn_p_Wt));
+                    // Find || dx_n + W dx_t || 
+                    Real norm_dxnpWdxt = sqrt(X::innr(dxn_p_Wdxt,dxn_p_Wdxt));
 
-                    // Find || bb_1 || = || t ||
-                    Real norm_t = sqrt(X::innr(bb.first,bb.first));
+                    // Find || bb_1 || = || dx_t ||
+                    Real norm_dxt = sqrt(X::innr(bb.first,bb.first));
 
                     // The bound is
-                    // min( delta, || n + Wt ||, xi_tang ||t||/delta)
-                    Real min = delta < norm_dxnpWt ?  delta : norm_dxnpWt;
-                    min = min < xi_tang*norm_t/delta ? min:xi_tang*norm_t/delta;
+                    // min( delta, || dx_n + W dx_t ||, xi_tang ||dx_t||/delta)
+                    Real min = delta < norm_dxnpWdxt ?  delta : norm_dxnpWdxt;
+                    min = min < xi_tang*norm_dxt/delta
+                        ? min : xi_tang*norm_dxt/delta;
                     return min; 
                 }
             };
             
-            // Finds the quasi-normal step
+            // Finds the tangential step 
             void tangentialStep(
                 const Messaging& msg,
                 const StateManipulator <Unconstrained <Real,XX> >& smanip,
