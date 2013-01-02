@@ -5640,75 +5640,82 @@ namespace peopt{
                     const Real& xi_pg = state.xi_pg;
                     const Real& delta = state.delta;
 
-                    // Find || xx_1 || = || Wg || 
-                    Real norm_Wg = sqrt(X::innr(xx.first,xx.first));
+                    // Find || xx_1 || = || W (grad L(x,y) + H dx_n) || 
+                    Real norm_WgpHdxn = sqrt(X::innr(xx.first,xx.first));
 
-                    // Find || bb_1 || = || g ||
-                    Real norm_g = sqrt(X::innr(bb.first,bb.first));
+                    // Find || bb_1 || = || grad L(x,y) + H dx_n ||
+                    Real norm_gpHdxn = sqrt(X::innr(bb.first,bb.first));
 
-                    // The bound is xi_pg min( || Wg ||, delta, || g || )
-                    Real min = norm_Wg < delta ? norm_Wg : delta;
-                    min = min < norm_g ? min : norm_g;
+                    // The bound is xi_pg min( || W (grad L(x,y) + H dx_n) ||,
+                    // delta, || grad L(x,y) + H dx_n || )
+                    Real min = norm_WgpHdxn < delta ? norm_WgpHdxn : delta;
+                    min = min < norm_gpHdxn ? min : norm_gpHdxn;
                     return xi_pg*min; 
                 }
             };
             
-            // Projects the gradient onto the nullspace of g'(x) 
-            struct NullspaceProjForGradient: public Operator <Real,XX,XX> {
-            private:
-                const typename State::t& state;
-                const typename Functions::t& fns;
-            public:
-                NullspaceProjForGradient(
-                    const typename State::t& state_,
-                    const typename Functions::t& fns_
-                ) : state(state_), fns(fns_) {}
-               
-                // Project dx=g into the nullspace of g'(x)
-                void operator () (
-                    const X_Vector& dx,
-                    X_Vector& result
-                ) const{
-                    // Create some shortcuts
-                    const Y_Vector& y=state.y;
-                    const Natural& augsys_iter_max=state.augsys_iter_max;
-                    const Natural& augsys_rst_freq=state.augsys_rst_freq;
-                    X_Vector& g=dx;
+            // Projects the quantity:
+            //
+            // grad f(x) + g'(x)*y + H dx_n
+            //
+            // into the null space of g'(x).  This is required for the
+            // tangential subproblem.
+            void projectGradLagrangianPlusHdxn(
+                const Messaging& msg,
+                const StateManipulator <Unconstrained <Real,XX> >& smanip,
+                const typename Functions::t& fns,
+                typename State::t& state,
+                X_Vector& W_gpHdxn
+            ) {
+                // Create some shortcuts
+                const X_Vector& x=state.x;
+                const X_Vector& g=state.g;
+                const X_Vector& dx_n=state.dx_n;
+                const Y_Vector& y=state.y;
+                const Natural& augsys_iter_max=state.augsys_iter_max;
+                const Natural& augsys_rst_freq=state.augsys_rst_freq;
+                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
 
-                    // Create the initial guess, x0=(0,0)
-                    XxY_Vector x0; X::init(g,x0.first); Y::init(y,x0.second);
-                    XxY::zero(x0);
+                // g_p_Hdxn <- H dx_n
+                X_Vector g_p_Hdxn; X::init(x,g_p_Hdxn);
+                f.hessvec(x,dx_n,g_p_Hdxn);
 
-                    // Create the rhs, b0=(g,0)
-                    XxY_Vector b0; XxY::init(x0,b0);
-                    X::copy(g,b0.first);
-                    Y::zero(b0.second);
-                
-                    // Build Schur style preconditioners
-                    BlockDiagonalPreconditioner Minv_l (
-                        Unconstrained <Real,XX>::Functions::Identity(),
-                        *(fns.Minv_left));
-                    BlockDiagonalPreconditioner Minv_r (
-                        Unconstrained <Real,XX>::Functions::Identity(),
-                        *(fns.Minv_right));
+                // g_p_Hdxn <- g + H dx_n
+                X::axpy(Real(1.),g,g_p_Hdxn);
 
-                    // Solve the augmented system for the nullspace projection 
-                    peopt::gmres <Real,XXxYY> (
-                        AugmentedSystem(state,fns),
-                        b0,
-                        Real(1.), // This will be overwritten by the manipulator
-                        augsys_iter_max,
-                        augsys_rst_freq,
-                        Minv_l,
-                        Minv_r,
-                        NullspaceProjForGradientMainpulator(state,fns),
-                        x0 
-                    );
+                // Create the initial guess, x0=(0,0)
+                XxY_Vector x0; X::init(x,x0.first); Y::init(y,x0.second);
+                XxY::zero(x0);
 
-                    // Copy out the solution
-                    X::copy(x0.first,result);
-                }
-            };
+                // Create the rhs, b0=(g + H dx_n,0)
+                XxY_Vector b0; XxY::init(x0,b0);
+                X::copy(g_p_Hdxn,b0.first);
+                Y::zero(b0.second);
+            
+                // Build Schur style preconditioners
+                BlockDiagonalPreconditioner Minv_l (
+                    Unconstrained <Real,XX>::Functions::Identity(),
+                    *(fns.Minv_left));
+                BlockDiagonalPreconditioner Minv_r (
+                    Unconstrained <Real,XX>::Functions::Identity(),
+                    *(fns.Minv_right));
+
+                // Solve the augmented system for the nullspace projection 
+                peopt::gmres <Real,XXxYY> (
+                    AugmentedSystem(state,fns),
+                    b0,
+                    Real(1.), // This will be overwritten by the manipulator
+                    augsys_iter_max,
+                    augsys_rst_freq,
+                    Minv_l,
+                    Minv_r,
+                    NullspaceProjForGradientMainpulator(state,fns),
+                    x0 
+                );
+
+                // Copy out the solution
+                X::copy(x0.first,W_gpHdxn);
+            }
             
             // Sets the tolerances for the nullspace projector that projects
             // the current direction in the projected conjugate direction
@@ -5731,14 +5738,14 @@ namespace peopt{
                     // Create some shortcuts
                     const Real& xi_proj = state.xi_proj;
 
-                    // Find || xx_1 || = || Wp || 
-                    Real norm_Wp = sqrt(X::innr(xx.first,xx.first));
+                    // Find || xx_1 || = || W dx_t || 
+                    Real norm_Wdxt = sqrt(X::innr(xx.first,xx.first));
 
-                    // Find || bb_1 || = || p ||
-                    Real norm_p = sqrt(X::innr(bb.first,bb.first));
+                    // Find || bb_1 || = || dx_t ||
+                    Real norm_dxt = sqrt(X::innr(bb.first,bb.first));
 
-                    // The bound is xi_proj min( || Wp ||, || p || )
-                    Real min = norm_Wp < norm_p ? norm_Wp : norm_p;
+                    // The bound is xi_proj min( || W dx_t  ||, || dx_t || )
+                    Real min = norm_Wdxt < norm_dxt ? norm_Wdxt : norm_dxt;
                     return xi_proj*min; 
                 }
             };
@@ -5755,24 +5762,23 @@ namespace peopt{
                     const typename Functions::t& fns_
                 ) : state(state_), fns(fns_) {}
                
-                // Project dx into the nullspace of g'(x)
+                // Project dx_t into the nullspace of g'(x)
                 void operator () (
-                    const X_Vector& dx,
+                    const X_Vector& dx_t,
                     X_Vector& result
                 ) const{
                     // Create some shortcuts
                     const Y_Vector& y=state.y;
                     const unsigned int augsys_iter_max=state.augsys_iter_max;
                     const unsigned int augsys_rst_freq=state.augsys_rst_freq;
-                    X_Vector& p=dx;
 
                     // Create the initial guess, x0=(0,0)
-                    XxY_Vector x0; X::init(p,x0.first); Y::init(y,x0.second);
+                    XxY_Vector x0; X::init(dx_t,x0.first); Y::init(y,x0.second);
                     XxY::zero(x0);
 
-                    // Create the rhs, b0=(p,0)
+                    // Create the rhs, b0=(dx_t,0)
                     XxY_Vector b0; XxY::init(x0,b0);
-                    X::copy(p,b0.first);
+                    X::copy(dx_t,b0.first);
                     Y::zero(b0.second);
                 
                     // Build Schur style preconditioners
