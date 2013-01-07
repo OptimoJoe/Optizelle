@@ -3642,7 +3642,8 @@ namespace peopt{
                 const Operator <Real,XX,XX>& Minv=*(fns.Minv);
                 const Operator <Real,XX,XX>& TR_op=*(fns.TR_op);
 
-                // Allocate some memory for the scaled trial step
+                // Allocate some memory for the scaled trial step and the
+                // trust-region center
                 X_Vector x_tmp1; X::init(x,x_tmp1);
 
                 // Continue to look for a step until one comes back as valid
@@ -3659,6 +3660,9 @@ namespace peopt{
                     X_Vector minus_g; X::init(x,minus_g);
                     X::copy(g,minus_g); X::scal(Real(-1.),minus_g);
 
+                    // Set the trust-region center
+                    X::zero(x_tmp1);
+
                     switch(krylov_solver) {
                     // Truncated conjugate direction
                     case KrylovSolverTruncated::ConjugateDirection:
@@ -3671,6 +3675,7 @@ namespace peopt{
                             krylov_iter_max,
                             krylov_orthog_max,
                             delta,
+                            x_tmp1,
                             dx,
                             dx_cp,
                             krylov_rel_err,
@@ -3689,6 +3694,7 @@ namespace peopt{
                             krylov_iter_max,
                             krylov_orthog_max,
                             delta,
+                            x_tmp1,
                             dx,
                             dx_cp,
                             krylov_rel_err,
@@ -4114,6 +4120,10 @@ namespace peopt{
                 // Manipulate the state if required
                 smanip(fns,state,OptimizationLocation::BeforeGetStep);
 
+                // Create the trust-region center 
+                X_Vector x_cntr; X::init(x,x_cntr);
+                X::zero(x_cntr);
+
                 // Find the line-search direction
                 switch(dir){
                 case LineSearchDirection::SteepestDescent:
@@ -4148,6 +4158,7 @@ namespace peopt{
                             krylov_iter_max,
                             krylov_orthog_max,
                             std::numeric_limits <Real>::infinity(),
+                            x_cntr,
                             dx,
                             dx_cp,
                             krylov_rel_err,
@@ -4166,6 +4177,7 @@ namespace peopt{
                             krylov_iter_max,
                             krylov_orthog_max,
                             std::numeric_limits <Real>::infinity(),
+                            x_cntr,
                             dx,
                             dx_cp,
                             krylov_rel_err,

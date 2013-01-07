@@ -502,8 +502,13 @@ namespace peopt {
             RelativeErrorSmall,       // Relative error is small
             MaxItersExceeded,         // Maximum number of iterations exceeded
             TrustRegionViolated,      // Trust-region radius violated
-            Instability               // Some sort of instability detected.
+            Instability,              // Some sort of instability detected.
                                       // Normally, a NaN.
+            InvalidTrustRegionCenter  // Trust-region center is chosen such that
+                                      // || C(x_cntr) || > delta where delta is
+                                      // the trust-region radius.  This means
+                                      // that our starting solution of 0
+                                      // violates the trust-region.
         };
 
         // Converts the Krylov stopping condition to a string 
@@ -519,6 +524,8 @@ namespace peopt {
                 return "TrustRegionViolated";
             case Instability:
                 return "Instability";
+            case InvalidTrustRegionCenter:
+                return "InvalidTrustRegionCenter";
             default:
                 throw;
             }
@@ -536,6 +543,8 @@ namespace peopt {
                 return TrustRegionViolated;
             else if(krylov_stop=="Instability")
                 return Instability;
+            else if(krylov_stop=="InvalidTrustRegionCenter")
+                return InvalidTrustRegionCenter;
             else
                 throw;
         }
@@ -547,7 +556,8 @@ namespace peopt {
                     name=="RelativeErrorSmall" ||
                     name=="MaxItersExceeded" ||
                     name=="TrustRegionViolated" ||
-                    name=="Instability" 
+                    name=="Instability" ||
+                    name=="InvalidTrustRegionCenter"
                 )
                     return true;
                 else
@@ -590,7 +600,7 @@ namespace peopt {
 
     // Computes the truncated projected conjugate direction algorithm in order
     // to solve Ax=b where we restrict x to be in the range of B and that
-    // || C x || <= delta.  The parameters are as follows.
+    // || C (x - x_cntr) || <= delta.  The parameters are as follows.
     // 
     // (input) A : Operator in the system A B x = b.
     // (input) b : Right hand side in the system A B x = b.
@@ -602,6 +612,7 @@ namespace peopt {
     //     number is 1, then we do the conjugate gradient algorithm.
     // (input) delta : Trust region radius.  If this number is infinity, we
     //     do not scale the final step if we detect negative curvature.
+    // (input) x_cntr : Center of the trust-region. 
     // (output) x : Final solution x.
     // (output) x_cp : The Cauchy-Point, which is defined as the solution x
     //     after a single iteration.
@@ -621,6 +632,7 @@ namespace peopt {
         const Natural iter_max,
         const Natural orthog_max,
         const Real delta,
+        const typename XX <Real>::Vector& x_cntr,
         typename XX <Real>::Vector& x,
         typename XX <Real>::Vector& x_cp,
         Real& norm_r,
@@ -644,15 +656,14 @@ namespace peopt {
         std::list <X_Vector> ABps;
 
         // Allocate memory for the norm of the trust-region operator
-        // applied at the trial step, || C(x+alpha Bp) ||.  
-        Real norm_CxpaBp=Real(0.); 
+        // applied at the trial step, || C( (x-x_cntr) + alpha Bp) ||.  
+        Real norm_C_x_m_xcntr_p_a_Bp(std::numeric_limits <Real>::quiet_NaN());
 
         // Allocate memory for the line-search used in the algorithm.
         Real alpha(std::numeric_limits<Real>::quiet_NaN());
 
         // Initialize x to zero. 
         X::zero(x);
-        Real norm_Cx = Real(0.);
 
         // Allocate memory for and find the initial residual, A*x-b = -b
         X_Vector r; X::init(x,r);
@@ -671,7 +682,23 @@ namespace peopt {
         // the results together.  This can have some numerical difficulties,
         // so we just sacrifice the additional memory.
         X_Vector x_tmp1; X::init(x,x_tmp1); 
-        X_Vector x_tmp2; X::init(x,x_tmp2); 
+        X_Vector x_tmp2; X::init(x,x_tmp2);
+
+        // Allocate memory for the quantity x-x_cntr
+        X_Vector x_m_xcntr; X::init(x,x_m_xcntr);
+        X::copy(x_cntr,x_m_xcntr);
+        X::scal(Real(-1.),x_m_xcntr);
+
+        // Verify that ||C(x-x_cntr)|| <= delta.  This insures that our initial
+        // iterate lies inside the trust-region.  If it does not, we exit.
+        C(x_m_xcntr,x_tmp1);
+        Real norm_C_x_m_xcntr = sqrt(X::innr(x_tmp1,x_tmp1));
+        if(norm_C_x_m_xcntr > delta) {
+            X::zero(x_cp);
+            iter=Natural(0);
+            krylov_stop = KrylovStop::InvalidTrustRegionCenter;
+            return;
+        }
 
         // Loop until the maximum iteration
         for(iter=Natural(1);iter<=iter_max;iter++){
@@ -741,15 +768,15 @@ namespace peopt {
 
                 // Find the trial step and the norm || C(x+alpha Bp) || 
 
-                // x_tmp1 <- x + alpha Bp
-                X::copy(x,x_tmp1);
+                // x_tmp1 <- (x-x_cntr) + alpha Bp
+                X::copy(x_m_xcntr,x_tmp1);
                 X::axpy(alpha,Bp,x_tmp1);
 
-                // x_tmp2 <- C(x+alpha Bp)
+                // x_tmp2 <- C( (x-x_cntr) + alpha Bp)
                 C(x_tmp1,x_tmp2);
 
-                // norm_CxpaBp <- || C(x+alpha Bp) ||
-                norm_CxpaBp = sqrt(X::innr(x_tmp2,x_tmp2));
+                // norm_C_x_m_xcntr_p_a_Bp <- || C( (x-x_cntr) + alpha Bp) ||
+                norm_C_x_m_xcntr_p_a_Bp = sqrt(X::innr(x_tmp2,x_tmp2));
             }
 
             // If we have negative curvature or our trial point is outside the
@@ -759,7 +786,7 @@ namespace peopt {
             // our current search direction, Bp, so we take our last search
             // direction, which is stored in the Bps.
             if( Anorm_Bp_2 <= Real(0.) ||
-                norm_CxpaBp >= delta ||
+                norm_C_x_m_xcntr_p_a_Bp >= delta ||
                 Anorm_Bp_2 != Anorm_Bp_2 
             ) {
                 // If we're on the first iteration and we have a NaN, then
@@ -774,24 +801,25 @@ namespace peopt {
                     // If we have a NaN, take our last search direction
                     if(Anorm_Bp_2 != Anorm_Bp_2) X::copy(Bps.back(),Bp);
 
-                    // Find sigma so that || C(x + sigma Bp) ||=delta.  This can
-                    // be found by finding the positive root of the quadratic
-                    // || C(x) + sigma C(Bp) ||^2 = delta^2.  Specifically, we
-                    // want the positive root of
+                    // Find sigma so that || C((x-x_cntr) + sigma Bp) ||=delta.
+                    // This can be found by finding the positive root of the
+                    // quadratic
+                    // || C(x-x_cntr) + sigma C(Bp) ||^2 = delta^2.
+                    // Specifically, we want the positive root of
                     // sigma^2 <C(Bp),C(Bp)>
-                    //     + sigma (2 <C(Bp),C(x)>)
-                    //     + (<C(x),C(x)>-delta^2).
+                    //     + sigma (2 <C(Bp),C(x-x_cntr)>)
+                    //     + (<C(x-x_cntr),C(x-x_cntr)>-delta^2).
 
                     // x_tmp1 <- C(Bp)
                     C(Bp,x_tmp1);
 
-                    // x_tmp2 <- C(x)
-                    C(x,x_tmp2);
+                    // x_tmp2 <- C(x-x_cntr)
+                    C(x_m_xcntr,x_tmp2);
 
                     // Solve the quadratic equation for the positive root 
                     Real aa = X::innr(x_tmp1,x_tmp1);
                     Real bb = Real(2.)*X::innr(x_tmp1,x_tmp2);
-                    Real cc = norm_Cx*norm_Cx-delta*delta;
+                    Real cc = norm_C_x_m_xcntr*norm_C_x_m_xcntr-delta*delta;
                     Natural nroots;
                     Real r1;
                     Real r2;
@@ -801,6 +829,7 @@ namespace peopt {
                     // Take the step, find its residual, and compute the 
                     // residual's norm
                     X::axpy(sigma,Bp,x);
+                    X::axpy(sigma,Bp,x_m_xcntr);
                     X::axpy(sigma,ABp,r);
                     norm_r=sqrt(X::innr(r,r));
 
@@ -808,6 +837,7 @@ namespace peopt {
                 // either take a step of unit scale if there's no NaN.
                 } else if(Anorm_Bp_2 == Anorm_Bp_2) {
                     X::axpy(Real(1.),Bp,x);
+                    X::axpy(Real(1.),Bp,x_m_xcntr);
                     X::axpy(Real(1.),ABp,r);
                     norm_r=sqrt(X::innr(r,r));
                 }
@@ -832,7 +862,7 @@ namespace peopt {
             if(iter==Natural(1)) X::copy(x,x_cp);
 
             // Update the norm of x
-            norm_Cx = norm_CxpaBp;
+            norm_C_x_m_xcntr = norm_C_x_m_xcntr_p_a_Bp;
 
             // Find the new residual
             X::axpy(alpha,ABp,r);
@@ -1408,6 +1438,7 @@ namespace peopt {
     //    norm of the residual.
     // (input) iter_max : Maximum number of iterations
     // (input) delta : Trust region radius.  
+    // (input) x_cntr : Center of the trust-region. 
     // (output) x : Final solution.
     // (output) x_cp : The Cauchy-Point, which is defined as the solution x
     //     after a single iteration.
@@ -1426,6 +1457,7 @@ namespace peopt {
         const Natural iter_max,
         Natural orthog_max,
         const Real delta,
+        const typename XX <Real>::Vector& x_cntr,
         typename XX <Real>::Vector& x,
         typename XX <Real>::Vector& x_cp,
         Real& Bnorm_r,
@@ -1442,7 +1474,6 @@ namespace peopt {
 
         // Initialize x to zero. 
         X::zero(x);
-        Real norm_Cx = Real(0.);
 
         // Allocate memory for the iterate update 
         X_Vector dx; X::init(x,dx);
@@ -1489,6 +1520,22 @@ namespace peopt {
         // Find the initial right hand side for the vector Q' norm(w1) e1.  
         Qt_e1[0] = Bnorm_r;
         Qt_e1[1] = Real(0.);
+
+        // Allocate memory for the quantity x-x_cntr
+        X_Vector x_m_xcntr; X::init(x,x_m_xcntr);
+        X::copy(x_cntr,x_m_xcntr);
+        X::scal(Real(-1.),x_m_xcntr);
+
+        // Verify that ||C(x-x_cntr)|| <= delta.  This insures that our initial
+        // iterate lies inside the trust-region.  If it does not, we exit.
+        C(x_m_xcntr,x_tmp1);
+        Real norm_C_x_m_xcntr = sqrt(X::innr(x_tmp1,x_tmp1));
+        if(norm_C_x_m_xcntr > delta) {
+            X::zero(x_cp);
+            iter=Natural(0);
+            krylov_stop = KrylovStop::InvalidTrustRegionCenter;
+            return;
+        }
 
         // Iterate until the maximum iteration
         for(iter = Natural(1); iter <= iter_max;iter++) {
@@ -1595,39 +1642,39 @@ namespace peopt {
                 X::copy(B_V_Rinvs.back(),dx);
                 X::scal(Qt_e1[0],dx);
 
-                // Find || C(x+dx) ||
-                X::copy(x,x_tmp1);
+                // Find || C( (x-x_cntr) + dx) ||
+                X::copy(x_m_xcntr,x_tmp1);
                 X::axpy(Real(1.),dx,x_tmp1);
                 C(x_tmp1,x_tmp2);
-                norm_Cx = sqrt(X::innr(x_tmp2,x_tmp2));
+                norm_C_x_m_xcntr = sqrt(X::innr(x_tmp2,x_tmp2));
             }
 
             // Exit early if we have either exceeded our trust-region or
             // if we have detected a NaN.
-            if(norm_Cx >= delta || Bnorm_v != Bnorm_v) {
+            if(norm_C_x_m_xcntr >= delta || Bnorm_v != Bnorm_v) {
                 // If we're paying attention to the trust-region, scale the
                 // step appropriately.
                 if(delta < std::numeric_limits <Real>::infinity()) {
                     // Find sigma so that
                     //
-                    // || C(x + sigma dx) ||=delta.
+                    // || C( (x-x_cntr) + sigma dx) ||=delta.
                     //
                     // This can be found by finding the positive root of the 
                     // quadratic
                     //
-                    // || C(x + sigma dx) ||^2 = delta^2.
+                    // || C( (x-x_cntr) + sigma dx) ||^2 = delta^2.
                     //
                     // Specifically, we want the positive root of
                     // 
                     // sigma^2<C(dx),C(dx)>
-                    //     + sigma(2 <C(dx),C(x)>)
-                    //     + (<C(x),C(x)>-delta^2).
+                    //     + sigma(2 <C(dx),C(x-x_cntr)>)
+                    //     + (<C(x-x_cntr),C(x-x_cntr)>-delta^2).
 
                     // x_tmp1 <- C(dx)
                     C(dx,x_tmp1);
 
-                    // x_tmp2 <- C(x);
-                    C(x,x_tmp2);
+                    // x_tmp2 <- C(x-x_cntr);
+                    C(x_m_xcntr,x_tmp2);
 
                     // Solve the quadratic equation for the positive root 
                     Real aa = X::innr(x_tmp1,x_tmp1);
@@ -1641,6 +1688,7 @@ namespace peopt {
 
                     // Take the step, x <- x + sigma dx
                     X::axpy(sigma,dx,x);
+                    X::axpy(sigma,dx,x_m_xcntr);
                 }
 
                 // Determine why we stopped
@@ -1661,6 +1709,7 @@ namespace peopt {
 
             // Move to the new iterate, x <- x + dx
             X::axpy(Real(1.),dx,x);
+            X::axpy(Real(1.),dx,x_m_xcntr);
 
             // If this is the first iteration, save the Cauchy-Point
             if(iter==Natural(1)) 
