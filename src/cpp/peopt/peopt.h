@@ -5828,12 +5828,97 @@ namespace peopt{
             ) {
                 // Create some shortcuts
                 const X_Vector& x=state.x;
-                const Y_Vector& g_x=state.g_x;
-                const unsigned int augsys_iter_max=state.augsys_iter_max;
-                const unsigned int augsys_rst_freq=state.augsys_rst_freq;
-                const Real& delta = state.delta;
-                const Real& zeta = state.zeta;
                 const X_Vector& dx_n=state.dx_n;
+                const X_Vector& dx_t=state.dx_t;
+                const X_Vector& g=state.g.front();
+                const Real& delta = state.delta;
+                const Real& eps_krylov=state.eps_krylov;
+                const Natural& krylov_iter_max=state.krylov_iter_max;
+                const Natural& krylov_orthog_max=state.krylov_orthog_max;
+                const KrylovSolverTruncated::t& krylov_solver
+                    = state.krylov_solver;
+                Real& krylov_rel_err=state.krylov_rel_err;
+                Natural& krylov_iter=state.krylov_iter;
+                Natural& krylov_iter_total=state.krylov_iter_total;
+                KrylovStop::t& krylov_stop=state.krylov_stop;
+                
+                // Create shortcuts to the functions that we need
+                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
+                const Operator <Real,XX,XX>& Minv=*(fns.Minv);
+                const Operator <Real,XX,XX>& TR_op=*(fns.TR_op);
+                    
+                // Setup the Hessian operator and allocate memory for the
+                // Cauchy point.
+                typename Unconstrained <Real,XX>::Algorithms::HessianOperator
+                    H(f,x);
+                X_Vector dx_cp; X::init(x,dx_cp);
+
+                // Find the quantity - W (g + H dxn).  We use this as the
+                // RHS in the linear system solve.
+                X_Vector minus_W_gpHdxn; X::init(x,minus_W_gpHdxn);
+
+                // minus_W_gpHdxn <- H dx_n
+                f.hessvec(x,dx_n,minus_W_gpHdxn);
+
+                // minus_W_gpHdxn <- H dx_n + g
+                X::axpy(Real(1.),g,minus_W_gpHdxn);
+                
+                // minus_W_gpHdxn <- W ( H dx_n + g )
+                projectGradLagrangianPlusHdxn(
+                    msg,smanip,fns,state,minus_W_gpHdxn);
+
+                // minus_W_gpHdxn <- - W ( H dx_n + g )
+                X::scal(Real(-1.),minus_W_gpHdxn);
+            
+                switch(krylov_solver) {
+                // Truncated conjugate direction
+                case KrylovSolverTruncated::ConjugateDirection:
+                    truncated_pcd(
+                        H,
+                        minus_W_gpHdxn,
+                        NullspaceProjForDir(state,fns), // Add in Minv?
+                        TR_op,
+                        eps_krylov,
+                        krylov_iter_max,
+                        krylov_orthog_max,
+                        delta,
+                        dx_n,
+                        dx_t,
+                        dx_cp,
+                        krylov_rel_err,
+                        krylov_iter,
+                        krylov_stop);
+                    break;
+
+                // Truncated MINRES 
+                case KrylovSolverTruncated::MINRES:
+                    truncated_minres(
+                        H,
+                        minus_W_gpHdxn,
+                        NullspaceProjForDir(state,fns), // Add in Minv?
+                        TR_op,
+                        eps_krylov,
+                        krylov_iter_max,
+                        krylov_orthog_max,
+                        delta,
+                        dx_n,
+                        dx_t,
+                        dx_cp,
+                        krylov_rel_err,
+                        krylov_iter,
+                        krylov_stop);
+
+                    // Force a descent direction
+                    if(X::innr(dx_t,minus_W_gpHdxn) < 0)
+                        X::scal(Real(-1.),dx_t);
+                    if(X::innr(dx_cp,minus_W_gpHdxn) < 0)
+                        X::scal(Real(-1.),dx_cp);
+                    break;
+                }
+                Real norm_W_gpHdxn = sqrt(X::innr(
+                    minus_W_gpHdxn,minus_W_gpHdxn));
+                krylov_rel_err = krylov_rel_err / (Real(1e-16)+norm_W_gpHdxn);
+                krylov_iter_total += krylov_iter;
             }
             
             // Sets the tolerances for the computation of the tangential
