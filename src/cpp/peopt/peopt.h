@@ -4668,15 +4668,15 @@ namespace peopt{
                 // Cauchy point for normal step
                 std::list <X_Vector> dx_ncp;
 
-                // Tangential step
+                // (Corrected) tangential step
                 std::list <X_Vector> dx_t;
-                
-                // Cauchy point for tangential step
-                std::list <X_Vector> dx_tcp;
-                
-                // Tangential step after applying the nullspace projection 
-                std::list <X_Vector> dx_tnull;
 
+                // Tangential step prior to correction
+                std::list <X_Vector> dx_t_uncorrected;
+                
+                // Cauchy point for tangential step prior to correction
+                std::list <X_Vector> dx_tcp_uncorrected;
+                
                 // Initialization constructors
                 t() {
                     EqualityConstrained <Real,XX,YY>::State::init_params(*this);
@@ -4746,13 +4746,13 @@ namespace peopt{
                     state.dx_t.push_back(X_Vector());
                     X::init(x,state.dx_t.front());
                 
-                state.dx_tcp.clear();
-                    state.dx_tcp.push_back(X_Vector());
-                    X::init(x,state.dx_tcp.front());
+                state.dx_t_uncorrected.clear();
+                    state.dx_t_uncorrected.push_back(X_Vector());
+                    X::init(x,state.dx_t_uncorrected.front());
                 
-                state.dx_tnull.clear();
-                    state.dx_tnull.push_back(X_Vector());
-                    X::init(x,state.dx_tnull.front());
+                state.dx_tcp_uncorrected.clear();
+                    state.dx_tcp_uncorrected.push_back(X_Vector());
+                    X::init(x,state.dx_tcp_uncorrected.front());
             }
             static void init_vectors(
                 t& state,
@@ -4961,8 +4961,8 @@ namespace peopt{
                         name == "dx_n" ||
                         name == "dx_ncp" ||
                         name == "dx_t" ||
-                        name == "dx_tcp" ||
-                        name == "dx_tnull" 
+                        name == "dx_t_uncorrected" ||
+                        name == "dx_tcp_uncorrected"
                     ) 
                         return true;
                     else
@@ -5064,10 +5064,10 @@ namespace peopt{
                 xs.second.splice(xs.second.end(),state.dx_ncp);
                 xs.first.push_back("dx_t");
                 xs.second.splice(xs.second.end(),state.dx_t);
-                xs.first.push_back("dx_tcp");
-                xs.second.splice(xs.second.end(),state.dx_tcp);
-                xs.first.push_back("dx_tnull");
-                xs.second.splice(xs.second.end(),state.dx_tnull);
+                xs.first.push_back("dx_t_uncorrected");
+                xs.second.splice(xs.second.end(),state.dx_t_uncorrected);
+                xs.first.push_back("dx_tcp_uncorrected");
+                xs.second.splice(xs.second.end(),state.dx_tcp_uncorrected);
             }
 
             // Copy out all the scalar information
@@ -5177,11 +5177,12 @@ namespace peopt{
                         state.dx_ncp.splice(state.dx_ncp.end(),xs.second,x0);
                     else if(*name0=="dx_t")
                         state.dx_t.splice(state.dx_t.end(),xs.second,x0);
-                    else if(*name0=="dx_tcp")
-                        state.dx_tcp.splice(state.dx_tcp.end(),xs.second,x0);
-                    else if(*name0=="dx_tnull")
-                        state.dx_tnull.splice(
-                            state.dx_tnull.end(),xs.second,x0);
+                    else if(*name0=="dx_t_uncorrected")
+                        state.dx_t_uncorrected.splice(
+                            state.dx_t_uncorrected.end(),xs.second,x0);
+                    else if(*name0=="dx_tcp_uncorrected")
+                        state.dx_tcp_uncorrected.splice(
+                            state.dx_tcp_uncorrected.end(),xs.second,x0);
 
                     // Remove the string corresponding to the element just
                     // spliced if splicing occured.
@@ -5676,7 +5677,7 @@ namespace peopt{
                 const Messaging& msg,
                 const StateManipulator <Unconstrained <Real,XX> >& smanip,
                 const typename Functions::t& fns,
-                typename State::t& state,
+                const typename State::t& state,
                 X_Vector& W_gpHdxn
             ) {
                 // Create some shortcuts
@@ -5730,15 +5731,14 @@ namespace peopt{
             }
             
             // Sets the tolerances for the nullspace projector that projects
-            // the current direction in the projected conjugate direction
-            // algorithm.
-            struct NullspaceProjForDirManipulator
+            // the current direction in the projected Krylov method. 
+            struct NullspaceProjForKrylovMethodManipulator
                 : GMRESManipulator <Real,XXxYY> {
             private:
                 const typename State::t& state;
                 const typename Functions::t& fns;
             public:
-                explicit NullspaceProjForDirManipulator (
+                explicit NullspaceProjForKrylovMethodManipulator (
                     const typename State::t& state_,
                     const typename Functions::t& fns_
                 ) : state(state_), fns(fns_) {}
@@ -5750,33 +5750,37 @@ namespace peopt{
                     // Create some shortcuts
                     const Real& xi_proj = state.xi_proj;
 
-                    // Find || xx_1 || = || W dx_t || 
-                    Real norm_Wdxt = sqrt(X::innr(xx.first,xx.first));
+                    // Find || xx_1 || = || W dx_t_uncorrected || 
+                    Real norm_Wdxt_uncorrected
+                        = sqrt(X::innr(xx.first,xx.first));
 
-                    // Find || bb_1 || = || dx_t ||
-                    Real norm_dxt = sqrt(X::innr(bb.first,bb.first));
+                    // Find || bb_1 || = || dx_t_uncorrected ||
+                    Real norm_dxt_uncorrected
+                        = sqrt(X::innr(bb.first,bb.first));
 
-                    // The bound is xi_proj min( || W dx_t  ||, || dx_t || )
-                    Real min = norm_Wdxt < norm_dxt ? norm_Wdxt : norm_dxt;
+                    // The bound is xi_proj min( || W dx_t_uncorrected  ||,
+                    // || dx_t_uncorrected || )
+                    Real min = norm_Wdxt_uncorrected < norm_dxt_uncorrected
+                        ? norm_Wdxt_uncorrected : norm_dxt_uncorrected;
                     return xi_proj*min; 
                 }
             };
             
             // Nullspace projector that projects the current direction in the
-            // projected conjugate direction algorithm.
-            struct NullspaceProjForDir: public Operator <Real,XX,XX> {
+            // projected Krylov method. 
+            struct NullspaceProjForKrylovMethod: public Operator <Real,XX,XX> {
             private:
                 const typename State::t& state;
                 const typename Functions::t& fns;
             public:
-                NullspaceProjForDir(
+                NullspaceProjForKrylovMethod(
                     const typename State::t& state_,
                     const typename Functions::t& fns_
                 ) : state(state_), fns(fns_) {}
                
                 // Project dx_t into the nullspace of g'(x)
                 void operator () (
-                    const X_Vector& dx_t,
+                    const X_Vector& dx_t_uncorrected,
                     X_Vector& result
                 ) const{
                     // Create some shortcuts
@@ -5785,12 +5789,14 @@ namespace peopt{
                     const unsigned int augsys_rst_freq=state.augsys_rst_freq;
 
                     // Create the initial guess, x0=(0,0)
-                    XxY_Vector x0; X::init(dx_t,x0.first); Y::init(y,x0.second);
-                    XxY::zero(x0);
+                    XxY_Vector x0;
+                        X::init(dx_t_uncorrected,x0.first);
+                        Y::init(y,x0.second);
+                        XxY::zero(x0);
 
-                    // Create the rhs, b0=(dx_t,0)
+                    // Create the rhs, b0=(dx_t_uncorrected,0)
                     XxY_Vector b0; XxY::init(x0,b0);
-                    X::copy(dx_t,b0.first);
+                    X::copy(dx_t_uncorrected,b0.first);
                     Y::zero(b0.second);
                 
                     // Build Schur style preconditioners
@@ -5829,7 +5835,6 @@ namespace peopt{
                 // Create some shortcuts
                 const X_Vector& x=state.x;
                 const X_Vector& dx_n=state.dx_n;
-                const X_Vector& dx_t=state.dx_t;
                 const X_Vector& g=state.g.front();
                 const Real& delta = state.delta;
                 const Real& eps_krylov=state.eps_krylov;
@@ -5837,6 +5842,8 @@ namespace peopt{
                 const Natural& krylov_orthog_max=state.krylov_orthog_max;
                 const KrylovSolverTruncated::t& krylov_solver
                     = state.krylov_solver;
+                X_Vector& dx_t_uncorrected=state.dx_t_uncorrected;
+                X_Vector& dx_tcp_uncorrected=state.dx_tcp_uncorrected;
                 Real& krylov_rel_err=state.krylov_rel_err;
                 Natural& krylov_iter=state.krylov_iter;
                 Natural& krylov_iter_total=state.krylov_iter_total;
@@ -5851,7 +5858,6 @@ namespace peopt{
                 // Cauchy point.
                 typename Unconstrained <Real,XX>::Algorithms::HessianOperator
                     H(f,x);
-                X_Vector dx_cp; X::init(x,dx_cp);
 
                 // Find the quantity - W (g + H dxn).  We use this as the
                 // RHS in the linear system solve.
@@ -5876,15 +5882,15 @@ namespace peopt{
                     truncated_pcd(
                         H,
                         minus_W_gpHdxn,
-                        NullspaceProjForDir(state,fns), // Add in Minv?
+                        NullspaceProjForKrylovMethod(state,fns), // Add in Minv?
                         TR_op,
                         eps_krylov,
                         krylov_iter_max,
                         krylov_orthog_max,
                         delta,
                         dx_n,
-                        dx_t,
-                        dx_cp,
+                        dx_t_uncorrected,
+                        dx_tcp_uncorrected,
                         krylov_rel_err,
                         krylov_iter,
                         krylov_stop);
@@ -5895,24 +5901,24 @@ namespace peopt{
                     truncated_minres(
                         H,
                         minus_W_gpHdxn,
-                        NullspaceProjForDir(state,fns), // Add in Minv?
+                        NullspaceProjForKrylovMethod(state,fns), // Add in Minv?
                         TR_op,
                         eps_krylov,
                         krylov_iter_max,
                         krylov_orthog_max,
                         delta,
                         dx_n,
-                        dx_t,
-                        dx_cp,
+                        dx_t_uncorrected,
+                        dx_tcp_uncorrected,
                         krylov_rel_err,
                         krylov_iter,
                         krylov_stop);
 
                     // Force a descent direction
-                    if(X::innr(dx_t,minus_W_gpHdxn) < 0)
-                        X::scal(Real(-1.),dx_t);
-                    if(X::innr(dx_cp,minus_W_gpHdxn) < 0)
-                        X::scal(Real(-1.),dx_cp);
+                    if(X::innr(dx_t_uncorrected,minus_W_gpHdxn) < 0)
+                        X::scal(Real(-1.),dx_t_uncorrected);
+                    if(X::innr(dx_tcp_uncorrected,minus_W_gpHdxn) < 0)
+                        X::scal(Real(-1.),dx_tcp_uncorrected);
                     break;
                 }
                 Real norm_W_gpHdxn = sqrt(X::innr(
@@ -5943,22 +5949,23 @@ namespace peopt{
                     const Real& xi_tang = state.xi_tang;
                     const Real& delta = state.delta;
 
-                    // dxn_p_Wdxt <- dx_n + W dx_t
-                    X_Vector dxn_p_Wdxt; X::init(dx_n,dxn_p_Wdxt);
-                    X::copy(dx_n,dxn_p_Wdxt);
-                    X::axpy(Real(1.),dxn_p_Wdxt,xx.first);
+                    // dxn_p_dxt <- dx_n + dx_t
+                    X_Vector dxn_p_dxt; X::init(dx_n,dxn_p_dxt);
+                    X::copy(dx_n,dxn_p_dxt);
+                    X::axpy(Real(1.),dxn_p_dxt,xx.first);
 
-                    // Find || dx_n + W dx_t || 
-                    Real norm_dxnpWdxt = sqrt(X::innr(dxn_p_Wdxt,dxn_p_Wdxt));
+                    // Find || dx_n + dx_t || 
+                    Real norm_dxnpdxt = sqrt(X::innr(dxn_p_dxt,dxn_p_dxt));
 
-                    // Find || bb_1 || = || dx_t ||
-                    Real norm_dxt = sqrt(X::innr(bb.first,bb.first));
+                    // Find || bb_1 || = || dx_t_uncorrected ||
+                    Real norm_dxt_uncorrected= sqrt(X::innr(bb.first,bb.first));
 
                     // The bound is
-                    // min( delta, || dx_n + W dx_t ||, xi_tang ||dx_t||/delta)
-                    Real min = delta < norm_dxnpWdxt ?  delta : norm_dxnpWdxt;
-                    min = min < xi_tang*norm_dxt/delta
-                        ? min : xi_tang*norm_dxt/delta;
+                    // min( delta, || dx_n + dx_t ||,
+                    //      xi_tang ||dx_t_uncorrected||/delta)
+                    Real min = delta < norm_dxnpdxt ?  delta : norm_dxnpdxt;
+                    min = min < xi_tang*norm_dxt_uncorrected/delta
+                        ? min : xi_tang*norm_dxt_uncorrected/delta;
                     return min; 
                 }
             };
@@ -5974,17 +5981,20 @@ namespace peopt{
                 const Y_Vector& y=state.y;
                 const Natural& augsys_iter_max=state.augsys_iter_max;
                 const Natural& augsys_rst_freq=state.augsys_rst_freq;
-                const X_Vector& dx_t=state.dx_t;
-                X_Vector& dx_tnull=state.dx_tnull;
+                const X_Vector& dx_t_uncorrected=state.dx_t_uncorrected;
+                X_Vector& dx_t=state.dx_t;
 
                 // Create the initial guess, x0=(0,0)
-                XxY_Vector x0; X::init(dx_t,x0.first); Y::init(y,x0.second);
-                XxY::zero(x0);
+                XxY_Vector x0;
+                    X::init(dx_t_uncorrected,x0.first);
+                    Y::init(y,x0.second);
+                    XxY::zero(x0);
 
-                // Create the rhs, b0=(dx_t,0);
-                XxY_Vector b0; XxY::init(x0,b0);
-                X::copy(dx_t,b0.first);
-                Y::zero(b0.second);
+                // Create the rhs, b0=(dx_t_uncorrected,0);
+                XxY_Vector b0;
+                    XxY::init(x0,b0);
+                    X::copy(dx_t_uncorrected,b0.first);
+                    Y::zero(b0.second);
 
                 // Build Schur style preconditioners
                 BlockDiagonalPreconditioner Minv_l (
@@ -6008,7 +6018,7 @@ namespace peopt{
                 );
 
                 // Copy out the tangential step
-                X::copy(x0.first,dx_tnull);
+                X::copy(x0.first,dx_t);
             }
             
             // Sets the tolerances for the computation of the Lagrange 
@@ -6054,14 +6064,17 @@ namespace peopt{
                 Y_Vector& dy=state.dy;
 
                 // Create the initial guess, x0=(0,0)
-                XxY_Vector x0; X::init(g,x0.first); Y::init(dy,x0.second);
-                XxY::zero(x0);
+                XxY_Vector x0;
+                    X::init(g,x0.first);
+                    Y::init(dy,x0.second);
+                    XxY::zero(x0);
 
                 // Create the rhs, b0=(-grad f(x)-g'(x)*y,0);
-                XxY_Vector b0; XxY::init(x0,b0);
-                X::copy(g,b0.first);
-                X::scal(Real(-1.),b0.first);
-                Y::zero(b0.second);
+                XxY_Vector b0;
+                    XxY::init(x0,b0);
+                    X::copy(g,b0.first);
+                    X::scal(Real(-1.),b0.first);
+                    Y::zero(b0.second);
 
                 // Build Schur style preconditioners
                 BlockDiagonalPreconditioner Minv_l (
