@@ -4648,6 +4648,9 @@ namespace peopt{
                 // subproblem;
                 Real xi_4;
 
+                // Residual term in the predicted reduction
+                Real rpred;
+
                 // Preconditioners for the augmented system
                 Operators::t Minv_left_type;
                 Operators::t Minv_right_type;
@@ -4659,8 +4662,23 @@ namespace peopt{
                 // How often we restart the augmented system solve
                 Natural augsys_rst_freq;
                 
-                // Equality constraint evaluated at x 
+                // Equality constraint evaluated at x.  This is used in the
+                // quasinormal step as well as in the computation of the
+                // linear Taylor series at x in the direciton dx_n.
                 std::list <Y_Vector> g_x;
+
+                // Norm of g_x.  This is used in the predicted reduction and
+                // the penalty parameter computation.
+                Real norm_gx;
+                
+                // Linear Taylor series at x in the direction dx_n.  This is
+                // used both in the predicted reduction as well as the
+                // residual predicted reduction. 
+                std::list <Y_Vector> gpxdxn_p_gx;
+
+                // Norm of gpxdxn_p_gx.  This is used in the penalty parameter
+                // computation and predicted reduction. 
+                Real norm_gpxdxnpgx;
 
                 // Normal step
                 std::list <X_Vector> dx_n;
@@ -4710,6 +4728,9 @@ namespace peopt{
                 state.xi_lmh = state.xi_all;
                 state.xi_lmg = Real(1e4);
                 state.xi_4 = Real(2.);
+                state.rpred=std::numeric_limits<Real>::quiet_NaN();
+                state.norm_gx=std::numeric_limits<Real>::quiet_NaN();
+                state.norm_gpxdxnpgx=std::numeric_limits<Real>::quiet_NaN();
                 state.Minv_left_type=Operators::Identity;
                 state.Minv_right_type=Operators::Identity;
                 state.augsys_iter_max = Natural(100);
@@ -4739,6 +4760,10 @@ namespace peopt{
                 state.g_x.clear();
                     state.g_x.push_back(Y_Vector());
                     Y::init(y,state.g_x.front());
+                
+                state.gpxdxn_p_gx.clear();
+                    state.gpxdxn_p_gx.push_back(Y_Vector());
+                    Y::init(y,state.gpxdxn_p_gx.front());
                 
                 state.dx_n.clear();
                     state.dx_n.push_back(X_Vector());
@@ -4931,7 +4956,10 @@ namespace peopt{
                         name == "xi_tang" ||
                         name == "xi_lmh" ||
                         name == "xi_lmg" ||
-                        name == "xi_4"
+                        name == "xi_4" ||
+                        name == "rpred" ||
+                        name == "norm_gx" ||
+                        name == "norm_gpxdxnpgx" 
                     )
                         return true;
                     else
@@ -4991,7 +5019,8 @@ namespace peopt{
                 bool operator () (const std::string& name) const {
                     if( name == "y" ||
                         name == "dy" ||
-                        name == "g_x"
+                        name == "g_x" ||
+                        name == "gpxdxn_p_gx"
                     ) 
                         return true;
                     else
@@ -5074,6 +5103,8 @@ namespace peopt{
                 ys.second.splice(ys.second.end(),state.dy);
                 ys.first.push_back("g_x");
                 ys.second.splice(ys.second.end(),state.g_x);
+                ys.first.push_back("gpxdxn_p_gx");
+                ys.second.splice(ys.second.end(),state.gpxdxn_p_gx);
                 xs.first.push_back("dx_n");
                 xs.second.splice(xs.second.end(),state.dx_n);
                 xs.first.push_back("dx_ncp");
@@ -5124,6 +5155,12 @@ namespace peopt{
                 reals.second.push_back(state.xi_lmg);
                 reals.first.push_back("xi_4");
                 reals.second.push_back(state.xi_4);
+                reals.first.push_back("rpred");
+                reals.second.push_back(state.rpred);
+                reals.first.push_back("norm_gx");
+                reals.second.push_back(state.norm_gx);
+                reals.first.push_back("norm_gpxdxnpgx");
+                reals.second.push_back(state.norm_gpxdxnpgx);
 
                 // Copy in all the natural numbers
                 nats.first.push_back("augsys_iter_max");
@@ -5168,6 +5205,9 @@ namespace peopt{
                         state.dy.splice(state.dy.end(),ys.second,y0);
                     else if(*name0=="g_x")
                         state.g_x.splice(state.g_x.end(),ys.second,y0);
+                    else if(*name0=="gpxdxn_p_gx")
+                        state.gpxdxn_p_gx.splice(
+                            state.gpxdxn_p_gx.end(),ys.second,y0);
                     
                     // Remove the string corresponding to the element just
                     // spliced if splicing occured.
@@ -5243,6 +5283,9 @@ namespace peopt{
                     else if(*name=="xi_lmh") state.xi_lmh=*real;
                     else if(*name=="xi_lmg") state.xi_lmg=*real;
                     else if(*name=="xi_4") state.xi_4=*real;
+                    else if(*name=="rpred") state.rpred=*real;
+                    else if(*name=="norm_gx") state.norm_gx=*real;
+                    else if(*name=="norm_gpxdxnpgx") state.norm_gpxdxnpgx=*real;
                 }
                 
                 // Next, copy in any naturals
@@ -5527,24 +5570,13 @@ namespace peopt{
                     Real& eps
                 ) const {
                     // Create some shortcuts
-                    const X_Vector& x=state.x;
-                    const Y_Vector& g_x=state.g_x;
-                    const X_Vector& dx_ncp=state.dx_ncp;
                     const Real& xi_qn = state.xi_qn;
 
-                    // Evaluate g'(x)dx_ncp + g(x)
-                    Y_Vector gp_x_dxncp;  Y::init(g_x,gp_x_dxncp);
-                    fns.g->p(x,dx_ncp,gp_x_dxncp);
-
-                    Y_Vector gp_p_g; Y::init(g_x,gp_p_g);
-                    Y::copy(g_x,gp_p_g);
-                    Y::axpy(Real(1.),gp_x_dxncp,gp_p_g);
-
                     // Find || g'(x)dx_ncp + g(x) ||
-                    Real norm_gp_p_g = sqrt(Y::innr(gp_p_g,gp_p_g));
+                    Real norm_gpxdxncp_p_g = sqrt(Y::innr(bb.second,bb.second));
 
                     // Return xi_qn * || g'(x)dx_ncp + g(x) ||
-                    eps = xi_qn * norm_gp_p_g;
+                    eps = xi_qn * norm_gpxdxncp_p_g;
                 }
             };
 
@@ -5699,6 +5731,7 @@ namespace peopt{
             //
             // into the null space of g'(x).  This is required for the
             // tangential subproblem as well as the predicted reduction.
+            // Note, this also computes and caches H dx_n.
             static void computeProjectedGradLagrangianPlusHdxn(
                 const Messaging& msg,
                 const StateManipulator <Unconstrained <Real,XX> >& smanip,
