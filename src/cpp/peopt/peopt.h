@@ -4677,6 +4677,12 @@ namespace peopt{
                 // Cauchy point for tangential step prior to correction
                 std::list <X_Vector> dx_tcp_uncorrected;
                 
+                // Hessian applied to the normal step 
+                std::list <X_Vector> H_dxn;
+
+                // Quantity grad f(x) + g'(x)*y + H dx_n
+                std::list <X_Vector> W_gpHdxn;
+                
                 // Initialization constructors
                 t() {
                     EqualityConstrained <Real,XX,YY>::State::init_params(*this);
@@ -4753,6 +4759,14 @@ namespace peopt{
                 state.dx_tcp_uncorrected.clear();
                     state.dx_tcp_uncorrected.push_back(X_Vector());
                     X::init(x,state.dx_tcp_uncorrected.front());
+                
+                state.H_dxn.clear();
+                    state.H_dxn.push_back(X_Vector());
+                    X::init(x,state.H_dxn.front());
+                
+                state.W_gpHdxn.clear();
+                    state.W_gpHdxn.push_back(X_Vector());
+                    X::init(x,state.W_gpHdxn.front());
             }
             static void init_vectors(
                 t& state,
@@ -4962,7 +4976,9 @@ namespace peopt{
                         name == "dx_ncp" ||
                         name == "dx_t" ||
                         name == "dx_t_uncorrected" ||
-                        name == "dx_tcp_uncorrected"
+                        name == "dx_tcp_uncorrected" ||
+                        name == "H_dxn" ||
+                        name == "W_gpHdxn"
                     ) 
                         return true;
                     else
@@ -5068,6 +5084,10 @@ namespace peopt{
                 xs.second.splice(xs.second.end(),state.dx_t_uncorrected);
                 xs.first.push_back("dx_tcp_uncorrected");
                 xs.second.splice(xs.second.end(),state.dx_tcp_uncorrected);
+                xs.first.push_back("H_dxn");
+                xs.second.splice(xs.second.end(),state.H_dxn);
+                xs.first.push_back("W_gpHdxn");
+                xs.second.splice(xs.second.end(),state.W_gpHdxn);
             }
 
             // Copy out all the scalar information
@@ -5183,6 +5203,12 @@ namespace peopt{
                     else if(*name0=="dx_tcp_uncorrected")
                         state.dx_tcp_uncorrected.splice(
                             state.dx_tcp_uncorrected.end(),xs.second,x0);
+                    else if(*name0=="H_dxn")
+                        state.H_dxn.splice(
+                            state.H_dxn.end(),xs.second,x0);
+                    else if(*name0=="W_gpHdxn")
+                        state.W_gpHdxn.splice(
+                            state.W_gpHdxn.end(),xs.second,x0);
 
                     // Remove the string corresponding to the element just
                     // spliced if splicing occured.
@@ -5666,44 +5692,52 @@ namespace peopt{
                     return xi_pg*min; 
                 }
             };
-            
+
             // Projects the quantity:
             //
             // grad f(x) + g'(x)*y + H dx_n
             //
             // into the null space of g'(x).  This is required for the
-            // tangential subproblem.
-            void projectGradLagrangianPlusHdxn(
+            // tangential subproblem as well as the predicted reduction.
+            static void computeProjectedGradLagrangianPlusHdxn(
                 const Messaging& msg,
                 const StateManipulator <Unconstrained <Real,XX> >& smanip,
                 const typename Functions::t& fns,
-                const typename State::t& state,
-                X_Vector& W_gpHdxn
+                typename State::t& state
             ) {
                 // Create some shortcuts
                 const X_Vector& x=state.x;
                 const X_Vector& g=state.g;
                 const X_Vector& dx_n=state.dx_n;
+                const X_Vector& H_dxn=state.H_dxn;
                 const Y_Vector& y=state.y;
                 const Natural& augsys_iter_max=state.augsys_iter_max;
                 const Natural& augsys_rst_freq=state.augsys_rst_freq;
                 const ScalarValuedFunction <Real,XX>& f=*(fns.f);
+                X_Vector& W_gpHdxn=state.W_gpHdxn;
+
+                // H_dxn <- H dx_n
+                f.hessvec(x,dx_n,H_dxn);
 
                 // g_p_Hdxn <- H dx_n
-                X_Vector g_p_Hdxn; X::init(x,g_p_Hdxn);
-                f.hessvec(x,dx_n,g_p_Hdxn);
+                X_Vector g_p_Hdxn;
+                    X::init(x,g_p_Hdxn);
+                    X::copy(H_dxn,g_p_Hdxn);
 
                 // g_p_Hdxn <- g + H dx_n
                 X::axpy(Real(1.),g,g_p_Hdxn);
 
                 // Create the initial guess, x0=(0,0)
-                XxY_Vector x0; X::init(x,x0.first); Y::init(y,x0.second);
-                XxY::zero(x0);
+                XxY_Vector x0;
+                    X::init(x,x0.first);
+                    Y::init(y,x0.second);
+                    XxY::zero(x0);
 
                 // Create the rhs, b0=(g + H dx_n,0)
-                XxY_Vector b0; XxY::init(x0,b0);
-                X::copy(g_p_Hdxn,b0.first);
-                Y::zero(b0.second);
+                XxY_Vector b0;
+                    XxY::init(x0,b0);
+                    X::copy(g_p_Hdxn,b0.first);
+                    Y::zero(b0.second);
             
                 // Build Schur style preconditioners
                 BlockDiagonalPreconditioner Minv_l (
