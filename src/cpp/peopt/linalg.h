@@ -857,6 +857,7 @@ namespace peopt {
 
             // Take a step in this direction
             X::axpy(alpha,Bp,x);
+            X::axpy(alpha,Bp,x_m_xcntr);
 
             // If this is the first iteration, save the Cauchy-Point
             if(iter==Natural(1)) X::copy(x,x_cp);

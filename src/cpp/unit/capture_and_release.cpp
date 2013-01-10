@@ -102,6 +102,7 @@ BOOST_AUTO_TEST_CASE(equality_constrained) {
     BOOST_CHECK(state.dx_tcp_uncorrected.size()==0);
     BOOST_CHECK(state.H_dxn.size()==0);
     BOOST_CHECK(state.W_gpHdxn.size()==0);
+    BOOST_CHECK(state.H_dxtuncorrected.size()==0);
 
     // Capture the state
     peopt::EqualityConstrained <double,Rm,Rm>::Restart
@@ -124,6 +125,7 @@ BOOST_AUTO_TEST_CASE(equality_constrained) {
     BOOST_CHECK(state.dx_tcp_uncorrected.size()==1);
     BOOST_CHECK(state.H_dxn.size()==1);
     BOOST_CHECK(state.W_gpHdxn.size()==1);
+    BOOST_CHECK(state.H_dxtuncorrected.size()==1);
 
     // Check the relative error between the vector created above and the one
     // left in the state
@@ -252,6 +254,7 @@ BOOST_AUTO_TEST_CASE(constrained) {
     BOOST_CHECK(state.dx_tcp_uncorrected.size()==0);
     BOOST_CHECK(state.H_dxn.size()==0);
     BOOST_CHECK(state.W_gpHdxn.size()==0);
+    BOOST_CHECK(state.H_dxtuncorrected.size()==0);
     BOOST_CHECK(state.z.size()==0);
     BOOST_CHECK(state.h_x.size()==0);
     BOOST_CHECK(state.g_orig.size()==0);
@@ -279,6 +282,7 @@ BOOST_AUTO_TEST_CASE(constrained) {
     BOOST_CHECK(state.dx_tcp_uncorrected.size()==1);
     BOOST_CHECK(state.H_dxn.size()==1);
     BOOST_CHECK(state.W_gpHdxn.size()==1);
+    BOOST_CHECK(state.H_dxtuncorrected.size()==1);
     BOOST_CHECK(state.z.size()==1);
     BOOST_CHECK(state.h_x.size()==1);
     BOOST_CHECK(state.g_orig.size()==1);
