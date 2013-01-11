@@ -105,7 +105,8 @@ namespace peopt{
     namespace AlgorithmClass{
         enum t{
             TrustRegion,            // Trust-Region algorithms
-            LineSearch              // Line-search algorithms
+            LineSearch,             // Line-search algorithms
+            UserDefined             // User provides the iterate 
         };
 
         // Converts the algorithm class to a string
@@ -115,6 +116,8 @@ namespace peopt{
                 return "TrustRegion";
             case LineSearch:
                 return "LineSearch";
+            case UserDefined:
+                return "UserDefined";
             default:
                 throw;
             }
@@ -126,6 +129,8 @@ namespace peopt{
                 return TrustRegion;
             else if(algorithm_class=="LineSearch")
                 return LineSearch;
+            else if(algorithm_class=="UserDefined")
+                return UserDefined;
             else
                 throw;
         }
@@ -134,7 +139,8 @@ namespace peopt{
         struct is_valid : public std::unary_function<std::string, bool> {
             bool operator () (const std::string& name) const {
                 if( name=="TrustRegion" ||
-                    name=="LineSearch"
+                    name=="LineSearch" ||
+                    name=="UserDefined"
                 )
                     return true;
                 else
@@ -422,6 +428,9 @@ namespace peopt{
 
             // Occurs before we calculate our new step.
             BeforeGetStep,
+            
+            // Occurs during a user defined get step calculation.
+            GetStep,
 
             // Occurs after we take the optimization step u+s, but before
             // we calculate the gradient based on this new step.  In addition,
@@ -473,6 +482,8 @@ namespace peopt{
                 return "BeforeStep";
             case BeforeGetStep:
                 return "BeforeGetStep";
+            case GetStep:
+                return "GetStep";
             case AfterStepBeforeGradient:
                 return "AfterStepBeforeGradient";
             case BeforeQuasi:
@@ -510,6 +521,8 @@ namespace peopt{
                 return BeforeStep; 
             else if(loc=="BeforeGetStep")
                 return BeforeGetStep; 
+            else if(loc=="GetStep")
+                return GetStep; 
             else if(loc=="AfterStepBeforeGradient")
                 return AfterStepBeforeGradient; 
             else if(loc=="BeforeQuasi")
@@ -542,6 +555,7 @@ namespace peopt{
                     name=="BeforeSaveOld" || 
                     name=="BeforeStep" || 
                     name=="BeforeGetStep" || 
+                    name=="GetStep" || 
                     name=="AfterStepBeforeGradient" ||
                     name=="BeforeQuasi" ||
                     name=="AfterQuasi" ||
@@ -4213,6 +4227,9 @@ namespace peopt{
                 case AlgorithmClass::LineSearch:
                     getStepLS(msg,smanip,fns,state);
                     break;
+                case AlgorithmClass::UserDefined:
+                    smanip(fns,state,OptimizationLocation::GetStep);
+                    break;
                 }
             }
 
@@ -4457,8 +4474,8 @@ namespace peopt{
 
             // x <- alpha * x
             static void scal(const Real_& alpha, Vector& x) {
-                X::copy(alpha,x.first);
-                Y::copy(alpha,x.second);
+                X::scal(alpha,x.first);
+                Y::scal(alpha,x.second);
             }
 
             // x <- 0 
@@ -5466,6 +5483,81 @@ namespace peopt{
             }
         };
         
+        // Contains functions that assist in creating an output for diagonstics
+        struct Printer {
+
+            // Gets the header for the state information
+            static void getStateHeader_(
+                const typename State::t& state,
+                std::list <std::string>& out
+            ) { }
+
+            // Combines all of the state headers
+            static void getStateHeader(
+                const typename State::t& state,
+                std::list <std::string>& out
+            ) {
+                Unconstrained <Real,XX>::Printer::getStateHeader_(state,out);
+                EqualityConstrained <Real,XX,YY>::Printer::getStateHeader_
+                    (state,out);
+            }
+
+            // Gets the state information for output
+            static void getState_(
+                const typename State::t& state,
+                const bool blank,
+                std::list <std::string>& out
+            ) { }
+
+            // Combines all of the state information
+            static void getState(
+                const typename State::t& state,
+                const bool blank,
+                const bool noiter,
+                std::list <std::string>& out
+            ) {
+                Unconstrained <Real,XX>::Printer
+                    ::getState_(state,blank,noiter,out);
+                EqualityConstrained <Real,XX,YY>::Printer
+                    ::getState_(state,blank,out);
+            }
+            
+            // Get the header for the Krylov iteration
+            static void getKrylovHeader_(
+                const typename State::t& state,
+                std::list <std::string>& out
+            ) { }
+
+            // Combines all of the Krylov headers
+            static void getKrylovHeader(
+                const typename State::t& state,
+                std::list <std::string>& out
+            ) {
+                Unconstrained <Real,XX>::Printer::getKrylovHeader_(state,out);
+                EqualityConstrained <Real,XX,YY>::Printer
+                    ::getKrylovHeader_(state,out);
+            }
+            
+            // Get the information for the Krylov iteration
+            static void getKrylov_(
+                const typename State::t& state,
+                const bool blank,
+                std::list <std::string>& out
+            ) { }
+
+            // Combines all of the Krylov information
+            static void getKrylov(
+                const typename State::t& state,
+                const bool blank,
+                std::list <std::string>& out
+            ) {
+                Unconstrained <Real,XX>::Printer::getKrylov_(state,blank,out);
+                EqualityConstrained <Real,XX,YY>::Printer
+                    ::getKrylov_(state,blank,out);
+            }
+        };
+
+        
         // This contains the different algorithms used for optimization 
         struct Algorithms {
         private:
@@ -5479,7 +5571,7 @@ namespace peopt{
             // [ I      g'(x)* ]
             // [ g'(x)  0      ]
             //
-            class AugmentedSystem: public Operator <Real,XXxYY,XXxYY> {
+            struct AugmentedSystem: public Operator <Real,XXxYY,XXxYY> {
             private:
                 const typename State::t& state;
                 const typename Functions::t& fns;
@@ -5500,7 +5592,7 @@ namespace peopt{
                     fns.g->ps(x_base,dx_dy.second,result.first);
 
                     // dx + g'(x_base)* dy 
-                    XxY::axpy(Real(1.),dx_dy.first,result.first);
+                    X::axpy(Real(1.),dx_dy.first,result.first);
 
                     // g'(x_base)* dx
                     fns.g->p(x_base,dx_dy.first,result.second);
@@ -5512,7 +5604,7 @@ namespace peopt{
             // [ Mx^{-1}    0       ]
             // [ 0          My^{-1} ]
             //
-            class BlockDiagonalPreconditioner:
+            struct BlockDiagonalPreconditioner:
                 public Operator <Real,XXxYY,XXxYY> {
             private:
                 const Operator <Real,XX,XX>& Minv_x;
@@ -5563,19 +5655,19 @@ namespace peopt{
             };
 
             // Finds the quasi-normal step
-            void quasinormalStep(
+            static void quasinormalStep(
                 const typename Functions::t& fns,
                 typename State::t& state
             ) {
                 // Create some shortcuts
-                const X_Vector& x=state.x;
-                const Y_Vector& g_x=state.g_x;
+                const X_Vector& x=state.x.front();
+                const Y_Vector& g_x=state.g_x.front();
                 const Natural& augsys_iter_max=state.augsys_iter_max;
                 const Natural& augsys_rst_freq=state.augsys_rst_freq;
                 const Real& delta = state.delta;
                 const Real& zeta = state.zeta;
-                X_Vector& dx_ncp=state.dx_ncp;
-                X_Vector& dx_n=state.dx_n;
+                X_Vector& dx_ncp=state.dx_ncp.front();
+                X_Vector& dx_n=state.dx_n.front();
 
                 // Find the Cauchy point.
 
@@ -5623,10 +5715,10 @@ namespace peopt{
 
                 // Build Schur style preconditioners
                 BlockDiagonalPreconditioner Minv_l (
-                    Unconstrained <Real,XX>::Functions::Identity(),
+                    typename Unconstrained <Real,XX>::Functions::Identity(),
                     *(fns.Minv_left));
                 BlockDiagonalPreconditioner Minv_r (
-                    Unconstrained <Real,XX>::Functions::Identity(),
+                    typename Unconstrained <Real,XX>::Functions::Identity(),
                     *(fns.Minv_right));
 
                 // Solve the augmented system for the Newton step
@@ -5717,15 +5809,13 @@ namespace peopt{
                 typename State::t& state
             ) {
                 // Create some shortcuts
-                const X_Vector& x=state.x;
-                const X_Vector& g=state.g;
-                const X_Vector& dx_n=state.dx_n;
-                const X_Vector& H_dxn=state.H_dxn;
-                const Y_Vector& y=state.y;
+                const X_Vector& x=state.x.front();
+                const X_Vector& g=state.g.front();
+                const X_Vector& H_dxn=state.H_dxn.front();
+                const Y_Vector& y=state.y.front();
                 const Natural& augsys_iter_max=state.augsys_iter_max;
                 const Natural& augsys_rst_freq=state.augsys_rst_freq;
-                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
-                X_Vector& W_gpHdxn=state.W_gpHdxn;
+                X_Vector& W_gpHdxn=state.W_gpHdxn.front();
 
                 // g_p_Hdxn <- H dx_n
                 X_Vector g_p_Hdxn;
@@ -5749,10 +5839,10 @@ namespace peopt{
             
                 // Build Schur style preconditioners
                 BlockDiagonalPreconditioner Minv_l (
-                    Unconstrained <Real,XX>::Functions::Identity(),
+                    typename Unconstrained <Real,XX>::Functions::Identity(),
                     *(fns.Minv_left));
                 BlockDiagonalPreconditioner Minv_r (
-                    Unconstrained <Real,XX>::Functions::Identity(),
+                    typename Unconstrained <Real,XX>::Functions::Identity(),
                     *(fns.Minv_right));
 
                 // Solve the augmented system for the nullspace projection 
@@ -5764,7 +5854,7 @@ namespace peopt{
                     augsys_rst_freq,
                     Minv_l,
                     Minv_r,
-                    NullspaceProjForGradientMainpulator(state,fns),
+                    NullspaceProjForGradientManipulator(state,fns),
                     x0 
                 );
 
@@ -5826,8 +5916,8 @@ namespace peopt{
                     X_Vector& result
                 ) const{
                     // Create some shortcuts
-                    const X_Vector& x=state.x;
-                    const Y_Vector& y=state.y;
+                    const X_Vector& x=state.x.front();
+                    const Y_Vector& y=state.y.front();
                     const unsigned int augsys_iter_max=state.augsys_iter_max;
                     const unsigned int augsys_rst_freq=state.augsys_rst_freq;
 
@@ -5845,10 +5935,10 @@ namespace peopt{
                 
                     // Build Schur style preconditioners
                     BlockDiagonalPreconditioner Minv_l (
-                        Unconstrained <Real,XX>::Functions::Identity(),
+                        typename Unconstrained <Real,XX>::Functions::Identity(),
                         *(fns.Minv_left));
                     BlockDiagonalPreconditioner Minv_r (
-                        Unconstrained <Real,XX>::Functions::Identity(),
+                        typename Unconstrained <Real,XX>::Functions::Identity(),
                         *(fns.Minv_right));
 
                     // Solve the augmented system for the nullspace projection 
@@ -5860,7 +5950,7 @@ namespace peopt{
                         augsys_rst_freq,
                         Minv_l,
                         Minv_r,
-                        NullspaceProjForDirMainpulator(state,fns),
+                        NullspaceProjForKrylovMethodManipulator(state,fns),
                         x0 
                     );
 
@@ -5875,9 +5965,8 @@ namespace peopt{
                 typename State::t& state
             ) {
                 // Create some shortcuts
-                const X_Vector& x=state.x;
-                const X_Vector& dx_n=state.dx_n;
-                const X_Vector& g=state.g.front();
+                const X_Vector& x=state.x.front();
+                const X_Vector& dx_n=state.dx_n.front();
                 const X_Vector& W_gpHdxn=state.W_gpHdxn.front();
                 const Real& delta = state.delta;
                 const Real& eps_krylov=state.eps_krylov;
@@ -5885,8 +5974,8 @@ namespace peopt{
                 const Natural& krylov_orthog_max=state.krylov_orthog_max;
                 const KrylovSolverTruncated::t& krylov_solver
                     = state.krylov_solver;
-                X_Vector& dx_t_uncorrected=state.dx_t_uncorrected;
-                X_Vector& dx_tcp_uncorrected=state.dx_tcp_uncorrected;
+                X_Vector& dx_t_uncorrected=state.dx_t_uncorrected.front();
+                X_Vector& dx_tcp_uncorrected=state.dx_tcp_uncorrected.front();
                 Real& krylov_rel_err=state.krylov_rel_err;
                 Natural& krylov_iter=state.krylov_iter;
                 Natural& krylov_iter_total=state.krylov_iter_total;
@@ -5894,7 +5983,6 @@ namespace peopt{
                 
                 // Create shortcuts to the functions that we need
                 const ScalarValuedFunction <Real,XX>& f=*(fns.f);
-                const Operator <Real,XX,XX>& Minv=*(fns.Minv);
                 const Operator <Real,XX,XX>& TR_op=*(fns.TR_op);
                     
                 // Setup the Hessian operator and allocate memory for the
@@ -6004,17 +6092,17 @@ namespace peopt{
             };
             
             // Finds the tangential step 
-            void tangentialStep(
+            static void tangentialStep(
                 const typename Functions::t& fns,
                 typename State::t& state
             ) {
                 // Create some shortcuts
-                const X_Vector& x=state.x;
-                const Y_Vector& y=state.y;
+                const X_Vector& x=state.x.front();
+                const Y_Vector& y=state.y.front();
                 const Natural& augsys_iter_max=state.augsys_iter_max;
                 const Natural& augsys_rst_freq=state.augsys_rst_freq;
-                const X_Vector& dx_t_uncorrected=state.dx_t_uncorrected;
-                X_Vector& dx_t=state.dx_t;
+                const X_Vector& dx_t_uncorrected=state.dx_t_uncorrected.front();
+                X_Vector& dx_t=state.dx_t.front();
 
                 // Create the initial guess, x0=(0,0)
                 XxY_Vector x0;
@@ -6030,10 +6118,10 @@ namespace peopt{
 
                 // Build Schur style preconditioners
                 BlockDiagonalPreconditioner Minv_l (
-                    Unconstrained <Real,XX>::Functions::Identity(),
+                    typename Unconstrained <Real,XX>::Functions::Identity(),
                     *(fns.Minv_left));
                 BlockDiagonalPreconditioner Minv_r (
-                    Unconstrained <Real,XX>::Functions::Identity(),
+                    typename Unconstrained <Real,XX>::Functions::Identity(),
                     *(fns.Minv_right));
 
                 // Solve the augmented system for the Newton step
@@ -6090,11 +6178,12 @@ namespace peopt{
                 // Create some shortcuts
                 const ScalarValuedFunction <Real,XX>& f=*(fns.f);
                 const VectorValuedFunction <Real,XX,YY>& g=*(fns.g);
-                const X_Vector& x=state.x;
-                const X_Vector& dx=state.dx;
+                const X_Vector& x=state.x.front();
+                const X_Vector& dx=state.dx.front();
+                const Y_Vector& y=state.y.front();
                 const Natural& augsys_iter_max=state.augsys_iter_max;
                 const Natural& augsys_rst_freq=state.augsys_rst_freq;
-                Y_Vector& dy=state.dy;
+                Y_Vector& dy=state.dy.front();
 
                 // x_p_dx <- x + dx
                 X_Vector x_p_dx;
@@ -6110,6 +6199,7 @@ namespace peopt{
                 // gps_xpdx_y <- g'(x+dx)*y
                 X_Vector gps_xpdx_y; 
                     X::init(x,gps_xpdx_y);
+                    g.ps(x_p_dx,y,gps_xpdx_y);
 
                 // g_xpdx <- grad f(x+dx) + g'(x+dx)*y
                 X::axpy(Real(1.),gps_xpdx_y,g_xpdx);
@@ -6129,10 +6219,10 @@ namespace peopt{
 
                 // Build Schur style preconditioners
                 BlockDiagonalPreconditioner Minv_l (
-                    Unconstrained <Real,XX>::Functions::Identity(),
+                    typename Unconstrained <Real,XX>::Functions::Identity(),
                     *(fns.Minv_left));
                 BlockDiagonalPreconditioner Minv_r (
-                    Unconstrained <Real,XX>::Functions::Identity(),
+                    typename Unconstrained <Real,XX>::Functions::Identity(),
                     *(fns.Minv_right));
 
                 // Solve the augmented system for the Newton step
@@ -6158,15 +6248,14 @@ namespace peopt{
                 typename State::t& state
             ) {
                 // Create some shortcuts
-                const X_Vector& x=state.x;
-                const X_Vector& g=state.g;
-                const X_Vector& W_gpHdxn=state.W_gpHdxn;
-                const X_Vector& H_dxn=state.H_dxn;
-                const X_Vector& H_dxtuncorrected=state.H_dxtuncorrected;
-                const X_Vector& dx_t_uncorrected=state.dx_t_uncorrected;
-                const X_Vector& dx_n=state.dx_n;
-                const Y_Vector& gpxdxn_p_gx=state.gpxdxn_p_gx;
-                const Y_Vector& dy=state.dy;
+                const X_Vector& g=state.g.front();
+                const X_Vector& W_gpHdxn=state.W_gpHdxn.front();
+                const X_Vector& H_dxn=state.H_dxn.front();
+                const X_Vector& H_dxtuncorrected=state.H_dxtuncorrected.front();
+                const X_Vector& dx_t_uncorrected=state.dx_t_uncorrected.front();
+                const X_Vector& dx_n=state.dx_n.front();
+                const Y_Vector& gpxdxn_p_gx=state.gpxdxn_p_gx.front();
+                const Y_Vector& dy=state.dy.front();
                 const Real& rho=state.rho;
                 const Real& norm_gx=state.norm_gx; 
                 const Real& norm_gpxdxnpgx=state.norm_gpxdxnpgx;
@@ -6231,10 +6320,10 @@ namespace peopt{
             ) {
                 // Create some shortcuts
                 const VectorValuedFunction <Real,XX,YY>& g=*(fns.g);
-                const X_Vector& x=state.x;
-                const Y_Vector& dy=state.dy;
-                const Y_Vector& gpxdxn_p_gx=state.gpxdxn_p_gx;
-                const X_Vector& dx_t=state.dx_t;
+                const X_Vector& x=state.x.front();
+                const Y_Vector& dy=state.dy.front();
+                const Y_Vector& gpxdxn_p_gx=state.gpxdxn_p_gx.front();
+                const X_Vector& dx_t=state.dx_t.front();
                 const Real& rho=state.rho;
                 Real& rpred=state.rpred;
 
@@ -6262,13 +6351,13 @@ namespace peopt{
                 // Create shortcuts to some elements in the state
                 const X_Vector& x=state.x.front();
                 const X_Vector& dx=state.dx.front();
-                const Y_Vector& y=state.y.front();
                 const Y_Vector& dy=state.dy.front();
                 const Real& eta1=state.eta1;
                 const Real& eta2=state.eta2;
                 const Real& delta_max=state.delta_max;
                 const Real& merit_x=state.merit_x;
                 const Real& norm_dx=state.norm_dx;
+                Y_Vector& y=state.y.front();
                 Real& delta=state.delta;
                 Real& ared=state.ared;
                 Real& pred=state.pred;
@@ -6338,28 +6427,30 @@ namespace peopt{
             // Finds the trust-region step
             static void getStep(
                 const Messaging& msg,
-                const StateManipulator <Unconstrained <Real,XX> >& smanip,
+                const StateManipulator <EqualityConstrained <Real,XX,YY> >&
+                    smanip,
                 const typename Functions::t& fns,
                 typename State::t& state
             ){
                 // Create some shortcuts
                 const ScalarValuedFunction <Real,XX>& f=*(fns.f);
                 const VectorValuedFunction <Real,XX,YY>& g=*(fns.g);
-                const X_Vector& x=state.x;
-                const X_Vector& dx_n=state.dx_n;
-                const X_Vector& dx_t=state.dx_t;
-                const X_Vector& dx_t_uncorrected=state.dx_t_uncorrected;
-                const X_Vector& dx_tcp_uncorrected=state.dx_tcp_uncorrected;
-                const X_Vector& H_dxn=state.H_dxn;
-                const X_Vector& H_dxtuncorrected=state.H_dxtuncorrected;
+                const X_Vector& x=state.x.front();
+                const X_Vector& dx_n=state.dx_n.front();
+                const X_Vector& dx_t=state.dx_t.front();
+                const X_Vector& dx_tcp_uncorrected
+                    =state.dx_tcp_uncorrected.front();
                 const Real& xi_4=state.xi_4;
                 const Real& eta0=state.eta0;
                 const Real& eps_dx=state.eps_dx;
                 const Real& norm_dxtyp=state.norm_dxtyp;
                 const Natural& history_reset=state.history_reset;
-                X_Vector& dx=state.dx;
-                Y_Vector& g_x=state.g_x;
-                Y_Vector& gpxdxn_p_gx=state.gpxdxn_p_gx;
+                X_Vector& dx=state.dx.front();
+                X_Vector& dx_t_uncorrected=state.dx_t_uncorrected.front();
+                X_Vector& H_dxn=state.H_dxn.front();
+                X_Vector& H_dxtuncorrected=state.H_dxtuncorrected.front();
+                Y_Vector& g_x=state.g_x.front();
+                Y_Vector& gpxdxn_p_gx=state.gpxdxn_p_gx.front();
                 std::list <X_Vector>& oldY=state.oldY; 
                 std::list <X_Vector>& oldS=state.oldS; 
                 Real& norm_gx=state.norm_gx;
@@ -6456,7 +6547,7 @@ namespace peopt{
                             predictedReduction(fns,state);
 
                             // Find the residual predicted reduction
-                            residualPredictedReduction(msg,smanip,fns,state);
+                            residualPredictedReduction(fns,state);
                         }
 
                         // Check if ||dx_t_uncorrected||<=xi_4 || dx_n + dx_t||.
@@ -6515,6 +6606,122 @@ namespace peopt{
                         break;
                     }
                 } 
+            }
+            
+            // This adds the composite-step method through use of a state
+            // manipulator.
+            struct CompositeStepManipulator
+                : public StateManipulator <EqualityConstrained <Real,XX,YY> >
+            {
+            private:
+                // Make sure we are working with an unconstrained state
+                // manipulator
+                typedef EqualityConstrained <Real,XX,YY> ProblemClass;
+
+                // A reference to the user-defined state manipulator
+                const StateManipulator<ProblemClass>& smanip;
+
+                // A reference to the messaging object
+                const Messaging& msg;
+
+            public:
+                CompositeStepManipulator(
+                    const StateManipulator <ProblemClass>& smanip_,
+                    const Messaging& msg_
+                ) : smanip(smanip_), msg(msg_) {}
+
+
+                // Application
+                void operator () (
+                    const typename ProblemClass::Functions::t& fns_,
+                    typename ProblemClass::State::t& state_,
+                    OptimizationLocation::t loc
+                ) const {
+                    // Dynamically cast the incoming state and fns to the
+                    // to work with the equality constrained spaces.  In theory,
+                    // this should always work since we're doing this trickery
+                    // internally.  Basically, this is required since we're
+                    // inserting into the unconstrained constrained code.
+                    // Within this code, the state manipulator is hard coded to 
+                    // use the state for the unconstrained problem even though
+                    // this state is really an equality constrained state when
+                    // called using the routines below.
+                    const typename Functions::t& fns
+                        =dynamic_cast <const typename Functions::t&> (fns_);
+                    typename State::t& state 
+                        =dynamic_cast <typename State::t&> (state_);
+                
+                    // Create some shortcuts
+                    const Y_Vector& dy=state.dy.front();
+                    Y_Vector& y=state.y.front();
+
+                    // Call the user define manipulator
+                    smanip(fns,state,loc);
+
+                    switch(loc){
+                    case OptimizationLocation::GetStep:
+                        // Find the steps in both the primal and dual directions
+                        getStep(msg,smanip,fns,state);
+                        break;
+
+                    case OptimizationLocation::BeforeStep:
+                        // Make sure to take the step in the dual variable
+                        Y::axpy(Real(1.),dy,y);
+                        break;
+                    default:
+                        break;
+                    }
+                }
+            };
+
+            // Solves an optimization problem where the user doesn't know about
+            // the state manipulator
+            static void getMin(
+                const Messaging& msg,
+                typename Functions::t& fns,
+                typename State::t& state
+            ){
+                // Create an empty state manipulator
+                StateManipulator <EqualityConstrained <Real,XX,YY> > smanip;
+
+                // Minimize the problem
+                getMin(msg,smanip,fns,state);
+            }
+            
+            // Initializes remaining functions then solves an optimization
+            // problem
+            static void getMin(
+                const Messaging& msg,
+                const StateManipulator <EqualityConstrained <Real,XX,YY> >&
+                    smanip,
+                typename Functions::t& fns,
+                typename State::t& state
+            ){
+
+                // Add the interior point pieces to the state manipulator
+                CompositeStepManipulator csmanip(smanip,msg);
+                
+                // Adds the output pieces to the state manipulator 
+                DiagnosticManipulator <EqualityConstrained <Real,XX,YY> >
+                    dmanip(csmanip,msg);
+
+                // Insures that we can interact with unconstrained code
+                ConversionManipulator
+                    <EqualityConstrained<Real,XX,YY>,Unconstrained <Real,XX> >
+                    cmanip(dmanip);
+                
+                // Initialize any remaining functions required for optimization 
+                Functions::init(msg,state,fns);
+
+                // If a trust-region operator has not been provided, use the
+                // identity.
+                if(fns.TR_op.get()==NULL)
+                    fns.TR_op.reset(new typename
+                        Unconstrained <Real,XX>::Functions::Identity());
+                
+                // Minimize the problem
+                Unconstrained <Real,XX>::Algorithms
+                    ::getMin_(msg,cmanip,fns,state);
             }
         };
     };
