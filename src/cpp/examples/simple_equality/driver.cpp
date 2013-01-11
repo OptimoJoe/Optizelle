@@ -4,7 +4,7 @@
 #include <iostream>
 #include <iomanip>
 
-// Optimize a simple optimization problem with an optimal solution of (1,0)
+// Optimize a simple optimization problem with an optimal solution of (0.8,0.4)
 
 // Squares its input
 template <typename Real>
@@ -80,7 +80,7 @@ struct MyEq
         X::Vector& z
     ) const {
         z[0] = Real(2.)*dy[0];
-        z[1] = dy[1];
+        z[1] = dy[0];
     }
 
     // z=(g''(x)dx)*dy

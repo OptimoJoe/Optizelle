@@ -1173,8 +1173,8 @@ namespace peopt {
     struct GMRESManipulator {
         // Application
         virtual void operator () (
-            const typename XX <Real>::Vector& b,
             const typename XX <Real>::Vector& x,
+            const typename XX <Real>::Vector& b,
             Real& eps
         ) const {}
 
@@ -1269,7 +1269,7 @@ namespace peopt {
 
         // Allocate memory for the subiteration number of GMRES taking into
         // account restarting
-        Natural i;
+        Natural i(0);
 
         // Find the true residual and its norm
         A(x,rtrue);

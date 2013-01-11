@@ -5619,7 +5619,7 @@ namespace peopt{
                     Minv_x(dx_dy.first,result.first);
                     
                     // Minv_y dy
-                    Minv_y(dx_dy.first,result.second);
+                    Minv_y(dx_dy.second,result.second);
                 }
             };
 
@@ -5634,8 +5634,8 @@ namespace peopt{
                     const typename Functions::t& fns_
                 ) : state(state_), fns(fns_) {}
                 void operator () (
-                    const typename XX <Real>::Vector& bb,
-                    const typename XX <Real>::Vector& xx,
+                    const typename XXxYY <Real>::Vector& xx,
+                    const typename XXxYY <Real>::Vector& bb,
                     Real& eps
                 ) const {
                     // Create some shortcuts
@@ -5709,12 +5709,9 @@ namespace peopt{
                 Y::axpy(Real(-1.),g_x,b0.second);
 
                 // Build Schur style preconditioners
-                BlockDiagonalPreconditioner Minv_l (
-                    typename Unconstrained <Real,XX>::Functions::Identity(),
-                    *(fns.Minv_left));
-                BlockDiagonalPreconditioner Minv_r (
-                    typename Unconstrained <Real,XX>::Functions::Identity(),
-                    *(fns.Minv_right));
+                typename Unconstrained <Real,XX>::Functions::Identity I;
+                BlockDiagonalPreconditioner Minv_l (I,*(fns.Minv_left));
+                BlockDiagonalPreconditioner Minv_r (I,*(fns.Minv_right));
 
                 // Solve the augmented system for the Newton step
                 peopt::gmres <Real,XXxYY> (
@@ -5770,8 +5767,8 @@ namespace peopt{
                     const typename Functions::t& fns_
                 ) : state(state_), fns(fns_) {}
                 void operator () (
-                    const typename XX <Real>::Vector& bb,
-                    const typename XX <Real>::Vector& xx,
+                    const typename XXxYY <Real>::Vector& xx,
+                    const typename XXxYY <Real>::Vector& bb,
                     Real& eps
                 ) const {
                     // Create some shortcuts
@@ -5786,9 +5783,9 @@ namespace peopt{
 
                     // The bound is xi_pg min( || W (grad L(x,y) + H dx_n) ||,
                     // delta, || grad L(x,y) + H dx_n || )
-                    Real min = norm_WgpHdxn < delta ? norm_WgpHdxn : delta;
-                    min = min < norm_gpHdxn ? min : norm_gpHdxn;
-                    return xi_pg*min; 
+                    eps = norm_WgpHdxn < delta ? norm_WgpHdxn : delta;
+                    eps = eps < norm_gpHdxn ? eps : norm_gpHdxn;
+                    eps = xi_pg*eps;
                 }
             };
 
@@ -5833,12 +5830,9 @@ namespace peopt{
                     Y::zero(b0.second);
             
                 // Build Schur style preconditioners
-                BlockDiagonalPreconditioner Minv_l (
-                    typename Unconstrained <Real,XX>::Functions::Identity(),
-                    *(fns.Minv_left));
-                BlockDiagonalPreconditioner Minv_r (
-                    typename Unconstrained <Real,XX>::Functions::Identity(),
-                    *(fns.Minv_right));
+                typename Unconstrained <Real,XX>::Functions::Identity I;
+                BlockDiagonalPreconditioner Minv_l (I,*(fns.Minv_left));
+                BlockDiagonalPreconditioner Minv_r (I,*(fns.Minv_right));
 
                 // Solve the augmented system for the nullspace projection 
                 peopt::gmres <Real,XXxYY> (
@@ -5870,8 +5864,8 @@ namespace peopt{
                     const typename Functions::t& fns_
                 ) : state(state_), fns(fns_) {}
                 void operator () (
-                    const typename XX <Real>::Vector& bb,
-                    const typename XX <Real>::Vector& xx,
+                    const typename XXxYY <Real>::Vector& xx,
+                    const typename XXxYY <Real>::Vector& bb,
                     Real& eps
                 ) const {
                     // Create some shortcuts
@@ -5887,9 +5881,9 @@ namespace peopt{
 
                     // The bound is xi_proj min( || W dx_t_uncorrected  ||,
                     // || dx_t_uncorrected || )
-                    Real min = norm_Wdxt_uncorrected < norm_dxt_uncorrected
+                    eps = norm_Wdxt_uncorrected < norm_dxt_uncorrected
                         ? norm_Wdxt_uncorrected : norm_dxt_uncorrected;
-                    return xi_proj*min; 
+                    eps = xi_proj*eps; 
                 }
             };
             
@@ -5929,12 +5923,9 @@ namespace peopt{
                         Y::zero(b0.second);
                 
                     // Build Schur style preconditioners
-                    BlockDiagonalPreconditioner Minv_l (
-                        typename Unconstrained <Real,XX>::Functions::Identity(),
-                        *(fns.Minv_left));
-                    BlockDiagonalPreconditioner Minv_r (
-                        typename Unconstrained <Real,XX>::Functions::Identity(),
-                        *(fns.Minv_right));
+                    typename Unconstrained <Real,XX>::Functions::Identity I;
+                    BlockDiagonalPreconditioner Minv_l (I,*(fns.Minv_left));
+                    BlockDiagonalPreconditioner Minv_r (I,*(fns.Minv_right));
 
                     // Solve the augmented system for the nullspace projection 
                     peopt::gmres <Real,XXxYY> (
@@ -6056,19 +6047,19 @@ namespace peopt{
                     const typename Functions::t& fns_
                 ) : state(state_), fns(fns_) {}
                 void operator () (
-                    const typename XX <Real>::Vector& bb,
-                    const typename XX <Real>::Vector& xx,
+                    const typename XXxYY <Real>::Vector& xx,
+                    const typename XXxYY <Real>::Vector& bb,
                     Real& eps
                 ) const {
                     // Create some shortcuts
-                    const X_Vector& dx_n=state.dx_n;
+                    const X_Vector& dx_n=state.dx_n.front();
                     const Real& xi_tang = state.xi_tang;
                     const Real& delta = state.delta;
 
                     // dxn_p_dxt <- dx_n + dx_t
                     X_Vector dxn_p_dxt; X::init(dx_n,dxn_p_dxt);
                     X::copy(dx_n,dxn_p_dxt);
-                    X::axpy(Real(1.),dxn_p_dxt,xx.first);
+                    X::axpy(Real(1.),xx.first,dxn_p_dxt);
 
                     // Find || dx_n + dx_t || 
                     Real norm_dxnpdxt = sqrt(X::innr(dxn_p_dxt,dxn_p_dxt));
@@ -6077,12 +6068,12 @@ namespace peopt{
                     Real norm_dxt_uncorrected= sqrt(X::innr(bb.first,bb.first));
 
                     // The bound is
-                    // min( delta, || dx_n + dx_t ||,
+                    // delta * min( delta, || dx_n + dx_t ||,
                     //      xi_tang ||dx_t_uncorrected||/delta)
-                    Real min = delta < norm_dxnpdxt ?  delta : norm_dxnpdxt;
-                    min = min < xi_tang*norm_dxt_uncorrected/delta
-                        ? min : xi_tang*norm_dxt_uncorrected/delta;
-                    return min; 
+                    eps = delta < norm_dxnpdxt ?  delta : norm_dxnpdxt;
+                    eps = eps < xi_tang*norm_dxt_uncorrected/delta
+                        ? eps : xi_tang*norm_dxt_uncorrected/delta;
+                    eps = eps*delta;
                 }
             };
             
@@ -6112,12 +6103,9 @@ namespace peopt{
                     Y::zero(b0.second);
 
                 // Build Schur style preconditioners
-                BlockDiagonalPreconditioner Minv_l (
-                    typename Unconstrained <Real,XX>::Functions::Identity(),
-                    *(fns.Minv_left));
-                BlockDiagonalPreconditioner Minv_r (
-                    typename Unconstrained <Real,XX>::Functions::Identity(),
-                    *(fns.Minv_right));
+                typename Unconstrained <Real,XX>::Functions::Identity I;
+                BlockDiagonalPreconditioner Minv_l (I,*(fns.Minv_left));
+                BlockDiagonalPreconditioner Minv_r (I,*(fns.Minv_right));
 
                 // Solve the augmented system for the Newton step
                 peopt::gmres <Real,XXxYY> (
@@ -6149,8 +6137,8 @@ namespace peopt{
                     const typename Functions::t& fns_
                 ) : state(state_), fns(fns_) {}
                 void operator () (
-                    const typename XX <Real>::Vector& bb,
-                    const typename XX <Real>::Vector& xx,
+                    const typename XXxYY <Real>::Vector& xx,
+                    const typename XXxYY <Real>::Vector& bb,
                     Real& eps
                 ) const {
                     // Create some shortcuts
@@ -6160,8 +6148,7 @@ namespace peopt{
 
                     // The bound is
                     // min( xi_lmg, xi_lmh || grad f(x) + g'(x)*y ||)
-                    Real min = xi_lmg < norm_g*xi_lmh ? xi_lmg : norm_g*xi_lmh;
-                    return min; 
+                    eps = xi_lmg < norm_g*xi_lmh ? xi_lmg : norm_g*xi_lmh;
                 }
             };
             
@@ -6186,11 +6173,12 @@ namespace peopt{
                     X::copy(x,x_p_dx);
                     X::axpy(Real(1.),dx,x_p_dx);
 
-                // g_xpdx <- grad f(x+dx)
+                // g_xpdx <- grad f(x+dx) + g'(x+dx)*y
                 X_Vector g_xpdx; 
                     X::init(x,g_xpdx);
                     f.grad(x_p_dx,g_xpdx);
 
+#if 0
                 // gps_xpdx_y <- g'(x+dx)*y
                 X_Vector gps_xpdx_y; 
                     X::init(x,gps_xpdx_y);
@@ -6198,6 +6186,7 @@ namespace peopt{
 
                 // g_xpdx <- grad f(x+dx) + g'(x+dx)*y
                 X::axpy(Real(1.),gps_xpdx_y,g_xpdx);
+#endif
 
                 // Create the initial guess, x0=(0,0)
                 XxY_Vector x0;
@@ -6213,12 +6202,9 @@ namespace peopt{
                     Y::zero(b0.second);
 
                 // Build Schur style preconditioners
-                BlockDiagonalPreconditioner Minv_l (
-                    typename Unconstrained <Real,XX>::Functions::Identity(),
-                    *(fns.Minv_left));
-                BlockDiagonalPreconditioner Minv_r (
-                    typename Unconstrained <Real,XX>::Functions::Identity(),
-                    *(fns.Minv_right));
+                typename Unconstrained <Real,XX>::Functions::Identity I;
+                BlockDiagonalPreconditioner Minv_l (I,*(fns.Minv_left));
+                BlockDiagonalPreconditioner Minv_r (I,*(fns.Minv_right));
 
                 // Solve the augmented system for the Newton step
                 peopt::gmres <Real,XXxYY> (
@@ -6381,9 +6367,6 @@ namespace peopt{
 
                 // Restore the old Lagrange multiplier
                 Y::copy(y_old,y);
-                
-                // Determine the actual reduction
-                ared = merit_x - merit_xpdx;
                 
                 // Add a safety check in case we don't actually minimize the TR
                 // subproblem correctly. This could happen for a variety of
@@ -6693,7 +6676,7 @@ namespace peopt{
                 typename State::t& state
             ){
 
-                // Add the interior point pieces to the state manipulator
+                // Add the composite step pieces to the state manipulator
                 CompositeStepManipulator csmanip(smanip,msg);
                 
                 // Adds the output pieces to the state manipulator 
@@ -6713,6 +6696,10 @@ namespace peopt{
                 if(fns.TR_op.get()==NULL)
                     fns.TR_op.reset(new typename
                         Unconstrained <Real,XX>::Functions::Identity());
+
+                // Make sure the algorithm uses the composite step routines
+                // to find the new step.
+                state.algorithm_class=AlgorithmClass::UserDefined;
                 
                 // Minimize the problem
                 Unconstrained <Real,XX>::Algorithms
