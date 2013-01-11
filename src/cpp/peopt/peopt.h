@@ -4544,12 +4544,20 @@ namespace peopt{
                 Real eps_constr;
 
                 // Inexactness tolerances
-                Real xi_all;    // General inexactness tolerance
                 Real xi_qn;     // Quasi-Newton step
                 Real xi_pg;     // Projection of the gradient
                 Real xi_proj;   // Null-space projection
                 Real xi_tang;   // Tangential step
                 Real xi_lmh;    // Lagrange multiplier
+
+                // Sets all the inexactness tolerances 
+                void xi_all(const Real& xi) {
+                    xi_qn = xi;
+                    xi_pg = xi;
+                    xi_proj = xi;
+                    xi_tang = xi;
+                    xi_lmh = xi;
+                }
 
                 // Absolute tolerance on the residual of the Lagrange
                 // multiplier solve.
@@ -4635,12 +4643,7 @@ namespace peopt{
                 state.rho = Real(1.0);;
                 state.rho_bar = Real(1e-8);
                 state.eps_constr = Real(1e-6);
-                state.xi_all = Real(1e-4);
-                state.xi_qn = state.xi_all;
-                state.xi_pg = state.xi_all;
-                state.xi_proj = state.xi_all;
-                state.xi_tang = state.xi_all;
-                state.xi_lmh = state.xi_all;
+                state.xi_all(Real(1e-4));
                 state.xi_lmg = Real(1e4);
                 state.xi_4 = Real(2.);
                 state.rpred=std::numeric_limits<Real>::quiet_NaN();
@@ -4770,12 +4773,6 @@ namespace peopt{
                         "stopping condition must be positive: eps_constr = "
                         << state.eps_constr;
 
-                // Check that the default inexactness tolerance lies in the
-                // interval (0,1)
-                else if(state.xi_all <= Real(0.) || state.xi_all >= Real(1.))
-                    ss << "The default inexactness tolerance must lie in the "
-                        "interval (0,1): xi_all = " << state.xi_all;
-                
                 // Check that the quasi-Newton step inexactness tolerance lies 
                 // in the interval (0,1) 
                 else if(state.xi_qn <= Real(0.) || state.xi_qn >= Real(1.))
@@ -4868,7 +4865,6 @@ namespace peopt{
                         name == "rho" ||
                         name == "rho_bar" ||
                         name == "eps_constr" ||
-                        name == "xi_all" ||
                         name == "xi_qn" || 
                         name == "xi_pg" ||
                         name == "xi_proj" ||
@@ -5061,8 +5057,6 @@ namespace peopt{
                 reals.second.push_back(state.rho_bar);
                 reals.first.push_back("eps_constr");
                 reals.second.push_back(state.eps_constr);
-                reals.first.push_back("xi_all");
-                reals.second.push_back(state.xi_all);
                 reals.first.push_back("xi_qn");
                 reals.second.push_back(state.xi_qn);
                 reals.first.push_back("xi_pg");
@@ -5200,7 +5194,6 @@ namespace peopt{
                     else if(*name=="rho") state.rho=*real;
                     else if(*name=="rho_bar") state.rho_bar=*real;
                     else if(*name=="eps_constr") state.eps_constr=*real;
-                    else if(*name=="xi_all") state.xi_all=*real;
                     else if(*name=="xi_qn") state.xi_qn=*real;
                     else if(*name=="xi_pg") state.xi_pg=*real;
                     else if(*name=="xi_proj") state.xi_proj=*real;
@@ -5333,8 +5326,7 @@ namespace peopt{
                 std::auto_ptr <peopt::ScalarValuedFunction <Real,XX> > f;
 
                 // Equality constraint.
-                const std::auto_ptr <peopt::VectorValuedFunction <Real,XX,YY> >&
-                    g;
+                const peopt::VectorValuedFunction <Real,XX,YY>& g;
 
                 // Equality Lagrange multiplier
                 const Y_Vector& y;
@@ -5343,7 +5335,7 @@ namespace peopt{
                 const Y_Vector& g_x;
 
                 // Penalty parameter for the augmented-Lagrangian
-                Real& rho;
+                const Real& rho;
                 
                 // Make sure we call the constructor below
                 EqualityModifiedFunction() {}
@@ -5351,7 +5343,7 @@ namespace peopt{
                 EqualityModifiedFunction(
                     const typename State::t& state,
                     typename Functions::t& fns
-                ) : f(fns.f), g(fns.g), y(state.y.back()),
+                ) : f(fns.f), g(*(fns.g)), y(state.y.back()),
                     g_x(state.g_x.back()), rho(state.rho) {}
 
                 // <- f(x) + < y,g(x) > + rho || g(x) ||^2 
@@ -5360,24 +5352,24 @@ namespace peopt{
                     // value of g(x) here since we evaluate this function at
                     // points such as x+dx.  Be careful of this.
                     Y_Vector g_x; Y::init(y,g_x);
-                    (*g)(x,g_x);
+                    g(x,g_x);
 
                     // Return f(x) + < y,g(x) > + rho || g(x) ||^2 
                     return (*f)(x) + Y::innr(y,g_x) + rho * Y::innr(g_x,g_x); 
                 }
 
-                // g = grad f(x) + g'(x)*y
-                void grad(const X_Vector& x,X_Vector& g) const {
-                    // g <- grad f(x)
-                    f->grad(x,g);
+                // gg = grad f(x) + g'(x)*y
+                void grad(const X_Vector& x,X_Vector& gg) const {
+                    // gg <- grad f(x)
+                    f->grad(x,gg);
                     
                     // x_tmp1 <- g'(x)* y 
                     X_Vector x_tmp1;
                         X::init(x,x_tmp1);
                         g.ps(x,y,x_tmp1);
 
-                    // g <- grad f(x) + g'(x)*y 
-                    X::axpy(Real(1.),x_tmp1,g);
+                    // gg <- grad f(x) + g'(x)*y 
+                    X::axpy(Real(1.),x_tmp1,gg);
                 }
 
                 // H_dx = hess f(x)dx + (g''(x)dx)*y  
@@ -5468,6 +5460,9 @@ namespace peopt{
                 
                 // Check that all functions are defined 
                 check(msg,fns);
+                
+                // Modify the objective 
+                fns.f.reset(new EqualityModifiedFunction(state,fns));
             }
 
             // Initialize any missing functions 
@@ -7512,6 +7507,9 @@ namespace peopt{
                 typename State::t& state,
                 t& fns
             ) {
+                // Check that all functions are defined 
+                check(msg,fns);
+
                 // Modify the objective 
                 fns.f.reset(new InequalityModifiedFunction(state,fns));
             }

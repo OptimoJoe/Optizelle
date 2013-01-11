@@ -223,6 +223,38 @@ namespace peopt {
                 Json::Value root=parse(msg,fname);
 
                 // Read in the parameters
+                state.zeta=Real(root["peopt"]
+                    .get("zeta",state.zeta).asDouble());
+                state.eta0=Real(root["peopt"]
+                    .get("eta0",state.eta0).asDouble());
+                state.rho=Real(root["peopt"]
+                    .get("rho",state.rho).asDouble());
+                state.rho_bar=Real(root["peopt"]
+                    .get("rho_bar",state.rho_bar).asDouble());
+                state.eps_constr=Real(root["peopt"]
+                    .get("eps_constr",state.eps_constr).asDouble());
+                state.xi_all(Real(root["peopt"]
+                    .get("xi_all",state.xi_qn).asDouble()));
+                state.xi_qn=Real(root["peopt"]
+                    .get("xi_qn",state.xi_qn).asDouble());
+                state.xi_pg=Real(root["peopt"]
+                    .get("xi_pg",state.xi_pg).asDouble());
+                state.xi_proj=Real(root["peopt"]
+                    .get("xi_proj",state.xi_proj).asDouble());
+                state.xi_tang=Real(root["peopt"]
+                    .get("xi_tang",state.xi_tang).asDouble());
+                state.xi_lmh=Real(root["peopt"]
+                    .get("xi_lmh",state.xi_lmh).asDouble());
+                state.xi_lmg=Real(root["peopt"]
+                    .get("xi_lmg",state.xi_lmg).asDouble());
+                state.xi_4=Real(root["peopt"]
+                    .get("xi_4",state.xi_4).asDouble());
+                state.augsys_iter_max=Natural(root["peopt"]
+                    .get("augsys_iter_max",
+                        Json::Value::UInt64(state.augsys_iter_max)).asUInt64());
+                state.augsys_rst_freq=Natural(root["peopt"]
+                    .get("augsys_rst_freq",
+                        Json::Value::UInt64(state.augsys_rst_freq)).asUInt64());
             }
             static void read(
                 const peopt::Messaging& msg,
@@ -246,6 +278,23 @@ namespace peopt {
                 Json::StyledWriter writer;
 
                 // Write the optimization parameters
+                root["peopt"]["zeta"]=state.zeta;
+                root["peopt"]["eta0"]=state.eta0;
+                root["peopt"]["rho"]=state.rho;
+                root["peopt"]["rho_bar"]=state.rho_bar;
+                root["peopt"]["eps_constr"]=state.eps_constr;
+                root["peopt"]["xi_all"]=state.xi_qn;
+                root["peopt"]["xi_qn"]=state.xi_qn;
+                root["peopt"]["xi_pg"]=state.xi_pg;
+                root["peopt"]["xi_proj"]=state.xi_proj;
+                root["peopt"]["xi_tang"]=state.xi_tang;
+                root["peopt"]["xi_lmh"]=state.xi_lmh;
+                root["peopt"]["xi_lmg"]=state.xi_lmg;
+                root["peopt"]["xi_4"]=state.xi_4;
+                root["peopt"]["augsys_iter_max"]
+                    =Json::Value::UInt64(state.augsys_iter_max);
+                root["peopt"]["augsys_rst_freq"]
+                    =Json::Value::UInt64(state.augsys_rst_freq);
 
                 return writer.write(root);
             }
