@@ -6178,16 +6178,6 @@ namespace peopt{
                     X::init(x,g_xpdx);
                     f.grad(x_p_dx,g_xpdx);
 
-#if 0
-                // gps_xpdx_y <- g'(x+dx)*y
-                X_Vector gps_xpdx_y; 
-                    X::init(x,gps_xpdx_y);
-                    g.ps(x_p_dx,y,gps_xpdx_y);
-
-                // g_xpdx <- grad f(x+dx) + g'(x+dx)*y
-                X::axpy(Real(1.),gps_xpdx_y,g_xpdx);
-#endif
-
                 // Create the initial guess, x0=(0,0)
                 XxY_Vector x0;
                     X::init(x,x0.first);
