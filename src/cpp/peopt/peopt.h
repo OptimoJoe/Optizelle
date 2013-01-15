@@ -6159,10 +6159,8 @@ namespace peopt{
             ) {
                 // Create some shortcuts
                 const ScalarValuedFunction <Real,XX>& f=*(fns.f);
-                const VectorValuedFunction <Real,XX,YY>& g=*(fns.g);
                 const X_Vector& x=state.x.front();
                 const X_Vector& dx=state.dx.front();
-                const Y_Vector& y=state.y.front();
                 const Natural& augsys_iter_max=state.augsys_iter_max;
                 const Natural& augsys_rst_freq=state.augsys_rst_freq;
                 Y_Vector& dy=state.dy.front();

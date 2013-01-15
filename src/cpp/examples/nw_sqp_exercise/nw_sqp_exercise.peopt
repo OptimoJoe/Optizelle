@@ -1,0 +1,10 @@
+{
+   "peopt" : {
+      "msg_level" : 1,
+      "H_type" : "External",
+      "iter_max" : 100,
+      "eps_krylov" : 1e-10,
+      "eps_dx" : 1e-16,
+      "eps_g" : 1e-10
+   }
+}

@@ -68,6 +68,7 @@ if(ENABLE_CPP_LIBRARY)
         add_subdirectory(cpp/examples/simple_quadratic_cone)
         add_subdirectory(cpp/examples/simple_sdp_cone)
         add_subdirectory(cpp/examples/simple_equality)
+        add_subdirectory(cpp/examples/nw_sqp_exercise)
     endif()
     
     # Check if we want to build the unit tests
