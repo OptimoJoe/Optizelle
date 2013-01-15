@@ -1,15 +1,15 @@
 {
    "peopt" : {
       "msg_level" : 1,
-      "H_type" : "External",
+      "H_type" : "UserDefined",
       "iter_max" : 200,
       "eps_krylov" : 1e-12,
       "eps_dx" : 1e-16,
-      "eps_g" : 1e-16
+      "eps_grad" : 1e-16
    },
    "peopt_TR_Newton" : {
       "msg_level" : 1,
-      "H_type" : "External",
+      "H_type" : "UserDefined",
       "iter_max" : 50,
       "eps_krylov" : 1e-2
    },
@@ -22,7 +22,7 @@
    "peopt_NewtonCG" : {
       "algorithm_class" : "LineSearch",
       "dir" : "NewtonCG",
-      "H_type" : "External",
+      "H_type" : "UserDefined",
       "eps_krylov" : 1e-2,
       "iter_max" : 100
    }

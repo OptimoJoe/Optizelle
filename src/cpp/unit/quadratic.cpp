@@ -58,7 +58,7 @@ BOOST_AUTO_TEST_CASE(tr_newton) {
     peopt::Unconstrained <double,Rm>::State::t state(x);
 
     // Setup some algorithmic parameters
-    state.H_type = peopt::Operators::External;
+    state.H_type = peopt::Operators::UserDefined;
     state.iter_max = 50;
     state.eps_krylov = 1e-10;
     state.msg_level = 0;
@@ -99,7 +99,7 @@ BOOST_AUTO_TEST_CASE(ncg_fletcher_reeves) {
     // Setup some algorithmic parameters
     state.algorithm_class = peopt::AlgorithmClass::LineSearch;
     state.dir = peopt::LineSearchDirection::FletcherReeves;
-    state.H_type = peopt::Operators::External;
+    state.H_type = peopt::Operators::UserDefined;
     state.iter_max = 50;
     state.msg_level = 0;
     
@@ -139,7 +139,7 @@ BOOST_AUTO_TEST_CASE(ncg_polak_ribiere){
     // Setup some algorithmic parameters
     state.algorithm_class = peopt::AlgorithmClass::LineSearch;
     state.dir = peopt::LineSearchDirection::PolakRibiere;
-    state.H_type = peopt::Operators::External;
+    state.H_type = peopt::Operators::UserDefined;
     state.iter_max = 50;
     state.msg_level = 0;
     
@@ -179,7 +179,7 @@ BOOST_AUTO_TEST_CASE(ncg_hestenes_stiefel){
     // Setup some algorithmic parameters
     state.algorithm_class = peopt::AlgorithmClass::LineSearch;
     state.dir = peopt::LineSearchDirection::HestenesStiefel;
-    state.H_type = peopt::Operators::External;
+    state.H_type = peopt::Operators::UserDefined;
     state.iter_max = 50;
     state.msg_level = 0;
     
@@ -210,7 +210,7 @@ BOOST_AUTO_TEST_CASE(ncg_hestenes_stiefel){
     // Setup some algorithmic parameters
     state0.algorithm_class = peopt::AlgorithmClass::LineSearch;
     state0.dir = peopt::LineSearchDirection::HestenesStiefel;
-    state0.H_type = peopt::Operators::External;
+    state0.H_type = peopt::Operators::UserDefined;
     state0.iter_max = 50;
     state0.msg_level = 0;
     state0.linesearch_iter_max = 10;

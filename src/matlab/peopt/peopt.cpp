@@ -951,9 +951,9 @@ void mexFunction(
             peopt::Unconstrained <double,MatlabVS>::State::t state(*x);
 
             // If we have a preconditioner, add it
-            if(mxGetField(pInput[1],0,"Minv")!=NULL)
-                fns.Minv.reset(new MatlabOperator
-                    (mxGetField(pInput[1],0,"Minv"),state.x.back()));
+            if(mxGetField(pInput[1],0,"PH")!=NULL)
+                fns.PH.reset(new MatlabOperator
+                    (mxGetField(pInput[1],0,"PH"),state.x.back()));
 
             // Read the parameters and optimize
             peopt::json::Unconstrained <double,MatlabVS>
@@ -972,9 +972,9 @@ void mexFunction(
                 state(*x,*z);
 
             // If we have a preconditioner, add it
-            if(mxGetField(pInput[1],0,"Minv")!=NULL)
-                fns.Minv.reset(new MatlabOperator
-                    (mxGetField(pInput[1],0,"Minv"),state.x.back()));
+            if(mxGetField(pInput[1],0,"PH")!=NULL)
+                fns.PH.reset(new MatlabOperator
+                    (mxGetField(pInput[1],0,"PH"),state.x.back()));
 
             // Read the parameters and optimize
             peopt::json::InequalityConstrained <double,MatlabVS,MatlabVS>

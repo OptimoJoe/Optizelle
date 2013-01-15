@@ -45,8 +45,8 @@ namespace peopt {
                 Json::Value root=parse(msg,fname);
 
                 // Read in the parameters
-                state.eps_g=Real(root["peopt"]
-                    .get("eps_g",state.eps_g).asDouble());
+                state.eps_grad=Real(root["peopt"]
+                    .get("eps_grad",state.eps_grad).asDouble());
                 state.eps_dx=Real(root["peopt"]
                     .get("eps_dx",state.eps_dx).asDouble());
                 state.stored_history=Natural(root["peopt"]
@@ -90,18 +90,16 @@ namespace peopt {
                     msg.error(base + algorithm_class
                         + " is not a valid algorithm_class");
 
-                std::string Minv_type=root["peopt"]
-                    .get("Minv_type",
-                        Operators::to_string(state.Minv_type))
+                std::string PH_type=root["peopt"]
+                    .get("PH_type",Operators::to_string(state.PH_type))
                     .asString();
-                if(Operators::is_valid()(Minv_type))
-                    state.Minv_type=Operators::from_string(Minv_type); 
+                if(Operators::is_valid()(PH_type))
+                    state.PH_type=Operators::from_string(PH_type); 
                 else
-                    msg.error(base + Minv_type + " is not a valid Minv_type");
+                    msg.error(base + PH_type + " is not a valid PH_type");
 
                 std::string H_type=root["peopt"]
-                    .get("H_type",
-                        Operators::to_string(state.H_type))
+                    .get("H_type",Operators::to_string(state.H_type))
                     .asString();
                 if(Operators::is_valid()(H_type))
                     state.H_type=Operators::from_string(H_type); 
@@ -162,7 +160,7 @@ namespace peopt {
                 Json::Value root;
 
                 // Write the optimization parameters
-                root["peopt"]["eps_g"]=state.eps_g;
+                root["peopt"]["eps_grad"]=state.eps_grad;
                 root["peopt"]["eps_dx"]=state.eps_dx;
                 root["peopt"]["stored_history"]
                     =Json::Value::UInt64(state.stored_history);
@@ -179,8 +177,8 @@ namespace peopt {
                     =KrylovSolverTruncated::to_string(state.krylov_solver);
                 root["peopt"]["algorithm_class"]
                     =AlgorithmClass::to_string(state.algorithm_class);
-                root["peopt"]["Minv_type"]
-                    =Operators::to_string(state.Minv_type);
+                root["peopt"]["PH_type"]
+                    =Operators::to_string(state.PH_type);
                 root["peopt"]["H_type"]=Operators::to_string(state.H_type);
                 root["peopt"]["msg_level"]=Json::Value::UInt64(state.msg_level);
                 root["peopt"]["delta"]=state.delta;

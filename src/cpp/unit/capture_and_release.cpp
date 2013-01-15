@@ -28,10 +28,10 @@ BOOST_AUTO_TEST_CASE(unconstrained) {
 
     // Check that the state has empty slots for the variables
     BOOST_CHECK(state.x.size()==0);
-    BOOST_CHECK(state.g.size()==0);
+    BOOST_CHECK(state.grad.size()==0);
     BOOST_CHECK(state.dx.size()==0);
     BOOST_CHECK(state.x_old.size()==0);
-    BOOST_CHECK(state.g_old.size()==0);
+    BOOST_CHECK(state.grad_old.size()==0);
     BOOST_CHECK(state.dx_old.size()==0);
     BOOST_CHECK(state.oldY.size()==0);
     BOOST_CHECK(state.oldS.size()==0);
@@ -42,10 +42,10 @@ BOOST_AUTO_TEST_CASE(unconstrained) {
 
     // Check that we actually have memory in these slots
     BOOST_CHECK(state.x.size()==1);
-    BOOST_CHECK(state.g.size()==1);
+    BOOST_CHECK(state.grad.size()==1);
     BOOST_CHECK(state.dx.size()==1);
     BOOST_CHECK(state.x_old.size()==1);
-    BOOST_CHECK(state.g_old.size()==1);
+    BOOST_CHECK(state.grad_old.size()==1);
     BOOST_CHECK(state.dx_old.size()==1);
 
     // Check the relative error between the vector created above and the one
@@ -85,10 +85,10 @@ BOOST_AUTO_TEST_CASE(equality_constrained) {
 
     // Check that the state has empty slots for the variables
     BOOST_CHECK(state.x.size()==0);
-    BOOST_CHECK(state.g.size()==0);
+    BOOST_CHECK(state.grad.size()==0);
     BOOST_CHECK(state.dx.size()==0);
     BOOST_CHECK(state.x_old.size()==0);
-    BOOST_CHECK(state.g_old.size()==0);
+    BOOST_CHECK(state.grad_old.size()==0);
     BOOST_CHECK(state.dx_old.size()==0);
     BOOST_CHECK(state.oldY.size()==0);
     BOOST_CHECK(state.oldS.size()==0);
@@ -101,7 +101,7 @@ BOOST_AUTO_TEST_CASE(equality_constrained) {
     BOOST_CHECK(state.dx_t_uncorrected.size()==0);
     BOOST_CHECK(state.dx_tcp_uncorrected.size()==0);
     BOOST_CHECK(state.H_dxn.size()==0);
-    BOOST_CHECK(state.W_gpHdxn.size()==0);
+    BOOST_CHECK(state.W_gradpHdxn.size()==0);
     BOOST_CHECK(state.H_dxtuncorrected.size()==0);
 
     // Capture the state
@@ -110,10 +110,10 @@ BOOST_AUTO_TEST_CASE(equality_constrained) {
 
     // Check that we actually have memory in these slots
     BOOST_CHECK(state.x.size()==1);
-    BOOST_CHECK(state.g.size()==1);
+    BOOST_CHECK(state.grad.size()==1);
     BOOST_CHECK(state.dx.size()==1);
     BOOST_CHECK(state.x_old.size()==1);
-    BOOST_CHECK(state.g_old.size()==1);
+    BOOST_CHECK(state.grad_old.size()==1);
     BOOST_CHECK(state.dx_old.size()==1);
     BOOST_CHECK(state.y.size()==1);
     BOOST_CHECK(state.g_x.size()==1);
@@ -124,7 +124,7 @@ BOOST_AUTO_TEST_CASE(equality_constrained) {
     BOOST_CHECK(state.dx_t_uncorrected.size()==1);
     BOOST_CHECK(state.dx_tcp_uncorrected.size()==1);
     BOOST_CHECK(state.H_dxn.size()==1);
-    BOOST_CHECK(state.W_gpHdxn.size()==1);
+    BOOST_CHECK(state.W_gradpHdxn.size()==1);
     BOOST_CHECK(state.H_dxtuncorrected.size()==1);
 
     // Check the relative error between the vector created above and the one
@@ -164,18 +164,18 @@ BOOST_AUTO_TEST_CASE(inequality_constrained) {
 
     // Check that the state has empty slots for the variables
     BOOST_CHECK(state.x.size()==0);
-    BOOST_CHECK(state.g.size()==0);
+    BOOST_CHECK(state.grad.size()==0);
     BOOST_CHECK(state.dx.size()==0);
     BOOST_CHECK(state.x_old.size()==0);
-    BOOST_CHECK(state.g_old.size()==0);
+    BOOST_CHECK(state.grad_old.size()==0);
     BOOST_CHECK(state.dx_old.size()==0);
     BOOST_CHECK(state.oldY.size()==0);
     BOOST_CHECK(state.oldS.size()==0);
     BOOST_CHECK(state.z.size()==0);
     BOOST_CHECK(state.h_x.size()==0);
-    BOOST_CHECK(state.g_orig.size()==0);
-    BOOST_CHECK(state.g_schur.size()==0);
-    BOOST_CHECK(state.g_lag.size()==0);
+    BOOST_CHECK(state.grad_orig.size()==0);
+    BOOST_CHECK(state.grad_schur.size()==0);
+    BOOST_CHECK(state.grad_lag.size()==0);
 
     // Capture the state
     peopt::InequalityConstrained <double,Rm,Rm>::Restart
@@ -183,16 +183,16 @@ BOOST_AUTO_TEST_CASE(inequality_constrained) {
 
     // Check that we actually have memory in these slots
     BOOST_CHECK(state.x.size()==1);
-    BOOST_CHECK(state.g.size()==1);
+    BOOST_CHECK(state.grad.size()==1);
     BOOST_CHECK(state.dx.size()==1);
     BOOST_CHECK(state.x_old.size()==1);
-    BOOST_CHECK(state.g_old.size()==1);
+    BOOST_CHECK(state.grad_old.size()==1);
     BOOST_CHECK(state.dx_old.size()==1);
     BOOST_CHECK(state.z.size()==1);
     BOOST_CHECK(state.h_x.size()==1);
-    BOOST_CHECK(state.g_orig.size()==1);
-    BOOST_CHECK(state.g_schur.size()==1);
-    BOOST_CHECK(state.g_lag.size()==1);
+    BOOST_CHECK(state.grad_orig.size()==1);
+    BOOST_CHECK(state.grad_schur.size()==1);
+    BOOST_CHECK(state.grad_lag.size()==1);
 
     // Check the relative error between the vector created above and the one
     // left in the state.  We check x instead of z since z is actually set
@@ -237,10 +237,10 @@ BOOST_AUTO_TEST_CASE(constrained) {
 
     // Check that the state has empty slots for the variables
     BOOST_CHECK(state.x.size()==0);
-    BOOST_CHECK(state.g.size()==0);
+    BOOST_CHECK(state.grad.size()==0);
     BOOST_CHECK(state.dx.size()==0);
     BOOST_CHECK(state.x_old.size()==0);
-    BOOST_CHECK(state.g_old.size()==0);
+    BOOST_CHECK(state.grad_old.size()==0);
     BOOST_CHECK(state.dx_old.size()==0);
     BOOST_CHECK(state.oldY.size()==0);
     BOOST_CHECK(state.oldS.size()==0);
@@ -253,13 +253,13 @@ BOOST_AUTO_TEST_CASE(constrained) {
     BOOST_CHECK(state.dx_t_uncorrected.size()==0);
     BOOST_CHECK(state.dx_tcp_uncorrected.size()==0);
     BOOST_CHECK(state.H_dxn.size()==0);
-    BOOST_CHECK(state.W_gpHdxn.size()==0);
+    BOOST_CHECK(state.W_gradpHdxn.size()==0);
     BOOST_CHECK(state.H_dxtuncorrected.size()==0);
     BOOST_CHECK(state.z.size()==0);
     BOOST_CHECK(state.h_x.size()==0);
-    BOOST_CHECK(state.g_orig.size()==0);
-    BOOST_CHECK(state.g_schur.size()==0);
-    BOOST_CHECK(state.g_lag.size()==0);
+    BOOST_CHECK(state.grad_orig.size()==0);
+    BOOST_CHECK(state.grad_schur.size()==0);
+    BOOST_CHECK(state.grad_lag.size()==0);
 
     // Capture the state
     peopt::Constrained <double,Rm,Rm,Rm>::Restart
@@ -267,10 +267,10 @@ BOOST_AUTO_TEST_CASE(constrained) {
 
     // Check that we actually have memory in these slots
     BOOST_CHECK(state.x.size()==1);
-    BOOST_CHECK(state.g.size()==1);
+    BOOST_CHECK(state.grad.size()==1);
     BOOST_CHECK(state.dx.size()==1);
     BOOST_CHECK(state.x_old.size()==1);
-    BOOST_CHECK(state.g_old.size()==1);
+    BOOST_CHECK(state.grad_old.size()==1);
     BOOST_CHECK(state.dx_old.size()==1);
     BOOST_CHECK(state.y.size()==1);
     BOOST_CHECK(state.g_x.size()==1);
@@ -281,13 +281,13 @@ BOOST_AUTO_TEST_CASE(constrained) {
     BOOST_CHECK(state.dx_t_uncorrected.size()==1);
     BOOST_CHECK(state.dx_tcp_uncorrected.size()==1);
     BOOST_CHECK(state.H_dxn.size()==1);
-    BOOST_CHECK(state.W_gpHdxn.size()==1);
+    BOOST_CHECK(state.W_gradpHdxn.size()==1);
     BOOST_CHECK(state.H_dxtuncorrected.size()==1);
     BOOST_CHECK(state.z.size()==1);
     BOOST_CHECK(state.h_x.size()==1);
-    BOOST_CHECK(state.g_orig.size()==1);
-    BOOST_CHECK(state.g_schur.size()==1);
-    BOOST_CHECK(state.g_lag.size()==1);
+    BOOST_CHECK(state.grad_orig.size()==1);
+    BOOST_CHECK(state.grad_schur.size()==1);
+    BOOST_CHECK(state.grad_lag.size()==1);
 
     // Check the relative error between the vector created above and the one
     // left in the state.  

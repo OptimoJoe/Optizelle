@@ -60,10 +60,10 @@ BOOST_AUTO_TEST_CASE(newton_cg) {
     // Setup some algorithmic parameters
     state.algorithm_class = peopt::AlgorithmClass::LineSearch;
     state.dir = peopt::LineSearchDirection::NewtonCG;
-    state.H_type = peopt::Operators::External;
+    state.H_type = peopt::Operators::UserDefined;
     state.eps_krylov = 1e-2;
     state.iter_max = 100;
-    state.eps_g = 1e-8;
+    state.eps_grad = 1e-8;
     state.eps_dx = 1e-8;
     state.msg_level = 0;
     
@@ -101,7 +101,7 @@ BOOST_AUTO_TEST_CASE(tr_newton) {
     peopt::Unconstrained <double,Rm>::State::t state(x);
 
     // Setup some algorithmic parameters
-    state.H_type = peopt::Operators::External;
+    state.H_type = peopt::Operators::UserDefined;
     state.iter_max = 100;
     state.eps_krylov = 1e-10;
     state.msg_level = 0;
@@ -186,7 +186,7 @@ BOOST_AUTO_TEST_CASE(sr1) {
     state.history_reset = 10;
     state.iter_max = 300;
     state.eps_krylov = 1e-16;
-    state.eps_g = 1e-10;
+    state.eps_grad = 1e-10;
     state.eps_dx = 1e-10;
     state.msg_level = 0;
     

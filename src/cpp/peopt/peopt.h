@@ -157,7 +157,7 @@ namespace peopt{
             RelativeStepSmall,       // Relative change in the step is small
             MaxItersExceeded,        // Maximum number of iterations exceeded
             InteriorPointInstability,// Instability in the interior point method
-            External                 // Some external stopping condition 
+            UserDefined              // Some user defined stopping condition 
         };
 
         // Converts the stopping condition to a string 
@@ -173,8 +173,8 @@ namespace peopt{
                 return "MaxItersExceeded";
             case InteriorPointInstability:
                 return "InteriorPointInstability";
-            case External:
-                return "External";
+            case UserDefined:
+                return "UserDefined";
             default:
                 throw;
             }
@@ -192,8 +192,8 @@ namespace peopt{
                 return MaxItersExceeded;
             else if(opt_stop=="InteriorPointInstability")
                 return InteriorPointInstability; 
-            else if(opt_stop=="External")
-                return External;
+            else if(opt_stop=="UserDefined")
+                return UserDefined;
             else
                 throw;
         }
@@ -206,7 +206,7 @@ namespace peopt{
                     name=="RelativeStepSmall" ||
                     name=="MaxItersExceeded" ||
                     name=="InteriorPointInstability" ||
-                    name=="External"
+                    name=="UserDefined"
                 )
                     return true;
                 else
@@ -224,7 +224,8 @@ namespace peopt{
             InvBFGS,           // Inverse BFGS approximation
             SR1,               // SR1 approximation
             InvSR1,            // Inverse SR1 approximation
-            External           // An external operator provided by the user
+            UserDefined        // User defined operator (such as the true
+                               // Hessian for Newton's method)
         };
         
         // Converts the operator type to a string 
@@ -242,8 +243,8 @@ namespace peopt{
                 return "SR1";
             case InvSR1:
                 return "InvSR1";
-            case External:
-                return "External";
+            case UserDefined:
+                return "UserDefined";
             default:
                 throw;
             }
@@ -263,8 +264,8 @@ namespace peopt{
                 return SR1; 
             else if(op=="InvSR1")
                 return InvSR1; 
-            else if(op=="External")
-                return External; 
+            else if(op=="UserDefined")
+                return UserDefined; 
             else
                 throw;
         }
@@ -278,7 +279,7 @@ namespace peopt{
                     name=="InvBFGS" ||
                     name=="SR1" ||
                     name=="InvSR1" ||
-                    name=="External" 
+                    name=="UserDefined" 
                 )
                     return true;
                 else
@@ -1638,7 +1639,7 @@ namespace peopt{
                 // ------------- GENERIC ------------- 
 
                 // Tolerance for the gradient stopping condition
-                Real eps_g;
+                Real eps_grad;
 
                 // Tolerance for the step length stopping criteria
                 Real eps_dx;
@@ -1687,17 +1688,17 @@ namespace peopt{
                 // Algorithm class
                 AlgorithmClass::t algorithm_class;
 
-                // Preconditioner
-                Operators::t Minv_type;
+                // Preconditioner for the Hessian
+                Operators::t PH_type;
 
                 // Hessian approximation
                 Operators::t H_type;
 
                 // Norm of the gradient
-                Real norm_g;
+                Real norm_grad;
 
                 // Norm of a typical tradient
-                Real norm_gtyp;
+                Real norm_gradtyp;
 
                 // Norm of the trial step
                 Real norm_dx;
@@ -1708,8 +1709,9 @@ namespace peopt{
                 // Optimization variable 
                 std::list <X_Vector> x; 
                 
-                // Gradient 
-                std::list <X_Vector> g;
+                // Gradient, possibly of the objective, possibly of the
+                // Lagrangian.  It depends on the context.
+                std::list <X_Vector> grad;
                 
                 // Trial step 
                 std::list <X_Vector> dx;
@@ -1718,7 +1720,7 @@ namespace peopt{
                 std::list <X_Vector> x_old; 
                 
                 // Old gradient 
-                std::list <X_Vector> g_old;
+                std::list <X_Vector> grad_old;
                 
                 // Old trial step 
                 std::list <X_Vector> dx_old;
@@ -1801,7 +1803,7 @@ namespace peopt{
             // This sets all of the parameters possible that don't require
             // special memory allocation such as variables.
             static void init_params_(t& state){
-                state.eps_g=Real(1e-6);
+                state.eps_grad=Real(1e-6);
                 state.eps_dx=Real(1e-6);
                 state.stored_history=Natural(0);
                 state.history_reset=Natural(5);
@@ -1818,10 +1820,10 @@ namespace peopt{
                 state.krylov_solver
                     =KrylovSolverTruncated::ConjugateDirection;
                 state.algorithm_class=AlgorithmClass::TrustRegion;
-                state.Minv_type=Operators::Identity;
-                state.H_type=Operators::Identity;
-                state.norm_g=std::numeric_limits<Real>::quiet_NaN();
-                state.norm_gtyp=std::numeric_limits<Real>::quiet_NaN();
+                state.PH_type=Operators::Identity;
+                state.H_type=Operators::UserDefined;
+                state.norm_grad=std::numeric_limits<Real>::quiet_NaN();
+                state.norm_gradtyp=std::numeric_limits<Real>::quiet_NaN();
                 state.norm_dx=std::numeric_limits<Real>::quiet_NaN();
                 state.norm_dxtyp=std::numeric_limits<Real>::quiet_NaN();
                 state.merit_x=std::numeric_limits<Real>::quiet_NaN();
@@ -1853,18 +1855,18 @@ namespace peopt{
                     state.x.push_back(X_Vector());
                     X::init(x,state.x.front());
                     X::copy(x,state.x.front());
-                state.g.clear();
-                    state.g.push_back(X_Vector());
-                    X::init(x,state.g.front());
+                state.grad.clear();
+                    state.grad.push_back(X_Vector());
+                    X::init(x,state.grad.front());
                 state.dx.clear();
                     state.dx.push_back(X_Vector());
                     X::init(x,state.dx.front()); 
                 state.x_old.clear();
                     state.x_old.push_back(X_Vector());
                     X::init(x,state.x_old.front());
-                state.g_old.clear();
-                    state.g_old.push_back(X_Vector());
-                    X::init(x,state.g_old.front()); 
+                state.grad_old.clear();
+                    state.grad_old.push_back(X_Vector());
+                    X::init(x,state.grad_old.front()); 
                 state.dx_old.clear();
                     state.dx_old.push_back(X_Vector());
                     X::init(x,state.dx_old.front()); 
@@ -1887,9 +1889,9 @@ namespace peopt{
                 
                 // Check that the tolerance for the gradient stopping condition
                 // is positive
-                if(state.eps_g <= Real(0.)) 
+                if(state.eps_grad <= Real(0.)) 
                     ss << "The tolerance for the gradient stopping condition "
-                        "must be positive: eps_g = " << state.eps_g;
+                        "must be positive: eps_grad = " << state.eps_grad;
             
                 // Check that the tolerance for the step length stopping
                 // condition is positive
@@ -1933,19 +1935,19 @@ namespace peopt{
 
                 // Check that the norm of the gradient is nonnegative or
                 // if we're on the first iteration, we allow a NaN
-                else if(state.norm_g < Real(0.)
-                    || (state.iter!=1 && state.norm_g!=state.norm_g)
+                else if(state.norm_grad < Real(0.)
+                    || (state.iter!=1 && state.norm_grad!=state.norm_grad)
                 )
                     ss << "The norm of the gradient must be nonnegative: "
-                        "norm_g = " << state.norm_g; 
+                        "norm_grad = " << state.norm_grad; 
 
                 // Check that the norm of a typical gradient is nonnegative or
                 // if we're on the first iteration, we allow a NaN
-                else if(state.norm_gtyp < Real(0.)
-                    || (state.iter!=1 && state.norm_gtyp!=state.norm_gtyp)
+                else if(state.norm_gradtyp < Real(0.)
+                    || (state.iter!=1 && state.norm_gradtyp!=state.norm_gradtyp)
                 ) 
                     ss << "The norm of a typical gradient must be nonnegative: "
-                        "norm_gtyp = " << state.norm_gtyp; 
+                        "norm_gradtyp = " << state.norm_gradtyp; 
 
                 // Check that the norm of the trial step is nonnegative or
                 // if we're on the first iteration, we allow a NaN
@@ -2044,12 +2046,12 @@ namespace peopt{
             // Checks whether we have a valid real label.
             struct is_real : public std::unary_function<std::string, bool> {
                 bool operator () (const std::string& name) const {
-                    if( name == "eps_g" || 
+                    if( name == "eps_grad" || 
                         name == "eps_dx" || 
                         name == "krylov_rel_err" || 
                         name == "eps_krylov" || 
-                        name == "norm_g" || 
-                        name == "norm_gtyp" || 
+                        name == "norm_grad" || 
+                        name == "norm_gradtyp" || 
                         name == "norm_dx" ||
                         name == "norm_dxtyp" || 
                         name == "merit_x" || 
@@ -2100,7 +2102,7 @@ namespace peopt{
                         name == "opt_stop" || 
                         name == "krylov_stop" ||
                         name == "H_type" || 
-                        name == "Minv_type" ||
+                        name == "PH_type" ||
                         name == "dir" || 
                         name == "kind" 
                     ) 
@@ -2114,10 +2116,10 @@ namespace peopt{
             struct is_x : public std::unary_function<std::string, bool> {
                 bool operator () (const std::string& name) const {
                     if( name == "x" || 
-                        name == "g" || 
+                        name == "grad" || 
                         name == "dx" || 
                         name == "x_old" || 
-                        name == "g_old" || 
+                        name == "grad_old" || 
                         name == "dx_old" || 
                         name.substr(0,5)=="oldY_" || 
                         name.substr(0,5)=="oldS_" 
@@ -2186,9 +2188,9 @@ namespace peopt{
                             ss << base<<"Hessian type: " << val;
 
                     // Check the type of the preconditioner
-                    } else if(label=="Minv_type"){
+                    } else if(label=="PH_type"){
                         if(!Operators::is_valid()(val))
-                            ss << base << "preconditioner type: " << val;
+                            ss << base <<"Hessian preconditioner type: " << val;
 
                     // Check the line-search direction
                     } else if(label=="dir"){
@@ -2212,14 +2214,14 @@ namespace peopt{
                 // Move the memory of all variables into the list 
                 xs.first.push_back("x");
                 xs.second.splice(xs.second.end(),state.x);
-                xs.first.push_back("g");
-                xs.second.splice(xs.second.end(),state.g);
+                xs.first.push_back("grad");
+                xs.second.splice(xs.second.end(),state.grad);
                 xs.first.push_back("dx");
                 xs.second.splice(xs.second.end(),state.dx);
                 xs.first.push_back("x_old");
                 xs.second.splice(xs.second.end(),state.x_old);
-                xs.first.push_back("g_old");
-                xs.second.splice(xs.second.end(),state.g_old);
+                xs.first.push_back("grad_old");
+                xs.second.splice(xs.second.end(),state.grad_old);
                 xs.first.push_back("dx_old");
                 xs.second.splice(xs.second.end(),state.dx_old);
 
@@ -2258,18 +2260,18 @@ namespace peopt{
             ) {
                 
                 // Copy in all the real numbers 
-                reals.first.push_back("eps_g");
-                reals.second.push_back(state.eps_g);
+                reals.first.push_back("eps_grad");
+                reals.second.push_back(state.eps_grad);
                 reals.first.push_back("eps_dx");
                 reals.second.push_back(state.eps_dx);
                 reals.first.push_back("krylov_rel_err");
                 reals.second.push_back(state.krylov_rel_err);
                 reals.first.push_back("eps_krylov");
                 reals.second.push_back(state.eps_krylov);
-                reals.first.push_back("norm_g");
-                reals.second.push_back(state.norm_g);
-                reals.first.push_back("norm_gtyp");
-                reals.second.push_back(state.norm_gtyp);
+                reals.first.push_back("norm_grad");
+                reals.second.push_back(state.norm_grad);
+                reals.first.push_back("norm_gradtyp");
+                reals.second.push_back(state.norm_gradtyp);
                 reals.first.push_back("norm_dx");
                 reals.second.push_back(state.norm_dx);
                 reals.first.push_back("norm_dxtyp");
@@ -2340,9 +2342,9 @@ namespace peopt{
                 params.first.push_back("H_type");
                 params.second.push_back(
                     Operators::to_string(state.H_type));
-                params.first.push_back("Minv_type");
+                params.first.push_back("PH_type");
                 params.second.push_back(
-                    Operators::to_string(state.Minv_type));
+                    Operators::to_string(state.PH_type));
                 params.first.push_back("dir");
                 params.second.push_back(
                     LineSearchDirection::to_string(state.dir));
@@ -2375,14 +2377,15 @@ namespace peopt{
                     // it in the correct location
                     if(*name0=="x")
                         state.x.splice(state.x.end(),xs.second,x0);
-                    else if(*name0=="g")
-                        state.g.splice(state.g.end(),xs.second,x0);
+                    else if(*name0=="grad")
+                        state.grad.splice(state.grad.end(),xs.second,x0);
                     else if(*name0=="dx")
                         state.dx.splice(state.dx.end(),xs.second,x0);
                     else if(*name0=="x_old")
                         state.x_old.splice(state.x_old.end(),xs.second,x0);
-                    else if(*name0=="g_old")
-                        state.g_old.splice(state.g_old.end(),xs.second,x0);
+                    else if(*name0=="grad_old")
+                        state.grad_old.splice(
+                            state.grad_old.end(),xs.second,x0);
                     else if(*name0=="dx_old")
                         state.dx_old.splice(state.dx_old.end(),xs.second,x0);
                     else if(name0->substr(0,5)=="oldY_")
@@ -2411,12 +2414,12 @@ namespace peopt{
                     name!=reals.first.end();
                     name++,real++
                 ){
-                    if(*name=="eps_g") state.eps_g=*real;
+                    if(*name=="eps_grad") state.eps_grad=*real;
                     else if(*name=="eps_dx") state.eps_dx=*real;
                     else if(*name=="krylov_rel_err") state.krylov_rel_err=*real;
                     else if(*name=="eps_krylov") state.eps_krylov=*real;
-                    else if(*name=="norm_g") state.norm_g=*real;
-                    else if(*name=="norm_gtyp") state.norm_gtyp=*real;
+                    else if(*name=="norm_grad") state.norm_grad=*real;
+                    else if(*name=="norm_gradtyp") state.norm_gradtyp=*real;
                     else if(*name=="norm_dx") state.norm_dx=*real;
                     else if(*name=="norm_dxtyp") state.norm_dxtyp=*real;
                     else if(*name=="merit_x") state.merit_x=*real;
@@ -2478,8 +2481,8 @@ namespace peopt{
                         state.krylov_stop=KrylovStop::from_string(*param);
                     else if(*name=="H_type")
                         state.H_type=Operators::from_string(*param);
-                    else if(*name=="Minv_type")
-                        state.Minv_type=Operators::from_string(*param);
+                    else if(*name=="PH_type")
+                        state.PH_type=Operators::from_string(*param);
                     else if(*name=="dir")
                         state.dir=LineSearchDirection::from_string(*param);
                     else if(*name=="kind")
@@ -2560,14 +2563,14 @@ namespace peopt{
                 std::auto_ptr <ScalarValuedFunction <Real,XX> > f;
 
                 // Preconditioner for the Hessian of the objective
-                std::auto_ptr <Operator <Real,XX,XX> > Minv;
+                std::auto_ptr <Operator <Real,XX,XX> > PH;
 
                 // Symmetric, positive definite operator that changes the
-                // shape of the trust-region.
-                std::auto_ptr <Operator <Real,XX,XX> > TR_op;
+                // scaling of the trust-region.
+                std::auto_ptr <Operator <Real,XX,XX> > TRS;
 
                 // Initialize all of the pointers to null
-                t() : f(NULL), Minv(NULL), TR_op(NULL) {}
+                t() : f(NULL), PH(NULL), TRS(NULL) {}
                 
                 // A trick to allow dynamic casting later
                 virtual ~t() {}
@@ -2585,17 +2588,17 @@ namespace peopt{
             class ScaledIdentity : public Operator <Real,XX,XX> {
             private:
                 // Norm of the gradient
-                const Real& norm_g;
+                const Real& norm_grad;
 
                 // Maximum size of the trust-region radius
                 const Real& delta_max;
             public:
                 ScaledIdentity(const typename State::t& state)
-                    : norm_g(state.norm_g), delta_max(state.delta_max) {};
+                    : norm_grad(state.norm_grad), delta_max(state.delta_max) {};
 
                 void operator () (const X_Vector& dx,X_Vector& result) const{
                     X::copy(dx,result);
-                    X::scal(norm_g/delta_max,result);
+                    X::scal(norm_grad/delta_max,result);
                 }
             };
 
@@ -3075,7 +3078,7 @@ namespace peopt{
                         case Operators::SR1:
                             H.reset(new SR1(msg,state));
                             break;
-                        case Operators::External:
+                        case Operators::UserDefined:
                             break;
                         default:
                             msg.error("Not a valid Hessian approximation.");
@@ -3118,7 +3121,7 @@ namespace peopt{
                     msg.error("Missing an objective function definition.");
                 
                 // Check that a preconditioner exists 
-                if(fns.Minv.get()==NULL)
+                if(fns.PH.get()==NULL)
                     msg.error("Missing a preconditioner definition.");
             }
 
@@ -3130,18 +3133,18 @@ namespace peopt{
                 t& fns
             ) {
                 // Determine the preconditioner
-                switch(state.Minv_type){
+                switch(state.PH_type){
                     case Operators::Identity:
-                        fns.Minv.reset(new Identity());
+                        fns.PH.reset(new Identity());
                         break;
                     case Operators::InvBFGS:
-                        fns.Minv.reset(new InvBFGS(msg,state));
+                        fns.PH.reset(new InvBFGS(msg,state));
                         break;
                     case Operators::InvSR1:
-                        fns.Minv.reset(new InvSR1(msg,state));
+                        fns.PH.reset(new InvSR1(msg,state));
                         break;
-                    case Operators::External:
-                        if(fns.Minv.get()==NULL)
+                    case Operators::UserDefined:
+                        if(fns.PH.get()==NULL)
                             msg.error("An externally defined preconditioner "
                                 "must be provided explicitly.");
                         break;
@@ -3152,8 +3155,8 @@ namespace peopt{
 
                 // If a trust-region operator has not been provided, use the
                 // identity.
-                if(fns.TR_op.get()==NULL)
-                    fns.TR_op.reset(new Identity());
+                if(fns.TRS.get()==NULL)
+                    fns.TRS.reset(new Identity());
 
                 // Check that all functions are defined (namely, the 
                 // objective).
@@ -3195,7 +3198,7 @@ namespace peopt{
                 // Basic information
                 out.push_back(atos <> ("Iter"));
                 out.push_back(atos <> ("Merit(x)"));
-                out.push_back(atos <> ("|| g ||"));
+                out.push_back(atos <> ("||grad||"));
                 out.push_back(atos <> ("|| dx ||"));
 
                 // In case we're using a Krylov method
@@ -3232,7 +3235,7 @@ namespace peopt{
                 // Create some shortcuts
                 const Natural& iter=state.iter;
                 const Real& merit_x=state.merit_x;
-                const Real& norm_g=state.norm_g;
+                const Real& norm_grad=state.norm_grad;
                 const Real& norm_dx=state.norm_dx;
                 const Natural& krylov_iter=state.krylov_iter;
                 const Real& krylov_rel_err=state.krylov_rel_err;
@@ -3264,7 +3267,7 @@ namespace peopt{
                 else
                     out.push_back(atos <> ("*"));
                 out.push_back(atos <> (merit_x));
-                out.push_back(atos <> (norm_g));
+                out.push_back(atos <> (norm_grad));
                 if(!opt_begin)
                     out.push_back(atos <> (norm_dx));
                 else
@@ -3392,13 +3395,13 @@ namespace peopt{
                 const typename State::t& state
             ){
                 // Create some shortcuts
-                const Real& norm_g=state.norm_g;
-                const Real& norm_gtyp=state.norm_gtyp;
+                const Real& norm_grad=state.norm_grad;
+                const Real& norm_gradtyp=state.norm_gradtyp;
                 const Real& norm_dx=state.norm_dx;
                 const Real& norm_dxtyp=state.norm_dxtyp;
                 const Natural& iter=state.iter;
                 const Natural& iter_max=state.iter_max;
-                const Real& eps_g=state.eps_g;
+                const Real& eps_grad=state.eps_grad;
                 const Real& eps_dx=state.eps_dx;
 
                 // Check if we've exceeded the number of iterations
@@ -3412,7 +3415,7 @@ namespace peopt{
                 
                 // Check whether the norm is small relative to some typical
                 // gradient
-                if(norm_g < eps_g*norm_gtyp)
+                if(norm_grad < eps_grad*norm_gradtyp)
                     return StoppingCondition::RelativeGradientSmall;
 
                 // Otherwise, return that we're not converged 
@@ -3449,7 +3452,7 @@ namespace peopt{
                 // Create shortcuts to some elements in the state
                 const X_Vector& x=state.x.front();
                 const X_Vector& dx=state.dx.front();
-                const X_Vector& g=state.g.front();
+                const X_Vector& grad=state.grad.front();
                 const Real& eta1=state.eta1;
                 const Real& eta2=state.eta2;
                 const Real& delta_max=state.delta_max;
@@ -3474,8 +3477,10 @@ namespace peopt{
                 X_Vector Hx_dx; X::init(x,Hx_dx);
                 f.hessvec(x,dx,Hx_dx);
 
-                // Calculate the model, m(dx) = f(x) + < g,dx > + < H(x)dx,dx >
-                Real model_dx= merit_x+X::innr(g,dx)+Real(.5)*X::innr(Hx_dx,dx);
+                // Calculate the model,
+                // m(dx) = f(x) + < grad,dx > + < H(x)dx,dx >
+                Real model_dx= merit_x + X::innr(grad,dx)
+                    + Real(.5)*X::innr(Hx_dx,dx);
 
                 // Determine the merit function evaluated at x+dx
                 merit_xpdx=f(x_p_dx);
@@ -3529,8 +3534,8 @@ namespace peopt{
                 const Natural& krylov_orthog_max=state.krylov_orthog_max;
                 const Real& delta=state.delta;
                 const X_Vector& x=state.x.front();
-                const X_Vector& g=state.g.front();
-                const Real& norm_g=state.norm_g;
+                const X_Vector& grad=state.grad.front();
+                const Real& norm_grad=state.norm_grad;
                 const Real& norm_dxtyp=state.norm_dxtyp;
                 const KrylovSolverTruncated::t& krylov_solver
                     = state.krylov_solver;
@@ -3547,8 +3552,8 @@ namespace peopt{
                 
                 // Create shortcuts to the functions that we need
                 const ScalarValuedFunction <Real,XX>& f=*(fns.f);
-                const Operator <Real,XX,XX>& Minv=*(fns.Minv);
-                const Operator <Real,XX,XX>& TR_op=*(fns.TR_op);
+                const Operator <Real,XX,XX>& PH=*(fns.PH);
+                const Operator <Real,XX,XX>& TRS=*(fns.TRS);
 
                 // Allocate some memory for the scaled trial step and the
                 // trust-region center
@@ -3565,8 +3570,8 @@ namespace peopt{
                     // new trial step
                     HessianOperator H(f,x);
                     X_Vector dx_cp; X::init(x,dx_cp);
-                    X_Vector minus_g; X::init(x,minus_g);
-                    X::copy(g,minus_g); X::scal(Real(-1.),minus_g);
+                    X_Vector minus_grad; X::init(x,minus_grad);
+                    X::copy(grad,minus_grad); X::scal(Real(-1.),minus_grad);
 
                     // Set the trust-region center
                     X::zero(x_tmp1);
@@ -3576,9 +3581,9 @@ namespace peopt{
                     case KrylovSolverTruncated::ConjugateDirection:
                         truncated_pcd(
                             H,
-                            minus_g,
-                            Minv,
-                            TR_op,
+                            minus_grad,
+                            PH,
+                            TRS,
                             eps_krylov,
                             krylov_iter_max,
                             krylov_orthog_max,
@@ -3595,9 +3600,9 @@ namespace peopt{
                     case KrylovSolverTruncated::MINRES:
                         truncated_minres(
                             H,
-                            minus_g,
-                            Minv,
-                            TR_op,
+                            minus_grad,
+                            PH,
+                            TRS,
                             eps_krylov,
                             krylov_iter_max,
                             krylov_orthog_max,
@@ -3610,12 +3615,12 @@ namespace peopt{
                             krylov_stop);
 
                         // Force a descent direction
-                        if(X::innr(dx,g) > 0) X::scal(Real(-1.),dx);
-                        if(X::innr(dx_cp,g) > 0) X::scal(Real(-1.),dx_cp);
+                        if(X::innr(dx,grad) > 0) X::scal(Real(-1.),dx);
+                        if(X::innr(dx_cp,grad) > 0) X::scal(Real(-1.),dx_cp);
                         break;
                     }
                     krylov_rel_err = krylov_rel_err
-                        / (std::numeric_limits <Real>::epsilon()+norm_g);
+                        / (std::numeric_limits <Real>::epsilon()+norm_grad);
                     krylov_iter_total += krylov_iter;
 
                     // Manipulate the state if required
@@ -3623,7 +3628,7 @@ namespace peopt{
                         OptimizationLocation::BeforeActualVersusPredicted);
 
                     // Save the length of the scaled trial step
-                    TR_op(dx,x_tmp1);
+                    TRS(dx,x_tmp1);
                     norm_dx=sqrt(X::innr(x_tmp1,x_tmp1));
 
                     // Check whether the step is good
@@ -3662,11 +3667,11 @@ namespace peopt{
                 typename State::t& state
             ) {
                 // Create some shortcuts 
-                const X_Vector& g=state.g.front();
+                const X_Vector& grad=state.grad.front();
                 X_Vector& dx=state.dx.front();
 
                 // We take the steepest descent direction
-                X::copy(g,dx);
+                X::copy(grad,dx);
                 X::scal(Real(-1.),dx);
             }
     
@@ -3677,7 +3682,7 @@ namespace peopt{
             ) {
             
                 // Create some shortcuts 
-                const X_Vector& g=state.g.front();
+                const X_Vector& grad=state.grad.front();
                 const X_Vector& dx_old=state.dx_old.front();
                 Natural& iter=state.iter;
                 X_Vector& dx=state.dx.front();
@@ -3702,14 +3707,14 @@ namespace peopt{
                         break;
                     }
 
-                    // Find -g+beta*dx_old
-                    X::copy(g,dx);
+                    // Find -grad+beta*dx_old
+                    X::copy(grad,dx);
                     X::scal(Real(-1.),dx);
                     X::axpy(beta,dx_old,dx);
 
                     // We don't ever check the strong-Wolfe conditions, so
                     // hard check that we have a descent direction
-                    if(X::innr(dx,g) > 0) X::scal(Real(-1.),dx);
+                    if(X::innr(dx,grad) > 0) X::scal(Real(-1.),dx);
                 }
             }
 
@@ -3719,11 +3724,11 @@ namespace peopt{
             ) {
 
                 // Create some shortcuts 
-                const X_Vector& g=state.g.front();
-                const X_Vector& g_old=state.g_old.front();
+                const X_Vector& grad=state.grad.front();
+                const X_Vector& grad_old=state.grad_old.front();
 
                 // Return the momentum parameter
-                return X::innr(g,g)/X::innr(g_old,g_old);
+                return X::innr(grad,grad)/X::innr(grad_old,grad_old);
             }
         
             // Polak-Ribiere CG search direction
@@ -3732,16 +3737,16 @@ namespace peopt{
             ) {
 
                 // Create some shortcuts 
-                const X_Vector& g=state.g.front();
-                const X_Vector& g_old=state.g_old.front();
+                const X_Vector& grad=state.grad.front();
+                const X_Vector& grad_old=state.grad_old.front();
 
-                // Find g-g_old 
-                X_Vector g_m_gold; X::init(g,g_m_gold);
-                X::copy(g,g_m_gold);
-                X::axpy(Real(-1.),g_old,g_m_gold);
+                // Find grad-grad_old 
+                X_Vector grad_m_gradold; X::init(grad,grad_m_gradold);
+                X::copy(grad,grad_m_gradold);
+                X::axpy(Real(-1.),grad_old,grad_m_gradold);
                     
                 // Return the momentum parameter
-                return X::innr(g,g_m_gold)/X::innr(g_old,g_old);
+                return X::innr(grad,grad_m_gradold)/X::innr(grad_old,grad_old);
             }
             
             // Hestenes-Stiefel search direction
@@ -3751,14 +3756,14 @@ namespace peopt{
 
                 // Create some shortcuts 
                 const Real& alpha=state.alpha;
-                const X_Vector& g=state.g.front();
-                const X_Vector& g_old=state.g_old.front();
+                const X_Vector& grad=state.grad.front();
+                const X_Vector& grad_old=state.grad_old.front();
                 const X_Vector& dx_old=state.dx_old.front();
 
-                // Find g-g_old 
-                X_Vector g_m_gold; X::init(g,g_m_gold);
-                X::copy(g,g_m_gold);
-                X::axpy(Real(-1.),g_old,g_m_gold);
+                // Find grad-grad_old 
+                X_Vector grad_m_gradold; X::init(grad,grad_m_gradold);
+                X::copy(grad,grad_m_gradold);
+                X::axpy(Real(-1.),grad_old,grad_m_gradold);
                     
                 // Return the momentum parameter.  Note, we scale things by
                 // alpha here, which is not in the standard Hestenes-Stiefel
@@ -3770,7 +3775,8 @@ namespace peopt{
                 // dx_old really needs to be (1/alpha)dx_old to get rid of
                 // the scaling.  The alpha on top is just an algebraic
                 // rearrangement.
-                return alpha*X::innr(g,g_m_gold)/X::innr(dx_old,g_m_gold);
+                return alpha*X::innr(grad,grad_m_gradold)
+                    / X::innr(dx_old,grad_m_gradold);
             }
 
             // BFGS search direction
@@ -3780,14 +3786,14 @@ namespace peopt{
             ) {
                 
                 // Create some shortcuts 
-                const X_Vector& g=state.g.front();
+                const X_Vector& grad=state.grad.front();
                 X_Vector& dx=state.dx.front();
 
                 // Create the inverse BFGS operator
                 typename Functions::InvBFGS Hinv(msg,state); 
 
                 // Apply the inverse BFGS operator to the gradient
-                Hinv(g,dx);
+                Hinv(grad,dx);
 
                 // Negate the result
                 X::scal(Real(-1.),dx);
@@ -3890,9 +3896,9 @@ namespace peopt{
             ) {
                 // Create some shortcuts
                 const X_Vector& x=state.x.front();
-                const X_Vector& g=state.g.front();
+                const X_Vector& grad=state.grad.front();
                 const X_Vector& x_old=state.x_old.front();
-                const X_Vector& g_old=state.g_old.front();
+                const X_Vector& grad_old=state.grad_old.front();
                 const LineSearchKind::t& kind=state.kind;
                 Real& alpha=state.alpha;
                 X_Vector& dx=state.dx.front();
@@ -3903,25 +3909,26 @@ namespace peopt{
                 // Create shortcuts to the functions that we need
                 const ScalarValuedFunction <Real,XX>& f=*(fns.f);
 
-                // Create elements for delta_x and delta_g as well as one work
-                // element for storing x+alpha s
+                // Create elements for delta_x and delta_grad as well as one
+                // work element for storing x+alpha dx 
                 X_Vector delta_x; X::init(x,delta_x);
-                X_Vector delta_g; X::init(x,delta_g);
+                X_Vector delta_grad; X::init(x,delta_grad);
                 X_Vector x_p_dx; X::init(x,x_p_dx);
 
                 // Find delta_x
                 X::copy(x,delta_x);
                 X::axpy(Real(-1.),x_old,delta_x);
 
-                // Find delta_g
-                X::copy(g,delta_g);
-                X::axpy(Real(-1.),g_old,delta_g);
+                // Find delta_grad
+                X::copy(grad,delta_grad);
+                X::axpy(Real(-1.),grad_old,delta_grad);
 
                 // Find alpha
                 if(kind==LineSearchKind::TwoPointA)
-                    alpha=X::innr(delta_x,delta_g)/X::innr(delta_g,delta_g);
+                    alpha=X::innr(delta_x,delta_grad) 
+                        / X::innr(delta_grad,delta_grad);
                 else if(kind==LineSearchKind::TwoPointB)
-                    alpha=X::innr(delta_x,delta_x)/X::innr(delta_x,delta_g);
+                    alpha=X::innr(delta_x,delta_x)/X::innr(delta_x,delta_grad);
 
                 // Save the merit value at this step
                 X::copy(x,x_p_dx);
@@ -3998,7 +4005,7 @@ namespace peopt{
             ){
                 // Create some shortcuts
                 const X_Vector& x=state.x.front();
-                const X_Vector& g=state.g.front();
+                const X_Vector& grad=state.grad.front();
                 const LineSearchDirection::t& dir=state.dir;
                 const LineSearchKind::t& kind=state.kind;
                 const Natural& iter=state.iter;
@@ -4011,7 +4018,7 @@ namespace peopt{
                 const Natural& krylov_orthog_max=state.krylov_orthog_max;
                 const KrylovSolverTruncated::t& krylov_solver
                     = state.krylov_solver;
-                const Real& norm_g=state.norm_g;
+                const Real& norm_grad=state.norm_grad;
                 X_Vector& dx=state.dx.front();
                 Real& merit_xpdx=state.merit_xpdx;
                 Real& norm_dx=state.norm_dx;
@@ -4023,8 +4030,8 @@ namespace peopt{
                 
                 // Create shortcuts to the functions that we need
                 const ScalarValuedFunction <Real,XX>& f=*(fns.f);
-                const Operator <Real,XX,XX>& Minv=*(fns.Minv);
-                const Operator <Real,XX,XX>& TR_op=*(fns.TR_op);
+                const Operator <Real,XX,XX>& PH=*(fns.PH);
+                const Operator <Real,XX,XX>& TRS=*(fns.TRS);
                     
                 // Manipulate the state if required
                 smanip(fns,state,OptimizationLocation::BeforeGetStep);
@@ -4053,16 +4060,16 @@ namespace peopt{
                 case LineSearchDirection::NewtonCG: {
                     HessianOperator H(f,x);
                     X_Vector dx_cp; X::init(x,dx_cp);
-                    X_Vector minus_g; X::init(x,minus_g);
-                    X::copy(g,minus_g); X::scal(Real(-1.),minus_g);
+                    X_Vector minus_grad; X::init(x,minus_grad);
+                    X::copy(grad,minus_grad); X::scal(Real(-1.),minus_grad);
                     switch(krylov_solver) {
                     // Truncated conjugate direction
                     case KrylovSolverTruncated::ConjugateDirection:
                         truncated_pcd(
                             H,
-                            minus_g,
-                            Minv,
-                            TR_op,
+                            minus_grad,
+                            PH,
+                            TRS,
                             eps_krylov,
                             krylov_iter_max,
                             krylov_orthog_max,
@@ -4079,9 +4086,9 @@ namespace peopt{
                     case KrylovSolverTruncated::MINRES:
                         truncated_minres(
                             H,
-                            minus_g,
-                            Minv,
-                            TR_op,
+                            minus_grad,
+                            PH,
+                            TRS,
                             eps_krylov,
                             krylov_iter_max,
                             krylov_orthog_max,
@@ -4094,12 +4101,12 @@ namespace peopt{
                             krylov_stop);
 
                         // Force a descent direction
-                        if(X::innr(dx,g) > 0) X::scal(Real(-1.),dx);
-                        if(X::innr(dx_cp,g) > 0) X::scal(Real(-1.),dx_cp);
+                        if(X::innr(dx,grad) > 0) X::scal(Real(-1.),dx);
+                        if(X::innr(dx_cp,grad) > 0) X::scal(Real(-1.),dx_cp);
                         break;
                     }
                     krylov_rel_err = krylov_rel_err
-                        / (std::numeric_limits <Real>::epsilon()+norm_g);
+                        / (std::numeric_limits <Real>::epsilon()+norm_grad);
                     krylov_iter_total += krylov_iter;
                     break;
                 }}
@@ -4164,7 +4171,7 @@ namespace peopt{
                             // making progress.  In this case, take a zero step 
                             // and allow the stopping conditions to exit
                             if(norm_dx < eps_dx*norm_dxtyp) {
-                                alpha=0.;
+                                alpha = Real(0.);
                                 break;
                             }
 
@@ -4191,7 +4198,7 @@ namespace peopt{
                     break;
                 case LineSearchKind::TwoPointA:
                 case LineSearchKind::TwoPointB:
-                    if(iter>1)
+                    if(iter>Natural(1))
                         twoPoint(fns,state);
                     else
                         goldenSection(fns,state);
@@ -4242,10 +4249,10 @@ namespace peopt{
 
                 // Create some shortcuts
                 const X_Vector& x=state.x.front();
-                const X_Vector& g=state.g.front();
+                const X_Vector& grad=state.grad.front();
                 const X_Vector& x_old=state.x_old.front();
-                const X_Vector& g_old=state.g_old.front();
-                const Operators::t& Minv_type=state.Minv_type;
+                const X_Vector& grad_old=state.grad_old.front();
+                const Operators::t& PH_type=state.PH_type;
                 const Operators::t& H_type=state.H_type;
                 const LineSearchDirection::t& dir=state.dir;
                 std::list <X_Vector>& oldY=state.oldY;
@@ -4259,12 +4266,12 @@ namespace peopt{
                 X::copy(x,s);
                 X::axpy(Real(-1.),x_old,s);
 
-                // Find y = g - g_old
-                X::copy(g,y);
-                X::axpy(Real(-1.),g_old,y);
+                // Find y = grad - grad_old
+                X::copy(grad,y);
+                X::axpy(Real(-1.),grad_old,y);
 
                 // If we're using BFGS, check that <y,s> > 0
-                if((Minv_type==Operators::InvBFGS || H_type==Operators::BFGS
+                if((PH_type==Operators::InvBFGS || H_type==Operators::BFGS
                     || dir==LineSearchDirection::BFGS)
                     && X::innr(y,s) <= Real(0.))
                     return;
@@ -4289,15 +4296,15 @@ namespace peopt{
             ){
                 // Create some shortcuts
                 X_Vector& x=state.x.front();
-                X_Vector& g=state.g.front();
+                X_Vector& grad=state.grad.front();
                 X_Vector& dx=state.dx.front();
                 X_Vector& x_old=state.x_old.front();
-                X_Vector& g_old=state.g_old.front();
+                X_Vector& grad_old=state.grad_old.front();
                 X_Vector& dx_old=state.dx_old.front();
                 Real& merit_x=state.merit_x;
                 Real& merit_xpdx=state.merit_xpdx;
-                Real& norm_g=state.norm_g;
-                Real& norm_gtyp=state.norm_gtyp;
+                Real& norm_grad=state.norm_grad;
+                Real& norm_gradtyp=state.norm_gradtyp;
                 Real& norm_dxtyp=state.norm_dxtyp;
                 Natural& iter=state.iter;
                 StoppingCondition::t& opt_stop=state.opt_stop;
@@ -4312,10 +4319,10 @@ namespace peopt{
                 // Evaluate the merit function and gradient if we've not
                 // done so already
                 if(merit_x != merit_x) {
-                    f.grad(x,g);
+                    f.grad(x,grad);
                     merit_x=f(x);
-                    norm_g=sqrt(X::innr(g,g));
-                    norm_gtyp=norm_g;
+                    norm_grad=sqrt(X::innr(grad,grad));
+                    norm_gradtyp=norm_grad;
 
                     // This one is a little funny.  Sometimes, we run into
                     // trouble trying to calculate the initial step.  In this
@@ -4325,7 +4332,7 @@ namespace peopt{
                     // it initially sets the norm of a typical step to be the
                     // norm of the gradient, which is akin to taking a
                     // steepest descent step without globalization.
-                    norm_dxtyp=norm_g;
+                    norm_dxtyp=norm_grad;
                 }
 
                 // Manipulate the state if required
@@ -4342,7 +4349,7 @@ namespace peopt{
                     // Save the old variable, gradient, and trial step.  This
                     // is useful for both CG and quasi-Newton methods.
                     X::copy(x,x_old);
-                    X::copy(g,g_old);
+                    X::copy(grad,grad_old);
                     X::copy(dx,dx_old);
 
                     // Manipulate the state if required
@@ -4357,8 +4364,8 @@ namespace peopt{
 
                     // Find the new merit value and gradient
                     merit_x=merit_xpdx;
-                    f.grad(x,g);
-                    norm_g=sqrt(X::innr(g,g));
+                    f.grad(x,grad);
+                    norm_grad=sqrt(X::innr(grad,grad));
                     
                     // Manipulate the state if required
                     smanip(fns,state,OptimizationLocation::BeforeQuasi);
@@ -4572,8 +4579,8 @@ namespace peopt{
                 Real rpred;
 
                 // Preconditioners for the augmented system
-                Operators::t Minv_left_type;
-                Operators::t Minv_right_type;
+                Operators::t PSchur_left_type;
+                Operators::t PSchur_right_type;
 
                 // Maximum number of iterations used when solving the augmented
                 // system
@@ -4602,7 +4609,7 @@ namespace peopt{
 
                 // Norm of gpxdxn_p_gx.  This is used in the penalty parameter
                 // computation and predicted reduction. 
-                Real norm_gpxdxnpgx;
+                Real norm_gradpxdxnpgx;
 
                 // Normal step
                 std::list <X_Vector> dx_n;
@@ -4623,7 +4630,7 @@ namespace peopt{
                 std::list <X_Vector> H_dxn;
 
                 // Quantity grad f(x) + g'(x)*y + H dx_n
-                std::list <X_Vector> W_gpHdxn;
+                std::list <X_Vector> W_gradpHdxn;
                 
                 // Hessian applied to the uncorrected tangential step 
                 std::list <X_Vector> H_dxtuncorrected;
@@ -4653,9 +4660,9 @@ namespace peopt{
                 state.rpred=std::numeric_limits<Real>::quiet_NaN();
                 state.norm_gx=std::numeric_limits<Real>::quiet_NaN();
                 state.norm_gxtyp=std::numeric_limits<Real>::quiet_NaN();
-                state.norm_gpxdxnpgx=std::numeric_limits<Real>::quiet_NaN();
-                state.Minv_left_type=Operators::Identity;
-                state.Minv_right_type=Operators::Identity;
+                state.norm_gradpxdxnpgx=std::numeric_limits<Real>::quiet_NaN();
+                state.PSchur_left_type=Operators::Identity;
+                state.PSchur_right_type=Operators::Identity;
                 state.augsys_iter_max = Natural(100);
                 state.augsys_rst_freq = Natural(0);
             }
@@ -4712,9 +4719,9 @@ namespace peopt{
                     state.H_dxn.push_back(X_Vector());
                     X::init(x,state.H_dxn.front());
                 
-                state.W_gpHdxn.clear();
-                    state.W_gpHdxn.push_back(X_Vector());
-                    X::init(x,state.W_gpHdxn.front());
+                state.W_gradpHdxn.clear();
+                    state.W_gradpHdxn.push_back(X_Vector());
+                    X::init(x,state.W_gradpHdxn.front());
                 
                 state.H_dxtuncorrected.clear();
                     state.H_dxtuncorrected.push_back(X_Vector());
@@ -4823,21 +4830,21 @@ namespace peopt{
                 
                 // Check that the left preconditioner for the augmented system
                 // is either defined by the user or the identity.
-                else if(state.Minv_left_type != Operators::Identity &&
-                    state.Minv_left_type != Operators::External)
+                else if(state.PSchur_left_type != Operators::Identity &&
+                    state.PSchur_left_type != Operators::UserDefined)
                     ss << "The left preconditioner for the augmented system "
                         "must be either user defined or the identity: "
-                        "Minv_left_type = "
-                        << Operators::to_string(state.Minv_left_type);
+                        "PSchur_left_type = "
+                        << Operators::to_string(state.PSchur_left_type);
                 
                 // Check that the right preconditioner for the augmented system
                 // is either defined by the user or the identity.
-                else if(state.Minv_right_type != Operators::Identity &&
-                    state.Minv_right_type != Operators::External)
+                else if(state.PSchur_right_type != Operators::Identity &&
+                    state.PSchur_right_type != Operators::UserDefined)
                     ss << "The right preconditioner for the augmented system "
                         "must be either user defined or the identity: "
-                        "Minv_right_type = "
-                        << Operators::to_string(state.Minv_right_type);
+                        "PSchur_right_type = "
+                        << Operators::to_string(state.PSchur_right_type);
 
                 // Check that the number of iterations used when solving the
                 // augmented system is positive
@@ -4880,7 +4887,7 @@ namespace peopt{
                         name == "rpred" ||
                         name == "norm_gx" ||
                         name == "norm_gxtyp" ||
-                        name == "norm_gpxdxnpgx" 
+                        name == "norm_gradpxdxnpgx" 
                     )
                         return true;
                     else
@@ -4907,8 +4914,8 @@ namespace peopt{
                 bool operator () (const std::string& name) const {
                     if( typename Unconstrained <Real,XX>::Restart
                             ::is_param()(name) ||
-                        name == "Minv_right_type" ||
-                        name == "Minv_left_type" 
+                        name == "PSchur_right_type" ||
+                        name == "PSchur_left_type" 
                     ) 
                         return true;
                     else
@@ -4927,7 +4934,7 @@ namespace peopt{
                         name == "dx_t_uncorrected" ||
                         name == "dx_tcp_uncorrected" ||
                         name == "H_dxn" ||
-                        name == "W_gpHdxn" ||
+                        name == "W_gradpHdxn" ||
                         name == "H_dxtuncorrected" 
                     ) 
                         return true;
@@ -4998,13 +5005,13 @@ namespace peopt{
 
                     // Check the type of the left preconditioner to the
                     // augmented system
-                    } else if(label=="Minv_left_type"){
+                    } else if(label=="PSchur_left_type"){
                         if(!Operators::is_valid()(val))
                             ss << base << "preconditioner type: " << val;
                     
                     // Check the type of the right preconditioner to the
                     // augmented system
-                    } else if(label=="Minv_right_type"){
+                    } else if(label=="PSchur_right_type"){
                         if(!Operators::is_valid()(val))
                             ss << base << "preconditioner type: " << val;
                     }
@@ -5039,8 +5046,8 @@ namespace peopt{
                 xs.second.splice(xs.second.end(),state.dx_tcp_uncorrected);
                 xs.first.push_back("H_dxn");
                 xs.second.splice(xs.second.end(),state.H_dxn);
-                xs.first.push_back("W_gpHdxn");
-                xs.second.splice(xs.second.end(),state.W_gpHdxn);
+                xs.first.push_back("W_gradpHdxn");
+                xs.second.splice(xs.second.end(),state.W_gradpHdxn);
                 xs.first.push_back("H_dxtuncorrected");
                 xs.second.splice(xs.second.end(),state.H_dxtuncorrected);
             }
@@ -5083,8 +5090,8 @@ namespace peopt{
                 reals.second.push_back(state.norm_gx);
                 reals.first.push_back("norm_gxtyp");
                 reals.second.push_back(state.norm_gxtyp);
-                reals.first.push_back("norm_gpxdxnpgx");
-                reals.second.push_back(state.norm_gpxdxnpgx);
+                reals.first.push_back("norm_gradpxdxnpgx");
+                reals.second.push_back(state.norm_gradpxdxnpgx);
 
                 // Copy in all the natural numbers
                 nats.first.push_back("augsys_iter_max");
@@ -5093,12 +5100,12 @@ namespace peopt{
                 nats.second.push_back(state.augsys_rst_freq);
 
                 // Copy in all the parameters
-                params.first.push_back("Minv_left_type");
+                params.first.push_back("PSchur_left_type");
                 params.second.push_back(
-                    Operators::to_string(state.Minv_left_type));
-                params.first.push_back("Minv_right_type");
+                    Operators::to_string(state.PSchur_left_type));
+                params.first.push_back("PSchur_right_type");
                 params.second.push_back(
-                    Operators::to_string(state.Minv_right_type));
+                    Operators::to_string(state.PSchur_right_type));
             }
             
             // Copy in all equality multipliers 
@@ -5170,9 +5177,9 @@ namespace peopt{
                     else if(*name0=="H_dxn")
                         state.H_dxn.splice(
                             state.H_dxn.end(),xs.second,x0);
-                    else if(*name0=="W_gpHdxn")
-                        state.W_gpHdxn.splice(
-                            state.W_gpHdxn.end(),xs.second,x0);
+                    else if(*name0=="W_gradpHdxn")
+                        state.W_gradpHdxn.splice(
+                            state.W_gradpHdxn.end(),xs.second,x0);
                     else if(*name0=="H_dxtuncorrected")
                         state.H_dxtuncorrected.splice(
                             state.H_dxtuncorrected.end(),xs.second,x0);
@@ -5212,7 +5219,7 @@ namespace peopt{
                     else if(*name=="rpred") state.rpred=*real;
                     else if(*name=="norm_gx") state.norm_gx=*real;
                     else if(*name=="norm_gxtyp") state.norm_gxtyp=*real;
-                    else if(*name=="norm_gpxdxnpgx") state.norm_gpxdxnpgx=*real;
+                    else if(*name=="norm_gradpxdxnpgx") state.norm_gradpxdxnpgx=*real;
                 }
                 
                 // Next, copy in any naturals
@@ -5231,10 +5238,10 @@ namespace peopt{
                     name!=params.first.end();
                     name++,param++
                 ){
-                    if(*name=="Minv_left_type")
-                        state.Minv_left_type=Operators::from_string(*param);
-                    else if(*name=="Minv_right_type")
-                        state.Minv_right_type=Operators::from_string(*param);
+                    if(*name=="PSchur_left_type")
+                        state.PSchur_left_type=Operators::from_string(*param);
+                    else if(*name=="PSchur_right_type")
+                        state.PSchur_right_type=Operators::from_string(*param);
                 }
             }
 
@@ -5316,14 +5323,14 @@ namespace peopt{
                 std::auto_ptr <VectorValuedFunction <Real,XX,YY> > g;
 
                 // Left preconditioner for the augmented system
-                std::auto_ptr <Operator <Real,YY,YY> > Minv_left;
+                std::auto_ptr <Operator <Real,YY,YY> > PSchur_left;
 
                 // Right preconditioner for the augmented system
-                std::auto_ptr <Operator <Real,YY,YY> > Minv_right;
+                std::auto_ptr <Operator <Real,YY,YY> > PSchur_right;
                 
                 // Initialize all of the pointers to null
                 t() : Unconstrained <Real,XX>::Functions::t(), g(NULL),
-                    Minv_left(NULL), Minv_right(NULL) {}
+                    PSchur_left(NULL), PSchur_right(NULL) {}
             };
 
             // An augmented Lagrangian merit function 
@@ -5368,17 +5375,17 @@ namespace peopt{
                 }
 
                 // gg = grad f(x) + g'(x)*y
-                void grad(const X_Vector& x,X_Vector& gg) const {
-                    // gg <- grad f(x)
-                    f->grad(x,gg);
+                void grad(const X_Vector& x,X_Vector& grad) const {
+                    // grad <- grad f(x)
+                    f->grad(x,grad);
                     
                     // x_tmp1 <- g'(x)* y 
                     X_Vector x_tmp1;
                         X::init(x,x_tmp1);
                         g.ps(x,y,x_tmp1);
 
-                    // gg <- grad f(x) + g'(x)*y 
-                    X::axpy(Real(1.),x_tmp1,gg);
+                    // g <- grad f(x) + g'(x)*y 
+                    X::axpy(Real(1.),x_tmp1,grad);
                 }
 
                 // H_dx = hess f(x)dx + (g''(x)dx)*y  
@@ -5418,10 +5425,10 @@ namespace peopt{
                     msg.error("Missing the equality constraint definition.");
 
                 // Check that preconditioners exist
-                if(fns.Minv_left.get()==NULL)
+                if(fns.PSchur_left.get()==NULL)
                     msg.error("Missing a left preconditioner for the "
                         "augmented system.");
-                if(fns.Minv_right.get()==NULL)
+                if(fns.PSchur_right.get()==NULL)
                     msg.error("Missing a right preconditioner for the "
                         "augmented system.");
             }
@@ -5434,12 +5441,12 @@ namespace peopt{
                 t& fns
             ) {
                 // Determine the left preconditioner for the augmented system
-                switch(state.Minv_left_type){
+                switch(state.PSchur_left_type){
                     case Operators::Identity:
-                        fns.Minv_left.reset(new Identity());
+                        fns.PSchur_left.reset(new Identity());
                         break;
-                    case Operators::External:
-                        if(fns.Minv_left.get()==NULL)
+                    case Operators::UserDefined:
+                        if(fns.PSchur_left.get()==NULL)
                             msg.error("An externally defined left "
                                 "preconditioner for the augmented system must "
                                 "be provided explicitly.");
@@ -5451,12 +5458,12 @@ namespace peopt{
                 }
                 
                 // Determine the right preconditioner for the augmented system
-                switch(state.Minv_right_type){
+                switch(state.PSchur_right_type){
                     case Operators::Identity:
-                        fns.Minv_right.reset(new Identity());
+                        fns.PSchur_right.reset(new Identity());
                         break;
-                    case Operators::External:
-                        if(fns.Minv_right.get()==NULL)
+                    case Operators::UserDefined:
+                        if(fns.PSchur_right.get()==NULL)
                             msg.error("An externally defined right "
                                 "preconditioner for the augmented system must "
                                 "be provided explicitly.");
@@ -5497,6 +5504,11 @@ namespace peopt{
             ) { 
                 // Norm of the constrained 
                 out.push_back(atos <> ("||g(x)||"));
+                   
+                // Krylov method information
+                out.push_back(atos <> ("Kry Iter"));
+                out.push_back(atos <> ("Kry Err"));
+                out.push_back(atos <> ("Kry Why"));
             }
             // Combines all of the state headers
             static void getStateHeader(
@@ -5516,14 +5528,34 @@ namespace peopt{
             ) {
                 // Create some shortcuts
                 const Real& norm_gx=state.norm_gx; 
+                const Natural& krylov_iter=state.krylov_iter;
+                const Real& krylov_rel_err=state.krylov_rel_err;
+                const KrylovStop::t& krylov_stop=state.krylov_stop;
+                const Natural& iter=state.iter;
+                const Natural& rejected_trustregion=state.rejected_trustregion;
+
+                // Figure out if we're at the absolute beginning of the
+                // optimization.  We have to be a little saavy about this
+                // since we could be on the first iteration, but in the
+                // middle of rejecting trust-region steps and still want 
+                // to output things.
+                bool opt_begin = (iter==Natural(1)) &&
+                        (rejected_trustregion == Natural(0));
 
                 // Get a iterator to the last element prior to inserting
                 // elements
                 std::list <std::string>::iterator prior=out.end(); prior--;
 
-                // Interior point information
-                // Estimate the interior-point parameter
+                // Norm of the gradient 
                 out.push_back(atos <> (norm_gx));
+                
+                // Krylov method information
+                if(!opt_begin) {
+                    out.push_back(atos <> (krylov_iter));
+                    out.push_back(atos <> (krylov_rel_err));
+                    out.push_back(atos <> (krylov_stop));
+                } else 
+                    for(Natural i=0;i<3;i++) out.push_back("          ");
 
                 // If we needed to do blank insertions, overwrite the elements
                 // with spaces 
@@ -5633,24 +5665,24 @@ namespace peopt{
             struct BlockDiagonalPreconditioner:
                 public Operator <Real,XXxYY,XXxYY> {
             private:
-                const Operator <Real,XX,XX>& Minv_x;
-                const Operator <Real,YY,YY>& Minv_y;
+                const Operator <Real,XX,XX>& PH_x;
+                const Operator <Real,YY,YY>& PH_y;
             public:
                 BlockDiagonalPreconditioner(
-                    const Operator <Real,XX,XX>& Minv_x_,
-                    const Operator <Real,YY,YY>& Minv_y_ 
-                ) : Minv_x(Minv_x_), Minv_y(Minv_y_) {}
+                    const Operator <Real,XX,XX>& PH_x_,
+                    const Operator <Real,YY,YY>& PH_y_ 
+                ) : PH_x(PH_x_), PH_y(PH_y_) {}
                 
                 // Operator interface
                 void operator () (
                     const XxY_Vector& dx_dy,
                     XxY_Vector& result
                 ) const{
-                    // Minv_x dx
-                    Minv_x(dx_dy.first,result.first);
+                    // PH_x dx
+                    PH_x(dx_dy.first,result.first);
                     
-                    // Minv_y dy
-                    Minv_y(dx_dy.second,result.second);
+                    // PH_y dy
+                    PH_y(dx_dy.second,result.second);
                 }
             };
 
@@ -5673,10 +5705,10 @@ namespace peopt{
                     const Real& xi_qn = state.xi_qn;
 
                     // Find || g'(x)dx_ncp + g(x) ||
-                    Real norm_gpxdxncp_p_g = sqrt(Y::innr(bb.second,bb.second));
+                    Real norm_gradpxdxncp_p_g = sqrt(Y::innr(bb.second,bb.second));
 
                     // Return xi_qn * || g'(x)dx_ncp + g(x) ||
-                    eps = xi_qn * norm_gpxdxncp_p_g;
+                    eps = xi_qn * norm_gradpxdxncp_p_g;
                 }
             };
 
@@ -5706,15 +5738,15 @@ namespace peopt{
                 fns.g->p(x,gps_g,gp_gps_g);
 
                 // Find || g'(x)*g(x) ||^2
-                Real norm_gpsg_2 = X::innr(gps_g,gps_g);
+                Real norm_gradpsg_2 = X::innr(gps_g,gps_g);
 
                 // Find || g'(x)g'(x)*g(x) ||^2
-                Real norm_gpgpsg_2 = X::innr(gp_gps_g,gp_gps_g);
+                Real norm_gradpgpsg_2 = X::innr(gp_gps_g,gp_gps_g);
 
                 // Find the Cauchy point,
                 // || g'(x)*g(x) ||^2/|| g'(x)g'(x)*g(x) ||^2 g'(x)*g(x)
                 X::copy(gps_g,dx_ncp);
-                X::scal(norm_gpsg_2/norm_gpgpsg_2,dx_ncp);
+                X::scal(norm_gradpsg_2/norm_gradpgpsg_2,dx_ncp);
 
                 // If || dx_ncp || >= zeta delta, scale it back to zeta delta
                 // and return
@@ -5741,8 +5773,8 @@ namespace peopt{
 
                 // Build Schur style preconditioners
                 typename Unconstrained <Real,XX>::Functions::Identity I;
-                BlockDiagonalPreconditioner Minv_l (I,*(fns.Minv_left));
-                BlockDiagonalPreconditioner Minv_r (I,*(fns.Minv_right));
+                BlockDiagonalPreconditioner PAugSys_l (I,*(fns.PSchur_left));
+                BlockDiagonalPreconditioner PAugSys_r (I,*(fns.PSchur_right));
 
                 // Solve the augmented system for the Newton step
                 peopt::gmres <Real,XXxYY> (
@@ -5751,8 +5783,8 @@ namespace peopt{
                     Real(1.), // This will be overwritten by the manipulator
                     augsys_iter_max,
                     augsys_rst_freq,
-                    Minv_l,
-                    Minv_r,
+                    PAugSys_l,
+                    PAugSys_r,
                     QNManipulator(state,fns),
                     x0 
                 );
@@ -5810,12 +5842,12 @@ namespace peopt{
                     Real norm_WgpHdxn = sqrt(X::innr(xx.first,xx.first));
 
                     // Find || bb_1 || = || grad L(x,y) + H dx_n ||
-                    Real norm_gpHdxn = sqrt(X::innr(bb.first,bb.first));
+                    Real norm_gradpHdxn = sqrt(X::innr(bb.first,bb.first));
 
                     // The bound is xi_pg min( || W (grad L(x,y) + H dx_n) ||,
                     // delta, || grad L(x,y) + H dx_n || )
                     eps = norm_WgpHdxn < delta ? norm_WgpHdxn : delta;
-                    eps = eps < norm_gpHdxn ? eps : norm_gpHdxn;
+                    eps = eps < norm_gradpHdxn ? eps : norm_gradpHdxn;
                     eps = xi_pg*eps;
                 }
             };
@@ -5833,20 +5865,20 @@ namespace peopt{
             ) {
                 // Create some shortcuts
                 const X_Vector& x=state.x.front();
-                const X_Vector& g=state.g.front();
+                const X_Vector& grad=state.grad.front();
                 const X_Vector& H_dxn=state.H_dxn.front();
                 const Y_Vector& y=state.y.front();
                 const Natural& augsys_iter_max=state.augsys_iter_max;
                 const Natural& augsys_rst_freq=state.augsys_rst_freq;
-                X_Vector& W_gpHdxn=state.W_gpHdxn.front();
+                X_Vector& W_gradpHdxn=state.W_gradpHdxn.front();
 
-                // g_p_Hdxn <- H dx_n
-                X_Vector g_p_Hdxn;
-                    X::init(x,g_p_Hdxn);
-                    X::copy(H_dxn,g_p_Hdxn);
+                // grad_p_Hdxn <- H dx_n
+                X_Vector grad_p_Hdxn;
+                    X::init(x,grad_p_Hdxn);
+                    X::copy(H_dxn,grad_p_Hdxn);
 
-                // g_p_Hdxn <- g + H dx_n
-                X::axpy(Real(1.),g,g_p_Hdxn);
+                // grad_p_Hdxn <- grad f(x) + H dx_n
+                X::axpy(Real(1.),grad,grad_p_Hdxn);
 
                 // Create the initial guess, x0=(0,0)
                 XxY_Vector x0;
@@ -5854,16 +5886,16 @@ namespace peopt{
                     Y::init(y,x0.second);
                     XxY::zero(x0);
 
-                // Create the rhs, b0=(g + H dx_n,0)
+                // Create the rhs, b0=(grad f(x) + H dx_n,0)
                 XxY_Vector b0;
                     XxY::init(x0,b0);
-                    X::copy(g_p_Hdxn,b0.first);
+                    X::copy(grad_p_Hdxn,b0.first);
                     Y::zero(b0.second);
             
                 // Build Schur style preconditioners
                 typename Unconstrained <Real,XX>::Functions::Identity I;
-                BlockDiagonalPreconditioner Minv_l (I,*(fns.Minv_left));
-                BlockDiagonalPreconditioner Minv_r (I,*(fns.Minv_right));
+                BlockDiagonalPreconditioner PAugSys_l (I,*(fns.PSchur_left));
+                BlockDiagonalPreconditioner PAugSys_r (I,*(fns.PSchur_right));
 
                 // Solve the augmented system for the nullspace projection 
                 peopt::gmres <Real,XXxYY> (
@@ -5872,14 +5904,14 @@ namespace peopt{
                     Real(1.), // This will be overwritten by the manipulator
                     augsys_iter_max,
                     augsys_rst_freq,
-                    Minv_l,
-                    Minv_r,
+                    PAugSys_l,
+                    PAugSys_r,
                     NullspaceProjForGradientManipulator(state,fns),
                     x0 
                 );
 
                 // Copy out the solution
-                X::copy(x0.first,W_gpHdxn);
+                X::copy(x0.first,W_gradpHdxn);
             }
             
             // Sets the tolerances for the nullspace projector that projects
@@ -5955,8 +5987,8 @@ namespace peopt{
                 
                     // Build Schur style preconditioners
                     typename Unconstrained <Real,XX>::Functions::Identity I;
-                    BlockDiagonalPreconditioner Minv_l (I,*(fns.Minv_left));
-                    BlockDiagonalPreconditioner Minv_r (I,*(fns.Minv_right));
+                    BlockDiagonalPreconditioner PAugSys_l (I,*(fns.PSchur_left));
+                    BlockDiagonalPreconditioner PAugSys_r (I,*(fns.PSchur_right));
 
                     // Solve the augmented system for the nullspace projection 
                     peopt::gmres <Real,XXxYY> (
@@ -5965,8 +5997,8 @@ namespace peopt{
                         Real(1.), // This will be overwritten by the manipulator
                         augsys_iter_max,
                         augsys_rst_freq,
-                        Minv_l,
-                        Minv_r,
+                        PAugSys_l,
+                        PAugSys_r,
                         NullspaceProjForKrylovMethodManipulator(state,fns),
                         x0 
                     );
@@ -5984,7 +6016,7 @@ namespace peopt{
                 // Create some shortcuts
                 const X_Vector& x=state.x.front();
                 const X_Vector& dx_n=state.dx_n.front();
-                const X_Vector& W_gpHdxn=state.W_gpHdxn.front();
+                const X_Vector& W_gradpHdxn=state.W_gradpHdxn.front();
                 const Real& delta = state.delta;
                 const Real& eps_krylov=state.eps_krylov;
                 const Natural& krylov_iter_max=state.krylov_iter_max;
@@ -6000,7 +6032,7 @@ namespace peopt{
                 
                 // Create shortcuts to the functions that we need
                 const ScalarValuedFunction <Real,XX>& f=*(fns.f);
-                const Operator <Real,XX,XX>& TR_op=*(fns.TR_op);
+                const Operator <Real,XX,XX>& TRS=*(fns.TRS);
                     
                 // Setup the Hessian operator and allocate memory for the
                 // Cauchy point.
@@ -6009,19 +6041,19 @@ namespace peopt{
 
                 // Find the quantity - W (g + H dxn).  We use this as the
                 // RHS in the linear system solve.
-                X_Vector minus_W_gpHdxn;
-                    X::init(x,minus_W_gpHdxn);
-                    X::copy(W_gpHdxn,minus_W_gpHdxn);
-                    X::scal(Real(-1.),minus_W_gpHdxn);
+                X_Vector minus_W_gradpHdxn;
+                    X::init(x,minus_W_gradpHdxn);
+                    X::copy(W_gradpHdxn,minus_W_gradpHdxn);
+                    X::scal(Real(-1.),minus_W_gradpHdxn);
             
                 switch(krylov_solver) {
                 // Truncated conjugate direction
                 case KrylovSolverTruncated::ConjugateDirection:
                     truncated_pcd(
                         H,
-                        minus_W_gpHdxn,
-                        NullspaceProjForKrylovMethod(state,fns), // Add in Minv?
-                        TR_op,
+                        minus_W_gradpHdxn,
+                        NullspaceProjForKrylovMethod(state,fns), // Add in PH?
+                        TRS,
                         eps_krylov,
                         krylov_iter_max,
                         krylov_orthog_max,
@@ -6038,9 +6070,9 @@ namespace peopt{
                 case KrylovSolverTruncated::MINRES:
                     truncated_minres(
                         H,
-                        minus_W_gpHdxn,
-                        NullspaceProjForKrylovMethod(state,fns), // Add in Minv?
-                        TR_op,
+                        minus_W_gradpHdxn,
+                        NullspaceProjForKrylovMethod(state,fns), // Add in PH?
+                        TRS,
                         eps_krylov,
                         krylov_iter_max,
                         krylov_orthog_max,
@@ -6053,15 +6085,15 @@ namespace peopt{
                         krylov_stop);
 
                     // Force a descent direction
-                    if(X::innr(dx_t_uncorrected,W_gpHdxn) > 0)
+                    if(X::innr(dx_t_uncorrected,W_gradpHdxn) > 0)
                         X::scal(Real(-1.),dx_t_uncorrected);
-                    if(X::innr(dx_tcp_uncorrected,W_gpHdxn) > 0)
+                    if(X::innr(dx_tcp_uncorrected,W_gradpHdxn) > 0)
                         X::scal(Real(-1.),dx_tcp_uncorrected);
                     break;
                 }
-                Real norm_W_gpHdxn = sqrt(X::innr(W_gpHdxn,W_gpHdxn));
+                Real norm_W_gradpHdxn = sqrt(X::innr(W_gradpHdxn,W_gradpHdxn));
                 krylov_rel_err = krylov_rel_err
-                    / (std::numeric_limits <Real>::epsilon()+norm_W_gpHdxn);
+                    / (std::numeric_limits <Real>::epsilon()+norm_W_gradpHdxn);
                 krylov_iter_total += krylov_iter;
             }
             
@@ -6135,8 +6167,8 @@ namespace peopt{
 
                 // Build Schur style preconditioners
                 typename Unconstrained <Real,XX>::Functions::Identity I;
-                BlockDiagonalPreconditioner Minv_l (I,*(fns.Minv_left));
-                BlockDiagonalPreconditioner Minv_r (I,*(fns.Minv_right));
+                BlockDiagonalPreconditioner PAugSys_l (I,*(fns.PSchur_left));
+                BlockDiagonalPreconditioner PAugSys_r (I,*(fns.PSchur_right));
 
                 // Solve the augmented system for the Newton step
                 peopt::gmres <Real,XXxYY> (
@@ -6145,8 +6177,8 @@ namespace peopt{
                     Real(1.), // This will be overwritten by the manipulator
                     augsys_iter_max,
                     augsys_rst_freq,
-                    Minv_l,
-                    Minv_r,
+                    PAugSys_l,
+                    PAugSys_r,
                     TangentialStepManipulator(state,fns),
                     x0 
                 );
@@ -6175,11 +6207,11 @@ namespace peopt{
                     // Create some shortcuts
                     const Real& xi_lmh = state.xi_lmh;
                     const Real& xi_lmg = state.xi_lmg;
-                    const Real& norm_g = state.norm_g;
+                    const Real& norm_grad = state.norm_grad;
 
                     // The bound is
                     // min( xi_lmg, xi_lmh || grad f(x) + g'(x)*y ||)
-                    eps = xi_lmg < norm_g*xi_lmh ? xi_lmg : norm_g*xi_lmh;
+                    eps = xi_lmg < norm_grad*xi_lmh ? xi_lmg : norm_grad*xi_lmh;
                 }
             };
             
@@ -6202,10 +6234,10 @@ namespace peopt{
                     X::copy(x,x_p_dx);
                     X::axpy(Real(1.),dx,x_p_dx);
 
-                // g_xpdx <- grad f(x+dx) + g'(x+dx)*y
-                X_Vector g_xpdx; 
-                    X::init(x,g_xpdx);
-                    f.grad(x_p_dx,g_xpdx);
+                // grad_xpdx <- L(x+dx,y) = grad f(x+dx) + g'(x+dx)*y
+                X_Vector grad_xpdx; 
+                    X::init(x,grad_xpdx);
+                    f.grad(x_p_dx,grad_xpdx);
 
                 // Create the initial guess, x0=(0,0)
                 XxY_Vector x0;
@@ -6213,17 +6245,17 @@ namespace peopt{
                     Y::init(dy,x0.second);
                     XxY::zero(x0);
 
-                // Create the rhs, b0=(-grad f(x+dx)-g'(x+dx)*y,0);
+                // Create the rhs, b0=(-grad L(x+dx,y),0);
                 XxY_Vector b0;
                     XxY::init(x0,b0);
-                    X::copy(g_xpdx,b0.first);
+                    X::copy(grad_xpdx,b0.first);
                     X::scal(Real(-1.),b0.first);
                     Y::zero(b0.second);
 
                 // Build Schur style preconditioners
                 typename Unconstrained <Real,XX>::Functions::Identity I;
-                BlockDiagonalPreconditioner Minv_l (I,*(fns.Minv_left));
-                BlockDiagonalPreconditioner Minv_r (I,*(fns.Minv_right));
+                BlockDiagonalPreconditioner PAugSys_l (I,*(fns.PSchur_left));
+                BlockDiagonalPreconditioner PAugSys_r (I,*(fns.PSchur_right));
 
                 // Solve the augmented system for the Newton step
                 peopt::gmres <Real,XXxYY> (
@@ -6232,8 +6264,8 @@ namespace peopt{
                     Real(1.), // This will be overwritten by the manipulator
                     augsys_iter_max,
                     augsys_rst_freq,
-                    Minv_l,
-                    Minv_r,
+                    PAugSys_l,
+                    PAugSys_r,
                     LagrangeMultiplierStepManipulator(state,fns),
                     x0 
                 );
@@ -6248,8 +6280,8 @@ namespace peopt{
                 typename State::t& state
             ) {
                 // Create some shortcuts
-                const X_Vector& g=state.g.front();
-                const X_Vector& W_gpHdxn=state.W_gpHdxn.front();
+                const X_Vector& grad=state.grad.front();
+                const X_Vector& W_gradpHdxn=state.W_gradpHdxn.front();
                 const X_Vector& H_dxn=state.H_dxn.front();
                 const X_Vector& H_dxtuncorrected=state.H_dxtuncorrected.front();
                 const X_Vector& dx_t_uncorrected=state.dx_t_uncorrected.front();
@@ -6258,38 +6290,38 @@ namespace peopt{
                 const Y_Vector& dy=state.dy.front();
                 const Real& rho=state.rho;
                 const Real& norm_gx=state.norm_gx; 
-                const Real& norm_gpxdxnpgx=state.norm_gpxdxnpgx;
+                const Real& norm_gradpxdxnpgx=state.norm_gradpxdxnpgx;
                 Real& pred=state.pred;
 
-                // pred <- - < W (g + H dx_n), dx_t_uncorrected >
-                pred = - X::innr(W_gpHdxn,dx_t_uncorrected);
+                // pred <- - < W (grad f(x) + H dx_n), dx_t_uncorrected >
+                pred = - X::innr(W_gradpHdxn,dx_t_uncorrected);
 
-                // pred <- - < W (g + H dx_n), dx_t_uncorrected >
+                // pred <- - < W (grad L(x,Y) + H dx_n), dx_t_uncorrected >
                 //    - .5 < H dx_t_uncorrected,dx_t_uncorrected >
                 pred -= Real(0.5)*X::innr( H_dxtuncorrected,dx_t_uncorrected);
 
-                // pred <- - < W (g + H dx_n), dx_t_uncorrected >
+                // pred <- - < W (grad L(x,y) + H dx_n), dx_t_uncorrected >
                 //    - .5 < H dx_t_uncorrected,dx_t_uncorrected >
-                //    - < g, dx_n >
-                pred -= X::innr(g,dx_n);
+                //    - < grad L(x,y), dx_n >
+                pred -= X::innr(grad,dx_n);
                 
-                // pred <- - < W (g + H dx_n), dx_t_uncorrected >
+                // pred <- - < W (grad L(x,y) + H dx_n), dx_t_uncorrected >
                 //    - .5 < H dx_t_uncorrected,dx_t_uncorrected >
-                //    - < g, dx_n > - .5 < H dx_n,dx_n >
+                //    - < grad L(x,y), dx_n > - .5 < H dx_n,dx_n >
                 pred -= Real(0.5) * X::innr(H_dxn,dx_n); 
                 
-                // pred <- - < W (g + H dx_n), dx_t_uncorrected >
+                // pred <- - < W (grad L(x,y) + H dx_n), dx_t_uncorrected >
                 //    - .5 < H dx_t_uncorrected,dx_t_uncorrected >
-                //    - < g, dx_n > - .5 < H dx_n,dx_n >
+                //    - < grad L(x,y), dx_n > - .5 < H dx_n,dx_n >
                 //    - < dy , g'(x)dx_n+g(x) >
                 pred -= X::innr(dy,gpxdxn_p_gx);
                 
-                // pred <- - < W (g + H dx_n), dx_t_uncorrected >
+                // pred <- - < W (grad L(x,y) + H dx_n), dx_t_uncorrected >
                 //    - .5 < H dx_t_uncorrected,dx_t_uncorrected >
-                //    - < g, dx_n > - .5 < H dx_n,dx_n >
+                //    - < grad L(x,y), dx_n > - .5 < H dx_n,dx_n >
                 //    - < dy , g'(x)dx_n+g(x) >
                 //    + rho ( || g(x) ||^2 - || g'(x)dx_n+g(x) ||^2 )
-                pred += rho* (norm_gx*norm_gx - norm_gpxdxnpgx*norm_gpxdxnpgx);
+                pred += rho* (norm_gx*norm_gx - norm_gradpxdxnpgx*norm_gradpxdxnpgx);
             }
             
             // Computes the penalty parameter 
@@ -6299,7 +6331,7 @@ namespace peopt{
             ) {
                 const Real& pred=state.pred;
                 const Real& norm_gx=state.norm_gx; 
-                const Real& norm_gpxdxnpgx=state.norm_gpxdxnpgx;
+                const Real& norm_gradpxdxnpgx=state.norm_gradpxdxnpgx;
                 const Real& rho_bar=state.rho_bar;
                 Real& rho=state.rho;
 
@@ -6308,10 +6340,10 @@ namespace peopt{
                 // correction before we attempt this.
                 if( pred > 0 && 
                     pred < (rho/Real(2.)) *
-                    (norm_gx*norm_gx - norm_gpxdxnpgx*norm_gpxdxnpgx) 
+                    (norm_gx*norm_gx - norm_gradpxdxnpgx*norm_gradpxdxnpgx) 
                 ) {
                     rho = -Real(2.) * pred
-                        / (norm_gx*norm_gx - norm_gpxdxnpgx*norm_gpxdxnpgx) 
+                        / (norm_gx*norm_gx - norm_gradpxdxnpgx*norm_gradpxdxnpgx) 
                         + Real(2.) * rho + rho_bar;
                 }
             }
@@ -6453,7 +6485,7 @@ namespace peopt{
                 Y_Vector& gpxdxn_p_gx=state.gpxdxn_p_gx.front();
                 std::list <X_Vector>& oldY=state.oldY; 
                 std::list <X_Vector>& oldS=state.oldS; 
-                Real& norm_gpxdxnpgx=state.norm_gpxdxnpgx;
+                Real& norm_gradpxdxnpgx=state.norm_gradpxdxnpgx;
                 Real& norm_dx=state.norm_dx;
                 Real& xi_qn=state.xi_qn;
                 Real& xi_pg=state.xi_pg;
@@ -6491,7 +6523,7 @@ namespace peopt{
                             X::axpy(Real(1.),g_x,gpxdxn_p_gx);
 
                             // Find || g'(x) dx_n + g(x) ||
-                            norm_gpxdxnpgx
+                            norm_gradpxdxnpgx
                                 = sqrt(X::innr(gpxdxn_p_gx,gpxdxn_p_gx));
 
                             // Find H dx_n
@@ -6759,8 +6791,8 @@ namespace peopt{
 
                 // If a trust-region operator has not been provided, use the
                 // identity.
-                if(fns.TR_op.get()==NULL)
-                    fns.TR_op.reset(new typename
+                if(fns.TRS.get()==NULL)
+                    fns.TRS.reset(new typename
                         Unconstrained <Real,XX>::Functions::Identity());
 
                 // Make sure the algorithm uses the composite step routines
@@ -6829,15 +6861,15 @@ namespace peopt{
 
             public:
                 // Original gradient (possibly of a Lagrangian) 
-                std::list <X_Vector> g_orig;
+                std::list <X_Vector> grad_orig;
 
                 // Gradient used in the Schur complement system,
                 // grad f(x) - sigma mu h'(x)* (inv(L(h(x))) e)
-                std::list <X_Vector> g_schur;
+                std::list <X_Vector> grad_schur;
 
                 // Gradient of the inequality Lagrangian,
                 // grad f(x) - h'(x)*z
-                std::list <X_Vector> g_lag;
+                std::list <X_Vector> grad_lag;
 
                 // Lagrange multiplier (dual variable) for the inequality
                 // constraints 
@@ -6915,20 +6947,20 @@ namespace peopt{
                 const X_Vector& x,
                 const Z_Vector& z
             ) {
-                // Allocate memory for g_orig
-                state.g_orig.clear();
-                    state.g_orig.push_back(X_Vector());
-                    X::init(x,state.g_orig.back());
+                // Allocate memory for grad_orig
+                state.grad_orig.clear();
+                    state.grad_orig.push_back(X_Vector());
+                    X::init(x,state.grad_orig.back());
 
-                // Allocate memory for g_schur 
-                state.g_schur.clear();
-                    state.g_schur.push_back(X_Vector());
-                    X::init(x,state.g_schur.back());
+                // Allocate memory for grad_schur 
+                state.grad_schur.clear();
+                    state.grad_schur.push_back(X_Vector());
+                    X::init(x,state.grad_schur.back());
 
-                // Allocate memory for g_lag
-                state.g_lag.clear();
-                    state.g_lag.push_back(X_Vector());
-                    X::init(x,state.g_lag.back());
+                // Allocate memory for grad_lag
+                state.grad_lag.clear();
+                    state.grad_lag.push_back(X_Vector());
+                    X::init(x,state.grad_lag.back());
 
                 // Allocate memory for z
                 state.z.clear();
@@ -7062,9 +7094,9 @@ namespace peopt{
                 bool operator () (const std::string& name) const {
                     if( typename Unconstrained <Real,XX>::Restart
                             ::is_x()(name) ||
-                        name == "g_orig" ||
-                        name == "g_schur" ||
-                        name == "g_lag"
+                        name == "grad_orig" ||
+                        name == "grad_schur" ||
+                        name == "grad_lag"
                     ) 
                         return true;
                     else
@@ -7149,12 +7181,12 @@ namespace peopt{
                 X_Vectors& xs,
                 Z_Vectors& zs
             ) {
-                xs.first.push_back("g_orig");
-                xs.second.splice(xs.second.end(),state.g_orig);
-                xs.first.push_back("g_schur");
-                xs.second.splice(xs.second.end(),state.g_schur);
-                xs.first.push_back("g_lag");
-                xs.second.splice(xs.second.end(),state.g_lag);
+                xs.first.push_back("grad_orig");
+                xs.second.splice(xs.second.end(),state.grad_orig);
+                xs.first.push_back("grad_schur");
+                xs.second.splice(xs.second.end(),state.grad_schur);
+                xs.first.push_back("grad_lag");
+                xs.second.splice(xs.second.end(),state.grad_lag);
 
                 zs.first.push_back("z");
                 zs.second.splice(zs.second.end(),state.z);
@@ -7214,12 +7246,12 @@ namespace peopt{
 
                     // Determine which variable we're reading in and then splice
                     // it in the correct location
-                    if(*name0=="g_orig")
-                        state.g_orig.splice(state.g_orig.end(),xs.second,x0);
-                    else if(*name0=="g_schur")
-                        state.g_schur.splice(state.g_schur.end(),xs.second,x0);
-                    else if(*name0=="g_lag")
-                        state.g_lag.splice(state.g_lag.end(),xs.second,x0);
+                    if(*name0=="grad_orig")
+                        state.grad_orig.splice(state.grad_orig.end(),xs.second,x0);
+                    else if(*name0=="grad_schur")
+                        state.grad_schur.splice(state.grad_schur.end(),xs.second,x0);
+                    else if(*name0=="grad_lag")
+                        state.grad_lag.splice(state.grad_lag.end(),xs.second,x0);
 
                     // Remove the string corresponding to the element just
                     // spliced if splicing occured.
@@ -7395,15 +7427,15 @@ namespace peopt{
                 const Z_Vector& h_x;
 
                 // Original version of the gradient
-                X_Vector& g_orig;
+                X_Vector& grad_orig;
 
                 // Schur complement version of the gradient,
                 // grad f(x) - sigma mu h'(x)* (inv(L(h(x))) e)
-                X_Vector& g_schur;
+                X_Vector& grad_schur;
 
                 // True gradient of the Lagrangian,
                 // grad f(x) - h'(x)*z
-                X_Vector& g_lag;
+                X_Vector& grad_lag;
 
                 // This forces derived classes to call the constructor that
                 // depends on the state
@@ -7418,9 +7450,9 @@ namespace peopt{
                     typename Functions::t& fns
                 ) : f(fns.f), h(*(fns.h)), z(state.z.front()), mu(state.mu),
                     sigma(state.sigma), h_x(state.h_x.front()),
-                    g_orig(state.g_orig.front()),
-                    g_schur(state.g_schur.front()),
-                    g_lag(state.g_lag.front())
+                    grad_orig(state.grad_orig.front()),
+                    grad_schur(state.grad_schur.front()),
+                    grad_lag(state.grad_lag.front())
                 { }
 
                 // <- f(x) - sigma mu barr(h(x))
@@ -7446,13 +7478,13 @@ namespace peopt{
                     // g <- grad f(x)
                     f->grad(x,g);
 
-                    // g_orig <- grad f(x)
-                    X::copy(g,g_orig);
+                    // grad_orig <- grad f(x)
+                    X::copy(g,grad_orig);
 
                     // Calculate the Schur complement version of the gradient
 
-                    // g_schur <- grad f(x)
-                    X::copy(g,g_schur);
+                    // grad_schur <- grad f(x)
+                    X::copy(g,grad_schur);
 
                     // z_tmp1 <- e
                     Z::id(z_tmp1);
@@ -7463,22 +7495,22 @@ namespace peopt{
                     // x_tmp1 <- h'(x)* (inv(L(h(x))) e)
                     h.ps(x,z_tmp2,x_tmp1);
 
-                    // g_schur <- grad f(x) - sigma mu h'(x)* (inv(L(h(x))) e)
-                    X::axpy(-sigma*mu,x_tmp1,g_schur);
+                    // grad_schur <- grad f(x) - sigma mu h'(x)* (inv(L(h(x))) e)
+                    X::axpy(-sigma*mu,x_tmp1,grad_schur);
 
                     // Calculate the true gradient of the Lagrangian
 
-                    // g_lag <- grad f(x)
-                    X::copy(g,g_lag);
+                    // grad_lag <- grad f(x)
+                    X::copy(g,grad_lag);
 
                     // x_tmp1 <- h'(x)*z
                     h.ps(x,z,x_tmp1);
 
-                    // g_lag <- grad f(x) - h'(x)*z
-                    X::axpy(-Real(1.0),x_tmp1,g_lag);
+                    // grad_lag <- grad f(x) - h'(x)*z
+                    X::axpy(-Real(1.0),x_tmp1,grad_lag);
 
                     // Finally, return the Schur complement gradient
-                    X::copy(g_schur,g);
+                    X::copy(grad_schur,g);
                 }
 
                 // Adds on the interior point piece to the Hessian. 
@@ -8160,21 +8192,21 @@ namespace peopt{
                     // Create some shorcuts
                     const VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
                     const X_Vector& x=state.x.front();
-                    const X_Vector& g_orig=state.g_orig.front();
-                    const X_Vector& g_lag=state.g_lag.front();
-                    const X_Vector& g_schur=state.g_schur.front();
+                    const X_Vector& grad_orig=state.grad_orig.front();
+                    const X_Vector& grad_lag=state.grad_lag.front();
+                    const X_Vector& grad_schur=state.grad_schur.front();
                     const InteriorPointMethod::t& ipm=state.ipm;
                     const CentralityStrategy::t& cstrat=state.cstrat;
                     const Natural& iter=state.iter;
                     const ScalarValuedFunction<Real,XX>& f=*(fns.f);
-                    X_Vector& g=state.g.front();
+                    X_Vector& grad=state.grad.front();
                     Z_Vector& z=state.z.front();
                     Z_Vector& h_x=state.h_x.front();
                     Z_Vector& dz=state.dz.front();
                     Real& mu = state.mu;
                     Real& sigma = state.sigma;
                     Real& merit_xpdx= state.merit_xpdx;
-                    Real& norm_g = state.norm_g;
+                    Real& norm_grad = state.norm_grad;
 
                     // Call the user define manipulator
                     smanip(fns,state,loc);
@@ -8198,8 +8230,8 @@ namespace peopt{
                     // due to small steps.
                     case OptimizationLocation::AfterRejectedTrustRegion:
                     case OptimizationLocation::AfterRejectedLineSearch:
-                        X::copy(g_lag,g);
-                        norm_g=sqrt(X::innr(g_lag,g_lag));
+                        X::copy(grad_lag,grad);
+                        norm_grad=sqrt(X::innr(grad_lag,grad_lag));
 
                         Z::zero(dz);
                         break;
@@ -8207,8 +8239,8 @@ namespace peopt{
                     // Make sure we use the Schur complement gradient when
                     // we get the step
                     case OptimizationLocation::BeforeGetStep:
-                        X::copy(g_schur,g);
-                        norm_g=sqrt(X::innr(g_schur,g_schur));
+                        X::copy(grad_schur,grad);
+                        norm_grad=sqrt(X::innr(grad_schur,grad_schur));
                         break;
                     
                     case OptimizationLocation::BeforeStep:
@@ -8255,15 +8287,15 @@ namespace peopt{
                     // or a CG-style algorithm.
                     case OptimizationLocation::BeforeSaveOld:
                     case OptimizationLocation::BeforeQuasi:
-                        X::copy(g_orig,g);
-                        norm_g=sqrt(X::innr(g_orig,g_orig));
+                        X::copy(grad_orig,grad);
+                        norm_grad=sqrt(X::innr(grad_orig,grad_orig));
                         break;
 
                     // Copy in the gradient of the Lagrangian for the
                     // stopping conditions.
                     case OptimizationLocation::AfterQuasi:
-                        X::copy(g_lag,g);
-                        norm_g=sqrt(X::innr(g_lag,g_lag));
+                        X::copy(grad_lag,grad);
+                        norm_grad=sqrt(X::innr(grad_lag,grad_lag));
                         break;
 
                     // Adjust the interior point parameter and insure that
@@ -8347,7 +8379,7 @@ namespace peopt{
                 state.mu_typ=state.mu;
 
                 // Set the trust-region scaling
-                fns.TR_op.reset(new TrustRegionScaling(fns,state));
+                fns.TRS.reset(new TrustRegionScaling(fns,state));
                 
                 // Minimize the problem
                 Unconstrained <Real,XX>::Algorithms

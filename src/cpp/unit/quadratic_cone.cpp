@@ -129,12 +129,12 @@ BOOST_AUTO_TEST_CASE(newton_cg) {
     // Setup the optimization problem
     state.algorithm_class = peopt::AlgorithmClass::LineSearch;
     state.dir = peopt::LineSearchDirection::NewtonCG;
-    state.H_type = peopt::Operators::External;
+    state.H_type = peopt::Operators::UserDefined;
     state.eps_krylov = 1e-10;
     state.iter_max = 300;
     state.msg_level = 0;
     state.eps_dx = 1e-16;
-    state.eps_g = 1e-9;
+    state.eps_grad = 1e-9;
     state.eps_mu  = 1e-8;
     state.sigma = 0.01;
     state.gamma = 0.995;
@@ -184,12 +184,12 @@ BOOST_AUTO_TEST_CASE(tr_newton) {
     fns.h.reset(new MyIneq);
 
     // Setup the optimization problem
-    state.H_type = peopt::Operators::External;
+    state.H_type = peopt::Operators::UserDefined;
     state.iter_max = 100;
     state.msg_level = 0;
     state.eps_krylov = 1e-10;
     state.eps_dx = 1e-16;
-    state.eps_g = 1e-10;
+    state.eps_grad = 1e-10;
     state.eps_mu = 1e-8;
     state.sigma = 0.01;
     state.gamma = 0.995;
@@ -239,12 +239,12 @@ BOOST_AUTO_TEST_CASE(tr_newton_predictor_corrector) {
     fns.h.reset(new MyIneq);
 
     // Setup the optimization problem
-    state.H_type = peopt::Operators::External;
+    state.H_type = peopt::Operators::UserDefined;
     state.iter_max = 100;
     state.msg_level = 0;
     state.eps_krylov = 1e-10;
     state.eps_dx = 1e-16;
-    state.eps_g = 1e-10;
+    state.eps_grad = 1e-10;
     state.eps_mu = 1e-8;
     state.gamma = 0.995;
     state.cstrat = peopt::CentralityStrategy::PredictorCorrector;

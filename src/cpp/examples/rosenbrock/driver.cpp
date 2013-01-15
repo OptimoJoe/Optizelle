@@ -113,7 +113,7 @@ int main(){
     // Setup some algorithmic parameters
     #if 1
     // Trust-Region Newton's method
-    state.H_type = peopt::Operators::External;
+    state.H_type = peopt::Operators::UserDefined;
     state.iter_max = 50;
     state.eps_krylov = 1e-10;
     #endif
@@ -130,7 +130,7 @@ int main(){
     #if 0
     state.algorithm_class = peopt::AlgorithmClass::LineSearch;
     state.dir = peopt::LineSearchDirection::NewtonCG;
-    state.H_type = peopt::Operators::External;
+    state.H_type = peopt::Operators::UserDefined;
     state.eps_krylov = 1e-2;
     state.iter_max = 50;
     #endif
