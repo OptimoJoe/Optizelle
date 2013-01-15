@@ -6272,8 +6272,11 @@ namespace peopt{
                 const Real& rho_bar=state.rho_bar;
                 Real& rho=state.rho;
 
-                // If the predicted reduction is too small, update it 
-                if(pred < (rho/Real(2.)) *
+                // If the predicted reduction is small, update the penalty
+                // parameter.  Make sure we actually have a positive predicted
+                // correction before we attempt this.
+                if( pred > 0 && 
+                    pred < (rho/Real(2.)) *
                     (norm_gx*norm_gx - norm_gpxdxnpgx*norm_gpxdxnpgx) 
                 ) {
                     rho = -Real(2.) * pred
@@ -6481,11 +6484,15 @@ namespace peopt{
                         f.hessvec(x,dx_t_uncorrected,H_dxtuncorrected);
 
                         // Continue to correct the tangential step until one
-                        // comes back as valid.
+                        // comes back as valid.  Sometimes, we can get a
+                        // negative predicted reduction due to odd numerical
+                        // errors or a bad Hessian.  In this case, no amount
+                        // of refining can fix the problem, so just exit and
+                        // let the checkStep code adjust the trust-region.
                         rpred=Real(1.);
                         pred=Real(0.);
                         for(Real xi_tang0=xi_tang;
-                            fabs(rpred)>eta0*pred;
+                            pred>=Real(0.) && fabs(rpred)>eta0*pred;
                             xi_tang0=xi_tang0*Real(.001)
                         ) {
 

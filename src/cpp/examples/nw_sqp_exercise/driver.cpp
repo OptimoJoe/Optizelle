@@ -58,12 +58,12 @@ struct MyObj : public peopt::ScalarValuedFunction <double,peopt::Rm> {
     ) const {
         g[itok(1)]= x[itok(2)]*x[itok(3)]*x[itok(4)]*x[itok(5)]
             * exp(x[itok(1)]*x[itok(2)]*x[itok(3)]*x[itok(4)]*x[itok(5)])
-            - Real(3.)*sq(x[itok(1)])*(pow(x[itok(1)],3)
-            + pow(x[itok(2)],3)+Real(1.));
+            - Real(3.)*sq(x[itok(1)])
+            *(pow(x[itok(1)],3) + pow(x[itok(2)],3)+Real(1.));
         g[itok(2)]= x[itok(1)]*x[itok(3)]*x[itok(4)]*x[itok(5)]
             * exp(x[itok(1)]*x[itok(2)]*x[itok(3)]*x[itok(4)]*x[itok(5)])
-            - Real(3.)*sq(x[itok(2)])*(pow(x[itok(1)],3)
-            + pow(x[itok(2)],3) + Real(1.));
+            - Real(3.)*sq(x[itok(2)])
+            * (pow(x[itok(1)],3) + pow(x[itok(2)],3) + Real(1.));
         g[itok(3)]= x[itok(1)]*x[itok(2)]*x[itok(4)]*x[itok(5)]
             * exp(x[itok(1)]*x[itok(2)]*x[itok(3)]*x[itok(4)]*x[itok(5)]);
         g[itok(4)]= x[itok(1)]*x[itok(2)]*x[itok(3)]*x[itok(5)]
@@ -350,11 +350,18 @@ int main(){
 
     // Print out the final answer
     const std::vector <double>& opt_x=*(state.x.begin());
-    std::cout << std::scientific << std::setprecision(16)
-        << "The optimal point is: ("
-        << opt_x[itok(1)] << ','
-	<< opt_x[itok(2)] << ','
-        << opt_x[itok(3)] << ','
-	<< opt_x[itok(4)] << ','
-        << opt_x[itok(5)] << ')' << std::endl;
+    std::cout << "The optimal point is:" << std::endl;
+    for(int i=1;i<=5;i++) {
+        if(i==1)
+            std::cout << "[ ";
+        else
+            std::cout << "  ";
+        std::cout << std::scientific << std::setprecision(16) << std::setw(23)
+            << std::right << opt_x[itok(i)];
+        if(i==5)
+            std::cout << " ]";
+        else
+            std::cout << " ;";
+        std::cout << std::endl;
+    }
 }
