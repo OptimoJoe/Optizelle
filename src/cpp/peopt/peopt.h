@@ -432,7 +432,7 @@ namespace peopt{
             // Occurs during a user defined get step calculation.
             GetStep,
 
-            // Occurs after we take the optimization step u+s, but before
+            // Occurs after we take the optimization step x+dx, but before
             // we calculate the gradient based on this new step.  In addition,
             // after this point we set the merit value, merit_x, to be
             // merit_xpdx.
@@ -4587,9 +4587,13 @@ namespace peopt{
                 // linear Taylor series at x in the direciton dx_n.
                 std::list <Y_Vector> g_x;
 
-                // Norm of g_x.  This is used in the predicted reduction and
-                // the penalty parameter computation.
+                // Norm of g_x.  This is used in the predicted reduction,
+                // the penalty parameter computation, and stopping conditions.
                 Real norm_gx;
+
+                // A typical norm for norm_gx.  Generally, we just take
+                // the value at the first iteration.
+                Real norm_gxtyp;
                 
                 // Linear Taylor series at x in the direction dx_n.  This is
                 // used both in the predicted reduction as well as the
@@ -4648,6 +4652,7 @@ namespace peopt{
                 state.xi_4 = Real(2.);
                 state.rpred=std::numeric_limits<Real>::quiet_NaN();
                 state.norm_gx=std::numeric_limits<Real>::quiet_NaN();
+                state.norm_gxtyp=std::numeric_limits<Real>::quiet_NaN();
                 state.norm_gpxdxnpgx=std::numeric_limits<Real>::quiet_NaN();
                 state.Minv_left_type=Operators::Identity;
                 state.Minv_right_type=Operators::Identity;
@@ -4874,6 +4879,7 @@ namespace peopt{
                         name == "xi_4" ||
                         name == "rpred" ||
                         name == "norm_gx" ||
+                        name == "norm_gxtyp" ||
                         name == "norm_gpxdxnpgx" 
                     )
                         return true;
@@ -5075,6 +5081,8 @@ namespace peopt{
                 reals.second.push_back(state.rpred);
                 reals.first.push_back("norm_gx");
                 reals.second.push_back(state.norm_gx);
+                reals.first.push_back("norm_gxtyp");
+                reals.second.push_back(state.norm_gxtyp);
                 reals.first.push_back("norm_gpxdxnpgx");
                 reals.second.push_back(state.norm_gpxdxnpgx);
 
@@ -5203,6 +5211,7 @@ namespace peopt{
                     else if(*name=="xi_4") state.xi_4=*real;
                     else if(*name=="rpred") state.rpred=*real;
                     else if(*name=="norm_gx") state.norm_gx=*real;
+                    else if(*name=="norm_gxtyp") state.norm_gxtyp=*real;
                     else if(*name=="norm_gpxdxnpgx") state.norm_gpxdxnpgx=*real;
                 }
                 
@@ -6422,7 +6431,6 @@ namespace peopt{
                 Y_Vector& gpxdxn_p_gx=state.gpxdxn_p_gx.front();
                 std::list <X_Vector>& oldY=state.oldY; 
                 std::list <X_Vector>& oldS=state.oldS; 
-                Real& norm_gx=state.norm_gx;
                 Real& norm_gpxdxnpgx=state.norm_gpxdxnpgx;
                 Real& norm_dx=state.norm_dx;
                 Real& xi_qn=state.xi_qn;
@@ -6433,12 +6441,6 @@ namespace peopt{
                 Real& pred=state.pred;
                 Real& rpred=state.rpred;
                 Natural& rejected_trustregion=state.rejected_trustregion;
-
-                // Find g(x)
-                g(x,g_x);
-
-                // Find || g(x) ||
-                norm_gx = sqrt(X::innr(g_x,g_x));
 
                 // Continue to look for a step until our actual vs. predicted
                 // reduction is good.
@@ -6581,6 +6583,25 @@ namespace peopt{
                 } 
             }
             
+            // Adjust the stopping conditions unless || g(x) || <  
+            static void adjustStoppingConditions(
+                const typename Functions::t& fns,
+                typename State::t& state
+            ) {
+                // Create some shortcuts
+                const Real& eps_constr=state.eps_constr;
+                const Real& norm_gx=state.norm_gx; 
+                const Real& norm_gxtyp=state.norm_gxtyp; 
+                StoppingCondition::t& opt_stop=state.opt_stop;
+                
+                // Prevent convergence unless the infeasibility is small. 
+                if( opt_stop==StoppingCondition::RelativeGradientSmall &&
+                    !(norm_gx < eps_constr*norm_gxtyp) 
+                )
+                    opt_stop=StoppingCondition::NotConverged;
+            }
+
+            
             // This adds the composite-step method through use of a state
             // manipulator.
             struct CompositeStepManipulator
@@ -6625,13 +6646,28 @@ namespace peopt{
                         =dynamic_cast <typename State::t&> (state_);
                 
                     // Create some shortcuts
+                    const VectorValuedFunction <Real,XX,YY>& g=*(fns.g);
+                    const X_Vector& x=state.x.front();
                     const Y_Vector& dy=state.dy.front();
                     Y_Vector& y=state.y.front();
+                    Y_Vector& g_x=state.g_x.front();
+                    Real& norm_gx = state.norm_gx;
+                    Real& norm_gxtyp = state.norm_gxtyp;
 
                     // Call the user define manipulator
                     smanip(fns,state,loc);
 
                     switch(loc){
+                    case OptimizationLocation::AfterInitialFuncAndGrad:
+                        // Make sure we properly cache g(x) and its norm
+                        // on initialization.  We have this conditional to
+                        // not reevaluate this during the restart
+                        if(norm_gx != norm_gx) {
+                            g(x,g_x);
+                            norm_gx = sqrt(X::innr(g_x,g_x));
+                            norm_gxtyp = norm_gx;
+                        }
+
                     case OptimizationLocation::GetStep:
                         // Find the steps in both the primal and dual directions
                         getStep(msg,smanip,fns,state);
@@ -6640,6 +6676,19 @@ namespace peopt{
                     case OptimizationLocation::BeforeStep:
                         // Make sure to take the step in the dual variable
                         Y::axpy(Real(1.),dy,y);
+                        break;
+
+                    case OptimizationLocation::AfterStepBeforeGradient:
+                        // Make sure we update our cached value of g(x) and
+                        // its norm
+                        g(x,g_x);
+                        norm_gx = sqrt(X::innr(g_x,g_x));
+                        break;
+
+                    case OptimizationLocation::EndOfOptimizationIteration:
+                        // Make sure we don't exit until the norm of the
+                        // constraints is small as well.
+                        adjustStoppingConditions(fns,state);
                         break;
                     default:
                         break;
