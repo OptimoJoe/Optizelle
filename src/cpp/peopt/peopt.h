@@ -5494,8 +5494,10 @@ namespace peopt{
             static void getStateHeader_(
                 const typename State::t& state,
                 std::list <std::string>& out
-            ) { }
-
+            ) { 
+                // Norm of the constrained 
+                out.push_back(atos <> ("||g(x)||"));
+            }
             // Combines all of the state headers
             static void getStateHeader(
                 const typename State::t& state,
@@ -5511,7 +5513,27 @@ namespace peopt{
                 const typename State::t& state,
                 const bool blank,
                 std::list <std::string>& out
-            ) { }
+            ) {
+                // Create some shortcuts
+                const Real& norm_gx=state.norm_gx; 
+
+                // Get a iterator to the last element prior to inserting
+                // elements
+                std::list <std::string>::iterator prior=out.end(); prior--;
+
+                // Interior point information
+                // Estimate the interior-point parameter
+                out.push_back(atos <> (norm_gx));
+
+                // If we needed to do blank insertions, overwrite the elements
+                // with spaces 
+                if(blank)
+                    for(std::list <std::string>::iterator x=++prior;
+                        x!=out.end();
+                        x++
+                    )
+                        (*x)="          ";
+            }
 
             // Combines all of the state information
             static void getState(
