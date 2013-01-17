@@ -217,6 +217,9 @@ namespace peopt {
                 typename peopt::EqualityConstrained <Real,XX,YY>::State::t&
                     state
             ) {
+                // Base error message
+                const std::string base = "Invalid JSON parameter: ";
+
                 // Read in the input file
                 Json::Value root=parse(msg,fname);
 
@@ -253,6 +256,28 @@ namespace peopt {
                 state.augsys_rst_freq=Natural(root["peopt"]
                     .get("augsys_rst_freq",
                         Json::Value::UInt64(state.augsys_rst_freq)).asUInt64());
+
+                std::string PSchur_left_type=root["peopt"]
+                    .get("PSchur_left_type",
+                        Operators::to_string(state.PSchur_left_type))
+                    .asString();
+                if(Operators::is_valid()(PSchur_left_type))
+                    state.PSchur_left_type
+                        = Operators::from_string(PSchur_left_type); 
+                else
+                    msg.error(base + PSchur_left_type
+                        + " is not a valid PSchur_left_type");
+
+                std::string PSchur_right_type=root["peopt"]
+                    .get("PSchur_right_type",
+                        Operators::to_string(state.PSchur_right_type))
+                    .asString();
+                if(Operators::is_valid()(PSchur_right_type))
+                    state.PSchur_right_type
+                        = Operators::from_string(PSchur_right_type); 
+                else
+                    msg.error(base + PSchur_right_type
+                        + " is not a valid PSchur_right_type");
             }
             static void read(
                 const peopt::Messaging& msg,
@@ -293,6 +318,10 @@ namespace peopt {
                     =Json::Value::UInt64(state.augsys_iter_max);
                 root["peopt"]["augsys_rst_freq"]
                     =Json::Value::UInt64(state.augsys_rst_freq);
+                root["peopt"]["PSchur_left_type"]
+                    =Operators::to_string(state.PSchur_left_type);
+                root["peopt"]["PSchur_right_type"]
+                    =Operators::to_string(state.PSchur_right_type);
 
                 return writer.write(root);
             }
