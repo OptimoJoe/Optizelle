@@ -616,14 +616,14 @@ namespace peopt {
     // (output) x : Final solution x.
     // (output) x_cp : The Cauchy-Point, which is defined as the solution x
     //     after a single iteration.
-    // (output) norm_r : The norm of the final residual.
+    // (output) B2norm_r : The norm ||B r|| of the final residual.
     // (output) iter : The number of iterations required to converge. 
     // (output) krylov_stop : The reason why the Krylov method was terminated.
     template <
         typename Real,
         template <typename> class XX
     >
-    void truncated_pcd(
+    void truncated_cd(
         const Operator <Real,XX,XX>& A,
         const typename XX <Real>::Vector& b,
         const Operator <Real,XX,XX>& B,
@@ -635,7 +635,7 @@ namespace peopt {
         const typename XX <Real>::Vector& x_cntr,
         typename XX <Real>::Vector& x,
         typename XX <Real>::Vector& x_cp,
-        Real& norm_r,
+        Real& B2norm_r,
         Natural& iter,
         KrylovStop::t& krylov_stop
     ){
@@ -670,10 +670,6 @@ namespace peopt {
         X::copy(b,r);
         X::scal(Real(-1.),r);
 
-        // Find the norm of the residual and save the original residual
-        norm_r = sqrt(X::innr(r,r));
-        Real norm_r0 = norm_r;
-
         // Allocate memory for two additional work vectors.  We use these
         // when calcuating the norm of the operator C applied to the
         // trial step.  In theory, we could get rid of at least one of these
@@ -700,23 +696,28 @@ namespace peopt {
             return;
         }
 
+        // Find the steepest descent search direction
+        X::copy(r,p);
+        X::scal(Real(-1.),p);	
+
+        // Find the Bp application.  We use this to find the B-norm of the
+        // residual.  Then, we save the original B-norm of the residual.
+        B(p,Bp);
+        Real B2norm_r0 = sqrt(X::innr(Bp,Bp));
+        B2norm_r = B2norm_r0; 
+
         // Loop until the maximum iteration
         for(iter=Natural(1);iter<=iter_max;iter++){
         
             // If the norm of the residual is small relative to the starting
             // residual, exit
-            if(norm_r < eps*norm_r0) {
+            if(B2norm_r < eps*B2norm_r0) {
                 iter--;
                 krylov_stop = KrylovStop::RelativeErrorSmall;
                 break;
             }
 
-            // Find the steepest descent search direction
-            X::copy(r,p);
-            X::scal(Real(-1.),p);	
-
-            // Find the Bp and ABp applications 
-            B(p,Bp);
+            // Find the ABp application
             A(Bp,ABp);
 
             // Orthogonalize this direction to the previous directions
@@ -801,7 +802,8 @@ namespace peopt {
                     // If we have a NaN, take our last search direction
                     if(Anorm_Bp_2 != Anorm_Bp_2) X::copy(Bps.back(),Bp);
 
-                    // Find sigma so that || C((x-x_cntr) + sigma Bp) ||=delta.
+                    // Find sigma so that
+                    // || C((x-x_cntr) + sigma Bp) || = delta.
                     // This can be found by finding the positive root of the
                     // quadratic
                     // || C(x-x_cntr) + sigma C(Bp) ||^2 = delta^2.
@@ -826,20 +828,22 @@ namespace peopt {
                     quad_equation(aa,bb,cc,nroots,r1,r2);
                     Real sigma = r1 > r2 ? r1 : r2;
 
-                    // Take the step, find its residual, and compute the 
-                    // residual's norm
+                    // Take the step and find its residual. Then, compute
+                    // B-norm of the residual. 
                     X::axpy(sigma,Bp,x);
                     X::axpy(sigma,Bp,x_m_xcntr);
                     X::axpy(sigma,ABp,r);
-                    norm_r=sqrt(X::innr(r,r));
+                    B(r,Bp);  // Here, we're just setting Bp <- Br 
+                    B2norm_r=sqrt(X::innr(Bp,Bp));
 
                 // In the case that we're ignoring the trust-region, we
-                // either take a step of unit scale if there's no NaN.
+                // take a step of unit scale if there's no NaN.
                 } else if(Anorm_Bp_2 == Anorm_Bp_2) {
                     X::axpy(Real(1.),Bp,x);
                     X::axpy(Real(1.),Bp,x_m_xcntr);
                     X::axpy(Real(1.),ABp,r);
-                    norm_r=sqrt(X::innr(r,r));
+                    B(r,Bp);  // Here, we're just setting Bp <- Br 
+                    B2norm_r=sqrt(X::innr(Bp,Bp));
                 }
 
                 // Determine why we stopped
@@ -868,8 +872,14 @@ namespace peopt {
             // Find the new residual
             X::axpy(alpha,ABp,r);
 
-            // Compute the norm of the residual
-            norm_r=sqrt(X::innr(r,r));
+            // Find the steepest descent search direction
+            X::copy(r,p);
+            X::scal(Real(-1.),p);	
+        
+            // Find the Bp application and use this to find the B-norm of the
+            // residual.
+            B(p,Bp);
+            B2norm_r = sqrt(X::innr(Bp,Bp));
         }
 
         // If we've exceeded the maximum iteration, make sure to denote this
@@ -1173,6 +1183,7 @@ namespace peopt {
     struct GMRESManipulator {
         // Application
         virtual void operator () (
+            const Natural& iter,
             const typename XX <Real>::Vector& x,
             const typename XX <Real>::Vector& b,
             Real& eps
@@ -1282,7 +1293,7 @@ namespace peopt {
             Qt_e1,Qts);
             
         // If for some bizarre reason, we're already optimal, don't do any work 
-        gmanip(x,b,eps);
+        gmanip(0,x,b,eps);
         if(norm_rtrue < eps) iter_max=0;	
 
         // Iterate until the maximum iteration
@@ -1357,7 +1368,7 @@ namespace peopt {
             norm_rtrue = sqrt(X::innr(rtrue,rtrue));
 
             // Adjust the stopping tolerance
-            gmanip(x_p_dx,b,eps);
+            gmanip(i,x_p_dx,b,eps);
 
             // Determine if we should exit since the norm of the true residual
             // is small
@@ -1443,7 +1454,9 @@ namespace peopt {
     // (output) x : Final solution.
     // (output) x_cp : The Cauchy-Point, which is defined as the solution x
     //     after a single iteration.
-    // (output) Bnorm_r : Final preconditioned norm of the residual
+    // (output) Bnorm_r : The B-norm of the residual.  In the case that we
+    //     truncate, this is the B-norm of the residual on the previous
+    //     iteration.
     // (output) iter : Number of iterations computed
     template <
         typename Real,
@@ -1480,6 +1493,7 @@ namespace peopt {
         X_Vector dx; X::init(x,dx);
 
         // Allocate memory for a few more temps 
+        X_Vector ABv_last; X::init(x,ABv_last);
         X_Vector x_tmp1; X::init(x,x_tmp1);
         X_Vector x_tmp2; X::init(x,x_tmp2);
 
@@ -1504,8 +1518,8 @@ namespace peopt {
 
         // Find the preconditioned residual
         B(b,x_tmp1);
-        Bnorm_r = sqrt(X::innr(x_tmp1,b));
-        Real Bnorm_r0 = Bnorm_r;
+        Real Bnorm_r0 = sqrt(X::innr(x_tmp1,b));
+        Bnorm_r = Bnorm_r0;
 
         // Find the initial Krylov vector. 
         X::copy(b,x_tmp1);
@@ -1544,8 +1558,9 @@ namespace peopt {
             // Find the next Krylov vector,
             // x_tmp1 <- ABv_last,
             // x_tmp2 <- B(ABv_last)
-            A(Bvs.back(),x_tmp1);
-            B(x_tmp1,x_tmp2);
+            A(Bvs.back(),ABv_last);
+            X::copy(ABv_last,x_tmp1);
+            B(ABv_last,x_tmp2);
             
             // Orthogonalize this Krylov vector with respect to the rest
             Borthogonalize <Real,XX> (vs,Bvs,x_tmp1,x_tmp2,R); 
@@ -1615,7 +1630,6 @@ namespace peopt {
                 // determines the new B-norm of the residual.
                 rot <Real> (Integer(1),&(Qt_e1[0]),Integer(1),&(Qt_e1[1]),
                     Integer(1),Qts.back().first,Qts.back().second);
-                Bnorm_r = fabs(Qt_e1[1]);
 
                 // Determine B V inv(R)
                 typename std::list <X_Vector>::const_reverse_iterator
@@ -1648,6 +1662,65 @@ namespace peopt {
                 X::axpy(Real(1.),dx,x_tmp1);
                 C(x_tmp1,x_tmp2);
                 norm_C_x_m_xcntr = sqrt(X::innr(x_tmp2,x_tmp2));
+                
+            // Sometimes the second Krylov vector lies in the nullspace
+            // of B.  In this case, we don't have a search direction to
+            // fall back on.  Hence, we need to find a valid search
+            // direction. In order to do this, we solve for alpha in 
+            // min_{alpha} .5 || A B v1 alpha - b ||^2_B, which is 
+            // alpha = <B A B v1, b> / || B A B v1 ||^2.
+            // Then, we set dx=alpha B v1.
+            } else if(iter==1){
+                // x_tmp1 <- B A B v1
+                B(ABv_last,x_tmp1);
+
+                // Solve for alpha
+                Real Bnorm_ABv1_2 = X::innr(x_tmp1,ABv_last);
+                Real Binnr_ABv1_b = X::innr(x_tmp1,b);
+                Real alpha=Binnr_ABv1_b / Bnorm_ABv1_2; 
+
+                // Find dx = alpha B v1
+                X::copy(Bvs.back(),dx);
+                X::scal(alpha,dx);
+
+                // Since we start with a zero initial guess, Bnorm_r0=||b||_B.
+                // Hence,
+                //   || A(x+dx)-b ||_B
+                // = || A(dx) - b ||_B
+                // = || alpha A B v1 - b ||_B
+                // = < B A B v1, A B v1>alpha^2-2< B A B v1, b >alpha+< B b, b>
+                // = Bnorm_Abv1_2 alpha^2 - 2 Binnr_ABv1_b alpha + Bnorm_r0^2.
+                // Note, if this is near zero, it's possible for the number
+                // to go negative, which messes up the output.
+                Bnorm_r = sqrt(
+                    Bnorm_ABv1_2*alpha*alpha
+                    - Real(2.)*Binnr_ABv1_b*alpha
+                    + Bnorm_r0*Bnorm_r0); 
+
+                // Find || C( (x-x_cntr) + dx) ||
+                X::copy(x_m_xcntr,x_tmp1);
+                X::axpy(Real(1.),dx,x_tmp1);
+                C(x_tmp1,x_tmp2);
+                norm_C_x_m_xcntr = sqrt(X::innr(x_tmp2,x_tmp2));
+            
+                // Determine if we should exit since the norm of the
+                // preconditioned residual is small.  Note, since we're
+                // technically in this block of code since we're detected
+                // instability, we need the exit statement here otherwise
+                // we'll scale the current direction to the trust-region.
+                if(!(norm_C_x_m_xcntr >= delta) && Bnorm_r < eps*Bnorm_r0) {
+                    // Move to the new iterate, x <- x + dx
+                    X::axpy(Real(1.),dx,x);
+                    X::axpy(Real(1.),dx,x_m_xcntr);
+
+                    // Save the Cauchy-Point
+                    if(iter==Natural(1)) 
+                        X::copy(x,x_cp);
+
+                    // Set the stopping condition
+                    krylov_stop = KrylovStop::RelativeErrorSmall;
+                    break;	
+                }
             }
 
             // Exit early if we have either exceeded our trust-region or
@@ -1667,9 +1740,9 @@ namespace peopt {
                     //
                     // Specifically, we want the positive root of
                     // 
-                    // sigma^2<C(dx),C(dx)>
-                    //     + sigma(2 <C(dx),C(x-x_cntr)>)
-                    //     + (<C(x-x_cntr),C(x-x_cntr)>-delta^2).
+                    // sigma^2 < C(dx),C(dx) >
+                    //     + sigma (2 < C(dx),C(x-x_cntr) >)
+                    //     + (< C(x-x_cntr),C(x-x_cntr) > - delta^2).
 
                     // x_tmp1 <- C(dx)
                     C(dx,x_tmp1);
@@ -1693,7 +1766,7 @@ namespace peopt {
                 }
 
                 // Determine why we stopped
-                if(Bnorm_v != Bnorm_v)
+                if(iter>1 && Bnorm_v != Bnorm_v)
                     krylov_stop = KrylovStop::Instability;
                 else
                     krylov_stop = KrylovStop::TrustRegionViolated;
@@ -1711,6 +1784,9 @@ namespace peopt {
             // Move to the new iterate, x <- x + dx
             X::axpy(Real(1.),dx,x);
             X::axpy(Real(1.),dx,x_m_xcntr);
+               
+            // Determine the B-norm of the residual
+            Bnorm_r = fabs(Qt_e1[0]);
 
             // If this is the first iteration, save the Cauchy-Point
             if(iter==Natural(1)) 

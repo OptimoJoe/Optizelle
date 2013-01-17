@@ -3579,7 +3579,7 @@ namespace peopt{
                     switch(krylov_solver) {
                     // Truncated conjugate direction
                     case KrylovSolverTruncated::ConjugateDirection:
-                        truncated_pcd(
+                        truncated_cd(
                             H,
                             minus_grad,
                             PH,
@@ -4065,7 +4065,7 @@ namespace peopt{
                     switch(krylov_solver) {
                     // Truncated conjugate direction
                     case KrylovSolverTruncated::ConjugateDirection:
-                        truncated_pcd(
+                        truncated_cd(
                             H,
                             minus_grad,
                             PH,
@@ -4609,7 +4609,7 @@ namespace peopt{
 
                 // Norm of gpxdxn_p_gx.  This is used in the penalty parameter
                 // computation and predicted reduction. 
-                Real norm_gradpxdxnpgx;
+                Real norm_gpxdxnpgx;
 
                 // Normal step
                 std::list <X_Vector> dx_n;
@@ -4660,7 +4660,7 @@ namespace peopt{
                 state.rpred=std::numeric_limits<Real>::quiet_NaN();
                 state.norm_gx=std::numeric_limits<Real>::quiet_NaN();
                 state.norm_gxtyp=std::numeric_limits<Real>::quiet_NaN();
-                state.norm_gradpxdxnpgx=std::numeric_limits<Real>::quiet_NaN();
+                state.norm_gpxdxnpgx=std::numeric_limits<Real>::quiet_NaN();
                 state.PSchur_left_type=Operators::Identity;
                 state.PSchur_right_type=Operators::Identity;
                 state.augsys_iter_max = Natural(100);
@@ -4887,7 +4887,7 @@ namespace peopt{
                         name == "rpred" ||
                         name == "norm_gx" ||
                         name == "norm_gxtyp" ||
-                        name == "norm_gradpxdxnpgx" 
+                        name == "norm_gpxdxnpgx" 
                     )
                         return true;
                     else
@@ -5090,8 +5090,8 @@ namespace peopt{
                 reals.second.push_back(state.norm_gx);
                 reals.first.push_back("norm_gxtyp");
                 reals.second.push_back(state.norm_gxtyp);
-                reals.first.push_back("norm_gradpxdxnpgx");
-                reals.second.push_back(state.norm_gradpxdxnpgx);
+                reals.first.push_back("norm_gpxdxnpgx");
+                reals.second.push_back(state.norm_gpxdxnpgx);
 
                 // Copy in all the natural numbers
                 nats.first.push_back("augsys_iter_max");
@@ -5219,7 +5219,7 @@ namespace peopt{
                     else if(*name=="rpred") state.rpred=*real;
                     else if(*name=="norm_gx") state.norm_gx=*real;
                     else if(*name=="norm_gxtyp") state.norm_gxtyp=*real;
-                    else if(*name=="norm_gradpxdxnpgx") state.norm_gradpxdxnpgx=*real;
+                    else if(*name=="norm_gpxdxnpgx") state.norm_gpxdxnpgx=*real;
                 }
                 
                 // Next, copy in any naturals
@@ -5697,6 +5697,7 @@ namespace peopt{
                     const typename Functions::t& fns_
                 ) : state(state_), fns(fns_) {}
                 void operator () (
+                    const Natural& iter,
                     const typename XXxYY <Real>::Vector& xx,
                     const typename XXxYY <Real>::Vector& bb,
                     Real& eps
@@ -5705,10 +5706,10 @@ namespace peopt{
                     const Real& xi_qn = state.xi_qn;
 
                     // Find || g'(x)dx_ncp + g(x) ||
-                    Real norm_gradpxdxncp_p_g = sqrt(Y::innr(bb.second,bb.second));
+                    Real norm_gpxdxncp_p_g = sqrt(Y::innr(bb.second,bb.second));
 
                     // Return xi_qn * || g'(x)dx_ncp + g(x) ||
-                    eps = xi_qn * norm_gradpxdxncp_p_g;
+                    eps = xi_qn * norm_gpxdxncp_p_g;
                 }
             };
 
@@ -5744,9 +5745,9 @@ namespace peopt{
                 Real norm_gradpgpsg_2 = X::innr(gp_gps_g,gp_gps_g);
 
                 // Find the Cauchy point,
-                // || g'(x)*g(x) ||^2/|| g'(x)g'(x)*g(x) ||^2 g'(x)*g(x)
+                // -|| g'(x)*g(x) ||^2/|| g'(x)g'(x)*g(x) ||^2 g'(x)*g(x)
                 X::copy(gps_g,dx_ncp);
-                X::scal(norm_gradpsg_2/norm_gradpgpsg_2,dx_ncp);
+                X::scal(-norm_gradpsg_2/norm_gradpgpsg_2,dx_ncp);
 
                 // If || dx_ncp || >= zeta delta, scale it back to zeta delta
                 // and return
@@ -5817,19 +5818,23 @@ namespace peopt{
                 X::axpy(theta,dx_dnewton,dx_n);
             }
             
-            // Sets the tolerances for projecting the gradient onto the
-            // nullspate of g'(x).
-            struct NullspaceProjForGradientManipulator
+            // Sets the tolerances for projecting 
+            //
+            // grad f(x) + g'(x)*y + H dx_n
+            //
+            // into the null space of g'(x).
+            struct NullspaceProjForGradLagPlusHdxnManipulator
                 : GMRESManipulator <Real,XXxYY> {
             private:
                 const typename State::t& state;
                 const typename Functions::t& fns;
             public:
-                explicit NullspaceProjForGradientManipulator(
+                explicit NullspaceProjForGradLagPlusHdxnManipulator(
                     const typename State::t& state_,
                     const typename Functions::t& fns_
                 ) : state(state_), fns(fns_) {}
                 void operator () (
+                    const Natural& iter,
                     const typename XXxYY <Real>::Vector& xx,
                     const typename XXxYY <Real>::Vector& bb,
                     Real& eps
@@ -5838,10 +5843,10 @@ namespace peopt{
                     const Real& xi_pg = state.xi_pg;
                     const Real& delta = state.delta;
 
-                    // Find || xx_1 || = || W (grad L(x,y) + H dx_n) || 
+                    // Find || W (grad L(x,y) + H dx_n) || = || xx_1 || 
                     Real norm_WgpHdxn = sqrt(X::innr(xx.first,xx.first));
 
-                    // Find || bb_1 || = || grad L(x,y) + H dx_n ||
+                    // Find || grad L(x,y) + H dx_n || = || bb_1 ||
                     Real norm_gradpHdxn = sqrt(X::innr(bb.first,bb.first));
 
                     // The bound is xi_pg min( || W (grad L(x,y) + H dx_n) ||,
@@ -5849,6 +5854,16 @@ namespace peopt{
                     eps = norm_WgpHdxn < delta ? norm_WgpHdxn : delta;
                     eps = eps < norm_gradpHdxn ? eps : norm_gradpHdxn;
                     eps = xi_pg*eps;
+
+                    // If the projected gradient is in the nullspace of
+                    // the constraints, it's hard to hit the tolerance above.
+                    // In this case, try to detect this and bail early.
+                    if(iter >= Natural(2)
+                        && norm_WgpHdxn 
+                            < std::numeric_limits <Real>::epsilon()
+                              * norm_gradpHdxn * Real(1e2)
+                    )
+                        eps=Real(1.);
                 }
             };
 
@@ -5906,7 +5921,7 @@ namespace peopt{
                     augsys_rst_freq,
                     PAugSys_l,
                     PAugSys_r,
-                    NullspaceProjForGradientManipulator(state,fns),
+                    NullspaceProjForGradLagPlusHdxnManipulator(state,fns),
                     x0 
                 );
 
@@ -5927,6 +5942,7 @@ namespace peopt{
                     const typename Functions::t& fns_
                 ) : state(state_), fns(fns_) {}
                 void operator () (
+                    const Natural& iter,
                     const typename XXxYY <Real>::Vector& xx,
                     const typename XXxYY <Real>::Vector& bb,
                     Real& eps
@@ -5934,11 +5950,11 @@ namespace peopt{
                     // Create some shortcuts
                     const Real& xi_proj = state.xi_proj;
 
-                    // Find || xx_1 || = || W dx_t_uncorrected || 
+                    // Find || W dx_t_uncorrected || = || xx_1 || 
                     Real norm_Wdxt_uncorrected
                         = sqrt(X::innr(xx.first,xx.first));
 
-                    // Find || bb_1 || = || dx_t_uncorrected ||
+                    // Find || dx_t_uncorrected || = || bb_1 ||
                     Real norm_dxt_uncorrected
                         = sqrt(X::innr(bb.first,bb.first));
 
@@ -5947,6 +5963,16 @@ namespace peopt{
                     eps = norm_Wdxt_uncorrected < norm_dxt_uncorrected
                         ? norm_Wdxt_uncorrected : norm_dxt_uncorrected;
                     eps = xi_proj*eps; 
+
+                    // If the projected direction is in the nullspace of
+                    // the constraints, it's hard to hit the tolerance above.
+                    // In this case, try to detect this and bail early.
+                    if(iter >= Natural(2)
+                        && norm_Wdxt_uncorrected
+                            < std::numeric_limits <Real>::epsilon()
+                              * norm_dxt_uncorrected * Real(1e2)
+                    )
+                        eps=Real(1.);
                 }
             };
             
@@ -5987,8 +6013,10 @@ namespace peopt{
                 
                     // Build Schur style preconditioners
                     typename Unconstrained <Real,XX>::Functions::Identity I;
-                    BlockDiagonalPreconditioner PAugSys_l (I,*(fns.PSchur_left));
-                    BlockDiagonalPreconditioner PAugSys_r (I,*(fns.PSchur_right));
+                    BlockDiagonalPreconditioner
+                        PAugSys_l(I,*(fns.PSchur_left));
+                    BlockDiagonalPreconditioner
+                        PAugSys_r(I,*(fns.PSchur_right));
 
                     // Solve the augmented system for the nullspace projection 
                     peopt::gmres <Real,XXxYY> (
@@ -6049,7 +6077,7 @@ namespace peopt{
                 switch(krylov_solver) {
                 // Truncated conjugate direction
                 case KrylovSolverTruncated::ConjugateDirection:
-                    truncated_pcd(
+                    truncated_cd(
                         H,
                         minus_W_gradpHdxn,
                         NullspaceProjForKrylovMethod(state,fns), // Add in PH?
@@ -6110,6 +6138,7 @@ namespace peopt{
                     const typename Functions::t& fns_
                 ) : state(state_), fns(fns_) {}
                 void operator () (
+                    const Natural& iter,
                     const typename XXxYY <Real>::Vector& xx,
                     const typename XXxYY <Real>::Vector& bb,
                     Real& eps
@@ -6167,8 +6196,8 @@ namespace peopt{
 
                 // Build Schur style preconditioners
                 typename Unconstrained <Real,XX>::Functions::Identity I;
-                BlockDiagonalPreconditioner PAugSys_l (I,*(fns.PSchur_left));
-                BlockDiagonalPreconditioner PAugSys_r (I,*(fns.PSchur_right));
+                BlockDiagonalPreconditioner PAugSys_l(I,*(fns.PSchur_left));
+                BlockDiagonalPreconditioner PAugSys_r(I,*(fns.PSchur_right));
 
                 // Solve the augmented system for the Newton step
                 peopt::gmres <Real,XXxYY> (
@@ -6200,6 +6229,7 @@ namespace peopt{
                     const typename Functions::t& fns_
                 ) : state(state_), fns(fns_) {}
                 void operator () (
+                    const Natural& iter,
                     const typename XXxYY <Real>::Vector& xx,
                     const typename XXxYY <Real>::Vector& bb,
                     Real& eps
@@ -6254,8 +6284,8 @@ namespace peopt{
 
                 // Build Schur style preconditioners
                 typename Unconstrained <Real,XX>::Functions::Identity I;
-                BlockDiagonalPreconditioner PAugSys_l (I,*(fns.PSchur_left));
-                BlockDiagonalPreconditioner PAugSys_r (I,*(fns.PSchur_right));
+                BlockDiagonalPreconditioner PAugSys_l(I,*(fns.PSchur_left));
+                BlockDiagonalPreconditioner PAugSys_r(I,*(fns.PSchur_right));
 
                 // Solve the augmented system for the Newton step
                 peopt::gmres <Real,XXxYY> (
@@ -6290,7 +6320,7 @@ namespace peopt{
                 const Y_Vector& dy=state.dy.front();
                 const Real& rho=state.rho;
                 const Real& norm_gx=state.norm_gx; 
-                const Real& norm_gradpxdxnpgx=state.norm_gradpxdxnpgx;
+                const Real& norm_gpxdxnpgx=state.norm_gpxdxnpgx;
                 Real& pred=state.pred;
 
                 // pred <- - < W (grad f(x) + H dx_n), dx_t_uncorrected >
@@ -6321,7 +6351,7 @@ namespace peopt{
                 //    - < grad L(x,y), dx_n > - .5 < H dx_n,dx_n >
                 //    - < dy , g'(x)dx_n+g(x) >
                 //    + rho ( || g(x) ||^2 - || g'(x)dx_n+g(x) ||^2 )
-                pred += rho* (norm_gx*norm_gx - norm_gradpxdxnpgx*norm_gradpxdxnpgx);
+                pred += rho* (norm_gx*norm_gx - norm_gpxdxnpgx*norm_gpxdxnpgx);
             }
             
             // Computes the penalty parameter 
@@ -6331,7 +6361,7 @@ namespace peopt{
             ) {
                 const Real& pred=state.pred;
                 const Real& norm_gx=state.norm_gx; 
-                const Real& norm_gradpxdxnpgx=state.norm_gradpxdxnpgx;
+                const Real& norm_gpxdxnpgx=state.norm_gpxdxnpgx;
                 const Real& rho_bar=state.rho_bar;
                 Real& rho=state.rho;
 
@@ -6340,10 +6370,10 @@ namespace peopt{
                 // correction before we attempt this.
                 if( pred > 0 && 
                     pred < (rho/Real(2.)) *
-                    (norm_gx*norm_gx - norm_gradpxdxnpgx*norm_gradpxdxnpgx) 
+                    (norm_gx*norm_gx - norm_gpxdxnpgx*norm_gpxdxnpgx) 
                 ) {
                     rho = -Real(2.) * pred
-                        / (norm_gx*norm_gx - norm_gradpxdxnpgx*norm_gradpxdxnpgx) 
+                        / (norm_gx*norm_gx - norm_gpxdxnpgx*norm_gpxdxnpgx) 
                         + Real(2.) * rho + rho_bar;
                 }
             }
@@ -6485,7 +6515,7 @@ namespace peopt{
                 Y_Vector& gpxdxn_p_gx=state.gpxdxn_p_gx.front();
                 std::list <X_Vector>& oldY=state.oldY; 
                 std::list <X_Vector>& oldS=state.oldS; 
-                Real& norm_gradpxdxnpgx=state.norm_gradpxdxnpgx;
+                Real& norm_gpxdxnpgx=state.norm_gpxdxnpgx;
                 Real& norm_dx=state.norm_dx;
                 Real& xi_qn=state.xi_qn;
                 Real& xi_pg=state.xi_pg;
@@ -6523,7 +6553,7 @@ namespace peopt{
                             X::axpy(Real(1.),g_x,gpxdxn_p_gx);
 
                             // Find || g'(x) dx_n + g(x) ||
-                            norm_gradpxdxnpgx
+                            norm_gpxdxnpgx
                                 = sqrt(X::innr(gpxdxn_p_gx,gpxdxn_p_gx));
 
                             // Find H dx_n

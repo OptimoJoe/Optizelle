@@ -382,7 +382,7 @@ BOOST_AUTO_TEST_CASE(tpcd_basic_solve) {
     double norm_r;
     Natural iter;
     peopt::KrylovStop::t krylov_stop;
-    peopt::truncated_pcd <double,peopt::Rm>
+    peopt::truncated_cd <double,peopt::Rm>
         (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,x,x_cp,
             norm_r,iter,krylov_stop);
 
@@ -469,7 +469,7 @@ BOOST_AUTO_TEST_CASE(tpcd_tr_stopping) {
     double norm_r;
     Natural iter;
     peopt::KrylovStop::t krylov_stop;
-    peopt::truncated_pcd <double,peopt::Rm>
+    peopt::truncated_cd <double,peopt::Rm>
         (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,x,x_cp,
             norm_r,iter,krylov_stop);
 
@@ -538,7 +538,7 @@ BOOST_AUTO_TEST_CASE(tpcd_tr_stopping_moved_center) {
     double norm_r;
     Natural iter;
     peopt::KrylovStop::t krylov_stop;
-    peopt::truncated_pcd <double,peopt::Rm>
+    peopt::truncated_cd <double,peopt::Rm>
         (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,x,x_cp,
             norm_r,iter,krylov_stop);
 
@@ -612,7 +612,7 @@ BOOST_AUTO_TEST_CASE(tpcd_cp) {
     double norm_r;
     Natural iter;
     peopt::KrylovStop::t krylov_stop;
-    peopt::truncated_pcd <double,peopt::Rm>
+    peopt::truncated_cd <double,peopt::Rm>
         (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,x,x_cp,
             norm_r,iter,krylov_stop);
 
@@ -692,7 +692,7 @@ BOOST_AUTO_TEST_CASE(tpcd_nullspace_solve) {
     double norm_r;
     Natural iter;
     peopt::KrylovStop::t krylov_stop;
-    peopt::truncated_pcd <double,peopt::Rm>
+    peopt::truncated_cd <double,peopt::Rm>
         (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,x,x_cp,
             norm_r,iter,krylov_stop);
 
@@ -783,7 +783,7 @@ BOOST_AUTO_TEST_CASE(tpcd_starting_solution) {
     double norm_r;
     Natural iter;
     peopt::KrylovStop::t krylov_stop;
-    peopt::truncated_pcd <double,peopt::Rm>
+    peopt::truncated_cd <double,peopt::Rm>
         (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,x,x_cp,
             norm_r,iter,krylov_stop);
 
