@@ -165,5 +165,7 @@ end
 
 % A function to eliminate the messages from MATLAB's gmres routines
 function z = mygmres(A,b,kry_rst,kry_tol,kry_iter_max,M)
+    warning off
     [z flag]=gmres(A,b,kry_rst,kry_tol,kry_iter_max,M);
+    warning on
 end
