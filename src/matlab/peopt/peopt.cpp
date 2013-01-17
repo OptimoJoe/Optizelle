@@ -508,6 +508,7 @@ struct MatlabMessaging : public peopt::Messaging {
     void print(const std::string msg) const {
         std::string msg_ = msg + "\n";
         mexPrintf(msg_.c_str());
+        mexEvalString("drawnow");
     }
 
     // Prints an error
