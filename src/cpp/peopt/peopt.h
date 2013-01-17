@@ -6805,6 +6805,7 @@ namespace peopt{
                             norm_gxtyp = norm_gx;
                             initialLagrangeMultiplier(fns,state);
                         }
+                        break;
 
                     case OptimizationLocation::GetStep:
                         // Find the steps in both the primal and dual directions
@@ -6828,6 +6829,7 @@ namespace peopt{
                         // constraints is small as well.
                         adjustStoppingConditions(fns,state);
                         break;
+
                     default:
                         break;
                     }
@@ -6857,18 +6859,18 @@ namespace peopt{
                 typename Functions::t& fns,
                 typename State::t& state
             ){
-
-                // Add the composite step pieces to the state manipulator
-                CompositeStepManipulator csmanip(smanip,msg);
                 
                 // Adds the output pieces to the state manipulator 
                 DiagnosticManipulator <EqualityConstrained <Real,XX,YY> >
-                    dmanip(csmanip,msg);
+                    dmanip(smanip,msg);
+
+                // Add the composite step pieces to the state manipulator
+                CompositeStepManipulator csmanip(dmanip,msg);
 
                 // Insures that we can interact with unconstrained code
                 ConversionManipulator
                     <EqualityConstrained<Real,XX,YY>,Unconstrained <Real,XX> >
-                    cmanip(dmanip);
+                    cmanip(csmanip);
                 
                 // Initialize any remaining functions required for optimization 
                 Functions::init(msg,state,fns);

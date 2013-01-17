@@ -90,6 +90,11 @@ pts.dy=randn(n,1);
 fprintf('---------Diagnostics on the equality constrained problem---------\n');
 peopt(VS,fns,pts);
 
+% Solve the full-space problem 
+fprintf('\n------------Solving the full-space problem------------\n');
+sol=peopt(VS,fns,pts,'parest.peopt');
+fprintf('\nWe converged due to: %s\n',sol.opt_stop);
+
 % Form the solution operator.  The user must specify this
 phi.eval=@(x)phi_eval(A,b,x);
 

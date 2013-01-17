@@ -989,8 +989,33 @@ void mexFunction(
                 peopt::StoppingCondition::to_string(state.opt_stop).c_str()));
             break;
         } case peopt::ProblemClass::EqualityConstrained: {
-            MatlabMessaging().error(
-                "Equality constrained optimization not currently implemented."); 
+            // Allocate memory for the state
+            peopt::EqualityConstrained <double,MatlabVS,MatlabVS>::State::t
+                state(*x,*y);
+
+            // If we have a preconditioner, add it
+            if(mxGetField(pInput[1],0,"PH")!=NULL)
+                fns.PH.reset(new MatlabOperator
+                    (mxGetField(pInput[1],0,"PH"),state.x.back()));
+            if(mxGetField(pInput[1],0,"PSchur_left")!=NULL)
+                fns.PSchur_left.reset(new MatlabOperator
+                    (mxGetField(pInput[1],0,"PSchur_left"),state.x.back()));
+            if(mxGetField(pInput[1],0,"PSchur_right")!=NULL)
+                fns.PSchur_right.reset(new MatlabOperator
+                    (mxGetField(pInput[1],0,"PSchur_right"),state.x.back()));
+
+            // Read the parameters and optimize
+            peopt::json::EqualityConstrained <double,MatlabVS,MatlabVS>
+                ::read(MatlabMessaging(),params,state);
+            peopt::EqualityConstrained<double,MatlabVS,MatlabVS>::Algorithms
+                ::getMin(MatlabMessaging(),fns,state);
+            
+            // Save the answer
+            mxSetField(pOutput[0],0,"x",state.x.back().release());
+            mxSetField(pOutput[0],0,"y",state.y.back().release());
+            mxSetField(pOutput[0],0,"opt_stop",mxCreateString(
+                peopt::StoppingCondition::to_string(state.opt_stop).c_str()));
+            break;
         } case peopt::ProblemClass::Constrained: {
             MatlabMessaging().error(
                 "Fully constrained optimization not currently implemented."); 
