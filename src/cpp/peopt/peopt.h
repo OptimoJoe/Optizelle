@@ -6156,7 +6156,7 @@ namespace peopt{
                     // Find || dx_n + dx_t || 
                     Real norm_dxnpdxt = sqrt(X::innr(dxn_p_dxt,dxn_p_dxt));
 
-                    // Find || bb_1 || = || dx_t_uncorrected ||
+                    // Find || dx_t_uncorrected || = || bb_1 || 
                     Real norm_dxt_uncorrected= sqrt(X::innr(bb.first,bb.first));
 
                     // The bound is
@@ -6237,13 +6237,65 @@ namespace peopt{
                     // Create some shortcuts
                     const Real& xi_lmh = state.xi_lmh;
                     const Real& xi_lmg = state.xi_lmg;
-                    const Real& norm_grad = state.norm_grad;
+                
+                    // Find the norm of the gradient of the Lagrangian.
+                    // Sometimes, this is -grad L(x+dx,y).  Sometimes, this
+                    // is -grad L(x,y).  In both cases, we just look at the
+                    // first element of the RHS.
+                    Real norm_grad = sqrt(X::innr(bb.first,bb.first));
 
                     // The bound is
                     // min( xi_lmg, xi_lmh || grad f(x) + g'(x)*y ||)
                     eps = xi_lmg < norm_grad*xi_lmh ? xi_lmg : norm_grad*xi_lmh;
                 }
             };
+
+            // Finds the initial Lagrange multiplier
+            static void initialLagrangeMultiplier(
+                const typename Functions::t& fns,
+                typename State::t& state
+            ) {
+                // Create some shortcuts
+                const X_Vector& x=state.x.front();
+                const Natural& augsys_iter_max=state.augsys_iter_max;
+                const Natural& augsys_rst_freq=state.augsys_rst_freq;
+                const X_Vector& grad=state.grad.front();
+                Y_Vector& y=state.y.front();
+
+                // Create the initial guess, x0=(0,0)
+                XxY_Vector x0;
+                    X::init(x,x0.first);
+                    Y::init(y,x0.second);
+                    XxY::zero(x0);
+
+                // Create the rhs, b0=(-grad L(x,y),0);
+                XxY_Vector b0;
+                    XxY::init(x0,b0);
+                    X::copy(grad,b0.first);
+                    X::scal(Real(-1.),b0.first);
+                    Y::zero(b0.second);
+
+                // Build Schur style preconditioners
+                typename Unconstrained <Real,XX>::Functions::Identity I;
+                BlockDiagonalPreconditioner PAugSys_l(I,*(fns.PSchur_left));
+                BlockDiagonalPreconditioner PAugSys_r(I,*(fns.PSchur_right));
+
+                // Solve the augmented system for the Newton step
+                peopt::gmres <Real,XXxYY> (
+                    AugmentedSystem(state,fns,x),
+                    b0,
+                    Real(1.), // This will be overwritten by the manipulator
+                    augsys_iter_max,
+                    augsys_rst_freq,
+                    PAugSys_l,
+                    PAugSys_r,
+                    LagrangeMultiplierStepManipulator(state,fns),
+                    x0 
+                );
+
+                // Find the Lagrange multiplier based on this step
+                X::axpy(Real(1.),x0.second,y);
+            }
             
             // Finds the Lagrange multiplier step 
             static void lagrangeMultiplierStep(
@@ -6744,12 +6796,14 @@ namespace peopt{
                     switch(loc){
                     case OptimizationLocation::AfterInitialFuncAndGrad:
                         // Make sure we properly cache g(x) and its norm
-                        // on initialization.  We have this conditional to
+                        // on initialization.  In addition, find an initial
+                        // Lagrange multiplier.  We have this conditional to
                         // not reevaluate this during the restart
                         if(norm_gx != norm_gx) {
                             g(x,g_x);
                             norm_gx = sqrt(X::innr(g_x,g_x));
                             norm_gxtyp = norm_gx;
+                            initialLagrangeMultiplier(fns,state);
                         }
 
                     case OptimizationLocation::GetStep:
