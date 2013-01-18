@@ -420,6 +420,9 @@ namespace peopt{
 
             // Occurs after the initial function and gradient evaluation 
             AfterInitialFuncAndGrad,
+            
+            // Occurs just before the main optimization loop 
+            BeforeOptimizationLoop,
 
             // Occurs just before we take the optimization step x+s
             BeforeSaveOld,
@@ -477,6 +480,8 @@ namespace peopt{
                 return "BeforeInitialFuncAndGrad";
             case AfterInitialFuncAndGrad:
                 return "AfterInitialFuncAndGrad";
+            case BeforeOptimizationLoop:
+                return "BeforeOptimizationLoop";
             case BeforeSaveOld:
                 return "BeforeSaveOld";
             case BeforeStep:
@@ -516,6 +521,8 @@ namespace peopt{
                 return BeforeInitialFuncAndGrad;
             else if(loc=="AfterInitialFuncAndGrad")
                 return AfterInitialFuncAndGrad;
+            else if(loc=="BeforeOptimizationLoop")
+                return BeforeOptimizationLoop;
             else if(loc=="BeforeSaveOld")
                 return BeforeSaveOld; 
             else if(loc=="BeforeStep")
@@ -553,6 +560,7 @@ namespace peopt{
             bool operator () (const std::string& name) const {
                 if( name=="BeforeInitialFuncAndGrad" ||
                     name=="AfterInitialFuncAndGrad" ||
+                    name=="BeforeOptimizationLoop" ||
                     name=="BeforeSaveOld" || 
                     name=="BeforeStep" || 
                     name=="BeforeGetStep" || 
@@ -1494,7 +1502,7 @@ namespace peopt{
             switch(loc){
 
             // Output the headers for the diagonstic information
-            case OptimizationLocation::AfterInitialFuncAndGrad:
+            case OptimizationLocation::BeforeOptimizationLoop:
                 if(msg_level >= Natural(1)) {
                     // Get the headers 
                     std::list <std::string> out;
@@ -3253,7 +3261,8 @@ namespace peopt{
                 bool opt_begin = (iter==Natural(1)) &&
                     ((algorithm_class == AlgorithmClass::LineSearch && 
                         linesearch_iter==Natural(0)) ||
-                    (algorithm_class == AlgorithmClass::TrustRegion && 
+                    ((algorithm_class == AlgorithmClass::TrustRegion ||
+                      algorithm_class == AlgorithmClass::UserDefined) && 
                         rejected_trustregion == Natural(0)));
 
 
@@ -4333,10 +4342,14 @@ namespace peopt{
                     // norm of the gradient, which is akin to taking a
                     // steepest descent step without globalization.
                     norm_dxtyp=norm_grad;
+                
+                    // Manipulate the state if required
+                    smanip(fns,state,
+                        OptimizationLocation::AfterInitialFuncAndGrad);
                 }
 
                 // Manipulate the state if required
-                smanip(fns,state,OptimizationLocation::AfterInitialFuncAndGrad);
+                smanip(fns,state,OptimizationLocation::BeforeOptimizationLoop);
 
                 // Primary optimization loop
                 do{
@@ -6797,14 +6810,11 @@ namespace peopt{
                     case OptimizationLocation::AfterInitialFuncAndGrad:
                         // Make sure we properly cache g(x) and its norm
                         // on initialization.  In addition, find an initial
-                        // Lagrange multiplier.  We have this conditional to
-                        // not reevaluate this during the restart
-                        if(norm_gx != norm_gx) {
-                            g(x,g_x);
-                            norm_gx = sqrt(X::innr(g_x,g_x));
-                            norm_gxtyp = norm_gx;
-                            initialLagrangeMultiplier(fns,state);
-                        }
+                        // Lagrange multiplier.  
+                        g(x,g_x);
+                        norm_gx = sqrt(X::innr(g_x,g_x));
+                        norm_gxtyp = norm_gx;
+                        initialLagrangeMultiplier(fns,state);
                         break;
 
                     case OptimizationLocation::GetStep:
