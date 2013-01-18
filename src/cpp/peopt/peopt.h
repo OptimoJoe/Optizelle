@@ -4556,6 +4556,9 @@ namespace peopt{
 
                 // Penalty parameter for the augmented-Lagrangian
                 Real rho;
+                
+                // Penalty parameter from the last iteration 
+                Real rho_old;
 
                 // Fixed increase in the penalty parameter
                 Real rho_bar;
@@ -4663,8 +4666,9 @@ namespace peopt{
             // constrained optimization.  
             static void init_params_(t& state) {
                 state.zeta = Real(0.8);
-                state.eta0 = Real(0.5);;
-                state.rho = Real(1.0);;
+                state.eta0 = Real(0.5);
+                state.rho = Real(1.0);
+                state.rho_old = state.rho;
                 state.rho_bar = Real(1e-8);
                 state.eps_constr = Real(1e-6);
                 state.xi_all(Real(1e-4));
@@ -4781,8 +4785,15 @@ namespace peopt{
                 // Check that the augmented Lagrangian penalty parameter is
                 // greater than or equal to 1
                 else if(state.rho < Real(1.))
-                    ss << "The augmented Lagrangian penalty paramter must be "
+                    ss << "The augmented Lagrangian penalty parameter must be "
                         "greater than or equal to 1: rho = " << state.rho;
+
+                // Check that the last penalty parameter is greater than or
+                // equal to 1
+                else if(state.rho_old < Real(1.))
+                    ss << "The previous augmented Lagrangian penalty parameter"
+                        "must be greater than or equal to 1: rho_old = "
+                        << state.rho_old;
 
                 // Check that the fixed increased to the augmented Lagrangian
                 // penalty parameter is positive 
@@ -4888,6 +4899,7 @@ namespace peopt{
                         name == "zeta" ||
                         name == "eta0" ||
                         name == "rho" ||
+                        name == "rho_old" ||
                         name == "rho_bar" ||
                         name == "eps_constr" ||
                         name == "xi_qn" || 
@@ -5079,6 +5091,8 @@ namespace peopt{
                 reals.second.push_back(state.eta0);
                 reals.first.push_back("rho");
                 reals.second.push_back(state.rho);
+                reals.first.push_back("rho_old");
+                reals.second.push_back(state.rho_old);
                 reals.first.push_back("rho_bar");
                 reals.second.push_back(state.rho_bar);
                 reals.first.push_back("eps_constr");
@@ -5220,6 +5234,7 @@ namespace peopt{
                     if(*name=="zeta") state.zeta=*real;
                     else if(*name=="eta0") state.eta0=*real;
                     else if(*name=="rho") state.rho=*real;
+                    else if(*name=="rho_old") state.rho_old=*real;
                     else if(*name=="rho_bar") state.rho_bar=*real;
                     else if(*name=="eps_constr") state.eps_constr=*real;
                     else if(*name=="xi_qn") state.xi_qn=*real;
@@ -6427,6 +6442,7 @@ namespace peopt{
                 const Real& pred=state.pred;
                 const Real& norm_gx=state.norm_gx; 
                 const Real& norm_gpxdxnpgx=state.norm_gpxdxnpgx;
+                const Real& rho_old=state.rho_old;
                 const Real& rho_bar=state.rho_bar;
                 Real& rho=state.rho;
 
@@ -6434,12 +6450,12 @@ namespace peopt{
                 // parameter.  Make sure we actually have a positive predicted
                 // correction before we attempt this.
                 if( pred > 0 && 
-                    pred < (rho/Real(2.)) *
-                    (norm_gx*norm_gx - norm_gpxdxnpgx*norm_gpxdxnpgx) 
+                    pred < (rho_old/Real(2.))
+                        * (norm_gx*norm_gx - norm_gpxdxnpgx*norm_gpxdxnpgx) 
                 ) {
                     rho = -Real(2.) * pred
                         / (norm_gx*norm_gx - norm_gpxdxnpgx*norm_gpxdxnpgx) 
-                        + Real(2.) * rho + rho_bar;
+                        + Real(2.) * rho_old + rho_bar;
                 }
             }
 
@@ -6571,6 +6587,7 @@ namespace peopt{
                 const Real& eta0=state.eta0;
                 const Real& eps_dx=state.eps_dx;
                 const Real& norm_dxtyp=state.norm_dxtyp;
+                const Real& rho_old=state.rho_old;
                 const Natural& history_reset=state.history_reset;
                 X_Vector& dx=state.dx.front();
                 X_Vector& dx_t_uncorrected=state.dx_t_uncorrected.front();
@@ -6589,6 +6606,7 @@ namespace peopt{
                 Real& xi_lmh=state.xi_lmh;
                 Real& pred=state.pred;
                 Real& rpred=state.rpred;
+                Real& rho=state.rho;
                 Natural& rejected_trustregion=state.rejected_trustregion;
 
                 // Continue to look for a step until our actual vs. predicted
@@ -6661,6 +6679,7 @@ namespace peopt{
                             lagrangeMultiplierStep(fns,state);
 
                             // Find the predicted reduction
+                            rho = rho_old;
                             predictedReduction(fns,state);
 
                             // Update the penalty paramter
@@ -6798,10 +6817,12 @@ namespace peopt{
                     const VectorValuedFunction <Real,XX,YY>& g=*(fns.g);
                     const X_Vector& x=state.x.front();
                     const Y_Vector& dy=state.dy.front();
+                    const Real& rho = state.rho;
                     Y_Vector& y=state.y.front();
                     Y_Vector& g_x=state.g_x.front();
                     Real& norm_gx = state.norm_gx;
                     Real& norm_gxtyp = state.norm_gxtyp;
+                    Real& rho_old = state.rho_old;
 
                     // Call the user define manipulator
                     smanip(fns,state,loc);
@@ -6809,12 +6830,16 @@ namespace peopt{
                     switch(loc){
                     case OptimizationLocation::AfterInitialFuncAndGrad:
                         // Make sure we properly cache g(x) and its norm
-                        // on initialization.  In addition, find an initial
-                        // Lagrange multiplier.  
+                        // on initialization.  
                         g(x,g_x);
                         norm_gx = sqrt(X::innr(g_x,g_x));
                         norm_gxtyp = norm_gx;
+
+                        // Find the initial Lagrange multiplier
                         initialLagrangeMultiplier(fns,state);
+
+                        // Prime the previous penalty paramter
+                        rho_old = rho;
                         break;
 
                     case OptimizationLocation::GetStep:
@@ -6823,6 +6848,9 @@ namespace peopt{
                         break;
 
                     case OptimizationLocation::BeforeStep:
+                        // Save the new penalty parameter
+                        rho_old = rho; 
+
                         // Make sure to take the step in the dual variable
                         Y::axpy(Real(1.),dy,y);
                         break;
