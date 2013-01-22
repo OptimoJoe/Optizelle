@@ -4623,6 +4623,10 @@ namespace peopt{
                 // residual predicted reduction. 
                 std::list <Y_Vector> gpxdxn_p_gx;
 
+                // Derivative of the constraint applied to the tangential step
+                // this is used in the residual predicted reduction.
+                std::list <Y_Vector> gpxdxt;
+
                 // Norm of gpxdxn_p_gx.  This is used in the penalty parameter
                 // computation and predicted reduction. 
                 Real norm_gpxdxnpgx;
@@ -4711,6 +4715,10 @@ namespace peopt{
                 state.gpxdxn_p_gx.clear();
                     state.gpxdxn_p_gx.push_back(Y_Vector());
                     Y::init(y,state.gpxdxn_p_gx.front());
+                
+                state.gpxdxt.clear();
+                    state.gpxdxt.push_back(Y_Vector());
+                    Y::init(y,state.gpxdxt.front());
                 
                 state.dx_n.clear();
                     state.dx_n.push_back(X_Vector());
@@ -4974,7 +4982,8 @@ namespace peopt{
                     if( name == "y" ||
                         name == "dy" ||
                         name == "g_x" ||
-                        name == "gpxdxn_p_gx"
+                        name == "gpxdxn_p_gx" ||
+                        name == "gpxdxt"
                     ) 
                         return true;
                     else
@@ -5059,6 +5068,8 @@ namespace peopt{
                 ys.second.splice(ys.second.end(),state.g_x);
                 ys.first.push_back("gpxdxn_p_gx");
                 ys.second.splice(ys.second.end(),state.gpxdxn_p_gx);
+                ys.first.push_back("gpxdxt");
+                ys.second.splice(ys.second.end(),state.gpxdxt);
                 xs.first.push_back("dx_n");
                 xs.second.splice(xs.second.end(),state.dx_n);
                 xs.first.push_back("dx_ncp");
@@ -5166,6 +5177,8 @@ namespace peopt{
                     else if(*name0=="gpxdxn_p_gx")
                         state.gpxdxn_p_gx.splice(
                             state.gpxdxn_p_gx.end(),ys.second,y0);
+                    else if(*name0=="gpxdxt")
+                        state.gpxdxt.splice(state.gpxdxt.end(),ys.second,y0);
                     
                     // Remove the string corresponding to the element just
                     // spliced if splicing occured.
@@ -5674,14 +5687,17 @@ namespace peopt{
                     const XxY_Vector& dx_dy,
                     XxY_Vector& result
                 ) const{
+                    // Create some shortcuts
+                    const VectorValuedFunction <Real,XX,YY>& g=*(fns.g);
+
                     // g'(x_base)* dy
-                    fns.g->ps(x_base,dx_dy.second,result.first);
+                    g.ps(x_base,dx_dy.second,result.first);
 
                     // dx + g'(x_base)* dy 
                     X::axpy(Real(1.),dx_dy.first,result.first);
 
                     // g'(x_base)* dx
-                    fns.g->p(x_base,dx_dy.first,result.second);
+                    g.p(x_base,dx_dy.first,result.second);
                 }
             };
             
@@ -5747,6 +5763,7 @@ namespace peopt{
                 typename State::t& state
             ) {
                 // Create some shortcuts
+                const VectorValuedFunction <Real,XX,YY>& g=*(fns.g);
                 const X_Vector& x=state.x.front();
                 const Y_Vector& g_x=state.g_x.front();
                 const Natural& augsys_iter_max=state.augsys_iter_max;
@@ -5760,11 +5777,11 @@ namespace peopt{
 
                 // Find g'(x)*g(x)
                 X_Vector gps_g; X::init(x,gps_g);
-                fns.g->ps(x,g_x,gps_g);
+                g.ps(x,g_x,gps_g);
 
                 // Find g'(x)g'(x)*g(x)
                 Y_Vector gp_gps_g; Y::init(g_x,gp_gps_g);
-                fns.g->p(x,gps_g,gp_gps_g);
+                g.p(x,gps_g,gp_gps_g);
 
                 // Find || g'(x)*g(x) ||^2
                 Real norm_gradpsg_2 = X::innr(gps_g,gps_g);
@@ -5796,7 +5813,7 @@ namespace peopt{
                 XxY_Vector b0; XxY::init(x0,b0);
                 X::copy(dx_ncp,b0.first);
                 X::scal(Real(-1.),b0.first);
-                fns.g->p(x,dx_ncp,b0.second);
+                g.p(x,dx_ncp,b0.second);
                 Y::scal(Real(-1.),b0.second);
                 Y::axpy(Real(-1.),g_x,b0.second);
 
@@ -6047,7 +6064,8 @@ namespace peopt{
                         PAugSys_r(I,*(fns.PSchur_right));
 
                     // Solve the augmented system for the nullspace projection 
-                    peopt::gmres <Real,XXxYY> (
+                    std::pair <Real,Natural> err_iter
+                        = peopt::gmres <Real,XXxYY> (
                         AugmentedSystem(state,fns,x),
                         b0,
                         Real(1.), // This will be overwritten by the manipulator
@@ -6227,7 +6245,7 @@ namespace peopt{
                 BlockDiagonalPreconditioner PAugSys_l(I,*(fns.PSchur_left));
                 BlockDiagonalPreconditioner PAugSys_r(I,*(fns.PSchur_right));
 
-                // Solve the augmented system for the Newton step
+                // Solve the augmented system for the tangential step 
                 peopt::gmres <Real,XXxYY> (
                     AugmentedSystem(state,fns,x),
                     b0,
@@ -6308,7 +6326,8 @@ namespace peopt{
                 BlockDiagonalPreconditioner PAugSys_l(I,*(fns.PSchur_left));
                 BlockDiagonalPreconditioner PAugSys_r(I,*(fns.PSchur_right));
 
-                // Solve the augmented system for the Newton step
+                // Solve the augmented system for the initial Lagrange
+                // multiplier 
                 peopt::gmres <Real,XXxYY> (
                     AugmentedSystem(state,fns,x),
                     b0,
@@ -6332,10 +6351,10 @@ namespace peopt{
             ) {
                 // Create some shortcuts
                 const ScalarValuedFunction <Real,XX>& f=*(fns.f);
-                const X_Vector& x=state.x.front();
                 const X_Vector& dx=state.dx.front();
                 const Natural& augsys_iter_max=state.augsys_iter_max;
                 const Natural& augsys_rst_freq=state.augsys_rst_freq;
+                X_Vector& x=state.x.front();
                 Y_Vector& dy=state.dy.front();
 
                 // x_p_dx <- x + dx
@@ -6367,9 +6386,24 @@ namespace peopt{
                 BlockDiagonalPreconditioner PAugSys_l(I,*(fns.PSchur_left));
                 BlockDiagonalPreconditioner PAugSys_r(I,*(fns.PSchur_right));
 
-                // Solve the augmented system for the Newton step
+                // This is a somewhat unsatisfying hack.  Basically, many
+                // of our operators like the preconditioner need to know
+                // what the current iterate is.  Right now, we just have
+                // a generic operator, which has no knowledge of this, so
+                // we create references behind the scenes to link to the
+                // current iterate.  Most of the time, this works fine,
+                // except here were we're building our augmented system
+                // at x+dx, but the preconditioner may and probably is linked
+                // to x.  Hence, we're going to temporarily move where our
+                // current iterate is for this solve and then move back.
+                X_Vector x_save;
+                    X::init(x,x_save);
+                    X::copy(x,x_save);
+                X::copy(x_p_dx,x);
+
+                // Solve the augmented system for the Lagrange multiplier step 
                 peopt::gmres <Real,XXxYY> (
-                    AugmentedSystem(state,fns,x_p_dx),
+                    AugmentedSystem(state,fns,x),
                     b0,
                     Real(1.), // This will be overwritten by the manipulator
                     augsys_iter_max,
@@ -6380,7 +6414,10 @@ namespace peopt{
                     x0 
                 );
 
-                // Copy out the tangential step
+                // Restore our current iterate
+                X::copy(x_save,x);
+
+                // Copy out the Lagrange multiplier step
                 X::copy(x0.second,dy);
             }
 
@@ -6465,28 +6502,21 @@ namespace peopt{
                 typename State::t& state
             ) {
                 // Create some shortcuts
-                const VectorValuedFunction <Real,XX,YY>& g=*(fns.g);
-                const X_Vector& x=state.x.front();
                 const Y_Vector& dy=state.dy.front();
                 const Y_Vector& gpxdxn_p_gx=state.gpxdxn_p_gx.front();
-                const X_Vector& dx_t=state.dx_t.front();
+                const Y_Vector& gpxdxt=state.gpxdxt.front();
                 const Real& rho=state.rho;
                 Real& rpred=state.rpred;
 
-                // r <- c'(x) dx_t
-                Y_Vector r;
-                    Y::init(dy,r);
-                    g.p(x,dx_t,r);
+                // rpred <- - < dy, g'(x)dx_t>
+                rpred = -Y::innr(dy,gpxdxt);
 
-                // rpred <- - < dy, r>
-                rpred = -Y::innr(dy,r);
+                // rpred <- - < dy, g'(x)dx_t> - rho || g'(x)dx_t ||^2
+                rpred -= rho * Y::innr(gpxdxt,gpxdxt);
 
-                // rpred <- - < dy, r> - rho || r ||^2
-                rpred -= rho * Y::innr(r,r);
-
-                // rpred <- - < dy, r> - rho || r ||^2
-                //     - 2 rho < r, g'(x) dx_n + g(x) >
-                rpred -= Real(2.) * rho * Y::innr(r,gpxdxn_p_gx);
+                // rpred <- - < dy, g'(x)dx_t> - rho || g'(x)dx_t ||^2
+                //     - 2 rho < g'(x)dx_t, g'(x) dx_n + g(x) >
+                rpred -= Real(2.) * rho * Y::innr(gpxdxt,gpxdxn_p_gx);
             }
             
             // Checks whether we accept or reject a step
@@ -6595,6 +6625,7 @@ namespace peopt{
                 X_Vector& H_dxtuncorrected=state.H_dxtuncorrected.front();
                 Y_Vector& g_x=state.g_x.front();
                 Y_Vector& gpxdxn_p_gx=state.gpxdxn_p_gx.front();
+                Y_Vector& gpxdxt=state.gpxdxt.front();
                 std::list <X_Vector>& oldY=state.oldY; 
                 std::list <X_Vector>& oldS=state.oldS; 
                 Real& norm_gpxdxnpgx=state.norm_gpxdxnpgx;
@@ -6660,9 +6691,10 @@ namespace peopt{
                         // let the checkStep code adjust the trust-region.
                         rpred=Real(1.);
                         pred=Real(0.);
-                        for(Real xi_tang0=xi_tang;
+                        Real xi_tang0 = xi_tang;
+                        for( ;
                             pred>=Real(0.) && fabs(rpred)>eta0*pred;
-                            xi_tang0=xi_tang0*Real(.001)
+                            xi_tang=xi_tang*Real(.001)
                         ) {
 
                             // Correct the tangential step
@@ -6674,6 +6706,9 @@ namespace peopt{
 
                             // Find the norm of the primal step
                             norm_dx = sqrt(X::innr(dx,dx));
+
+                            // Find g'(x)dx_t
+                            g.p(x,dx_t,gpxdxt);
 
                             // Find the Lagrange multiplier step
                             lagrangeMultiplierStep(fns,state);
@@ -6692,6 +6727,7 @@ namespace peopt{
                             // Find the residual predicted reduction
                             residualPredictedReduction(fns,state);
                         }
+                        xi_tang = xi_tang0;
 
                         // Check if ||dx_t_uncorrected||<=xi_4 || dx_n + dx_t||.
                         // In this case, the inexactness is acceptable and we

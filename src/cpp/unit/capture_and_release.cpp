@@ -95,6 +95,7 @@ BOOST_AUTO_TEST_CASE(equality_constrained) {
     BOOST_CHECK(state.y.size()==0);
     BOOST_CHECK(state.g_x.size()==0);
     BOOST_CHECK(state.gpxdxn_p_gx.size()==0);
+    BOOST_CHECK(state.gpxdxt.size()==0);
     BOOST_CHECK(state.dx_n.size()==0);
     BOOST_CHECK(state.dx_ncp.size()==0);
     BOOST_CHECK(state.dx_t.size()==0);
@@ -118,6 +119,7 @@ BOOST_AUTO_TEST_CASE(equality_constrained) {
     BOOST_CHECK(state.y.size()==1);
     BOOST_CHECK(state.g_x.size()==1);
     BOOST_CHECK(state.gpxdxn_p_gx.size()==1);
+    BOOST_CHECK(state.gpxdxt.size()==1);
     BOOST_CHECK(state.dx_n.size()==1);
     BOOST_CHECK(state.dx_ncp.size()==1);
     BOOST_CHECK(state.dx_t.size()==1);
@@ -247,6 +249,7 @@ BOOST_AUTO_TEST_CASE(constrained) {
     BOOST_CHECK(state.y.size()==0);
     BOOST_CHECK(state.g_x.size()==0);
     BOOST_CHECK(state.gpxdxn_p_gx.size()==0);
+    BOOST_CHECK(state.gpxdxt.size()==0);
     BOOST_CHECK(state.dx_n.size()==0);
     BOOST_CHECK(state.dx_ncp.size()==0);
     BOOST_CHECK(state.dx_t.size()==0);
@@ -275,6 +278,7 @@ BOOST_AUTO_TEST_CASE(constrained) {
     BOOST_CHECK(state.y.size()==1);
     BOOST_CHECK(state.g_x.size()==1);
     BOOST_CHECK(state.gpxdxn_p_gx.size()==1);
+    BOOST_CHECK(state.gpxdxt.size()==1);
     BOOST_CHECK(state.dx_n.size()==1);
     BOOST_CHECK(state.dx_ncp.size()==1);
     BOOST_CHECK(state.dx_t.size()==1);
