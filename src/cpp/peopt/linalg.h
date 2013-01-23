@@ -566,16 +566,14 @@ namespace peopt {
         };
     };
 
-    // A B orthogonalizes a vector x to a list of other xs.  
+    // A orthogonalizes a vector Bx to a list of other Bxs.  
     template <
         typename Real,
         template <typename> class XX
     >
-    void ABorthogonalize(
-        const std::list <typename XX <Real>::Vector>& vs,
+    void Aorthogonalize(
         const std::list <typename XX <Real>::Vector>& Bvs,
         const std::list <typename XX <Real>::Vector>& ABvs,
-        typename XX <Real>::Vector& x,
         typename XX <Real>::Vector& Bx,
         typename XX <Real>::Vector& ABx
     ) {
@@ -585,14 +583,12 @@ namespace peopt {
 
         // Orthogonalize the vectors
         for(typename std::list <X_Vector>::const_iterator
-                v=vs.begin(),
                 Bv=Bvs.begin(),
                 ABv=ABvs.begin();
-            v!=vs.end();
-            v++,Bv++,ABv++
+            Bv!=Bvs.end();
+            Bv++,ABv++
         ) {
             Real beta=X::innr(*ABv,Bx);
-            X::axpy(Real(-1.)*beta,*v,x);
             X::axpy(Real(-1.)*beta,*Bv,Bx);
             X::axpy(Real(-1.)*beta,*ABv,ABx);
         }
@@ -651,7 +647,6 @@ namespace peopt {
         X_Vector ABp; X::init(x,ABp);
 
         // Allocate memory for the previous search directions
-        std::list <X_Vector> ps;
         std::list <X_Vector> Bps;
         std::list <X_Vector> ABps;
 
@@ -721,7 +716,7 @@ namespace peopt {
             A(Bp,ABp);
 
             // Orthogonalize this direction to the previous directions
-            ABorthogonalize <Real,XX> (ps,Bps,ABps,p,Bp,ABp); 
+            Aorthogonalize <Real,XX> (Bps,ABps,Bp,ABp); 
 
             // Check if this direction is a descent direction.  If it is not,
             // flip it so that it is.
@@ -745,17 +740,12 @@ namespace peopt {
 
                 // Check if we need to eliminate any vectors for
                 // orthogonalization.
-                if(ps.size()==orthog_max) {
-                    ps.pop_front();
+                if(Bps.size()==orthog_max) {
                     Bps.pop_front();
                     ABps.pop_front();
                 }
 
                 // Store the previous directions
-                ps.push_back(X_Vector()); X::init(x,ps.back());
-                X::copy(p,ps.back());
-                X::scal(Real(1.)/Anorm_Bp,ps.back());
-                
                 Bps.push_back(X_Vector()); X::init(x,Bps.back());
                 X::copy(Bp,Bps.back());
                 X::scal(Real(1.)/Anorm_Bp,Bps.back());
