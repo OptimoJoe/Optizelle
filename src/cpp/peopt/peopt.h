@@ -5823,7 +5823,7 @@ namespace peopt{
                 BlockDiagonalPreconditioner PAugSys_r (I,*(fns.PSchur_right));
 
                 // Solve the augmented system for the Newton step
-                peopt::gmres <Real,XXxYY> (
+                std::pair <Real,Natural> err_iter = peopt::gmres <Real,XXxYY> (
                     AugmentedSystem(state,fns,x),
                     b0,
                     Real(1.), // This will be overwritten by the manipulator
@@ -5958,7 +5958,7 @@ namespace peopt{
                 BlockDiagonalPreconditioner PAugSys_r (I,*(fns.PSchur_right));
 
                 // Solve the augmented system for the nullspace projection 
-                peopt::gmres <Real,XXxYY> (
+                std::pair <Real,Natural> err_iter = peopt::gmres <Real,XXxYY> (
                     AugmentedSystem(state,fns,x),
                     b0,
                     Real(1.), // This will be overwritten by the manipulator
@@ -6246,7 +6246,7 @@ namespace peopt{
                 BlockDiagonalPreconditioner PAugSys_r(I,*(fns.PSchur_right));
 
                 // Solve the augmented system for the tangential step 
-                peopt::gmres <Real,XXxYY> (
+                std::pair <Real,Natural> err_iter = peopt::gmres <Real,XXxYY> (
                     AugmentedSystem(state,fns,x),
                     b0,
                     Real(1.), // This will be overwritten by the manipulator
@@ -6328,7 +6328,7 @@ namespace peopt{
 
                 // Solve the augmented system for the initial Lagrange
                 // multiplier 
-                peopt::gmres <Real,XXxYY> (
+                std::pair <Real,Natural> err_iter = peopt::gmres <Real,XXxYY> (
                     AugmentedSystem(state,fns,x),
                     b0,
                     Real(1.), // This will be overwritten by the manipulator
@@ -6402,7 +6402,7 @@ namespace peopt{
                 X::copy(x_p_dx,x);
 
                 // Solve the augmented system for the Lagrange multiplier step 
-                peopt::gmres <Real,XXxYY> (
+                std::pair <Real,Natural> err_iter = peopt::gmres <Real,XXxYY> (
                     AugmentedSystem(state,fns,x),
                     b0,
                     Real(1.), // This will be overwritten by the manipulator
