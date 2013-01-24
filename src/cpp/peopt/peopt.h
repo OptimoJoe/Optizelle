@@ -6693,7 +6693,8 @@ namespace peopt{
                         pred=Real(0.);
                         Real xi_tang0 = xi_tang;
                         for( ;
-                            pred>=Real(0.) && fabs(rpred)>eta0*pred;
+                            pred>=Real(0.) && fabs(rpred)>eta0*pred
+                                && xi_tang>std::numeric_limits<Real>::epsilon();
                             xi_tang=xi_tang*Real(.001)
                         ) {
 
@@ -6749,6 +6750,19 @@ namespace peopt{
                             xi_proj /= Real(10.);
                             xi_tang /= Real(10.);
                             xi_lmh /= Real(10.);
+
+                            // If any tolerance hits essentially zero, set
+                            // the step to zero and allow the algorithm to
+                            // exit
+                            if(xi_qn < std::numeric_limits <Real>::epsilon() ||
+                                xi_pg < std::numeric_limits <Real>::epsilon() ||
+                                xi_proj<std::numeric_limits <Real>::epsilon() ||
+                                xi_tang<std::numeric_limits <Real>::epsilon() ||
+                                xi_lmh <std::numeric_limits <Real>::epsilon()
+                            ){
+                                X::zero(dx);
+                                pred=Real(0.);
+                            }
                         }
                     }
 
@@ -6958,6 +6972,10 @@ namespace peopt{
                 // Make sure the algorithm uses the composite step routines
                 // to find the new step.
                 state.algorithm_class=AlgorithmClass::UserDefined;
+
+                // Make sure that we do full orthogonalization in our
+                // truncated Krylov method
+                state.krylov_orthog_max = state.krylov_iter_max;
                 
                 // Minimize the problem
                 Unconstrained <Real,XX>::Algorithms
