@@ -5529,6 +5529,12 @@ namespace peopt{
                             "augmented system.");
                         break;
                 }
+
+                // If a trust-region operator has not been provided, use the
+                // identity.
+                if(fns.TRS.get()==NULL)
+                    fns.TRS.reset(new typename
+                        Unconstrained <Real,XX>::Functions::Identity());
                 
                 // Check that all functions are defined 
                 check(msg,fns);
@@ -6883,16 +6889,29 @@ namespace peopt{
                     const X_Vector& x=state.x.front();
                     const Y_Vector& dy=state.dy.front();
                     const Real& rho = state.rho;
+                    const Natural& krylov_iter_max = state.krylov_iter_max;
+                    AlgorithmClass::t& algorithm_class=state.algorithm_class;
                     Y_Vector& y=state.y.front();
                     Y_Vector& g_x=state.g_x.front();
                     Real& norm_gx = state.norm_gx;
                     Real& norm_gxtyp = state.norm_gxtyp;
                     Real& rho_old = state.rho_old;
+                    Natural& krylov_orthog_max = state.krylov_orthog_max;
 
                     // Call the user define manipulator
                     smanip(fns,state,loc);
 
                     switch(loc){
+                    case OptimizationLocation::BeforeInitialFuncAndGrad:
+                        // Make sure the algorithm uses the composite step
+                        // routines to find the new step.
+                        algorithm_class=AlgorithmClass::UserDefined;
+
+                        // Make sure that we do full orthogonalization in our
+                        // truncated Krylov method
+                        krylov_orthog_max = krylov_iter_max;
+                        break;
+                
                     case OptimizationLocation::AfterInitialFuncAndGrad:
                         // Make sure we properly cache g(x) and its norm
                         // on initialization.  
@@ -6978,20 +6997,6 @@ namespace peopt{
                 // Initialize any remaining functions required for optimization 
                 Functions::init(msg,state,fns);
 
-                // If a trust-region operator has not been provided, use the
-                // identity.
-                if(fns.TRS.get()==NULL)
-                    fns.TRS.reset(new typename
-                        Unconstrained <Real,XX>::Functions::Identity());
-
-                // Make sure the algorithm uses the composite step routines
-                // to find the new step.
-                state.algorithm_class=AlgorithmClass::UserDefined;
-
-                // Make sure that we do full orthogonalization in our
-                // truncated Krylov method
-                state.krylov_orthog_max = state.krylov_iter_max;
-                
                 // Minimize the problem
                 Unconstrained <Real,XX>::Algorithms
                     ::getMin_(msg,cmanip,fns,state);
@@ -7688,7 +7693,7 @@ namespace peopt{
                     // x_tmp1 <- h'(x)* (inv(L(h(x))) e)
                     h.ps(x,z_tmp2,x_tmp1);
 
-                    // grad_schur <- grad f(x) - sigma mu h'(x)* (inv(L(h(x))) e)
+                    // grad_schur<- grad f(x) - sigma mu h'(x)* (inv(L(h(x))) e)
                     X::axpy(-sigma*mu,x_tmp1,grad_schur);
 
                     // Calculate the true gradient of the Lagrangian
@@ -7790,6 +7795,10 @@ namespace peopt{
 
                 // Modify the objective 
                 fns.f.reset(new InequalityModifiedFunction(state,fns));
+
+                // Set the trust-region scaling
+                fns.TRS.reset(
+                    new typename Algorithms::TrustRegionScaling(fns,state));
             }
 
             // Initialize any missing functions 
@@ -8397,6 +8406,7 @@ namespace peopt{
                     Z_Vector& h_x=state.h_x.front();
                     Z_Vector& dz=state.dz.front();
                     Real& mu = state.mu;
+                    Real& mu_typ = state.mu_typ;
                     Real& sigma = state.sigma;
                     Real& merit_xpdx= state.merit_xpdx;
                     Real& norm_grad = state.norm_grad;
@@ -8406,6 +8416,16 @@ namespace peopt{
 
                     switch(loc){
                     case OptimizationLocation::BeforeInitialFuncAndGrad:
+
+                        // Initialize the value h(x)
+                        h(x,h_x);
+
+                        // Estimate the interior point parameter
+                        mu=estimateInteriorPointParameter(fns,state);
+
+                        // Set the typical value for mu
+                        mu_typ=mu;
+
                         // Do predictor corrector if need be
                         if(cstrat==CentralityStrategy::PredictorCorrector)
                             sigma = iter % Natural(2) ? Real(0.) : Real(1.);
@@ -8560,18 +8580,6 @@ namespace peopt{
                 
                 // Initialize any remaining functions required for optimization 
                 Functions::init(msg,state,fns);
-
-                // Initialize the value h(x)
-                (*fns.h)(state.x.back(),state.h_x.back());
-
-                // Estimate the interior point parameter
-                state.mu=estimateInteriorPointParameter(fns,state);
-
-                // Set the typical value for mu
-                state.mu_typ=state.mu;
-
-                // Set the trust-region scaling
-                fns.TRS.reset(new TrustRegionScaling(fns,state));
                 
                 // Minimize the problem
                 Unconstrained <Real,XX>::Algorithms
@@ -8967,6 +8975,66 @@ namespace peopt{
                     ::Functions::init_(msg,state,fns);
                 InequalityConstrained <Real,XX,ZZ>
                     ::Functions::init_(msg,state,fns);
+            }
+        };
+        
+        // This contains the different algorithms used for optimization 
+        struct Algorithms {
+        private:
+            // This is a namespace inside of a class.  Do not allow
+            // construction.
+            Algorithms();
+
+        public:
+            // Solves an optimization problem where the user doesn't know about
+            // the state manipulator
+            static void getMin(
+                const Messaging& msg,
+                typename Functions::t& fns,
+                typename State::t& state
+            ){
+                // Create an empty state manipulator
+                StateManipulator <Constrained <Real,XX,YY,ZZ> > smanip;
+
+                // Minimize the problem
+                getMin(msg,smanip,fns,state);
+            }
+            
+            // Initializes remaining functions then solves an optimization
+            // problem
+            static void getMin(
+                const Messaging& msg,
+                const StateManipulator <Constrained <Real,XX,YY,ZZ> >&smanip,
+                typename Functions::t& fns,
+                typename State::t& state
+            ){
+                // Adds the output pieces to the state manipulator 
+                DiagnosticManipulator <EqualityConstrained <Real,XX,YY> >
+                    dmanip_eq(smanip,msg);
+                DiagnosticManipulator <InequalityConstrained <Real,XX,ZZ> >
+                    dmanip_ineq(dmanip_eq,msg);
+
+                // Add the composite step pieces to the state manipulator
+                typename EqualityConstrained <Real,XX,YY>::Algorithms
+                    ::CompositeStepManipulator csmanip(dmanip_ineq,msg);
+
+                // Add the interior point pieces to the state manipulator
+                typename InequalityConstrained <Real,XX,ZZ>::Algorithms
+                    ::template InteriorPointManipulator
+                    <Constrained <Real,XX,YY,ZZ> >
+                    ipmanip(csmanip);
+
+                // Insures that we can interact with unconstrained code
+                ConversionManipulator
+                    <Constrained<Real,XX,YY,ZZ>,Unconstrained <Real,XX> >
+                    cmanip(ipmanip);
+                
+                // Initialize any remaining functions required for optimization 
+                Functions::init(msg,state,fns);
+                
+                // Minimize the problem
+                Unconstrained <Real,XX>::Algorithms
+                    ::getMin_(msg,cmanip,fns,state);
             }
         };
 
