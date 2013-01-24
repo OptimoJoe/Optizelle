@@ -612,7 +612,7 @@ namespace peopt {
     // (output) x : Final solution x.
     // (output) x_cp : The Cauchy-Point, which is defined as the solution x
     //     after a single iteration.
-    // (output) B2norm_r : The norm ||B r|| of the final residual.
+    // (output) norm_Br : The norm ||B r|| of the final residual.
     // (output) iter : The number of iterations required to converge. 
     // (output) krylov_stop : The reason why the Krylov method was terminated.
     template <
@@ -631,7 +631,7 @@ namespace peopt {
         const typename XX <Real>::Vector& x_cntr,
         typename XX <Real>::Vector& x,
         typename XX <Real>::Vector& x_cp,
-        Real& B2norm_r,
+        Real& norm_Br,
         Natural& iter,
         KrylovStop::t& krylov_stop
     ){
@@ -640,15 +640,36 @@ namespace peopt {
         typedef XX <Real> X;
         typedef typename X::Vector X_Vector;
 
-        // Allocate memory for the search direction, its projection, and the
+        // Set the tolerance for our orthogonality check
+        const Real eps_orthog(0.5);
+
+        // Allocate memory for the projected search direction and the
         // the operator applied to the projection
-        X_Vector p; X::init(x,p);
         X_Vector Bp; X::init(x,Bp);
         X_Vector ABp; X::init(x,ABp);
 
         // Allocate memory for the previous search directions
         std::list <X_Vector> Bps;
         std::list <X_Vector> ABps;
+        
+        // Allocate memory for the residuals and projected residuals 
+        std::list <X_Vector> rs;
+        std::list <X_Vector> Brs;
+        std::list <Real> norm_Brs;
+
+        // Allocate memory for the orthogonality check matrix.  This is
+        // inv(D) ( Brs' rs - D^2 ) inv(D) = inv(D) Brs' rs inv(D) - I,
+        // where D = diag(||Br_i||).  In theory, the projected/preconditioned
+        // residuals should be orthogonal to the residuals.  In practice,
+        // this may not be the case,  Hence, we look at how antisymmetric
+        // this matrix is and bail if it becomes too bad.  Note, we really
+        // need to know ( i, j, <orthog_check>_ij ).  We need the indices in
+        // order to help eliminate elements when we don't do full 
+        // orthogonalization.
+        typedef typename
+            std::list < std::pair< std::pair <Natural,Natural> , Real > >
+            indexed_matrix;
+        indexed_matrix orthog_check;
 
         // Allocate memory for the norm of the trust-region operator
         // applied at the trial step, || C( (x-x_cntr) + alpha Bp) ||.  
@@ -660,8 +681,10 @@ namespace peopt {
         // Initialize x to zero. 
         X::zero(x);
 
-        // Allocate memory for and find the initial residual, A*x-b = -b
+        // Allocate memory for and find the initial residual, A*x-b = -b.
+        // Also, allocate memory for the projected residual.
         X_Vector r; X::init(x,r);
+        X_Vector Br; X::init(x,Br);
         X::copy(b,r);
         X::scal(Real(-1.),r);
 
@@ -691,22 +714,22 @@ namespace peopt {
             return;
         }
 
-        // Find the steepest descent search direction
-        X::copy(r,p);
-        X::scal(Real(-1.),p);	
-
-        // Find the Bp application.  We use this to find the B-norm of the
+        // Find the Br application.  We use this to find the B-norm of the
         // residual.  Then, we save the original B-norm of the residual.
-        B(p,Bp);
-        Real B2norm_r0 = sqrt(X::innr(Bp,Bp));
-        B2norm_r = B2norm_r0; 
+        B(r,Br);
+        Real norm_Br0 = sqrt(X::innr(Br,Br));
+        norm_Br = norm_Br0; 
+
+        // Find the projected search direction 
+        X::copy(Br,Bp);
+        X::scal(Real(-1.),Bp);
 
         // Loop until the maximum iteration
         for(iter=Natural(1);iter<=iter_max;iter++){
         
             // If the norm of the residual is small relative to the starting
             // residual, exit
-            if(B2norm_r < eps*B2norm_r0) {
+            if(norm_Br < eps*norm_Br0) {
                 iter--;
                 krylov_stop = KrylovStop::RelativeErrorSmall;
                 break;
@@ -721,7 +744,6 @@ namespace peopt {
             // Check if this direction is a descent direction.  If it is not,
             // flip it so that it is.
             if(X::innr(Bp,r) > Real(0.)) {
-                X::scal(Real(-1.),p);
                 X::scal(Real(-1.),Bp);
                 X::scal(Real(-1.),ABp);
             }
@@ -743,6 +765,26 @@ namespace peopt {
                 if(Bps.size()==orthog_max) {
                     Bps.pop_front();
                     ABps.pop_front();
+                    rs.pop_front();
+                    Brs.pop_front();
+                    norm_Brs.pop_front();
+
+                    // Don't remove elements from the orthogonality check 
+                    // matrix until we have enough elements to remove.
+                    if(iter>orthog_max) {
+                        // Figure out the index to remove from orthog_check
+                        Natural ii=iter-orthog_max;
+
+                        // Remove all elements associated with this index
+                        typename indexed_matrix::iterator
+                            ele=orthog_check.begin();
+                        while(ele!=orthog_check.end()) {
+                            if(ele->first.first==ii || ele->first.second==ii)
+                                ele=orthog_check.erase(ele);
+                            else
+                                ele++;
+                        }
+                    }
                 }
 
                 // Store the previous directions
@@ -753,6 +795,57 @@ namespace peopt {
                 ABps.push_back(X_Vector()); X::init(x,ABps.back());
                 X::copy(ABp,ABps.back());
                 X::scal(Real(1.)/Anorm_Bp,ABps.back());
+
+                // Store the previous residuals
+                rs.push_back(X_Vector()); X::init(x,rs.back());
+                X::copy(r,rs.back());
+
+                Brs.push_back(X_Vector()); X::init(x,Brs.back());
+                X::copy(Br,Brs.back());
+
+                norm_Brs.push_back(norm_Br);
+
+                // Build new pieces of the orthogonality check matrix
+                typename std::list <X_Vector>::reverse_iterator
+                    Br_star=Brs.rbegin();
+                typename std::list <Real>::reverse_iterator
+                    norm_Bri=norm_Brs.rbegin(); 
+
+                // Start out at the iteration number and count backwards
+                // the number of elements equal to the number of residual
+                // vectors.
+                for(Natural ii=iter;ii>iter-rs.size();ii--) {
+                    typename std::list <X_Vector>::reverse_iterator
+                        r_star=rs.rbegin();
+                    typename std::list <Real>::reverse_iterator
+                        norm_Brj=norm_Brs.rbegin(); 
+
+                    // Use the same counting scheme as ii
+                    for(Natural jj=iter;jj>iter-rs.size();jj--) {
+
+                        // Don't recompute elements that we've already stored
+                        if(ii >= iter || jj >= iter) {
+                            // < Br_i, r_j > / || Br_i || || Br_j ||
+                            orthog_check.push_back(
+                                std::pair <std::pair <Natural,Natural> , Real> (
+                                    std::pair <Natural,Natural> (ii,jj),
+                                    X::innr(*Br_star,*r_star)
+                                        / ((*norm_Brj)*(*norm_Bri))
+                                )
+                            );
+
+                            // If we're on a diagonal element, make sure to
+                            // remove the piece of the identity, 1.
+                            if(ii==jj)
+                                orthog_check.back().second -= Real(1.);
+                        }
+
+                        r_star++;
+                        norm_Brj++;
+                    }
+                    Br_star++;
+                    norm_Bri++;
+                }
 
                 // Do an exact linesearch in the computed direction
                 alpha = -X::innr(r,Bp) / Anorm_Bp_2;
@@ -770,6 +863,22 @@ namespace peopt {
                 norm_C_x_m_xcntr_p_a_Bp = sqrt(X::innr(x_tmp2,x_tmp2));
             }
 
+            // Calculate the Frobenius norm of the orgonality check.
+            Real norm_orthogcheck(0.);
+            for(typename indexed_matrix::iterator ele=orthog_check.begin();
+                ele!=orthog_check.end();
+                ele++
+            ) 
+                norm_orthogcheck += (ele->second)*(ele->second);
+            norm_orthogcheck = sqrt(norm_orthogcheck);
+
+            // Check if we have instability.  This is either a NaN in our
+            // normalization factor for Gram-Schmidt or if the norm
+            // of our orthogonality check matrix is greater than our
+            // tolerance.
+            bool instability = (Anorm_Bp_2!=Anorm_Bp_2)
+                || norm_orthogcheck > eps_orthog;
+
             // If we have negative curvature or our trial point is outside the
             // trust-region radius, terminate truncated-PCD and find our final
             // step by scaling the search direction until we reach the
@@ -778,20 +887,16 @@ namespace peopt {
             // direction, which is stored in the Bps.
             if( Anorm_Bp_2 <= Real(0.) ||
                 norm_C_x_m_xcntr_p_a_Bp >= delta ||
-                Anorm_Bp_2 != Anorm_Bp_2 
+                instability 
             ) {
-                // If we're on the first iteration and we have a NaN, then
-                // just terminate without taking a step.  This means that
-                // our solution will be zero
-                if(iter==1 && Anorm_Bp_2 != Anorm_Bp_2) 
+
+                // If we have instability, we terminate without taking a step
+                if(instability)
                     ;
 
                 // If we're paying attention to the trust-region, scale the
                 // step appropriately.
                 else if(delta < std::numeric_limits <Real>::infinity()) {
-                    // If we have a NaN, take our last search direction
-                    if(Anorm_Bp_2 != Anorm_Bp_2) X::copy(Bps.back(),Bp);
-
                     // Find sigma so that
                     // || C((x-x_cntr) + sigma Bp) || = delta.
                     // This can be found by finding the positive root of the
@@ -823,21 +928,21 @@ namespace peopt {
                     X::axpy(sigma,Bp,x);
                     X::axpy(sigma,Bp,x_m_xcntr);
                     X::axpy(sigma,ABp,r);
-                    B(r,Bp);  // Here, we're just setting Bp <- Br 
-                    B2norm_r=sqrt(X::innr(Bp,Bp));
+                    B(r,Br);
+                    norm_Br=sqrt(X::innr(Br,Br));
 
                 // In the case that we're ignoring the trust-region, we
-                // take a step of unit scale if there's no NaN.
-                } else if(Anorm_Bp_2 == Anorm_Bp_2) {
+                // take a step of unit scale. 
+                } else {
                     X::axpy(Real(1.),Bp,x);
                     X::axpy(Real(1.),Bp,x_m_xcntr);
                     X::axpy(Real(1.),ABp,r);
-                    B(r,Bp);  // Here, we're just setting Bp <- Br 
-                    B2norm_r=sqrt(X::innr(Bp,Bp));
+                    B(r,Br);
+                    norm_Br=sqrt(X::innr(Br,Br));
                 }
 
                 // Determine why we stopped
-                if(Anorm_Bp_2 != Anorm_Bp_2)
+                if(instability)
                     krylov_stop = KrylovStop::Instability;
                 else if(Anorm_Bp_2 <= Real(0.)) 
                     krylov_stop = KrylovStop::NegativeCurvature;
@@ -859,17 +964,14 @@ namespace peopt {
             // Update the norm of x
             norm_C_x_m_xcntr = norm_C_x_m_xcntr_p_a_Bp;
 
-            // Find the new residual
+            // Find the new residual and projected residual
             X::axpy(alpha,ABp,r);
+            B(r,Br);
+            norm_Br = sqrt(X::innr(Br,Br));
 
-            // Find the steepest descent search direction
-            X::copy(r,p);
-            X::scal(Real(-1.),p);	
-        
-            // Find the Bp application and use this to find the B-norm of the
-            // residual.
-            B(p,Bp);
-            B2norm_r = sqrt(X::innr(Bp,Bp));
+            // Find the projected steepest descent direction
+            X::copy(Br,Bp);
+            X::scal(Real(-1.),Bp);	
         }
 
         // If we've exceeded the maximum iteration, make sure to denote this
@@ -1713,12 +1815,19 @@ namespace peopt {
                 }
             }
 
+            // Determine if we're unstable.  Right now, this is just if
+            // we've calculate Bnorm_v = || v ||_B to be a NaN.
+            bool instability = (Bnorm_v != Bnorm_v); 
+
             // Exit early if we have either exceeded our trust-region or
             // if we have detected a NaN.
-            if(norm_C_x_m_xcntr >= delta || Bnorm_v != Bnorm_v) {
+            if(norm_C_x_m_xcntr >= delta || instability) {
                 // If we're paying attention to the trust-region, scale the
-                // step appropriately.
-                if(delta < std::numeric_limits <Real>::infinity()) {
+                // step appropriately.  We do not do this if we're unstable.
+                if(delta < std::numeric_limits <Real>::infinity()
+                    && !instability
+                ) {
+
                     // Find sigma so that
                     //
                     // || C( (x-x_cntr) + sigma dx) ||=delta.
@@ -1756,7 +1865,7 @@ namespace peopt {
                 }
 
                 // Determine why we stopped
-                if(iter>1 && Bnorm_v != Bnorm_v)
+                if(iter>1 && instability)
                     krylov_stop = KrylovStop::Instability;
                 else
                     krylov_stop = KrylovStop::TrustRegionViolated;
