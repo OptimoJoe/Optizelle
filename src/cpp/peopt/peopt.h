@@ -415,6 +415,9 @@ namespace peopt{
     
     namespace OptimizationLocation{
         enum t{
+            // Occurs at the start of the optimization function 
+            BeginningOfOptimization,
+
             // Occurs before the initial function and gradient evaluation 
             BeforeInitialFuncAndGrad,
 
@@ -476,6 +479,8 @@ namespace peopt{
         // Converts the optimization location to a string 
         inline std::string to_string(t loc){
             switch(loc){
+            case BeginningOfOptimization:
+                return "BeginningOfOptimization";
             case BeforeInitialFuncAndGrad:
                 return "BeforeInitialFuncAndGrad";
             case AfterInitialFuncAndGrad:
@@ -517,7 +522,9 @@ namespace peopt{
         
         // Converts a string to a line-search kind 
         inline t from_string(std::string loc){
-            if(loc=="BeforeInitialFuncAndGrad")
+            if(loc=="BeginningOfOptimization")
+                return BeginningOfOptimization;
+            else if(loc=="BeforeInitialFuncAndGrad")
                 return BeforeInitialFuncAndGrad;
             else if(loc=="AfterInitialFuncAndGrad")
                 return AfterInitialFuncAndGrad;
@@ -558,7 +565,8 @@ namespace peopt{
         // Checks whether or not a string is valid
         struct is_valid : public std::unary_function<std::string, bool> {
             bool operator () (const std::string& name) const {
-                if( name=="BeforeInitialFuncAndGrad" ||
+                if( name=="BeginningOfOptimization" ||
+                    name=="BeforeInitialFuncAndGrad" ||
                     name=="AfterInitialFuncAndGrad" ||
                     name=="BeforeOptimizationLoop" ||
                     name=="BeforeSaveOld" || 
@@ -4322,12 +4330,19 @@ namespace peopt{
                 const ScalarValuedFunction <Real,XX>& f=*(fns.f);
 
                 // Manipulate the state if required
-                smanip(fns,state,OptimizationLocation
-                    ::BeforeInitialFuncAndGrad);
+                smanip(fns,state,OptimizationLocation::BeginningOfOptimization);
 
                 // Evaluate the merit function and gradient if we've not
                 // done so already
                 if(merit_x != merit_x) {
+
+                    // Manipulate the state if required
+                    smanip(fns,state,OptimizationLocation
+                        ::BeforeInitialFuncAndGrad);
+
+                    // Sometimes, we can calculate the gradient and objective
+                    // simultaneously.  Hence, it's best to calculate the
+                    // gradient first and then possibly cache the objective
                     f.grad(x,grad);
                     merit_x=f(x);
                     norm_grad=sqrt(X::innr(grad,grad));
@@ -8530,19 +8545,18 @@ namespace peopt{
                 typename Functions::t& fns,
                 typename State::t& state
             ){
+                // Adds the output pieces to the state manipulator 
+                DiagnosticManipulator <InequalityConstrained <Real,XX,ZZ> >
+                    dmanip(smanip,msg);
 
                 // Add the interior point pieces to the state manipulator
                 InteriorPointManipulator <InequalityConstrained <Real,XX,ZZ> >
-                    ipmanip(smanip);
-                
-                // Adds the output pieces to the state manipulator 
-                DiagnosticManipulator <InequalityConstrained <Real,XX,ZZ> >
-                    dmanip(ipmanip,msg);
+                    ipmanip(dmanip);
 
                 // Insures that we can interact with unconstrained code
                 ConversionManipulator
                     <InequalityConstrained<Real,XX,ZZ>,Unconstrained <Real,XX> >
-                    cmanip(dmanip);
+                    cmanip(ipmanip);
                 
                 // Initialize any remaining functions required for optimization 
                 Functions::init(msg,state,fns);
