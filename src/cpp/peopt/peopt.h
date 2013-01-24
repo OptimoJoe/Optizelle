@@ -8978,6 +8978,89 @@ namespace peopt{
             }
         };
         
+        // Contains functions that assist in creating an output for diagonstics
+        struct Printer {
+
+            // Gets the header for the state information
+            static void getStateHeader_(
+                const typename State::t& state,
+                std::list <std::string>& out
+            ) { 
+            }
+            // Combines all of the state headers
+            static void getStateHeader(
+                const typename State::t& state,
+                std::list <std::string>& out
+            ) {
+                Unconstrained <Real,XX>::Printer::getStateHeader_(state,out);
+                EqualityConstrained <Real,XX,YY>::Printer::getStateHeader_
+                    (state,out);
+                InequalityConstrained <Real,XX,ZZ>::Printer::getStateHeader_
+                    (state,out);
+            }
+
+            // Gets the state information for output
+            static void getState_(
+                const typename State::t& state,
+                const bool blank,
+                std::list <std::string>& out
+            ) {
+            }
+
+            // Combines all of the state information
+            static void getState(
+                const typename State::t& state,
+                const bool blank,
+                const bool noiter,
+                std::list <std::string>& out
+            ) {
+                Unconstrained <Real,XX>::Printer
+                    ::getState_(state,blank,noiter,out);
+                EqualityConstrained <Real,XX,YY>::Printer
+                    ::getState_(state,blank,out);
+                InequalityConstrained <Real,XX,ZZ>::Printer
+                    ::getState_(state,blank,out);
+            }
+            
+            // Get the header for the Krylov iteration
+            static void getKrylovHeader_(
+                const typename State::t& state,
+                std::list <std::string>& out
+            ) { }
+
+            // Combines all of the Krylov headers
+            static void getKrylovHeader(
+                const typename State::t& state,
+                std::list <std::string>& out
+            ) {
+                Unconstrained <Real,XX>::Printer::getKrylovHeader_(state,out);
+                EqualityConstrained <Real,XX,YY>::Printer
+                    ::getKrylovHeader_(state,out);
+                InequalityConstrained <Real,XX,ZZ>::Printer
+                    ::getKrylovHeader_(state,out);
+            }
+            
+            // Get the information for the Krylov iteration
+            static void getKrylov_(
+                const typename State::t& state,
+                const bool blank,
+                std::list <std::string>& out
+            ) { }
+
+            // Combines all of the Krylov information
+            static void getKrylov(
+                const typename State::t& state,
+                const bool blank,
+                std::list <std::string>& out
+            ) {
+                Unconstrained <Real,XX>::Printer::getKrylov_(state,blank,out);
+                EqualityConstrained <Real,XX,YY>::Printer
+                    ::getKrylov_(state,blank,out);
+                InequalityConstrained <Real,XX,YY>::Printer
+                    ::getKrylov_(state,blank,out);
+            }
+        };
+        
         // This contains the different algorithms used for optimization 
         struct Algorithms {
         private:
@@ -9009,14 +9092,12 @@ namespace peopt{
                 typename State::t& state
             ){
                 // Adds the output pieces to the state manipulator 
-                DiagnosticManipulator <EqualityConstrained <Real,XX,YY> >
-                    dmanip_eq(smanip,msg);
-                DiagnosticManipulator <InequalityConstrained <Real,XX,ZZ> >
-                    dmanip_ineq(dmanip_eq,msg);
+                DiagnosticManipulator <Constrained <Real,XX,YY,ZZ> >
+                    dmanip(smanip,msg);
 
                 // Add the composite step pieces to the state manipulator
                 typename EqualityConstrained <Real,XX,YY>::Algorithms
-                    ::CompositeStepManipulator csmanip(dmanip_ineq,msg);
+                    ::CompositeStepManipulator csmanip(dmanip,msg);
 
                 // Add the interior point pieces to the state manipulator
                 typename InequalityConstrained <Real,XX,ZZ>::Algorithms
