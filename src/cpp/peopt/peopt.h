@@ -6843,14 +6843,11 @@ namespace peopt{
             
             // This adds the composite-step method through use of a state
             // manipulator.
+            template <typename ProblemClass>
             struct CompositeStepManipulator
-                : public StateManipulator <EqualityConstrained <Real,XX,YY> >
+                : public StateManipulator <ProblemClass>
             {
             private:
-                // Make sure we are working with an unconstrained state
-                // manipulator
-                typedef EqualityConstrained <Real,XX,YY> ProblemClass;
-
                 // A reference to the user-defined state manipulator
                 const StateManipulator<ProblemClass>& smanip;
 
@@ -6870,6 +6867,9 @@ namespace peopt{
                     typename ProblemClass::State::t& state_,
                     OptimizationLocation::t loc
                 ) const {
+                    // Call the user define manipulator
+                    smanip(fns_,state_,loc);
+
                     // Dynamically cast the incoming state and fns to the
                     // to work with the equality constrained spaces.  In theory,
                     // this should always work since we're doing this trickery
@@ -6898,9 +6898,6 @@ namespace peopt{
                     Real& rho_old = state.rho_old;
                     Natural& krylov_orthog_max = state.krylov_orthog_max;
 
-                    // Call the user define manipulator
-                    smanip(fns,state,loc);
-
                     switch(loc){
                     case OptimizationLocation::BeforeInitialFuncAndGrad:
                         // Make sure the algorithm uses the composite step
@@ -6926,12 +6923,18 @@ namespace peopt{
                         rho_old = rho;
                         break;
 
-                    case OptimizationLocation::GetStep:
+                    case OptimizationLocation::GetStep: {
+                        // Get a manipulator compatible with equality
+                        // constrained code
+                        ConversionManipulator
+                            <ProblemClass,EqualityConstrained<Real,XX,YY> >
+                            cmanip(smanip);
+
                         // Find the steps in both the primal and dual directions
-                        getStep(msg,smanip,fns,state);
+                        getStep(msg,cmanip,fns,state);
                         break;
 
-                    case OptimizationLocation::BeforeStep:
+                    } case OptimizationLocation::BeforeStep:
                         // Save the new penalty parameter
                         rho_old = rho; 
 
@@ -6987,7 +6990,8 @@ namespace peopt{
                     dmanip(smanip,msg);
 
                 // Add the composite step pieces to the state manipulator
-                CompositeStepManipulator csmanip(dmanip,msg);
+                CompositeStepManipulator <EqualityConstrained <Real,XX,YY> >
+                    csmanip(dmanip,msg);
 
                 // Insures that we can interact with unconstrained code
                 ConversionManipulator
@@ -8376,6 +8380,9 @@ namespace peopt{
                     typename ProblemClass::State::t& state_,
                     OptimizationLocation::t loc
                 ) const {
+                    // Call the user define manipulator
+                    smanip(fns_,state_,loc);
+
                     // Dynamically cast the incoming state and fns to the
                     // to work with the interior-point spaces.  In theory,
                     // this should always work since we're doing this trickery
@@ -8410,9 +8417,6 @@ namespace peopt{
                     Real& sigma = state.sigma;
                     Real& merit_xpdx= state.merit_xpdx;
                     Real& norm_grad = state.norm_grad;
-
-                    // Call the user define manipulator
-                    smanip(fns,state,loc);
 
                     switch(loc){
                     case OptimizationLocation::BeforeInitialFuncAndGrad:
@@ -9097,7 +9101,9 @@ namespace peopt{
 
                 // Add the composite step pieces to the state manipulator
                 typename EqualityConstrained <Real,XX,YY>::Algorithms
-                    ::CompositeStepManipulator csmanip(dmanip,msg);
+                    ::template CompositeStepManipulator
+                    <Constrained <Real,XX,YY,ZZ> >
+                    csmanip(dmanip,msg);
 
                 // Add the interior point pieces to the state manipulator
                 typename InequalityConstrained <Real,XX,ZZ>::Algorithms
