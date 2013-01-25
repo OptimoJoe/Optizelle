@@ -5769,12 +5769,28 @@ namespace peopt{
                 ) const {
                     // Create some shortcuts
                     const Real& xi_qn = state.xi_qn;
+                    const Real& norm_gxtyp = state.norm_gxtyp;
+                    const Real& eps_constr= state.eps_constr;
 
                     // Find || g'(x)dx_ncp + g(x) ||
                     Real norm_gpxdxncp_p_g = sqrt(Y::innr(bb.second,bb.second));
 
                     // Return xi_qn * || g'(x)dx_ncp + g(x) ||
                     eps = xi_qn * norm_gpxdxncp_p_g;
+
+                    // If the Cauchy point actually brings us to optimality,
+                    // it's hard to hit the tolerance above.  In this case,
+                    // try to detect the condition and bail early.  The way
+                    // we detect this is by noting that
+                    //
+                    // g(x+dx) ~= g(x)+g'(x)dx
+                    //
+                    // Hence, if || g(x)+g'(x)dx || is small, we should be
+                    // feasible after the step.  Therefore, we check if we
+                    // satisfy our stopping condition for feasibility.  If so,
+                    // we bail.
+                    if(norm_gpxdxncp_p_g < eps_constr*norm_gxtyp)
+                        eps=Real(1.);
                 }
             };
 
@@ -5923,7 +5939,12 @@ namespace peopt{
 
                     // If the projected gradient is in the nullspace of
                     // the constraints, it's hard to hit the tolerance above.
-                    // In this case, try to detect this and bail early.
+                    // In this case, try to detect the condition and bail early.
+                    // Specifically, sometimes the right hand side is
+                    // a decent size, but the solution is small.  Therefore,
+                    // we exit when the norm of the current projected gradient
+                    // is smaller than the norm of the unprojected gradient
+                    // by two orders of magnitude larger than machine precision.
                     if(iter >= Natural(2)
                         && norm_WgpHdxn 
                             < std::numeric_limits <Real>::epsilon()
@@ -6032,7 +6053,12 @@ namespace peopt{
 
                     // If the projected direction is in the nullspace of
                     // the constraints, it's hard to hit the tolerance above.
-                    // In this case, try to detect this and bail early.
+                    // In this case, try to detect the condition and bail early.
+                    // Specifically, sometimes the right hand side is
+                    // a decent size, but the solution is small.  Therefore,
+                    // we exit when the norm of the projected Krylov iterate 
+                    // is smaller than the norm of the unprojected iterate 
+                    // by two orders of magnitude larger than machine precision.
                     if(iter >= Natural(2)
                         && norm_Wdxt_uncorrected
                             < std::numeric_limits <Real>::epsilon()
