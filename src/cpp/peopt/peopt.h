@@ -4661,13 +4661,16 @@ namespace peopt{
                 // Cauchy point for tangential step prior to correction
                 std::list <X_Vector> dx_tcp_uncorrected;
                 
-                // Hessian applied to the normal step 
+                // Hessian applied to the normal step.  This is required by
+                // W_gradpHdxn as well as the predicted reduction.
                 std::list <X_Vector> H_dxn;
 
-                // Quantity grad f(x) + g'(x)*y + H dx_n
+                // Quantity grad f(x) + g'(x)*y + H dx_n.  This is required
+                // in the tangential subproblem and the predicted reduction.
                 std::list <X_Vector> W_gradpHdxn;
                 
-                // Hessian applied to the uncorrected tangential step 
+                // Hessian applied to the uncorrected tangential step.  THis
+                // is needed in the predicted reduction.
                 std::list <X_Vector> H_dxtuncorrected;
                 
                 // Initialization constructors
@@ -8165,20 +8168,20 @@ namespace peopt{
                 
                 // Determine how far we can go in the primal variable
                 
-                // x_tmp1=x+s
+                // x_tmp1=x+dx
                 X_Vector x_tmp1; X::init(x,x_tmp1);
                 X::copy(x,x_tmp1);
                 X::axpy(Real(1.),dx_,x_tmp1);
 
-                // z_tmp1=h(x+s)
+                // z_tmp1=h(x+dx)
                 Z_Vector z_tmp1; Z::init(z,z_tmp1);
                 h(x_tmp1,z_tmp1);
 
-                // z_tmp1=h(x+s)-h(x)
+                // z_tmp1=h(x+dx)-h(x)
                 Z::axpy(Real(-1.),h_x,z_tmp1);
 
                 // Find the largest alpha such that
-                // alpha (h(x+s)-h(x)) + h(x) >=0
+                // alpha (h(x+dx)-h(x)) + h(x) >=0
                 Real alpha_x=Z::srch(z_tmp1,h_x);
 
                 // Determine how far we can go in the dual variable 
@@ -8244,32 +8247,32 @@ namespace peopt{
                 
                 // Determine how far we can go in the primal variable
                 
-                // x_tmp1=x+s
+                // x_tmp1=x+dx
                 X_Vector x_tmp1; X::init(x,x_tmp1);
                 X::copy(x,x_tmp1);
                 X::axpy(Real(1.),dx_,x_tmp1);
 
-                // z_tmp1=h(x+s)
+                // z_tmp1=h(x+dx)
                 Z_Vector z_tmp1; Z::init(z,z_tmp1);
                 h(x_tmp1,z_tmp1);
 
-                // z_tmp2=h(x+s)-h(x)
+                // z_tmp2=h(x+dx)-h(x)
                 Z::axpy(Real(-1.),h_x,z_tmp1);
 
                 // Find the largest alpha such that
-                // alpha (h(x+s)-h(x)) + h(x) >=0
+                // alpha (h(x+dx)-h(x)) + h(x) >=0
                 Real alpha1=Z::srch(z_tmp1,h_x);
 
                 // Determine how far we can go in the dual variable
 
-                // z_tmp1=h'(x)s
+                // z_tmp1=h'(x)dx
                 h.p(x,dx_,z_tmp1);
                 
-                // z_tmp2 = z o h'(x)s
+                // z_tmp2 = z o h'(x)dx
                 Z_Vector z_tmp2; Z::init(z,z_tmp2);
                 Z::prod(z,z_tmp1,z_tmp2);
 
-                // z_tmp2 = - z o h'(x)s
+                // z_tmp2 = - z o h'(x)dx
                 Z::scal(Real(-1.),z_tmp2);
 
                 // z_tmp1 = e
@@ -8279,7 +8282,7 @@ namespace peopt{
                 Z::scal(sigma*mu,z_tmp1);
 
                 // Find the largest alpha such that
-                // alpha (- z o h'(x)s) + sigma mu e >=0
+                // alpha (- z o h'(x)dx) + sigma mu e >=0
                 Real alpha2=Z::srch(z_tmp2,z_tmp1);
 
                 // Determine the farthest we can go in both variables
@@ -8357,15 +8360,15 @@ namespace peopt{
                 X::copy(x,x_tmp1);
                 X::axpy(Real(1.),dx_,x_tmp1);
 
-                // z_tmp1=h(x+s)
+                // z_tmp1=h(x+dx)
                 Z_Vector z_tmp1; Z::init(z,z_tmp1);
                 h(x_tmp1,z_tmp1);
 
-                // z_tmp1=h(x+s)-h(x)
+                // z_tmp1=h(x+dx)-h(x)
                 Z::axpy(Real(-1.),h_x,z_tmp1);
 
                 // Find the largest alpha such that
-                // alpha (h(x+s)-h(x)) + h(x) >=0
+                // alpha (h(x+dx)-h(x)) + h(x) >=0
                 Real alpha_x=Z::srch(z_tmp1,h_x);
 
                 // Figure out how much to shorten the steps, if at all
