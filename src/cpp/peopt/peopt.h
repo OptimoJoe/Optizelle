@@ -8112,6 +8112,8 @@ namespace peopt{
                 // Create some shortcuts
                 const Z_Vector& z=state.z.front();
                 const Z_Vector& h_x=state.h_x.front();
+                const Real& mu_typ = state.mu_typ; 
+                const Real& eps_mu = state.eps_mu; 
 
                 // Determine the scaling factor for the interior-
                 // point parameter estimate
@@ -8120,7 +8122,10 @@ namespace peopt{
                 Real m = Z::innr(z_tmp,z_tmp);
 
                 // Estimate the interior-point parameter
-                return Z::innr(z,h_x) / m;
+                Real mu_est = Z::innr(z,h_x) / m;
+
+                // Estimate the interior-point parameter
+                return mu_est < eps_mu*mu_typ ? eps_mu*mu_typ : mu_est; 
             }
            
             // Adjust the stopping conditions unless mu < mu_typ*eps_mu 
@@ -8137,7 +8142,7 @@ namespace peopt{
                 // Prevent convergence unless mu has been reduced to
                 // eps_mu times mu_typ.
                 if( opt_stop==StoppingCondition::RelativeGradientSmall &&
-                    !(mu < mu_typ*eps_mu) 
+                    !(mu <= mu_typ*eps_mu) 
                 )
                     opt_stop=StoppingCondition::NotConverged;
 
