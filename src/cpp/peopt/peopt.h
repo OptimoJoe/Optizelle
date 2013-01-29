@@ -5803,6 +5803,7 @@ namespace peopt{
                 typename State::t& state
             ) {
                 // Create some shortcuts
+                const Operator <Real,XX,XX>& TRS=*(fns.TRS);
                 const VectorValuedFunction <Real,XX,YY>& g=*(fns.g);
                 const X_Vector& x=state.x.front();
                 const Y_Vector& g_x=state.g_x.front();
@@ -5834,11 +5835,15 @@ namespace peopt{
                 X::copy(gps_g,dx_ncp);
                 X::scal(-norm_gradpsg_2/norm_gradpgpsg_2,dx_ncp);
 
-                // If || dx_ncp || >= zeta delta, scale it back to zeta delta
+                // Find TRS(dx_ncp)
+                X_Vector trs_dx_ncp; X::init(x,trs_dx_ncp);
+                TRS(dx_ncp,trs_dx_ncp);
+
+                // If || TRS(dx_ncp) || >= zeta delta, scale it back to zeta delta
                 // and return
-                Real norm_dxncp = sqrt(X::innr(dx_ncp,dx_ncp));
-                if(norm_dxncp >= zeta*delta) {
-                    X::scal(zeta*delta/norm_dxncp,dx_ncp);
+                Real norm_trs_dxncp = sqrt(X::innr(trs_dx_ncp,trs_dx_ncp));
+                if(norm_trs_dxncp >= zeta*delta) {
+                    X::scal(zeta*delta/norm_trs_dxncp,dx_ncp);
                     X::copy(dx_ncp,dx_n);
                     return;
                 }
@@ -5882,18 +5887,24 @@ namespace peopt{
                 X::copy(dx_ncp,dx_n);
                 X::axpy(Real(1.),dx_dnewton,dx_n);
 
-                // If the Newton step is smaller than zeta deta, then return
+                // Find TRS(dx_n)
+                X_Vector trs_dx_n; X::init(x,trs_dx_n);
+                TRS(dx_n,trs_dx_n);
+
+                // If the TRS(dx_n) is smaller than zeta deta, then return
                 // it as the quasi-normal step
-                Real norm_dxnewton = sqrt(X::innr(dx_n,dx_n));
-                if(norm_dxnewton <= zeta*delta) return;
+                Real norm_trs_dxnewton = sqrt(X::innr(trs_dx_n,trs_dx_n));
+                if(norm_trs_dxnewton <= zeta*delta) return;
 
                 // Otherwise, compute the dogleg step.  In order to accomplish
                 // this, we need to find theta so that
-                // || dx_ncp + theta dx_dnewton || = zeta*delta
+                // || TRS( dx_ncp + theta dx_dnewton ) || = zeta*delta
                 // and then set dx_n = dx_ncp + theta dx_dnewton.
-                Real aa = X::innr(dx_dnewton,dx_dnewton);
-                Real bb = Real(2.) * X::innr(dx_dnewton,dx_ncp);
-                Real cc = norm_dxncp*norm_dxncp - zeta*zeta*delta*delta; 
+                X_Vector trs_dx_dnewton; X::init(x,trs_dx_dnewton);
+                TRS(dx_dnewton,trs_dx_dnewton);
+                Real aa = X::innr(trs_dx_dnewton,trs_dx_dnewton);
+                Real bb = Real(2.) * X::innr(trs_dx_dnewton,trs_dx_ncp);
+                Real cc = norm_trs_dxncp*norm_trs_dxncp - zeta*zeta*delta*delta;
                 Natural nroots;
                 Real r1;
                 Real r2;
