@@ -427,10 +427,10 @@ namespace peopt{
             // Occurs just before the main optimization loop 
             BeforeOptimizationLoop,
 
-            // Occurs just before we take the optimization step x+s
+            // Occurs just before we take the optimization step x+dx
             BeforeSaveOld,
 
-            // Occurs just before we take the optimization step x+s
+            // Occurs just before we take the optimization step x+dx
             BeforeStep,
 
             // Occurs before we calculate our new step.
@@ -444,6 +444,10 @@ namespace peopt{
             // after this point we set the merit value, merit_x, to be
             // merit_xpdx.
             AfterStepBeforeGradient,
+
+            // Occurs just after the gradient computation with the new
+            // trial step
+            AfterGradient,
 
             // Occurs before we update our quasi-Newton information. 
             BeforeQuasi,
@@ -497,6 +501,8 @@ namespace peopt{
                 return "GetStep";
             case AfterStepBeforeGradient:
                 return "AfterStepBeforeGradient";
+            case AfterGradient:
+                return "AfterGradient";
             case BeforeQuasi:
                 return "BeforeQuasi";
             case AfterQuasi:
@@ -540,6 +546,8 @@ namespace peopt{
                 return GetStep; 
             else if(loc=="AfterStepBeforeGradient")
                 return AfterStepBeforeGradient; 
+            else if(loc=="AfterGradient")
+                return AfterGradient;
             else if(loc=="BeforeQuasi")
                 return BeforeQuasi;
             else if(loc=="AfterQuasi")
@@ -574,6 +582,7 @@ namespace peopt{
                     name=="BeforeGetStep" || 
                     name=="GetStep" || 
                     name=="AfterStepBeforeGradient" ||
+                    name=="AfterGradient" ||
                     name=="BeforeQuasi" ||
                     name=="AfterQuasi" ||
                     name=="EndOfOptimizationIteration" ||
@@ -900,6 +909,8 @@ namespace peopt{
                 return atos <> ("TrstReg");
             case KrylovStop::Instability:
                 return atos <> ("Unstable");
+            case KrylovStop::InvalidTrustRegionCenter:
+                return atos <> ("InvldCnt");
             default:
                 throw;
             }
@@ -1757,11 +1768,11 @@ namespace peopt{
                 
                 // ------------- TRUST-REGION ------------- 
 
-                // Trust region radius
-                Real delta;
-
                 // Maximum trust region radius
                 Real delta_max;
+
+                // Trust region radius
+                Real delta;
 
                 // Trust-region parameter for checking whether a step has been
                 // accepted
@@ -1845,8 +1856,8 @@ namespace peopt{
                 state.merit_x=std::numeric_limits<Real>::quiet_NaN();
                 state.merit_xpdx=std::numeric_limits<Real>::quiet_NaN();
                 state.msg_level=Natural(1);
-                state.delta=Real(100.);
                 state.delta_max=Real(100.);
+                state.delta=state.delta_max;
                 state.eta1=Real(.1);
                 state.eta2=Real(.9);
                 state.ared=std::numeric_limits<Real>::quiet_NaN();
@@ -3066,6 +3077,24 @@ namespace peopt{
                 // Underlying function
                 std::auto_ptr <peopt::ScalarValuedFunction <Real,XX> > f;
 
+                // First objective evaluation?
+                mutable bool first_objective;
+                
+                // Point at which we last evaluated the objective
+                mutable X_Vector xobj;
+
+                // Evaluation of the underlying objective at xobj
+                mutable Real f_xobj;
+                
+                // First gradient evaluation?
+                mutable bool first_gradient;
+                
+                // Point at which we last evaluated the gradient
+                mutable X_Vector xgrad;
+
+                // Underlying gradient at xobj
+                mutable X_Vector grad_xgrad;
+
                 // This forces derived classes to call the constructor that
                 // depends on the state
                 HessianAdjustedFunction() {}
@@ -3078,7 +3107,21 @@ namespace peopt{
                     const Messaging& msg,
                     const typename State::t& state,
                     typename Functions::t& fns
-                ) : f(fns.f) {
+                ) : f(fns.f), 
+                    first_objective(true),
+                    xobj(),
+                    f_xobj(std::numeric_limits <Real>::quiet_NaN()),
+                    first_gradient(true),
+                    xgrad(),
+                    grad_xgrad()
+                {
+                    // Create some shortcuts
+                    const X_Vector& x=state.x.back();
+
+                    // Allocate a bit of memory for the caching
+                    X::init(x,xobj);
+                    X::init(x,xgrad);
+                    X::init(x,grad_xgrad);
                     
                     // Determine the Hessian approximation
                     switch(state.H_type){
@@ -3104,12 +3147,72 @@ namespace peopt{
 
                  // <- f(x) 
                  Real operator () (const X_Vector& x) const {
-                     return (*f)(x);
+                    // Allocate memory for f(x) 
+                    Real f_x(std::numeric_limits <Real>::quiet_NaN()); 
+                    
+                    // Figure out the residual between xobj and x 
+                    X_Vector residual;
+                    X::init(xobj,residual);
+                    X::copy(xobj,residual);
+                    X::axpy(Real(-1.),x,residual);
+
+                    // Figure out the relative error between x and xobj
+                    Real rel_err = sqrt(X::innr(residual,residual)) /
+                        (std::numeric_limits <Real>::epsilon() 
+                        + sqrt(X::innr(x,x)));
+
+                    // If the relative error is small, use the cached values 
+                    if(rel_err < std::numeric_limits <Real>::epsilon()*1e1
+                        && !first_objective
+                    ) {
+                        // f_x <- f(x)
+                        f_x = f_xobj;
+
+                    // If the residual is large, compute anew
+                    } else {
+                        // f_x <- f(x)
+                        f_x = (*f)(x);
+                    }
+
+                    // Cache the values
+                    first_objective=false;
+                    X::copy(x,xobj);
+                    f_xobj=f_x;
+                    
+                    // Return f(x)
+                    return f_x; 
                  }
 
-                 // g = grad f(x) 
-                 void grad(const X_Vector& x,X_Vector& g) const {
-                     f->grad(x,g);
+                 // grad = grad f(x) 
+                 void grad(const X_Vector& x,X_Vector& grad) const {
+                    // Figure out the residual between xgrad and x 
+                    X_Vector residual;
+                    X::init(xgrad,residual);
+                    X::copy(xgrad,residual);
+                    X::axpy(Real(-1.),x,residual);
+                    
+                    // Figure out the relative error between x and xgrad
+                    Real rel_err = sqrt(X::innr(residual,residual)) /
+                        (std::numeric_limits <Real>::epsilon() 
+                        + sqrt(X::innr(x,x)));
+
+                    // If the residual is small, use the cached values.
+                    if(rel_err < std::numeric_limits <Real>::epsilon()*1e1
+                        && !first_gradient 
+                    ) {
+                        // grad <- grad f(x)
+                        X::copy(grad_xgrad,grad);
+
+                    // If the residual is large, compute anew
+                    } else {
+                        // grad <- grad f(x) 
+                        f->grad(x,grad);
+                    }
+
+                    // Cache the values
+                    first_gradient=false;
+                    X::copy(x,xgrad);
+                    X::copy(grad,grad_xgrad);
                  }
 
                  // H_dx = hess f(x) dx 
@@ -4396,6 +4499,9 @@ namespace peopt{
                     norm_grad=sqrt(X::innr(grad,grad));
                     
                     // Manipulate the state if required
+                    smanip(fns,state,OptimizationLocation::AfterGradient);
+                    
+                    // Manipulate the state if required
                     smanip(fns,state,OptimizationLocation::BeforeQuasi);
 
                     // Update the quasi-Newton information
@@ -5403,13 +5509,22 @@ namespace peopt{
                 // Equality constraint.
                 const peopt::VectorValuedFunction <Real,XX,YY>& g;
 
-                // Equality Lagrange multiplier
+                // First objective evaluation?
+                mutable bool first_objective;
+
+                // Point at which we last evaluated the objective
+                mutable X_Vector xobj;
+
+                // Equality constraint evaluated at xobj 
+                mutable Y_Vector g_xobj;
+
+                // || g(x_obj) ||^2
+                mutable Real norm_gxobj_2;
+
+                // Reference to equality Lagrange multiplier
                 const Y_Vector& y;
 
-                // Equality constraint evaluated at x
-                const Y_Vector& g_x;
-
-                // Penalty parameter for the augmented-Lagrangian
+                // Reference to parameter for the augmented-Lagrangian
                 const Real& rho;
                 
                 // Make sure we call the constructor below
@@ -5418,32 +5533,84 @@ namespace peopt{
                 EqualityModifiedFunction(
                     const typename State::t& state,
                     typename Functions::t& fns
-                ) : f(fns.f), g(*(fns.g)), y(state.y.back()),
-                    g_x(state.g_x.back()), rho(state.rho) {}
+                ) : f(fns.f),
+                    g(*(fns.g)),
+                    first_objective(true),
+                    xobj(),
+                    g_xobj(),
+                    norm_gxobj_2(std::numeric_limits <Real>::quiet_NaN()),
+                    y(state.y.back()),
+                    rho(state.rho)
+                {
+                    // Create some shortcuts
+                    const X_Vector& x=state.x.back();
+
+                    // Allocate a bit of memory for the caching
+                    X::init(x,xobj);
+                    Y::init(y,g_xobj);
+                }
 
                 // <- f(x) + < y,g(x) > + rho || g(x) ||^2 
                 Real operator () (const X_Vector& x) const {
-                    // Calculate g(x).  Funny enough, we don't use the cached
-                    // value of g(x) here since we evaluate this function at
-                    // points such as x+dx.  Be careful of this.
-                    Y_Vector g_x; Y::init(y,g_x);
-                    g(x,g_x);
+                    // Allocate memory for g(x) and || g(x) ||^2
+                    Y_Vector g_x;
+                    Y::init(y,g_x);
+                    Real norm_gx_2(std::numeric_limits <Real>::quiet_NaN());
+                    
+                    // Figure out the residual between xobj and x 
+                    X_Vector residual;
+                    X::init(xobj,residual);
+                    X::copy(xobj,residual);
+                    X::axpy(Real(-1.),x,residual);
 
-                    // Return f(x) + < y,g(x) > + rho || g(x) ||^2 
-                    return (*f)(x) + Y::innr(y,g_x) + rho * Y::innr(g_x,g_x); 
+                    // Figure out the relative error between x and xobj
+                    Real rel_err = sqrt(X::innr(residual,residual)) /
+                        (std::numeric_limits <Real>::epsilon() 
+                        + sqrt(X::innr(x,x)));
+
+                    // If the relative error is small, use the cached values 
+                    if(rel_err < std::numeric_limits <Real>::epsilon()*1e1
+                        && !first_objective
+                    ) {
+                        // g_x <- g(x)
+                        Y::copy(g_xobj,g_x);
+
+                        // norm_gx_2 <- || g(x) ||^2
+                        norm_gx_2 = norm_gxobj_2;
+
+                    // If the residual is large, compute anew
+                    } else {
+                        // g_x <- g(x)
+                        g(x,g_x);
+
+                        // norm_gx_2 <- || g(x) ||^2
+                        norm_gx_2 = Y::innr(g_x,g_x);
+                    }
+
+                    // Cache the values
+                    first_objective=false;
+                    X::copy(x,xobj);
+                    X::copy(g_x,g_xobj);
+                    norm_gxobj_2 = norm_gx_2;
+                   
+                    // f_x <- f(x)
+                    Real f_x = (*f)(x);
+
+                     // Return f(x) + < y,g(x) > + rho || g(x) ||^2   
+                    return f_x + Y::innr(y,g_x) + rho * Y::innr(g_x,g_x);
                 }
 
                 // gg = grad f(x) + g'(x)*y
                 void grad(const X_Vector& x,X_Vector& grad) const {
-                    // grad <- grad f(x)
+                    // grad <- grad f(x) 
                     f->grad(x,grad);
-                    
+
                     // x_tmp1 <- g'(x)* y 
                     X_Vector x_tmp1;
                         X::init(x,x_tmp1);
                         g.ps(x,y,x_tmp1);
 
-                    // g <- grad f(x) + g'(x)*y 
+                    // grad <- grad f(x) + g'(x)*y 
                     X::axpy(Real(1.),x_tmp1,grad);
                 }
 
@@ -5839,8 +6006,8 @@ namespace peopt{
                 X_Vector trs_dx_ncp; X::init(x,trs_dx_ncp);
                 TRS(dx_ncp,trs_dx_ncp);
 
-                // If || TRS(dx_ncp) || >= zeta delta, scale it back to zeta delta
-                // and return
+                // If || TRS(dx_ncp) || >= zeta delta, scale it back to zeta
+                // delta and return
                 Real norm_trs_dxncp = sqrt(X::innr(trs_dx_ncp,trs_dx_ncp));
                 if(norm_trs_dxncp >= zeta*delta) {
                     X::scal(zeta*delta/norm_trs_dxncp,dx_ncp);
@@ -6357,8 +6524,8 @@ namespace peopt{
                 }
             };
 
-            // Finds the initial Lagrange multiplier
-            static void initialLagrangeMultiplier(
+            // Finds the Lagrange multiplier at the current iterate 
+            static void lagrangeMultiplier(
                 const typename Functions::t& fns,
                 typename State::t& state
             ) {
@@ -6402,7 +6569,7 @@ namespace peopt{
                 );
 
                 // Find the Lagrange multiplier based on this step
-                X::axpy(Real(1.),x0.second,y);
+                Y::axpy(Real(1.),x0.second,y);
             }
             
             // Finds the Lagrange multiplier step 
@@ -6479,7 +6646,59 @@ namespace peopt{
                 X::copy(x_save,x);
 
                 // Copy out the Lagrange multiplier step
-                X::copy(x0.second,dy);
+                Y::copy(x0.second,dy);
+            }
+            
+            // Does a check on how far off the Lagrange multiplier is 
+            static Real lagrangeMultiplierCheck(
+                const typename Functions::t& fns,
+                typename State::t& state
+            ) {
+                // Create some shortcuts
+                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
+                const Natural& augsys_iter_max=state.augsys_iter_max;
+                const Natural& augsys_rst_freq=state.augsys_rst_freq;
+                X_Vector& x=state.x.front();
+                Y_Vector& dy=state.dy.front();
+
+                // grad_x <- L(x,y) = grad f(x) + g'(x)*y
+                X_Vector grad_x; 
+                    X::init(x,grad_x);
+                    f.grad(x,grad_x);
+
+                // Create the initial guess, x0=(0,0)
+                XxY_Vector x0;
+                    X::init(x,x0.first);
+                    Y::init(dy,x0.second);
+                    XxY::zero(x0);
+
+                // Create the rhs, b0=(-grad L(x,y),0);
+                XxY_Vector b0;
+                    XxY::init(x0,b0);
+                    X::copy(grad_x,b0.first);
+                    X::scal(Real(-1.),b0.first);
+                    Y::zero(b0.second);
+
+                // Build Schur style preconditioners
+                typename Unconstrained <Real,XX>::Functions::Identity I;
+                BlockDiagonalPreconditioner PAugSys_l(I,*(fns.PSchur_left));
+                BlockDiagonalPreconditioner PAugSys_r(I,*(fns.PSchur_right));
+
+                // Solve the augmented system for the Lagrange multiplier step 
+                std::pair <Real,Natural> err_iter = peopt::gmres <Real,XXxYY> (
+                    AugmentedSystem(state,fns,x),
+                    b0,
+                    Real(1.), // This will be overwritten by the manipulator
+                    augsys_iter_max,
+                    augsys_rst_freq,
+                    PAugSys_l,
+                    PAugSys_r,
+                    LagrangeMultiplierStepManipulator(state,fns),
+                    x0 
+                );
+
+                // Copy out the Lagrange multiplier step
+                return sqrt(Y::innr(x0.second,x0.second));
             }
 
             // Computes the predicted reduction 
@@ -6501,10 +6720,10 @@ namespace peopt{
                 const Real& norm_gpxdxnpgx=state.norm_gpxdxnpgx;
                 Real& pred=state.pred;
 
-                // pred <- - < W (grad f(x) + H dx_n), dx_t_uncorrected >
+                // pred <- - < W (grad L(x,y) + H dx_n), dx_t_uncorrected >
                 pred = - X::innr(W_gradpHdxn,dx_t_uncorrected);
 
-                // pred <- - < W (grad L(x,Y) + H dx_n), dx_t_uncorrected >
+                // pred <- - < W (grad L(x,y) + H dx_n), dx_t_uncorrected >
                 //    - .5 < H dx_t_uncorrected,dx_t_uncorrected >
                 pred -= Real(0.5)*X::innr( H_dxtuncorrected,dx_t_uncorrected);
 
@@ -6594,6 +6813,7 @@ namespace peopt{
                 const Real& delta_max=state.delta_max;
                 const Real& merit_x=state.merit_x;
                 const Real& norm_dx=state.norm_dx;
+                const KrylovStop::t& krylov_stop=state.krylov_stop;
                 Y_Vector& y=state.y.front();
                 Real& delta=state.delta;
                 Real& ared=state.ared;
@@ -6644,9 +6864,11 @@ namespace peopt{
                 // Update the trust region radius and return whether or not we
                 // accept the step
                 if(ared >= eta2*pred){
-                    // Only increase the size of the trust region if we were
-                    // close to the boundary
-                    if(fabs(norm_dx-delta) < Real(1e-4)*delta)
+                    // Increase the size of the trust-region if the Krylov
+                    // solver reached the boundary.
+                    if( krylov_stop==KrylovStop::NegativeCurvature ||
+                        krylov_stop==KrylovStop::TrustRegionViolated
+                    ) 
                         delta = delta*Real(2.) < delta_max
                               ? delta*Real(2.) : delta_max;
                     return true;
@@ -6669,6 +6891,7 @@ namespace peopt{
                 // Create some shortcuts
                 const ScalarValuedFunction <Real,XX>& f=*(fns.f);
                 const VectorValuedFunction <Real,XX,YY>& g=*(fns.g);
+                const Operator <Real,XX,XX>& TRS=*(fns.TRS);
                 const X_Vector& x=state.x.front();
                 const X_Vector& dx_n=state.dx_n.front();
                 const X_Vector& dx_t=state.dx_t.front();
@@ -6699,7 +6922,11 @@ namespace peopt{
                 Real& pred=state.pred;
                 Real& rpred=state.rpred;
                 Real& rho=state.rho;
+                Real& alpha=state.alpha;
                 Natural& rejected_trustregion=state.rejected_trustregion;
+
+                // Create a single temporary vector
+                X_Vector x_tmp1; X::init(x,x_tmp1);
 
                 // Continue to look for a step until our actual vs. predicted
                 // reduction is good.
@@ -6827,9 +7054,26 @@ namespace peopt{
                         }
                     }
 
+                    // In an interior point method, we may truncate the step
+                    // and this information is communicated through the
+                    // linesearch parameter, alpha.
+                    alpha = Real(1.);
+
                     // Manipulate the state if required
                     smanip(fns,state,
                         OptimizationLocation::BeforeActualVersusPredicted);
+
+                    // If need be, shorten the step
+                    X::scal(alpha,dx);
+
+                    // If we shorten our step, update our Lagrange multiplier
+                    // step
+                    if(alpha < Real(1.))
+                        lagrangeMultiplierStep(fns,state);
+                    
+                    // Save the length of the scaled trial step
+                    TRS(dx,x_tmp1);
+                    norm_dx=sqrt(X::innr(x_tmp1,x_tmp1));
 
                     // Check whether the step is good
                     if(checkStep(fns,state))
@@ -6862,7 +7106,8 @@ namespace peopt{
                 } 
             }
             
-            // Adjust the stopping conditions unless || g(x) || <  
+            // Adjust the stopping conditions unless
+            // || g(x) || <  eps_constr || g(x_0) ||
             static void adjustStoppingConditions(
                 const typename Functions::t& fns,
                 typename State::t& state
@@ -6925,17 +7170,20 @@ namespace peopt{
                         =dynamic_cast <typename State::t&> (state_);
                 
                     // Create some shortcuts
+                    const ScalarValuedFunction <Real,XX>& f=*(fns.f);
                     const VectorValuedFunction <Real,XX,YY>& g=*(fns.g);
                     const X_Vector& x=state.x.front();
                     const Y_Vector& dy=state.dy.front();
                     const Real& rho = state.rho;
                     const Natural& krylov_iter_max = state.krylov_iter_max;
                     AlgorithmClass::t& algorithm_class=state.algorithm_class;
+                    X_Vector& grad=state.grad.front();
                     Y_Vector& y=state.y.front();
                     Y_Vector& g_x=state.g_x.front();
                     Real& norm_gx = state.norm_gx;
                     Real& norm_gxtyp = state.norm_gxtyp;
                     Real& rho_old = state.rho_old;
+                    Real& merit_x = state.merit_x;
                     Natural& krylov_orthog_max = state.krylov_orthog_max;
 
                     switch(loc){
@@ -6956,8 +7204,11 @@ namespace peopt{
                         norm_gx = sqrt(X::innr(g_x,g_x));
                         norm_gxtyp = norm_gx;
 
-                        // Find the initial Lagrange multiplier
-                        initialLagrangeMultiplier(fns,state);
+                        // Find the initial Lagrange multiplier and then update
+                        // the gradient and merit function.
+                        lagrangeMultiplier(fns,state);
+                        f.grad(x,grad);
+                        merit_x = f(x);
 
                         // Prime the previous penalty paramter
                         rho_old = rho;
@@ -6982,7 +7233,18 @@ namespace peopt{
                         Y::axpy(Real(1.),dy,y);
                         break;
 
-                    case OptimizationLocation::AfterStepBeforeGradient:
+                    case OptimizationLocation::AfterGradient: {
+                        // In an interior point method, we may have modified
+                        // our interior point parameter, which changes the
+                        // gradient.  This necessitates a new Lagrange 
+                        // multiplier computation and a new gradient and 
+                        // merit function.
+                        lagrangeMultiplier(fns,state);
+                        f.grad(x,grad);
+                        merit_x = f(x);
+                        break;
+
+                    } case OptimizationLocation::AfterStepBeforeGradient:
                         // Make sure we update our cached value of g(x) and
                         // its norm
                         g(x,g_x);
@@ -7489,11 +7751,14 @@ namespace peopt{
                     // Determine which variable we're reading in and then splice
                     // it in the correct location
                     if(*name0=="grad_orig")
-                        state.grad_orig.splice(state.grad_orig.end(),xs.second,x0);
+                        state.grad_orig.splice(
+                            state.grad_orig.end(),xs.second,x0);
                     else if(*name0=="grad_schur")
-                        state.grad_schur.splice(state.grad_schur.end(),xs.second,x0);
+                        state.grad_schur.splice(
+                            state.grad_schur.end(),xs.second,x0);
                     else if(*name0=="grad_lag")
-                        state.grad_lag.splice(state.grad_lag.end(),xs.second,x0);
+                        state.grad_lag.splice(
+                            state.grad_lag.end(),xs.second,x0);
 
                     // Remove the string corresponding to the element just
                     // spliced if splicing occured.
@@ -7655,6 +7920,15 @@ namespace peopt{
 
                 // Inequality constraint.
                 const peopt::VectorValuedFunction <Real,XX,ZZ>& h;
+                
+                // First objective evaluation?
+                mutable bool first_objective;
+
+                // Point at which we last evaluated the objective
+                mutable X_Vector xobj;
+
+                // Inequality constraint evaluated at xobj 
+                mutable Z_Vector h_xobj;
 
                 // Inequality Lagrange multiplier
                 const Z_Vector& z;
@@ -7690,43 +7964,90 @@ namespace peopt{
                 InequalityModifiedFunction(
                     typename State::t& state,
                     typename Functions::t& fns
-                ) : f(fns.f), h(*(fns.h)), z(state.z.front()), mu(state.mu),
-                    sigma(state.sigma), h_x(state.h_x.front()),
+                ) : f(fns.f),
+                    h(*(fns.h)),
+                    first_objective(true),
+                    xobj(),
+                    h_xobj(),
+                    z(state.z.front()),
+                    mu(state.mu),
+                    sigma(state.sigma),
+                    h_x(state.h_x.front()),
                     grad_orig(state.grad_orig.front()),
                     grad_schur(state.grad_schur.front()),
                     grad_lag(state.grad_lag.front())
-                { }
+                { 
+                    // Create some shortcuts
+                    const X_Vector& x=state.x.back();
+
+                    // Allocate a bit of memory for the caching
+                    X::init(x,xobj);
+                    Z::init(z,h_xobj);
+                }
 
                 // <- f(x) - sigma mu barr(h(x))
                 Real operator () (const X_Vector& x) const {
-                    // Calculate h(x).  Funny enough, we don't use the cached
-                    // value of h(x) here since we evaluate this function at
-                    // points such as x+s.  Be careful of this.
-                    Z_Vector h_x; Z::init(z,h_x);
-                    h(x,h_x);
+                    // Allocate memory for h(x).  Note, we do not use the 
+                    // value of h_x stored in the state since this function 
+                    // is commonly evaluated at points such as x+dx.
+                    Z_Vector h_x;
+                    Z::init(z,h_x);
+                    
+                    // Figure out the residual between xobj and x 
+                    X_Vector residual;
+                    X::init(xobj,residual);
+                    X::copy(xobj,residual);
+                    X::axpy(Real(-1.),x,residual);
+
+                    // Figure out the relative error between x and xobj
+                    Real rel_err = sqrt(X::innr(residual,residual)) /
+                        (std::numeric_limits <Real>::epsilon() 
+                        + sqrt(X::innr(x,x)));
+
+                    // If the relative error is small, use the cached values 
+                    if(rel_err < std::numeric_limits <Real>::epsilon()*1e1
+                        && !first_objective
+                    ) {
+                        // h_x <- h(x)
+                        Z::copy(h_xobj,h_x);
+
+                    // If the residual is large, compute anew
+                    } else {
+
+                        // h_x <- h(x)
+                        h(x,h_x);
+                    }
+
+                    // Cache the values
+                    first_objective=false;
+                    X::copy(x,xobj);
+                    Z::copy(h_x,h_xobj);
+                        
+                    // f_x <- f(x)
+                    Real f_x = (*f)(x);
 
                     // Return f(x) - sigma mu barr(h(x))
-                    return (*f)(x) - sigma*mu * Z::barr(h_x); 
+                    return f_x - sigma*mu * Z::barr(h_x); 
                 }
 
                 // g = grad f(x) - sigma mu h'(x)* (inv(L(h(x))) e)
-                void grad(const X_Vector& x,X_Vector& g) const {
+                void grad(const X_Vector& x,X_Vector& grad) const {
                     // Create work elements for accumulating the
                     // interior point pieces
                     Z_Vector z_tmp1; Z::init(z,z_tmp1);
                     Z_Vector z_tmp2; Z::init(z,z_tmp2);
                     X_Vector x_tmp1; X::init(x,x_tmp1);
-
-                    // g <- grad f(x)
-                    f->grad(x,g);
+                        
+                    // grad <- grad f(x) 
+                    f->grad(x,grad);
 
                     // grad_orig <- grad f(x)
-                    X::copy(g,grad_orig);
+                    X::copy(grad,grad_orig);
 
                     // Calculate the Schur complement version of the gradient
 
                     // grad_schur <- grad f(x)
-                    X::copy(g,grad_schur);
+                    X::copy(grad,grad_schur);
 
                     // z_tmp1 <- e
                     Z::id(z_tmp1);
@@ -7743,7 +8064,7 @@ namespace peopt{
                     // Calculate the true gradient of the Lagrangian
 
                     // grad_lag <- grad f(x)
-                    X::copy(g,grad_lag);
+                    X::copy(grad,grad_lag);
 
                     // x_tmp1 <- h'(x)*z
                     h.ps(x,z,x_tmp1);
@@ -7752,7 +8073,7 @@ namespace peopt{
                     X::axpy(-Real(1.0),x_tmp1,grad_lag);
 
                     // Finally, return the Schur complement gradient
-                    X::copy(grad_schur,g);
+                    X::copy(grad_schur,grad);
                 }
 
                 // Adds on the interior point piece to the Hessian. 
@@ -7841,8 +8162,13 @@ namespace peopt{
                 fns.f.reset(new InequalityModifiedFunction(state,fns));
 
                 // Set the trust-region scaling
+#if 0
                 fns.TRS.reset(
                     new typename Algorithms::TrustRegionScaling(fns,state));
+#else
+                if(fns.TRS.get()==NULL)
+                    fns.TRS.reset(new typename Unconstrained <Real,XX>::Functions::Identity());
+#endif
             }
 
             // Initialize any missing functions 
@@ -8112,8 +8438,8 @@ namespace peopt{
                 // Create some shortcuts
                 const Z_Vector& z=state.z.front();
                 const Z_Vector& h_x=state.h_x.front();
-                const Real& mu_typ = state.mu_typ; 
-                const Real& eps_mu = state.eps_mu; 
+                //const Real& mu_typ = state.mu_typ; 
+                //const Real& eps_mu = state.eps_mu; 
 
                 // Determine the scaling factor for the interior-
                 // point parameter estimate
@@ -8125,7 +8451,8 @@ namespace peopt{
                 Real mu_est = Z::innr(z,h_x) / m;
 
                 // Estimate the interior-point parameter
-                return mu_est < eps_mu*mu_typ ? eps_mu*mu_typ : mu_est; 
+                //return mu_est < eps_mu*mu_typ ? eps_mu*mu_typ : mu_est; 
+                return mu_est; 
             }
            
             // Adjust the stopping conditions unless mu < mu_typ*eps_mu 
@@ -8371,7 +8698,7 @@ namespace peopt{
                 
                 // Determine how far we can go in the primal variable
                 
-                // x_tmp1=x+s
+                // x_tmp1=x+dx
                 X_Vector x_tmp1; X::init(x,x_tmp1);
                 X::copy(x,x_tmp1);
                 X::axpy(Real(1.),dx_,x_tmp1);
@@ -9144,22 +9471,22 @@ namespace peopt{
                 DiagnosticManipulator <Constrained <Real,XX,YY,ZZ> >
                     dmanip(smanip,msg);
 
-                // Add the composite step pieces to the state manipulator
-                typename EqualityConstrained <Real,XX,YY>::Algorithms
-                    ::template CompositeStepManipulator
-                    <Constrained <Real,XX,YY,ZZ> >
-                    csmanip(dmanip,msg);
-
                 // Add the interior point pieces to the state manipulator
                 typename InequalityConstrained <Real,XX,ZZ>::Algorithms
                     ::template InteriorPointManipulator
                     <Constrained <Real,XX,YY,ZZ> >
-                    ipmanip(csmanip);
+                    ipmanip(dmanip);
+
+                // Add the composite step pieces to the state manipulator
+                typename EqualityConstrained <Real,XX,YY>::Algorithms
+                    ::template CompositeStepManipulator
+                    <Constrained <Real,XX,YY,ZZ> >
+                    csmanip(ipmanip,msg);
 
                 // Insures that we can interact with unconstrained code
                 ConversionManipulator
                     <Constrained<Real,XX,YY,ZZ>,Unconstrained <Real,XX> >
-                    cmanip(ipmanip);
+                    cmanip(csmanip);
                 
                 // Initialize any remaining functions required for optimization 
                 Functions::init(msg,state,fns);
