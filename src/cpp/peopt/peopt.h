@@ -3333,6 +3333,11 @@ namespace peopt{
                 if(algorithm_class==AlgorithmClass::LineSearch) {
                     out.push_back(atos <> ("LS Iter"));
                 }
+
+                // In case we're using a trust-region method 
+                if(algorithm_class==AlgorithmClass::TrustRegion) {
+                    out.push_back(atos <> ("ared/pred"));
+                }
             }
 
             // Combines all of the state headers
@@ -3360,6 +3365,8 @@ namespace peopt{
                 const Real& krylov_rel_err=state.krylov_rel_err;
                 const KrylovStop::t& krylov_stop=state.krylov_stop;
                 const Natural& linesearch_iter=state.linesearch_iter;
+                const Real& ared=state.ared;
+                const Real& pred=state.pred;
                 const AlgorithmClass::t& algorithm_class=state.algorithm_class;
                 const LineSearchDirection::t& dir=state.dir;
                 const Natural& rejected_trustregion=state.rejected_trustregion;
@@ -3409,6 +3416,14 @@ namespace peopt{
                 if(algorithm_class==AlgorithmClass::LineSearch) {
                     if(!opt_begin)
                         out.push_back(atos <> (linesearch_iter));
+                    else 
+                        out.push_back("          ");
+                }
+                
+                // In case we're using a trust-region method
+                if(algorithm_class==AlgorithmClass::TrustRegion) {
+                    if(!opt_begin)
+                        out.push_back(atos <> (ared/pred));
                     else 
                         out.push_back("          ");
                 }
@@ -5736,6 +5751,9 @@ namespace peopt{
             ) { 
                 // Norm of the constrained 
                 out.push_back(atos <> ("||g(x)||"));
+                    
+                // Trust-region information
+                out.push_back(atos <> ("ared/pred"));
                    
                 // Krylov method information
                 out.push_back(atos <> ("Kry Iter"));
@@ -5765,6 +5783,8 @@ namespace peopt{
                 const KrylovStop::t& krylov_stop=state.krylov_stop;
                 const Natural& iter=state.iter;
                 const Natural& rejected_trustregion=state.rejected_trustregion;
+                const Real& pred = state.pred;
+                const Real& ared = state.ared;
 
                 // Figure out if we're at the absolute beginning of the
                 // optimization.  We have to be a little saavy about this
@@ -5780,6 +5800,12 @@ namespace peopt{
 
                 // Norm of the gradient 
                 out.push_back(atos <> (norm_gx));
+                    
+                // Actual vs. predicted reduction 
+                if(!opt_begin)
+                    out.push_back(atos <> (ared/pred));
+                else 
+                    out.push_back("          ");
                 
                 // Krylov method information
                 if(!opt_begin) {
@@ -7368,7 +7394,7 @@ namespace peopt{
                 std::list <X_Vector> grad_orig;
 
                 // Gradient used in the Schur complement system,
-                // grad f(x) - sigma mu h'(x)* (inv(L(h(x))) e)
+                // grad f(x) - mu h'(x)* (inv(L(h(x))) e)
                 std::list <X_Vector> grad_schur;
 
                 // Gradient of the inequality Lagrangian,
@@ -7394,6 +7420,9 @@ namespace peopt{
 
                 // Interior point parameter
                 Real mu;
+
+                // Current interior point estimate
+                Real mu_est;
 
                 // Typical value for mu.  Generally, the first estimated
                 // value for mu.
@@ -7432,6 +7461,7 @@ namespace peopt{
             // constrained optimization.  
             static void init_params_(t& state) {
                 state.mu = std::numeric_limits<Real>::quiet_NaN();
+                state.mu_est = std::numeric_limits<Real>::quiet_NaN();
                 state.mu_typ = std::numeric_limits<Real>::quiet_NaN();
                 state.eps_mu= Real(1e-6);
                 state.sigma = Real(0.5);
@@ -7512,6 +7542,11 @@ namespace peopt{
                 if(state.mu <= Real(0.)) 
                     ss << "The interior point parameter must be positive: " 
                         "mu = " << state.mu;
+                
+                // Check that the interior point parameter estimate is positive 
+                if(state.mu_est <= Real(0.)) 
+                    ss << "The interior point parameter estimate must be "
+                        "positive: mu_est = " << state.mu_est;
 
                 // Check that the typical interior point parameter is positive 
                 if(state.mu_typ <= Real(0.)) 
@@ -7556,6 +7591,7 @@ namespace peopt{
                     if( typename Unconstrained <Real,XX>::Restart
                             ::is_real()(name) ||
                         name == "mu" ||
+                        name == "mu_est" ||
                         name == "mu_typ" ||
                         name == "eps_mu" ||
                         name == "sigma" ||
@@ -7710,6 +7746,8 @@ namespace peopt{
                 // Copy in all the real numbers
                 reals.first.push_back("mu");
                 reals.second.push_back(state.mu);
+                reals.first.push_back("mu_est");
+                reals.second.push_back(state.mu_est);
                 reals.first.push_back("mu_typ");
                 reals.second.push_back(state.mu_typ);
                 reals.first.push_back("eps_mu");
@@ -7810,6 +7848,7 @@ namespace peopt{
                     name++,real++
                 ){
                     if(*name=="mu") state.mu=*real;
+                    else if(*name=="mu_est") state.mu_est=*real;
                     else if(*name=="mu_typ") state.mu_typ=*real;
                     else if(*name=="eps_mu") state.eps_mu=*real;
                     else if(*name=="sigma") state.sigma=*real;
@@ -7936,9 +7975,6 @@ namespace peopt{
                 // Interior point parameter
                 const Real& mu;
 
-                // Centering paramter 
-                const Real& sigma;
-
                 // Inequality constraint evaluated at x
                 const Z_Vector& h_x;
 
@@ -7946,7 +7982,7 @@ namespace peopt{
                 X_Vector& grad_orig;
 
                 // Schur complement version of the gradient,
-                // grad f(x) - sigma mu h'(x)* (inv(L(h(x))) e)
+                // grad f(x) - mu h'(x)* (inv(L(h(x))) e)
                 X_Vector& grad_schur;
 
                 // True gradient of the Lagrangian,
@@ -7971,7 +8007,6 @@ namespace peopt{
                     h_xobj(),
                     z(state.z.front()),
                     mu(state.mu),
-                    sigma(state.sigma),
                     h_x(state.h_x.front()),
                     grad_orig(state.grad_orig.front()),
                     grad_schur(state.grad_schur.front()),
@@ -7985,7 +8020,7 @@ namespace peopt{
                     Z::init(z,h_xobj);
                 }
 
-                // <- f(x) - sigma mu barr(h(x))
+                // <- f(x) - mu barr(h(x))
                 Real operator () (const X_Vector& x) const {
                     // Allocate memory for h(x).  Note, we do not use the 
                     // value of h_x stored in the state since this function 
@@ -8026,11 +8061,11 @@ namespace peopt{
                     // f_x <- f(x)
                     Real f_x = (*f)(x);
 
-                    // Return f(x) - sigma mu barr(h(x))
-                    return f_x - sigma*mu * Z::barr(h_x); 
+                    // Return f(x) - mu barr(h(x))
+                    return f_x - mu * Z::barr(h_x); 
                 }
 
-                // g = grad f(x) - sigma mu h'(x)* (inv(L(h(x))) e)
+                // g = grad f(x) - mu h'(x)* (inv(L(h(x))) e)
                 void grad(const X_Vector& x,X_Vector& grad) const {
                     // Create work elements for accumulating the
                     // interior point pieces
@@ -8058,8 +8093,8 @@ namespace peopt{
                     // x_tmp1 <- h'(x)* (inv(L(h(x))) e)
                     h.ps(x,z_tmp2,x_tmp1);
 
-                    // grad_schur<- grad f(x) - sigma mu h'(x)* (inv(L(h(x))) e)
-                    X::axpy(-sigma*mu,x_tmp1,grad_schur);
+                    // grad_schur<- grad f(x) - mu h'(x)* (inv(L(h(x))) e)
+                    X::axpy(-mu,x_tmp1,grad_schur);
 
                     // Calculate the true gradient of the Lagrangian
 
@@ -8192,9 +8227,10 @@ namespace peopt{
                 const typename State::t& state,
                 std::list <std::string>& out
             ) {
-
-                // Interior point pieces of the state 
+                // Print out the current interior point parameter and
+                // the estimate of the interior point parameter.
                 out.push_back(atos <> ("mu"));
+                out.push_back(atos <> ("mu_est"));
             }
 
             // Combines all of the state headers
@@ -8216,14 +8252,15 @@ namespace peopt{
 
                 // Create some shortcuts
                 const Real& mu=state.mu; 
+                const Real& mu_est=state.mu_est; 
 
                 // Get a iterator to the last element prior to inserting
                 // elements
                 std::list <std::string>::iterator prior=out.end(); prior--;
 
                 // Interior point information
-                // Estimate the interior-point parameter
                 out.push_back(atos <> (mu));
+                out.push_back(atos <> (mu_est));
 
                 // If we needed to do blank insertions, overwrite the elements
                 // with spaces 
@@ -8330,7 +8367,7 @@ namespace peopt{
             };
 
             // Finds the new inequality Lagrange multiplier
-            // z = inv L(h(x)) (-z o h'(x)s + sigma mu e)
+            // z = inv L(h(x)) (-z o h'(x)s + mu e)
             static void findInequalityMultiplierLinked(
                 const typename Functions::t& fns,
                 typename State::t& state
@@ -8340,7 +8377,6 @@ namespace peopt{
                 const X_Vector& x=state.x.front();
                 const X_Vector& dx=state.dx.front();
                 const Real& mu=state.mu;
-                const Real& sigma=state.sigma;
                 const VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
                 Z_Vector& z=state.z.front();
 
@@ -8358,15 +8394,15 @@ namespace peopt{
                 // z_tmp1 <- e
                 Z::id(z_tmp1);
 
-                // z_tmp2 <- -z o h'(x)dx + sigma mu e
-                Z::axpy(sigma*mu,z_tmp1,z_tmp2);
+                // z_tmp2 <- -z o h'(x)dx + mu e
+                Z::axpy(mu,z_tmp1,z_tmp2);
 
-                // z <- inv L(h(x)) (-z o h'(x)dx + sigma mu e)
+                // z <- inv L(h(x)) (-z o h'(x)dx + mu e)
                 Z::linv(h_x,z_tmp2,z);
             }
 
             // Finds the new inequality Lagrange multiplier
-            // z = sigma mu inv L(h(x)) e 
+            // z = mu inv L(h(x)) e 
             static void findInequalityMultiplierLogBarrier(
                 const typename Functions::t& fns,
                 typename State::t& state
@@ -8374,7 +8410,6 @@ namespace peopt{
                 // Create some shortcuts
                 const Z_Vector& h_x=state.h_x.front();
                 const Real& mu=state.mu;
-                const Real& sigma=state.sigma;
                 Z_Vector& z=state.z.front();
 
                 // z_tmp1 <- e 
@@ -8384,13 +8419,13 @@ namespace peopt{
                 // z <- inv(L(h(x))) e 
                 Z::linv(h_x,z_tmp1,z);
 
-                // z <- sigma mu inv(L(h(x))) e 
-                Z::scal(sigma*mu,z);
+                // z <- mu inv(L(h(x))) e 
+                Z::scal(mu,z);
             }
 
 
             // Finds the new inequality Lagrange multiplier step
-            // dz = -z + inv L(h(x)) (-z o h'(x)s + sigma mu e)
+            // dz = -z + inv L(h(x)) (-z o h'(x)dx + mu e)
             static void findInequalityMultiplierStep(
                 const typename Functions::t& fns,
                 typename State::t& state
@@ -8401,7 +8436,6 @@ namespace peopt{
                 const X_Vector& x=state.x.front();
                 const X_Vector& dx=state.dx.front();
                 const Real& mu=state.mu;
-                const Real& sigma=state.sigma;
                 const VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
                 Z_Vector& dz=state.dz.front();
 
@@ -8419,27 +8453,26 @@ namespace peopt{
                 // z_tmp1 <- e
                 Z::id(z_tmp1);
 
-                // z_tmp2 <- -z o h'(x)dx + sigma mu e
-                Z::axpy(sigma*mu,z_tmp1,z_tmp2);
+                // z_tmp2 <- -z o h'(x)dx + mu e
+                Z::axpy(mu,z_tmp1,z_tmp2);
 
-                // dz <- inv L(h(x)) (-z o h'(x)dx + sigma mu e)
+                // dz <- inv L(h(x)) (-z o h'(x)dx + mu e)
                 Z::linv(h_x,z_tmp2,dz);
 
-                // dz <- -z + inv L(h(x)) (-z o h'(x)dx + sigma mu e)
+                // dz <- -z + inv L(h(x)) (-z o h'(x)dx + mu e)
                 Z::axpy(Real(-1.),z,dz);
             }
 
             // Estimates the interior point parameter with the formula
             // mu = <z,h(x)>/m
-            static Real estimateInteriorPointParameter(
+            static void estimateInteriorPointParameter(
                 const typename Functions::t& fns,
-                const typename State::t& state
+                typename State::t& state
             ) {
                 // Create some shortcuts
                 const Z_Vector& z=state.z.front();
                 const Z_Vector& h_x=state.h_x.front();
-                //const Real& mu_typ = state.mu_typ; 
-                //const Real& eps_mu = state.eps_mu; 
+                Real& mu_est=state.mu_est;
 
                 // Determine the scaling factor for the interior-
                 // point parameter estimate
@@ -8448,20 +8481,38 @@ namespace peopt{
                 Real m = Z::innr(z_tmp,z_tmp);
 
                 // Estimate the interior-point parameter
-                Real mu_est = Z::innr(z,h_x) / m;
-
-                // Estimate the interior-point parameter
-                //return mu_est < eps_mu*mu_typ ? eps_mu*mu_typ : mu_est; 
-                return mu_est; 
+                mu_est = Z::innr(z,h_x) / m;
             }
+
+            // Find interior point parameter
+            static void findInteriorPointParameter(
+                const typename Functions::t& fns,
+                typename State::t& state
+            ) {
+                // Create some shortcuts
+                const Real& mu_est=state.mu_est;
+                const Real& mu_typ=state.mu_typ;
+                const Real& sigma=state.sigma;
+                const Real& eps_mu=state.eps_mu;
+                Real& mu=state.mu;
+
+                // Do a simple reduction strategy
+                mu=sigma*mu_est;
+                
+                // Cap the interior point parameter if we satisfy our stopping
+                // conditions.
+                if(mu_est <= mu_typ*eps_mu)
+                    mu=mu_est;
+            }
+
            
-            // Adjust the stopping conditions unless mu < mu_typ*eps_mu 
+            // Adjust the stopping conditions unless mu_est < mu_typ*eps_mu 
             static void adjustStoppingConditions(
                 const typename Functions::t& fns,
                 typename State::t& state
             ) {
                 // Create some shortcuts
-                const Real& mu=state.mu;
+                const Real& mu_est=state.mu_est;
                 const Real& mu_typ=state.mu_typ;
                 const Real& eps_mu=state.eps_mu;
                 StoppingCondition::t& opt_stop=state.opt_stop;
@@ -8469,12 +8520,12 @@ namespace peopt{
                 // Prevent convergence unless mu has been reduced to
                 // eps_mu times mu_typ.
                 if( opt_stop==StoppingCondition::RelativeGradientSmall &&
-                    !(mu <= mu_typ*eps_mu) 
+                    !(mu_est <= mu_typ*eps_mu) 
                 )
                     opt_stop=StoppingCondition::NotConverged;
 
-                // If the interior point paramter is negative, exit
-                if(mu < Real(0.))
+                // If the estimated interior point paramter is negative, exit
+                if(mu_est < Real(0.))
                     opt_stop=StoppingCondition::InteriorPointInstability;
             }
 
@@ -8570,7 +8621,6 @@ namespace peopt{
                 // Create some shortcuts 
                 const Real& gamma=state.gamma;
                 const Real& mu=state.mu;
-                const Real& sigma=state.sigma;
                 const AlgorithmClass::t& algorithm_class =state.algorithm_class;
                 const Z_Vector& z=state.z.front();
                 const X_Vector& x=state.x.front();
@@ -8621,11 +8671,11 @@ namespace peopt{
                 // z_tmp1 = e
                 Z::id(z_tmp1);
 
-                // z_tmp1 = sigma mu e
-                Z::scal(sigma*mu,z_tmp1);
+                // z_tmp1 = mu e
+                Z::scal(mu,z_tmp1);
 
                 // Find the largest alpha such that
-                // alpha (- z o h'(x)dx) + sigma mu e >=0
+                // alpha (- z o h'(x)dx) + mu e >=0
                 Real alpha2=Z::srch(z_tmp2,z_tmp1);
 
                 // Determine the farthest we can go in both variables
@@ -8780,11 +8830,11 @@ namespace peopt{
                     const CentralityStrategy::t& cstrat=state.cstrat;
                     const Natural& iter=state.iter;
                     const ScalarValuedFunction<Real,XX>& f=*(fns.f);
+                    const Real& mu_est = state.mu_est;
                     X_Vector& grad=state.grad.front();
                     Z_Vector& z=state.z.front();
                     Z_Vector& h_x=state.h_x.front();
                     Z_Vector& dz=state.dz.front();
-                    Real& mu = state.mu;
                     Real& mu_typ = state.mu_typ;
                     Real& sigma = state.sigma;
                     Real& merit_xpdx= state.merit_xpdx;
@@ -8797,14 +8847,17 @@ namespace peopt{
                         h(x,h_x);
 
                         // Estimate the interior point parameter
-                        mu=estimateInteriorPointParameter(fns,state);
+                        estimateInteriorPointParameter(fns,state);
 
                         // Set the typical value for mu
-                        mu_typ=mu;
+                        mu_typ=mu_est;
 
                         // Do predictor corrector if need be
                         if(cstrat==CentralityStrategy::PredictorCorrector)
                             sigma = iter % Natural(2) ? Real(0.) : Real(1.);
+
+                        // Find an initial interior point parameter
+                        findInteriorPointParameter(fns,state);
 
                         // In a log-barrier method, find the initial Lagrange
                         // multiplier.
@@ -8860,7 +8913,10 @@ namespace peopt{
                         h(x,h_x);
 
                         // Update the interior point estimate
-                        mu = estimateInteriorPointParameter(fns,state);
+                        estimateInteriorPointParameter(fns,state);
+
+                        // Update the interior point parameter
+                        findInteriorPointParameter(fns,state);
 
                         // Update the inequality multiplier in a log-barrier
                         // method

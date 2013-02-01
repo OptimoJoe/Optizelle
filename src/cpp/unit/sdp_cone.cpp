@@ -316,6 +316,7 @@ BOOST_AUTO_TEST_CASE(sr1) {
     state.gamma = 0.95;
     state.eps_dx = 1e-16;
     state.eps_grad = 1e-9;
+    state.eps_mu = 1e-8;
     
     // Solve the optimization problem
     peopt::InequalityConstrained <double,peopt::Rm,peopt::SQL>::Algorithms
@@ -332,7 +333,7 @@ BOOST_AUTO_TEST_CASE(sr1) {
     BOOST_CHECK(err < 1e-6);
 
     // Check the number of iterations 
-    BOOST_CHECK(state.iter == 9);
+    BOOST_CHECK(state.iter == 11);
 }
 
 

@@ -154,7 +154,7 @@ BOOST_AUTO_TEST_CASE(newton_cg) {
     BOOST_CHECK(err < 1e-6);
 
     // Check the number of iterations 
-    BOOST_CHECK(state.iter == 8);
+    BOOST_CHECK(state.iter == 12);
 }
 
 BOOST_AUTO_TEST_CASE(tr_newton) {
