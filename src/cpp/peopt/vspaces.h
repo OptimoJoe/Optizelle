@@ -199,12 +199,12 @@ namespace peopt {
                 // number of variables.
                 offsets.resize(sizes.size()+Natural(1));
                 offsets.front()=Natural(0);
-                for(Natural i=Natural(1);i<offsets.size()+Natural(1);i++)
-                    offsets[i] = types[itok(i)]==Cone::Linear ||
-                                 types[itok(i)]==Cone::Quadratic
-                                     ? offsets[itok(i)]+sizes[itok(i)]
-                                     : offsets[itok(i)]+sizes[itok(i)]
-                                         *sizes[itok(i)];
+                for(Natural i=Natural(2);i<=offsets.size();i++)
+                    offsets[itok(i)] = types[itok(i-1)]==Cone::Linear ||
+                                       types[itok(i-1)]==Cone::Quadratic
+                                     ? offsets[itok(i-1)]+sizes[itok(i-1)]
+                                     : offsets[itok(i-1)]+sizes[itok(i-1)]
+                                         *sizes[itok(i-1)];
 
                 // Create the data.
                 data.resize(offsets.back());
