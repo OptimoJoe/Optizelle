@@ -853,10 +853,8 @@ extern "C" PyObject* pypeopt(
                     state(*x,*y);
                 peopt::json::EqualityConstrained <double,PythonVS,PythonVS>
                     ::read(PythonMessaging(),fname,state);
-                #if 0
                 peopt::EqualityConstrained <double,PythonVS,PythonVS>
                     ::Algorithms::getMin(PythonMessaging(),fns,state);
-                #endif
                 PyTuple_SetItem(sol.get(),0,state.x.front().release());
                 PyTuple_SetItem(sol.get(),1,state.y.front().release());
                 PyTuple_SetItem(sol.get(),2,Py_None);
@@ -877,10 +875,8 @@ extern "C" PyObject* pypeopt(
                     state(*x,*y,*z);
                 peopt::json::Constrained <double,PythonVS,PythonVS,PythonVS>
                     ::read(PythonMessaging(),fname,state);
-                #if 0
                 peopt::Constrained <double,PythonVS,PythonVS,PythonVS>
                     ::Algorithms::getMin(PythonMessaging(),fns,state);
-                #endif
                 PyTuple_SetItem(sol.get(),0,state.x.front().release());
                 PyTuple_SetItem(sol.get(),1,state.y.front().release());
                 PyTuple_SetItem(sol.get(),2,state.z.front().release());
