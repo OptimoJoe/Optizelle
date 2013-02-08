@@ -86,7 +86,7 @@ BOOST_AUTO_TEST_CASE(newton_cg) {
     BOOST_CHECK(err < 1e-6);
 
     // Check that the number of iterations is 18 
-    BOOST_CHECK(state.iter == 18);
+    BOOST_CHECK(state.iter == 17);
 }
 
 BOOST_AUTO_TEST_CASE(tr_newton) {
@@ -146,6 +146,7 @@ BOOST_AUTO_TEST_CASE(bfgs) {
     state.iter_max = 300;
     state.msg_level = 0;
     state.eps_dx = 1e-16;
+    state.eps_grad = 1e-8;
     
     // Create the bundle of functions 
     peopt::Unconstrained <double,Rm>::Functions::t fns;
@@ -165,8 +166,8 @@ BOOST_AUTO_TEST_CASE(bfgs) {
         /(1+sqrt(Rm <double>::innr(x_star,x_star)));
     BOOST_CHECK(err < 1e-6);
 
-    // Check that the number of iterations is 21
-    BOOST_CHECK(state.iter == 24);
+    // Check the number of iterations 
+    BOOST_CHECK(state.iter == 25);
 }
 
 BOOST_AUTO_TEST_CASE(sr1) {
