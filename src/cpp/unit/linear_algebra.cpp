@@ -383,7 +383,7 @@ BOOST_AUTO_TEST_CASE(tpcd_basic_solve) {
     Natural iter;
     peopt::KrylovStop::t krylov_stop;
     peopt::truncated_cd <double,peopt::Rm>
-        (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,x,x_cp,
+        (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,false,x,x_cp,
             norm_r,iter,krylov_stop);
 
     // Check the error is less than our tolerance 
@@ -470,7 +470,7 @@ BOOST_AUTO_TEST_CASE(tpcd_tr_stopping) {
     Natural iter;
     peopt::KrylovStop::t krylov_stop;
     peopt::truncated_cd <double,peopt::Rm>
-        (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,x,x_cp,
+        (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,false,x,x_cp,
             norm_r,iter,krylov_stop);
 
     // Check that the size of x is just the trust-region radius
@@ -539,7 +539,7 @@ BOOST_AUTO_TEST_CASE(tpcd_tr_stopping_moved_center) {
     Natural iter;
     peopt::KrylovStop::t krylov_stop;
     peopt::truncated_cd <double,peopt::Rm>
-        (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,x,x_cp,
+        (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,false,x,x_cp,
             norm_r,iter,krylov_stop);
 
     // Check that the size of x is 2.5 
@@ -613,7 +613,7 @@ BOOST_AUTO_TEST_CASE(tpcd_cp) {
     Natural iter;
     peopt::KrylovStop::t krylov_stop;
     peopt::truncated_cd <double,peopt::Rm>
-        (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,x,x_cp,
+        (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,false,x,x_cp,
             norm_r,iter,krylov_stop);
 
     // Check that we ran to a single iteration 
@@ -693,7 +693,7 @@ BOOST_AUTO_TEST_CASE(tpcd_nullspace_solve) {
     Natural iter;
     peopt::KrylovStop::t krylov_stop;
     peopt::truncated_cd <double,peopt::Rm>
-        (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,x,x_cp,
+        (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,true,x,x_cp,
             norm_r,iter,krylov_stop);
 
     // Check the error is less than our tolerance 
@@ -784,7 +784,7 @@ BOOST_AUTO_TEST_CASE(tpcd_starting_solution) {
     Natural iter;
     peopt::KrylovStop::t krylov_stop;
     peopt::truncated_cd <double,peopt::Rm>
-        (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,x,x_cp,
+        (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,true,x,x_cp,
             norm_r,iter,krylov_stop);
 
     // Check the error is less than our tolerance 

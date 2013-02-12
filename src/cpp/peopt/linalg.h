@@ -609,6 +609,7 @@ namespace peopt {
     // (input) delta : Trust region radius.  If this number is infinity, we
     //     do not scale the final step if we detect negative curvature.
     // (input) x_cntr : Center of the trust-region. 
+    // (input) do_orthog_check : Orthogonality check for projected algorithms 
     // (output) x : Final solution x.
     // (output) x_cp : The Cauchy-Point, which is defined as the solution x
     //     after a single iteration.
@@ -629,6 +630,7 @@ namespace peopt {
         const Natural orthog_max,
         const Real delta,
         const typename XX <Real>::Vector& x_cntr,
+	const bool do_orthog_check,
         typename XX <Real>::Vector& x,
         typename XX <Real>::Vector& x_cp,
         Real& norm_Br,
@@ -877,7 +879,7 @@ namespace peopt {
             // of our orthogonality check matrix is greater than our
             // tolerance.
             bool instability = (Anorm_Bp_2!=Anorm_Bp_2)
-                || norm_orthogcheck > eps_orthog;
+                || (do_orthog_check && norm_orthogcheck > eps_orthog);
 
             // If we have negative curvature or our trial point is outside the
             // trust-region radius, terminate truncated-PCD and find our final
