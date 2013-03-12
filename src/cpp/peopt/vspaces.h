@@ -767,9 +767,10 @@ namespace peopt {
             Real alpha=Real(-1.);
                    
             // Variables required for the linesearch on SDP blocks 
-            std::vector <Real> invU;
-            std::vector <Real> tmp;
-            std::vector <Real> invUtXinvU;
+            Integer info(0);
+            std::vector <Real> Xrf;
+            std::vector <Real> Yrf;
+            std::vector <Real> Zrf;
 
             // Loop over all the blocks
             for(Natural blk=Natural(1);blk<=x.numBlocks();blk++) {
@@ -885,76 +886,73 @@ namespace peopt {
                 }
                 break;
 
-                // Here, if the solution to the generalized eigenvalue problem
-                //
-                // X v = lambda Y v
-                //
-                // has a negative eigenvalue, we use the negative of that.  Now,
-                // sometimes we have cached a Schur decomposition of Y.  In this
-                // case we can look for the smallest eigenvalue of V' X V.  
-                // However, since we're doing a line search both for X and for 
-                // Z, I don't think we're always going to have a cached version.
-                // That means that we may be required to do a Schur 
-                // decomposition for the line search on the dual variable 
-                // which is expensive.  Alternatively, since Y is positive 
-                // definite, we can do a Choleski factorization.  Then, we can 
-                // find the smallest eigenvalue of inv(U)' X inv(U).  From
-                // this, we have that the line search parameter is -1/lambda_min
-                // whenever lambda_min <0.  That's what we do here.
+                // We need to find the solution of the generalized eigenvalue
+                // problem alpha X v + Y v = 0.  Since Y is positive definite,
+                // we want to divide by alpha to get a standard form
+                // generalized eigenvalue problem X v = (-1/alpha) Y v.  This
+                // means that we solve the problem X v = lambda Y v and then
+                // set alpha = -1/lambda as long as lambda is negative.  Note,
+                // our Krylov method will converge to lambda from the right,
+                // which is going to give an upper bound on alpha.  This is
+                // not good for our line search, since we want a lower bound.
+                // However, since we get an absolute estimate of the error
+                // in lambda, we can just back off of it by a small amount.
                 case Cone::Semidefinite: {
 
-                    // First, make a copy of Y and store it in invU
-                    invU.resize(m*m);
-                    peopt::copy <Real> (Integer(m*m),&(y(blk,1,1)),Integer(1),
-                        &(invU.front()),Integer(1));
+                    // Convert X and Y to rectangular packed storage
+                    Xrf.resize(m*(m+1)/2);
+                    peopt::trttf <Real> ('N','U',m,&(x(blk,1,1)),m,&(Xrf[0]),
+                        info);
 
-                    // invU <- chol(Y)
-                    Integer info;
-                    peopt::potrf <Real> ('U',Integer(m),&(invU.front()),
-                        Integer(m),info);
+                    Yrf.resize(m*(m+1)/2);
+                    peopt::trttf <Real> ('N','U',m,&(y(blk,1,1)),m,&(Yrf[0]),
+                        info);
 
-                    // invU <- inv(chol(Y))
-                    peopt::trtri <Real> ('U','N',Integer(m),&(invU.front()),
-                        Integer(m),info);
-                    
-                    // Fill in the bottom half of invU with zeros 
-                    #ifdef _OPENMP
-                    #pragma omp parallel for schedule(guided)
-                    #endif
-                    for(Natural j=Natural(1);j<=m;j++)
-                        for(Natural i=j+Natural(1);i<=m;i++)
-                            invU[ijtok(i,j,m)]=Real(0.);
-
-                    // Find inv(chol(Y))' X inv(chol(Y))
-                    tmp.resize(m*m);
-                    invUtXinvU.resize(m*m);
-        
-                    // tmp <- X inv(chol(Y)) 
-                    peopt::gemm <Real> ('N','N',Integer(m),Integer(m),
-                        Integer(m),Real(1.),&(x(blk,1,1)),Integer(m),
-                        &(invU.front()),Integer(m),Real(0.),
-                        &(tmp.front()),Integer(m)); 
-
-                    // invUtXinvU <- inv(chol(Y))' X inv(chol(Y))
-                    peopt::gemm <Real> ('T','N',Integer(m),Integer(m),
-                        Integer(m),Real(1.),&(invU.front()),Integer(m),
-                        &(tmp.front()),Integer(m),Real(0.),
-                        &(invUtXinvU.front()),Integer(m));
-
-                    // Find the smallest eigenvalue of invUtXinvU.  The
-                    // negative of the reciprical of this is the line
-                    // search parameter.
+                    // Solve the generalized eigenvalue problem X v = lambda Y v
                     Real abs_tol=1e-2;
-                    Real lambda=peopt::lanczos <Real>
-                        (m,&(invUtXinvU.front()),m,abs_tol);
-                    
-                    // Lanczos converges from the left, but we really need
-                    // a lower bound on the eigenvalue.  Hence, modify this
-                    // result so that we have a lower bound.
-                    lambda -= abs_tol; 
+                    std::pair <Real,Real> lambda_err = peopt::gsyiram <Real> (
+                        m,&(Xrf[0]),&(Yrf[0]),20,
+                        std::numeric_limits <Natural>::max(),abs_tol);
+
+                    // IRAM converges from the right, but we really need a lower
+                    // bound on the eigenvalue.  Hence, modify the result
+                    // so that we have a lower bound
+                    Real lambda=lambda_err.first-abs_tol;
 
                     // Now, find the line-search parameter
                     Real alpha0=-Real(1.)/lambda;
+
+                    // Do a safeguard step because sometimes the eigenvalue
+                    // solver converges to the wrong eigenvalue.  Now, if
+                    // alpha0 is negative, ostensibly we can take as big
+                    // as step as we want.  However, if we converged to
+                    // the wrong eigenvalue, this may not be true.  Hence, 
+                    // if alpha0 is negative, we do the line-search with
+                    // alpha0 = 2.  If this value doesn't move, we assume
+                    // that our eigenvalue estimate was fine and this
+                    // direction is feasible for all alpha.
+                    bool completely_feasible_dir= alpha0<=Real(0.);
+                    alpha0= alpha0>0 ? alpha0 : Real(2.);
+                    Zrf.resize(m*(m+1)/2);
+                    do {
+                        // Basically, we find X+alpha0 Y and try to take
+                        // the Choleski factorization.  If that fails, we're
+                        // infeasible and we do a backtracking line search.
+                        peopt::copy <Real> (m*(m+1)/2,&(Yrf[0]),1,&(Zrf[0]),1);
+                        peopt::axpy <Real> (m*(m+1)/2,alpha0,&(Xrf[0]),1,
+                            &(Zrf[0]),1);
+                        pftrf('N','U',m,&(Zrf[0]),info);
+
+                        // Check if the Choleski failed
+                        if(info!=0) {
+                            alpha0 /= Real(2.); 
+                            completely_feasible_dir=false;
+                        }
+                    } while(info!=0 && alpha0>=Real(0.));
+
+                    // If we still have a completely feasible direction,
+                    // fix alpha0 so that we don't update our line search.
+                    alpha0 = completely_feasible_dir ? Real(-1.) : alpha0;
 
                     // Adjust the line search step if necessary
                     if(alpha0 >= Real(0.) && (alpha==Real(-1.) || alpha0<alpha))

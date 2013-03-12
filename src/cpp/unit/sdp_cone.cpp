@@ -254,8 +254,8 @@ BOOST_AUTO_TEST_CASE(tr_newton_predictor_corrector) {
     state.msg_level = 0;
     state.eps_krylov = 1e-10;
     state.eps_dx = 1e-16;
-    state.eps_grad = 1e-9;
-    state.eps_mu = 1e-8;
+    state.eps_grad = 1e-8;
+    state.eps_mu = 1e-7;
     state.gamma = 0.995;
     state.cstrat = peopt::CentralityStrategy::PredictorCorrector;
 

@@ -573,13 +573,13 @@ namespace peopt {
 
             // Next, do a number of QR-iterations using the Ritz values to the
             // right of the leftmost Ritz value as shifts
-            for(Integer i=iter_innr_max;i>=2;i--) {
+            for(Natural i=iter_innr_max;i>=2;i--) {
 
                 // Convert Hp to H.  We need H for the QR factorization routine,
                 // geqrf, below.
                 tpttr <Real> ('U',iter_innr_max,&(Hp[0]),&(H[0]),iter_innr_max,
                     info);
-                for(Integer j=1;j<=iter_innr_max;j++)
+                for(Natural j=1;j<=iter_innr_max;j++)
                     copy <Real> (iter_innr_max-j,
                         &(H[ijtok(j,j+1,iter_innr_max)]),iter_innr_max,
                         &(H[ijtok(j+1,j,iter_innr_max)]),1);
