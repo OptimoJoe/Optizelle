@@ -9,82 +9,11 @@
 #include <string>
 #include <cstddef>
 #include <iostream>
+#include <cstdlib>
 
 namespace peopt {
     typedef size_t Natural;
     typedef ptrdiff_t Integer;
-
-    template <typename Real>
-    void copy(Integer n,const Real* x,Integer incx,Real* y,Integer incy) {
-        if(n<=0) return;
-        for(Integer i=0,ix=0,iy=0;
-            i<n;
-            i++,ix+=incx,iy+=incy
-        )
-            y[iy]=x[ix];
-    }
-    
-    template <typename Real>
-    void axpy(Integer n,Real alpha,const Real* x,Integer incx,
-        Real* y,Integer incy);
-    
-    template <typename Real>
-    void scal(Integer n,const Real alpha,Real* x,Integer incx) {
-        if(n<=0) return;
-        for(int i=0,ix=0;
-            i<n;
-            i++,ix+=incx
-        )
-            x[ix]*=alpha;
-    }
-    
-    template <typename Real>
-    Real dot(Integer n,const Real* x,Integer incx,const Real* y,Integer incy);
-    
-    template <typename Real>
-    void syr2k(char uplo,char trans,Integer n,Integer k,Real alpha,
-        const Real* A,Integer lda,const Real* B,Integer ldb,
-        Real beta,Real* C,Integer ldc);
-
-    template <typename Real>
-    void syevr(char jobz,char range,char uplo,Integer n,Real *A,Integer lda,
-        Real vl,Real vu,Integer il,Integer iu,Real abstol,Integer& m,
-        Real* w,Real* z,Integer ldz,Integer* isuppz,Real* work,Integer lwork,
-        Integer* iwork,Integer liwork,Integer& info);
-    
-    template <typename Real>
-    void stemr(char jobz,char range,Integer n,Real *D,Real *E,Real vl,Real vu,
-        Integer il,Integer iu,Integer& m,Real* w,Real* z,Integer ldz,
-        Integer nzc,Integer* isuppz,Integer& tryrac,Real* work,
-        Integer lwork,Integer* iwork,Integer liwork,Integer& info);
-    
-    template <typename Real>
-    void stevr(char jobz,char range,Integer n,Real *D,Real *E,Real vl,Real vu,
-        Integer il,Integer iu,Real abstol, Integer& m,Real* w,Real* z,
-        Integer ldz,Integer* isuppz,Real* work,Integer lwork,Integer* iwork,
-        Integer liwork,Integer& info);
-
-    template <typename Real>
-    Real lamch(char cmach);
-
-    template <typename Real>
-    void gemm(char transa,char transb,Integer m,Integer n,Integer k,Real alpha,
-        const Real* A,Integer lda,const Real* B,Integer ldb,Real beta,
-        Real* C,Integer ldc);
-    
-    template <typename Real>
-    void symm(char side,char uplo,Integer m,Integer n,Real alpha,const Real* A,
-        Integer lda,const Real* B,Integer ldb,Real beta,Real* C,Integer ldc);
-    
-    template <typename Real>
-    void symv(char uplo,Integer n,Real alpha,const Real* A,Integer lda,
-        const Real* x,Integer incx,Real beta,Real* y,Integer incy);
-
-    template <typename Real>
-    void potrf(char uplo,Integer n,Real* A,Integer lda,Integer& info);
-
-    template <typename Real>
-    void trtri(char uplo,char diag,Integer n,Real* A,Integer lda,Integer& info);
 
     template <typename Real>
     Real sq(Real x) {
@@ -94,6 +23,12 @@ namespace peopt {
     template <typename Real>
     int sgn(Real val) {
         return (Real(0) < val) - (val < Real(0));
+    }
+    
+    template <typename Real>
+    void xerbla(std::string srname,Integer info) {
+        std::cout << " ** On entry to " << srname << " parameter number "
+            << info << " had an illegal value" << std::endl;
     }
 
     template <typename Real>
@@ -133,12 +68,46 @@ namespace peopt {
         }
     }
 
-    template <typename Real>
-    void xerbla(std::string srname,Integer info) {
-        std::cout << " ** On entry to " << srname << " parameter number "
-            << info << " had an illegal value" << std::endl;
-    }
 
+    template <typename Real>
+    void copy(Integer n,const Real* x,Integer incx,Real* y,Integer incy) {
+        if(n<=0) return;
+        for(Integer i=0,ix=0,iy=0;
+            i<n;
+            i++,ix+=incx,iy+=incy
+        )
+            y[iy]=x[ix];
+    }
+    
+    template <typename Real>
+    void axpy(Integer n,Real alpha,const Real* x,Integer incx,
+        Real* y,Integer incy);
+    
+    template <typename Real>
+    void scal(Integer n,const Real alpha,Real* x,Integer incx) {
+        if(n<=0) return;
+        for(int i=0,ix=0;
+            i<n;
+            i++,ix+=incx
+        )
+            x[ix]*=alpha;
+    }
+    
+    template <typename Real>
+    Real dot(Integer n,const Real* x,Integer incx,const Real* y,Integer incy);
+
+    template <typename Real>
+    void gemv(char trans,Integer m,Integer n,Real alpha,const Real* A,
+        Integer lda,const Real* x,Integer incx,Real beta,Real* y,Integer incy);
+    
+    template <typename Real>
+    void symv(char uplo,Integer n,Real alpha,const Real* A,Integer lda,
+        const Real* x,Integer incx,Real beta,Real* y,Integer incy);
+
+    template <typename Real>
+    void spmv(char uplo,Integer n,Real alpha,const Real* Ap,
+        const Real* x,Integer incx,Real beta,Real* y,Integer incy);
+    
     // NOTE: this routine is not fully general.  It only implements what we
     // need.
     template <typename Real>
@@ -213,11 +182,96 @@ namespace peopt {
         }
     }
 
+    template <typename Real>
+    void gemm(char transa,char transb,Integer m,Integer n,Integer k,Real alpha,
+        const Real* A,Integer lda,const Real* B,Integer ldb,Real beta,
+        Real* C,Integer ldc);
+    
+    template <typename Real>
+    void symm(char side,char uplo,Integer m,Integer n,Real alpha,const Real* A,
+        Integer lda,const Real* B,Integer ldb,Real beta,Real* C,Integer ldc);
+    
+    template <typename Real>
+    void syr2k(char uplo,char trans,Integer n,Integer k,Real alpha,
+        const Real* A,Integer lda,const Real* B,Integer ldb,
+        Real beta,Real* C,Integer ldc);
+
+    template <typename Real>
+    Real lamch(char cmach);
+
+    template <typename Real>
+    void syevr(char jobz,char range,char uplo,Integer n,Real *A,Integer lda,
+        Real vl,Real vu,Integer il,Integer iu,Real abstol,Integer& m,
+        Real* w,Real* z,Integer ldz,Integer* isuppz,Real* work,Integer lwork,
+        Integer* iwork,Integer liwork,Integer& info);
+    
+    template <typename Real>
+    void stemr(char jobz,char range,Integer n,Real *D,Real *E,Real vl,Real vu,
+        Integer il,Integer iu,Integer& m,Real* w,Real* z,Integer ldz,
+        Integer nzc,Integer* isuppz,Integer& tryrac,Real* work,
+        Integer lwork,Integer* iwork,Integer liwork,Integer& info);
+    
+    template <typename Real>
+    void stevr(char jobz,char range,Integer n,Real *D,Real *E,Real vl,Real vu,
+        Integer il,Integer iu,Real abstol, Integer& m,Real* w,Real* z,
+        Integer ldz,Integer* isuppz,Real* work,Integer lwork,Integer* iwork,
+        Integer liwork,Integer& info);
+
+    template <typename Real>
+    void spevx(char jobz,char range,char uplo,Integer n,Real* Ap,
+        Real vl,Real vu,Integer il,Integer iu,Real abstol,Integer& m,
+        Real* w,Real* z,Integer ldz,Real* work,Integer* iwork,
+        Integer* ifail,Integer& info);
+
+    template <typename Real>
+    void potrf(char uplo,Integer n,Real* A,Integer lda,Integer& info);
+    
+    template <typename Real>
+    void pftrf(char transr,char uplo,Integer n,Real* Arf,Integer& info);
+
+    template <typename Real>
+    void trtri(char uplo,char diag,Integer n,Real* A,Integer lda,Integer& info);
+
+    template <typename Real>
+    void spgst(Integer itype,char uplo,Integer n,Real* Ap,Real const * const Bp,
+        Integer& info);
+
+    template <typename Real>
+    void geqrf(Integer m,Integer n,Real* A,Integer lda,Real* tau,
+        Real* work,Integer lwork,Integer& info);
+
+    template <typename Real>
+    void orgqr(Integer m,Integer n,Integer k,Real* A,Integer lda,Real* tau,
+        Real* work,Integer lwork,Integer& info);
+
+    template <typename Real>
+    void trttf(char transr,char uplo,Integer n,Real const * const A,Integer lda,
+        Real* Arf,Integer& info);
+
+    template <typename Real>
+    void trttp(char uplo,Integer n,Real const * const A,Integer lda,
+        Real* Ap,Integer& info);
+
+    template <typename Real>
+    void tfttr(char transr,char uplo,Integer n,Real const * const Arf,Real* A,
+        Integer lda,Integer& info);
+
+    template <typename Real>
+    void tfttp(char transr,char uplo,Integer n,Real const * const Arf,Real* Ap,
+        Integer& info);
+
+    template <typename Real>
+    void tpttr(char uplo,Integer n,Real const * const A,Real* Ap,Integer lda,
+        Integer& info);
+
     // Indexing function for matrices
     Natural ijtok(Natural i,Natural j,Natural m);
 
-    // Indexing for packed storage
+    // Indexing for packed storage where i<=j
     Natural ijtokp(Natural i,Natural j); 
+
+    // Indexing formula for symmetric matrices in RPF format where i<=j.
+    Natural ijtokrf(Natural const& i,Natural const& j,Natural const& m);
 
     // Indexing for vectors 
     Natural itok(Natural i);
@@ -324,7 +378,6 @@ namespace peopt {
         Integer liwork=-1;
         Integer info;
         Integer nevals;
-        //Integer nzc=0;
         std::vector <Real> W;
         std::vector <Real> Z;
         std::vector <Real> D;
@@ -339,7 +392,7 @@ namespace peopt {
             // Copy the candidate Arnoldi vector to the current Arnoldi vector
             copy <Real> (Integer(m),&(w[0]),Integer(1),&(v[0]),Integer(1));
 
-            // Get the normalized version of this vector.  Realhis is now a real
+            // Get the normalized version of this vector.  This is now a real
             // Arnoldi vector.
             scal <Real> (Integer(m),Real(1.)/beta[i],&(v[0]),Integer(1));
 
@@ -363,37 +416,10 @@ namespace peopt {
                 Integer(1));
 
             // Store the norm of the Arnoldi vector w in the off diagonal part
-            // of Real.
+            // of T.
             beta.push_back(std::sqrt(dot <Real> (Integer(m),&(w[0]),Integer(1),
                 &(w[0]),Integer(1))));
    
-#if 0
-            // Figure out the workspaces for the eigenvalues and eigenvectors
-            Integer k=alpha.size();  // Size of the eigenvalue subproblem
-            D.resize(alpha.size());
-            copy <Real> (k,&(alpha[0]),1,&(D[0]),1);
-            E.resize(beta.size());
-            copy <Real> (k,&(beta[0]),1,&(E[0]),1);
-            isuppz.resize(2*k);
-            lwork=-1;
-            liwork=-1;
-            W.resize(k);
-            Z.resize(k*k);
-            peopt::stemr <double> ('V','A',k,&(D[0]),&(E[0]),double(0.),
-                double(0.),0,0,nevals,&(W[0]),&(Z[0]),k,k,&(isuppz[0]),
-                nzc,&(work[0]),lwork,&(iwork[0]),liwork,info);
-
-            // Resize the workspace 
-            lwork = Integer(work[0])+Integer(1);
-            work.resize(lwork);
-            liwork = iwork[0];
-            iwork.resize(liwork);
-
-            // Find the eigenvalues and vectors 
-            peopt::stemr <double> ('V','A',k,&(D[0]),&(E[0]),double(0.),
-                double(0.),0,0,nevals,&(W[0]),&(Z[0]),k,k,&(isuppz[0]),
-                nzc,&(work[0]),lwork,&(iwork[0]),liwork,info);
-#else
             // Figure out the workspaces for the eigenvalues and eigenvectors
             Natural k=alpha.size();  // Size of the eigenvalue subproblem
             D.resize(alpha.size());
@@ -401,8 +427,10 @@ namespace peopt {
             E.resize(beta.size());
             copy <Real> (Integer(k),&(beta[0]),Integer(1),&(E[0]),Integer(1));
             isuppz.resize(Natural(2)*k);
-            lwork=-1;
-            liwork=-1;
+            lwork=Integer(Natural(20)*k);
+            work.resize(Natural(lwork));
+            liwork=Integer(Natural(10)*k);
+            iwork.resize(liwork);
             W.resize(k);
             Z.resize(k*k);
             peopt::stevr <Real> ('V','A',Integer(k),&(D[0]),&(E[0]),Real(0.),
@@ -410,37 +438,275 @@ namespace peopt {
                 nevals,&(W[0]),&(Z[0]),Integer(k),&(isuppz[0]),&(work[0]),
                 lwork,&(iwork[0]),liwork,info);
 
-            // Resize the workspace 
-            lwork = Integer(work[0])+Integer(1);
-            work.resize(Natural(lwork));
-            liwork = iwork[0];
-            iwork.resize(liwork);
-
-            // Find the eigenvalues and vectors 
-            peopt::stevr <Real> ('V','A',Integer(k),&(D[0]),&(E[0]),Real(0.),
-                Real(0.),Integer(0),Integer(0),peopt::lamch <Real> ('S'),
-                nevals,&(W[0]),&(Z[0]),Integer(k),&(isuppz[0]),&(work[0]),
-                lwork,&(iwork[0]),liwork,info);
-#endif
-
-            // Find beta_i |s_{ik}| where s_{ik} is the ith (last) element
-            // of the kth Ritz vector where k corresponds to the largest
-            // and smallest Ritz values.  Basically, we don't know which is
-            // going to converge first, but they'll both be the first two.
-            // Hence, we converge until these errors estimates are accurate
-            // enough.
-            Real err_est_min = fabs(Z[ijtok(k,1,k)])*beta[i+1];
-            Real err_est_max = fabs(Z[ijtok(k,k,k)])*beta[i+1];
+            // Find beta_i |s_{i1}| where s_{i1} is the last element
+            // of the 1st Ritz vector, which corresponds to the smallest
+            // Ritz value.
+            Real err_est = fabs(Z[ijtok(k,1,k)])*beta[i+1];
 
             // Stop of the error estimates are small
-            if(    err_est_min < fabs(W[0]) * tol
-                && err_est_max < fabs(W[i]) * tol
-            )
+            if(err_est < tol)
                 break;
         }
 
         // Return the smallest Ritz value
         return W[0];
+    }
+
+    // Solve the symmetric eigenvalue problem A x = lambda x for the leftmost
+    // eigenvalue using the implicitely restarted Arnoldi method.  Here, A is in
+    // rectangular packed format (RPF).
+    template <typename Real>
+    std::pair <Real,Real> syiram(
+        Natural const& m,
+        Real const * const Ap,
+        Natural const& iter_innr_max,
+        Natural const& iter_outr_max,
+        Real const& tol
+    ) {
+        // Allocate memory for solving a dense eigenvalue problem in LAPACK.
+        Integer eig_size = m<=iter_innr_max ? m : iter_innr_max;
+        std::vector <Real> Aeig(eig_size*(eig_size+1)/2);
+        Integer nevals(0);
+        std::vector <Real> W(eig_size);
+        std::vector <Real> Z(0);
+        std::vector <Real> work(8*eig_size);
+        std::vector <Integer> ifail(0);
+        std::vector <Integer> iwork(5*eig_size);
+        Integer info=0;
+
+        // If the size of the matrix is equal to or smaller than the maximum 
+        // number of inner iterations, just use LAPACK to find the smallest
+        // eigenvalue
+        if(m<=iter_innr_max) {
+            // Copy in the operator for the eigenvalue problem 
+            copy <Real> (m*(m+1)/2,&(Ap[0]),1,&(Aeig[0]),1);
+
+            // Solve the eigenvalue problem for the smallest eigenvalue
+            spevx <Real> ('N','I','U',m,&(Aeig[0]),Real(0.),
+                Real(0.),1,1,Real(2.)*lamch <Real> ('S'),nevals,
+                &(W[0]),&(Z[0]),m,&(work[0]),&(iwork[0]),&(ifail[0]),info);
+            return std::pair <Real,Real> (W[0],Real(0.));
+        }
+
+        // Initialize memory for all of the Krylov vectors
+        std::vector <Real> V(m*(iter_innr_max+1));
+
+        // Allocate memory for the norm of the current Krylov vector.  This is
+        // also the element below the diagonal in H (if we stored it
+        // explicitely).
+        Real norm_v;
+        
+        // Initialize the first Krylov vector 
+        srand48(1);
+        for(Natural i=1;i<=m;i++)
+            V[ijtok(i,1,m)]=drand48();
+        norm_v=sqrt(dot <Real> (m,&(V[ijtok(1,1,m)]),1,&(V[ijtok(1,1,m)]),1));
+        scal <Real> (m,Real(1.)/norm_v,&(V[ijtok(1,1,m)]),1);
+
+        // Allocate memory for the upper Hessenberg matrix that arises from
+        // Gram-Schmidt.  Given that we're working with a symmetric matrix, this
+        // is really tridiagonal.  At this point, we're just going to leave the
+        // matrix since we have the operator Q' H Q later and I don't currently
+        // know of a great way to compute this if we have two vectors
+        // representing the tridiagonal form of H.  Also, we have Hp to
+        // represent the packed version of this matrix and H to represent the
+        // symmetric version of this.  We prefer the use of Hp, but convert to
+        // H when required.
+        std::vector <Real> Hp(iter_innr_max*(iter_innr_max+1)/2,Real(0.));
+        std::vector <Real> H(iter_innr_max*iter_innr_max,Real(0.));
+
+        // Allocate memory for the QR factorizations used in the restart
+        std::vector <Real> Q(iter_innr_max*iter_innr_max);
+        std::vector <Real> Q_all(iter_innr_max*iter_innr_max);
+        std::vector <Real> tau(iter_innr_max);
+        Integer lwork_qr=iter_innr_max;
+        std::vector <Real> work_qr(lwork_qr);
+
+        // Allocate memory for use in the QR-shifts 
+        std::vector <Real> QR_tmp(iter_innr_max*iter_innr_max);
+
+        // Allocate memory for the vector of all ones.  This makes it easier
+        // to define the identiy matrix later
+        std::vector <Real> e(iter_innr_max,Real(1.));
+
+        // Allocate memory for the starting Krylov vectors after the restart
+        std::vector <Real> v1(m);
+        std::vector <Real> v2(m);
+
+        // Continue to compute until we converge
+        for(Natural iter_outr=1;iter_outr<=iter_outr_max;iter_outr++) {
+            // If we restart, we already have a second Krylov vector.
+            // Otherwise, we compute the second Krylov vector.
+            Natural gs_start= iter_outr==1 ? 1 : 2; 
+
+            // Do the Arnoldi iteration
+            for(Natural k=gs_start;k<=iter_innr_max;k++) {
+                // Gram-Schmidt with DGKS correction
+                spmv <Real> ('U',m,Real(1.),&(Ap[0]),&(V[ijtok(1,k,m)]),1,
+                    Real(0.),&(V[ijtok(1,k+1,m)]),1);
+                for(Natural dgks_iter=1;dgks_iter<=2;dgks_iter++) {
+                    for(Natural i=1;i<=k;i++) {
+                        Real alpha = dot <Real> (
+                            m,&(V[ijtok(1,k+1,m)]),1,&(V[ijtok(1,i,m)]),1);
+                        Hp[ijtokp(i,k)]+=alpha;
+                        axpy <Real> (m,-alpha,&(V[ijtok(1,i,m)]),1,
+                            &(V[ijtok(1,k+1,m)]),1);
+                    }
+                }
+                norm_v=sqrt(
+                    dot<Real>(m,&(V[ijtok(1,k+1,m)]),1,&(V[ijtok(1,k+1,m)]),1));
+                scal <Real> (m,Real(1.)/norm_v,&(V[ijtok(1,k+1,m)]),1);
+            }
+
+            // Find the Ritz values of H 
+            copy <Real> (iter_innr_max*(iter_innr_max+1)/2,&(Hp[0]),1,
+                &(Aeig[0]),1);
+            spevx <Real> ('N','A','U',iter_innr_max,&(Aeig[0]),Real(0.),
+                Real(0.),0,0,Real(2.)*lamch <Real> ('S'),nevals,
+                &(W[0]),&(Z[0]),iter_innr_max,&(work[0]),&(iwork[0]),
+                &(ifail[0]),info);
+
+            // Q_all <- I
+            scal <Real> (iter_innr_max*iter_innr_max,Real(0.),&(Q_all[0]),1);
+            axpy <Real> (iter_innr_max,Real(1.),&(e[0]),1,&(Q_all[0]),
+                iter_innr_max+1);
+
+            // Next, do a number of QR-iterations using the Ritz values to the
+            // right of the leftmost Ritz value as shifts
+            for(Integer i=iter_innr_max;i>=2;i--) {
+
+                // Convert Hp to H.  We need H for the QR factorization routine,
+                // geqrf, below.
+                tpttr <Real> ('U',iter_innr_max,&(Hp[0]),&(H[0]),iter_innr_max,
+                    info);
+                for(Integer j=1;j<=iter_innr_max;j++)
+                    copy <Real> (iter_innr_max-j,
+                        &(H[ijtok(j,j+1,iter_innr_max)]),iter_innr_max,
+                        &(H[ijtok(j+1,j,iter_innr_max)]),1);
+
+                // Q <- H - theta_i I
+                copy <Real> (iter_innr_max*iter_innr_max,&(H[0]),1,&(Q[0]),1);
+                axpy <Real> (iter_innr_max,-W[ijtok(i,1,iter_innr_max)],
+                    &(e[0]),1,&(Q[0]),iter_innr_max+1);
+
+                // Q <- QR(H - theta_i I)
+                geqrf <Real> (iter_innr_max,iter_innr_max,&(Q[0]),iter_innr_max,
+                    &(tau[0]),&(work_qr[0]),lwork_qr,info);
+                orgqr <Real> (iter_innr_max,iter_innr_max,iter_innr_max,
+                    &(Q[0]),iter_innr_max,&(tau[0]),&(work_qr[0]),lwork_qr,
+                    info);
+
+                // QR_tmp <- H Q
+                symm <Real> ('L','U',iter_innr_max,iter_innr_max,Real(1.),
+                    &(H[0]),iter_innr_max,&(Q[0]),iter_innr_max,Real(0.),
+                    &(QR_tmp[0]),iter_innr_max);
+
+                // H <- Q' H Q
+                gemm <Real> ('T','N',iter_innr_max,iter_innr_max,iter_innr_max,
+                    Real(1.),&(Q[0]),iter_innr_max,&(QR_tmp[0]),iter_innr_max,
+                    Real(0.),&(H[0]),iter_innr_max);
+
+                // Convert back to Hp
+                trttp <Real> ('U',iter_innr_max,&(H[0]),iter_innr_max,&(Hp[0]),
+                    info); 
+
+                // QR_tmp <- Q Q_all
+                gemm <Real> ('N','N',iter_innr_max,iter_innr_max,iter_innr_max,
+                    Real(1.),&(Q_all[0]),iter_innr_max,&(Q[0]),iter_innr_max,
+                    Real(0.),&(QR_tmp[0]),iter_innr_max);
+
+                // Q_all <- Q Q_all
+                copy <Real> (iter_innr_max*iter_innr_max,&(QR_tmp[0]),1,
+                    &(Q_all[0]),1);
+            }
+            
+            // Find the starting Krylov vectors
+
+            // v1 <- V Q_all(*,1)
+            gemv <Real> ('N',m,iter_innr_max,Real(1.),&(V[0]),m,
+                &(Q_all[ijtok(1,1,iter_innr_max)]),1,Real(0.),&(v1[0]),1);
+
+            // v2 <- V Q_all(*,2)
+            gemv <Real> ('N',m,iter_innr_max,Real(1.),&(V[0]),m,
+                &(Q_all[ijtok(1,2,iter_innr_max)]),1,Real(0.),&(v2[0]),1);
+
+            // v2 <- V Q_all(*,2) H(2,1)
+            scal <Real> (m,Hp[ijtokp(2,1)],&(v2[0]),1);
+
+            // v2 <- V Q_all(*,2) H(2,1) 
+            //           + norm_v Q_all(iter_innr_max,1) V(*,iter_innr_max+1)
+            axpy <Real> (m,norm_v*Q_all[ijtok(iter_innr_max,1,iter_innr_max)],
+                &(V[ijtok(1,iter_innr_max+1,m)]),1,&(v2[0]),1);
+
+            // Setup the upper Hessenberg matrix that stores the Gram-Schmidt
+            // coefficients and the norms
+
+            // H(1,1) stays the same
+            Real H11 = Hp[ijtokp(1,1)];
+
+            // norm_v (H(2,1)) <- || v2 ||, but we're not storing the lower
+            // diagonal pieces
+            norm_v=sqrt (dot <Real> (m,&(v2[0]),1,&(v2[0]),1));
+
+            // Zero out the upper Hessenberg matrix since we just add elements
+            // into this matrix since we're using the DGKS correction
+            scal <Real> (iter_innr_max*(iter_innr_max+1)/2,Real(0.),&(Hp[0]),1);
+
+            // Insert H11
+            Hp[ijtokp(1,1)]=H11;
+
+            // Insert the new Krylov vectors into V
+            scal <Real> (m,Real(1.)/norm_v,&(v2[0]),1);
+            copy <Real> (m,&(v1[0]),1,&(V[ijtok(1,1,m)]),1);
+            copy <Real> (m,&(v2[0]),1,&(V[ijtok(1,2,m)]),1);
+
+            // Check the stopping condition.  Basically, we can look at the Ritz
+            // values of the new H and multiply it by the norm of the last
+            // Krylov vector.  However, since this is 1x1, we can just look at
+            // H(2,1), which is || v2 ||.  If we're converged, the current Ritz
+            // value is just H(1,1).
+            if(norm_v < tol)
+                break;
+        }
+
+        // Return the smallest current Ritz value and the estimated error
+        return std::pair <Real,Real> (Hp[ijtokp(1,1)],norm_v);
+    }
+
+    // Solve the generalized, symmetric eigenvalue problem A x = lambda x for
+    // the leftmost eigenvalue using the implicitely restarted Arnoldi method.
+    // Here, A and B is in rectangular packed format (RPF) and we assume that
+    // B is positive definite.
+    template <typename Real>
+    std::pair <Real,Real> gsyiram(
+        Natural const& m,
+        Real const * const Arf,
+        Real const * const Brf,
+        Natural const& iter_innr_max,
+        Natural const& iter_outr_max,
+        Real const& tol
+    ) {
+        // First, make a copy of Brf since the Choleski factorization is
+        // destructive
+        std::vector <Real> Brf0 (m*(m+1)/2);
+        copy <Real> (m*(m+1)/2,Brf,1,&(Brf0[0]),1);
+
+        // Then, find the Choleski factorization of Brf0
+        Integer info;
+        pftrf('N','U',m,&(Brf0[0]),info);
+
+        // Next, find the packed version of Arf and Brf0
+        std::vector <Real> Ap(m*(m+1)/2);
+        tfttp <Real> ('N','U',m,Arf,&(Ap[0]),info);
+        std::vector <Real> Bp(m*(m+1)/2);
+        tfttp <Real> ('N','U',m,&(Brf0[0]),&(Bp[0]),info);
+
+        // Ap <- inv(U') A inv(U) where U comes from the above Choleski
+        // fractorization of Brf.
+        spgst(1,'U',m,&(Ap[0]),&(Bp[0]),info);
+
+        // Now, find the smallest eigenvalue of Ap = inv(U') A inv(U) 
+        return syiram <Real> (m,&(Ap[0]),iter_innr_max,iter_outr_max,tol);
     }
 
     // Solves a quadratic equation

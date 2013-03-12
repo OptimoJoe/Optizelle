@@ -160,7 +160,7 @@ BOOST_AUTO_TEST_CASE(newton_cg) {
     BOOST_CHECK(err < 1e-6);
 
     // Check the number of iterations 
-    BOOST_CHECK(state.iter == 14);
+    BOOST_CHECK(state.iter == 13);
 }
 
 BOOST_AUTO_TEST_CASE(tr_newton) {
@@ -254,7 +254,7 @@ BOOST_AUTO_TEST_CASE(tr_newton_predictor_corrector) {
     state.msg_level = 0;
     state.eps_krylov = 1e-10;
     state.eps_dx = 1e-16;
-    state.eps_grad = 1e-10;
+    state.eps_grad = 1e-9;
     state.eps_mu = 1e-8;
     state.gamma = 0.995;
     state.cstrat = peopt::CentralityStrategy::PredictorCorrector;
@@ -274,7 +274,7 @@ BOOST_AUTO_TEST_CASE(tr_newton_predictor_corrector) {
     BOOST_CHECK(err < 1e-6);
 
     // Check the number of iterations 
-    BOOST_CHECK(state.iter == 10);
+    BOOST_CHECK(state.iter == 11);
 }
 
 
@@ -333,7 +333,7 @@ BOOST_AUTO_TEST_CASE(sr1) {
     BOOST_CHECK(err < 1e-6);
 
     // Check the number of iterations 
-    BOOST_CHECK(state.iter == 11);
+    BOOST_CHECK(state.iter == 12);
 }
 
 

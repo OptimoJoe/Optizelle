@@ -728,6 +728,7 @@ namespace peopt {
                     peopt::potrf <Real> ('U',Integer(m),&(U.front()),Integer(m),
                         info);
 
+                #if 0
                     // Find the deterimant of the Choleski factor
                     Real det(1.);
                     #ifdef _OPENMP
@@ -738,6 +739,18 @@ namespace peopt {
                     
                     // Complete the barrier computation by taking the log
                     z+= Real(2.) * log(det);
+                #else
+                    // Find the log-determinant of the Choleski factor
+                    Real log_det(0.);
+                    #ifdef _OPENMP
+                    #pragma omp parallel for reduction(+:log_det) schedule(static)
+                    #endif
+                    for(Natural i=Natural(1);i<=m;i++)
+                        log_det += log(U[peopt::ijtok(i,i,m)]);
+                    
+                    // Complete the barrier computation by taking the log
+                    z+= Real(2.) * log_det;
+                #endif
                     
                     break;
                 } }
@@ -796,7 +809,9 @@ namespace peopt {
                         #pragma omp critical
                         #endif
                         {
-                           if(alpha==Real(-1.) || alpha_loc < alpha)
+                           if( alpha==Real(-1.) ||
+                               (alpha_loc >=0 && alpha_loc < alpha)
+                           )
                                alpha=alpha_loc;
                         }
                     }
@@ -872,7 +887,7 @@ namespace peopt {
 
                 // Here, if the solution to the generalized eigenvalue problem
                 //
-                // Y v = lambda Y v
+                // X v = lambda Y v
                 //
                 // has a negative eigenvalue, we use the negative of that.  Now,
                 // sometimes we have cached a Schur decomposition of Y.  In this
@@ -927,9 +942,19 @@ namespace peopt {
                         &(invUtXinvU.front()),Integer(m));
 
                     // Find the smallest eigenvalue of invUtXinvU.  The
-                    // negative of this is the line search parameter.
-                    Real alpha0=-Real(1.)/peopt::lanczos<Real>
-                        (m,&(invUtXinvU.front()),m,Real(1e-1));
+                    // negative of the reciprical of this is the line
+                    // search parameter.
+                    Real abs_tol=1e-2;
+                    Real lambda=peopt::lanczos <Real>
+                        (m,&(invUtXinvU.front()),m,abs_tol);
+                    
+                    // Lanczos converges from the left, but we really need
+                    // a lower bound on the eigenvalue.  Hence, modify this
+                    // result so that we have a lower bound.
+                    lambda -= abs_tol; 
+
+                    // Now, find the line-search parameter
+                    Real alpha0=-Real(1.)/lambda;
 
                     // Adjust the line search step if necessary
                     if(alpha0 >= Real(0.) && (alpha==Real(-1.) || alpha0<alpha))
