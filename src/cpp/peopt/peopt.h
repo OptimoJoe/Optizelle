@@ -8237,7 +8237,10 @@ namespace peopt{
                 mutable X_Vector grad_tmp;
                 mutable X_Vector hess_mod; 
                 mutable X_Vector x_tmp1;
+#if 0
                 mutable Z_Vector linv_hx_z_prod_hpx; 
+#endif
+                mutable Z_Vector linv_hx_hpx_prod_z; 
                 mutable Z_Vector z_tmp1;
                 mutable Z_Vector z_tmp2;
                 
@@ -8398,7 +8401,10 @@ namespace peopt{
                     X::init(x,x_tmp1);
                     Z::init(z,z_tmp1);
                     Z::init(z,z_tmp2);
+#if 0
                     Z::init(z,linv_hx_z_prod_hpx);
+#endif
+                    Z::init(z,linv_hx_hpx_prod_z);
                     
                     // Allocate memory for the caching
                     X::init(x,x_merit.second);
@@ -8477,6 +8483,7 @@ namespace peopt{
                     f_mod->grad_quasi(x,grad,grad_quasi);
                 }
 
+#if 0
                 // Modification of the gradient when solving for the equality
                 // multiplier
                 virtual void grad_mult(
@@ -8490,7 +8497,7 @@ namespace peopt{
 
                 // Modification of the Hessian-vector product when finding a
                 // trial step
-                virtual void hessvec_step(
+                virtual void hessvec_step_old(
                     const X_Vector& x,
                     const X_Vector& dx,
                     const X_Vector& H_dx,
@@ -8527,6 +8534,49 @@ namespace peopt{
                     // H_dx 
                     //  = hess f(x) dx + h'(x)* (inv(L(h(x))) (z o h'(x) dx)
                     //                          + z o (inv L(h(x)) h'(x) dx))/2
+                    X::axpy(Real(1.),hess_mod,Hdx_step);
+                }
+#endif
+
+                // Modification of the Hessian-vector product when finding a
+                // trial step
+                virtual void hessvec_step(
+                    const X_Vector& x,
+                    const X_Vector& dx,
+                    const X_Vector& H_dx,
+                    X_Vector& Hdx_step 
+                ) const {
+
+                    // Modify the Hessian-vector product
+                    f_mod->hessvec_step(x,dx,H_dx,Hdx_step);
+
+                    // z_tmp1 <- h'(x) dx
+                    h.p(x,dx,z_tmp1);
+
+                    // z_tmp2 <- h'(x) dx o z
+                    Z::prod(z_tmp1,z,z_tmp2);
+
+                    // linv_hx_hpx_prod_z <- inv(L(h(x))) (h'(x) dx o z) 
+                    Z::linv(h_x,z_tmp2,linv_hx_hpx_prod_z);
+                    
+                    // z_tmp2 <- inv L(h(x)) h'(x) dx
+                    Z::linv(h_x,z_tmp1,z_tmp2);
+                    
+                    // z_tmp1 <- (inv L(h(x)) h'(x) dx) o z
+                    Z::prod(z_tmp2,z,z_tmp1);
+
+                    // z_tmp1 <- (inv(L(h(x))) (h'(x) dx o z)
+                    //               + (inv L(h(x)) h'(x) dx) o z)/2
+                    Z::axpy(Real(1.),linv_hx_hpx_prod_z,z_tmp1);
+                    Z::scal(Real(.5),z_tmp1);
+
+                    // hess_mod <- h'(x)* (inv(L(h(x))) (h'(x) dx o z)
+                    //                    + (inv L(h(x)) h'(x) dx) o z)/2
+                    h.ps(x,z_tmp1,hess_mod);
+
+                    // H_dx 
+                    //  = hess f(x) dx + h'(x)* (inv(L(h(x))) (h'(x) dx o z)
+                    //                          + (inv L(h(x)) h'(x) dx) o z)/2
                     X::axpy(Real(1.),hess_mod,Hdx_step);
                 }
             };
