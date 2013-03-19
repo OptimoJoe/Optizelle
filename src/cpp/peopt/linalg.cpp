@@ -146,6 +146,11 @@ void dpotrf_fortran(char* uplo,Integer *n,double* A,Integer* lda,Integer* info);
 #define spotrf_fortran FortranCInterface_GLOBAL (spotrf,SPOTRF)
 void spotrf_fortran(char* uplo,Integer *n,float* A,Integer* lda,Integer* info);
 
+#define dpotri_fortran FortranCInterface_GLOBAL (dpotri,DPOTRF)
+void dpotri_fortran(char* uplo,Integer *n,double* A,Integer* lda,Integer* info);
+#define spotri_fortran FortranCInterface_GLOBAL (spotri,SPOTRF)
+void spotri_fortran(char* uplo,Integer *n,float* A,Integer* lda,Integer* info);
+
 #define dpftrf_fortran FortranCInterface_GLOBAL (dpftrf,DPFTRF)
 void dpftrf_fortran(char* transr,char* uplo,Integer* n,double* Arf,
     Integer* info);
@@ -504,6 +509,15 @@ namespace peopt {
     template <>
     void potrf(char uplo,Integer n,float* A,Integer lda,Integer& info) {
         spotrf_fortran(&uplo,&n,A,&lda,&info);
+    }
+
+    template <>
+    void potri(char uplo,Integer n,double* A,Integer lda,Integer& info) {
+        dpotri_fortran(&uplo,&n,A,&lda,&info);
+    }
+    template <>
+    void potri(char uplo,Integer n,float* A,Integer lda,Integer& info) {
+        spotri_fortran(&uplo,&n,A,&lda,&info);
     }
 
     template <>

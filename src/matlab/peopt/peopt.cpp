@@ -58,13 +58,14 @@ private:
     mxArrayPtr linv_;
     mxArrayPtr barr_;
     mxArrayPtr srch_;
+    mxArrayPtr symm_;
 
 public:
     // On basic initialization, just make sure that the internal storage is
     // NULL.
     MatVector() : mxArrayPtr(), copy_(NULL), scal_(NULL), zero_(NULL),
         axpy_(NULL), innr_(NULL), prod_(NULL), id_(NULL), linv_(NULL),
-        barr_(NULL), srch_(NULL) {}
+        barr_(NULL), srch_(NULL), symm_(NULL) {}
 
     // On a simple vector, initialize both the internal storage as well as
     // the basic linear algebra.
@@ -75,7 +76,9 @@ public:
         mxArray* zero__,
         mxArray* axpy__,
         mxArray* innr__
-    ) : prod_(NULL), id_(NULL), linv_(NULL), barr_(NULL), srch_(NULL) {
+    ) : prod_(NULL), id_(NULL), linv_(NULL), barr_(NULL), srch_(NULL),
+        symm_(NULL)
+    {
         // Compute a deep copy of the data in the supplied vector 
         reset(mxDuplicateArray(vec));
 
@@ -100,7 +103,8 @@ public:
         mxArray* id__,
         mxArray* linv__,
         mxArray* barr__,
-        mxArray* srch__
+        mxArray* srch__,
+        mxArray* symm__
     ) { 
         // Compute a deep copy of the data in the supplied vector 
         reset(mxDuplicateArray(vec));
@@ -116,6 +120,7 @@ public:
         linv_.reset(mxDuplicateArray(linv__));
         barr_.reset(mxDuplicateArray(barr__));
         srch_.reset(mxDuplicateArray(srch__));
+        symm_.reset(mxDuplicateArray(symm__));
     }
 
     // Memory allocation and size setting 
@@ -134,6 +139,7 @@ public:
         if(x.linv_.get()) linv_.reset(mxDuplicateArray(x.linv_.get()));
         if(x.barr_.get()) barr_.reset(mxDuplicateArray(x.barr_.get()));
         if(x.srch_.get()) srch_.reset(mxDuplicateArray(x.srch_.get()));
+        if(x.symm_.get()) symm_.reset(mxDuplicateArray(x.symm_.get()));
     }
 
     // y <- x (Shallow.  No memory allocation.) 
@@ -275,6 +281,17 @@ public:
         // Return the result 
         return alpha;
     }
+
+    // Symmetrization, x <- phi(x) such that L(phi(x)) is a symmetric operator.
+    void symm() {
+        // Create the inputs and outputs 
+        mxArray* input[2]={symm_.get(),get()};
+        mxArray* output[1];
+
+        // Find the symmetrization and store the result
+        mexCallMATLAB(1,output,2,input,"feval");
+        reset(output[0]);
+    }
 };
 
         
@@ -337,6 +354,12 @@ struct MatlabVS {
     // where y > 0.  If the argmax is infinity, then return Real(-1.). 
     static Real srch(const Vector& x,const Vector& y) {
         return y.srch(x);
+    }
+        
+    // Symmetrization, x <- phi(x) such that L(phi(x)) is a symmetric
+    // operator.
+    static void symm(Vector& x) {
+        return x.symm();
     }
 };
 
@@ -556,8 +579,8 @@ void check_euclidean_jordan(const mxArray* X,std::string name) {
     check_vector_space(X,name);
 
     // Next, we check we have a valid Euclidean-Jordan algebra
-    std::string ops[5] = { "prod", "id", "linv", "barr", "srch" };
-    check_fns(X,ops,5,"vector space",name);
+    std::string ops[6] = { "prod", "id", "linv", "barr", "srch", "symm" };
+    check_fns(X,ops,6,"vector space",name);
 }
 
 // Check that we have all the operations necessary for a scalar valued function 
@@ -881,7 +904,8 @@ void mexFunction(
             mxGetField(Z,0,"id"),
             mxGetField(Z,0,"linv"),
             mxGetField(Z,0,"barr"),
-            mxGetField(Z,0,"srch")));
+            mxGetField(Z,0,"srch"),
+            mxGetField(Z,0,"symm")));
         if(diagnostics) {
             dz.reset(new MatVector());
                 dz->init(*z);

@@ -41,7 +41,7 @@ struct MyObj : public peopt::ScalarValuedFunction <double,peopt::Rm> {
 
 // Define a simple SDP inequality 
 //
-// g(x,y) = [ y x ] >= 0
+// h(x,y) = [ y x ] >= 0
 //          [ x 1 ]
 //
 struct MyIneq 
@@ -51,7 +51,7 @@ struct MyIneq
     typedef peopt::SQL <double> Y;
     typedef double Real;
 
-    // y=f(x) 
+    // y=h(x) 
     void operator () (
         const X::Vector& x,
         Y::Vector& y
@@ -62,7 +62,7 @@ struct MyIneq
         y(1,2,2)=Real(1.);
     }
 
-    // y=f'(x)dx
+    // y=h'(x)dx
     void p(
         const X::Vector& x,
         const X::Vector& dx,
@@ -74,17 +74,18 @@ struct MyIneq
         y(1,2,2)=Real(0.);
     }
 
-    // z=f'(x)*dy
+    // z=h'(x)*dy
     void ps(
         const X::Vector& x,
         const Y::Vector& dy,
         X::Vector& z
     ) const {
-        z[0]= Real(2.)*dy(1,1,2);
+        //z[0]= Real(2.)*dy(1,1,2);
+        z[0]= dy(1,1,2)+dy(1,2,1);
         z[1]= dy(1,1,1);
     }
 
-    // z=(f''(x)dx)*dy
+    // z=(h''(x)dx)*dy
     void pps(
         const X::Vector& x,
         const X::Vector& dx,

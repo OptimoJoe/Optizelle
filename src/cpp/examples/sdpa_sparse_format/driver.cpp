@@ -541,6 +541,8 @@ public:
         Rm::zero(x.first);
         x.second=Real(0.);
     }
+
+    static void symm(Vector& x) {}
 };
 
 // Define the stage-1 objective where 

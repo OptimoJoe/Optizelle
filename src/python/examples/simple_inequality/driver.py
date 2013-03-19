@@ -33,6 +33,8 @@ class ListVS:
                 if alpha0 < alpha:
                     alpha=alpha0
         return alpha
+    def symm(self,x):
+        return x 
 
 # Define the objective 
 # 

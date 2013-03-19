@@ -227,6 +227,9 @@ namespace peopt {
     void potrf(char uplo,Integer n,Real* A,Integer lda,Integer& info);
     
     template <typename Real>
+    void potri(char uplo,Integer n,Real* A,Integer lda,Integer& info);
+    
+    template <typename Real>
     void pftrf(char transr,char uplo,Integer n,Real* Arf,Integer& info);
 
     template <typename Real>
@@ -313,11 +316,11 @@ namespace peopt {
         std::vector <Real> tmp(m*m);
         std::vector <Real> VtBV(m*m);
         // tmp <- B V
-        symm <Real> ('L','U',Integer(m),Integer(m),Real(1.),&(B[0]),Integer(m),
-            &(V[0]),Integer(m),Real(0.),&(tmp[0]),Integer(m)); 
+        symm <Real> ('L','U',m,m,Real(1.),&(B[0]),m,&(V[0]),m,Real(0.),
+            &(tmp[0]),m); 
         // VtBV <- V' B V
-        gemm <Real> ('T','N',Integer(m),Integer(m),Integer(m),Real(1.),&(V[0]),
-            Integer(m),&(tmp[0]),Integer(m),Real(0.),&(VtBV[0]),Integer(m));
+        gemm <Real> ('T','N',m,m,m,Real(1.),&(V[0]),m,&(tmp[0]),m,Real(0.),
+            &(VtBV[0]),m);
 
         // Solve for each column of X.  In theory, we only need half of these
         // elements since X is symmetric.
@@ -331,12 +334,11 @@ namespace peopt {
 
         // Realransform the solution back, X = V X V'
         // tmp <- V X
-        symm <Real> ('R','U',Integer(m),Integer(m),Real(1.),&(X[0]),Integer(m),
-            &(V[0]),Integer(m),Real(0.),&(tmp[0]),Integer(m));
+        symm <Real> ('R','U',m,m,Real(1.),&(X[0]),m,&(V[0]),m,Real(0.),
+            &(tmp[0]),m);
         // X <- V X V'
-        gemm <Real> ('N','T',Integer(m),Integer(m),Integer(m),Real(1.),
-            &(tmp[0]),Integer(m),&(V[0]),Integer(m),Real(0.),&(X[0]),
-            Integer(m));
+        gemm <Real> ('N','T',m,m,m,Real(1.),&(tmp[0]),m,&(V[0]),m,Real(0.),
+            &(X[0]),m);
     }
 
     // Find a bound on the smallest eigenvalue of the given matrix A such
@@ -354,15 +356,12 @@ namespace peopt {
         // Get the next Krylov vector and orthgonalize it
         std::vector <Real> w(m);
         // w <- A v
-        symv <Real> ('U',Integer(m),Real(1.),&(A[0]),Integer(m),&(v[0]),
-            Integer(1),Real(0.),&(w[0]),Integer(1));
+        symv <Real> ('U',m,Real(1.),&(A[0]),m,&(v[0]),1,Real(0.),&(w[0]),1);
         // alpha[0] <- <Av,v>
         std::vector <Real> alpha;
-        alpha.push_back(dot <Real> (Integer(m),&(w[0]),Integer(1),&(v[0]),
-            Integer(1)));
+        alpha.push_back(dot <Real> (m,&(w[0]),1,&(v[0]),1));
         // w <- Av - <Av,v> v
-        axpy <Real> (Integer(m),-alpha[0],&(v[0]),Integer(1),&(w[0]),
-            Integer(1));
+        axpy <Real> (m,-alpha[0],&(v[0]),1,&(w[0]),1);
 
         // Store the norm of the Arnoldi vector w in the off diagonal part of T.
         // By T, we mean the triagonal matrix such that A = Q T Q'.
@@ -387,55 +386,50 @@ namespace peopt {
         std::vector <Real> v_old(m);
         for(Natural i=0;i<max_iter;i++) {
             // Save the current Arnoldi vector
-            copy <Real> (Integer(m),&(v[0]),Integer(1),&(v_old[0]),Integer(1));
+            copy <Real> (m,&(v[0]),1,&(v_old[0]),1);
 
             // Copy the candidate Arnoldi vector to the current Arnoldi vector
-            copy <Real> (Integer(m),&(w[0]),Integer(1),&(v[0]),Integer(1));
+            copy <Real> (m,&(w[0]),1,&(v[0]),1);
 
             // Get the normalized version of this vector.  This is now a real
             // Arnoldi vector.
-            scal <Real> (Integer(m),Real(1.)/beta[i],&(v[0]),Integer(1));
+            scal <Real> (m,Real(1.)/beta[i],&(v[0]),1);
 
             // Get the new Arnoldi vector, w <- A v
-            symv <Real> ('U',Integer(m),Real(1.),&(A[0]),Integer(m),&(v[0]),
-                Integer(1),Real(0.),&(w[0]),Integer(1));
+            symv <Real> ('U',m,Real(1.),&(A[0]),m,&(v[0]),1,Real(0.),&(w[0]),1);
 
             // Orthogonalize against v_old and v using modified Gram-Schdmit.
 
             // First, we orthogonalize against v_old
             // w <- Av - <Av,v_old> v_old.  Due to symmetry, <Av,v_old>=beta.
-            axpy <Real> (Integer(m),-beta[i],&(v_old[0]),Integer(1),&(w[0]),
-                Integer(1));
+            axpy <Real> (m,-beta[i],&(v_old[0]),1,&(w[0]),1);
 
             // Now, we orthogonalize against v
             // Find the Gram-Schmidt coefficient
-            alpha.push_back(dot <Real> (Integer(m),&(w[0]),Integer(1),&(v[0]),
-                Integer(1)));
+            alpha.push_back(dot <Real> (m,&(w[0]),1,&(v[0]),1));
             // Orthogonlize w to v
-            axpy <Real> (Integer(m),-alpha[i+1],&(v[0]),Integer(1),&(w[0]),
-                Integer(1));
+            axpy <Real> (m,-alpha[i+1],&(v[0]),1,&(w[0]),1);
 
             // Store the norm of the Arnoldi vector w in the off diagonal part
             // of T.
-            beta.push_back(std::sqrt(dot <Real> (Integer(m),&(w[0]),Integer(1),
-                &(w[0]),Integer(1))));
+            beta.push_back(std::sqrt(dot <Real> (m,&(w[0]),1,&(w[0]),1)));
    
             // Figure out the workspaces for the eigenvalues and eigenvectors
             Natural k=alpha.size();  // Size of the eigenvalue subproblem
             D.resize(alpha.size());
-            copy <Real> (Integer(k),&(alpha[0]),Integer(1),&(D[0]),Integer(1));
+            copy <Real> (k,&(alpha[0]),1,&(D[0]),1);
             E.resize(beta.size());
-            copy <Real> (Integer(k),&(beta[0]),Integer(1),&(E[0]),Integer(1));
-            isuppz.resize(Natural(2)*k);
-            lwork=Integer(Natural(20)*k);
-            work.resize(Natural(lwork));
-            liwork=Integer(Natural(10)*k);
+            copy <Real> (k,&(beta[0]),1,&(E[0]),1);
+            isuppz.resize(2*k);
+            lwork=20*k;
+            work.resize(lwork);
+            liwork=10*k;
             iwork.resize(liwork);
             W.resize(k);
             Z.resize(k*k);
-            peopt::stevr <Real> ('V','A',Integer(k),&(D[0]),&(E[0]),Real(0.),
-                Real(0.),Integer(0),Integer(0),peopt::lamch <Real> ('S'),
-                nevals,&(W[0]),&(Z[0]),Integer(k),&(isuppz[0]),&(work[0]),
+            peopt::stevr <Real> ('V','A',k,&(D[0]),&(E[0]),Real(0.),
+                Real(0.),0,0,peopt::lamch <Real> ('S'),
+                nevals,&(W[0]),&(Z[0]),k,&(isuppz[0]),&(work[0]),
                 lwork,&(iwork[0]),liwork,info);
 
             // Find beta_i |s_{i1}| where s_{i1} is the last element
@@ -743,13 +737,13 @@ namespace peopt {
                 r1 = (Real(2.)*c) / (-b - sqrt(b*b-Real(4.)*a*c));
                 r2 = (-b - sqrt(b*b-Real(4.)*a*c)) / (Real(2.)*a);
             }
-            nroots = Natural(2);
+            nroots = 2;
 
         // Now, in the case that a is zero, but b is not, we have a linear
         // function and we can solve for the root.
         } else if( b != Real(0.)) {
             r1 = -c/b;
-            nroots = Natural(1);
+            nroots = 1;
 
         // Here, we have a constant function.  Now, we could have no roots
         // if c is zero.  Alternatively, we could have an infinity number of
@@ -757,7 +751,7 @@ namespace peopt {
         // of these cases, so we just assume that c is not zero and return
         // zero roots.
         } else {
-            nroots = Natural(0);
+            nroots = 0;
         }
     }
 
@@ -977,7 +971,7 @@ namespace peopt {
         Real norm_C_x_m_xcntr = sqrt(X::innr(x_tmp1,x_tmp1));
         if(norm_C_x_m_xcntr > delta) {
             X::zero(x_cp);
-            iter=Natural(0);
+            iter=0;
             krylov_stop = KrylovStop::InvalidTrustRegionCenter;
             return;
         }
@@ -993,11 +987,11 @@ namespace peopt {
         X::scal(Real(-1.),Bp);
 
         // Loop until the maximum iteration
-        for(iter=Natural(1);iter<=iter_max;iter++){
+        for(iter=1;iter<=iter_max;iter++){
         
             // If the norm of the residual is small relative to the starting
             // residual, exit
-            if(norm_Br < eps*norm_Br0) {
+            if(norm_Br <= eps*norm_Br0) {
                 iter--;
                 krylov_stop = KrylovStop::RelativeErrorSmall;
                 break;
@@ -1218,7 +1212,7 @@ namespace peopt {
                     krylov_stop = KrylovStop::TrustRegionViolated;
  
                 // If this is the first iteration, save the Cauchy-Point
-                if(iter==Natural(1)) X::copy(x,x_cp);
+                if(iter==1) X::copy(x,x_cp);
                 break;
             }
 
@@ -1227,7 +1221,7 @@ namespace peopt {
             X::axpy(alpha,Bp,x_m_xcntr);
 
             // If this is the first iteration, save the Cauchy-Point
-            if(iter==Natural(1)) X::copy(x,x_cp);
+            if(iter==1) X::copy(x,x_cp);
 
             // Update the norm of x
             norm_C_x_m_xcntr = norm_C_x_m_xcntr_p_a_Bp;
@@ -1279,14 +1273,14 @@ namespace peopt {
         std::vector <Natural> p(3);
         std::vector <Natural> q(3);
         if(i==0) {
-            p[1]=Natural(1); p[2]=Natural(2);
-            q[1]=Natural(1); q[2]=Natural(2);
+            p[1]=1; p[2]=2;
+            q[1]=1; q[2]=2;
         } else if(i==1) {
-            p[1]=Natural(2); p[2]=Natural(1);
-            q[1]=Natural(1); q[2]=Natural(2);
+            p[1]=2; p[2]=1;
+            q[1]=1; q[2]=2;
         } else {
-            p[1]=Natural(2); p[2]=Natural(1);
-            q[1]=Natural(2); q[2]=Natural(1);
+            p[1]=2; p[2]=1;
+            q[1]=2; q[2]=1;
         }
 
         // Do a step of Gaussian elimination
@@ -1465,8 +1459,8 @@ namespace peopt {
         X_Vector V_y; X::init(x,V_y);
 
         // Solve the system for y
-        copy <Real> (Integer(m),&(Qt_e1[0]),Integer(1),&(y[0]),Integer(1));
-        tpsv <Real> ('U','N','N',Integer(m),&(R[0]),&(y[0]),Integer(1));
+        copy <Real> (m,&(Qt_e1[0]),1,&(y[0]),1);
+        tpsv <Real> ('U','N','N',m,&(R[0]),&(y[0]),1);
 
         // Compute tmp = V y
         X::zero(V_y);
@@ -1592,7 +1586,7 @@ namespace peopt {
         rst_freq = rst_freq > iter_max ? iter_max : rst_freq;
 
         // Adjust the restart frequency if none is desired.
-        rst_freq = rst_freq == Natural(0) ? iter_max : rst_freq;
+        rst_freq = rst_freq == 0 ? iter_max : rst_freq;
 
         // Allocate memory for the residual
         X_Vector r; X::init(x,r);
@@ -1615,7 +1609,7 @@ namespace peopt {
         // A V = V H + e_m' w_m
         // Note, this size is restricted to be no larger than the restart
         // frequency
-        std::vector <Real> R(rst_freq*(rst_freq+Natural(1))/Natural(2));
+        std::vector <Real> R(rst_freq*(rst_freq+1)/2);
 
         // Allocate memory for the normalized Krylov vector
         X_Vector v; X::init(x,v);
@@ -1630,7 +1624,7 @@ namespace peopt {
         // Q' norm(w1) e1.  Since we have a problem overdetermined by a single
         // index at each step, the size of this vector is the restart frequency
         // plus 1.
-        std::vector <Real> Qt_e1(rst_freq+Natural(1));
+        std::vector <Real> Qt_e1(rst_freq+1);
 
         // Allocoate memory for the Givens rotations
         std::list <std::pair<Real,Real> > Qts;
@@ -1658,7 +1652,7 @@ namespace peopt {
 
         // Iterate until the maximum iteration
         Natural iter;
-        for(iter = Natural(1); iter <= iter_max;iter++) {
+        for(iter = 1; iter <= iter_max;iter++) {
 
             // Find the current iterate taking into account restarting
             i = iter % rst_freq;
@@ -1667,7 +1661,7 @@ namespace peopt {
             // before restarting.  However, the iterate in this case is equal to
             // the restart frequency and not zero since our factorization has
             // size rst_freq x rst_freq.
-            if(i == Natural(0)) i = rst_freq;
+            if(i == 0) i = rst_freq;
 
             // Find the next Krylov vector
             Mr_inv(v,w);
@@ -1694,26 +1688,25 @@ namespace peopt {
                 Qt!=Qts.end();
                 Qt++
             ) { 
-                rot <Real> (Integer(1),&(R[(j-1)+(i-1)*i/2]),
-                    Integer(1),&(R[j+(i-1)*i/2]),Integer(1),
+                rot <Real> (1,&(R[(j-1)+(i-1)*i/2]),1,&(R[j+(i-1)*i/2]),1,
                     Qt->first,Qt->second);
                 j++;
             }
 
             // Form the new Givens rotation
             Qts.push_back(std::pair <Real,Real> ());
-            rotg <Real> (R[(i-1)+i*(i-1)/Natural(2)],norm_w,
+            rotg <Real> (R[(i-1)+i*(i-1)/2],norm_w,
                 Qts.back().first,Qts.back().second);
 
             // Apply this new Givens rotation to the last element of R and 
             // norm(w).  This fixes our system R.
-            rot <Real> (Integer(1),&(R[(i-1)+i*(i-1)/2]),Integer(1),
-                &(norm_w),Integer(1),Qts.back().first,Qts.back().second);
+            rot <Real> (1,&(R[(i-1)+i*(i-1)/2]),1,
+                &(norm_w),1,Qts.back().first,Qts.back().second);
 
             // Apply the new givens rotation to the RHS.  This also determines
             // the new norm of the preconditioned residual.
-            rot <Real> (Integer(1),&(Qt_e1[i-1]),Integer(1),&(Qt_e1[i]),
-                Integer(1),Qts.back().first,Qts.back().second);
+            rot <Real> (1,&(Qt_e1[i-1]),1,&(Qt_e1[i]),
+                1,Qts.back().first,Qts.back().second);
             norm_r = fabs(Qt_e1[i]);
                 
             // Solve for the new iterate update 
@@ -1736,7 +1729,7 @@ namespace peopt {
 
             // If we've hit the restart frequency, reset the Krylov spaces and
             // factorizations
-            if(i%rst_freq==Natural(0)) {
+            if(i%rst_freq==0) {
 
                 // Move to the new iterate
                 X::copy(x_p_dx,x);
@@ -1749,7 +1742,7 @@ namespace peopt {
                 // iteration 0 of the next round of GMRES.  If we exit
                 // immediately thereafter, we use this check to make sure we
                 // don't do any additional solves for x.
-                i = Natural(0);
+                i = 0;
             }
         }
 
@@ -1758,7 +1751,7 @@ namespace peopt {
 
         // As long as we didn't just solve for our new ierate, go ahead and
         // solve for it now.
-        if(i > Natural(0)){ 
+        if(i > 0){ 
             solveInKrylov <Real,XX> (i,&(R[0]),&(Qt_e1[0]),vs,Mr_inv,x,dx);
             X::axpy(Real(1.),dx,x);
         }
@@ -1907,13 +1900,13 @@ namespace peopt {
         Real norm_C_x_m_xcntr = sqrt(X::innr(x_tmp1,x_tmp1));
         if(norm_C_x_m_xcntr > delta) {
             X::zero(x_cp);
-            iter=Natural(0);
+            iter=0;
             krylov_stop = KrylovStop::InvalidTrustRegionCenter;
             return;
         }
 
         // Iterate until the maximum iteration
-        for(iter = Natural(1); iter <= iter_max;iter++) {
+        for(iter = 1; iter <= iter_max;iter++) {
 
             // Find the next Krylov vector,
             // x_tmp1 <- ABv_last,
@@ -1936,7 +1929,7 @@ namespace peopt {
             
                 // Check if we need to eliminate any vectors for
                 // orthogonalization.
-                if(vs.size()==orthog_max+Natural(1)) {
+                if(vs.size()==orthog_max+1) {
                     vs.pop_front();
                     Bvs.pop_front();
                 }
@@ -1969,11 +1962,11 @@ namespace peopt {
                     Qt!=Qts.end();
                     Qt++,beta++,beta_next++
                 )
-                    rot <Real> (Integer(1),&(*beta),Integer(1),&(*beta_next),
-                        Integer(1),Qt->first,Qt->second);
+                    rot <Real> (1,&(*beta),1,&(*beta_next),1,
+                        Qt->first,Qt->second);
                
                 // Remove unneeded Givens rotations
-                if(Qts.size()==orthog_max+Natural(1))
+                if(Qts.size()==orthog_max+1)
                     Qts.pop_front();
 
                 // Form the new Givens rotation
@@ -1983,13 +1976,13 @@ namespace peopt {
 
                 // Apply this new Givens rotation to the last element of R and 
                 // norm(w).  This fixes our system R.
-                rot <Real> (Integer(1),&(R.back()),Integer(1),
-                    &(Bnorm_v),Integer(1),Qts.back().first,Qts.back().second);
+                rot <Real> (1,&(R.back()),1,
+                    &(Bnorm_v),1,Qts.back().first,Qts.back().second);
 
                 // Apply the new givens rotation to the RHS.  This also 
                 // determines the new B-norm of the residual.
-                rot <Real> (Integer(1),&(Qt_e1[0]),Integer(1),&(Qt_e1[1]),
-                    Integer(1),Qts.back().first,Qts.back().second);
+                rot <Real> (1,&(Qt_e1[0]),1,&(Qt_e1[1]),
+                    1,Qts.back().first,Qts.back().second);
 
                 // Determine B V inv(R)
                 typename std::list <X_Vector>::const_reverse_iterator
@@ -2005,7 +1998,7 @@ namespace peopt {
                 X::scal(Real(1.)/R.back(),x_tmp1);
                
                 // Remove unneeded vectors in B V inv(R).
-                if(B_V_Rinvs.size()==orthog_max+Natural(1)) 
+                if(B_V_Rinvs.size()==orthog_max+1) 
                     B_V_Rinvs.pop_front();
 
                 // Add in the new B V inv(R) vector.
@@ -2074,7 +2067,7 @@ namespace peopt {
                     X::axpy(Real(1.),dx,x_m_xcntr);
 
                     // Save the Cauchy-Point
-                    if(iter==Natural(1)) 
+                    if(iter==1) 
                         X::copy(x,x_cp);
 
                     // Set the stopping condition
@@ -2139,7 +2132,7 @@ namespace peopt {
                     krylov_stop = KrylovStop::TrustRegionViolated;
  
                 // If this is the first iteration, save the Cauchy-Point
-                if(iter==Natural(1)) 
+                if(iter==1) 
                     X::copy(x,x_cp);
                 break;
             }
@@ -2156,12 +2149,12 @@ namespace peopt {
             Bnorm_r = fabs(Qt_e1[0]);
 
             // If this is the first iteration, save the Cauchy-Point
-            if(iter==Natural(1)) 
+            if(iter==1) 
                 X::copy(x,x_cp);
             
             // Determine if we should exit since the norm of the preconditioned
             // residual is small
-            if(Bnorm_r < eps*Bnorm_r0) {
+            if(Bnorm_r <= eps*Bnorm_r0) {
                 krylov_stop = KrylovStop::RelativeErrorSmall;
                 break;	
             }

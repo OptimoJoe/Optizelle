@@ -85,7 +85,7 @@ namespace {
             const Y::Vector& dy,
             X::Vector& z
         ) const {
-            z[0]= Real(2.)*dy(1,1,2);
+            z[0]= dy(1,1,2)+dy(1,2,1);
             z[1]= dy(1,1,1);
         }
 
@@ -141,9 +141,9 @@ BOOST_AUTO_TEST_CASE(newton_cg) {
     state.msg_level = 0;
     state.eps_dx = 1e-16;
     state.eps_grad = 1e-9;
-    state.eps_mu = 1e-8;
-    state.sigma = 0.2;
-    state.gamma = 0.95;
+    state.eps_mu = 1e-11;
+    state.sigma = 0.1;
+    state.gamma = 0.99;
 
     // Solve the optimization problem
     peopt::InequalityConstrained <double,peopt::Rm,peopt::SQL>::Algorithms
@@ -198,9 +198,9 @@ BOOST_AUTO_TEST_CASE(tr_newton) {
     state.eps_krylov = 1e-10;
     state.eps_dx = 1e-16;
     state.eps_grad = 1e-10;
-    state.eps_mu = 1e-8;
-    state.sigma = 0.2;
-    state.gamma = 0.95;
+    state.eps_mu = 1e-11;
+    state.sigma = 0.1;
+    state.gamma = 0.99;
 
     // Solve the optimization problem
     peopt::InequalityConstrained <double,peopt::Rm,peopt::SQL>::Algorithms
@@ -274,7 +274,7 @@ BOOST_AUTO_TEST_CASE(tr_newton_predictor_corrector) {
     BOOST_CHECK(err < 1e-6);
 
     // Check the number of iterations 
-    BOOST_CHECK(state.iter == 11);
+    BOOST_CHECK(state.iter == 9);
 }
 
 
@@ -316,7 +316,7 @@ BOOST_AUTO_TEST_CASE(sr1) {
     state.gamma = 0.95;
     state.eps_dx = 1e-16;
     state.eps_grad = 1e-9;
-    state.eps_mu = 1e-8;
+    state.eps_mu = 1e-10;
     
     // Solve the optimization problem
     peopt::InequalityConstrained <double,peopt::Rm,peopt::SQL>::Algorithms
@@ -333,7 +333,7 @@ BOOST_AUTO_TEST_CASE(sr1) {
     BOOST_CHECK(err < 1e-6);
 
     // Check the number of iterations 
-    BOOST_CHECK(state.iter == 12);
+    BOOST_CHECK(state.iter == 15);
 }
 
 

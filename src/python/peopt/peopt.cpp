@@ -77,23 +77,24 @@ public:
 struct PyVector : public PyObjectPtr {
 private:
     // References to the algebra required in Python
-    PyObjectPtr copy_; \
-    PyObjectPtr scal_; \
-    PyObjectPtr zero_; \
-    PyObjectPtr axpy_; \
-    PyObjectPtr innr_; \
-    PyObjectPtr prod_; \
-    PyObjectPtr id_; \
-    PyObjectPtr linv_; \
-    PyObjectPtr barr_; \
-    PyObjectPtr srch_; \
+    PyObjectPtr copy_;
+    PyObjectPtr scal_;
+    PyObjectPtr zero_;
+    PyObjectPtr axpy_;
+    PyObjectPtr innr_;
+    PyObjectPtr prod_;
+    PyObjectPtr id_;
+    PyObjectPtr linv_;
+    PyObjectPtr barr_;
+    PyObjectPtr srch_;
+    PyObjectPtr symm_; 
 
 public:
     // On basic initialization, just make sure that the internal storage is
     // NULL.
     PyVector() : PyObjectPtr(), copy_(NULL), scal_(NULL), zero_(NULL),
         axpy_(NULL), innr_(NULL), prod_(NULL), id_(NULL), linv_(NULL),
-        barr_(NULL), srch_(NULL) {}
+        barr_(NULL), srch_(NULL), symm_(NULL) {}
 
     // On a simple vector, initialize both the internal storage as well as
     // the basic linear algebra.
@@ -106,7 +107,7 @@ public:
         PyObject* innr__
     ) : PyObjectPtr(vec), copy_(copy__), scal_(scal__), zero_(zero__),
         axpy_(axpy__), innr_(innr__), prod_(NULL), id_(NULL), linv_(NULL),
-        barr_(NULL), srch_(NULL) {}
+        barr_(NULL), srch_(NULL), symm_(NULL) {}
 
     // On a general vector, initialize both the internal storage as well as
     // all the linear algebra 
@@ -121,10 +122,11 @@ public:
         PyObject* id__,
         PyObject* linv__,
         PyObject* barr__,
-        PyObject* srch__
+        PyObject* srch__,
+        PyObject* symm__
     ) : PyObjectPtr(vec), copy_(copy__), scal_(scal__), zero_(zero__),
         axpy_(axpy__), innr_(innr__), prod_(prod__), id_(id__), linv_(linv__),
-        barr_(barr__), srch_(srch__) {}
+        barr_(barr__), srch_(srch__), symm_(symm__) {}
 
     // Memory allocation and size setting 
     void init(const PyVector& vec) { 
@@ -151,6 +153,7 @@ public:
         linv_ = vec.linv_;
         barr_ = vec.barr_;
         srch_ = vec.srch_;
+        symm_ = vec.symm_;
 
         // Release the global interpretter lock 
         PyGILState_Release(gstate);  
@@ -376,6 +379,28 @@ public:
         // Return the result 
         return z; 
     } 
+
+    // Symmetrization, x <- phi(x) such that L(phi(x)) is a symmetric operator.
+    void symm() { 
+        // Acquire the global interpreter lock 
+        PyGILState_STATE gstate = PyGILState_Ensure(); 
+
+        // Call the symm function on the internal.  Store in the internal.
+        PyObjectPtr args(PyTuple_New(1)); 
+        MyPyTuple_SetItem(args.get(),0,get()); 
+        reset(PyObject_CallObject(symm_.get(),args.get())); 
+
+        // Release the global interpretter lock 
+        PyGILState_Release(gstate); 
+
+        // Check errors
+        if(get()==NULL)
+            PythonMessaging().
+                error("Evaluation of the vector space function symm failed.");
+
+    } 
+
+
 };
 
 template <typename Real=double> 
@@ -438,6 +463,11 @@ struct PythonVS {
     static Real srch(const Vector& x,const Vector& y) {  
         return y.srch(x);
     } 
+
+    // Symmetrization, x <- phi(x) such that L(phi(x)) is a symmetric operator.
+    static void symm(Vector& x) {
+        x.symm();
+    }
 }; 
 
 // A simple scalar valued function interface, f : X -> R
@@ -774,7 +804,8 @@ extern "C" PyObject* pypeopt(
                 PyObject_GetAttrString(Z.get(),"id"),
                 PyObject_GetAttrString(Z.get(),"linv"),
                 PyObject_GetAttrString(Z.get(),"barr"),
-                PyObject_GetAttrString(Z.get(),"srch")));
+                PyObject_GetAttrString(Z.get(),"srch"),
+                PyObject_GetAttrString(Z.get(),"symm")));
             if(mode == 0) {
                 dz.reset(new PyVector()); 
                     dz->init(*z);

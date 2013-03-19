@@ -1617,11 +1617,11 @@ namespace peopt{
 
             // Output the headers for the diagonstic information
             case OptimizationLocation::BeforeOptimizationLoop:
-                if(msg_level >= Natural(1)) {
+                if(msg_level >= 1) {
                     // Get the headers 
                     std::list <std::string> out;
                     ProblemClass::Printer::getStateHeader(state,out);
-                    if(msg_level >= Natural(2))
+                    if(msg_level >= 2)
                         ProblemClass::Printer::getKrylovHeader(state,out);
 
                     // Output the result
@@ -1633,7 +1633,7 @@ namespace peopt{
             case OptimizationLocation::EndOfOptimizationIteration: 
             case OptimizationLocation::AfterRejectedTrustRegion:
             case OptimizationLocation::AfterRejectedLineSearch:
-                if(msg_level >= Natural(1)) {
+                if(msg_level >= 1) {
                     // Get the diagonstic information
                     std::list <std::string> out;
 
@@ -1661,7 +1661,7 @@ namespace peopt{
 
             // Output information at the end of each Krylov iteration
             case OptimizationLocation::EndOfKrylovIteration:
-                if(msg_level >= Natural(2)) {
+                if(msg_level >= 2) {
                     // Get the diagonstic information
                     std::list <std::string> out;
 
@@ -1923,15 +1923,15 @@ namespace peopt{
             static void init_params_(t& state){
                 state.eps_grad=Real(1e-6);
                 state.eps_dx=Real(1e-6);
-                state.stored_history=Natural(0);
-                state.history_reset=Natural(5);
-                state.iter=Natural(1);
-                state.iter_max=Natural(10);
+                state.stored_history=0;
+                state.history_reset=5;
+                state.iter=1;
+                state.iter_max=10;
                 state.opt_stop=StoppingCondition::NotConverged;
-                state.krylov_iter=Natural(0);
-                state.krylov_iter_max=Natural(10);
-                state.krylov_iter_total=Natural(0);
-                state.krylov_orthog_max=Natural(1);
+                state.krylov_iter=0;
+                state.krylov_iter_max=10;
+                state.krylov_iter_total=0;
+                state.krylov_orthog_max=1;
                 state.krylov_stop=KrylovStop::RelativeErrorSmall;
                 state.krylov_rel_err=Real(0.);
                 state.eps_krylov=Real(1e-2);
@@ -1944,18 +1944,18 @@ namespace peopt{
                 state.norm_dxtyp=std::numeric_limits<Real>::quiet_NaN();
                 state.f_x=std::numeric_limits<Real>::quiet_NaN();
                 state.f_xpdx=std::numeric_limits<Real>::quiet_NaN();
-                state.msg_level=Natural(1);
+                state.msg_level=1;
                 state.delta_max=Real(100.);
                 state.delta=state.delta_max;
                 state.eta1=Real(.1);
                 state.eta2=Real(.9);
                 state.ared=std::numeric_limits<Real>::quiet_NaN();
                 state.pred=std::numeric_limits<Real>::quiet_NaN();
-                state.rejected_trustregion=Natural(0);
+                state.rejected_trustregion=0;
                 state.alpha=Real(1.);
-                state.linesearch_iter=Natural(0);
-                state.linesearch_iter_max=Natural(5);
-                state.linesearch_iter_total=Natural(0);
+                state.linesearch_iter=0;
+                state.linesearch_iter_max=5;
+                state.linesearch_iter_total=0;
                 state.eps_ls=Real(1e-2);
                 state.dir=LineSearchDirection::SteepestDescent;
                 state.kind=LineSearchKind::GoldenSection;
@@ -2016,23 +2016,23 @@ namespace peopt{
                         "condition must be positive: eps_dx = " << state.eps_dx;
         
                 // Check that the current iteration is positive
-                else if(state.iter == Natural(0)) 
+                else if(state.iter == 0) 
                     ss << "The current optimization iteration must be "
                         "positive: iter = " << state.iter;
 
                 // Check that the maximum iteration is positive
-                else if(state.iter_max == Natural(0)) 
+                else if(state.iter_max == 0) 
                     ss << "The maximum optimization iteration must be "
                         "positive: iter_max = " << state.iter_max;
 
                 // Check that the maximum Krylov iteration is positive
-                else if(state.krylov_iter_max == Natural(0)) 
+                else if(state.krylov_iter_max == 0) 
                     ss << "The maximum Krylov iteration must be "
                         "positive: krylov_iter_max = " << state.krylov_iter_max;
 
                 // Check that the number of vectors we orthogonalize against
                 // is at least 1.
-                else if(state.krylov_orthog_max == Natural(0)) 
+                else if(state.krylov_orthog_max == 0) 
                     ss << "The maximum number of vectors the Krylov method"
                     "orthogonalizes against must be positive: "
                     "krylov_orthog_max = " << state.krylov_orthog_max;
@@ -2067,13 +2067,13 @@ namespace peopt{
 
                 // Check that the objective value isn't a NaN past
                 // iteration 1
-                else if(state.iter!=Natural(1) && state.f_x!=state.f_x)
+                else if(state.iter!=1 && state.f_x!=state.f_x)
                     ss<< "The objective value must be a number: f_x = "
                         << state.f_x;
 
                 // Check that the objective value at a trial step isn't
                 // a NaN past iteration 1
-                else if(state.iter!=Natural(1)
+                else if(state.iter!=1
                      && state.f_xpdx != state.f_xpdx
                 ) 
                     ss << "The objective value at the trial step must be a "
@@ -2768,7 +2768,7 @@ namespace peopt{
                     // If we have no vectors in our history, we return the
                     // direction
                     X::copy(p,result);
-                    if(oldY.size() == Natural(0)) return;
+                    if(oldY.size() == 0) return;
 
                     // As a safety check, insure that the inner product
                     // between all the (s,y) pairs is positive
@@ -2927,7 +2927,7 @@ namespace peopt{
                     // If we have no vectors in our history, we return the 
                     // direction
                     X::copy(p,result);
-                    if(oldY.size() == Natural(0)) return;
+                    if(oldY.size() == 0) return;
 
                     // Othwerwise, we copy all of the trial step differences 
                     // into the work space
@@ -3385,12 +3385,12 @@ namespace peopt{
                 // since we could be on the first iteration, but in the
                 // middle of a line-search or trust-region method and
                 // still want to output things
-                bool opt_begin = (iter==Natural(1)) &&
+                bool opt_begin = (iter==1) &&
                     ((algorithm_class == AlgorithmClass::LineSearch && 
-                        linesearch_iter==Natural(0)) ||
+                        linesearch_iter==0) ||
                     ((algorithm_class == AlgorithmClass::TrustRegion ||
                       algorithm_class == AlgorithmClass::UserDefined) && 
-                        rejected_trustregion == Natural(0)));
+                        rejected_trustregion == 0));
 
                 // Determine some extra diagnostic information
                 Real merit_x=f_mod.merit(x,f_x);
@@ -3660,8 +3660,9 @@ namespace peopt{
                     f_mod.hessvec_step(x,dx,H_dx,Hdx_step);
 
                 // Determine the gradient
-                X_Vector grad_step; X::init(x,grad_step);
-                f_mod.grad_step(x,grad,grad_step);
+                X_Vector grad_step;
+                    X::init(x,grad_step);
+                    f_mod.grad_step(x,grad,grad_step);
 
                 // Calculate the model,
                 // m(dx) = f(x) + < grad,dx > + < H(x)dx,dx >
@@ -3759,7 +3760,7 @@ namespace peopt{
                 Real norm_grad = sqrt(X::innr(grad_step,grad_step));
 
                 // Continue to look for a step until one comes back as valid
-                for(rejected_trustregion=Natural(0);
+                for(rejected_trustregion=0;
                     true; 
                 ) {
                     // Manipulate the state if required
@@ -3899,7 +3900,7 @@ namespace peopt{
 
                 // If we're on the first iterations, we take the steepest
                 // descent direction
-                if(iter==Natural(1)) SteepestDescent(fns,state);
+                if(iter==1) SteepestDescent(fns,state);
 
                 // On subsequent iterations, we take the specified direction
                 else {
@@ -4202,7 +4203,7 @@ namespace peopt{
 
                 // Since we do one function evaluation, increase the linesearch
                 // iteration by one
-                iter=Natural(1); iter_total++;
+                iter=1; iter_total++;
             }
             
             // Compute a backtracking line-search. 
@@ -4238,7 +4239,7 @@ namespace peopt{
                 // Note, we start iter at 1 since we've already done one
                 // iteration above.
                 Real alpha0=alpha;
-                for(iter=Natural(1);iter<iter_max;iter++){
+                for(iter=1;iter<iter_max;iter++){
                     // Evaluate f(x+alpha*dx)
                     X::copy(x,x_p_dx);
                     X::axpy(alpha0,dx,x_p_dx);
@@ -4488,7 +4489,7 @@ namespace peopt{
                     break;
                 case LineSearchKind::TwoPointA:
                 case LineSearchKind::TwoPointB:
-                    if(iter>Natural(1))
+                    if(iter>1)
                         twoPoint(fns,state);
                     else
                         goldenSection(fns,state);
@@ -4533,7 +4534,7 @@ namespace peopt{
                 typename State::t& state
             ){
                 // Exit immediately if we're not using a quasi-Newton method
-                if(state.stored_history==Natural(0)) return;
+                if(state.stored_history==0) return;
 
                 // Create some shortcuts
                 const ScalarValuedFunctionModifications <Real,XX>& f_mod
@@ -4981,8 +4982,8 @@ namespace peopt{
                 state.norm_gpxdxnpgx=std::numeric_limits<Real>::quiet_NaN();
                 state.PSchur_left_type=Operators::Identity;
                 state.PSchur_right_type=Operators::Identity;
-                state.augsys_iter_max = Natural(100);
-                state.augsys_rst_freq = Natural(0);
+                state.augsys_iter_max = 100;
+                state.augsys_rst_freq = 0;
             }
             static void init_params(t& state) {
                 Unconstrained <Real,XX>::State::init_params_(state); 
@@ -5177,7 +5178,7 @@ namespace peopt{
 
                 // Check that the number of iterations used when solving the
                 // augmented system is positive
-                else if(state.augsys_iter_max <= Natural(0))
+                else if(state.augsys_iter_max <= 0)
                     ss << "The number of iterations used when solving the "
                         "augmented system must be positive: augsys_iter_max = "
                         << state.augsys_iter_max;
@@ -6049,8 +6050,8 @@ namespace peopt{
                 // since we could be on the first iteration, but in the
                 // middle of rejecting trust-region steps and still want 
                 // to output things.
-                bool opt_begin = (iter==Natural(1)) &&
-                        (rejected_trustregion == Natural(0));
+                bool opt_begin = (iter==1) &&
+                        (rejected_trustregion == 0);
 
                 // Get a iterator to the last element prior to inserting
                 // elements
@@ -6401,7 +6402,7 @@ namespace peopt{
                     // we exit when the norm of the current projected gradient
                     // is smaller than the norm of the unprojected gradient
                     // by two orders of magnitude larger than machine precision.
-                    if(iter >= Natural(2)
+                    if(iter >= 2
                         && norm_WgpHdxn 
                             < std::numeric_limits <Real>::epsilon()
                               * norm_gradpHdxn * Real(1e2)
@@ -6528,7 +6529,7 @@ namespace peopt{
                     // we exit when the norm of the projected Krylov iterate 
                     // is smaller than the norm of the unprojected iterate 
                     // by two orders of magnitude larger than machine precision.
-                    if(iter >= Natural(2)
+                    if(iter >= 2
                         && norm_Wdxt_uncorrected
                             < std::numeric_limits <Real>::epsilon()
                               * norm_dxt_uncorrected * Real(1e2)
@@ -7275,7 +7276,7 @@ namespace peopt{
 
                 // Continue to look for a step until our actual vs. predicted
                 // reduction is good.
-                rejected_trustregion=Natural(0);
+                rejected_trustregion=0;
                 while(true) {
                     // Manipulate the state if required
                     smanip(fns,state,OptimizationLocation::BeforeGetStep);
@@ -8237,10 +8238,6 @@ namespace peopt{
                 mutable X_Vector grad_tmp;
                 mutable X_Vector hess_mod; 
                 mutable X_Vector x_tmp1;
-#if 0
-                mutable Z_Vector linv_hx_z_prod_hpx; 
-#endif
-                mutable Z_Vector linv_hx_hpx_prod_z; 
                 mutable Z_Vector z_tmp1;
                 mutable Z_Vector z_tmp2;
                 
@@ -8352,9 +8349,6 @@ namespace peopt{
                             >= std::numeric_limits <Real>::epsilon()*1e1 ||
                         rel_err_z(z,z_schur)
                             >= std::numeric_limits <Real>::epsilon()*1e1
-                            /*||
-                        rel_err_mu(mu,mu_schur)
-                            >= std::numeric_limits <Real>::epsilon()*1e1 */
                     ) {
                         // z_tmp1 <- e
                         Z::id(z_tmp1);
@@ -8401,10 +8395,6 @@ namespace peopt{
                     X::init(x,x_tmp1);
                     Z::init(z,z_tmp1);
                     Z::init(z,z_tmp2);
-#if 0
-                    Z::init(z,linv_hx_z_prod_hpx);
-#endif
-                    Z::init(z,linv_hx_hpx_prod_z);
                     
                     // Allocate memory for the caching
                     X::init(x,x_merit.second);
@@ -8483,7 +8473,6 @@ namespace peopt{
                     f_mod->grad_quasi(x,grad,grad_quasi);
                 }
 
-#if 0
                 // Modification of the gradient when solving for the equality
                 // multiplier
                 virtual void grad_mult(
@@ -8495,6 +8484,7 @@ namespace peopt{
                     grad_lag(x,grad_tmp,grad_mult);
                 }
 
+#if 0
                 // Modification of the Hessian-vector product when finding a
                 // trial step
                 virtual void hessvec_step_old(
@@ -8557,26 +8547,13 @@ namespace peopt{
                     Z::prod(z_tmp1,z,z_tmp2);
 
                     // linv_hx_hpx_prod_z <- inv(L(h(x))) (h'(x) dx o z) 
-                    Z::linv(h_x,z_tmp2,linv_hx_hpx_prod_z);
-                    
-                    // z_tmp2 <- inv L(h(x)) h'(x) dx
-                    Z::linv(h_x,z_tmp1,z_tmp2);
-                    
-                    // z_tmp1 <- (inv L(h(x)) h'(x) dx) o z
-                    Z::prod(z_tmp2,z,z_tmp1);
+                    Z::linv(h_x,z_tmp2,z_tmp1);
 
-                    // z_tmp1 <- (inv(L(h(x))) (h'(x) dx o z)
-                    //               + (inv L(h(x)) h'(x) dx) o z)/2
-                    Z::axpy(Real(1.),linv_hx_hpx_prod_z,z_tmp1);
-                    Z::scal(Real(.5),z_tmp1);
-
-                    // hess_mod <- h'(x)* (inv(L(h(x))) (h'(x) dx o z)
-                    //                    + (inv L(h(x)) h'(x) dx) o z)/2
+                    // hess_mod <- h'(x)* (inv(L(h(x))) (h'(x) dx o z))
                     h.ps(x,z_tmp1,hess_mod);
 
                     // H_dx 
-                    //  = hess f(x) dx + h'(x)* (inv(L(h(x))) (h'(x) dx o z)
-                    //                          + (inv L(h(x)) h'(x) dx) o z)/2
+                    //  = hess f(x) dx + h'(x)* (inv(L(h(x))) (h'(x) dx o z))
                     X::axpy(Real(1.),hess_mod,Hdx_step);
                 }
             };
@@ -8779,7 +8756,7 @@ namespace peopt{
             };
 
             // Finds the new inequality Lagrange multiplier
-            // z = inv L(h(x)) (-z o h'(x)s + mu e)
+            // z = inv L(h(x)) (-h'(x)dx o z + mu e)
             static void findInequalityMultiplierLinked(
                 const typename Functions::t& fns,
                 typename State::t& state
@@ -8793,24 +8770,29 @@ namespace peopt{
                 Z_Vector& z=state.z.front();
 
                 // z_tmp1 <- h'(x)dx
-                Z_Vector z_tmp1; Z::init(z,z_tmp1);
-                h.p(x,dx,z_tmp1);
+                Z_Vector z_tmp1;
+                    Z::init(z,z_tmp1);
+                    h.p(x,dx,z_tmp1);
 
-                // z_tmp2 <- z o h'(x)dx
-                Z_Vector z_tmp2; Z::init(z,z_tmp2);
-                Z::prod(z,z_tmp1,z_tmp2);
+                // z_tmp2 <- h'(x)dx o z
+                Z_Vector z_tmp2;
+                    Z::init(z,z_tmp2);
+                    Z::prod(z_tmp1,z,z_tmp2);
 
-                // z_tmp2 <- - z o h'(x)dx
+                // z_tmp2 <- -h'(x)dx o z
                 Z::scal(Real(-1.),z_tmp2);
 
                 // z_tmp1 <- e
                 Z::id(z_tmp1);
 
-                // z_tmp2 <- -z o h'(x)dx + mu e
+                // z_tmp2 <- -h'(x)dx o z + mu e
                 Z::axpy(mu,z_tmp1,z_tmp2);
 
-                // z <- inv L(h(x)) (-z o h'(x)dx + mu e)
+                // z <- inv L(h(x)) (-h'(x)dx o z + mu e)
                 Z::linv(h_x,z_tmp2,z);
+
+                // Symmetrize the iterate
+                Z::symm(z);
             }
 
             // Finds the new inequality Lagrange multiplier
@@ -8825,19 +8807,23 @@ namespace peopt{
                 Z_Vector& z=state.z.front();
 
                 // z_tmp1 <- e 
-                Z_Vector z_tmp1; Z::init(z,z_tmp1);
-                Z::id(z_tmp1);
+                Z_Vector z_tmp1;
+                    Z::init(z,z_tmp1);
+                    Z::id(z_tmp1);
 
                 // z <- inv(L(h(x))) e 
                 Z::linv(h_x,z_tmp1,z);
 
                 // z <- mu inv(L(h(x))) e 
                 Z::scal(mu,z);
+                
+                // Symmetrize the iterate 
+                Z::symm(z);
             }
 
-
+#if 1
             // Finds the new inequality Lagrange multiplier step
-            // dz = -z + inv L(h(x)) (-z o h'(x)dx + mu e)
+            // dz = -z + inv L(h(x)) (-h'(x)dx o z + mu e)
             static void findInequalityMultiplierStep(
                 const typename Functions::t& fns,
                 typename State::t& state
@@ -8855,25 +8841,86 @@ namespace peopt{
                 Z_Vector z_tmp1; Z::init(z,z_tmp1);
                 h.p(x,dx,z_tmp1);
 
-                // z_tmp2 <- z o h'(x)dx
+                // z_tmp2 <- h'(x)dx o z
                 Z_Vector z_tmp2; Z::init(z,z_tmp2);
-                Z::prod(z,z_tmp1,z_tmp2);
+                Z::prod(z_tmp1,z,z_tmp2);
 
-                // z_tmp2 <- - z o h'(x)dx
+                // z_tmp2 <- -h'(x)dx o z
                 Z::scal(Real(-1.),z_tmp2);
 
                 // z_tmp1 <- e
                 Z::id(z_tmp1);
 
-                // z_tmp2 <- -z o h'(x)dx + mu e
+                // z_tmp2 <- -h'(x)dx o z + mu e
                 Z::axpy(mu,z_tmp1,z_tmp2);
 
-                // dz <- inv L(h(x)) (-z o h'(x)dx + mu e)
+                // dz <- inv L(h(x)) (-h'(x)dx o z + mu e)
                 Z::linv(h_x,z_tmp2,dz);
 
-                // dz <- -z + inv L(h(x)) (-z o h'(x)dx + mu e)
+                // dz <- -z + inv L(h(x)) (-h'(x)dx o z + mu e)
+                Z::axpy(Real(-1.),z,dz);
+                
+                // Symmetrize the direction
+                Z::symm(dz);
+            }
+#else
+            // Finds the new inequality Lagrange multiplier step
+            // dz = -z + inv L(h(x)) (-h'(x)dx o z + mu e)
+            static void findInequalityMultiplierStep(
+                const typename Functions::t& fns,
+                typename State::t& state
+            ) {
+                // Create some shortcuts
+                const Z_Vector& z=state.z.front();
+                const Z_Vector& h_x=state.h_x.front();
+                const X_Vector& x=state.x.front();
+                const X_Vector& dx=state.dx.front();
+                const Real& mu=state.mu;
+                const VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
+                Z_Vector& dz=state.dz.front();
+
+                // z_tmp1 <- h'(x)dx
+                Z_Vector z_tmp1; Z::init(z,z_tmp1);
+                h.p(x,dx,z_tmp1);
+                
+                // z_tmp1 <- -0.5 h'(x)dx
+                Z::scal(Real(-0.5),z_tmp1);
+
+                // z_tmp2 <- -0.5 h'(x)dx o z
+                Z_Vector z_tmp2; Z::init(z,z_tmp2);
+                Z::prod(z_tmp1,z,z_tmp2);
+
+                // dz <- e
+                Z::id(dz);
+
+                // z_tmp2 <- -0.5 h'(x)dx o z + mu e
+                Z::axpy(mu,dz,z_tmp2);
+
+                // dz <- inv L(h(x)) (-0.5 h'(x)dx o z + mu e)
+                Z::linv(h_x,z_tmp2,dz);
+               
+                // z_tmp3 <- e
+                Z_Vector z_tmp3; Z::init(z,z_tmp3);
+                Z::id(z_tmp3);
+
+                // z_tmp2 <- inv(L(h(x))) e
+                Z::linv(h_x,z_tmp3,z_tmp2);
+
+                // z_tmp3 <- -0.5 h'(x)dx o inv(L(h(x))) e
+                Z::prod(z_tmp1,z_tmp2,z_tmp3);
+
+                // z_tmp1 <- z o (-0.5 h'(x)dx o inv(L(h(x))) e)
+                Z::prod(z,z_tmp3,z_tmp1);
+                
+                // dz <- inv L(h(x)) (-0.5 h'(x)dx o z + mu e)
+                //     + z o (-0.5 h'(x)dx o inv(L(h(x))) e)
+                Z::axpy(Real(1.),z_tmp1,dz);
+
+                // dz <- -z + inv L(h(x)) (-h'(x)dx o z + mu e)
+                //          + z o (-0.5 h'(x)dx o inv(L(h(x))) e)
                 Z::axpy(Real(-1.),z,dz);
             }
+#endif
 
             // Estimates the interior point parameter with the formula
             // mu = <z,h(x)>/m
@@ -8971,7 +9018,7 @@ namespace peopt{
                     // Otherwise, alternate iterations between taking a
                     // centrality step and an optimality step.
                     else {
-                        Real sigma0 = iter % Natural(2) ? Real(0.) : Real(1.);
+                        Real sigma0 = iter % 2 ? Real(0.) : Real(1.);
                         mu=sigma0*mu_est;
                     }
                     break;
@@ -8979,7 +9026,8 @@ namespace peopt{
             }
 
            
-            // Adjust the stopping conditions unless mu_est < mu_typ*eps_mu 
+            // Adjust the stopping conditions unless the criteria below are
+            // satisfied.
             static void adjustStoppingConditions(
                 const typename Functions::t& fns,
                 typename State::t& state
@@ -8988,18 +9036,34 @@ namespace peopt{
                 const Real& mu_est=state.mu_est;
                 const Real& mu_typ=state.mu_typ;
                 const Real& eps_mu=state.eps_mu;
+                const CentralityStrategy::t& cstrat=state.cstrat;
+                const Natural& iter=state.iter;
                 StoppingCondition::t& opt_stop=state.opt_stop;
-                
-                // Prevent convergence unless mu has been reduced to
-                // eps_mu times mu_typ.
-                if( opt_stop==StoppingCondition::RelativeGradientSmall &&
-                    !(mu_est <= mu_typ*eps_mu) 
-                )
-                    opt_stop=StoppingCondition::NotConverged;
 
                 // If the estimated interior point paramter is negative, exit
-                if(mu_est < Real(0.))
+                if(mu_est < Real(0.)) {
                     opt_stop=StoppingCondition::InteriorPointInstability;
+                    return;
+                }
+
+                // If we're doing a predicted-corrector method, don't exit
+                // on the prediction step.  It ignores the interior point
+                // parameter and we really want that to be small.
+                if(cstrat == CentralityStrategy::PredictorCorrector &&
+                    iter % 2 == 0
+                ) {
+                    opt_stop=StoppingCondition::NotConverged;
+                    return;
+                }
+                
+                // Prevent convergence unless mu has been reduced to
+                // eps_mu * mu_typ.
+                if( opt_stop==StoppingCondition::RelativeGradientSmall &&
+                    !(mu_est <= mu_typ*eps_mu) 
+                ) {
+                    opt_stop=StoppingCondition::NotConverged;
+                    return;
+                }
             }
 
             // Conduct a line search that preserves positivity of both the
@@ -9036,13 +9100,15 @@ namespace peopt{
                 // Determine how far we can go in the primal variable
                 
                 // x_tmp1=x+dx
-                X_Vector x_tmp1; X::init(x,x_tmp1);
-                X::copy(x,x_tmp1);
-                X::axpy(Real(1.),dx_,x_tmp1);
+                X_Vector x_tmp1;
+                    X::init(x,x_tmp1);
+                    X::copy(x,x_tmp1);
+                    X::axpy(Real(1.),dx_,x_tmp1);
 
                 // z_tmp1=h(x+dx)
-                Z_Vector z_tmp1; Z::init(z,z_tmp1);
-                h(x_tmp1,z_tmp1);
+                Z_Vector z_tmp1;
+                    Z::init(z,z_tmp1);
+                    h(x_tmp1,z_tmp1);
 
                 // z_tmp1=h(x+dx)-h(x)
                 Z::axpy(Real(-1.),h_x,z_tmp1);
@@ -9114,9 +9180,10 @@ namespace peopt{
                 // Determine how far we can go in the primal variable
                 
                 // x_tmp1=x+dx
-                X_Vector x_tmp1; X::init(x,x_tmp1);
-                X::copy(x,x_tmp1);
-                X::axpy(Real(1.),dx_,x_tmp1);
+                X_Vector x_tmp1;
+                    X::init(x,x_tmp1);
+                    X::copy(x,x_tmp1);
+                    X::axpy(Real(1.),dx_,x_tmp1);
 
                 // z_tmp1=h(x+dx)
                 Z_Vector z_tmp1; Z::init(z,z_tmp1);
@@ -9134,11 +9201,12 @@ namespace peopt{
                 // z_tmp1=h'(x)dx
                 h.p(x,dx_,z_tmp1);
                 
-                // z_tmp2 = z o h'(x)dx
-                Z_Vector z_tmp2; Z::init(z,z_tmp2);
-                Z::prod(z,z_tmp1,z_tmp2);
+                // z_tmp2 = h'(x)dx o z
+                Z_Vector z_tmp2;
+                    Z::init(z,z_tmp2);
+                    Z::prod(z_tmp1,z,z_tmp2);
 
-                // z_tmp2 = - z o h'(x)dx
+                // z_tmp2 = -h'(x)dx o z
                 Z::scal(Real(-1.),z_tmp2);
 
                 // z_tmp1 = e
@@ -9148,7 +9216,7 @@ namespace peopt{
                 Z::scal(mu,z_tmp1);
 
                 // Find the largest alpha such that
-                // alpha (- z o h'(x)dx) + mu e >=0
+                // alpha (-h'(x)dx o z) + mu e >=0
                 Real alpha2=Z::srch(z_tmp2,z_tmp1);
 
                 // Determine the farthest we can go in both variables
@@ -9222,13 +9290,15 @@ namespace peopt{
                 // Determine how far we can go in the primal variable
                 
                 // x_tmp1=x+dx
-                X_Vector x_tmp1; X::init(x,x_tmp1);
-                X::copy(x,x_tmp1);
-                X::axpy(Real(1.),dx_,x_tmp1);
+                X_Vector x_tmp1;
+                    X::init(x,x_tmp1);
+                    X::copy(x,x_tmp1);
+                    X::axpy(Real(1.),dx_,x_tmp1);
 
                 // z_tmp1=h(x+dx)
-                Z_Vector z_tmp1; Z::init(z,z_tmp1);
-                h(x_tmp1,z_tmp1);
+                Z_Vector z_tmp1;
+                    Z::init(z,z_tmp1);
+                    h(x_tmp1,z_tmp1);
 
                 // z_tmp1=h(x+dx)-h(x)
                 Z::axpy(Real(-1.),h_x,z_tmp1);
@@ -9327,6 +9397,7 @@ namespace peopt{
                     // Adjust our step or potential step to preserve positivity
                     case OptimizationLocation::BeforeLineSearch:
                     case OptimizationLocation::BeforeActualVersusPredicted:
+                        // Do the linesearch
                         switch(ipm){
                         case InteriorPointMethod::PrimalDual:
                             findInequalityMultiplierStep(fns,state);
@@ -9356,6 +9427,12 @@ namespace peopt{
                         switch(ipm){
                         case InteriorPointMethod::PrimalDual:
                             Z::axpy(Real(1.),dz,z);
+
+                            // In theory, we start symmetric and make sure our
+                            // steps are symmetric.  However, in the interest
+                            // in never having a nonsymmetric dual variable,
+                            // we force symmetrization here.
+                            Z::symm(z);
                             break;
                         case InteriorPointMethod::PrimalDualLinked:
                             findInequalityMultiplierLinked(fns,state);
