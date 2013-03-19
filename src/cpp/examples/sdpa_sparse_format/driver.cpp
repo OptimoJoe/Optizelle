@@ -494,12 +494,12 @@ public:
     }
 };
 
-// Stage-1 vector space
+// Phase-1 vector space
 template <typename Real>
-struct Stage1VS {
+struct Phase1VS {
 private:
     // This is a templated namespace.  Do not allow construction.
-    Stage1VS();
+    Phase1VS();
 
     // Create a shortcut for these routines
     typedef peopt::Rm <Real> Rm;
@@ -545,13 +545,13 @@ public:
     static void symm(Vector& x) {}
 };
 
-// Define the stage-1 objective where 
+// Define the phase-1 objective where 
 // 
 // f(x)=.5*(x0-1)^2
 //
 template <typename Real>
-struct Stage1Obj : public peopt::ScalarValuedFunction <Real,Stage1VS> {
-    typedef Stage1VS <Real> X;
+struct Phase1Obj : public peopt::ScalarValuedFunction <Real,Phase1VS> {
+    typedef Phase1VS <Real> X;
     typedef typename X::Vector X_Vector;
 
     // Evaluation 
@@ -579,18 +579,18 @@ struct Stage1Obj : public peopt::ScalarValuedFunction <Real,Stage1VS> {
     }
 };
 
-// Define the stage-1 inequality where 
+// Define the phase-1 inequality where 
 //
 // hh(x,x0) = h(x) - x0 e
 //
 // As long as we can find x0 > 0, this guarantees that h(x) >= x0 e > 0.  This
 // gives us a strictly feasible solution.
 template <typename Real>
-struct Stage1Ineq 
-    : public peopt::VectorValuedFunction <Real,Stage1VS,peopt::SQL> 
+struct Phase1Ineq 
+    : public peopt::VectorValuedFunction <Real,Phase1VS,peopt::SQL> 
 {
 public:
-    typedef Stage1VS <Real> X;
+    typedef Phase1VS <Real> X;
     typedef peopt::SQL <Real> Z;
     typedef typename X::Vector X_Vector;
     typedef typename Z::Vector Z_Vector;
@@ -600,7 +600,7 @@ private:
 
 public:
     // Grab a reference to the SDP inequality 
-    Stage1Ineq(SDPIneq <Real>& h_) : h(h_) {}
+    Phase1Ineq(SDPIneq <Real>& h_) : h(h_) {}
 
     // z=hh(x) 
     void operator () (
@@ -734,10 +734,10 @@ int main(int argc,char* argv[]) {
     typedef double Real;
     typedef peopt::Rm <Real> X;
     typedef peopt::SQL <Real> Z;
-    typedef Stage1VS <Real> XStage1;
+    typedef Phase1VS <Real> XPhase1;
     typedef X::Vector X_Vector;
     typedef Z::Vector Z_Vector;
-    typedef XStage1::Vector XStage1_Vector;
+    typedef XPhase1::Vector XPhase1_Vector;
 
     // Check that we have sufficient inputs
     if(argc!=2) {
@@ -784,7 +784,7 @@ int main(int argc,char* argv[]) {
     //     (1/alpha) e + h(x) >= 0
     // ==> h(x) >= (-1/alpha) e > (-2/alpha) e
     // Hence, we look at alpha and if alpha > 0, we're infeasible, but we
-    // can solve a stage-1 problem to recover infeasibility.  Otherwise, if
+    // can solve a phase-1 problem to recover infeasibility.  Otherwise, if
     // alpha < 0, we're feasible and we can proceed to solve the problem.
     // Since e is strictly feasible, alpha will not be zero.
     X::zero(x);
@@ -796,80 +796,80 @@ int main(int argc,char* argv[]) {
         h(x,h_x);
     Real alpha = Z::srch(h_x,e);
 
-    // If we're infeasible, do a stage-1 process in order to find a feasible
+    // If we're infeasible, do a phase-1 process in order to find a feasible
     // starting solution
     if(alpha > 0) {
         std::cout << std::endl <<
-            "Problem is infeasible.  Solving stage-1 problem for feasibility."
+            "Problem is infeasible.  Solving phase-1 problem for feasibility."
             << std::endl;
 
-        // The constraint for the stage-1 problem is h(x) - x0 e >= 0
+        // The constraint for the phase-1 problem is h(x) - x0 e >= 0
         // or h(x) >= x0 e.  From above, we know that h(x) > (-2/alpha) e.
         // Hence, if we initialize with x0 = -2/alpha, we should be striclty
         // feasible.
-        XStage1_Vector x_stage1;
-            X::init(x,x_stage1.first);
-            X::copy(x,x_stage1.first);
-            x_stage1.second=Real(-2.)/alpha;
+        XPhase1_Vector x_phase1;
+            X::init(x,x_phase1.first);
+            X::copy(x,x_phase1.first);
+            x_phase1.second=Real(-2.)/alpha;
 #if 0
-        // Run some finite difference tests on the stage1 problem
+        // Run some finite difference tests on the phase1 problem
     
         // Create the directions for the FD test
-        XStage1_Vector dx_stage1;
-            X::init(dx,dx_stage1.first);
-            X::copy(dx,dx_stage1.first);
-            dx_stage1.second=drand48();
-        XStage1_Vector dxx_stage1;
-            X::init(dxx,dxx_stage1.first);
-            X::copy(dxx,dxx_stage1.first);
-            dxx_stage1.second=drand48();
+        XPhase1_Vector dx_phase1;
+            X::init(dx,dx_phase1.first);
+            X::copy(dx,dx_phase1.first);
+            dx_phase1.second=drand48();
+        XPhase1_Vector dxx_phase1;
+            X::init(dxx,dxx_phase1.first);
+            X::copy(dxx,dxx_phase1.first);
+            dxx_phase1.second=drand48();
 
         // Create the functions for the FD test
-        Stage1Obj <Real> f_stage1;
-        Stage1Ineq <Real> h_stage1(h);
+        Phase1Obj <Real> f_phase1;
+        Phase1Ineq <Real> h_phase1(h);
 
         // Do the actual tests
         peopt::Diagnostics::gradientCheck <> (
-            peopt::Messaging(),f_stage1,x_stage1,dx_stage1);
+            peopt::Messaging(),f_phase1,x_phase1,dx_phase1);
         peopt::Diagnostics::hessianCheck <> (
-            peopt::Messaging(),f_stage1,x_stage1,dx_stage1);
+            peopt::Messaging(),f_phase1,x_phase1,dx_phase1);
         peopt::Diagnostics::hessianSymmetryCheck <> (peopt::Messaging(),
-            f_stage1,x_stage1,dx_stage1,dxx_stage1);
+            f_phase1,x_phase1,dx_phase1,dxx_phase1);
         peopt::Diagnostics::derivativeCheck <> (
-            peopt::Messaging(),h_stage1,x_stage1,dx_stage1,z);
+            peopt::Messaging(),h_phase1,x_phase1,dx_phase1,z);
         peopt::Diagnostics::derivativeAdjointCheck <>(
-            peopt::Messaging(),h_stage1,x_stage1,dx_stage1,z);
+            peopt::Messaging(),h_phase1,x_phase1,dx_phase1,z);
         peopt::Diagnostics::secondDerivativeCheck <>(
-            peopt::Messaging(),h_stage1,x_stage1,dx_stage1,z);
+            peopt::Messaging(),h_phase1,x_phase1,dx_phase1,z);
 #endif
 
-        // Create the stage-1 state
-        peopt::InequalityConstrained <Real,Stage1VS,peopt::SQL>::State::t
-            state_stage1(x_stage1,z);
+        // Create the phase-1 state
+        peopt::InequalityConstrained <Real,Phase1VS,peopt::SQL>::State::t
+            state_phase1(x_phase1,z);
 
         // Read the parameters from file
-        peopt::json::InequalityConstrained <Real,Stage1VS,peopt::SQL>::read(
-            peopt::Messaging(),"sdpa_sparse_format_stage1.peopt",state_stage1);
+        peopt::json::InequalityConstrained <Real,Phase1VS,peopt::SQL>::read(
+            peopt::Messaging(),"sdpa_sparse_format_phase1.peopt",state_phase1);
 
-        // Create the stage-1 bundle of functions
-        peopt::InequalityConstrained <Real,Stage1VS,peopt::SQL>::Functions::t
-            fns_stage1;
-        fns_stage1.f.reset(new Stage1Obj <Real>); 
-        fns_stage1.h.reset(new Stage1Ineq <Real>(h));
+        // Create the phase-1 bundle of functions
+        peopt::InequalityConstrained <Real,Phase1VS,peopt::SQL>::Functions::t
+            fns_phase1;
+        fns_phase1.f.reset(new Phase1Obj <Real>); 
+        fns_phase1.h.reset(new Phase1Ineq <Real>(h));
 
-        // Solve the stage-1 problem
-        peopt::InequalityConstrained <Real,Stage1VS,peopt::SQL>::Algorithms
-            ::getMin(peopt::Messaging(),fns_stage1,state_stage1);
+        // Solve the phase-1 problem
+        peopt::InequalityConstrained <Real,Phase1VS,peopt::SQL>::Algorithms
+            ::getMin(peopt::Messaging(),fns_phase1,state_phase1);
 
-        // Check that the stage-1 problem was successful
-        if(state_stage1.x.front().second <= Real(0.)) {
-            std::cout << "Stage-1 problem failed to find a feasible solution."
+        // Check that the phase-1 problem was successful
+        if(state_phase1.x.front().second <= Real(0.)) {
+            std::cout << "Phase-1 problem failed to find a feasible solution."
                 << std::endl;
             return(EXIT_SUCCESS);
         }
 
         // Copy this answer into x
-        X::copy(state_stage1.x.front().first,x);
+        X::copy(state_phase1.x.front().first,x);
     }
    
     // Keep our user informed
