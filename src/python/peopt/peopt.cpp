@@ -380,7 +380,8 @@ public:
         return z; 
     } 
 
-    // Symmetrization, x <- phi(x) such that L(phi(x)) is a symmetric operator.
+    // Symmetrization, x <- symm(x) such that L(symm(x)) is a symmetric
+    // operator.
     void symm() { 
         // Acquire the global interpreter lock 
         PyGILState_STATE gstate = PyGILState_Ensure(); 
@@ -464,7 +465,8 @@ struct PythonVS {
         return y.srch(x);
     } 
 
-    // Symmetrization, x <- phi(x) such that L(phi(x)) is a symmetric operator.
+    // Symmetrization, x <- symm(x) such that L(symm(x)) is a symmetric
+    // operator.
     static void symm(Vector& x) {
         x.symm();
     }

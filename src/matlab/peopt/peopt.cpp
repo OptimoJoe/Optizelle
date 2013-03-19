@@ -282,7 +282,8 @@ public:
         return alpha;
     }
 
-    // Symmetrization, x <- phi(x) such that L(phi(x)) is a symmetric operator.
+    // Symmetrization, x <- symm(x) such that L(symm(x)) is a symmetric
+    // operator.
     void symm() {
         // Create the inputs and outputs 
         mxArray* input[2]={symm_.get(),get()};
@@ -356,7 +357,7 @@ struct MatlabVS {
         return y.srch(x);
     }
         
-    // Symmetrization, x <- phi(x) such that L(phi(x)) is a symmetric
+    // Symmetrization, x <- symm(x) such that L(symm(x)) is a symmetric
     // operator.
     static void symm(Vector& x) {
         return x.symm();

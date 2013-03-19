@@ -128,7 +128,7 @@ namespace peopt {
             return alpha;
         }
 
-        // Symmetrization, x <- phi(x) such that L(phi(x)) is a symmetric
+        // Symmetrization, x <- symm(x) such that L(symm(x)) is a symmetric
         // operator.
         static void symm(Vector& x) { }
     };
@@ -934,7 +934,7 @@ namespace peopt {
             return alpha;
         }
         
-        // Symmetrization, x <- phi(x) such that L(phi(x)) is a symmetric
+        // Symmetrization, x <- symm(x) such that L(symm(x)) is a symmetric
         // operator.
         static void symm(Vector& x) { }
     };
@@ -1689,7 +1689,7 @@ namespace peopt {
             }
             return alpha;
         }
-        // Symmetrization, x <- phi(x) such that L(phi(x)) is a symmetric
+        // Symmetrization, x <- symm(x) such that L(symm(x)) is a symmetric
         // operator.
         static void symm(Vector& x) { 
             // Allocate vectors to help with the SDP blocks
