@@ -44,6 +44,42 @@ public:
     }
 };
 
+// Handles a Matlab exception
+void handleException(mxArray* err,std::string msg) {
+    if(err) {
+        // In the cass of an exception, grab the report
+        mxArray* input[1]={err};
+        mxArray* output[1];
+        mexCallMATLAB(1,output,1,input,"getReport");
+
+        // Turn the report into a string
+        mwSize char_limit=256;
+        char report_[char_limit];
+        mxGetString(output[0],report_,char_limit);
+
+        // The report has extra information that we don't want.  Hence,
+        // we eliminate both the first line as well as the last two lines.
+        // The first line is supposed to say what function this occured in,
+        // but Matlab gets a little confused since we're doing mex trickery.
+        // The last two lines will automatically be repeated by mexErrMsgTxt.
+        std::string report=report_;
+        size_t pos=report.find("\n");
+        report = report.substr(pos+1);
+        pos = report.rfind("\n");
+        report = report.substr(0,pos);
+        pos = report.rfind("\n");
+        report = report.substr(0,pos);
+        pos = report.rfind("\n");
+        report = report.substr(0,pos);
+
+        // Now, tack on our additional error message and then return control
+        // to Matlab.
+        std::stringstream ss;
+        ss << msg << std::endl << std::endl << report;
+        mexErrMsgTxt(ss.str().c_str());
+    }
+}
+
 // Defines a vector for use in a vector space 
 struct MatVector : public mxArrayPtr {
 private:
@@ -151,7 +187,8 @@ public:
     void copy(const MatVector& x) {
         mxArray* input[2]={copy_.get(),x.get()};
         mxArray* output[1];
-        mexCallMATLAB(1,output,2,input,"feval");
+        mxArray* err=mexCallMATLABWithTrap(1,output,2,input,"feval");
+        handleException(err,"Error in the vector space copy function");
         reset(output[0]);
     }
 
@@ -166,7 +203,8 @@ public:
         mxArray* output[1];
 
         // Compute the scalar multiplication and store the result
-        mexCallMATLAB(1,output,3,input,"feval");
+        mxArray* err=mexCallMATLABWithTrap(1,output,3,input,"feval");
+        handleException(err,"Error in the vector space scal function");
         reset(output[0]);
     }
 
@@ -177,7 +215,8 @@ public:
         mxArray* output[1];
 
         // Find the zero vector and store the result.
-        mexCallMATLAB(1,output,2,input,"feval");
+        mxArray* err=mexCallMATLABWithTrap(1,output,2,input,"feval");
+        handleException(err,"Error in the vector space zero function");
         reset(output[0]);
 
     }
@@ -193,7 +232,8 @@ public:
         mxArray* output[1];
 
         // Compute the addition and store the result
-        mexCallMATLAB(1,output,4,input,"feval");
+        mxArray* err=mexCallMATLABWithTrap(1,output,4,input,"feval");
+        handleException(err,"Error in the vector space axpy function");
         reset(output[0]);
     }
 
@@ -204,7 +244,8 @@ public:
         mxArray* output[1];
 
         // Compute the inner product 
-        mexCallMATLAB(1,output,3,input,"feval");
+        mxArray* err=mexCallMATLABWithTrap(1,output,3,input,"feval");
+        handleException(err,"Error in the vector space innr function");
         mxArrayPtr output_(output[0]);
 
         // Get the result of the computation 
@@ -221,7 +262,8 @@ public:
         mxArray* output[1];
 
         // Compute the product and store the result 
-        mexCallMATLAB(1,output,3,input,"feval");
+        mxArray* err=mexCallMATLABWithTrap(1,output,3,input,"feval");
+        handleException(err,"Error in the vector space prod function");
         reset(output[0]);
     }
 
@@ -232,7 +274,8 @@ public:
         mxArray* output[1];
 
         // Find the identity element and store the result
-        mexCallMATLAB(1,output,2,input,"feval");
+        mxArray* err=mexCallMATLABWithTrap(1,output,2,input,"feval");
+        handleException(err,"Error in the vector space id function");
         reset(output[0]);
     }
 
@@ -243,7 +286,8 @@ public:
         mxArray* output[1];
 
         // Compute the product inverse and store the result 
-        mexCallMATLAB(1,output,3,input,"feval");
+        mxArray* err=mexCallMATLABWithTrap(1,output,3,input,"feval");
+        handleException(err,"Error in the vector space linv function");
         reset(output[0]);
     }
 
@@ -254,7 +298,8 @@ public:
         mxArray* output[1];
 
         // Compute the barrier function 
-        mexCallMATLAB(1,output,2,input,"feval");
+        mxArray* err=mexCallMATLABWithTrap(1,output,2,input,"feval");
+        handleException(err,"Error in the vector space barr function");
         mxArrayPtr output_(output[0]);
 
         // Get the result of the computation 
@@ -272,7 +317,8 @@ public:
         mxArray* output[1];
 
         // Compute the search function 
-        mexCallMATLAB(1,output,3,input,"feval");
+        mxArray* err=mexCallMATLABWithTrap(1,output,3,input,"feval");
+        handleException(err,"Error in the vector space srch function");
         mxArrayPtr output_(output[0]);
         
         // Get the result of the computation 
@@ -290,7 +336,8 @@ public:
         mxArray* output[1];
 
         // Find the symmetrization and store the result
-        mexCallMATLAB(1,output,2,input,"feval");
+        mxArray* err=mexCallMATLABWithTrap(1,output,2,input,"feval");
+        handleException(err,"Error in the vector space symm function");
         reset(output[0]);
     }
 };
@@ -395,6 +442,9 @@ public:
 
         // Evaluate the function 
         mexCallMATLAB(1,output,2,input,"feval"); 
+        mxArray* err=mexCallMATLABWithTrap(1,output,2,input,"feval");
+        handleException(err,
+            "Error in the scalar valued function (objective) evaluation");
         mxArrayPtr output_(output[0]);
 
         // Get the result of the computation 
@@ -408,7 +458,9 @@ public:
     void grad(const MatVector& x,MatVector& g) const { 
         mxArray* input[2]={grad_.get(),x.get()}; 
         mxArray* output[1];
-        mexCallMATLAB(1,output,2,input,"feval");
+        mxArray* err=mexCallMATLABWithTrap(1,output,2,input,"feval");
+        handleException(err,
+            "Error in the scalar valued function (objective) gradient");
         g.reset(output[0]);
     }
 
@@ -416,7 +468,10 @@ public:
     void hessvec(const MatVector& x,const MatVector& dx,MatVector& H_dx) const {
         mxArray* input[3]={hessvec_.get(),x.get(),dx.get()}; 
         mxArray* output[1];
-        mexCallMATLAB(1,output,3,input,"feval");
+        mxArray* err=mexCallMATLABWithTrap(1,output,3,input,"feval");
+        handleException(err,
+            "Error in the scalar valued function (objective) Hessian-vector "
+            "product");
         H_dx.reset(output[0]);
     }
 };
@@ -455,6 +510,9 @@ public:
         mxArray* input[2]={eval_.get(),x.get()}; 
         mxArray* output[1];
         mexCallMATLAB(1,output,2,input,"feval");
+        mxArray* err=mexCallMATLABWithTrap(1,output,2,input,"feval");
+        handleException(err,
+            "Error in the vector valued function (constraint) evaluation");
         y.reset(output[0]);
     }
 
@@ -466,7 +524,9 @@ public:
      ) const { 
         mxArray* input[3]={p_.get(),x.get(),dx.get()}; 
         mxArray* output[1];
-        mexCallMATLAB(1,output,3,input,"feval");
+        mxArray* err=mexCallMATLABWithTrap(1,output,3,input,"feval");
+        handleException(err,
+            "Error in the vector valued function (constraint) derivative");
         y.reset(output[0]);
      }
 
@@ -478,7 +538,10 @@ public:
      ) const {
         mxArray* input[3]={ps_.get(),x.get(),dy.get()}; 
         mxArray* output[1];
-        mexCallMATLAB(1,output,3,input,"feval");
+        mxArray* err=mexCallMATLABWithTrap(1,output,3,input,"feval");
+        handleException(err,
+            "Error in the vector valued function (constraint) derivative "
+            "adjoint");
         z.reset(output[0]);
      }
      
@@ -491,7 +554,10 @@ public:
      ) const { 
         mxArray* input[4]={pps_.get(),x.get(),dx.get(),dy.get()}; 
         mxArray* output[1];
-        mexCallMATLAB(1,output,4,input,"feval");
+        mxArray* err=mexCallMATLABWithTrap(1,output,4,input,"feval");
+        handleException(err,
+            "Error in the vector valued function (constraint) second "
+            "derivative adjoint");
         z.reset(output[0]);
      }
 };
@@ -521,7 +587,8 @@ public:
     virtual void operator () (const X_Vector& dx,Y_Vector& y) const { 
         mxArray* input[3]={eval_.get(),x.get(),dx.get()}; 
         mxArray* output[1];
-        mexCallMATLAB(1,output,3,input,"feval");
+        mxArray* err=mexCallMATLABWithTrap(1,output,3,input,"feval");
+        handleException(err,"Error in the operator");
         y.reset(output[0]);
     }
 };
