@@ -1,0 +1,11 @@
+This directory contains several parameters designed to solve problems
+found in SDPLIB 2.1 from Brian Borchers.  These parameters are not
+optimal, but should demonstrate how to succesfully solve a variety
+of linear SDP problems.  The test problem set can be found here:
+
+http://euler.nmt.edu/~brian/sdplib/
+
+and a paper describing the problems can be found at:
+
+Borchers, B., SDPLIB 1.2, A Library of Semidefinite Programming Test Problems.
+Optimization Methods and Software. 11(1):683-690, 1999.

@@ -1,0 +1,22 @@
+{
+   "peopt" : {
+      "msg_level" : 1,
+      "H_type" : "UserDefined",
+      "iter_max" : 300,
+      "krylov_iter_max" : 300,
+      "krylov_orthog_max" : 300,
+      "eps_krylov" : 1e-3,
+      "eps_dx" : 1e-16,
+      "eps_grad" : 1e-16,
+      "eps_mu" : 1e-13,
+      "sigma" : 0.5,
+      "gamma" : 0.95,
+      "delta_max" : 1e6,
+      "delta" : 1e6
+   },
+   "sdp_settings" : {
+      "epsilon" : 1e0,
+      "beta" : 1e-7,
+      "fd_tests" : false
+   }
+}

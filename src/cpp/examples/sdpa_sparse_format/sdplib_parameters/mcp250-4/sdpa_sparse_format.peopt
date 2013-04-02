@@ -13,6 +13,6 @@
       "delta_max" : 10000
    },
    "sdp_settings" : {
-      "fd_tests" : false 
+      "fd_tests" : true
    }
 }

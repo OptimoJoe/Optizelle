@@ -12,13 +12,6 @@
 typedef size_t Natural;
 typedef ptrdiff_t Integer;
 
-// Stores a sparse SDPA format problem of the form
-//
-// min b1*x1 + ... + bm*xm
-// st  A1*x1 + ... + Am*xm - A0 >= 0
-//
-// where each A has a block structure with sizes blksizes_1,...,blksizes_nblocks
-
 // Index vectors starting from 1
 inline Natural itok(Natural i) {
     return i-1;
@@ -37,7 +30,12 @@ struct SparseMat{
     std::vector <Real> data;
 };
 
-// Store the SDP problem in a sparse format
+// Stores a sparse SDPA format problem of the form
+//
+// min b1*x1 + ... + bm*xm
+// st  A1*x1 + ... + Am*xm - A0 >= 0
+//
+// where each A has a block structure with sizes blksizes_1,...,blksizes_nblocks
 template <typename Real>
 struct SparseSDP {
     // Block sizes.  Negative means a diagonal block.
@@ -65,6 +63,7 @@ void eat_formatting(std::stringstream& sin) {
         sin.get();
 }
 
+// Reads in the sparse SDPA format
 template <typename Real>
 void parse_sdpa(const std::string fname,SparseSDP <Real>& prob) {
     // Open the file
@@ -78,8 +77,8 @@ void parse_sdpa(const std::string fname,SparseSDP <Real>& prob) {
 
     // Get rid of all the lines with comments
     std::string line;
-    std::getline (fin,line);
     do {
+        std::getline (fin,line);
         if(fin.fail()) {
             std::cerr << "Error while parsing initial comments." << std::endl;
             exit(EXIT_FAILURE);
@@ -316,9 +315,58 @@ void sort_sdp (SparseSDP <Real>& prob) {
     }
 }
 
+// Cartesian product between Rm and the SQL spaces 
+template <typename Real>
+struct RmxR {
+private:
+    // This is a templated namespace.  Do not allow construction.
+    RmxR();
+
+    // Create a shortcut for these routines
+    typedef peopt::Rm <Real> Rm;
+
+public:
+    // Use a Cartesian product of two Rm spaces for our storage 
+    typedef std::pair <typename Rm::Vector,Real> Vector;
+
+    // Memory allocation and size setting.
+    static void init(const Vector& x, Vector& y) {
+        Rm::init(x.first,y.first);
+    }
+    
+    // y <- x (Shallow.  No memory allocation.)
+    static void copy(const Vector& x, Vector& y) {
+        Rm::copy(x.first,y.first);
+        y.second=x.second;
+    }
+
+    // x <- alpha * x.
+    static void scal(const Real& alpha, Vector& x) {
+        Rm::scal(alpha,x.first);
+        x.second*=alpha;
+    }
+
+    // y <- alpha * x + y.
+    static void axpy(const Real& alpha, const Vector& x, Vector& y) {
+        Rm::axpy(alpha,x.first,y.first);
+        y.second+=alpha*x.second;
+    }
+
+    // innr <- <x,y>.
+    static Real innr(const Vector& x,const Vector& y) {
+        return Rm::innr(x.first,y.first)+x.second*y.second;
+    }
+
+    // x <- 0.
+    static void zero(Vector& x) {
+        Rm::zero(x.first);
+        x.second=Real(0.);
+    }
+};
+
 // Define the SDP objective where 
 // 
-// f(x)=<b,x>
+// f(x)=<b,x> 
 //
 template <typename Real>
 struct SDPObj : public peopt::ScalarValuedFunction <Real,peopt::Rm> {
@@ -326,15 +374,15 @@ private:
     const SparseSDP <Real>& prob;
         
 public:
-    typedef peopt::Rm <Real> X;
-    typedef typename X::Vector X_Vector;
+    typedef peopt::Rm <Real> Rm;
+    typedef typename Rm::Vector X_Vector;
 
     // Grab a reference to the underlying SDP problem
-    SDPObj(SparseSDP <Real>& prob_) : prob(prob_) {}
+    SDPObj(const SparseSDP <Real>& prob_) : prob(prob_) {}
 
     // Evaluation 
     double operator () (const X_Vector& x) const {
-        return X::innr(prob.b,x);
+        return Rm::innr(prob.b,x);
     }
 
     // Gradient
@@ -342,7 +390,7 @@ public:
         const X_Vector& x,
         X_Vector& grad 
     ) const {
-        X::copy(prob.b,grad);
+        Rm::copy(prob.b,grad);
     }
 
     // Hessian-vector product
@@ -351,18 +399,17 @@ public:
         const X_Vector& dx,
         X_Vector& H_dx
     ) const {
-        X::zero(H_dx);
+        Rm::zero(H_dx);
     }
 };
+
 
 // Define the SDP inequality where 
 //
 // h(x) = A1*x1 + ... + Am*xm - A0 >= 0
 //
 template <typename Real>
-struct SDPIneq 
-    : public peopt::VectorValuedFunction <Real,peopt::Rm,peopt::SQL> 
-{
+struct SDPIneq : public peopt::VectorValuedFunction <Real,peopt::Rm,peopt::SQL>{
 public:
     typedef peopt::Rm <Real> X;
     typedef peopt::SQL <Real> Z;
@@ -426,7 +473,7 @@ private:
 
 public:
     // Grab a reference to the underlying SDP problem
-    SDPIneq(SparseSDP <Real>& prob_) : prob(prob_) {}
+    SDPIneq(const SparseSDP <Real>& prob_) : prob(prob_) {}
 
     // z=h(x) 
     void operator () (
@@ -494,69 +541,82 @@ public:
     }
 };
 
-// Phase-1 vector space
+// Initializes an SQL vector 
 template <typename Real>
-struct Phase1VS {
-private:
-    // This is a templated namespace.  Do not allow construction.
-    Phase1VS();
+void initSQL(
+    const SparseSDP <Real>& prob,
+    typename peopt::SQL <Real>::Vector& x
+) {
+    // Create a type shortcut
+    typedef peopt::SQL <Real> SQL;
 
-    // Create a shortcut for these routines
-    typedef peopt::Rm <Real> Rm;
-
-public:
-    // Use std::vector as our vector storage
-    typedef std::pair <typename peopt::Rm <Real>::Vector,Real> Vector;
-
-    // Memory allocation and size setting.
-    static void init(const Vector& x, Vector& y) {
-        Rm::init(x.first,y.first);
-    }
-    
-    // y <- x (Shallow.  No memory allocation.)
-    static void copy(const Vector& x, Vector& y) {
-        Rm::copy(x.first,y.first);
-        y.second=x.second;
+    // Figure out the structure of the codomain of the inequality
+    // constraint h 
+    std::vector <peopt::Natural> sizes(prob.blk_sizes.size());
+    std::vector <peopt::Cone::t> types(prob.blk_sizes.size());
+    for(Natural i=0;i<sizes.size();i++) {
+        sizes[i]=abs(prob.blk_sizes[i]);
+        if(prob.blk_sizes[i]<0)
+            types[i]=peopt::Cone::Linear;
+        else
+            types[i]=peopt::Cone::Semidefinite;
     }
 
-    // x <- alpha * x.
-    static void scal(const Real& alpha, Vector& x) {
-        Rm::scal(alpha,x.first);
-        x.second *= alpha;
-    }
+    // Create a new element 
+    typename SQL::Vector xx(peopt::Messaging(),types,sizes);
 
-    // y <- alpha * x + y.
-    static void axpy(const Real& alpha, const Vector& x, Vector& y) {
-        Rm::axpy(alpha,x.first,y.first);
-        y.second += alpha*x.second;
-    }
-
-    // innr <- <x,y>.
-    static Real innr(const Vector& x,const Vector& y) {
-        return Rm::innr(x.first,y.first)+x.second*y.second;
-    }
-
-    // x <- 0.
-    static void zero(Vector& x) {
-        Rm::zero(x.first);
-        x.second=Real(0.);
-    }
-
-    static void symm(Vector& x) {}
-};
+    // Initialize the memory for the user input
+    SQL::init(xx,x);
+}
 
 // Define the phase-1 objective where 
 // 
-// f(x)=.5*(x0-1)^2
+// f(x,y) = 1/2 || y - epsilon ||^2 + beta/2 || h(x) ||^2
 //
 template <typename Real>
-struct Phase1Obj : public peopt::ScalarValuedFunction <Real,Phase1VS> {
-    typedef Phase1VS <Real> X;
-    typedef typename X::Vector X_Vector;
+struct Phase1Obj : public peopt::ScalarValuedFunction <Real,RmxR> {
+private:
+    // Inequality constraint
+    const SDPIneq <Real> h;
+    
+    // Workspace for working with h(x) and its derivatives
+    mutable typename peopt::SQL <Real>::Vector z_tmp1;
+   
+    // Extent to which we push for positive definiteness 
+    const Real epsilon;
+
+    // Regularization constant on h
+    const Real beta;
+        
+public:
+    typedef peopt::Rm <Real> Rm;
+    typedef peopt::SQL <Real> SQL;
+    typedef typename RmxR <Real>::Vector X_Vector;
+
+    // Set some optimization parameters, allocate memory for the workspace,
+    // and grab a reference for the inequality constraint
+    Phase1Obj(
+        const SparseSDP <Real>& prob,
+        const Real& epsilon_,
+        const Real& beta_
+    ) : h(prob), epsilon(epsilon_), beta(beta_) {
+        // Initialize memory for the internal workspace
+        initSQL(prob,z_tmp1); 
+    }
 
     // Evaluation 
     double operator () (const X_Vector& x) const {
-        return Real(0.5)*(x.second-Real(1.))*(x.second-Real(1.));
+        // f_x <- 1/2 || y - epsilon ||^2
+        Real f_x = Real(0.5) * (x.second-epsilon)*(x.second-epsilon);
+
+        // z_tmp1 <- h(x)
+        h(x.first,z_tmp1);
+
+        // f_x <- 1/2 || y - epsilon e ||^2 + beta/2 || h(x) ||^2
+        f_x += beta/Real(2.) * SQL::innr(z_tmp1,z_tmp1); 
+
+        // <- f_x
+        return f_x;
     }
 
     // Gradient
@@ -564,8 +624,17 @@ struct Phase1Obj : public peopt::ScalarValuedFunction <Real,Phase1VS> {
         const X_Vector& x,
         X_Vector& grad 
     ) const {
-        X::zero(grad);
-        grad.second=x.second-Real(1.);
+        // grad_2 <- y-e
+        grad.second=x.second-epsilon;
+
+        // z_tmp1 <- h(x)
+        h(x.first,z_tmp1);
+
+        // grad_1 <- h'(x)* h(x)
+        h.ps(x.first,z_tmp1,grad.first);
+
+        // grad_1 <- beta h'(x)* h(x)
+        Rm::scal(beta,grad.first);
     }
 
     // Hessian-vector product
@@ -574,181 +643,224 @@ struct Phase1Obj : public peopt::ScalarValuedFunction <Real,Phase1VS> {
         const X_Vector& dx,
         X_Vector& H_dx
     ) const {
-        X::zero(H_dx);
+        // H_dx_2 <- dy
         H_dx.second=dx.second;
+
+        // z_tmp1 <- h'(x)dx
+        h.p(x.first,dx.first,z_tmp1);
+
+        // H_dx_1 <- h'(x)*h'(x)dx
+        h.ps(x.first,z_tmp1,H_dx.first);
+
+        // H_dx_1 <- beta h'(x)*h'(x)dx
+        Rm::scal(beta,H_dx.first);
     }
 };
 
-// Define the phase-1 inequality where 
+// Define a combination of the SDP inequality as well as a piece that
+// helps with feasibility
 //
-// hh(x,x0) = h(x) - x0 e
+// hh(x,y) = [ h(x) >= y e ]
 //
-// As long as we can find x0 > 0, this guarantees that h(x) >= x0 e > 0.  This
-// gives us a strictly feasible solution.
 template <typename Real>
-struct Phase1Ineq 
-    : public peopt::VectorValuedFunction <Real,Phase1VS,peopt::SQL> 
-{
+struct Phase1Ineq : public peopt::VectorValuedFunction <Real,RmxR,peopt::SQL>{
 public:
-    typedef Phase1VS <Real> X;
+    typedef peopt::Rm <Real> Rm;
+    typedef peopt::SQL <Real> SQL;
+    
+    typedef typename RmxR <Real>::Vector X_Vector;
     typedef peopt::SQL <Real> Z;
-    typedef typename X::Vector X_Vector;
     typedef typename Z::Vector Z_Vector;
 
 private:
-    const SDPIneq <Real>& h;
+    const SDPIneq <Real> h;
+    mutable typename peopt::SQL <Real>::Vector e;
 
 public:
-    // Grab a reference to the SDP inequality 
-    Phase1Ineq(SDPIneq <Real>& h_) : h(h_) {}
+    // Grab a reference to the SDP inequality, the identity element, and
+    // the amount of infeasibility we want to allow
+    Phase1Ineq(
+        const SparseSDP <Real>& prob
+    ) : h(prob) { 
+        // Initialize memory for the identity element 
+        initSQL(prob,e); 
+        SQL::id(e);
+    }
 
-    // z=hh(x) 
+    // z=hh(x,y) 
     void operator () (
         const X_Vector& x,
         Z_Vector& z
     ) const {
+        // z <- h(x)
         h(x.first,z);
-        Z_Vector e;
-            Z::init(z,e);
-            Z::id(e);
-        Z::axpy(-x.second,e,z);
+
+        // z <- h(x) - y e
+        SQL::axpy(-x.second,e,z);
     }
 
-    // z=hh'(x)dx
+    // z=hh'(x,y)(dx,dy)
     void p(
         const X_Vector& x,
         const X_Vector& dx,
         Z_Vector& z
     ) const {
+        // z <- h'(x)dx
         h.p(x.first,dx.first,z);
-        Z_Vector e;
-            Z::init(z,e);
-            Z::id(e);
-        Z::axpy(-dx.second,e,z);
+       
+        // z <- h'(x)dx - dy e 
+        SQL::axpy(-dx.second,e,z);
     }
 
-    // xhat=hh'(x)*dz
+    // xhat=hh'(x,y)*dz
     void ps(
         const X_Vector& x,
         const Z_Vector& dz,
         X_Vector& xhat 
     ) const {
+        // xhat_1 <- h'(x)*dx
         h.ps(x.first,dz,xhat.first);
-        Z_Vector e;
-            Z::init(dz,e);
-            Z::id(e);
-        xhat.second=-Z::innr(dz,e);
+
+        // xhat_2 <- -<dz,e>
+        xhat.second = -SQL::innr(dz,e);
     }
 
-    // xhat=(hh''(x)dx)*dz
+    // xhat=(hh''(x,y)(dx,dy)*dz
     void pps(
         const X_Vector& x,
         const X_Vector& dx,
         const Z_Vector& dz,
         X_Vector& xhat 
     ) const {
-        X::zero(xhat);
+        Rm::zero(xhat.first);
+        xhat.second=Real(0.);
     }
 };
 
-#if 0
-template <typename ProblemClass>
-class DebugManip : public peopt::StateManipulator<ProblemClass> {
-public:
-    // Application
-    virtual void operator () (
-        const typename ProblemClass::Functions::t& fns,
-        typename ProblemClass::State::t& state,
-        peopt::OptimizationLocation::t loc
-    ) const {
-        typedef typename ProblemClass::X X;
-        typedef typename ProblemClass::Z Z;
-        typedef typename X::Vector X_Vector;
-        typedef typename Z::Vector Z_Vector;
-        const Z_Vector& z=state.z.front();
-        const Z_Vector& dz=state.dz.front();
-        const Z_Vector& h_x=state.h_x.front();
+// Creates an initial guess for x
+template <typename Real>
+bool initPhase1X(const SparseSDP <Real> prob,typename RmxR <Real>::Vector& x){
+    // Create some type shortcuts
+    typedef typename peopt::Rm <Real> Rm;
+    typedef typename peopt::SQL <Real> SQL;
 
-        switch(loc) {
-        case peopt::OptimizationLocation::BeforeGetStep: {
-            {
-                std::ofstream fout("foo_hx.dat");
-                for(int i=1;i<=161;i++) {
-                    for(int j=1;j<=161;j++) {
-                        fout << h_x(1,i,j) << std::endl;
-                    }
-                }
-                fout.close();
-            }
-            {
-                std::ofstream fout("bar_hx.dat");
-                for(int i=1;i<=174;i++) {
-                    fout << h_x(2,i) << std::endl;
-                }
-                fout.close();
-            }
-            {
-                std::ofstream fout("foo_z.dat");
-                for(int i=1;i<=161;i++) {
-                    for(int j=1;j<=161;j++) {
-                        fout << z(1,i,j) << std::endl;
-                    }
-                }
-                fout.close();
-            }
-            {
-                std::ofstream fout("bar_z.dat");
-                for(int i=1;i<=174;i++) {
-                    fout << z(2,i) << std::endl;
-                }
-                fout.close();
-            }
-            break;
-        } case peopt::OptimizationLocation::BeforeActualVersusPredicted: {
-            {
-                std::ofstream fout("foo_dz.dat");
-                for(int i=1;i<=161;i++) {
-                    for(int j=1;j<=161;j++) {
-                        fout << dz(1,i,j) << std::endl;
-                    }
-                }
-                fout.close();
-            }
-            {
-                std::ofstream fout("bar_dz.dat");
-                for(int i=1;i<=174;i++) {
-                    fout << dz(2,i) << std::endl;
-                }
-                fout.close();
-            }
-        } default:
-            break;
-        }
-    }
-};
-#endif
+    // Set the size of the primary part of x
+    x.first.resize(prob.A.size()-1);
+    for(Natural i=0;i<x.first.size();i++)
+        x.first[i]=drand48();
+
+    // Create the identity element
+    typename SQL::Vector e;
+    initSQL <Real> (prob,e);
+    SQL::id(e);
+    
+    // Determine how infeasible we are.  Basically, we find delta such that
+    // e + delta h(x) >=0.  Dividing by delta, we have
+    //     (1/delta) e + h(x) >= 0
+    // ==> h(x) >= (-1/delta) e > (-2/delta) e
+    // This gives us a couple of scenarios.  First, we don't have to worry
+    // about delta being 0 since e is strictly feasible.  Second, if delta > 0,
+    // we can simply set y=-2/delta then we're strictly feasible.  Third,
+    // if delta < 0, we're strictly feasible and we can set y=0.
+    SDPIneq <Real> h(prob);
+
+    // xx <- x_1
+    typename Rm::Vector xx;
+        Rm::init(x.first,xx);
+        Rm::copy(x.first,xx);
+
+    // h_xx <- h(xx)
+    typename SQL::Vector h_xx;
+        SQL::init(e,h_xx);
+        h(xx,h_xx);
+
+    // Figure out the extent of our infeasibility.  Use the formula above
+    // to transform delta into this value.
+    Real delta = SQL::srch(h_xx,e);
+
+    // Determine if we're feasible
+    bool feasible = delta < Real(0.);
+
+    // Set y so that we're guaranteed to be feasible
+    x.second=!feasible ? -Real(2.)/delta : Real(0.);
+
+    // Return whether or not we're feasible
+    return feasible;
+}
+
+// Creates an initial guess for dx
+template <typename Real>
+void initPhase1DX(const SparseSDP<Real>prob,typename RmxR <Real>::Vector& dx){
+    // First, initialize the perturbation just like x
+    initPhase1X <Real> (prob,dx);
+
+    // Randomize the elements in y 
+    dx.second=Real(drand48());
+}
+
+// Create an initial guess for z
+template <typename Real>
+void initZ(
+    const SparseSDP <Real> prob,
+    typename peopt::SQL <Real>::Vector& z
+) {
+    // Allocate memory for z
+    initSQL <Real> (prob,z);
+
+    // Randomize the elements in z
+    for(Natural i=0;i<z.data.size();i++)
+        z.data[i]=Real(drand48());
+}
+
+// Parse the values beta and epsilon for the phase-1 problem.  In addition,
+// parse whether or not we want finite difference tests.
+template <typename Real>
+void parseSDPSettings(
+    const peopt::Messaging& msg,
+    const std::string& fname,
+    Real& epsilon,
+    Real& beta,
+    bool& fd_tests
+) {
+    Json::Value root=peopt::json::parse(msg,fname);
+    epsilon=Real(root["sdp_settings"].get("epsilon",1.).asDouble());
+    beta=Real(root["sdp_settings"].get("beta",1e-5).asDouble());
+    fd_tests=root["sdp_settings"].get("fd_tests",false).asBool();
+}
 
 // Sets up and runs the problem
 int main(int argc,char* argv[]) {
     // Type shortcuts
     typedef double Real;
-    typedef peopt::Rm <Real> X;
-    typedef peopt::SQL <Real> Z;
-    typedef Phase1VS <Real> XPhase1;
-    typedef X::Vector X_Vector;
-    typedef Z::Vector Z_Vector;
-    typedef XPhase1::Vector XPhase1_Vector;
+    typedef peopt::Rm <Real> Rm;
+    typedef peopt::SQL <Real> SQL;
 
     // Check that we have sufficient inputs
     if(argc!=2) {
-        std::cerr << "Usage: sdpa_sparse_format <problem>" << std::endl;
+        std::cerr << "Usage: sdpa_sparse_format <problem>"
+            << std::endl;
         exit(EXIT_FAILURE);
     }
-
+    
     // Grab the filename
     std::string fname(argv[1]);
 
-    // Parse the file
+    // Grab the settings for the phase-1 problem and whether or not we
+    // need to do finite difference tests.
+    double epsilon;
+    double beta;
+    bool phase1_fd_tests;
+    bool phase2_fd_tests;
+
+    // Note, we're going to ignore the values of epsilon and beta from this
+    // parsing.  Mostly, it's just easier not to have two different routines.
+    parseSDPSettings(peopt::Messaging(),"sdpa_sparse_format.peopt",
+        epsilon,beta,phase2_fd_tests);
+
+    parseSDPSettings(peopt::Messaging(),"sdpa_sparse_format_phase1.peopt",
+        epsilon,beta,phase1_fd_tests);
+
+    // Parse the file sparse SDPA file
     SparseSDP <Real> prob;
     parse_sdpa <Real> (fname,prob);
 
@@ -759,149 +871,82 @@ int main(int argc,char* argv[]) {
     srand48(1);
 
     // Create an initial guess for the problem
-    X_Vector x(prob.A.size()-1);
-    for(Natural i=0;i<x.size();i++)
-        x[i]=drand48();
-    
-    // Create an initial guess for the dual
-    std::vector <peopt::Natural> sizes(prob.blk_sizes.size());
-    std::vector <peopt::Cone::t> types(prob.blk_sizes.size());
-    for(Natural i=0;i<sizes.size();i++) {
-        sizes[i]=abs(prob.blk_sizes[i]);
-        if(prob.blk_sizes[i]<0)
-            types[i]=peopt::Cone::Linear;
-        else
-            types[i]=peopt::Cone::Semidefinite;
-    }
-    Z_Vector z(peopt::Messaging(),types,sizes);
-    Z::id(z);
-    
-    // Create a constraint for determining the amount of infeasibility
-    SDPIneq <Real> h(prob);
-
-    // Determine how infeasible we are.  Basically, we find alpha such that
-    // e + alpha h(x) >=0.  Dividing by alpha, we have
-    //     (1/alpha) e + h(x) >= 0
-    // ==> h(x) >= (-1/alpha) e > (-2/alpha) e
-    // Hence, we look at alpha and if alpha > 0, we're infeasible, but we
-    // can solve a phase-1 problem to recover infeasibility.  Otherwise, if
-    // alpha < 0, we're feasible and we can proceed to solve the problem.
-    // Since e is strictly feasible, alpha will not be zero.
-    X::zero(x);
-    Z_Vector e;
-        Z::init(z,e);
-        Z::id(e);
-    Z_Vector h_x;
-        Z::init(z,h_x);
-        h(x,h_x);
-    Real alpha = Z::srch(h_x,e);
-
-    // If we're infeasible, do a phase-1 process in order to find a feasible
-    // starting solution
-    if(alpha > 0) {
-        std::cout << std::endl <<
-            "Problem is infeasible.  Solving phase-1 problem for feasibility."
-            << std::endl;
-
-        // The constraint for the phase-1 problem is h(x) - x0 e >= 0
-        // or h(x) >= x0 e.  From above, we know that h(x) > (-2/alpha) e.
-        // Hence, if we initialize with x0 = -2/alpha, we should be striclty
-        // feasible.
-        XPhase1_Vector x_phase1;
-            X::init(x,x_phase1.first);
-            X::copy(x,x_phase1.first);
-            x_phase1.second=Real(-2.)/alpha;
-#if 0
-        // Run some finite difference tests on the phase1 problem
-    
-        // Create the directions for the FD test
-        XPhase1_Vector dx_phase1;
-            X::init(dx,dx_phase1.first);
-            X::copy(dx,dx_phase1.first);
-            dx_phase1.second=drand48();
-        XPhase1_Vector dxx_phase1;
-            X::init(dxx,dxx_phase1.first);
-            X::copy(dxx,dxx_phase1.first);
-            dxx_phase1.second=drand48();
-
-        // Create the functions for the FD test
-        Phase1Obj <Real> f_phase1;
-        Phase1Ineq <Real> h_phase1(h);
-
-        // Do the actual tests
-        peopt::Diagnostics::gradientCheck <> (
-            peopt::Messaging(),f_phase1,x_phase1,dx_phase1);
-        peopt::Diagnostics::hessianCheck <> (
-            peopt::Messaging(),f_phase1,x_phase1,dx_phase1);
-        peopt::Diagnostics::hessianSymmetryCheck <> (peopt::Messaging(),
-            f_phase1,x_phase1,dx_phase1,dxx_phase1);
-        peopt::Diagnostics::derivativeCheck <> (
-            peopt::Messaging(),h_phase1,x_phase1,dx_phase1,z);
-        peopt::Diagnostics::derivativeAdjointCheck <>(
-            peopt::Messaging(),h_phase1,x_phase1,dx_phase1,z);
-        peopt::Diagnostics::secondDerivativeCheck <>(
-            peopt::Messaging(),h_phase1,x_phase1,dx_phase1,z);
-#endif
-
-        // Create the phase-1 state
-        peopt::InequalityConstrained <Real,Phase1VS,peopt::SQL>::State::t
-            state_phase1(x_phase1,z);
-
-        // Read the parameters from file
-        peopt::json::InequalityConstrained <Real,Phase1VS,peopt::SQL>::read(
-            peopt::Messaging(),"sdpa_sparse_format_phase1.peopt",state_phase1);
-
-        // Create the phase-1 bundle of functions
-        peopt::InequalityConstrained <Real,Phase1VS,peopt::SQL>::Functions::t
-            fns_phase1;
-        fns_phase1.f.reset(new Phase1Obj <Real>); 
-        fns_phase1.h.reset(new Phase1Ineq <Real>(h));
-
-        // Solve the phase-1 problem
-        peopt::InequalityConstrained <Real,Phase1VS,peopt::SQL>::Algorithms
-            ::getMin(peopt::Messaging(),fns_phase1,state_phase1);
-
-        // Check that the phase-1 problem was successful
-        if(state_phase1.x.front().second <= Real(0.)) {
-            std::cout << "Phase-1 problem failed to find a feasible solution."
-                << std::endl;
-            return(EXIT_SUCCESS);
-        }
-
-        // Copy this answer into x
-        X::copy(state_phase1.x.front().first,x);
-    }
-   
-    // Keep our user informed
-    std::cout << std::endl << "Solving the SDP probem: " << fname << std::endl;
-
-#if 0
-    // Run some finite difference tests on this problem 
+    RmxR <Real>::Vector x;
+    bool feasible = initPhase1X <Real> (prob,x);
 
     // Create the directions for the FD test
-    X_Vector dx(prob.A.size()-1);
-    X_Vector dxx(prob.A.size()-1);
-    for(Natural i=0;i<x.size();i++) {
-        dx[i]=drand48();
-        dxx[i]=drand48();
+    RmxR <Real>::Vector dx;
+        initPhase1DX <Real> (prob,dx);
+    RmxR <Real>::Vector dxx;
+        initPhase1DX <Real> (prob,dxx);
+
+    // Create an initial guess for the inequality multiplier
+    SQL::Vector z;
+        initZ <Real> (prob,z);
+
+    // Create the phase-1 state 
+    peopt::InequalityConstrained <Real,RmxR,peopt::SQL>::State::t
+        phase1_state(x,z);
+
+    // Read the parameters from file
+    peopt::json::InequalityConstrained <Real,RmxR,peopt::SQL>::read(
+        peopt::Messaging(),"sdpa_sparse_format_phase1.peopt",phase1_state);
+
+    // Create the bundle of phase-1 functions
+    peopt::InequalityConstrained <Real,RmxR,peopt::SQL>::Functions::t
+        phase1_fns;
+    phase1_fns.f.reset(new Phase1Obj <Real> (prob,epsilon,beta)); 
+    phase1_fns.h.reset(new Phase1Ineq <Real> (prob));
+
+    // Solve the phase-1.  Right now, we always run this even if we start
+    // feasible.  The idea is to help find a better starting position, which
+    // may or may not be true.
+    std::cout << std::endl <<
+        "Solving the phase-1 problem for an initial solution." << std::endl;
+
+    if(phase1_fd_tests) {
+        // Run some finite difference tests on this problem 
+        std::cout << "Finite difference test on the objective." << std::endl;
+        peopt::Diagnostics::gradientCheck <> (
+            peopt::Messaging(),*phase1_fns.f,x,dx);
+        peopt::Diagnostics::hessianCheck <> (
+            peopt::Messaging(),*phase1_fns.f,x,dx);
+        peopt::Diagnostics::hessianSymmetryCheck <> (
+            peopt::Messaging(),*phase1_fns.f,x,dx,dxx);
+        
+        std::cout << std::endl
+            << "Finite difference test on the inequality constraint."
+            << std::endl;
+        peopt::Diagnostics::derivativeCheck <> (
+            peopt::Messaging(),*phase1_fns.h,x,dx,z);
+        peopt::Diagnostics::derivativeAdjointCheck <> (
+            peopt::Messaging(),*phase1_fns.h,x,dx,z);
+        peopt::Diagnostics::secondDerivativeCheck <> (
+            peopt::Messaging(),*phase1_fns.h,x,dx,z);
     }
 
-    // Create the functions for the FD test
-    SDPObj <Real> f(prob);
+    // Solve the SDP 
+    peopt::InequalityConstrained <Real,RmxR,peopt::SQL>::Algorithms
+        ::getMin(peopt::Messaging(),phase1_fns,phase1_state);
 
-    // Do the actual tests
-    peopt::Diagnostics::gradientCheck <> (peopt::Messaging(),f,x,dx);
-    peopt::Diagnostics::hessianCheck <> (peopt::Messaging(),f,x,dx);
-    peopt::Diagnostics::hessianSymmetryCheck <> (peopt::Messaging(),f,x,dx,dxx);
-    peopt::Diagnostics::derivativeCheck <> (peopt::Messaging(),h,x,dx,z);
-    peopt::Diagnostics::derivativeAdjointCheck <>(peopt::Messaging(),h,x,dx,z);
-    peopt::Diagnostics::secondDerivativeCheck <>(peopt::Messaging(),h,x,dx,z);
-#endif
-    
+    // Tell us why the problem converged
+    std::cout << "Phase-1 problem converged due to: "
+        << peopt::StoppingCondition::to_string(phase1_state.opt_stop)
+        << std::endl;
 
-    // Create the SDP state 
+    // Check if we're feasible
+    if(phase1_state.x.front().second <= Real(0.)) {
+        std::cout << "Phase-1 problem failed to find a feasible solution."
+            << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    // Copy the solution back into the variable x
+    Rm::copy(phase1_state.x.front().first,x.first);
+
+    // Create the optimization state 
     peopt::InequalityConstrained <Real,peopt::Rm,peopt::SQL>::State::t
-        state(x,z);
+        state(x.first,z);
 
     // Read the parameters from file
     peopt::json::InequalityConstrained <Real,peopt::Rm,peopt::SQL>::read(
@@ -910,12 +955,41 @@ int main(int argc,char* argv[]) {
     // Create the bundle of functions
     peopt::InequalityConstrained <Real,peopt::Rm,peopt::SQL>::Functions::t
         fns;
-    fns.f.reset(new SDPObj <Real> (prob)); 
+    fns.f.reset(new SDPObj <Real> (prob));
     fns.h.reset(new SDPIneq <Real> (prob));
+    
+    // Keep our user informed
+    std::cout << std::endl << "Solving the SDP probem: " << fname << std::endl;
+
+    if(phase2_fd_tests) {
+        // Run some finite difference tests on this problem 
+        std::cout << "Finite difference test on the objective." << std::endl;
+        peopt::Diagnostics::gradientCheck <> (
+            peopt::Messaging(),*fns.f,x.first,dx.first);
+        peopt::Diagnostics::hessianCheck <> (
+            peopt::Messaging(),*fns.f,x.first,dx.first);
+        peopt::Diagnostics::hessianSymmetryCheck <> (
+            peopt::Messaging(),*fns.f,x.first,dx.first,dxx.first);
         
+        std::cout << std::endl
+            << "Finite difference test on the inequality constraint."
+            << std::endl;
+        peopt::Diagnostics::derivativeCheck <> (
+            peopt::Messaging(),*fns.h,x.first,dx.first,z);
+        peopt::Diagnostics::derivativeAdjointCheck <> (
+            peopt::Messaging(),*fns.h,x.first,dx.first,z);
+        peopt::Diagnostics::secondDerivativeCheck <> (
+            peopt::Messaging(),*fns.h,x.first,dx.first,z);
+    }
+
     // Solve the SDP 
-    peopt::InequalityConstrained <Real,peopt::Rm,peopt::SQL>::Algorithms
-        ::getMin(peopt::Messaging(),fns,state);
+    peopt::InequalityConstrained<Real,peopt::Rm,peopt::SQL>::Algorithms::getMin(
+        peopt::Messaging(),fns,state);
+
+    // Tell us why the problem converged
+    std::cout << "SDP problem converged due to: "
+        << peopt::StoppingCondition::to_string(state.opt_stop)
+        << std::endl;
 
     // Return the objective function
     std::cout << "Objective value: " << std::setprecision(16)
