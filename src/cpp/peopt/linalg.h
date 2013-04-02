@@ -224,6 +224,21 @@ namespace peopt {
         Integer* ifail,Integer& info);
 
     template <typename Real>
+    void tptrs(char uplo,char trans,char diag,Integer n,Integer nrhs,
+        Real const * const Ap,Real* B,Integer ldb,Integer& info);
+
+    template <typename Real>
+    void tprfs(char uplo,char trans,char diag,Integer n,Integer nrhs,
+        Real const * const Ap,Real const * const B,Integer ldb,
+        Real const * const X,Integer ldx,Real* ferr,Real* berr,Real* work,
+        Integer* iwork,Integer& info);
+
+    template <typename Real>
+    void tpcon(char norm,char uplo,char diag,Integer n,
+        Real const * const Ap,Real& rcond,Real* work,Integer* iwork,
+        Integer& info);
+
+    template <typename Real>
     void potrf(char uplo,Integer n,Real* A,Integer lda,Integer& info);
     
     template <typename Real>
@@ -1462,6 +1477,18 @@ namespace peopt {
         copy <Real> (m,&(Qt_e1[0]),1,&(y[0]),1);
         tpsv <Real> ('U','N','N',m,&(R[0]),&(y[0]),1);
 
+#if 0
+        // Check the condition number on R.  If it's large, something
+        // wrong has occured and we need to bail.
+        Integer info(0);
+        Real rcond(0.);
+        std::vector <Real> work(3*m);
+        std::vector <Integer> iwork(m);
+        tpcon('I','U','N',m,&(R[0]),rcond,&(work[0]),&(iwork[0]),info);
+        if(rcond < std::numeric_limits <Real>::epsilon()*1e3)
+            return false;
+#endif
+
         // Compute tmp = V y
         X::zero(V_y);
         typename std::list <X_Vector>::const_iterator vv=vs.begin();
@@ -1709,7 +1736,7 @@ namespace peopt {
                 1,Qts.back().first,Qts.back().second);
             norm_r = fabs(Qt_e1[i]);
                 
-            // Solve for the new iterate update 
+            // Solve for the new iterate update
             solveInKrylov <Real,XX> (i,&(R[0]),&(Qt_e1[0]),vs,Mr_inv,x,dx);
 
             // Find the current iterate, its residual, the residual's norm

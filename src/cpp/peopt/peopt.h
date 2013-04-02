@@ -6281,7 +6281,7 @@ namespace peopt{
                 Real norm_gpsg_2 = X::innr(gps_g,gps_g);
 
                 // Find || g'(x)g'(x)*g(x) ||^2
-                Real norm_gpgpsg_2 = X::innr(gp_gps_g,gp_gps_g);
+                Real norm_gpgpsg_2 = Y::innr(gp_gps_g,gp_gps_g);
 
                 // Find the Cauchy point,
                 // -|| g'(x)*g(x) ||^2 / || g'(x)g'(x)*g(x) ||^2 g'(x)*g(x)
@@ -7081,7 +7081,7 @@ namespace peopt{
                 //    - .5 < H dx_t_uncorrected,dx_t_uncorrected >
                 //    - < grad L(x,y), dx_n > - .5 < H dx_n,dx_n >
                 //    - < dy , g'(x)dx_n+g(x) >
-                pred -= X::innr(dy,gpxdxn_p_gx);
+                pred -= Y::innr(dy,gpxdxn_p_gx);
                 
                 // pred <- - < W (grad L(x,y) + H dx_n), dx_t_uncorrected >
                 //    - .5 < H dx_t_uncorrected,dx_t_uncorrected >
@@ -7298,11 +7298,11 @@ namespace peopt{
 
                             // Find g'(x) dx_n + g(x)
                             g.p(x,dx_n,gpxdxn_p_gx);
-                            X::axpy(Real(1.),g_x,gpxdxn_p_gx);
+                            Y::axpy(Real(1.),g_x,gpxdxn_p_gx);
 
                             // Find || g'(x) dx_n + g(x) ||
                             norm_gpxdxnpgx
-                                = sqrt(X::innr(gpxdxn_p_gx,gpxdxn_p_gx));
+                                = sqrt(Y::innr(gpxdxn_p_gx,gpxdxn_p_gx));
 
                             // Find H dx_n
                             f.hessvec(x,dx_n,H_dxn);
@@ -7541,7 +7541,7 @@ namespace peopt{
                         // Make sure we properly cache g(x) and its norm
                         // on initialization.  
                         g(x,g_x);
-                        norm_gxtyp = sqrt(X::innr(g_x,g_x));
+                        norm_gxtyp = sqrt(Y::innr(g_x,g_x));
 
                         // Find the initial Lagrange multiplier and then update
                         // the gradient and merit function.
@@ -9878,7 +9878,7 @@ namespace peopt{
                 
                 // Initialize all of the pointers to null
                 t() : EqualityConstrained <Real,XX,YY>::Functions::t(), 
-                    InequalityConstrained <Real,XX,YY>::Functions::t() {}
+                    InequalityConstrained <Real,XX,ZZ>::Functions::t() {}
             };
 
             // Check that all the functions are defined
@@ -9991,7 +9991,7 @@ namespace peopt{
                 Unconstrained <Real,XX>::Printer::getKrylov_(state,blank,out);
                 EqualityConstrained <Real,XX,YY>::Printer
                     ::getKrylov_(state,blank,out);
-                InequalityConstrained <Real,XX,YY>::Printer
+                InequalityConstrained <Real,XX,ZZ>::Printer
                     ::getKrylov_(state,blank,out);
             }
         };

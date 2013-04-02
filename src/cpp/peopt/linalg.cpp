@@ -141,6 +141,29 @@ void sspevx_fortran(char* jobz,char* range,char* uplo,Integer* n,float* Ap,
     Integer* m,float* w,float* z,Integer* ldz,float* work,
     Integer* iwork,Integer* ifail,Integer* info);
 
+#define dtptrs_fortran FortranCInterface_GLOBAL (dtptrs,DTPTRS)
+void dtptrs_fortran(char* uplo,char* trans,char* diag,Integer *n,Integer* nrhs,
+    double* Ap,double* B,Integer* ldb,Integer* info);
+#define stptrs_fortran FortranCInterface_GLOBAL (stptrs,STPTRS)
+void stptrs_fortran(char* uplo,char* trans,char* diag,Integer *n,Integer* nrhs,
+    float* Ap,float* B,Integer* ldb,Integer* info);
+
+#define dtprfs_fortran FortranCInterface_GLOBAL (dtprfs,DTPRFS)
+void dtprfs_fortran(char* uplo,char* trans,char* diag,Integer *n,Integer* nrhs,
+    double* Ap,double* B,Integer* ldb,double* X,Integer* ldx,double* ferr,
+    double* berr,double* work,Integer* iwork,Integer* info);
+#define stprfs_fortran FortranCInterface_GLOBAL (stprfs,STPRFS)
+void stprfs_fortran(char* uplo,char* trans,char* diag,Integer *n,Integer* nrhs,
+    float* Ap,float* B,Integer* ldb,float* X,Integer* ldx,float* ferr,
+    float* berr,float* work,Integer* iwork,Integer* info);
+
+#define dtpcon_fortran FortranCInterface_GLOBAL (dtpcon,DTPCON)
+void dtpcon_fortran(char* norm,char* uplo,char* diag,Integer *n,
+    double* Ap,double* rcond,double* work,Integer* iwork,Integer* info);
+#define stpcon_fortran FortranCInterface_GLOBAL (stpcon,STPCON)
+void stpcon_fortran(char* norm,char* uplo,char* diag,Integer *n,
+    float* Ap,float* rcond,float* work,Integer* iwork,Integer* info);
+
 #define dpotrf_fortran FortranCInterface_GLOBAL (dpotrf,DPOTRF)
 void dpotrf_fortran(char* uplo,Integer *n,double* A,Integer* lda,Integer* info);
 #define spotrf_fortran FortranCInterface_GLOBAL (spotrf,SPOTRF)
@@ -500,6 +523,59 @@ namespace peopt {
     ) {
         sspevx_fortran(&jobz,&range,&uplo,&n,Ap,&vl,&vu,&il,&iu,&abstol,&m,w,z,
             &ldz,work,iwork,ifail,&info);
+    }
+    
+    template <>
+    void tptrs(char uplo,char trans,char diag,Integer n,Integer nrhs,
+        double const * const Ap,double* B,Integer ldb,Integer& info
+    ) {
+        dtptrs_fortran(&uplo,&trans,&diag,&n,&nrhs,const_cast <double*>(Ap),
+            B,&ldb,&info);
+    }
+    template <>
+    void tptrs(char uplo,char trans,char diag,Integer n,Integer nrhs,
+        float const * const Ap,float* B,Integer ldb,Integer& info
+    ) {
+        stptrs_fortran(&uplo,&trans,&diag,&n,&nrhs,const_cast <float*>(Ap),
+            B,&ldb,&info);
+    }
+    
+    template <>
+    void tprfs(char uplo,char trans,char diag,Integer n,Integer nrhs,
+        double const * const Ap,double const * const B,Integer ldb,
+        double const * const X,Integer ldx,double* ferr,double* berr,
+        double* work,Integer* iwork,Integer& info
+    ) {
+        dtprfs_fortran(&uplo,&trans,&diag,&n,&nrhs,const_cast <double*>(Ap),
+            const_cast <double*> (B),&ldb,const_cast <double*> (X),&ldx,
+            ferr,berr,work,iwork,&info);
+    }
+    template <>
+    void tprfs(char uplo,char trans,char diag,Integer n,Integer nrhs,
+        float const * const Ap,float const * const B,Integer ldb,
+        float const * const X,Integer ldx,float* ferr,float* berr,
+        float* work,Integer* iwork,Integer& info
+    ) {
+        stprfs_fortran(&uplo,&trans,&diag,&n,&nrhs,const_cast <float*>(Ap),
+            const_cast <float*> (B),&ldb,const_cast <float*> (X),&ldx,
+            ferr,berr,work,iwork,&info);
+    }
+    
+    template <>
+    void tpcon(char norm,char uplo,char diag,Integer n,
+        double const * const Ap,double& rcond,double* work,Integer* iwork,
+        Integer& info
+    ) {
+        dtpcon_fortran(&norm,&uplo,&diag,&n,const_cast <double*>(Ap),&rcond,
+            work,iwork,&info); 
+    }
+    template <>
+    void tpcon(char norm,char uplo,char diag,Integer n,
+        float const * const Ap,float& rcond,float* work,Integer* iwork,
+        Integer& info
+    ) {
+        stpcon_fortran(&norm,&uplo,&diag,&n,const_cast <float*>(Ap),&rcond,
+            work,iwork,&info); 
     }
 
     template <>
