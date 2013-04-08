@@ -16,6 +16,6 @@
       "PH_type" : "UserDefined"
    },
    "sdp_settings" : {
-      "fd_tests" : true 
+      "fd_tests" : false 
    }
 }

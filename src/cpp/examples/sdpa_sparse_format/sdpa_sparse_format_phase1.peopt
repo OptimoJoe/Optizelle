@@ -16,6 +16,6 @@
    },
    "sdp_settings" : {
       "epsilon" : 1,
-      "fd_tests" : true 
+      "fd_tests" : false 
    }
 }
