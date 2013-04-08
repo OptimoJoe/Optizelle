@@ -15,8 +15,15 @@ install(FILES
     ${CMAKE_SOURCE_DIR}/cpp/peopt/json.h
     ${CMAKE_SOURCE_DIR}/cpp/peopt/linalg.h
     DESTINATION include/peopt)
+
+# See if we're going to build the documentation for the package
+set(ENABLE_DOCUMENTATION OFF CACHE BOOL "Enable documentation generation?")
+if(ENABLE_DOCUMENTATION)
+    include(UseLATEX)
+    add_subdirectory(doc)
+endif()
         
-# First, figure out if we're doing a barebones header only installation
+# Figure out if we're doing a barebones header only installation
 # or if we build the library.
 set(ENABLE_CPP_LIBRARY OFF CACHE BOOL "Enable libraries for C++?")
 if(ENABLE_CPP_LIBRARY)
