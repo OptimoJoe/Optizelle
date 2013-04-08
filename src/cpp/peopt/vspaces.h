@@ -1639,8 +1639,7 @@ namespace peopt {
                     // Solve the generalized eigenvalue problem X v = lambda Y v
                     Real abs_tol=1e-2;
                     std::pair <Real,Real> lambda_err = peopt::gsyiram <Real> (
-                        m,&(Xrf[0]),&(Yrf[0]),20,
-                        std::numeric_limits <Natural>::max(),abs_tol);
+                        m,&(Xrf[0]),&(Yrf[0]),20,20,abs_tol);
 
                     // IRAM converges from the right, but we really need a lower
                     // bound on the eigenvalue.  Hence, modify the result

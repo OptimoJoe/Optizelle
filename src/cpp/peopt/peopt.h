@@ -3756,9 +3756,6 @@ namespace peopt{
                 X::copy(grad_step,minus_grad);
                 X::scal(Real(-1.),minus_grad);
 
-                // Find the norm of the gradient
-                Real norm_grad = sqrt(X::innr(grad_step,grad_step));
-
                 // Continue to look for a step until one comes back as valid
                 for(rejected_trustregion=0;
                     true; 
@@ -3772,6 +3769,10 @@ namespace peopt{
 
                     // Set the trust-region center
                     X::zero(x_tmp1);
+
+                    // Keep track of the residual errors
+                    Real residual_err0(std::numeric_limits <Real>::quiet_NaN());
+                    Real residual_err(std::numeric_limits <Real>::quiet_NaN());
 
                     switch(krylov_solver) {
                     // Truncated conjugate direction
@@ -3789,7 +3790,8 @@ namespace peopt{
 			    false,
                             dx,
                             dx_cp,
-                            krylov_rel_err,
+                            residual_err0,
+                            residual_err,
                             krylov_iter,
                             krylov_stop);
                         break;
@@ -3808,7 +3810,8 @@ namespace peopt{
                             x_tmp1,
                             dx,
                             dx_cp,
-                            krylov_rel_err,
+                            residual_err0,
+                            residual_err,
                             krylov_iter,
                             krylov_stop);
 
@@ -3817,8 +3820,8 @@ namespace peopt{
                         if(X::innr(dx_cp,grad) > 0) X::scal(Real(-1.),dx_cp);
                         break;
                     }
-                    krylov_rel_err = krylov_rel_err
-                        / (std::numeric_limits <Real>::epsilon()+norm_grad);
+                    krylov_rel_err = residual_err 
+                        / (std::numeric_limits <Real>::epsilon()+residual_err0);
                     krylov_iter_total += krylov_iter;
 
                     // Manipulate the state if required
@@ -4336,6 +4339,11 @@ namespace peopt{
                         X::init(x,minus_grad);
                         X::copy(grad_step,minus_grad);
                         X::scal(Real(-1.),minus_grad);
+
+                    // Keep track of the residual errors
+                    Real residual_err0(std::numeric_limits <Real>::quiet_NaN());
+                    Real residual_err(std::numeric_limits <Real>::quiet_NaN());
+
                     switch(krylov_solver) {
                     // Truncated conjugate direction
                     case KrylovSolverTruncated::ConjugateDirection:
@@ -4352,7 +4360,8 @@ namespace peopt{
                             false,
                             dx,
                             dx_cp,
-                            krylov_rel_err,
+                            residual_err0,
+                            residual_err,
                             krylov_iter,
                             krylov_stop);
                         break;
@@ -4371,7 +4380,8 @@ namespace peopt{
                             x_cntr,
                             dx,
                             dx_cp,
-                            krylov_rel_err,
+                            residual_err0,
+                            residual_err,
                             krylov_iter,
                             krylov_stop);
 
@@ -4380,9 +4390,8 @@ namespace peopt{
                         if(X::innr(dx_cp,grad_step)>0) X::scal(Real(-1.),dx_cp);
                         break;
                     }
-                    Real norm_grad=sqrt(X::innr(grad_step,grad_step));
-                    krylov_rel_err = krylov_rel_err
-                        / (std::numeric_limits <Real>::epsilon()+norm_grad);
+                    krylov_rel_err = residual_err 
+                        / (std::numeric_limits <Real>::epsilon()+residual_err0);
                     krylov_iter_total += krylov_iter;
                     break;
                 }}
@@ -5156,7 +5165,7 @@ namespace peopt{
                 else if(state.xi_4 <= Real(1.))
                     ss << "The tolerance on the acceptable error in the "
                         "tangential step must be greater than or equal to 1: "
-                        "xi4 = " << state.xi_4;
+                        "xi_4 = " << state.xi_4;
                 
                 // Check that the left preconditioner for the augmented system
                 // is either defined by the user or the identity.
@@ -5698,58 +5707,6 @@ namespace peopt{
                 mutable std::pair <bool,Y_Vector> y_grad;
                 mutable X_Vector gpxsy; 
 
-                // Determines the relative error between the cached value of
-                // x and the current value of x.  If we've not cached a value
-                // yet, this is infinity.
-                Real rel_err_x(
-                    const X_Vector& x,
-                    const std::pair <bool,X_Vector>& x_cached
-                ) const {
-                    // If we've not been cached yet, return infinity
-                    if(!x_cached.first)
-                        return std::numeric_limits <Real>::infinity();
-                    
-                    // Otherwise, figure out the relative error
-                    else {
-                        // Figure out the residual between x_cached and x 
-                        X::copy(x_cached.second,x_tmp1);
-                        X::axpy(Real(-1.),x,x_tmp1);
-
-                        // Figure out the relative error between x and x_cached 
-                        Real rel_err = sqrt(X::innr(x_tmp1,x_tmp1)) /
-                            (std::numeric_limits <Real>::epsilon() 
-                            + sqrt(X::innr(x,x)));
-
-                        // Return the relative error 
-                        return rel_err;
-                    }
-                }
-
-                // Does the same calculate for y as x.
-                Real rel_err_y(
-                    const Y_Vector& y,
-                    const std::pair <bool,Y_Vector>& y_cached
-                ) const {
-                    // If we've not been cached yet, return infinity
-                    if(!y_cached.first)
-                        return std::numeric_limits <Real>::infinity();
-                    
-                    // Otherwise, figure out the relative error
-                    else {
-                        // Figure out the residual between y_cached and y 
-                        Y::copy(y_cached.second,y_tmp1);
-                        Y::axpy(Real(-1.),y,y_tmp1);
-
-                        // Figure out the relative error between y and y_cached 
-                        Real rel_err = sqrt(Y::innr(y_tmp1,y_tmp1)) /
-                            (std::numeric_limits <Real>::epsilon() 
-                            + sqrt(Y::innr(y,y)));
-
-                        // Return the relative error 
-                        return rel_err;
-                    }
-                }
-
                 // Adds the Lagrangian pieces to the gradient
                 void grad_lag(
                     const X_Vector& x,
@@ -5761,9 +5718,9 @@ namespace peopt{
                     
                     // If relative error between the current and cached values
                     // is large, compute anew.
-                    if( rel_err_x(x,x_grad)
+                    if( rel_err_cached <Real,XX> (x,x_grad)
                             >= std::numeric_limits <Real>::epsilon()*1e1 ||
-                        rel_err_y(y,y_grad)
+                        rel_err_cached <Real,YY> (y,y_grad)
                             >= std::numeric_limits <Real>::epsilon()*1e1 
                     ) {
                         // gpxsy <- g'(x)* y 
@@ -5821,7 +5778,7 @@ namespace peopt{
                     
                     // If we've not started caching or the relative error
                     // is large, compute anew.
-                    if( rel_err_x(x,x_merit)
+                    if( rel_err_cached <Real,XX> (x,x_merit)
                             >= std::numeric_limits <Real>::epsilon()*1e1
                     ) {
                         // g_x <- g(x)
@@ -6638,6 +6595,10 @@ namespace peopt{
                     X::init(x,minus_W_gradpHdxn);
                     X::copy(W_gradpHdxn,minus_W_gradpHdxn);
                     X::scal(Real(-1.),minus_W_gradpHdxn);
+
+                // Keep track of the residual errors
+                Real residual_err0(std::numeric_limits <Real>::quiet_NaN());
+                Real residual_err(std::numeric_limits <Real>::quiet_NaN());
             
                 switch(krylov_solver) {
                 // Truncated conjugate direction
@@ -6655,7 +6616,8 @@ namespace peopt{
 			true,
                         dx_t_uncorrected,
                         dx_tcp_uncorrected,
-                        krylov_rel_err,
+                        residual_err0,
+                        residual_err,
                         krylov_iter,
                         krylov_stop);
                     break;
@@ -6674,7 +6636,8 @@ namespace peopt{
                         dx_n,
                         dx_t_uncorrected,
                         dx_tcp_uncorrected,
-                        krylov_rel_err,
+                        residual_err0,
+                        residual_err,
                         krylov_iter,
                         krylov_stop);
 
@@ -6685,9 +6648,8 @@ namespace peopt{
                         X::scal(Real(-1.),dx_tcp_uncorrected);
                     break;
                 }
-                Real norm_W_gradpHdxn = sqrt(X::innr(W_gradpHdxn,W_gradpHdxn));
-                krylov_rel_err = krylov_rel_err
-                    / (std::numeric_limits <Real>::epsilon()+norm_W_gradpHdxn);
+                krylov_rel_err = residual_err 
+                    / (std::numeric_limits <Real>::epsilon()+residual_err0);
                 krylov_iter_total += krylov_iter;
             }
             
@@ -7799,11 +7761,6 @@ namespace peopt{
                 state.h_x.clear();
                     state.h_x.push_back(Z_Vector());
                     Z::init(z,state.h_x.back());
-
-                // Set z to be ||x||/||e|| e.  In this way, ||z||=||x||.
-                Z_Vector& zz=state.z.front();
-                Z::id(zz);
-                Z::scal(sqrt(X::innr(x,x))/sqrt(Z::innr(zz,zz)),zz);
             }
             static void init_vectors(
                 t& state,
@@ -8252,58 +8209,6 @@ namespace peopt{
                 mutable X_Vector hpxsz;
                 mutable X_Vector hpxs_invLhx_e;
 
-                // Determines the relative error between the cached value of
-                // x and the current value of x.  If we've not cached a value
-                // yet, this is infinity.
-                Real rel_err_x(
-                    const X_Vector& x,
-                    const std::pair <bool,X_Vector>& x_cached
-                ) const {
-                    // If we've not been cached yet, return infinity
-                    if(!x_cached.first)
-                        return std::numeric_limits <Real>::infinity();
-                    
-                    // Otherwise, figure out the relative error
-                    else {
-                        // Figure out the residual between x_cached and x 
-                        X::copy(x_cached.second,x_tmp1);
-                        X::axpy(Real(-1.),x,x_tmp1);
-
-                        // Figure out the relative error between x and x_cached 
-                        Real rel_err = sqrt(X::innr(x_tmp1,x_tmp1)) /
-                            (std::numeric_limits <Real>::epsilon() 
-                            + sqrt(X::innr(x,x)));
-
-                        // Return the relative error 
-                        return rel_err;
-                    }
-                }
-
-                // Does the same calculate for z as x.
-                Real rel_err_z(
-                    const Z_Vector& z,
-                    const std::pair <bool,Z_Vector>& z_cached
-                ) const {
-                    // If we've not been cached yet, return infinity
-                    if(!z_cached.first)
-                        return std::numeric_limits <Real>::infinity();
-                    
-                    // Otherwise, figure out the relative error
-                    else {
-                        // Figure out the residual between z_cached and z 
-                        Z::copy(z_cached.second,z_tmp1);
-                        Z::axpy(Real(-1.),z,z_tmp1);
-
-                        // Figure out the relative error between z and z_cached 
-                        Real rel_err = sqrt(Z::innr(z_tmp1,z_tmp1)) /
-                            (std::numeric_limits <Real>::epsilon() 
-                            + sqrt(Z::innr(z,z)));
-
-                        // Return the relative error 
-                        return rel_err;
-                    }
-                }
-                
                 // Adds the Lagrangian pieces to the gradient
                 void grad_lag(
                     const X_Vector& x,
@@ -8315,9 +8220,9 @@ namespace peopt{
                     
                     // If relative error between the current and cached values
                     // is large, compute anew.
-                    if( rel_err_x(x,x_lag)
+                    if( rel_err_cached <Real,XX> (x,x_lag)
                             >= std::numeric_limits <Real>::epsilon()*1e1 ||
-                        rel_err_z(z,z_lag)
+                        rel_err_cached <Real,ZZ> (z,z_lag)
                             >= std::numeric_limits <Real>::epsilon()*1e1 
                     ) {
                         // hpxsz <- h'(x)* z 
@@ -8345,9 +8250,9 @@ namespace peopt{
                     
                     // If relative error between the current and cached values
                     // is large, compute anew.
-                    if( rel_err_x(x,x_schur)
+                    if( rel_err_cached <Real,XX> (x,x_schur)
                             >= std::numeric_limits <Real>::epsilon()*1e1 ||
-                        rel_err_z(z,z_schur)
+                        rel_err_cached <Real,ZZ> (z,z_schur)
                             >= std::numeric_limits <Real>::epsilon()*1e1
                     ) {
                         // z_tmp1 <- e
@@ -8419,7 +8324,7 @@ namespace peopt{
                     
                     // If we've not started caching or the relative error
                     // is large, compute anew.
-                    if( rel_err_x(x,x_merit)
+                    if( rel_err_cached <Real,XX> (x,x_merit)
                             >= std::numeric_limits <Real>::epsilon()*1e1
                     ) {
                         // hx_merit <- h(x)
@@ -8483,50 +8388,6 @@ namespace peopt{
                     f_mod->grad_mult(x,grad,grad_tmp);
                     grad_lag(x,grad_tmp,grad_mult);
                 }
-
-#if 0
-                // Modification of the Hessian-vector product when finding a
-                // trial step
-                virtual void hessvec_step_old(
-                    const X_Vector& x,
-                    const X_Vector& dx,
-                    const X_Vector& H_dx,
-                    X_Vector& Hdx_step 
-                ) const {
-
-                    // Modify the Hessian-vector product
-                    f_mod->hessvec_step(x,dx,H_dx,Hdx_step);
-
-                    // z_tmp1 <- h'(x) dx
-                    h.p(x,dx,z_tmp1);
-
-                    // z_tmp2 <- z o h'(x) dx
-                    Z::prod(z,z_tmp1,z_tmp2);
-
-                    // linv_hx_z_prod_hpx <- inv(L(h(x))) (z o h'(x) dx) 
-                    Z::linv(h_x,z_tmp2,linv_hx_z_prod_hpx);
-                    
-                    // z_tmp2 <- inv L(h(x)) h'(x) dx
-                    Z::linv(h_x,z_tmp1,z_tmp2);
-                    
-                    // z_tmp1 <- z o (inv L(h(x)) h'(x) dx)
-                    Z::prod(z,z_tmp2,z_tmp1);
-
-                    // z_tmp1 <- (inv(L(h(x))) (z o h'(x) dx)
-                    //               + z o (inv L(h(x)) h'(x) dx))/2
-                    Z::axpy(Real(1.),linv_hx_z_prod_hpx,z_tmp1);
-                    Z::scal(Real(.5),z_tmp1);
-
-                    // hess_mod <- h'(x)* (inv(L(h(x))) (z o h'(x) dx)
-                    //                    + z o (inv L(h(x)) h'(x) dx))/2
-                    h.ps(x,z_tmp1,hess_mod);
-
-                    // H_dx 
-                    //  = hess f(x) dx + h'(x)* (inv(L(h(x))) (z o h'(x) dx)
-                    //                          + z o (inv L(h(x)) h'(x) dx))/2
-                    X::axpy(Real(1.),hess_mod,Hdx_step);
-                }
-#endif
 
                 // Modification of the Hessian-vector product when finding a
                 // trial step
@@ -9378,6 +9239,11 @@ namespace peopt{
 
                         // Initialize the value h(x)
                         h(x,h_x);
+                
+                        // Set z to be m / <h(x),e> e.  In this way,
+                        // mu_est = <h(x),z> / m = 1.
+                        Z::id(z);
+                        Z::scal(Z::innr(z,z)/Z::innr(h_x,z),z);
 
                         // Estimate the interior point parameter
                         estimateInteriorPointParameter(fns,state);

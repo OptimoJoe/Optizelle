@@ -136,7 +136,7 @@ BOOST_AUTO_TEST_CASE(newton_cg) {
     state.eps_dx = 1e-16;
     state.eps_grad = 1e-9;
     state.eps_mu  = 1e-8;
-    state.sigma = 0.01;
+    state.sigma = 0.1;
     state.gamma = 0.995;
 
     // Solve the optimization problem
@@ -154,7 +154,7 @@ BOOST_AUTO_TEST_CASE(newton_cg) {
     BOOST_CHECK(err < 1e-6);
 
     // Check the number of iterations 
-    BOOST_CHECK(state.iter == 8);
+    BOOST_CHECK(state.iter == 10);
 }
 
 BOOST_AUTO_TEST_CASE(tr_newton) {
@@ -209,7 +209,7 @@ BOOST_AUTO_TEST_CASE(tr_newton) {
     BOOST_CHECK(err < 1e-6);
 
     // Check the number of iterations 
-    BOOST_CHECK(state.iter == 7);
+    BOOST_CHECK(state.iter == 5);
 }
 
 BOOST_AUTO_TEST_CASE(tr_newton_predictor_corrector) {
@@ -264,7 +264,7 @@ BOOST_AUTO_TEST_CASE(tr_newton_predictor_corrector) {
     BOOST_CHECK(err < 1e-6);
 
     // Check the number of iterations 
-    BOOST_CHECK(state.iter == 13);
+    BOOST_CHECK(state.iter == 9);
 }
 
 
@@ -321,7 +321,7 @@ BOOST_AUTO_TEST_CASE(sr1) {
     BOOST_CHECK(err < 1e-6);
 
     // Check the number of iterations 
-    BOOST_CHECK(state.iter == 10);
+    BOOST_CHECK(state.iter == 14);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

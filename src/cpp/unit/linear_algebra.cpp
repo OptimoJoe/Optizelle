@@ -379,15 +379,15 @@ BOOST_AUTO_TEST_CASE(tpcd_basic_solve) {
     peopt::Rm <double>::zero(x_cntr);
 
     // Solve this linear system
-    double norm_r;
+    double residual_err0, residual_err; 
     Natural iter;
     peopt::KrylovStop::t krylov_stop;
     peopt::truncated_cd <double,peopt::Rm>
         (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,false,x,x_cp,
-            norm_r,iter,krylov_stop);
+            residual_err0,residual_err,iter,krylov_stop);
 
     // Check the error is less than our tolerance 
-    BOOST_CHECK(norm_r < eps_krylov*norm_b);
+    BOOST_CHECK(residual_err < eps_krylov*norm_b);
 
     // Check that we ran to the maximum number of iterations
     BOOST_CHECK(iter == m);
@@ -466,12 +466,12 @@ BOOST_AUTO_TEST_CASE(tpcd_tr_stopping) {
     peopt::Rm <double>::zero(x_cntr);
 
     // Solve this linear system
-    double norm_r;
+    double residual_err0, residual_err; 
     Natural iter;
     peopt::KrylovStop::t krylov_stop;
     peopt::truncated_cd <double,peopt::Rm>
         (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,false,x,x_cp,
-            norm_r,iter,krylov_stop);
+            residual_err0,residual_err,iter,krylov_stop);
 
     // Check that the size of x is just the trust-region radius
     double norm_x = sqrt(X::innr(x,x));
@@ -535,12 +535,12 @@ BOOST_AUTO_TEST_CASE(tpcd_tr_stopping_moved_center) {
     x_cntr[1]=-4.;
 
     // Solve this linear system
-    double norm_r;
+    double residual_err0, residual_err; 
     Natural iter;
     peopt::KrylovStop::t krylov_stop;
     peopt::truncated_cd <double,peopt::Rm>
         (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,false,x,x_cp,
-            norm_r,iter,krylov_stop);
+            residual_err0,residual_err,iter,krylov_stop);
 
     // Check that the size of x is 2.5 
     double norm_x = sqrt(X::innr(x,x));
@@ -609,12 +609,12 @@ BOOST_AUTO_TEST_CASE(tpcd_cp) {
     peopt::Rm <double>::zero(x_cntr);
 
     // Solve this linear system
-    double norm_r;
+    double residual_err0, residual_err; 
     Natural iter;
     peopt::KrylovStop::t krylov_stop;
     peopt::truncated_cd <double,peopt::Rm>
         (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,false,x,x_cp,
-            norm_r,iter,krylov_stop);
+            residual_err0,residual_err,iter,krylov_stop);
 
     // Check that we ran to a single iteration 
     BOOST_CHECK(iter == 1);
@@ -689,15 +689,15 @@ BOOST_AUTO_TEST_CASE(tpcd_nullspace_solve) {
     peopt::Rm <double>::zero(x_cntr);
 
     // Solve this linear system
-    double norm_r;
+    double residual_err0, residual_err; 
     Natural iter;
     peopt::KrylovStop::t krylov_stop;
     peopt::truncated_cd <double,peopt::Rm>
         (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,true,x,x_cp,
-            norm_r,iter,krylov_stop);
+            residual_err0,residual_err,iter,krylov_stop);
 
     // Check the error is less than our tolerance 
-    BOOST_CHECK(norm_r < eps_krylov*norm_b);
+    BOOST_CHECK(residual_err < eps_krylov*norm_b);
 
     // Check that we completed in two iterations.  This is due to the
     // nullspace projection
@@ -780,15 +780,15 @@ BOOST_AUTO_TEST_CASE(tpcd_starting_solution) {
     peopt::Rm <double>::zero(x_cntr);
 
     // Solve this linear system
-    double norm_r;
+    double residual_err0, residual_err; 
     Natural iter;
     peopt::KrylovStop::t krylov_stop;
     peopt::truncated_cd <double,peopt::Rm>
         (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,true,x,x_cp,
-            norm_r,iter,krylov_stop);
+            residual_err0,residual_err,iter,krylov_stop);
 
     // Check the error is less than our tolerance 
-    BOOST_CHECK(norm_r < eps_krylov*norm_b);
+    BOOST_CHECK(residual_err < eps_krylov*norm_b);
 
     // Check that we ran to the maximum number of iterations
     BOOST_CHECK(iter == m);
@@ -870,15 +870,15 @@ BOOST_AUTO_TEST_CASE(tminres_basic_solve) {
     peopt::Rm <double>::zero(x_cntr);
 
     // Solve this linear system
-    double norm_r;
+    double residual_err0, residual_err; 
     Natural iter;
     peopt::KrylovStop::t krylov_stop;
     peopt::truncated_minres <double,peopt::Rm>
         (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,x,x_cp,
-            norm_r,iter,krylov_stop);
+            residual_err0,residual_err,iter,krylov_stop);
 
     // Check the error is less than our tolerance 
-    BOOST_CHECK(norm_r < eps_krylov*norm_b);
+    BOOST_CHECK(residual_err < eps_krylov*norm_b);
 
     // Check that we ran to the maximum number of iterations
     BOOST_CHECK(iter == m);
@@ -957,12 +957,12 @@ BOOST_AUTO_TEST_CASE(tminres_tr_stopping) {
     peopt::Rm <double>::zero(x_cntr);
 
     // Solve this linear system
-    double norm_r;
+    double residual_err0, residual_err; 
     Natural iter;
     peopt::KrylovStop::t krylov_stop;
     peopt::truncated_minres <double,peopt::Rm>
         (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,x,x_cp,
-            norm_r,iter,krylov_stop);
+            residual_err0,residual_err,iter,krylov_stop);
 
     // Check that the size of x is just the trust-region radius
     double norm_x = sqrt(X::innr(x,x));
@@ -1027,12 +1027,12 @@ BOOST_AUTO_TEST_CASE(tminres_tr_stopping_moved_center) {
     x_cntr[1]=-4.;
 
     // Solve this linear system
-    double norm_r;
+    double residual_err0, residual_err; 
     Natural iter;
     peopt::KrylovStop::t krylov_stop;
     peopt::truncated_minres <double,peopt::Rm>
         (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,x,x_cp,
-            norm_r,iter,krylov_stop);
+            residual_err0,residual_err,iter,krylov_stop);
 
     // Check that the size of x is 1.25 
     double norm_x = sqrt(X::innr(x,x));
@@ -1101,12 +1101,12 @@ BOOST_AUTO_TEST_CASE(tminres_cp) {
     peopt::Rm <double>::zero(x_cntr);
 
     // Solve this linear system
-    double norm_r;
+    double residual_err0, residual_err; 
     Natural iter;
     peopt::KrylovStop::t krylov_stop;
     peopt::truncated_minres <double,peopt::Rm>
         (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,x,x_cp,
-            norm_r,iter,krylov_stop);
+            residual_err0,residual_err,iter,krylov_stop);
 
     // Check that we ran to a single iteration 
     BOOST_CHECK(iter == 1);
@@ -1181,15 +1181,15 @@ BOOST_AUTO_TEST_CASE(tminres_nullspace_solve) {
     peopt::Rm <double>::zero(x_cntr);
 
     // Solve this linear system
-    double norm_r;
+    double residual_err0, residual_err; 
     Natural iter;
     peopt::KrylovStop::t krylov_stop;
     peopt::truncated_minres <double,peopt::Rm>
         (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,x,x_cp,
-            norm_r,iter,krylov_stop);
+            residual_err0,residual_err,iter,krylov_stop);
 
     // Check the error is less than our tolerance 
-    BOOST_CHECK(norm_r < eps_krylov*norm_b);
+    BOOST_CHECK(residual_err < eps_krylov*norm_b);
 
     // Check that we completed in two iterations.  This is due to the
     // nullspace projection

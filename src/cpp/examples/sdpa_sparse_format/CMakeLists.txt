@@ -13,8 +13,5 @@ install(FILES
     sdpa_sparse_format_phase1.peopt
     lp.dat-s
     DESTINATION share/peopt/cpp/examples/sdpa_sparse_format)
-install(DIRECTORY
-    sdplib_parameters
-    DESTINATION share/peopt/cpp/examples/sdpa_sparse_format)
 install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/sdpa_sparse_format
     DESTINATION share/peopt/cpp/examples/sdpa_sparse_format)

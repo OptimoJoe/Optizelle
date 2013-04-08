@@ -58,6 +58,13 @@ void dspmv_fortran(char* uplo,Integer* n,double* alpha,double* Ap,
 void sspmv_fortran(char* uplo,Integer* n,float* alpha,float* Ap,
     float* x,Integer* incx,float* beta,float* y,Integer *incy);
 
+#define dtrsv_fortran FortranCInterface_GLOBAL (dtrsv,DTPSV)
+void dtrsv_fortran(char* uplo,char* trans,char* diag,Integer* n,double* A,
+    Integer* lda,double* x,Integer* incx);
+#define strsv_fortran FortranCInterface_GLOBAL (strsv,STPSV)
+void strsv_fortran(char* uplo,char* trans,char* diag,Integer* n,float* A,
+    Integer* lda,float* x,Integer* incx);
+
 #define dtpsv_fortran FortranCInterface_GLOBAL (dtpsv,DTPSV)
 void dtpsv_fortran(char* uplo,char* trans,char* diag,Integer* n,double* Ap,
     double* x,Integer* incx);
@@ -156,6 +163,15 @@ void dtprfs_fortran(char* uplo,char* trans,char* diag,Integer *n,Integer* nrhs,
 void stprfs_fortran(char* uplo,char* trans,char* diag,Integer *n,Integer* nrhs,
     float* Ap,float* B,Integer* ldb,float* X,Integer* ldx,float* ferr,
     float* berr,float* work,Integer* iwork,Integer* info);
+
+#define dtrcon_fortran FortranCInterface_GLOBAL (dtrcon,DTRCON)
+void dtrcon_fortran(char* norm,char* uplo,char* diag,Integer *n,
+    double* A,Integer* lda,double* rcond,double* work,Integer* iwork,
+    Integer* info);
+#define strcon_fortran FortranCInterface_GLOBAL (strcon,STRCON)
+void strcon_fortran(char* norm,char* uplo,char* diag,Integer *n,
+    float* A,Integer* lda,float* rcond,float* work,Integer* iwork,
+    Integer* info);
 
 #define dtpcon_fortran FortranCInterface_GLOBAL (dtpcon,DTPCON)
 void dtpcon_fortran(char* norm,char* uplo,char* diag,Integer *n,
@@ -371,6 +387,23 @@ namespace peopt {
     }
     
     template <>
+    void trsv(
+        char uplo,char trans,char diag,Integer n,const double* A,Integer lda,
+        double* x,Integer incx
+    ) {
+        dtrsv_fortran(&uplo,&trans,&diag,&n,const_cast <double*> (A),&lda,x,
+            &incx);
+    }
+    template <>
+    void trsv(
+        char uplo,char trans,char diag,Integer n,const float* A,Integer lda,
+        float* x,Integer incx
+    ) {
+        strsv_fortran(&uplo,&trans,&diag,&n,const_cast <float*> (A),&lda,x,
+            &incx);
+    }
+    
+    template <>
     void tpsv(
         char uplo,char trans,char diag,Integer n,const double* Ap,double* x,
         Integer incx
@@ -559,6 +592,23 @@ namespace peopt {
         stprfs_fortran(&uplo,&trans,&diag,&n,&nrhs,const_cast <float*>(Ap),
             const_cast <float*> (B),&ldb,const_cast <float*> (X),&ldx,
             ferr,berr,work,iwork,&info);
+    }
+    
+    template <>
+    void trcon(char norm,char uplo,char diag,Integer n,
+        double const * const A,Integer lda,double& rcond,double* work,
+        Integer* iwork,Integer& info
+    ) {
+        dtrcon_fortran(&norm,&uplo,&diag,&n,const_cast <double*>(A),&lda,&rcond,
+            work,iwork,&info); 
+    }
+    template <>
+    void trcon(char norm,char uplo,char diag,Integer n,
+        float const * const A,Integer lda,float& rcond,float* work,
+        Integer* iwork,Integer& info
+    ) {
+        strcon_fortran(&norm,&uplo,&diag,&n,const_cast <float*>(A),&lda,&rcond,
+            work,iwork,&info); 
     }
     
     template <>

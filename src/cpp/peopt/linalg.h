@@ -108,6 +108,10 @@ namespace peopt {
     void spmv(char uplo,Integer n,Real alpha,const Real* Ap,
         const Real* x,Integer incx,Real beta,Real* y,Integer incy);
     
+    template <typename Real>
+    void trsv(char uplo,char trans,char diag,Integer n,const Real* A,
+        Integer lda,Real* x,Integer incx); 
+    
     // NOTE: this routine is not fully general.  It only implements what we
     // need.
     template <typename Real>
@@ -232,6 +236,11 @@ namespace peopt {
         Real const * const Ap,Real const * const B,Integer ldb,
         Real const * const X,Integer ldx,Real* ferr,Real* berr,Real* work,
         Integer* iwork,Integer& info);
+
+    template <typename Real>
+    void trcon(char norm,char uplo,char diag,Integer n,
+        Real const * const A,Integer lda,Real& rcond,Real* work,Integer* iwork,
+        Integer& info);
 
     template <typename Real>
     void tpcon(char norm,char uplo,char diag,Integer n,
@@ -908,6 +917,7 @@ namespace peopt {
 	const bool do_orthog_check,
         typename XX <Real>::Vector& x,
         typename XX <Real>::Vector& x_cp,
+        Real& norm_Br0,
         Real& norm_Br,
         Natural& iter,
         KrylovStop::t& krylov_stop
@@ -994,7 +1004,7 @@ namespace peopt {
         // Find the Br application.  We use this to find the B-norm of the
         // residual.  Then, we save the original B-norm of the residual.
         B(r,Br);
-        Real norm_Br0 = sqrt(X::innr(Br,Br));
+        norm_Br0 = sqrt(X::innr(Br,Br));
         norm_Br = norm_Br0; 
 
         // Find the projected search direction 
@@ -1854,6 +1864,7 @@ namespace peopt {
         const typename XX <Real>::Vector& x_cntr,
         typename XX <Real>::Vector& x,
         typename XX <Real>::Vector& x_cp,
+        Real& Bnorm_r0,
         Real& Bnorm_r,
         Natural& iter,
         KrylovStop::t& krylov_stop
@@ -1898,7 +1909,7 @@ namespace peopt {
 
         // Find the preconditioned residual
         B(b,x_tmp1);
-        Real Bnorm_r0 = sqrt(X::innr(x_tmp1,b));
+        Bnorm_r0 = sqrt(X::innr(x_tmp1,b));
         Bnorm_r = Bnorm_r0;
 
         // Find the initial Krylov vector. 
@@ -2193,6 +2204,40 @@ namespace peopt {
             iter = iter_max;
         }
     }
+
+    // Determines the relative error between two vectors where the second vector
+    // may or may not have been initialized.  This is typically used for
+    // determining the relative error between a vector and some cached value.
+    template <typename Real,template <typename> class XX>
+    Real rel_err_cached(
+        const typename XX <Real>::Vector& x,
+        const std::pair <bool,typename XX <Real>::Vector>& x_cached
+    ) {
+        // Create a type shortcut
+        typedef XX <Real> X;
+
+        // Create some workspace
+        typename X::Vector x_tmp1;
+            X::init(x,x_tmp1);
+
+        // If we've not been cached yet, return infinity
+        if(!x_cached.first)
+            return std::numeric_limits <Real>::infinity();
+
+        // Otherwise, figure out the relative error
+        else {
+            // Figure out the residual between x_cached and x 
+            X::copy(x_cached.second,x_tmp1);
+            X::axpy(Real(-1.),x,x_tmp1);
+
+            // Figure out the relative error between x and x_cached 
+            Real rel_err = sqrt(X::innr(x_tmp1,x_tmp1)) /
+                (std::numeric_limits <Real>::epsilon() + sqrt(X::innr(x,x)));
+
+            // Return the relative error 
+            return rel_err;
+        }
+    } 
 }
 
 #endif
