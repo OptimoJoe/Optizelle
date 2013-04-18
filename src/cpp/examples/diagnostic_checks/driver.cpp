@@ -109,9 +109,9 @@ struct Rosen : public peopt::ScalarValuedFunction <double,MyHS> {
 
 // Define some utility function where
 //
-// g(x,y)= [ cos(x)sin(y) ]
-//         [ 3 x^2 y + y^3]
-//         [ log(x) + 3y^5]
+// g(x)= [ cos(x1) sin(x2)   ]
+//       [ 3 x1^2 x2 + x2 ^3 ]
+//       [ log(x1) + 3 x2 ^5 ]
 //
 struct Utility  : public peopt::VectorValuedFunction
     <double,MyHS,MyHS>
@@ -119,7 +119,7 @@ struct Utility  : public peopt::VectorValuedFunction
     typedef MyHS <double> X;
     typedef MyHS <double> Y;
 
-    // y=f(x) 
+    // y=g(x) 
     void operator () (
         const X::Vector& x,
         Y::Vector& y
@@ -129,7 +129,7 @@ struct Utility  : public peopt::VectorValuedFunction
         y[2]=log(x[0])+3.*quint(x[1]);
     }
 
-    // y=f'(x)dx
+    // y=g'(x)dx
     void p(
         const X::Vector& x,
         const X::Vector& dx,
@@ -143,7 +143,7 @@ struct Utility  : public peopt::VectorValuedFunction
               +15.*quad(x[1])*dx[1];
     }
 
-    // z=f'(x)*dy
+    // z=g'(x)*dy
     void ps(
         const X::Vector& x,
         const Y::Vector& dy,
@@ -157,7 +157,7 @@ struct Utility  : public peopt::VectorValuedFunction
               +15.*quad(x[1])*dy[2];
     }
 
-    // z=(f''(x)dx)*dy
+    // z=(g''(x)dx)*dy
     void pps(
         const X::Vector& x,
         const X::Vector& dx,
