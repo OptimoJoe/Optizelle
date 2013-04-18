@@ -8994,10 +8994,8 @@ namespace peopt{
                 Real alpha_z=Z::srch(dz,z); 
 
                 // Figure out how much to shorten the steps, if at all
-                Real beta_x = alpha_x<Real(0.) || alpha_x*gamma>Real(1.)
-                    ? Real(1.) : alpha_x*gamma;
-                Real beta_z = alpha_z<Real(0.) || alpha_z*gamma>Real(1.)
-                    ? Real(1.) : alpha_z*gamma;
+                Real beta_x = alpha_x*gamma>Real(1.) ? Real(1.) : alpha_x*gamma;
+                Real beta_z = alpha_z*gamma>Real(1.) ? Real(1.) : alpha_z*gamma;
 
                 // Shorten the inequality multiplier step
                 Z::scal(beta_z,dz);
@@ -9093,16 +9091,22 @@ namespace peopt{
                 Real alpha0;
 
                 // Only the dual step is restrictive
-                if(alpha1 < Real(0.) && alpha2 >= Real(0.))
+                if( alpha1 > std::numeric_limits <Real>::max() &&
+                    alpha2 <= std::numeric_limits <Real>::max() 
+                )
                     alpha0 = alpha2;
 
                 // Only the primal step is restrictive
-                else if(alpha1 >= Real(0.) && alpha2 < Real(0.))
+                else if(alpha1 <= std::numeric_limits <Real>::max() &&
+                    alpha2 > std::numeric_limits <Real>::max()
+                )
                     alpha0 = alpha1;
 
                 // Neither step is restrictive
-                else if(alpha1 < Real(0.) && alpha2 < Real(0.))
-                    alpha0 = Real(-1.);
+                else if( alpha1 > std::numeric_limits <Real>::max() &&
+                    alpha2 > std::numeric_limits <Real>::max()
+                )
+                    alpha0 = alpha1; 
 
                 // Both steps are restrictive
                 else
@@ -9110,13 +9114,7 @@ namespace peopt{
                     
                 // Next, determine if we need to back off from the
                 // boundary or leave the step unchanged.
-                alpha0 =
-                    alpha0 == Real(-1.) || alpha0*gamma > Real(1.) ?
-                        // If we're unrestricted or backing off still puts
-                        // us farther than we want to go
-                        Real(1.) :
-                        // If we're restricted, back off from the boundary
-                        alpha0*gamma;
+                alpha0 = alpha0*gamma > Real(1.) ?  Real(1.) : alpha0*gamma;
 
                 // If we're doing a trust-region method, shorten the
                 // step length accordingly
@@ -9178,8 +9176,7 @@ namespace peopt{
                 Real alpha_x=Z::srch(z_tmp1,h_x);
 
                 // Figure out how much to shorten the steps, if at all
-                Real beta_x = alpha_x<Real(0.) || alpha_x*gamma>Real(1.)
-                    ? Real(1.) : alpha_x*gamma;
+                Real beta_x = alpha_x*gamma>Real(1.) ? Real(1.) : alpha_x*gamma;
 
                 // If we're doing a trust-region method, shorten the
                 // step length accordingly

@@ -26,7 +26,7 @@ class ListVS:
     def barr(self,x):
         return reduce(lambda x,y:x+log(y),x,0)
     def srch(self,x,y):
-        alpha = 1;
+        alpha = float("inf")
         for i in xrange(0,len(x)):
             if x[i] < 0:
                 alpha0 = -y[i]/x[i]

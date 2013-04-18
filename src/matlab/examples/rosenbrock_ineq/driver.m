@@ -21,7 +21,7 @@ Z.prod=@(x,y)x.*y;
 Z.id=@(x)ones(size(x));
 Z.linv=@(x,y)y./x;
 Z.barr=@(x)sum(log(x));
-Z.srch=@(x,y)1./max(1./(-y./x));
+Z.srch=@(x,y) feval(@(z)min([min(z(find(z>0)));inf]),-y./x);
 Z.symm=@(x)x;
 
 % Create a bundle of vector spaces

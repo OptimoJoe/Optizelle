@@ -91,17 +91,17 @@ namespace peopt {
         }
 
         // Line search, srch <- argmax {alpha \in Real >= 0 : alpha x + y >= 0}
-        // where y > 0.  If the argmax is infinity, then return Real(-1.).
+        // where y > 0. 
         static Real srch(const Vector& x,const Vector& y) {
             // Line search parameter
-            Real alpha=Real(-1.);
+            Real alpha=std::numeric_limits <Real>::infinity();
 
             #ifdef _OPENMP
             #pragma omp parallel
             #endif
             {
                 // Create a local version of alpha.
-                Real alpha_loc=Real(-1.);
+                Real alpha_loc=std::numeric_limits <Real>::infinity();
 
                 // Search for the optimal linesearch parameter.
                 #ifdef _OPENMP
@@ -110,8 +110,7 @@ namespace peopt {
                 for(Natural i=0;i<x.size();i++) {
                     if(x[i] < Real(0.)) {
                         Real alpha0 = -y[i]/x[i];
-                        if(alpha_loc==Real(-1.) || alpha0 < alpha_loc)
-                            alpha_loc=alpha0;
+                        alpha_loc = alpha0 < alpha_loc ? alpha0 : alpha_loc;
                     }
                 }
 
@@ -121,8 +120,7 @@ namespace peopt {
                 #pragma omp critical
                 #endif
                 {
-                   if(alpha==Real(-1.) || alpha_loc < alpha)
-                       alpha=alpha_loc;
+                    alpha = alpha_loc < alpha ? alpha_loc : alpha;
                 }
             }
             return alpha;
@@ -736,10 +734,10 @@ namespace peopt {
         }
 
         // Line search, srch <- argmax {alpha \in Real >= 0 : alpha x + y >= 0}
-        // where y > 0.  If the argmax is infinity, then return Real(-1.).
+        // where y > 0. 
         static Real srch(const Vector& x,const Vector& y) {
             // Line search parameter
-            Real alpha=Real(-1.);
+            Real alpha=std::numeric_limits <Real>::infinity();
                    
             // Variables required for the linesearch on SDP blocks 
             Integer info(0);
@@ -765,7 +763,7 @@ namespace peopt {
                     #endif
                     {
                         // Create a local version of alpha
-                        Real alpha_loc=Real(-1.);
+                        Real alpha_loc=std::numeric_limits <Real>::infinity();
 
                         // Search for the optimal linesearch parameter
                         #ifdef _OPENMP
@@ -774,8 +772,8 @@ namespace peopt {
                         for(Natural i=1;i<=m;i++) {
                             if(x(blk,i) < Real(0.)) {
                                 Real alpha0 = -y(blk,i)/x(blk,i);
-                                if(alpha_loc==Real(-1.) || alpha0 < alpha_loc)
-                                    alpha_loc=alpha0;
+                                alpha_loc = alpha0 < alpha_loc ?
+                                    alpha0 : alpha_loc;
                             }
                         }
 
@@ -785,10 +783,7 @@ namespace peopt {
                         #pragma omp critical
                         #endif
                         {
-                           if( alpha==Real(-1.) ||
-                               (alpha_loc >=0 && alpha_loc < alpha)
-                           )
-                               alpha=alpha_loc;
+                            alpha = alpha_loc < alpha ? alpha_loc : alpha;
                         }
                     }
 
@@ -836,21 +831,17 @@ namespace peopt {
 
                     // If we have a restriction on alpha based on the leading
                     // coefficient.
-                    if(alpha0 >= Real(0.) && (alpha==Real(-1.) || alpha0<alpha))
-                        alpha=alpha0;
+                    alpha = x.naught(blk) < Real(0.) && alpha0<alpha ?
+                        alpha0 : alpha;
 
                     // Next, if we have two roots, determine the restriction 
                     if(nroots==2) { 
-                        if(alpha1>=Real(0.) && (alpha==Real(-1.)||alpha1<alpha))
-                            alpha=alpha1;
-                        if(alpha2>=Real(0.) && (alpha==Real(-1.)||alpha2<alpha))
-                            alpha=alpha2;
+                        alpha = alpha1>=Real(0.)&&alpha1<alpha ? alpha1 : alpha;
+                        alpha = alpha2>=Real(0.)&&alpha2<alpha ? alpha2 : alpha;
 
                     // If we have a single root 
-                    } else if(nroots==1) {
-                        if(alpha1>=Real(0.) && (alpha==Real(-1.)||alpha1<alpha))
-                            alpha=alpha1;
-                    }
+                    } else if(nroots==1)
+                        alpha = alpha1>=Real(0.)&&alpha1<alpha ? alpha1 : alpha;
 
                     // If we no roots, there's no additional restriction.
                     // This can't happen since we assume that y is strictly
@@ -924,11 +915,11 @@ namespace peopt {
 
                     // If we still have a completely feasible direction,
                     // fix alpha0 so that we don't update our line search.
-                    alpha0 = completely_feasible_dir ? Real(-1.) : alpha0;
+                    alpha0 = completely_feasible_dir ?
+                        std::numeric_limits <Real>::infinity(): alpha0;
 
                     // Adjust the line search step if necessary
-                    if(alpha0 >= Real(0.) && (alpha==Real(-1.) || alpha0<alpha))
-                        alpha=alpha0;
+                    alpha = alpha0<alpha ? alpha0 : alpha;
                 } }
             }
             return alpha;
@@ -1495,7 +1486,7 @@ namespace peopt {
         // where y > 0.  If the argmax is infinity, then return Real(-1.).
         static Real srch(const Vector& x,const Vector& y) {
             // Line search parameter
-            Real alpha=Real(-1.);
+            Real alpha=std::numeric_limits <Real>::infinity();
                    
             // Variables required for the linesearch on SDP blocks 
             Integer info(0);
@@ -1521,7 +1512,7 @@ namespace peopt {
                     #endif
                     {
                         // Create a local version of alpha
-                        Real alpha_loc=Real(-1.);
+                        Real alpha_loc=std::numeric_limits <Real>::infinity();
 
                         // Search for the optimal linesearch parameter
                         #ifdef _OPENMP
@@ -1530,8 +1521,8 @@ namespace peopt {
                         for(Natural i=1;i<=m;i++) {
                             if(x(blk,i) < Real(0.)) {
                                 Real alpha0 = -y(blk,i)/x(blk,i);
-                                if(alpha_loc==Real(-1.) || alpha0 < alpha_loc)
-                                    alpha_loc=alpha0;
+                                alpha_loc = alpha0 < alpha_loc ?
+                                    alpha0 : alpha_loc;
                             }
                         }
 
@@ -1541,10 +1532,7 @@ namespace peopt {
                         #pragma omp critical
                         #endif
                         {
-                           if( alpha==Real(-1.) ||
-                               (alpha_loc >=0 && alpha_loc < alpha)
-                           )
-                               alpha=alpha_loc;
+                            alpha = alpha_loc < alpha ? alpha_loc : alpha;
                         }
                     }
 
@@ -1592,21 +1580,17 @@ namespace peopt {
 
                     // If we have a restriction on alpha based on the leading
                     // coefficient.
-                    if(alpha0 >= Real(0.) && (alpha==Real(-1.) || alpha0<alpha))
-                        alpha=alpha0;
+                    alpha = x.naught(blk) < Real(0.) && alpha0<alpha ?
+                        alpha0 : alpha;
 
                     // Next, if we have two roots, determine the restriction 
                     if(nroots==2) { 
-                        if(alpha1>=Real(0.) && (alpha==Real(-1.)||alpha1<alpha))
-                            alpha=alpha1;
-                        if(alpha2>=Real(0.) && (alpha==Real(-1.)||alpha2<alpha))
-                            alpha=alpha2;
+                        alpha = alpha1>=Real(0.)&&alpha1<alpha ? alpha1 : alpha;
+                        alpha = alpha2>=Real(0.)&&alpha2<alpha ? alpha2 : alpha;
 
                     // If we have a single root 
-                    } else if(nroots==1) {
-                        if(alpha1>=Real(0.) && (alpha==Real(-1.)||alpha1<alpha))
-                            alpha=alpha1;
-                    }
+                    } else if(nroots==1)
+                        alpha = alpha1>=Real(0.)&&alpha1<alpha ? alpha1 : alpha;
 
                     // If we no roots, there's no additional restriction.
                     // This can't happen since we assume that y is strictly
@@ -1679,11 +1663,11 @@ namespace peopt {
 
                     // If we still have a completely feasible direction,
                     // fix alpha0 so that we don't update our line search.
-                    alpha0 = completely_feasible_dir ? Real(-1.) : alpha0;
+                    alpha0 = completely_feasible_dir ?
+                        std::numeric_limits <Real>::infinity(): alpha0;
 
                     // Adjust the line search step if necessary
-                    if(alpha0 >= Real(0.) && (alpha==Real(-1.) || alpha0<alpha))
-                        alpha=alpha0;
+                    alpha = alpha0<alpha ? alpha0 : alpha;
                 } }
             }
             return alpha;
