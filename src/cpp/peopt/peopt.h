@@ -3341,7 +3341,8 @@ namespace peopt{
 
                 // In case we're using a trust-region method 
                 if(algorithm_class==AlgorithmClass::TrustRegion) {
-                    out.push_back(atos <> ("ared/pred"));
+                    out.push_back(atos <> ("ared"));
+                    out.push_back(atos <> ("pred"));
                 }
             }
 
@@ -3440,10 +3441,13 @@ namespace peopt{
                 
                 // In case we're using a trust-region method
                 if(algorithm_class==AlgorithmClass::TrustRegion) {
-                    if(!opt_begin)
-                        out.push_back(atos <> (ared/pred));
-                    else 
+                    if(!opt_begin) {
+                        out.push_back(atos <> (ared));
+                        out.push_back(atos <> (pred));
+                    } else  {
                         out.push_back("          ");
+                        out.push_back("          ");
+                    }
                 }
 
                 // If we needed to do blank insertions, overwrite the elements
@@ -3676,6 +3680,10 @@ namespace peopt{
                 // Determine the norm of the step
                 Real norm_dx = sqrt(X::innr(dx,dx));
 
+                // Determine the reductions
+                ared = merit_x - merit_xpdx;
+                pred = merit_x - model_dx;
+
                 // Add a safety check in case we don't actually minimize the TR
                 // subproblem correctly. This could happen for a variety of
                 // reasons.  Most notably, if we do not correctly calculate the
@@ -3686,13 +3694,8 @@ namespace peopt{
                 // positive value.  Hence, we require an extra check.
                 if(model_dx > merit_x){
                     delta = norm_dx/Real(2.);
-                    pred = std::numeric_limits<Real>::quiet_NaN();
                     return false;
                 }
-
-                // Determine the reductions
-                ared = merit_x - merit_xpdx;
-                pred = merit_x - model_dx;
 
                 // Update the trust region radius and return whether or not we
                 // accept the step
@@ -5968,7 +5971,8 @@ namespace peopt{
                 out.push_back(atos <> ("||g(x)||"));
                     
                 // Trust-region information
-                out.push_back(atos <> ("ared/pred"));
+                out.push_back(atos <> ("ared"));
+                out.push_back(atos <> ("pred"));
                    
                 // Krylov method information
                 out.push_back(atos <> ("Kry Iter"));
@@ -6019,10 +6023,13 @@ namespace peopt{
                 out.push_back(atos <> (norm_gx));
                     
                 // Actual vs. predicted reduction 
-                if(!opt_begin)
-                    out.push_back(atos <> (ared/pred));
-                else 
+                if(!opt_begin) {
+                    out.push_back(atos <> (ared));
+                    out.push_back(atos <> (pred));
+                } else { 
                     out.push_back("          ");
+                    out.push_back("          ");
+                }
                 
                 // Krylov method information
                 if(!opt_begin) {
@@ -7153,6 +7160,9 @@ namespace peopt{
 
                 // norm_dx = || dx ||
                 Real norm_dx = sqrt(X::innr(dx,dx));
+
+                // Determine the actual reduction
+                ared = merit_x - merit_xpdx;
                 
                 // Add a safety check in case we don't actually minimize the TR
                 // subproblem correctly. This could happen for a variety of
@@ -7164,12 +7174,8 @@ namespace peopt{
                 // positive value.  Hence, we require an extra check.
                 if(pred < Real(0.)){
                     delta = norm_dx/Real(2.);
-                    pred = std::numeric_limits<Real>::quiet_NaN();
                     return false;
                 }
-
-                // Determine the actual reduction
-                ared = merit_x - merit_xpdx;
 
                 // Update the trust region radius and return whether or not we
                 // accept the step
