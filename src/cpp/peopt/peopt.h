@@ -3640,6 +3640,7 @@ namespace peopt{
                 const Real& eta2=state.eta2;
                 const Real& delta_max=state.delta_max;
                 const Real& f_x=state.f_x;
+                const KrylovStop::t& krylov_stop=state.krylov_stop;
                 Real& delta=state.delta;
                 Real& ared=state.ared;
                 Real& pred=state.pred;
@@ -3700,9 +3701,11 @@ namespace peopt{
                 // Update the trust region radius and return whether or not we
                 // accept the step
                 if(ared >= eta2*pred){
-                    // Only increase the size of the trust region if we were
-                    // close to the boundary
-                    if(fabs(norm_dx-delta) < Real(1e-4)*delta)
+                    // Increase the size of the trust-region if the Krylov
+                    // solver reached the boundary.
+                    if( krylov_stop==KrylovStop::NegativeCurvature ||
+                        krylov_stop==KrylovStop::TrustRegionViolated
+                    ) 
                         delta = delta*Real(2.) < delta_max
                               ? delta*Real(2.) : delta_max;
                     return true;

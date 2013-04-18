@@ -275,7 +275,7 @@ BOOST_AUTO_TEST_CASE(tr_newton_predictor_corrector) {
     BOOST_CHECK(err < 1e-6);
 
     // Check the number of iterations 
-    BOOST_CHECK(state.iter == 39);
+    BOOST_CHECK(state.iter == 17);
 }
 
 
