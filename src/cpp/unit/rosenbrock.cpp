@@ -190,6 +190,7 @@ BOOST_AUTO_TEST_CASE(sr1) {
     state.eps_grad = 1e-10;
     state.eps_dx = 1e-10;
     state.msg_level = 0;
+    state.delta = 100;
     
     // Create the bundle of functions 
     peopt::Unconstrained <double,Rm>::Functions::t fns;

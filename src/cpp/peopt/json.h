@@ -112,8 +112,6 @@ namespace peopt {
                         Json::Value::UInt64(state.msg_level)).asUInt64());
                 state.delta=Real(root["peopt"]
                     .get("delta",state.delta).asDouble());
-                state.delta_max=Real(root["peopt"]
-                    .get("delta_max",state.delta_max).asDouble());
 
                 state.eta1=Real(root["peopt"]
                     .get("eta1",state.eta1).asDouble());
@@ -182,7 +180,6 @@ namespace peopt {
                 root["peopt"]["H_type"]=Operators::to_string(state.H_type);
                 root["peopt"]["msg_level"]=Json::Value::UInt64(state.msg_level);
                 root["peopt"]["delta"]=state.delta;
-                root["peopt"]["delta_max"]=state.delta_max;
                 root["peopt"]["eta1"]=state.eta1;
                 root["peopt"]["eta2"]=state.eta2;
                 root["peopt"]["alpha"]=state.alpha;

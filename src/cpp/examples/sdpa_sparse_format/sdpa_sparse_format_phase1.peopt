@@ -10,7 +10,6 @@
       "eps_mu" : 1e-6,
       "sigma" : 0.5,
       "gamma" : 0.95,
-      "delta_max" : 1e100,
       "delta" : 1e100,
       "PH_type" : "UserDefined"
    },

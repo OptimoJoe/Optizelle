@@ -8,6 +8,7 @@
       "eps_grad" : 1e-10,
       "eps_mu" : 1e-12,
       "sigma" : 0.1,
-      "gamma" : 0.95
+      "gamma" : 0.99,
+      "delta" : 100
    }
 }

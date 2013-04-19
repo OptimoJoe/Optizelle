@@ -201,6 +201,7 @@ BOOST_AUTO_TEST_CASE(tr_newton) {
     state.eps_mu = 1e-11;
     state.sigma = 0.1;
     state.gamma = 0.99;
+    state.delta = 100;
 
     // Solve the optimization problem
     peopt::InequalityConstrained <double,peopt::Rm,peopt::SQL>::Algorithms
@@ -258,6 +259,7 @@ BOOST_AUTO_TEST_CASE(tr_newton_predictor_corrector) {
     state.eps_mu = 1e-8;
     state.gamma = 0.9;
     state.sigma = 0.5;
+    state.delta = 100;
     state.cstrat = peopt::CentralityStrategy::PredictorCorrector;
 
     // Solve the optimization problem
@@ -318,6 +320,7 @@ BOOST_AUTO_TEST_CASE(sr1) {
     state.eps_dx = 1e-16;
     state.eps_grad = 1e-9;
     state.eps_mu = 1e-10;
+    state.delta = 100;
     
     // Solve the optimization problem
     peopt::InequalityConstrained <double,peopt::Rm,peopt::SQL>::Algorithms

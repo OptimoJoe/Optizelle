@@ -894,6 +894,17 @@ namespace peopt {
                     // alpha0 = 2.  If this value doesn't move, we assume
                     // that our eigenvalue estimate was fine and this
                     // direction is feasible for all alpha.
+                    //
+                    // Also, note that the Choleski check is not full-proof.
+                    // It's possible that the Choleski check passes and yet
+                    // we have an indefinite matrix.  This is sort of hard
+                    // to check.  Basically, that means that the next iteration
+                    // will have an infeasible solution, which is going to
+                    // cause issues with this routine.  In theory, we should
+                    // continue to cut alpha0 until it becomes a hard 0 and
+                    // then this routine will exit.  Hopefully, the other
+                    // pieces in the code will pick up on the interior point
+                    // instability and exit.
                     bool completely_feasible_dir= alpha0<=Real(0.);
                     alpha0= alpha0>0 ? alpha0 : Real(2.);
                     Zrf.resize(m*(m+1)/2);
@@ -911,7 +922,10 @@ namespace peopt {
                             alpha0 /= Real(2.); 
                             completely_feasible_dir=false;
                         }
-                    } while(info!=0 && alpha0>=Real(0.));
+
+                    // If alpha0 ever becomes 0, then something wrong has
+                    // gone on and we really ought to exit.
+                    } while(info!=0 && alpha0>Real(0.));
 
                     // If we still have a completely feasible direction,
                     // fix alpha0 so that we don't update our line search.
@@ -1642,6 +1656,17 @@ namespace peopt {
                     // alpha0 = 2.  If this value doesn't move, we assume
                     // that our eigenvalue estimate was fine and this
                     // direction is feasible for all alpha.
+                    //
+                    // Also, note that the Choleski check is not full-proof.
+                    // It's possible that the Choleski check passes and yet
+                    // we have an indefinite matrix.  This is sort of hard
+                    // to check.  Basically, that means that the next iteration
+                    // will have an infeasible solution, which is going to
+                    // cause issues with this routine.  In theory, we should
+                    // continue to cut alpha0 until it becomes a hard 0 and
+                    // then this routine will exit.  Hopefully, the other
+                    // pieces in the code will pick up on the interior point
+                    // instability and exit.
                     bool completely_feasible_dir= alpha0<=Real(0.);
                     alpha0= alpha0>0 ? alpha0 : Real(2.);
                     Zrf.resize(m*(m+1)/2);
@@ -1659,7 +1684,10 @@ namespace peopt {
                             alpha0 /= Real(2.); 
                             completely_feasible_dir=false;
                         }
-                    } while(info!=0 && alpha0>=Real(0.));
+                    
+                    // If alpha0 ever becomes 0, then something wrong has
+                    // gone on and we really ought to exit.
+                    } while(info!=0 && alpha0>Real(0.));
 
                     // If we still have a completely feasible direction,
                     // fix alpha0 so that we don't update our line search.

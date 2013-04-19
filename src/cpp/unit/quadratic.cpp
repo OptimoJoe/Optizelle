@@ -82,7 +82,7 @@ BOOST_AUTO_TEST_CASE(tr_newton) {
     BOOST_CHECK(err < 1e-6);
 
     // Check that the number of iterations is 1
-    BOOST_CHECK(state.iter == 2);
+    BOOST_CHECK(state.iter == 3);
 }
 
 BOOST_AUTO_TEST_CASE(ncg_fletcher_reeves) {

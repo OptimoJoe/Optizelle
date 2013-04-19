@@ -1859,9 +1859,6 @@ namespace peopt{
                 
                 // ------------- TRUST-REGION ------------- 
 
-                // Maximum trust region radius
-                Real delta_max;
-
                 // Trust region radius
                 Real delta;
 
@@ -1945,8 +1942,7 @@ namespace peopt{
                 state.f_x=std::numeric_limits<Real>::quiet_NaN();
                 state.f_xpdx=std::numeric_limits<Real>::quiet_NaN();
                 state.msg_level=1;
-                state.delta_max=Real(100.);
-                state.delta=state.delta_max;
+                state.delta=Real(1.);
                 state.eta1=Real(.1);
                 state.eta2=Real(.9);
                 state.ared=std::numeric_limits<Real>::quiet_NaN();
@@ -2084,18 +2080,6 @@ namespace peopt{
                     ss << "The trust-region radius must be positive: delta = "
                         << state.delta; 
 
-                // Check that the maximum trust-region radius is positive
-                else if(state.delta_max<=Real(0.))
-                    ss << "The maximum trust-region radius must be positive: "
-                        "delta_max = " << state.delta_max; 
-
-                // Check that the current trust-region radius is less than
-                // or equal to the maximum trust-region radius
-                else if(state.delta > state.delta_max)
-                    ss << "The trust-region radius must be less than or equal "
-                        "to the maximum trust-region radius: delta = "
-                        << state.delta << ", delta_max = " << state.delta_max;
-
                 // Check that the predicted vs. actual reduction tolerance
                 // is between 0 and 1
                 else if(state.eta1 < Real(0.) || state.eta1 > Real(1.))
@@ -2155,7 +2139,6 @@ namespace peopt{
                         name == "f_x" || 
                         name == "f_xpdx" ||
                         name == "delta" || 
-                        name == "delta_max" || 
                         name == "eta1" || 
                         name == "eta2" || 
                         name == "ared" || 
@@ -2376,8 +2359,6 @@ namespace peopt{
                 reals.second.push_back(state.f_xpdx);
                 reals.first.push_back("delta");
                 reals.second.push_back(state.delta);
-                reals.first.push_back("delta_max");
-                reals.second.push_back(state.delta_max);
                 reals.first.push_back("eta1");
                 reals.second.push_back(state.eta1);
                 reals.first.push_back("eta2");
@@ -2517,7 +2498,6 @@ namespace peopt{
                     else if(*name=="f_x") state.f_x=*real;
                     else if(*name=="f_xpdx") state.f_xpdx=*real;
                     else if(*name=="delta") state.delta=*real;
-                    else if(*name=="delta_max") state.delta_max=*real;
                     else if(*name=="eta1") state.eta1=*real;
                     else if(*name=="eta2") state.eta2=*real;
                     else if(*name=="ared") state.ared=*real;
@@ -2680,7 +2660,9 @@ namespace peopt{
             };
 
             // The scaled identity Hessian approximation.  Specifically, use use
-            // || grad || / delta_max I.
+            // || grad || / (2 delta) I where delta is the current size of the
+            // trust-region.  This forces us into the trust-region at each
+            // iteration.
             class ScaledIdentity : public Operator <Real,XX,XX> {
             private:
                 // Objective modifications
@@ -2693,7 +2675,7 @@ namespace peopt{
                 const X_Vector& grad;
 
                 // Maximum size of the trust-region radius
-                const Real& delta_max;
+                const Real& delta;
             public:
                 ScaledIdentity(
                     const typename Functions::t& fns,
@@ -2701,7 +2683,7 @@ namespace peopt{
                 ) : f_mod(*(fns.f_mod)),
                     x(state.x.back()),
                     grad(state.grad.back()),
-                    delta_max(state.delta_max)
+                    delta(state.delta)
                 {};
 
                 void operator () (const X_Vector& dx,X_Vector& result) const{
@@ -2713,7 +2695,7 @@ namespace peopt{
 
                     // Copy in the direction and scale it
                     X::copy(dx,result);
-                    X::scal(norm_grad/delta_max,result);
+                    X::scal(norm_grad/(Real(2.)*delta),result);
                 }
             };
 
@@ -3638,7 +3620,6 @@ namespace peopt{
                 const X_Vector& grad=state.grad.front();
                 const Real& eta1=state.eta1;
                 const Real& eta2=state.eta2;
-                const Real& delta_max=state.delta_max;
                 const Real& f_x=state.f_x;
                 const KrylovStop::t& krylov_stop=state.krylov_stop;
                 Real& delta=state.delta;
@@ -3706,8 +3687,7 @@ namespace peopt{
                     if( krylov_stop==KrylovStop::NegativeCurvature ||
                         krylov_stop==KrylovStop::TrustRegionViolated
                     ) 
-                        delta = delta*Real(2.) < delta_max
-                              ? delta*Real(2.) : delta_max;
+                        delta*=Real(2.);
                     return true;
                 } else if(ared >= eta1*pred && ared < eta2*pred)
                     return true;
@@ -7129,7 +7109,6 @@ namespace peopt{
                 const Y_Vector& dy=state.dy.front();
                 const Real& eta1=state.eta1;
                 const Real& eta2=state.eta2;
-                const Real& delta_max=state.delta_max;
                 const Real& f_x=state.f_x;
                 const KrylovStop::t& krylov_stop=state.krylov_stop;
                 Y_Vector& y=state.y.front();
@@ -7188,8 +7167,7 @@ namespace peopt{
                     if( krylov_stop==KrylovStop::NegativeCurvature ||
                         krylov_stop==KrylovStop::TrustRegionViolated
                     ) 
-                        delta = delta*Real(2.) < delta_max
-                              ? delta*Real(2.) : delta_max;
+                        delta *= Real(2.);
                     return true;
                 } else if(ared >= eta1*pred && ared < eta2*pred)
                     return true;
