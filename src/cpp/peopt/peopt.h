@@ -3289,7 +3289,6 @@ namespace peopt{
             Printer();
 
         public:
-
             // Gets the header for the state information
             static void getStateHeader_(
                 const typename State::t& state,
@@ -3325,6 +3324,7 @@ namespace peopt{
                 if(algorithm_class==AlgorithmClass::TrustRegion) {
                     out.push_back(atos <> ("ared"));
                     out.push_back(atos <> ("pred"));
+                    out.push_back(atos <> ("ared/pred"));
                 }
             }
 
@@ -3426,7 +3426,9 @@ namespace peopt{
                     if(!opt_begin) {
                         out.push_back(atos <> (ared));
                         out.push_back(atos <> (pred));
+                        out.push_back(atos <> (ared/pred));
                     } else  {
+                        out.push_back("          ");
                         out.push_back("          ");
                         out.push_back("          ");
                     }
@@ -5944,7 +5946,12 @@ namespace peopt{
         
         // Contains functions that assist in creating an output for diagonstics
         struct Printer {
+        private:
+            // This is a namespace inside of a class.  Do not allow
+            // construction.
+            Printer();
 
+        public:
             // Gets the header for the state information
             static void getStateHeader_(
                 const typename State::t& state,
@@ -5956,6 +5963,7 @@ namespace peopt{
                 // Trust-region information
                 out.push_back(atos <> ("ared"));
                 out.push_back(atos <> ("pred"));
+                out.push_back(atos <> ("ared/pred"));
                    
                 // Krylov method information
                 out.push_back(atos <> ("Kry Iter"));
@@ -6009,7 +6017,9 @@ namespace peopt{
                 if(!opt_begin) {
                     out.push_back(atos <> (ared));
                     out.push_back(atos <> (pred));
+                    out.push_back(atos <> (ared/pred));
                 } else { 
+                    out.push_back("          ");
                     out.push_back("          ");
                     out.push_back("          ");
                 }
@@ -8456,7 +8466,12 @@ namespace peopt{
         
         // Contains functions that assist in creating an output for diagonstics
         struct Printer {
+        private:
+            // This is a namespace inside of a class.  Do not allow
+            // construction.
+            Printer();
 
+        public:
             // Gets the header for the state information
             static void getStateHeader_(
                 const typename State::t& state,
@@ -9763,7 +9778,12 @@ namespace peopt{
         
         // Contains functions that assist in creating an output for diagonstics
         struct Printer {
+        private:
+            // This is a namespace inside of a class.  Do not allow
+            // construction.
+            Printer();
 
+        public:
             // Gets the header for the state information
             static void getStateHeader_(
                 const typename State::t& state,
