@@ -4,7 +4,7 @@
 #include <iostream>
 #include <iomanip>
 
-// Optimize a simple optimization problem with an optimal solution of (0.8,0.4)
+// Optimize a simple optimization problem with an optimal solution of (2-sqrt(2)/2,2-sqrt(2)/2).
 
 // Squares its input
 template <typename Real>
@@ -14,24 +14,23 @@ Real sq(Real x){
 
 // Define a simple objective where 
 // 
-// f(x,y)=(1/2)x^2+(1/2)y^2
+// f(x,y)=x^2+y^2
 //
 struct MyObj : public peopt::ScalarValuedFunction <double,peopt::Rm> {
     typedef peopt::Rm <double> X;
-    typedef double Real;
 
     // Evaluation 
     double operator () (const X::Vector& x) const {
-        return Real(0.5)*sq(x[0])+Real(0.5)*sq(x[1]);
+        return sq(x[0])+sq(x[1]);
     }
 
     // Gradient
     void grad(
         const X::Vector& x,
-        X::Vector& g
+        X::Vector& grad
     ) const {
-        g[0]=x[0];
-        g[1]=x[1];
+        grad[0]=2.*x[0];
+        grad[1]=2.*x[1];
     }
 
     // Hessian-vector product
@@ -40,28 +39,27 @@ struct MyObj : public peopt::ScalarValuedFunction <double,peopt::Rm> {
         const X::Vector& dx,
         X::Vector& H_dx
     ) const {
-        H_dx[0]= dx[0]; 
-        H_dx[1]= dx[1]; 
+        H_dx[0]=2.*dx[0]; 
+        H_dx[1]=2.*dx[1]; 
     }
 };
 
 // Define a simple equality constraint
 //
-// g(x,y)= [ 2x + y = 2 ] 
+// g(x,y)= [ (x-2)^2 + (y-2)^2 = 1 ] 
 //
 struct MyEq
     : public peopt::VectorValuedFunction <double,peopt::Rm,peopt::Rm>
 {
     typedef peopt::Rm <double> X;
     typedef peopt::Rm <double> Y;
-    typedef double Real;
 
     // y=g(x) 
     void operator () (
         const X::Vector& x,
         Y::Vector& y
     ) const {
-        y[0] = Real(2.)*x[0]+x[1]-Real(2.);
+        y[0] = sq(x[0]-2.)+sq(x[1]-2.)-1.;
     }
 
     // y=g'(x)dx
@@ -70,7 +68,7 @@ struct MyEq
         const X::Vector& dx,
         Y::Vector& y
     ) const {
-        y[0] = Real(2.)*dx[0]+dx[1];
+        y[0] = 2.*(x[0]-2.)*dx[0]+2.*(x[1]-2.)*dx[1];
     }
 
     // z=g'(x)*dy
@@ -79,8 +77,8 @@ struct MyEq
         const Y::Vector& dy,
         X::Vector& z
     ) const {
-        z[0] = Real(2.)*dy[0];
-        z[1] = dy[0];
+        z[0] = 2.*(x[0]-2.)*dy[0];
+        z[1] = 2.*(x[1]-2.)*dy[0];
     }
 
     // z=(g''(x)dx)*dy
@@ -90,7 +88,8 @@ struct MyEq
         const Y::Vector& dy,
         X::Vector& z
     ) const {
-        X::zero(z);
+        z[0] = 2.*dx[0]*dy[0];
+        z[1] = 2.*dx[1]*dy[0];
     }
 };
 
@@ -110,8 +109,8 @@ int main(){
     peopt::EqualityConstrained <double,Rm,Rm>::State::t state(x,y);
 
     // Read the parameters from file
-    peopt::json::EqualityConstrained <double,peopt::Rm,peopt::Rm>::read(
-        peopt::Messaging(),"simple_equality.peopt",state);
+    peopt::json::EqualityConstrained <double,peopt::Rm,peopt::Rm>
+        ::read(peopt::Messaging(),"simple_equality.peopt",state);
     
     // Create a bundle of functions
     peopt::EqualityConstrained <double,Rm,Rm>::Functions::t fns;
@@ -124,7 +123,8 @@ int main(){
 
     // Print out the reason for convergence
     std::cout << "The algorithm converged due to: " <<
-        peopt::StoppingCondition::to_string(state.opt_stop) << std::endl;
+        peopt::StoppingCondition::to_string(state.opt_stop) <<
+        std::endl;
 
     // Print out the final answer
     const std::vector <double>& opt_x=*(state.x.begin());
