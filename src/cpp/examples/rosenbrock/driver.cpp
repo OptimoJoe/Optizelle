@@ -3,7 +3,8 @@
 // to modify the parameters, look at the file run.peopt.  Only the
 // peopt section is run, so copy in different parameter selections
 // into that header in order to experiment.
-// For reference, the optimal solution to the Rosenbrock function is (1,1).
+// For reference, the optimal solution to the Rosenbrock function
+// is (1,1).
 
 #include <vector>
 #include <iostream>
@@ -22,7 +23,9 @@ Real sq(Real x){
 // 
 // f(x,y)=(1-x)^2+100(y-x^2)^2
 //
-struct Rosen : public peopt::ScalarValuedFunction <double,peopt::Rm> {
+struct Rosen
+    : public peopt::ScalarValuedFunction <double,peopt::Rm>
+{
     typedef peopt::Rm <double> X;
 
     // Evaluation of the Rosenbrock function
@@ -35,8 +38,8 @@ struct Rosen : public peopt::ScalarValuedFunction <double,peopt::Rm> {
         const X::Vector& x,
         X::Vector& grad
     ) const {
-        grad[0]=-400*x[0]*(x[1]-sq(x[0]))-2*(1-x[0]);
-        grad[1]=200*(x[1]-sq(x[0]));
+        grad[0]=-400.*x[0]*(x[1]-sq(x[0]))-2.*(1.-x[0]);
+        grad[1]=200.*(x[1]-sq(x[0]));
     }
 
     // Hessian-vector product
@@ -45,8 +48,8 @@ struct Rosen : public peopt::ScalarValuedFunction <double,peopt::Rm> {
         const X::Vector& dx,
         X::Vector& H_dx
     ) const {
-    	H_dx[0]= (1200*sq(x[0])-400*x[1]+2)*dx[0]-400*x[0]*dx[1];
-        H_dx[1]= -400*x[0]*dx[0] + 200*dx[1];
+    	H_dx[0]=(1200.*sq(x[0])-400.*x[1]+2)*dx[0]-400.*x[0]*dx[1];
+        H_dx[1]=-400.*x[0]*dx[0]+200.*dx[1];
     }
 };
 
@@ -68,18 +71,12 @@ int main(){
     peopt::Unconstrained <double,peopt::Rm>::State::t state(x);
 
     // Read the parameters from file
-    peopt::json::Unconstrained <double,peopt::Rm>::read(peopt::Messaging(),
-        "rosenbrock_easy.peopt",state);
+    peopt::json::Unconstrained <double,peopt::Rm>
+        ::read(peopt::Messaging(),"rosenbrock.peopt",state);
 
     // Create the bundle of functions 
     peopt::Unconstrained <double,peopt::Rm>::Functions::t fns;
     fns.f.reset(new Rosen);
-    
-    // Do some finite difference tests on the Rosenbrock function
-    peopt::Diagnostics::gradientCheck <> (peopt::Messaging(),*(fns.f),x,dx);
-    peopt::Diagnostics::hessianCheck <> (peopt::Messaging(),*(fns.f),x,dx);
-    peopt::Diagnostics::hessianSymmetryCheck <> (peopt::Messaging(),*(fns.f),
-        x,dx,dxx);
     
     // Solve the optimization problem
     peopt::Unconstrained <double,peopt::Rm>::Algorithms
@@ -87,7 +84,8 @@ int main(){
 
     // Print out the reason for convergence
     std::cout << "The algorithm converged due to: " <<
-        peopt::StoppingCondition::to_string(state.opt_stop) << std::endl;
+        peopt::StoppingCondition::to_string(state.opt_stop) <<
+        std::endl;
 
     // Print out the final answer
     const std::vector <double>& opt_x=*(state.x.begin());
