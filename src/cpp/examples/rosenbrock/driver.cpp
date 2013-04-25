@@ -9,6 +9,7 @@
 #include <vector>
 #include <iostream>
 #include <string>
+#include <cstdlib>
 #include "peopt/peopt.h"
 #include "peopt/vspaces.h"
 #include "peopt/json.h"
@@ -54,7 +55,6 @@ struct Rosen
 };
 
 int main(){
-
     // Generate an initial guess for Rosenbrock
     std::vector <double> x(2);
     x[0]=-1.2; x[1]=1.;
@@ -91,4 +91,7 @@ int main(){
     const std::vector <double>& opt_x=*(state.x.begin());
     std::cout << "The optimal point is: (" << opt_x[0] << ','
 	<< opt_x[1] << ')' << std::endl;
+
+    // Successful termination
+    return EXIT_SUCCESS;
 }
