@@ -4,7 +4,8 @@
 #include <iostream>
 #include <iomanip>
 
-// Optimize a simple optimization problem with an optimal solution of (1/3,1/3)
+// Optimize a simple optimization problem with an optimal solution
+// of (1/3,1/3)
 
 // Squares its input
 template <typename Real>
@@ -16,22 +17,23 @@ Real sq(Real x){
 // 
 // f(x,y)=(x+1)^2+(y+1)^2
 //
-struct MyObj : public peopt::ScalarValuedFunction <double,peopt::Rm> {
+struct MyObj
+    : public peopt::ScalarValuedFunction <double,peopt::Rm>
+{
     typedef peopt::Rm <double> X;
-    typedef double Real;
 
     // Evaluation 
     double operator () (const X::Vector& x) const {
-        return sq(x[0]+Real(1.))+sq(x[1]+Real(1.));
+        return sq(x[0]+1.)+sq(x[1]+1.);
     }
 
     // Gradient
     void grad(
         const X::Vector& x,
-        X::Vector& g
+        X::Vector& grad
     ) const {
-        g[0]=2*x[0]+2;
-        g[1]=2*x[1]+2;
+        grad[0]=2.*x[0]+2.;
+        grad[1]=2.*x[1]+2.;
     }
 
     // Hessian-vector product
@@ -40,8 +42,8 @@ struct MyObj : public peopt::ScalarValuedFunction <double,peopt::Rm> {
         const X::Vector& dx,
         X::Vector& H_dx
     ) const {
-        H_dx[0]= Real(2.)*dx[0]; 
-        H_dx[1]= Real(2.)*dx[1]; 
+        H_dx[0]=2.*dx[0]; 
+        H_dx[1]=2.*dx[1]; 
     }
 };
 
@@ -51,19 +53,18 @@ struct MyObj : public peopt::ScalarValuedFunction <double,peopt::Rm> {
 //         [ 2x + y >= 1 ] 
 //
 struct MyIneq
-    : public peopt::VectorValuedFunction <double,peopt::Rm,peopt::Rm>
+    :public peopt::VectorValuedFunction<double,peopt::Rm,peopt::Rm>
 {
     typedef peopt::Rm <double> X;
     typedef peopt::Rm <double> Y;
-    typedef double Real;
 
     // y=h(x) 
     void operator () (
         const X::Vector& x,
         Y::Vector& y
     ) const {
-        y[0]=x[0]+Real(2.)*x[1]-Real(1.);
-        y[1]=Real(2.)*x[0]+x[1]-Real(1.);
+        y[0]=x[0]+2.*x[1]-1.;
+        y[1]=2.*x[0]+x[1]-1.;
     }
 
     // y=h'(x)dx
@@ -72,8 +73,8 @@ struct MyIneq
         const X::Vector& dx,
         Y::Vector& y
     ) const {
-        y[0]= dx[0]+Real(2.)*dx[1];
-        y[1]= Real(2.)*dx[0]+dx[1];
+        y[0]= dx[0]+2.*dx[1];
+        y[1]= 2.*dx[0]+dx[1];
     }
 
     // z=h'(x)*dy
@@ -82,8 +83,8 @@ struct MyIneq
         const Y::Vector& dy,
         X::Vector& z
     ) const {
-        z[0]= dy[0]+Real(2.)*dy[1];
-        z[1]= Real(2.)*dy[0]+dy[1];
+        z[0]= dy[0]+2.*dy[1];
+        z[1]= 2.*dy[0]+dy[1];
     }
 
     // z=(h''(x)dx)*dy
@@ -110,11 +111,12 @@ int main(){
     z[0]=1.; z[1]=1.;
 
     // Create an optimization state
-    peopt::InequalityConstrained <double,Rm,Rm>::State::t state(x,z);
+    peopt::InequalityConstrained <double,Rm,Rm>::State::t
+        state(x,z);
 
     // Read the parameters from file
-    peopt::json::InequalityConstrained <double,peopt::Rm,peopt::Rm>::read(
-        peopt::Messaging(),"simple_inequality.peopt",state);
+    peopt::json::InequalityConstrained <double,peopt::Rm,peopt::Rm>
+        ::read(peopt::Messaging(),"simple_inequality.peopt",state);
     
     // Create a bundle of functions
     peopt::InequalityConstrained <double,Rm,Rm>::Functions::t fns;
@@ -127,7 +129,8 @@ int main(){
 
     // Print out the reason for convergence
     std::cout << "The algorithm converged due to: " <<
-        peopt::StoppingCondition::to_string(state.opt_stop) << std::endl;
+        peopt::StoppingCondition::to_string(state.opt_stop) <<
+        std::endl;
 
     // Print out the final answer
     const std::vector <double>& opt_x=*(state.x.begin());

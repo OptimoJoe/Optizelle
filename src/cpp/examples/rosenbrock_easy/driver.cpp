@@ -33,10 +33,10 @@ struct Rosen : public peopt::ScalarValuedFunction <double,peopt::Rm> {
     // Gradient
     void grad(
         const X::Vector& x,
-        X::Vector& g
+        X::Vector& grad
     ) const {
-        g[0]=-400*x[0]*(x[1]-sq(x[0]))-2*(1-x[0]);
-        g[1]=200*(x[1]-sq(x[0]));
+        grad[0]=-400*x[0]*(x[1]-sq(x[0]))-2*(1-x[0]);
+        grad[1]=200*(x[1]-sq(x[0]));
     }
 
     // Hessian-vector product
@@ -84,8 +84,6 @@ int main(){
     // Solve the optimization problem
     peopt::Unconstrained <double,peopt::Rm>::Algorithms
         ::getMin(peopt::Messaging(),fns,state);
-
-    // Setup the optimization problem
 
     // Print out the reason for convergence
     std::cout << "The algorithm converged due to: " <<

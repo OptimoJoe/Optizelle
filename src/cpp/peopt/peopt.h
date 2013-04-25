@@ -1010,6 +1010,9 @@ namespace peopt{
                 throw;
             }
         }
+
+        // Blank separator for printing
+        const std::string blankSeparator = ".         ";
     }
 
     // A collection of miscellaneous diagnostics that help determine errors.
@@ -3304,20 +3307,20 @@ namespace peopt{
                 out.push_back(atos <> ("f(x)"));
                 out.push_back(atos <> ("merit(x)"));
                 out.push_back(atos <> ("||grad||"));
-                out.push_back(atos <> ("|| dx ||"));
+                out.push_back(atos <> ("||dx||"));
 
                 // In case we're using a Krylov method
                 if(    algorithm_class==AlgorithmClass::TrustRegion
                     || dir==LineSearchDirection::NewtonCG
                 ){
-                    out.push_back(atos <> ("Kry Iter"));
-                    out.push_back(atos <> ("Kry Err"));
-                    out.push_back(atos <> ("Kry Why"));
+                    out.push_back(atos <> ("KryIter"));
+                    out.push_back(atos <> ("KryErr"));
+                    out.push_back(atos <> ("KryWhy"));
                 }
 
                 // In case we're using a line-search method
                 if(algorithm_class==AlgorithmClass::LineSearch) {
-                    out.push_back(atos <> ("LS Iter"));
+                    out.push_back(atos <> ("LSIter"));
                 }
 
                 // In case we're using a trust-region method 
@@ -3399,7 +3402,7 @@ namespace peopt{
                 if(!opt_begin)
                     out.push_back(atos <> (norm_dx));
                 else
-                    out.push_back("          ");
+                    out.push_back(blankSeparator);
 
                 // In case we're using a Krylov method
                 if(    algorithm_class==AlgorithmClass::TrustRegion
@@ -3410,7 +3413,7 @@ namespace peopt{
                         out.push_back(atos <> (krylov_rel_err));
                         out.push_back(atos <> (krylov_stop));
                     } else 
-                        for(Natural i=0;i<3;i++) out.push_back("          ");
+                        for(Natural i=0;i<3;i++) out.push_back(blankSeparator);
                 }
 
                 // In case we're using a line-search method
@@ -3418,7 +3421,7 @@ namespace peopt{
                     if(!opt_begin)
                         out.push_back(atos <> (linesearch_iter));
                     else 
-                        out.push_back("          ");
+                        out.push_back(blankSeparator);
                 }
                 
                 // In case we're using a trust-region method
@@ -3427,11 +3430,8 @@ namespace peopt{
                         out.push_back(atos <> (ared));
                         out.push_back(atos <> (pred));
                         out.push_back(atos <> (ared/pred));
-                    } else  {
-                        out.push_back("          ");
-                        out.push_back("          ");
-                        out.push_back("          ");
-                    }
+                    } else  
+                        for(Natural i=0;i<3;i++) out.push_back(blankSeparator);
                 }
 
                 // If we needed to do blank insertions, overwrite the elements
@@ -3441,7 +3441,7 @@ namespace peopt{
                         x!=out.end();
                         x++
                     )
-                        (*x)="          ";
+                        (*x)=blankSeparator;
             }
 
             // Combines all of the state information
@@ -5966,9 +5966,9 @@ namespace peopt{
                 out.push_back(atos <> ("ared/pred"));
                    
                 // Krylov method information
-                out.push_back(atos <> ("Kry Iter"));
-                out.push_back(atos <> ("Kry Err"));
-                out.push_back(atos <> ("Kry Why"));
+                out.push_back(atos <> ("KryIter"));
+                out.push_back(atos <> ("KryErr"));
+                out.push_back(atos <> ("KryWhy"));
             }
             // Combines all of the state headers
             static void getStateHeader(
@@ -6018,11 +6018,8 @@ namespace peopt{
                     out.push_back(atos <> (ared));
                     out.push_back(atos <> (pred));
                     out.push_back(atos <> (ared/pred));
-                } else { 
-                    out.push_back("          ");
-                    out.push_back("          ");
-                    out.push_back("          ");
-                }
+                } else 
+                    for(Natural i=0;i<3;i++) out.push_back(blankSeparator);
                 
                 // Krylov method information
                 if(!opt_begin) {
@@ -6030,7 +6027,7 @@ namespace peopt{
                     out.push_back(atos <> (krylov_rel_err));
                     out.push_back(atos <> (krylov_stop));
                 } else 
-                    for(Natural i=0;i<3;i++) out.push_back("          ");
+                    for(Natural i=0;i<3;i++) out.push_back(blankSeparator);
 
                 // If we needed to do blank insertions, overwrite the elements
                 // with spaces 
@@ -6039,7 +6036,7 @@ namespace peopt{
                         x!=out.end();
                         x++
                     )
-                        (*x)="          ";
+                        (*x)=blankSeparator;
             }
 
             // Combines all of the state information
@@ -8520,7 +8517,7 @@ namespace peopt{
                         x!=out.end();
                         x++
                     )
-                        (*x)="          ";
+                        (*x)=blankSeparator;
             }
 
             // Combines all of the state information
