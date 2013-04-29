@@ -157,7 +157,7 @@ Dependencies: ENABLE_CPP_LIBRARY
 Autodetect?:  Yes 
 Description:  A path that indicates where the jsoncpp headers have been 
               installed.  The actual headers must be found in 
-              ${BOOST_UNIT_TEST_INCLUDE_DIR}/json/.
+              ${JSONCPP_INCLUDE_DIR}/json/.
 
 Flag:         JSONCPP_LIBRARY
 Type:         Path 

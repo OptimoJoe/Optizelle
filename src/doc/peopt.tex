@@ -17,8 +17,9 @@
 % Create some new environments for displaying code and output
 \lstdefinelanguage{peoptOutput}{
     morekeywords={Iter,f,x,merit,grad,dx,KryWhy,KryErr,KryIter,ared,pred,
-        ared/pred,mu,mu_est},
-    sensitive=false
+        ared/pred,mu,mu_est,g},
+    sensitive=false,
+    literate=
 }
 
 \colorlet{punct}{red!60!black}
@@ -52,30 +53,24 @@
       {]}{{{\color{delim}{]}}}}{1},
 }
 
-\lstnewenvironment{lstCpp}
-    { \lstset {
-        language=C++,
-        backgroundcolor=\color{black!5},
-        showstringspaces=false,
-        basicstyle=\footnotesize
-    } }
-    {}
+\lstdefinestyle{C++}{
+    language=C++,
+    backgroundcolor=\color{black!5},
+    showstringspaces=false,
+    basicstyle=\footnotesize
+} 
 
-\lstnewenvironment{lstPeopt}
-    { \lstset {
-        language=peoptOutput,
-        backgroundcolor=\color{black!5},
-        basicstyle=\scriptsize
-    }}
-    {}
+\lstdefinestyle{peoptOutput}{
+    language=peoptOutput,
+    backgroundcolor=\color{black!5},
+    basicstyle=\scriptsize
+}
 
-\lstnewenvironment{lstPeoptJSON}
-    { \lstset {
-        language=json,
-        backgroundcolor=\color{black!5},
-        basicstyle=\footnotesize
-    }}
-    {}
+\lstdefinestyle{json}{
+    language=json,
+    backgroundcolor=\color{black!5},
+    basicstyle=\footnotesize
+}
 
 \title{Pretty Efficient Optimization (PEOpt)}
 \author{Joseph Young}
@@ -87,7 +82,7 @@
 
         The PEOpt (\underline{P}retty \underline{E}fficient \underline{Opt}imization) library contains a collection of routines used to solve a variety of nonlinear optimization problems.  It focuses on open ended abstractions that make it easy to interface to existing applications.
 
-\section{Unconstrained Optimization}\setcounter{figure}{1}
+\section{Unconstrained Optimization}
 
         The PEopt unconstrained optimization routines solve problems of the form
 $$
@@ -97,13 +92,13 @@ where $f:X\rightarrow \re$ denotes a differentiable function.  For example, we f
 $$
         \min_{x\in\re^2} (1-x_1)^2+100(x_2-x_1^2)^2.
 $$
-In PEOpt, we minimize the Rosenbrock function with the code in Figure \ref{fig:Rosen} and the input specification in Figure \ref{fig:RosenJSON}, which generates the output in Figure \ref{fig:RosenOut}.  We explain the functions used to generate this example in Chapter \ref{ch:Basic}, the input specification in Chapter \ref{ch:Input}, and the output in Chapter \ref{ch:Output}.
+In PEOpt, we minimize the Rosenbrock function with the code in Listing \ref{lst:Rosen} and the input specification in Listing \ref{lst:RosenJSON}, which generates the output in Listing \ref{lst:RosenOut}.  We explain the functions used to generate this example in Chapter \ref{ch:Basic}, the input specification in Chapter \ref{ch:Input}, and the output in Chapter \ref{ch:Output}.
 
 \input{rosen_code.tex}
 \input{rosen_input.tex}
 \input{rosen_output.tex}
 
-\section{Inequality Constrained Optimization}\setcounter{figure}{2}
+\section{Inequality Constrained Optimization}
 
         The PEopt inequality constrained optimization routines solve problems in the form
 $$
@@ -113,13 +108,13 @@ where $f:X\rightarrow \re$ denotes a differentiable function, $h:X\rightarrow Z$
 $$
         \min_{x\in\re^2}\{(x_1+1)^2+(x_2+1)^2 : x_1 + 2x_2 \geq 1, 2x_1 + x_2\geq 1\}
 $$
-In PEOpt, we minimize the above inequality constrained problem with the code in Figure \ref{fig:simpleIneq} and the input specification in Figure \ref{fig:simpleIneqJSON}, which generates the output in Figure \ref{fig:simpleIneqOut}.  As with the unconstrained example, we explain the functions used to generate this example in Chapter \ref{ch:Basic}, the input specification in Chapter \ref{ch:Input}, and the output in Chapter \ref{ch:Output}.
+In PEOpt, we minimize the above inequality constrained problem with the code in Listing \ref{lst:simpleIneq} and the input specification in Listing \ref{lst:simpleIneqJSON}, which generates the output in Listing \ref{lst:simpleIneqOut}.  As with the unconstrained example, we explain the functions used to generate this example in Chapter \ref{ch:Basic}, the input specification in Chapter \ref{ch:Input}, and the output in Chapter \ref{ch:Output}.
 
 \input{simple_ineq_code.tex}
 \input{simple_ineq_input.tex}
 \input{simple_ineq_output.tex}
 
-\section{Equality Constrained Optimization}\setcounter{figure}{2}
+\section{Equality Constrained Optimization}
 
         The PEOpt equality constrained optimization routines solve problems in the form
 $$
@@ -129,13 +124,13 @@ where $f:X\rightarrow \re$ and $g:X\rightarrow Y$ denote differentiable function
 $$
         \min_{x\in\re^2}\{x_1^2+x_2^2 : (x_1-2)^2 + (x_2-2)^2 = 1 \}
 $$
-In order to minimize this formulation in PEOpt, we use the code in Figure \ref{fig:simpleEq} and the input specification in Figure \ref{fig:simpleEqJSON}, which generates the output in Figure \ref{fig:simpleEqOut}.  Similar to the previous two examples, we explain the functions used to generate this example in Chapter \ref{ch:Basic}, the input specification in Chapter \ref{ch:Input}, and the output in Chapter \ref{ch:Output}.
+In order to minimize this formulation in PEOpt, we use the code in Listing \ref{lst:simpleEq} and the input specification in Listing \ref{lst:simpleEqJSON}, which generates the output in Listing \ref{lst:simpleEqOut}.  Similar to the previous two examples, we explain the functions used to generate this example in Chapter \ref{ch:Basic}, the input specification in Chapter \ref{ch:Input}, and the output in Chapter \ref{ch:Output}.
 
 \input{simple_eq_code.tex}
 \input{simple_eq_input.tex}
 \input{simple_eq_output.tex}
 
-\section{Constrained Optimization}\setcounter{figure}{3}
+\section{Constrained Optimization}
 
         The PEOpt constrained optimization routines solve problems in the form
 $$
@@ -145,7 +140,7 @@ where $f:X\rightarrow \re$ and $g:X\rightarrow Y$ denote differentiable function
 $$
         \min_{x\in\re^2}\{(x+1)^2+(y+1)^2 :  x + 2y = 1, 2x + y \geq 1 \} 
 $$
-In order to minimize this formulation in PEOpt, we use the code in Figure \ref{fig:simpleCon} and the input specification in Figure \ref{fig:simpleConJSON}, which generates the output in Figure \ref{fig:simpleConOut}.  As with the other examples in the introduction, we explain the functions used to generate this example in Chapter \ref{ch:Basic}, the input specification in Chapter \ref{ch:Input}, and the output in Chapter \ref{ch:Output}.
+In order to minimize this formulation in PEOpt, we use the code in Listing \ref{lst:simpleCon} and the input specification in Listing \ref{lst:simpleConJSON}, which generates the output in Listing \ref{lst:simpleConOut}.  As with the other examples in the introduction, we explain the functions used to generate this example in Chapter \ref{ch:Basic}, the input specification in Chapter \ref{ch:Input}, and the output in Chapter \ref{ch:Output}.
 
 \input{simple_con_code.tex}
 \input{simple_con_input.tex}
@@ -161,7 +156,7 @@ In order to minimize this formulation in PEOpt, we use the code in Figure \ref{f
 
         At its core, PEOpt requires two headers: \url{peopt.h} and \url{linalg.h} found in the \url{./src/cpp/peopt} directory.  Copy these files to a directory labeled \url{peopt} in the incorporating projects source tree.  Then, add the
 \begin{verbatim}
-    #include <peopt/peopt.h>
+#include <peopt/peopt.h>
 \end{verbatim}
 directive to the source files where PEOpt is used.
 
@@ -170,10 +165,10 @@ directive to the source files where PEOpt is used.
 
         In order to do a header only installation with CMake, we require CMake version 2.4 or better.  In the base PEOpt directory, execute the following commands
 \begin{verbatim}
-    mkdir build
-    cd build
-    cmake -DCMAKE_INSTALL_PREFIX=/dir/to/install/location ../src
-    make install
+mkdir build
+cd build
+cmake -DCMAKE_INSTALL_PREFIX=/dir/to/install/location ../src
+make install
 \end{verbatim}
 This installs the appropriate PEOpt headers to the directory \url{/dir/to/install/location/include/peopt}.
 
@@ -181,11 +176,11 @@ This installs the appropriate PEOpt headers to the directory \url{/dir/to/instal
 
         In order to fully install PEOpt using CMake, we require CMake version 2.8.9 or better.  Then, in the base PEOpt directory, execute the following commands
 \begin{verbatim}
-    mkdir build
-    cd build
-    ccmake ../src
-    make
-    make install
+mkdir build
+cd build
+ccmake ../src
+make
+make install
 \end{verbatim}
 The command \texttt{ccmake} executes the curses version of CMake, which displays several different options.  The PEOpt specific flags are
 \begin{center}
@@ -320,7 +315,7 @@ Dependencies: &\texttt{ENABLE\_CPP\_LIBRARY} \\
 Autodetect?:  &Yes \\
 Description:  &A path that indicates where the jsoncpp headers have been 
               installed.  The actual headers must be found in 
-              \url{${BOOST_UNIT_TEST_INCLUDE_DIR}/json/}.\\
+              \url{${JSONCPP_INCLUDE_DIR}/json/}.\\
 \\
 Flag:         &\texttt{JSONCPP\_LIBRARY}\\
 Type:         &Path \\

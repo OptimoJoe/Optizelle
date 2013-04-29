@@ -1,5 +1,4 @@
-\begin{figure}
-    \begin{lstCpp}
+\begin{lstlisting}[style=C++,caption={This example program minimizes the Rosenbrock function.  The code for this example can be found under \protect\path{cpp/examples/rosenbrock} in the installation directory.},label=lst:Rosen]
 #include <vector>
 #include <iostream>
 #include <string>
@@ -47,11 +46,7 @@ struct Rosen
         H_dx[1]=-400.*x[0]*dx[0]+200.*dx[1];
     }
 };
-\end{lstCpp}
-\end{figure}
-\begin{figure}
-    \ContinuedFloat
-    \begin{lstCpp}
+
 int main(){
     // Generate an initial guess for Rosenbrock
     std::vector <double> x(2);
@@ -93,7 +88,4 @@ int main(){
     // Successful termination
     return EXIT_SUCCESS;
 }
-\end{lstCpp}
-    \caption{This example program minimizes the Rosenbrock function.  The code for this example can be found under \protect\path{cpp/examples/rosenbrock} in the installation directory.}
-    \label{fig:Rosen}
-\end{figure}
+\end{lstlisting}

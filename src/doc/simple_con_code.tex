@@ -1,5 +1,4 @@
-\begin{figure}
-    \begin{lstCpp}
+\begin{lstlisting}[style=C++,caption={An example program that minimizes a simple constrained optimization problem.  The code for this example can be found under \protect\path{cpp/examples/simple_constrained} in the installation directory.},label=lst:simpleCon]
 #include "peopt/peopt.h"
 #include "peopt/vspaces.h"
 #include "peopt/json.h"
@@ -49,11 +48,7 @@ struct MyObj
         H_dx[1]=2.*dx[1];
     }
 };
-\end{lstCpp}
-\end{figure}
-\begin{figure}
-    \ContinuedFloat
-    \begin{lstCpp}
+
 // Define a simple equality
 //
 // g(x,y)= [ x + 2y = 1 ] 
@@ -101,11 +96,7 @@ struct MyEq
         X::zero(z);
     }
 };
-\end{lstCpp}
-\end{figure}
-\begin{figure}
-    \ContinuedFloat
-    \begin{lstCpp}
+
 // Define a simple inequality
 //
 // h(x,y)= [ 2x + y >= 1 ] 
@@ -153,11 +144,7 @@ struct MyIneq
         X::zero(z);
     }
 };
-\end{lstCpp}
-\end{figure}
-\begin{figure}
-    \ContinuedFloat
-    \begin{lstCpp}
+
 int main(){
     // Create a type shortcut
     using peopt::Rm;
@@ -203,7 +190,4 @@ int main(){
     // Return that the program exited properly
     return EXIT_SUCCESS;
 }
-\end{lstCpp}
-    \caption{An example program that minimizes a simple constrained optimization problem.  The code for this example can be found under \protect\path{cpp/examples/simple_constrained} in the installation directory.}
-    \label{fig:simpleCon}
-\end{figure}
+\end{lstlisting}

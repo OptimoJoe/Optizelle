@@ -1,5 +1,4 @@
-\begin{figure}
-    \begin{lstCpp}
+\begin{lstlisting}[style=C++,caption={An example program that minimizes a simple inequality constrained function.  The code for this example can be found under \protect\path{cpp/examples/simple_inequality} in the installation directory.},label=lst:simpleIneq]
 #include "peopt/peopt.h"
 #include "peopt/vspaces.h"
 #include "peopt/json.h"
@@ -49,11 +48,7 @@ struct MyObj
         H_dx[1]=2.*dx[1];
     }
 };
-\end{lstCpp}
-\end{figure}
-\begin{figure}
-    \ContinuedFloat
-    \begin{lstCpp}
+
 // Define simple inequalities 
 //
 // h(x,y)= [ x + 2y >= 1 ] 
@@ -104,11 +99,7 @@ struct MyIneq
         X::zero(z);
     }
 };
-\end{lstCpp}
-\end{figure}
-\begin{figure}
-    \ContinuedFloat
-    \begin{lstCpp}
+
 int main(){
     // Create a type shortcut
     using peopt::Rm;
@@ -152,7 +143,4 @@ int main(){
     // Return that the program exited properly
     return EXIT_SUCCESS;
 }
-\end{lstCpp}
-    \caption{An example program that minimizes a simple inequality constrained function.  The code for this example can be found under \protect\path{cpp/examples/simple_inequality} in the installation directory.}
-    \label{fig:simpleIneq}
-\end{figure}
+\end{lstlisting}
