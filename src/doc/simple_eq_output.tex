@@ -1,0 +1,35 @@
+\begin{figure}
+    \begin{lstPeopt}
+Iter      f(x)      merit(x)  ||grad||  ||dx||    
+1         5.62e+00  5.48e+00  4.42e+00  .         
+2         2.05e+00  4.04e+00  6.52e-01  1.00e+00  
+3         3.08e+00  3.36e+00  2.15e-01  3.90e-01  
+4         3.33e+00  3.34e+00  1.52e-02  8.17e-02  
+5         3.34e+00  3.34e+00  5.05e-05  4.28e-03  
+6         3.34e+00  3.34e+00  4.62e-10  1.28e-05  
+\end{lstPeopt}
+    \begin{lstPeopt}
+Iter      ared      pred      ared/pred KryIter   KryErr    KryWhy    
+1         .         .         .         .         .         .         
+2         1.43e+00  2.48e+00  5.79e-01  1         1.21e-01  TrstReg   
+3         1.33e+00  8.05e-01  1.65e+00  1         1.06e-16  RelErrSml 
+4         4.12e-02  1.43e-02  2.89e+00  1         9.47e-17  RelErrSml 
+5         9.62e-05  3.38e-05  2.85e+00  2         nan       Unstable  
+6         7.97e-10  3.23e-10  2.47e+00  1         9.50e-17  RelErrSml 
+\end{lstPeopt}
+    \begin{lstPeopt}
+Iter      ||g(x)||  
+1         1.80e-01  
+2         1.00e+00  
+3         1.52e-01  
+4         6.68e-03  
+5         1.83e-05  
+6         1.63e-10  
+\end{lstPeopt}
+    \begin{lstPeopt}
+The algorithm converged due to: RelativeGradientSmall
+The optimal point is: (1.2928932188134328e+00,1.2928932186979691e+00)
+\end{lstPeopt}
+    \caption{PEOpt uses this input specification to minimize the inequality constrained problem specified in Figure \ref{fig:simpleEq}.  We explain this specification Chapter \ref{ch:Input}.} 
+    \label{fig:simpleEqOut}
+\end{figure}

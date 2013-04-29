@@ -3,8 +3,10 @@
 #include "peopt/json.h"
 #include <iostream>
 #include <iomanip>
+#include <cstdlib>
 
-// Optimize a simple optimization problem with an optimal solution of (2-sqrt(2)/2,2-sqrt(2)/2).
+// Optimize a simple optimization problem with an optimal solution 
+// of (2-sqrt(2)/2,2-sqrt(2)/2).
 
 // Squares its input
 template <typename Real>
@@ -16,7 +18,9 @@ Real sq(Real x){
 // 
 // f(x,y)=x^2+y^2
 //
-struct MyObj : public peopt::ScalarValuedFunction <double,peopt::Rm> {
+struct MyObj
+    : public peopt::ScalarValuedFunction <double,peopt::Rm>
+{
     typedef peopt::Rm <double> X;
 
     // Evaluation 
@@ -49,7 +53,7 @@ struct MyObj : public peopt::ScalarValuedFunction <double,peopt::Rm> {
 // g(x,y)= [ (x-2)^2 + (y-2)^2 = 1 ] 
 //
 struct MyEq
-    : public peopt::VectorValuedFunction <double,peopt::Rm,peopt::Rm>
+    :public peopt::VectorValuedFunction<double,peopt::Rm,peopt::Rm>
 {
     typedef peopt::Rm <double> X;
     typedef peopt::Rm <double> Y;
@@ -97,13 +101,12 @@ int main(){
     // Create a type shortcut
     using peopt::Rm;
 
-    // Generate an initial guess for the primal
+    // Generate an initial guess 
     std::vector <double> x(2);
     x[0]=2.1; x[1]=1.1;
 
-    // Generate an initial guess for the dual
+    // Allocate memory for the equality multiplier 
     std::vector <double> y(1);
-    y[0]=1.; 
 
     // Create an optimization state
     peopt::EqualityConstrained <double,Rm,Rm>::State::t state(x,y);
@@ -131,4 +134,7 @@ int main(){
     std::cout << std::scientific << std::setprecision(16)
         << "The optimal point is: (" << opt_x[0] << ','
 	<< opt_x[1] << ')' << std::endl;
+
+    // Return that we've exited successfuly
+    return EXIT_SUCCESS;
 }

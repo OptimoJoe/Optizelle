@@ -3,6 +3,7 @@
 #include "peopt/json.h"
 #include <iostream>
 #include <iomanip>
+#include <cstdlib>
 
 // Optimize a simple optimization problem with an optimal solution
 // of (1/3,1/3)
@@ -102,13 +103,12 @@ int main(){
     // Create a type shortcut
     using peopt::Rm;
 
-    // Generate an initial guess for the primal
+    // Generate an initial guess
     std::vector <double> x(2);
     x[0]=2.1; x[1]=1.1;
 
-    // Generate an initial guess for the dual
+    // Allocate memory for the inequality multipler 
     std::vector <double> z(2);
-    z[0]=1.; z[1]=1.;
 
     // Create an optimization state
     peopt::InequalityConstrained <double,Rm,Rm>::State::t
@@ -137,4 +137,7 @@ int main(){
     std::cout << std::scientific << std::setprecision(16)
         << "The optimal point is: (" << opt_x[0] << ','
 	<< opt_x[1] << ')' << std::endl;
+
+    // Return that the program exited properly
+    return EXIT_SUCCESS;
 }

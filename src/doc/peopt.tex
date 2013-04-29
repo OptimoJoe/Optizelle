@@ -4,9 +4,9 @@
 \usepackage{amssymb}
 \usepackage{listings}
 \usepackage{xcolor}
-\usepackage{rotating}
 \usepackage{url}
 \usepackage{subfig}
+\usepackage{longtable}
 
 % Change the figure numbering to be chap.sec.num
 \renewcommand{\thefigure}{\arabic{chapter}.\arabic{section}.\arabic{figure}}
@@ -27,7 +27,6 @@
 \colorlet{numb}{magenta!60!black}
 \lstdefinelanguage{json}{
     basicstyle=\normalfont\ttfamily,
-    numbers=left,
     stepnumber=1,
     numbersep=8pt,
     showstringspaces=false,
@@ -88,7 +87,7 @@
 
         The PEOpt (\underline{P}retty \underline{E}fficient \underline{Opt}imization) library contains a collection of routines used to solve a variety of nonlinear optimization problems.  It focuses on open ended abstractions that make it easy to interface to existing applications.
 
-\section{Unconstrained Optimization}
+\section{Unconstrained Optimization}\setcounter{figure}{1}
 
         The PEopt unconstrained optimization routines solve problems of the form
 $$
@@ -98,135 +97,13 @@ where $f:X\rightarrow \re$ denotes a differentiable function.  For example, we f
 $$
         \min_{x\in\re^2} (1-x_1)^2+100(x_2-x_1^2)^2.
 $$
-In PEOpt, we minimize the Rosenbrock function with the code in Figure \ref{fig:Rosen}, which generates the output in Figure \ref{fig:RosenOut}.  We explain the functions used to generate this example in Chapter \ref{ch:Basic} and the output in Chapter \ref{ch:Output}.
+In PEOpt, we minimize the Rosenbrock function with the code in Figure \ref{fig:Rosen} and the input specification in Figure \ref{fig:RosenJSON}, which generates the output in Figure \ref{fig:RosenOut}.  We explain the functions used to generate this example in Chapter \ref{ch:Basic}, the input specification in Chapter \ref{ch:Input}, and the output in Chapter \ref{ch:Output}.
 
-\begin{figure}
-\begin{lstCpp}
-#include <vector>
-#include <iostream>
-#include <string>
-#include "peopt/peopt.h"
-#include "peopt/vspaces.h"
-#include "peopt/json.h"
+\input{rosen_code.tex}
+\input{rosen_input.tex}
+\input{rosen_output.tex}
 
-// Squares its input
-template <typename Real>
-Real sq(Real x){
-    return x*x;
-}
-
-// Define the Rosenbrock function where
-// 
-// f(x,y)=(1-x)^2+100(y-x^2)^2
-//
-struct Rosen
-    : public peopt::ScalarValuedFunction <double,peopt::Rm> 
-{
-    typedef peopt::Rm <double> X;
-
-    // Evaluation of the Rosenbrock function
-    double operator () (const X::Vector& x) const {
-        return sq(1.-x[0])+100.*sq(x[1]-sq(x[0]));
-    }
-
-    // Gradient
-    void grad(
-        const X::Vector& x,
-        X::Vector& grad
-    ) const {
-        grad[0]=-400*x[0]*(x[1]-sq(x[0]))-2*(1-x[0]);
-        grad[1]=200*(x[1]-sq(x[0]));
-    }
-
-    // Hessian-vector product
-    void hessvec(
-        const X::Vector& x,
-        const X::Vector& dx,
-        X::Vector& H_dx
-    ) const {
-        H_dx[0]= (1200*sq(x[0])-400*x[1]+2)*dx[0]-400*x[0]*dx[1];
-        H_dx[1]= -400*x[0]*dx[0] + 200*dx[1];
-    }
-};
-\end{lstCpp}
-\end{figure}
-\begin{figure}
-\ContinuedFloat
-\begin{lstCpp}
-
-int main(){
-
-    // Generate an initial guess for Rosenbrock
-    std::vector <double> x(2);
-    x[0]=-1.2; x[1]=1.;
-
-    // Create an unconstrained state based on this vector
-    peopt::Unconstrained <double,peopt::Rm>::State::t state(x);
-
-    // Read the parameters from file
-    peopt::json::Unconstrained <double,peopt::Rm>::read(
-        peopt::Messaging(),"rosenbrock_easy.peopt",state);
-
-    // Create the bundle of functions 
-    peopt::Unconstrained <double,peopt::Rm>::Functions::t fns;
-    fns.f.reset(new Rosen);
-
-    // Solve the optimization problem
-    peopt::Unconstrained <double,peopt::Rm>::Algorithms
-        ::getMin(peopt::Messaging(),fns,state);
-
-    // Print out the reason for convergence
-    std::cout << "The algorithm converged due to: " <<
-        peopt::StoppingCondition::to_string(state.opt_stop) <<
-        std::endl;
-
-    // Print out the final answer
-    const std::vector <double>& opt_x=*(state.x.begin());
-    std::cout << "The optimal point is: (" << opt_x[0] << ','
-        << opt_x[1] << ')' << std::endl;
-}
-\end{lstCpp}
-\caption{An example program that minimizes the Rosenbrock function.  The code for this example can be found under \protect\path{cpp/examples/rosenbrock_easy} in the installation directory.}
-\label{fig:Rosen}
-\end{figure}
-
-\begin{figure}
-\begin{sideways}
-\begin{lstPeopt}
-Iter      f(x)      merit(x)  ||grad||  || dx ||  Kry Iter  Kry Err   Kry Why   ared      pred      ared/pred 
-1         2.42e+01  2.42e+01  2.33e+02                                                                        
-2         4.73e+00  4.73e+00  4.64e+00  3.81e-01  2         5.92e-17  RelErrSml 1.95e+01  1.94e+01  1.00e+00  
-*         4.73e+00  4.73e+00  4.64e+00  1.00e+00  2         3.14e-01  TrstReg   -6.36e-01 1.54e+00  -4.14e-01 
-3         4.00e+00  4.00e+00  1.74e+01  5.00e-01  2         3.54e-01  TrstReg   7.28e-01  8.14e-01  8.93e-01  
-4         3.34e+00  3.34e+00  2.33e+01  5.00e-01  2         1.19e-02  TrstReg   6.67e-01  6.28e-01  1.06e+00  
-5         2.58e+00  2.58e+00  8.77e+00  2.04e-01  2         3.61e-16  RelErrSml 7.53e-01  5.68e-01  1.33e+00  
-*         2.58e+00  2.58e+00  8.77e+00  4.91e-01  2         1.35e-15  RelErrSml -1.48e-01 5.57e-01  -2.65e-01 
-6         2.09e+00  2.09e+00  8.48e+00  2.45e-01  2         1.15e-01  TrstReg   4.92e-01  4.36e-01  1.13e+00  
-7         1.75e+00  1.75e+00  1.37e+01  3.06e-01  2         2.38e-15  RelErrSml 3.38e-01  4.07e-01  8.31e-01  
-8         1.20e+00  1.20e+00  2.99e+00  9.50e-02  2         3.04e-16  RelErrSml 5.58e-01  4.66e-01  1.20e+00  
-*         1.20e+00  1.20e+00  2.99e+00  4.15e-01  2         3.18e-15  RelErrSml -2.09e+00 4.54e-01  -4.60e+00 
-9         9.13e-01  9.13e-01  7.24e+00  2.08e-01  2         5.13e-01  TrstReg   2.83e-01  3.40e-01  8.34e-01  
-10        6.17e-01  6.17e-01  2.36e+00  1.23e-01  2         7.19e-17  RelErrSml 2.96e-01  2.26e-01  1.31e+00  
-11        4.64e-01  4.64e-01  8.01e+00  2.08e-01  2         1.61e-01  TrstReg   1.52e-01  1.88e-01  8.13e-01  
-12        2.69e-01  2.69e-01  1.17e+00  1.23e-01  2         1.96e-17  RelErrSml 1.95e-01  1.59e-01  1.23e+00  
-13        1.83e-01  1.83e-01  6.37e+00  2.08e-01  2         3.14e-01  TrstReg   8.65e-02  1.08e-01  8.02e-01  
-14        9.23e-02  9.23e-02  1.23e+00  1.30e-01  2         7.50e-17  RelErrSml 9.06e-02  7.21e-02  1.26e+00  
-15        5.33e-02  5.33e-02  5.17e+00  2.08e-01  2         6.56e-02  TrstReg   3.90e-02  4.57e-02  8.52e-01  
-16        1.85e-02  1.85e-02  6.67e-01  1.03e-01  2         5.29e-17  RelErrSml 3.47e-02  2.89e-02  1.20e+00  
-17        9.22e-03  9.22e-03  3.68e+00  1.88e-01  2         1.77e-14  RelErrSml 9.32e-03  1.30e-02  7.17e-01  
-18        6.89e-04  6.89e-04  5.82e-02  4.05e-02  2         1.13e-15  RelErrSml 8.53e-03  8.14e-03  1.05e+00  
-19        4.05e-05  4.05e-05  2.78e-01  5.50e-02  2         3.02e-14  RelErrSml 6.49e-04  6.60e-04  9.84e-01  
-20        1.62e-08  1.62e-08  2.58e-04  2.83e-03  2         6.80e-16  RelErrSml 4.05e-05  4.03e-05  1.00e+00  
-21        2.64e-14  2.64e-14  7.13e-06  2.84e-04  2         1.23e-13  RelErrSml 1.62e-08  1.62e-08  1.00e+00  
-The algorithm converged due to: RelativeGradientSmall
-The optimal point is: (1,1)
-\end{lstPeopt}
-\end{sideways}
-\caption{Output generated by PEOpt when running the Rosenbrock example.  We explain this output in Chapter \ref{ch:Output}.}
-\label{fig:RosenOut}
-\end{figure}
-
-\section{Inequality Constrained Optimization}
+\section{Inequality Constrained Optimization}\setcounter{figure}{2}
 
         The PEopt inequality constrained optimization routines solve problems in the form
 $$
@@ -236,227 +113,268 @@ where $f:X\rightarrow \re$ denotes a differentiable function, $h:X\rightarrow Z$
 $$
         \min_{x\in\re^2}\{(x_1+1)^2+(x_2+1)^2 : x_1 + 2x_2 \geq 1, 2x_1 + x_2\geq 1\}
 $$
-In PEOpt, we minimize the above inequality constrained problem with the code in Figure \ref{fig:simpleIneq}, which generates the output in Figure \ref{fig:simpleIneqOut}.  As with the unconstrained example, we explain the functions used to generate this example in Chapter \ref{ch:Basic} and the Output in Chapter \ref{ch:Output}.
+In PEOpt, we minimize the above inequality constrained problem with the code in Figure \ref{fig:simpleIneq} and the input specification in Figure \ref{fig:simpleIneqJSON}, which generates the output in Figure \ref{fig:simpleIneqOut}.  As with the unconstrained example, we explain the functions used to generate this example in Chapter \ref{ch:Basic}, the input specification in Chapter \ref{ch:Input}, and the output in Chapter \ref{ch:Output}.
 
-\begin{figure}
-\begin{lstCpp}
-#include "peopt/peopt.h"
-#include "peopt/vspaces.h"
-#include "peopt/json.h"
-#include <iostream>
-#include <iomanip>
+\input{simple_ineq_code.tex}
+\input{simple_ineq_input.tex}
+\input{simple_ineq_output.tex}
 
-// Optimize a simple optimization problem with an optimal solution
-// of (1/3,1/3)
+\section{Equality Constrained Optimization}\setcounter{figure}{2}
 
-// Squares its input
-template <typename Real>
-Real sq(Real x){
-    return x*x;
-}
+        The PEOpt equality constrained optimization routines solve problems in the form
+$$
+        \min_{x\in X} \{ f(x) : g(x)=0 \}
+$$
+where $f:X\rightarrow \re$ and $g:X\rightarrow Y$ denote differentiable functions.  For example, these problems include linearly constrained quadratic programs such as
+$$
+        \min_{x\in\re^2}\{x_1^2+x_2^2 : (x_1-2)^2 + (x_2-2)^2 = 1 \}
+$$
+In order to minimize this formulation in PEOpt, we use the code in Figure \ref{fig:simpleEq} and the input specification in Figure \ref{fig:simpleEqJSON}, which generates the output in Figure \ref{fig:simpleEqOut}.  Similar to the previous two examples, we explain the functions used to generate this example in Chapter \ref{ch:Basic}, the input specification in Chapter \ref{ch:Input}, and the output in Chapter \ref{ch:Output}.
 
-// Define a simple objective where 
-// 
-// f(x,y)=(x+1)^2+(y+1)^2
-//
-struct MyObj
-    : public peopt::ScalarValuedFunction <double,peopt::Rm>
-{
-    typedef peopt::Rm <double> X;
+\input{simple_eq_code.tex}
+\input{simple_eq_input.tex}
+\input{simple_eq_output.tex}
 
-    // Evaluation 
-    double operator () (const X::Vector& x) const {
-        return sq(x[0]+1.)+sq(x[1]+1.);
-    }
+\section{Constrained Optimization}\setcounter{figure}{3}
 
-    // Gradient
-    void grad(
-        const X::Vector& x,
-        X::Vector& grad
-    ) const {
-        grad[0]=2.*x[0]+2.;
-        grad[1]=2.*x[1]+2.;
-    }
+        The PEOpt constrained optimization routines solve problems in the form
+$$
+        \min_{x\in X} \{ f(x) : g(x)=0, h(x)\succeq 0 \}
+$$
+where $f:X\rightarrow \re$ and $g:X\rightarrow Y$ denote differentiable functions, $h:X\rightarrow Z$ denotes an affine function, and $\succeq$ denotes a partial order that corresponds to a symmetric cone.  For example, these formulations include constrained problems such as 
+$$
+        \min_{x\in\re^2}\{(x+1)^2+(y+1)^2 :  x + 2y = 1, 2x + y \geq 1 \} 
+$$
+In order to minimize this formulation in PEOpt, we use the code in Figure \ref{fig:simpleCon} and the input specification in Figure \ref{fig:simpleConJSON}, which generates the output in Figure \ref{fig:simpleConOut}.  As with the other examples in the introduction, we explain the functions used to generate this example in Chapter \ref{ch:Basic}, the input specification in Chapter \ref{ch:Input}, and the output in Chapter \ref{ch:Output}.
 
-    // Hessian-vector product
-    void hessvec(
-        const X::Vector& x,
-        const X::Vector& dx,
-        X::Vector& H_dx
-    ) const {
-        H_dx[0]=2.*dx[0];
-        H_dx[1]=2.*dx[1];
-    }
-};
-\end{lstCpp}
-\end{figure}
-\begin{figure}
-\ContinuedFloat
-\begin{lstCpp}
-// Define simple inequalities 
-//
-// h(x,y)= [ x + 2y >= 1 ] 
-//         [ 2x + y >= 1 ] 
-//
-struct MyIneq
-    :public peopt::VectorValuedFunction<double,peopt::Rm,peopt::Rm>
-{
-    typedef peopt::Rm <double> X;
-    typedef peopt::Rm <double> Y;
-
-    // y=h(x) 
-    void operator () (
-        const X::Vector& x,
-        Y::Vector& y
-    ) const {
-        y[0]=x[0]+2.*x[1]-1.;
-        y[1]=2.*x[0]+x[1]-1.;
-    }
-    
-    // y=h'(x)dx
-    void p(
-        const X::Vector& x,
-        const X::Vector& dx,
-        Y::Vector& y
-    ) const { 
-        y[0]= dx[0]+2.*dx[1];
-        y[1]= 2.*dx[0]+dx[1];
-    }
-    
-    // z=h'(x)*dy
-    void ps(
-        const X::Vector& x,
-        const Y::Vector& dy,
-        X::Vector& z
-    ) const { 
-        z[0]= dy[0]+2.*dy[1];
-        z[1]= 2.*dy[0]+dy[1];
-    }
-    
-    // z=(h''(x)dx)*dy
-    void pps( 
-        const X::Vector& x,
-        const X::Vector& dx,
-        const Y::Vector& dy,
-        X::Vector& z
-    ) const {
-        X::zero(z);
-    }
-};
-\end{lstCpp}
-\end{figure}
-\begin{figure}
-\ContinuedFloat
-\begin{lstCpp}
-int main(){
-    // Create a type shortcut
-    using peopt::Rm;
-    
-    // Generate an initial guess for the primal
-    std::vector <double> x(2);
-    x[0]=2.1; x[1]=1.1;
-    
-    // Generate an initial guess for the dual
-    std::vector <double> z(2);
-    z[0]=1.; z[1]=1.;
-    
-    // Create an optimization state
-    peopt::InequalityConstrained <double,Rm,Rm>::State::t
-        state(x,z);
-    
-    // Read the parameters from file
-    peopt::json::InequalityConstrained <double,peopt::Rm,peopt::Rm>
-        ::read(peopt::Messaging(),"simple_inequality.peopt",state);
-    
-    // Create a bundle of functions
-    peopt::InequalityConstrained <double,Rm,Rm>::Functions::t fns;
-    fns.f.reset(new MyObj);
-    fns.h.reset(new MyIneq);
-    
-    // Solve the optimization problem
-    peopt::InequalityConstrained <double,Rm,Rm>::Algorithms
-        ::getMin(peopt::Messaging(),fns,state);
-    
-    // Print out the reason for convergence
-    std::cout << "The algorithm converged due to: " <<
-        peopt::StoppingCondition::to_string(state.opt_stop) <<
-        std::endl;
-    
-    // Print out the final answer
-    const std::vector <double>& opt_x=*(state.x.begin());
-    std::cout << std::scientific << std::setprecision(16)
-        << "The optimal point is: (" << opt_x[0] << ','
-        << opt_x[1] << ')' << std::endl;
-}
-\end{lstCpp}
-\caption{An example program that minimizes a simple inequality constrained function.  The code for this example can be found under \protect\path{cpp/examples/simple_inequality} in the installation directory.}
-\label{fig:simpleIneq}
-\end{figure}
-
-\begin{figure}
-\begin{lstPeoptJSON}
-{
-   "peopt" : {
-      "msg_level" : 1,
-      "H_type" : "UserDefined",
-      "iter_max" : 100,
-      "eps_krylov" : 1e-10,
-      "eps_dx" : 1e-16,
-      "eps_grad" : 1e-10,
-      "eps_mu" : 1e-8,
-      "sigma" : 0.01,
-      "gamma" : 0.995
-   }
-}
-\end{lstPeoptJSON}
-\caption{Fill me in}
-\label{fig:simpleIneqJSON}
-\end{figure}
-
-\begin{figure}
-\begin{lstPeopt}
-Iter      f(x)      merit(x)  ||grad||  ||dx||    
-1         1.40e+01  1.40e+01  6.40e+00  .         
-2         7.53e+00  7.53e+00  4.88e+00  1.00e+00  
-3         4.08e+00  4.08e+00  2.54e+00  7.30e-01  
-4         3.69e+00  3.69e+00  6.96e-01  2.33e-01  
-5         3.56e+00  3.56e+00  1.11e-01  1.01e-01  
-6         3.56e+00  3.56e+00  8.16e-05  4.07e-04  
-7         3.56e+00  3.56e+00  8.88e-16  2.46e-05  
-8         3.56e+00  3.56e+00  8.88e-16  9.20e-08  
-\end{lstPeopt}
-\begin{lstPeopt}
-Iter      KryIter   KryErr    KryWhy    ared      pred      ared/pred 
-1         .         .         .         .         .         .         
-2         1         6.52e-01  TrstReg   6.47e+00  6.18e+00  1.05e+00  
-3         2         4.48e-03  TrstReg   3.44e+00  3.26e+00  1.06e+00  
-4         2         1.04e-15  RelErrSml 3.85e-01  3.54e-01  1.09e+00  
-5         2         2.80e-16  RelErrSml 1.29e-01  9.59e-02  1.34e+00  
-6         2         4.22e-17  RelErrSml 7.28e-04  4.08e-04  1.78e+00  
-7         2         5.17e-16  RelErrSml 3.30e-05  1.71e-05  1.94e+00  
-8         2         9.64e-17  RelErrSml 3.31e-07  1.72e-07  1.93e+00 
-\end{lstPeopt}
-\begin{lstPeopt}
-Iter      mu        mu_est    
-1         1.00e-02  1.00e+00  
-2         2.51e-03  2.51e-01  
-3         6.88e-04  6.88e-02  
-4         3.53e-04  3.53e-02  
-5         3.73e-06  3.73e-04  
-6         1.74e-07  1.74e-05  
-7         1.75e-09  1.75e-07  
-8         1.75e-09  1.75e-09  
-\end{lstPeopt}
-\begin{lstPeopt}
-The algorithm converged due to: RelativeGradientSmall
-The optimal point is: (3.3333333399027393e-01,3.3333333399027548e-01)
-\end{lstPeopt}
-\caption{Output generated by PEOpt when running the simple inequality example.  We explain this output in Chapter \ref{ch:Output}.}
-\label{fig:simpleIneqOut}
-\end{figure}
+\input{simple_con_code.tex}
+\input{simple_con_input.tex}
+\input{simple_con_output.tex}
 
 \chapter{Installation}\label{ch:Install}
+
+    Depending on the requirements of the application, PEOpt has several different build an installation methods.  In the most simple case, PEOpt can be incorporated into a project as a header taken from the source directory.  In a more complete case, PEOpt uses CMake in order to manage the installation of several supporting libraries.  We discuss these methods below.
+
+        Outside the installation mechanism, there are two primary modes in which we access the PEOpt routines: headers only and as a library.  In headers only mode, PEOpt enables access to the core optimization and verification routines, which include utilities such as finite-difference tests.  In libary mode, PEOpt also includes predefined vector spaces as well as parameter readers that read in parameter files in JSON format.
+
+\section{Header Only Installation with No Build System}
+
+        At its core, PEOpt requires two headers: \url{peopt.h} and \url{linalg.h} found in the \url{./src/cpp/peopt} directory.  Copy these files to a directory labeled \url{peopt} in the incorporating projects source tree.  Then, add the
+\begin{verbatim}
+    #include <peopt/peopt.h>
+\end{verbatim}
+directive to the source files where PEOpt is used.
+
+
+\section{Header Only Installation with CMake}
+
+        In order to do a header only installation with CMake, we require CMake version 2.4 or better.  In the base PEOpt directory, execute the following commands
+\begin{verbatim}
+    mkdir build
+    cd build
+    cmake -DCMAKE_INSTALL_PREFIX=/dir/to/install/location ../src
+    make install
+\end{verbatim}
+This installs the appropriate PEOpt headers to the directory \url{/dir/to/install/location/include/peopt}.
+
+\section{Library Installation with CMake}
+
+        In order to fully install PEOpt using CMake, we require CMake version 2.8.9 or better.  Then, in the base PEOpt directory, execute the following commands
+\begin{verbatim}
+    mkdir build
+    cd build
+    ccmake ../src
+    make
+    make install
+\end{verbatim}
+The command \texttt{ccmake} executes the curses version of CMake, which displays several different options.  The PEOpt specific flags are
+\begin{center}
+\begin{longtable}{lp{0.75\textwidth}}
+Flag:         &\texttt{ENABLE\_CPP\_LIBRARY}\\
+Type:         &Bool\\
+Default:      &Off\\
+Dependencies: &\texttt{BLAS\_LIBRARY}, \texttt{LAPACK\_LIBRARY},
+              \texttt{JSONCPP\_INCLUDE\_DIR}, \texttt{JSONCPP\_LIBRARY}\\
+Autodetect?:  &No\\
+Description:  &Enables the the library build for peopt.  This includes the
+              built-in vector spaces for real vectors or cone programming.\\
+\\
+Flag:         &\texttt{ENABLE\_CPP\_EXAMPLES}\\
+Type:         &Bool\\
+Default:      &Off\\
+Dependencies: &\texttt{ENABLE\_CPP\_LIBRARY}\\
+Autodetect?:  &No\\
+Description:  &Enables the build and installation of simple examples that
+              demonstrate the use of peopt.  These examples are installed to
+              the directory
+              \url{${CMAKE_INSTALL_PREFIX}/share/peopt/cpp/examples}.\\
+\\
+Flag:         &\texttt{ENABLE\_CPP\_UNIT}\\
+Type:         &Bool\\
+Default:      &Off\\
+Dependencies: &\texttt{ENABLE\_CPP\_LIBRARY},
+              \texttt{BOOST\_UNIT\_TEST\_INCLUDE\_DIR},
+              \texttt{BOOST\_UNIT\_TEST\_LIBRARY}\\
+Autodetect?:  &No\\
+Description:  &Enables the build and installation of unit tests that help
+              validate the peopt code.  These tests are installed to the
+              directory \url{${CMAKE_INSTALL_PREFIX}/share/peopt/cpp/unit}.\\
+\\
+Flag:         &\texttt{ENABLE\_OPENMP}\\
+Type:         &Bool\\
+Default:      &Off\\
+Dependencies: &\texttt{ENABLE\_CPP\_LIBRARY}\\
+Autodetect?:  &No\\
+Description:  &Toggles whether or not the peopt library should be compiled
+              using OpenMP.  This primarily affect whether or not the
+              prepackaged vector spaces are coded to run in parallel using
+              threads.\\
+\\
+Flag:         &\texttt{ENABLE\_PYTHON}\\
+Type:         &Bool\\
+Default:      &Off\\
+Dependencies: &\texttt{ENABLE\_CPP\_LIBRARY}, \texttt{PYTHON\_INCLUDE\_DIR}, \texttt{PYTHON\_LIBRARY}\\
+Autodetect?:  &No\\
+Description:  &Enables the build and installation of the Python wrappers for
+              peopt.  The resulting Python module is installed to
+              \url{${CMAKE_INSTALL_PREFIX}/share/peopt/python}.  As such, make
+              sure that the PYTHONPATH includes this directory.  In addition,
+              using this module assumes that libpeopt\_complete.so can be found
+              in the LD\_LIBRARY\_PATH.\\
+\\
+Flag:         &\texttt{ENABLE\_PYTHON\_EXAMPLES}\\
+Type:         &Bool\\
+Default:      &Off\\
+Dependencies: &\texttt{ENABLE\_PYTHON\_LIBRARY}\\
+Autodetect?:  &No\\
+Description:  &Enables the build and installation of examples that use the
+              Python wrappers for peopt.  These examples are installed into
+              the directory
+              \url{${CMAKE_INSTALL_PREFIX}/share/peopt/python/examples.}\\
+\\
+Flag:         &\texttt{ENABLE\_MATLAB}\\
+Type:         &Bool\\
+Default:      &Off\\
+Dependencies: &\texttt{ENABLE\_CPP\_LIBRARY}, \texttt{MATLAB\_INCLUDE\_DIR},
+              \texttt{MATLAB\_LIBRARY}, \texttt{MATLAB\_MEX\_EXTENSION}\\
+Autodetect?:  &No\\
+Description:  &Enables the build and installation of the MATLAB wrappers for
+              peopt.  The resulting MATLAB mex file is installed to
+              \url{${CMAKE_INSTALL_PREFIX}/share/peopt/matlab}.  As such, make
+              sure that the MATLAB path includes this directory. \\
+\\
+Flag:         &\texttt{ENABLE\_MATLAB\_EXAMPLES}\\
+Type:         &Bool\\
+Default:      &Off\\
+Dependencies: &\texttt{ENABLE\_MATLAB\_LIBRARY}\\
+Autodetect?:  &No\\
+Description:  &Enables the build and installation of examples that use the
+              MATLAB wrappers for peopt.  These examples are installed into
+              the directory
+              \url{${CMAKE_INSTALL_PREFIX}/share/peopt/matlab/examples}.\\
+\\
+Flag:         &\texttt{BLAS\_LIBRARY} \\
+Type:         &Path \\
+Default:      &None \\
+Dependencies: &\texttt{ENABLE\_CPP\_LIBRARY} \\
+Autodetect?:  &Yes \\
+Description:  &A semicolon separated list of the complete path and library used
+              to provide BLAS.  This must include all required libraries in
+              order to successfully compile a BLAS dependent application.  For
+              example, using ATLAS BLAS, one possible entry is:
+              \url{/usr/lib/libf77blas.a;/usr/lib/libatlas.a}\\
+\\
+Flag:         &\texttt{LAPACK\_LIBRARY} \\
+Type:         &Path \\
+Default:      &None \\
+Dependencies: &\texttt{ENABLE\_CPP\_LIBRARY} \\
+Autodetect?:  &Yes \\
+Description:  &A semicolon separated list of the complete path and library used
+              to provide LAPACK.  This must include all required libraries,
+              except for BLAS libraries above in \texttt{BLAS\_LIBRARY}, in
+              order to successfully compile a LAPACK dependent application.
+              For example, using ATLAS LAPACK, one possible entry is:
+              \url{/usr/lib/liblapack.a;/usr/lib/libcblas.a;/usr/lib/libgfortran.so.3}\\
+\\
+Flag:         &\texttt{BOOST\_UNIT\_TEST\_INCLUDE\_DIR} \\
+Type:         &Path \\
+Default:      &None \\
+Dependencies: &\texttt{ENABLE\_CPP\_UNIT} \\
+Autodetect?:  &Yes \\
+Description:  &A path that indicates where the boost headers for unit testing
+              have been installed.  The actual header must be found at
+              \url{${BOOST_UNIT_TEST_INCLUDE_DIR}/boost/test/unit_test.hpp}.\\
+\\
+Flag:         &\texttt{BOOST\_UNIT\_TEST\_LIBRARY}\\
+Type:         &Path \\
+Default:      &None \\
+Dependencies: &\texttt{ENABLE\_CPP\_UNIT}\\
+Autodetect?:  &Yes \\
+Description:  &The complete path and library for the boost unit test
+              framework. \\
+\\
+Flag:         &\texttt{JSONCPP\_INCLUDE\_DIR} \\
+Type:         &Path \\
+Default:      &None \\
+Dependencies: &\texttt{ENABLE\_CPP\_LIBRARY} \\
+Autodetect?:  &Yes \\
+Description:  &A path that indicates where the jsoncpp headers have been 
+              installed.  The actual headers must be found in 
+              \url{${BOOST_UNIT_TEST_INCLUDE_DIR}/json/}.\\
+\\
+Flag:         &\texttt{JSONCPP\_LIBRARY}\\
+Type:         &Path \\
+Default:      &None \\
+Dependencies: &\texttt{ENABLE\_CPP\_LIBRARY}\\
+Autodetect?:  &Yes \\
+Description:  &The complete path and library for jsoncpp. \\
+\\
+Flag:         &\texttt{PYTHON\_INCLUDE\_DIR} \\
+Type:         &Path \\
+Default:      &None \\
+Dependencies: &\texttt{ENABLE\_PYTHON} \\
+Autodetect?:  &Yes \\
+Description:  &A path that indicates where the Python 2.7 headers have been 
+              installed.  We do not prefix these headers, so we look directly
+              in the directory provided here.\\
+\\
+Flag:         &\texttt{PYTHON\_LIBRARY}\\
+Type:         &Path \\
+Default:      &None \\
+Dependencies: &\texttt{ENABLE\_PYTHON}\\
+Autodetect?:  &Yes \\
+Description:  &The complete path and library for Python 2.7. \\
+\\
+Flag:         &\texttt{MATLAB\_INCLUDE\_DIR} \\
+Type:         &Path \\
+Default:      &None \\
+Dependencies: &\texttt{ENABLE\_MATLAB}\\
+Autodetect?:  &Yes \\
+Description:  &A path that indicates where the MATLAB headers have been 
+              installed.  We do not prefix these headers, so we look directly
+              in the directory provided here.\\
+\\
+Flag:         &\texttt{MATLAB\_LIBRARY}\\
+Type:         &Path \\
+Default:      &None \\
+Dependencies: &\texttt{ENABLE\_MATLAB}\\
+Autodetect?:  &Yes \\
+Description:  &The complete path and library for the mex library.  Typically,
+              this is libmex.so on Linux.\\
+\\
+Flag:         &\texttt{MATLAB\_MEX\_EXTENSION}\\
+Type:         &String \\
+Default:      &None \\
+Dependencies: &\texttt{ENABLE\_MATLAB}\\
+Autodetect?:  &No \\
+Description:  &The extension of mex files on the system.  This can be found
+              by typing in the command 'mexext' inside of MATLAB.  Note, copy
+              the output from 'mexext' directly and do not add a '.'.
+\end{longtable}
+\end{center}
+       
 \chapter{Basic API}\label{ch:Basic}
+\chapter{Input Specifications}\label{ch:Input}
 \chapter{Output}\label{ch:Output}
 \chapter{Advanced API}\label{ch:Advanced}
 \end{document}
