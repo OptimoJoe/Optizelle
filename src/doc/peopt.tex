@@ -74,9 +74,9 @@
 }
 
 % Create some Lagrangian macros
-\newcommand{\ineqGradLag}[2]{f(#1)-h^\prime(#1)^*#2}
-\newcommand{\eqGradLag}[2]{f(#1)+g^\prime(#1)^*#2}
-\newcommand{\conGradLag}[3]{f(#1)+g^\prime(#1)^*#2-h^\prime(#1)^*#3}
+\newcommand{\ineqGradLag}[2]{\nabla f(#1)-h^\prime(#1)^*#2}
+\newcommand{\eqGradLag}[2]{\nabla f(#1)+g^\prime(#1)^*#2}
+\newcommand{\conGradLag}[3]{\nabla f(#1)+g^\prime(#1)^*#2-h^\prime(#1)^*#3}
 
 \title{Pretty Efficient Optimization (PEOpt)}
 \author{Joseph Young}
@@ -655,12 +655,54 @@ Name & Default & Description\\
 \\
 \texttt{augsys\_rst\_freq} & 0 & Restarts GMRES every specified number of iterations in order to save memory.  When 0, PEOpt uses no restarting.\\
 \\
-\texttt{PSchur\_left\_type} & \texttt{Identity} & Type of left Schur preconditioner used by PEOpt during an augmented system solve.  This can be either \texttt{Identity} or \texttt{UserDefined}.  An augmented system solve finds the solution of a linear system where the operator has the form $\begin{bmatrix} I & g^\prime(x)^*\\g^\prime(x) 0\end{bmatrix}$.  The Schur preconditioner for this problem is an operator of the form $\begin{bmatrix} I & 0\\ 0 B\end{bmatrix}$ where $B$ is the operator specified by this parameter.  Note, if we specify $B=(g^\prime(x)g^\prime(x)^*)^{-1})$, then the augmented system solves in 3 iterations.\\
+\texttt{PSchur\_left\_type} & \texttt{Identity} & Type of left Schur preconditioner used by PEOpt during an augmented system solve.  This can be either \texttt{Identity} or \texttt{UserDefined}.  An augmented system solve finds the solution of a linear system where the operator has the form $\begin{bmatrix} I & g^\prime(x)^*\\g^\prime(x) & 0\end{bmatrix}$.  The Schur preconditioner for this problem is an operator of the form $\begin{bmatrix} I & 0\\ 0 & B\end{bmatrix}$ where $B$ is the operator specified by this parameter.  Note, if we specify $B=(g^\prime(x)g^\prime(x)^*)^{-1}$, then the augmented system solves in 3 iterations.\\
 \\
 \texttt{PSchur\_right\_type} & \texttt{Identity} & Type of right Schur preconditioner used by PEOpt during an augmented system solve.  This can be eiter \texttt{Identity} or \texttt{UserDefined}.
 \end{longtable}
 
 \chapter{Output}\label{ch:Output}
+
+        PEOpt generates a series of diagnostics while running that give information about the behavior and performance of the underlying algorithm.  This information is organized into columns that are exactly 10 characters wide.  Each column always has some sort of information, which makes the output easy to parse using standard Unix utitlities such as \texttt{cut} or \texttt{awk}.  As far as the information in the columns themselves, we detail their meaning in the following table.
+
+\begin{longtable}{lp{0.6\textwidth}}
+\multicolumn{2}{p{\textwidth}}{\bf Output for: Unconstrained, Inequality Constrained, Equality Constrained, Constrained}\\
+Name & Description\\
+\texttt{Iter} & Current optimization iteration.  If the value of this entry is \texttt{*}, that means that a trust-region algorithm has rejected a step due to an unfavorable actual versus predicted reduction. \\
+\\
+\texttt{f(x)} & Value of the objective function at the start of the specified iteration.\\
+\\
+\texttt{merit(x)} & Value of the merit function at the start of the iteration.  For an unconstrained problem, this is simply $f(x)$.  For an inequality constrained problem, PEOpt returns $f(x)-\mu \textnormal{barr}(x)$ where $\textnormal{barr}(x)$ denotes the value of the barrier function from the inequality algebra.  For an equality constrained problem, PEOpt gives $f(x)-\langle y, g(x)\rangle + \rho \|g(x)\|^2$.  For a constrained peoblem, PEOpt defines this quantity as $f(x)-\langle y, g(x)\rangle + \rho \|g(x)\|^2 - \mu\textnormal{barr}(x)$.\\
+\\
+\texttt{||grad||} & Norm of the gradient of either the objective function or the Lagrangian.  In each case, this denotes the norm of the optimality conditions.  In the unconstrained case, PEOpt defines this quantity as $\|\nabla f(x)\|$.  In the inequality constrained case, this becomes $\|\ineqGradLag{x}{z}\|$.  In the equality constrained case, this is $\|\eqGradLag{x}{y}\|$.  In the fully constrained case, this quantity denotes $\|\conGradLag{x}{y}{z}\|$.\\\\
+\texttt{||dx||} & Norm of the step taken during the last iteration. \\
+\\
+\texttt{ared} & Actual reduction defined as $\textnormal{merit}(x_k)-\textnormal{merit}{x_{k+1}}$ where $x_k$ denotes the iterate at the previous step and $x_{k+1}$ denotes the current iterate.\\
+\\
+\texttt{pred} & Predicted reduction defined as $\textnormal{merit}(x_k)-\textnormal{model}(\delta x)$ where $x_k$ denotes the iterate at the previous step and $\delta x$ denotes the current step.  Depending on the formulation, PEOpt uses a different model, but these models generally correspond to a quadratic approximation to the merit function.\\
+\\
+\texttt{ared/pred} & Actual versus predicted reduction.  For a perfect model, this ratio is 1.0.\\
+\\
+\texttt{KryIter} & Number of iterations used by truncated-CG or MINRES when solving the optimality system.\\
+\\
+\texttt{KryErr} & Error in truncated-CG or MINRES when solving the optimality system.  For truncated-CG, this is defined as $\|B(Ax-b)\|$ where we are solving the system $Ax=b$ with the preconditioner $B$.  For truncated-MINRES, this becomes $\|Ax-b\|_B$.
+\\
+\texttt{KryWhy} & Why the truncated-CG or MINRES solve terminated.  This value can be either \texttt{RelErrSml}, the relative error is small, \texttt{NegCurv}, detected negative curvature, \texttt{IterExcd}, number of iterations exceeded, \texttt{TrstReg}, step violates the trust-region, \texttt{Unstable}, loss of orthogonality in the system, or \texttt{InvldCnt}, an invalid center for the trust-region radius.\\
+\\
+\texttt{LSIter} & Number of iterations taken by the line search.\\
+\\
+\multicolumn{2}{p{\textwidth}}{\bf Output for: Inequality Constrained, Constrained}\\
+Name & Description\\
+\texttt{mu} & Interior point parameter used by the optimization.  In other words, the target interior point parameter.\\
+\\
+\texttt{mu\_est} & Current estimate of the interior point parameter defined as $\langle z,h(x) \rangle/\langle e,e\rangle$ where $z$ denotes the inequality multiplier and $e$ denotes the identity element for the inequality algebra.  For linear bound constraints, this is the vector of all ones, so $\langle e,e\rangle=m$ where $m$ denotes the number of variables.\\
+\\
+\multicolumn{2}{p{\textwidth}}{\bf Output for: Equality Constrained, Constrained}\\
+Name & Description\\
+\texttt{||g(x)||} & Norm of the equality constraint at the start of the optimization iteration.  This denotes the infeasibility of the current iterate with respect to the equality constraints. 
+\end{longtable}
+
+
+
 \chapter{Advanced API}\label{ch:Advanced}
 
 \end{document}
