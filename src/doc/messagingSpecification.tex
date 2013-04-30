@@ -1,0 +1,20 @@
+\begin{lstlisting}[style=C++]
+namespace peopt{
+    // Defines how we output messages to the user
+    struct Messaging {
+        // Prints a message
+        virtual void print(const std::string msg) const {
+            std::cout << msg << std::endl;
+        }
+
+        // Prints an error
+        virtual void error(const std::string msg) const {
+            std::cerr << msg << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        // Allow a derived class to deallocate memory
+        virtual ~Messaging() {}
+    };
+}
+\end{lstlisting}

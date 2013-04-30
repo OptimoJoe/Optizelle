@@ -1,0 +1,48 @@
+\begin{lstlisting}[style=C++]
+template <typename Real>
+struct MyVS {
+    typedef ClassForVector Vector;
+
+    // Memory allocation and size setting
+    static void init(const Vector& x, Vector& y) { ... }
+
+    // y <- x (Shallow.  No memory allocation.)
+    static void copy(const Vector& x, Vector& y) { ... }
+
+    // x <- alpha * x
+    static void scal(const Real& alpha, Vector& x) { ... }
+
+    // x <- 0 
+    static void zero(Vector& x) { ... }
+
+    // y <- alpha * x + y
+    static void axpy(const Real& alpha, const Vector& x, Vector& y)
+        { ... }
+
+    // innr <- <x,y>
+    static Real innr(const Vector& x,const Vector& y) { ... }
+
+    // Jordan product, z <- x o y.
+    static void prod(const Vector& x, const Vector& y, Vector& z)
+        { ... }
+
+    // Identity element, x <- e such that x o e = x.
+    static void id(Vector& x) { ... }
+
+    // Jordan product inverse, z <- inv(L(x)) y where
+    // L(x) y = x o y.
+    static void linv(const Vector& x,const Vector& y,Vector& z)
+        { ... }
+
+    // Barrier function, barr <- barr(x) where x o grad barr(x) = e.
+    static Real barr(const Vector& x) { ... }
+
+    // Line search, srch <- argmax {alpha \in Real >= 0 : 
+    // alpha x + y >= 0} where y > 0. 
+    static Real srch(const Vector& x,const Vector& y) { ... }
+
+    // Symmetrization, x <- symm(x) such that L(symm(x)) is a
+    // symmetric operator.
+    static void symm(Vector& x) { ... }
+};
+\end{lstlisting}

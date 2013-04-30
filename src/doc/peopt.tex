@@ -701,8 +701,122 @@ Name & Description\\
 \texttt{||g(x)||} & Norm of the equality constraint at the start of the optimization iteration.  This denotes the infeasibility of the current iterate with respect to the equality constraints. 
 \end{longtable}
 
-
-
 \chapter{Advanced API}\label{ch:Advanced}
+
+        PEOpt contains many additional features such as customizing the output and defining custom vector spaces.  We detail these features below.
+
+\section{Messaging Object}
+
+        PEOpt messaging objects inherit from \texttt{peopt::Messaging}, which PEOpt defines as
+\input{messagingSpecification.tex}
+Hence, messaging objects have two functions, \texttt{print} and \texttt{error}, that both accept a string and print the result.  The only difference between \texttt{print} and \texttt{error} is that \texttt{error} must safely exit the program.  Within a larger program, it is common to modify the messaging object so that PEOpt's output goes directly to a specified file.
+
+\section{Custom Vector Spaces}
+
+        PEOpt allows the use of a custom vector space provided by the user.  This allows PEOpt to more easily work with programs that store their information in a custom format.  Simply, we define a new vector space rather than trying to convert the internal data into a \texttt{std::vector}.  The requirements for a new vector space are a structure of the form
+\input{vectorSpaceSpecification.tex}
+Note, the functions \texttt{prod}, \texttt{id}, \texttt{linv}, \texttt{barr}, \texttt{srch}, and \texttt{symm} are only required for the codomain of the inequality constraint.  We explain these functions below.
+
+\subsection{typedef}
+
+       PEOpt requires that the custom vector space contains a typedef called Vector.  The underlying storage for the vector can be any valid class as long as the class contains a default constructor that does nothing and a copy constructor that knows how to copy items created by the default constructor.  As far as allocating memory for this structure, this is does with the \texttt{init} command that we describe below.
+
+\subsection{init}
+
+        Since allocating memory for a custom object may be complicated, PEOpt uses an \texttt{init} function that copies the structure of a vector from an already existing object.  Hence, this function can be seen as a deep copy from x to y.
+
+\subsection{copy}
+        
+        The \texttt{copy} function copies the data from x to y using already initalized vectors.  Hence, it implements a shallow copy.
+
+\subsection{scal}
+
+        The \text{scal} function computes and returns the scalar multiple of a vector.  The scalar argument has the same type as the template argument to the structure.
+
+\subsection{zero}
+
+        The \texttt{zero} function transforms a vector into the zero element for the vector space.  In other words, the additive identity element.  The reason that \texttt{zero} exists separately from \texttt{scal} is that if a vector contains NaN elements, the multiplication of zero by NaN is undefined.
+
+\subsection{axpy}
+
+        Next, the function \texttt{axpy} computes the operator $\alpha x + y$ and then stores the result in $y$.
+
+\subsection{innr}
+
+        The inner product function \texttt{innr}, computes the inner product between two elements and then returns the result.  Recall, the inner product is a function $\langle \cdot,\cdot \rangle\rightarrow \re$ so that
+\begin{enumerate}
+    \item $\langle x,y\rangle = \langle y,x \rangle$,
+    \item $\langle \alpha x,y\rangle = \alpha \langle x,y\rangle$,
+    \item $\langle x+y,z\rangle = \langle x,z\rangle + \langle y,z\rangle$,
+    \item $\langle x,x\rangle\geq 0$ with equality only when $x=0$.
+\end{enumerate}
+Note, PEOpt restricts the formulations to real vector spaces.  Note, for $\ell^2$, the inner product can be defined simply as $\langle x,y\rangle=x^Ty$.
+
+\subsection{prod}
+
+        The function \texttt{prod} defines a pseudo-Jordan product between two elements.  We say pseudo-Jordan in the sense that we do not require a full Euclidean-Jordan algebra.  Instead, we drop the requirement for communtitivity.  Hence, for linear bound constraints, we define that
+$$
+        [x\circ y]_i = x_iy_i.
+$$
+Hence, the product denotes the pointwise or Hadamard product.  For second-order cone cosntraints, we define that
+$$
+        \begin{bmatrix}x_0\\\bar{x}\end{bmatrix} \circ \begin{bmatrix}y_0\\\bar{y}\end{bmatrix}=\begin{bmatrix} x_0y_0 + \bar{x}^T\bar{y}\\x_0 \bar{y} + y_0 \bar{x}\end{bmatrix}.
+$$
+For semidefinite programming, we have that
+$$
+        X\circ Y = XY.
+$$
+Alternatively, we can define that
+$$
+        X\circ Y = \frac{XY + YX}{2},
+$$
+but the inverse operation we discuss below will be far more inefficient.
+
+\subsection{id} 
+
+       The function \texttt{id} transforms a vector into the identiy element for the inequality algebra.  Hence, it returns an element $e$ so that $x\circ e=x$.   For linear bound constraints, $e$ denotes the vector of all ones.  For second-order cone constraints, $e=\begin{bmatrix} 1 & 0 & \dots & 0\end{bmatrix}^T$.  For semidefinite constraints, $e=I$.
+
+\subsection{linv}
+
+        The function \texttt{linv} denotes the inverse operation to \texttt{prod}.  Note, $\texttt{prod}$ defines a bilinear operation so that there exists a linear operator $L(x)$ such that $x\circ y=L(x)y$.  The function \texttt{linv} computes the action of the {\it inverse} of $L(x)$ on a vector.  For linear bound constraints, $L(x)=\textnormal{Diag}(x)$, where $\textnormal{Diag}(x)$ denotes the diagonal matrix with $x$ on the diagonal.  For second-order cone constraints, $L(x)=\textnormal{Arw}(x)$ where we define $\textnormal{Arw}(x)$ as
+$$
+        \textnormal{Arw}\left(\begin{bmatrix}x_0\\\bar{x}\end{bmatrix}\right) =
+\begin{bmatrix}
+        x_0 & \bar{x}^T\\\bar{x} & x0 I
+\end{bmatrix}.
+$$
+For semidefinite constraints, we can either define that $L(X)=X$ or that $L(X)=\frac{X\cdot + \cdot X}{2}$.  Generally, it's preferable to use the first definition since $L(X)^{-1}=X^{-1}$.  In the second case, PEOpt requires the solution of the Sylvester equations.
+
+\subsection{barr}
+
+        The function \texttt{barr} denotes the barrier function used by the merit function.  PEOpt requires a function so that
+$$
+    x\circ \nabla \textnormal{barr}(x) = e.
+$$
+For linear bound constraints, this is simply the log-barrier function
+$$
+    \textnormal{barr}(x) = \sum\limits_{i=1}^m \log(x_i).
+$$
+For second-order cone constraints, we define this as
+$$
+    \textnormal{barr}\left(\begin{bmatrix}x_0\\\bar{x}\end{bmatrix}\right) = \frac{1}{2} \log(x_0^2-\langle \bar{x},\bar{x}\rangle).
+$$
+For semidefinite constraints, we define this as
+$$
+    \textnormal{barr}(X)=\log(\textnormal{det}(X))
+$$
+where $\textnormal{det}(X)$ denotes the determinant of $X$.
+
+\subsection{srch}
+
+        The function \texttt{srch} denotes the search function used to maintain strict feasibility with respect to the inequality constraint.  We define this as
+$$
+    \textnormal{srch}(x,y)=\arg\max\limits_{\alpha\geq 0} \{ \alpha\in\re : \alpha x + y \succeq 0\}
+$$
+where we assume $y\succ 0$.  Hence, $\alpha$ denotes the maximum distance we can move in the direction $x$ from $y$ so that $\alpha x + y$ remains feasible.
+
+\subsection{symm}
+
+        The function \texttt{symm} denotes the symmetrization operator.  We require this operator since we relax the commutivity requirement from the Euclidan-Jordan algebra.  For linear bound constraints and second-order cone constraints, this operation does nothing.  In addition, for semidefinite constraints where $X\circ Y=\frac{XY+YX}{2}$, this operation does nothing.  However, for semidefinite constraints where $X\circ Y=XY$, we define $\textnormal{symm}(X)=\frac{X+X^T}{2}$.
 
 \end{document}
