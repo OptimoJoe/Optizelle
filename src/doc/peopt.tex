@@ -7,6 +7,7 @@
 \usepackage{url}
 \usepackage{subfig}
 \usepackage{longtable}
+\usepackage{amsmath}
 
 % Change the figure numbering to be chap.sec.num
 \renewcommand{\thefigure}{\arabic{chapter}.\arabic{section}.\arabic{figure}}
@@ -138,7 +139,7 @@ $$
 $$
 where $f:X\rightarrow \re$ and $g:X\rightarrow Y$ denote differentiable functions, $h:X\rightarrow Z$ denotes an affine function, and $\succeq$ denotes a partial order that corresponds to a symmetric cone.  For example, these formulations include constrained problems such as 
 $$
-        \min_{x\in\re^2}\{(x+1)^2+(y+1)^2 :  x + 2y = 1, 2x + y \geq 1 \} 
+        \min_{x\in\re^2}\{(x_1+1)^2+(x_2+1)^2 :  x_1 + 2x_2 = 1, 2x_1 + x_2 \geq 1 \} 
 $$
 In order to minimize this formulation in PEOpt, we use the code in Listing \ref{lst:simpleCon} and the input specification in Listing \ref{lst:simpleConJSON}, which generates the output in Listing \ref{lst:simpleConOut}.  As with the other examples in the introduction, we explain the functions used to generate this example in Chapter \ref{ch:Basic}, the input specification in Chapter \ref{ch:Input}, and the output in Chapter \ref{ch:Output}.
 
@@ -150,7 +151,7 @@ In order to minimize this formulation in PEOpt, we use the code in Listing \ref{
 
     Depending on the requirements of the application, PEOpt has several different build an installation methods.  In the most simple case, PEOpt can be incorporated into a project as a header taken from the source directory.  In a more complete case, PEOpt uses CMake in order to manage the installation of several supporting libraries.  We discuss these methods below.
 
-        Outside the installation mechanism, there are two primary modes in which we access the PEOpt routines: headers only and as a library.  In headers only mode, PEOpt enables access to the core optimization and verification routines, which include utilities such as finite-difference tests.  In libary mode, PEOpt also includes predefined vector spaces as well as parameter readers that read in parameter files in JSON format.
+        Outside the installation mechanism, there are two primary modes in which we access the PEOpt routines: headers only and as a library.  In headers only mode, PEOpt enables access to the core optimization and verification routines, which include utilities such as finite-difference tests.  In library mode, PEOpt also includes predefined vector spaces as well as parameter readers that read in parameter files in JSON format.
 
 \section{Header Only Installation with No Build System}
 
@@ -369,6 +370,100 @@ Description:  &The extension of mex files on the system.  This can be found
 \end{center}
        
 \chapter{Basic API}\label{ch:Basic}
+
+        The basic interface to PEOpt is centered around defining the appropriate functions for optimization, settings the appropriate parameters, and then calling the optimization routines.  Each one of these steps has a well-define interface that we define below.
+
+\section{Defining the Objective Function}
+
+        PEOpt defines the objective function as a class that inherits from\linebreak\texttt{peopt::ScalarValuedFunction}, which PEOpt defines as
+\input{objectiveSpecification.tex}
+This specification corresponds to the evaluation of the objective, $f(x)$, gradient, $\nabla f(x)$, and Hessian-vector product, $\nabla^2 f(x)$, respectively.  Strictly, PEOpt only requires $f(x)$ and $\nabla f(x)$, but an appropriate first order method such as SR1 must be chosen when setting the optimization parameters.  In the case where the Hessian is not available, set the result of the Hessian vector product to zero. 
+
+        As an example, we define the Rosenbrock function as
+$$
+        f(x)=(1-x_1)^2+100(x_2-x_1^2)^2.
+$$
+This means we define the gradient as
+$$
+        \nabla f(x)=\begin{bmatrix}
+        -400x_1(x_2-x_1^2)-2(1-x_1)\\
+        200(x_2-x_1^2)
+        \end{bmatrix}
+$$
+and Hessian-vector product as
+$$
+        \nabla^2 f(x)\delta x=
+        \begin{bmatrix}
+            1200x_1^2-400x_2+2 & -400x_1\\
+            -400x_1 & 200
+        \end{bmatrix}\delta x.
+$$
+Using PEOpt's internal vector spaces, we implement these operators as
+\input{objectiveExample.tex}
+
+\section{Defining the Constraints}
+
+        PEOpt defines the constraints as a vector-valued function that inherits from \texttt{peopt::VectorValuedFunction}, which PEOpt defines as
+\input{constraintSpecification.tex}
+This abstract class corresponds to the evaluation of the constraint, $g(x)$, Fr\'{e}chet derivative (Jacobian)-vector product, $g^\prime(x)\delta x$, adjoint of the F\'{e}chet derivative (Jacobian)-vector product, $g^\prime(x)^*\delta y$, and the second derivative adjoint-vector product, $(g^{\prime\prime}(x)\delta x)^*\delta y$.  Here, $^*$ denotes the Hilbert-adjoint, which is most often the transpose of the operator.  Alternatively, if we work in $\re^m$ with the $\ell^2$ inner product, we can define these operators as
+\begin{align*}
+        g(x)&=\begin{bmatrix}
+            g_1(x)\\
+            \dots\\
+            g_m(x)
+        \end{bmatrix}
+        & g^\prime(x)\delta x&=\begin{bmatrix}
+                \nabla g_1(x)^T \delta x\\
+                \dots\\
+                \nabla g_m(x)^T \delta x
+        \end{bmatrix}\\
+        g^\prime(x)^*\delta y&=
+        \sum\limits_{i=1}^m \nabla g_i(x) [\delta y]_i 
+        & (g^{\prime\prime}(x)\delta x)^*\delta y&=
+        \sum\limits_{i=1}^m \nabla^2 g_i(x)\delta x [\delta y]_i 
+\end{align*}
+As with the objective function, the algorithms in PEOpt do not require second order information, but benefit from it when available.  As such, the evaluation of $(g^{\prime\prime}(x)\delta x)^*\delta y$ is not strictly required.  If not available, set the result of the second derivative adjoint-vector product to zero.
+
+        For example, we define a simple vector-valued function as
+$$
+    f(x)=\begin{bmatrix}
+        (x_1-2)^2 + (x_2-2)^2 - 1\\
+        x_1 + 2x_2 - 1.
+    \end{bmatrix}
+$$
+Then, we have that
+\begin{align*}
+    f^\prime(x)\delta x=&\begin{bmatrix}
+        2(x_1-2) & 2(x_2-2)\\
+        1 & 2
+    \end{bmatrix}\begin{bmatrix}\delta x_1\\\delta x_2\end{bmatrix}\\
+    f^\prime(x)^*\delta y=&
+        \begin{bmatrix}
+            2(x_1-2)\\
+            2(x_2-2)
+        \end{bmatrix}  \delta y_1
+        +
+        \begin{bmatrix}
+            1\\
+            2
+        \end{bmatrix} \delta y_2\\
+    (f^{\prime\prime}(x)\delta x)^*\delta y=&
+        \begin{bmatrix}
+            2 & 0\\
+            0 & 2
+        \end{bmatrix}\begin{bmatrix}\delta x_1\\\delta x_2\end{bmatrix}
+            \delta y_1
+        +\begin{bmatrix}
+            0 & 0\\
+            0 & 0
+        \end{bmatrix}\begin{bmatrix}\delta x_1\\\delta x_2\end{bmatrix}
+            \delta y_2.
+\end{align*}
+In code, we implement these operators as
+\input{constraintExample.tex}
+
+
+
 \chapter{Input Specifications}\label{ch:Input}
 \chapter{Output}\label{ch:Output}
 \chapter{Advanced API}\label{ch:Advanced}

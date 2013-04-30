@@ -1,0 +1,53 @@
+\begin{lstlisting}[style=C++]
+// Define a simple vector valued function 
+//
+// g(x,y)= [ (x-2)^2 + (y-2)^2 - 1 ] 
+//         [ x + 2y - 1            ] 
+//
+struct MyEq
+    :public peopt::VectorValuedFunction<double,peopt::Rm,peopt::Rm>
+{
+    typedef peopt::Rm <double> X;
+    typedef peopt::Rm <double> Y;
+
+    // y=g(x) 
+    void operator () (
+        const X::Vector& x,
+        Y::Vector& y
+    ) const {
+        y[0] = sq(x[0]-2.)+sq(x[1]-2.)-1.;
+        y[1] = x[0]+2.*x[1]-1.;
+    }
+
+    // y=g'(x)dx
+    void p(
+        const X::Vector& x,
+        const X::Vector& dx,
+        Y::Vector& y
+    ) const {
+        y[0] = 2.*(x[0]-2.)*dx[0]+2.*(x[1]-2.)*dx[1];
+        y[1] = dx[0]+2.*dx[1];
+    }
+
+    // z=g'(x)*dy
+    void ps(
+        const X::Vector& x,
+        const Y::Vector& dy,
+        X::Vector& z
+    ) const {
+        z[0] = 2.*(x[0]-2.)*dy[0] + dy[1];
+        z[1] = 2.*(x[1]-2.)*dy[0] + 2.*dy[1];
+    }
+
+    // z=(g''(x)dx)*dy
+    void pps(
+        const X::Vector& x,
+        const X::Vector& dx,
+        const Y::Vector& dy,
+        X::Vector& z
+    ) const {
+        z[0] = 2.*dx[0]*dy[0];
+        z[1] = 2.*dx[1]*dy[0];
+    }
+};
+\end{lstlisting}

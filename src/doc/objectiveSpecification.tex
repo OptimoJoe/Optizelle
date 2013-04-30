@@ -1,0 +1,29 @@
+\begin{lstlisting}[style=C++]
+namespace peopt{
+    // A simple scalar valued function interface, f : X -> R
+    template <
+        typename Real,
+        template <typename> class XX
+    >
+    struct ScalarValuedFunction {
+    private:
+        // Create some type shortcuts
+        typedef XX <Real> X;
+        typedef typename X::Vector Vector;
+
+    public:
+        // <- f(x) 
+        virtual Real operator () (const Vector& x) const = 0;
+
+        // grad = grad f(x) 
+        virtual void grad(const Vector& x,Vector& grad) const = 0;
+
+        // H_dx = hess f(x) dx 
+        virtual void hessvec(
+            const Vector& x,const Vector& dx,Vector& H_dx) const=0;
+
+        // Allow a derived class to deallocate memory
+        virtual ~ScalarValuedFunction() {}
+    };
+}
+\end{lstlisting}
