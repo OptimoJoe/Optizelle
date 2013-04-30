@@ -9,7 +9,8 @@ add_latex_document(peopt.tex DEFAULT_PDF
            initialGuessExample.tex
            allocateCodomainExample.tex
            stateSpecification.tex
-           jsonReaderSpecification.tex
+           jsonReaderSpecification.tex jsonReaderExample1.tex
+               jsonReaderExample2.tex
            functionBundleSpecification.tex
            solverSpecification.tex
            solutionExtractionSpecification.tex

@@ -122,7 +122,7 @@ BOOST_AUTO_TEST_CASE(ncg_fletcher_reeves) {
     BOOST_CHECK(err < 1e-6);
 
     // Check the number of iterations 
-    BOOST_CHECK(state.iter == 4);
+    BOOST_CHECK(state.iter == 5);
 }
 
 BOOST_AUTO_TEST_CASE(ncg_polak_ribiere){
@@ -162,7 +162,7 @@ BOOST_AUTO_TEST_CASE(ncg_polak_ribiere){
     BOOST_CHECK(err < 1e-6);
 
     // Check the number of iterations 
-    BOOST_CHECK(state.iter == 5);
+    BOOST_CHECK(state.iter == 6);
 }
 
 BOOST_AUTO_TEST_CASE(ncg_hestenes_stiefel){
@@ -202,7 +202,7 @@ BOOST_AUTO_TEST_CASE(ncg_hestenes_stiefel){
     BOOST_CHECK(err < 1e-6);
 
     // Check the number of iterations 
-    BOOST_CHECK(state.iter == 7);
+    BOOST_CHECK(state.iter == 9);
 
     // Create an unconstrained state based on this vector
     peopt::Unconstrained <double,Rm>::State::t state0(x);
@@ -220,7 +220,7 @@ BOOST_AUTO_TEST_CASE(ncg_hestenes_stiefel){
         ::getMin(peopt::Messaging(),fns,state0);
 
     // Check the number of iterations.  This should be lower than above.
-    BOOST_CHECK(state0.iter == 4);
+    BOOST_CHECK(state0.iter == 6);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

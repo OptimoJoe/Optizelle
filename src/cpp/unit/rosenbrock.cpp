@@ -125,7 +125,7 @@ BOOST_AUTO_TEST_CASE(tr_newton) {
     BOOST_CHECK(err < 1e-6);
 
     // Check that the number of iterations is 21
-    BOOST_CHECK(state.iter == 21);
+    BOOST_CHECK(state.iter == 22);
 }
 
 BOOST_AUTO_TEST_CASE(bfgs) {

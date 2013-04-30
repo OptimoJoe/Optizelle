@@ -1921,8 +1921,8 @@ namespace peopt{
             // This sets all of the parameters possible that don't require
             // special memory allocation such as variables.
             static void init_params_(t& state){
-                state.eps_grad=Real(1e-6);
-                state.eps_dx=Real(1e-6);
+                state.eps_grad=Real(1e-8);
+                state.eps_dx=Real(1e-8);
                 state.stored_history=0;
                 state.history_reset=5;
                 state.iter=1;
@@ -4970,7 +4970,7 @@ namespace peopt{
                 state.rho = Real(1.0);
                 state.rho_old = state.rho;
                 state.rho_bar = Real(1e-8);
-                state.eps_constr = Real(1e-6);
+                state.eps_constr = Real(1e-8);
                 state.xi_all(Real(1e-4));
                 state.xi_lmg = Real(1e4);
                 state.xi_4 = Real(2.);
@@ -7722,7 +7722,7 @@ namespace peopt{
                 state.mu = std::numeric_limits<Real>::quiet_NaN();
                 state.mu_est = std::numeric_limits<Real>::quiet_NaN();
                 state.mu_typ = std::numeric_limits<Real>::quiet_NaN();
-                state.eps_mu= Real(1e-6);
+                state.eps_mu= Real(1e-8);
                 state.sigma = Real(0.5);
                 state.gamma = Real(0.95);
                 state.ipm = InteriorPointMethod::PrimalDual;

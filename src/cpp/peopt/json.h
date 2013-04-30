@@ -354,8 +354,6 @@ namespace peopt {
                 Json::Value root=parse(msg,fname);
 
                 // Read in the parameters
-                state.mu=Real(root["peopt"]
-                    .get("mu",state.mu).asDouble());
                 state.eps_mu=Real(root["peopt"]
                     .get("eps_mu",state.eps_mu).asDouble());
                 state.sigma=Real(root["peopt"]
@@ -401,7 +399,6 @@ namespace peopt {
                 Json::StyledWriter writer;
                 
                 // Write the optimization parameters
-                root["peopt"]["mu"]=state.mu;
                 root["peopt"]["eps_mu"]=state.eps_mu;
                 root["peopt"]["sigma"]=state.sigma;
                 root["peopt"]["gamma"]=state.gamma;

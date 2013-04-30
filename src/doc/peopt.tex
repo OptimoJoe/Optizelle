@@ -73,6 +73,11 @@
     basicstyle=\footnotesize
 }
 
+% Create some Lagrangian macros
+\newcommand{\ineqGradLag}[2]{f(#1)-h^\prime(#1)^*#2}
+\newcommand{\eqGradLag}[2]{f(#1)+g^\prime(#1)^*#2}
+\newcommand{\conGradLag}[3]{f(#1)+g^\prime(#1)^*#2-h^\prime(#1)^*#3}
+
 \title{Pretty Efficient Optimization (PEOpt)}
 \author{Joseph Young}
 \begin{document}
@@ -511,6 +516,11 @@ where these states correspond to the unconstrained, inequality constrained, equa
 \input{jsonReaderSpecification.tex}
 where these four different commands correspond to unconstrained, inequality constrained, equality constrained, and constrained formulations, respectively.  As before, the template parameters denote first the precision required and then the vector spaces used by the optimization.
 
+        Note, although the names of the parameters used by each are identical, the format is slightly different depending on whether we directly modify the state or use the JSON reader.  For example, the following JSON file modifies the stopping criteria for the gradient
+\input{jsonReaderExample1.tex}
+This has the same affect as the code
+\input{jsonReaderExample2.tex}
+
         As far as the actual parameters and their affect, we discuss this in Chapter \ref{ch:Input}.
 
 \section{Accumulate the Functions}
@@ -531,6 +541,125 @@ These commands accept three input arguments: the messaging object, the bundle of
 \input{solutionExtractionSpecification.tex}
 
 \chapter{Input Specifications}\label{ch:Input}
+
+        The parameters that guide the optimization solver have a dramatic effect on the performance of the internal algorithms.  As such, we catalog these parmametrs and their affect below. 
+
+\begin{longtable}{llp{0.4\textwidth}}
+\multicolumn{3}{p{\textwidth}}{\bf Parameters for: Unconstrained, Inequality Constrained, Equality Constrained, Constrained}\\
+Name & Default & Description\\
+\texttt{eps\_grad} & $10^{-8}$ 
+    & Relative tolerance for the gradient stopping criteria.  In unconstrained problems, PEOpt terminates when $\| \nabla f(x_k) \| \leq \epsilon \| \nabla f(x_0) \|$ where $x_k$ denotes the solution at the $k$-th iteration.  For inequality constrained problems, the gradient stopping criteria is $\| \ineqGradLag{x_k}{z_k} \| \leq \epsilon \| \ineqGradLag{x_0}{z_0}) \|$.  For equality constrained problems, this becomes $\| \eqGradLag{x_k}{y_k} \| \leq \epsilon \| \eqGradLag{x_0}{y_0} \|$.  Finally, for constrained problems, the stopping criteria is $\| \conGradLag{x_k}{y_k}{z_k} \| \leq \epsilon \| \conGradLag{x_0}{y_0}{z_0} \|$.\\
+\\
+\texttt{eps\_dx} & $10^{-8}$
+    & Relative tolerance for the step length stopping criteria.  In unconstrained problems, PEOpt terminates when $\|\delta x\| \leq \epsilon \|\nabla f(x_0)\|$ where $\delta x$ denotes the step in the optimization variables at the current iteration and $x_0$ denotes the initial guess provided to the optimization.  For inequality constrained problems, PEOpt terminates when $\|\delta x\| \leq \epsilon \| \ineqGradLag{x_0}{z_0} \|$.  For equality constrained problems, this becomes $\|\delta x\| \leq \epsilon \| \eqGradLag{x_0}{y_0} \|$.  For constrained problems, this becomes $\|\delta x\| \leq \epsilon \| \conGradLag{x_0}{y_0}{z_0} \|$.
+\\
+\texttt{stored\_history} & 0
+    & Number of vectors stored for use with quasi-Newton methods such as SR1 and BFGS\\
+\\
+\texttt{history\_reset} & 5
+    & Number of failed trust-region iterations or line-search batches before the quasi-Newton information is discarded and PEOpt takes a steepest descent direction.\\
+\\
+\texttt{iter\_max} & 10
+    & Maximum number of optimization iterations.\\
+\\
+\texttt{krylov\_iter\_max} & 10 
+    & Maximum number of iterations taken by either truncated-CG or truncated-MINRES when solving the optimality system.\\
+\\
+\texttt{krylov\_orthog\_max} & 0 
+    & Numbers of vectors stored and used in the orthogonalization of truncated-CG or truncated-MINRES.  In exact arithmetic, the number can be provably 0. In practice, if memory is available, it may be worthwhile to over orthogonalize. \\
+\\
+\texttt{eps\_krylov} & $10^{-2}$
+    & Relative stopping criteria for truncated-CG or truncated-MINRES.  In truncated-CG, the stopping criteria when solving the system $Ax=b$ with preconditioner $B$ is $\|B(Ax_k-b)\|\leq \epsilon\|B(Ax_0-b)\|$.  In truncated-MINRES, the stopping critiera is $\|Ax_k-b\|_B \leq \epsilon\|Ax_0-b\|_B$.\\
+\\
+\texttt{krylov\_solver} & \texttt{ConjugateDirection}
+    & Linear system solver used when solving the optimality conditions.  This can either be \texttt{ConjugateDirection} or \texttt{MINRES}.\\
+\\
+\texttt{algorithm\_class} & \texttt{TrustRegion}
+    & Class of algorithm used in optimization.  This can either be \texttt{TrustRegion}, \texttt{LineSearch}, or \texttt{UserDefined}.
+\\
+\texttt{PH\_type} & \texttt{Identity}
+    & Preconditioner used when solving the optimality conditions.  This can be either \texttt{Identity}, \texttt{InvBFGS}, or \texttt{InvSR1}, which correspond to the identity operator, a BFGS-based preconditioner, or a SR1 based preconditioner, respectively.\\
+\texttt{H\_type} & \texttt{UserDefined}
+    & Hessian approximation for the objective function.  This can be either \texttt{UserDefined}, \texttt{Identity}, \texttt{ScaledIdentity}, \texttt{BFGS}, or \texttt{SR1}.  If \texttt{UserDefined} is chosen, PEOpt uses the \texttt{hessvec} calculation inside of the objective function to calculate the Hessian-vector product.  Otherwise, the \texttt{Identity}, \texttt{BFGS}, and \texttt{SR1} approximations corresponds to the identity operator, BFGS, and SR1 operators, respectively.  Finally, the \texttt{ScaledIdentity} option directs PEOpt to use a scaled version of the identity matrix defined as $\|\nabla f(x)\|/(2\Delta) I$ where $\Delta$ denotes the trust-region radius.  This forces the algorithm to take a steepest-descent step the size of the trust-region at every iteration.  This implements a steepest-descent algorithm with a trust-region method. \\
+\\
+\texttt{msg\_level} & 1
+    & Controls the amount of diagonstic output produced by PEOpt.  Here, 0 denotes no output and 1 denotes print information about each optimization iteration.\\
+\\
+\texttt{delta} & 1.0
+    & Initial size of the trust-region radius\\
+\\
+\texttt{eta1} & 0.1
+    & When the actual versus predicted reduction for a trust-region method is below this threshold, the step is rejected.  Otherwise, it is accepted.\\
+\\
+\texttt{eta2} & 0.9
+    & When the actual versus predicted reduction for a trust-region method is above this threshold, the trust-region radius is increased when the trust-region radius inhibits the progress of the algorithm.\\
+\\
+\texttt{alpha} & 1.0
+    & Initial line-search step length.\\
+\\
+\texttt{linesearch\_iter\_max} & 5
+    & Maximum number of line-search iterations conducted before checking for a reduction in the objective value.\\
+\\
+\texttt{dir} & \texttt{SteepestDescent}
+    & Line-search direction taken by a line-search algorithm.  This can be either \texttt{SteepestDescent}, \texttt{FletcherReeves}, \texttt{PolakRibiere}, \texttt{HestenesStiefel}, \texttt{BFGS}, or \texttt{NewtonCG}.  The \texttt{FletcherReeves}, \texttt{PolakRibiere}, and \texttt{HestenesStiefel} directions corresponds to different flavors of Nonlinear-CG.  The \texttt{BFGS} direction implements a standard BFGS algorithm.  Finally, \texttt{NewtonCG} defines a a Newton-CG algorithm that uses the current Hessian approximation defined by \texttt{H\_type} in order to calculate the direction.\\
+\\
+\texttt{kind} & \texttt{GoldenSection}
+    & Kind of line-search algorithm used in a line-search algorithm.  This can be either \texttt{GoldenSection}, \texttt{BackTracking}, \texttt{TwoPointA}, or \texttt{TwoPointB}.  The algorithms \texttt{GoldenSection} and \texttt{BackTracking} correspond to a golden section search and a back tracking line-search, respectively.  \texttt{TwoPointA} and \texttt{TwoPointB} correspond to a line-search based on a two-point approximation of the Hessian.  This is used by the Barzilai-Borwein algorithm for unconstrained optimization.  If either \texttt{TwoPointA} or \texttt{TwoPointB} are chosen, it is important to set \texttt{dir} to \texttt{SteepestDescent}.\\
+\\
+\multicolumn{3}{p{\textwidth}}{\bf Parameters for: Inequality Constrained, Constrained}\\
+Name & Default & Description\\
+\texttt{eps\_mu} & $10^{-8}$
+    & Absolute tolerance for the interior point stopping critieria.  PEOpts defines the estimate of the infeasibility with respect to the complementary slackness stopping condition as $\langle z,h(x) \rangle/\langle e,e\rangle$ where $z$ denotes the inequality multiplier and $e$ denotes the identity element for the inequality algebra.  For linear bound constraints, this is the vector of all ones, so $\langle e,e\rangle=m$ where $m$ denotes the number of variables.  Hence, the stopping criteria for the inequality constraints is $\mu < \epsilon$.  Since we always choose a starting inequality multiplier so that $\langle z,h(x) \rangle/\langle e,e\rangle=1$, this tolerance is effectively a relative tolerance as well.\\
+\\
+\texttt{sigma} & $0.5$
+    & Rate at which PEOpt attempts to decrease the interior point parameter.  Specifically, if the current estimate of the interior point parameter is $\mu$, then we attempt to reduce $\mu$ to $\sigma \mu$.\\
+\\
+\texttt{gamma} & $0.95$
+    & How close PEOpt allows a step in the optimization algorithm to approach the boundary.  A step of $1.0$ would allow a step to touch the boundary of the inequality constraint in a single step, which is disallowed by the interior point algorithm.\\
+\\
+\texttt{ipm} & \texttt{PrimalDual}
+    & Kind of interior-point method used by PEOpt.  PEOpt allows either \texttt{PrimalDual}, \texttt{PrimalDualLinked}, or \texttt{LogBarrier}.  This corresponds to either a primal-dual interior point method, a primal-dual interior point method where the primal and dual step lengths are linked together, or a log-barrier algorithm.\\
+\\
+\texttt{cstrat} & \texttt{Constant}
+    & Centrality strategy used by the interior-point method.  PEOpt allows either \texttt{Constant}, \texttt{StairStep}, or \texttt{PredictorCorrector} strategies.  This corresponds to a constant reduction in the interior point parameter by $\sigma$, reducing $\sigma$ only when the relative reduction in the interior point parameter $\mu$ is less than the relative reduction in the gradient stopping condition, or a predictor-corrector strategy where on even iterations $\sigma=0$ and on odd iterations $\sigma=1$.\\
+\\
+\multicolumn{3}{p{\textwidth}}{\bf Parameters for: Equality Constrained, Constrained}\\
+Name & Default & Description\\
+\texttt{zeta} & 0.8 & Fraction of the trust-region used for the quasi-normal step.\\
+\\
+\texttt{eta0} & 0.5 & Trust-region parameter that bounds the error in the predicted-reduction.\\
+\\
+\texttt{rho} & 1.0 & Initial penalty parameter used in the augmented Lagrangian.  For globalization purposes, the equality constrained algorithm uses an augmented Lagrangian of the form $f(x)+\langle y,g(x)\rangle+\rho\|g(x)\|^2$.  For the constrained algorithms, PEOpt uses an augmented Lagrangian of the form $f(x)+\langle y,g(x)\rangle+\rho\|g(x)\|^2-\mu \textnormal{barr}(h(x))$ where $\textnormal{barr}(x)$ denotes the barrier functioned defined in the inequality algebra.\\
+\\
+\texttt{rho\_bar} & $10^{-8}$ & Fixed increase in the interior point parameter.\\
+\\
+\texttt{eps\_constr} & $10^{-8}$ & Relative stopping tolerance for feasibility with respect to the equality constraint.  PEOpt requires that $\|g(x_k)\|<\epsilon\|g(x_0)||$ in order to terminate where $x_k$ denotes the solution at the $k$-th iteration.\\
+\\
+\texttt{xi\_all} & $10^{-4}$ & Relative stopping tolerance for all of the augmented system solves, \texttt{xi\_qn}, \texttt{xi\_pg}, \texttt{xi\_proj}, \texttt{xi\_proj}, \texttt{xi\_tang}, and \texttt{xi\_lmh}, described below.
+\\
+\texttt{xi\_qn} & \texttt{xi\_all} & Relative stopping tolerance for the augmented system solve associated with the quasi-Newton step.\\
+\\
+\texttt{xi\_pg} & \texttt{xi\_all} & Relative stopping tolerance for the augmented system solve associated with the projection of the gradient prior to solving the tangential subproblem.\\
+\\
+\texttt{xi\_proj} & \texttt{xi\_all} & Relative stopping tolerance for the augmented system solve associated with the null-space projection of the iterate in the tangential subproblem.\\ 
+\\
+\texttt{xi\_tang} & \texttt{xi\_all} & Relative stopping tolerance for the augmented system solve associated with the tangential step computation after solving the tangential subproblem. \\
+\\
+\texttt{xi\_lmh} & \texttt{xi\_all} & Relative stopping tolerance for the augmented system solve associated with the equality multiplier computation.
+\\
+\texttt{xi\_lmg} & $10^4$ & Absolute tolerance on the residual of the equality multiplier solve. \\
+\\
+\texttt{xi\_4} & 2.0 & Tolerance for how much error is acceptable after computing the tangential step given the result from the tangential subproblem.\\
+\\
+\texttt{augsys\_iter\_max} & 100 & Maximum number of GMRES iterations allowed when solving an augmented system.\\
+\\
+\texttt{augsys\_rst\_freq} & 0 & Restarts GMRES every specified number of iterations in order to save memory.  When 0, PEOpt uses no restarting.\\
+\\
+\texttt{PSchur\_left\_type} & \texttt{Identity} & Type of left Schur preconditioner used by PEOpt during an augmented system solve.  This can be either \texttt{Identity} or \texttt{UserDefined}.  An augmented system solve finds the solution of a linear system where the operator has the form $\begin{bmatrix} I & g^\prime(x)^*\\g^\prime(x) 0\end{bmatrix}$.  The Schur preconditioner for this problem is an operator of the form $\begin{bmatrix} I & 0\\ 0 B\end{bmatrix}$ where $B$ is the operator specified by this parameter.  Note, if we specify $B=(g^\prime(x)g^\prime(x)^*)^{-1})$, then the augmented system solves in 3 iterations.\\
+\\
+\texttt{PSchur\_right\_type} & \texttt{Identity} & Type of right Schur preconditioner used by PEOpt during an augmented system solve.  This can be eiter \texttt{Identity} or \texttt{UserDefined}.
+\end{longtable}
+
 \chapter{Output}\label{ch:Output}
 \chapter{Advanced API}\label{ch:Advanced}
 
