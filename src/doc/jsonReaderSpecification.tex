@@ -1,0 +1,10 @@
+\begin{lstlisting}[style=C++]
+peopt::json::Unconstrained <double,Rm>::read(
+        peopt::Messaging(),"parameters.peopt",state);
+peopt::json::InequalityConstrained<double,Rm,Rm>::read(
+        peopt::Messaging(),"parameters.peopt",state);
+peopt::json::EqualityConstrained<double,Rm,Rm>::read(
+        peopt::Messaging(),"parameters.peopt",state);
+peopt::json::Constrained <double,Rm,Rm,Rm>::read(
+        peopt::Messaging(),"parameters.peopt",state);
+\end{lstlisting}

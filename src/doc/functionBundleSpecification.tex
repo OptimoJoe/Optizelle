@@ -1,0 +1,10 @@
+\begin{lstlisting}[style=C++]
+    peopt::Unconstrained <double,Rm>::Functions::t fns;
+    peopt::InequalityConstrained <double,Rm>::Functions::t fns;
+    peopt::EqualityConstrained <double,Rm>::Functions::t fns;
+    peopt::Constrained <double,Rm,Rm,Rm>::Functions::t fns;
+
+    fns.f.reset(new MyObj);
+    fns.g.reset(new MyEq);
+    fns.h.reset(new MyIneq);
+\end{lstlisting}

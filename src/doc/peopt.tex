@@ -497,13 +497,38 @@ In code, we implement these operators as
         For example, if we have a single equality constraint, we allocate memory for the codomain as
 \input{allocateCodomainExample.tex}
 
-\section{Create an Optimization State}
+\section{Create an Optimization State}\label{sec:State}
 
         In PEOpt, the optimization state contains an entire description of the current state of the optimization algorithm.  This is unique to the particular optimization formulation, but all algorithms in a particular formulations share the same state.  Most algorithms do not require information about all of these pieces, but they are present to make it easier to switch from one algorithm to another.  For example, trust-region and line-search algorithms share several components, but the trust-region radius is unique to trust-region algorithms and the line-search step length is unique to line-search algorithms.  Nevertheless, we may want to switch from one algorithm to another, so they share the same components.
 
         In order to define an optimization state, we instantiate the state class within the particular class of formulation we require.  The syntax is
 \input{stateSpecification.tex}
-  
+where these states correspond to the unconstrained, inequality constrained, equality constrained, and constrained formulations, respectively.  The variables \texttt{x}, \texttt{y}, and \texttt{z} correspond to elements in the domain of the objective, codomain of the equality constraints, and codomain of the inequality constraints, respectively.  Finally, the first template parameter denotes the floating point precision used by the optimization.  The remaining template parameters denote the vector space used by each of the elements, \texttt{x}, \texttt{y}, and \texttt{z}. 
+
+\section{Set the Optimization Parameters}
+
+        For each optimization problem, the parameters required for an efficient optimization solve can vary wildy.  Nevertheless, the parameters that guide this process reside within the state object.  There are two mechanisms for modifying these entires.  First, the state object created in Section \ref{sec:State} is simply a class with a variety of elements.  These can be modified directly.  Alternatively, if the PEOpt library is installed, we can use the JSON reader.  The syntax for reading a parameter file in JSON format from file is
+\input{jsonReaderSpecification.tex}
+where these four different commands correspond to unconstrained, inequality constrained, equality constrained, and constrained formulations, respectively.  As before, the template parameters denote first the precision required and then the vector spaces used by the optimization.
+
+        As far as the actual parameters and their affect, we discuss this in Chapter \ref{ch:Input}.
+
+\section{Accumulate the Functions}
+
+        In order to pass the functions used in the optimization to PEOpt, we accumulate each of them into a bundle of functions.  These bundles are simple structures that contain a number of \texttt{std::auto\_ptr} objects that point to the appropriate function.  The syntax for creating these objects is
+\input{functionBundleSpecification.tex}
+where \texttt{f} refers to a \texttt{ScalarValuedFunction} that denotes the objective, \texttt{g} refers to a \texttt{VectorValuedFunction} that denotes the equality constraint, and \texttt{h} refers to an affine \texttt{VectorValuedFunction} that denotes the inequality constraint.  Note, each of these structures only contains elements appropriate for their particular formulation.  For example, the bundle of functions that corresponds to unconstrained optimization only contains the element for \texttt{f} and not for \texttt{g} and \texttt{h}.
+
+\section{Call the Optimization Solver}
+
+       Once the state, parameters, and functions are set, calling the optimization solver is straightforward.  Simply, we call one of the four commands
+\input{solverSpecification.tex}
+These commands accept three input arguments: the messaging object, the bundle of functions, and the state.  The messaging object \texttt{peopt::Messaging()} sends the output to \texttt{stdout}.  This can be modified and we discuss how in Chapter \ref{ch:Advanced}.  Once the solver routine has been called, the optimization algorithms iterate until the stopping criteria is satisfied.  Generally, this creates a collection diagnostic information and we discuss the format of these output in Chapter \ref{ch:Output}.
+
+\section{Extract the Solution}
+
+        After the optimization routine concludes, the solution resides inside of the optimization state in a variable called \texttt{x}.  This is a \texttt{std::list} that contains a single element, the solution.  PEOpt stores each of its vector arguments inside of list in order to more efficiently manage memory.  This makes more advanced optimization techniques such as saving the state of the optimization and restarting a computation later easier.  The command required to extract the solution is the same for each formulation
+\input{solutionExtractionSpecification.tex}
 
 \chapter{Input Specifications}\label{ch:Input}
 \chapter{Output}\label{ch:Output}

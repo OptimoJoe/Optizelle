@@ -4,4 +4,3 @@
     peopt::EqualityConstrained <double,Rm,Rm>::State::t state(x,y);
     peopt::Constrained <double,Rm,Rm,Rm>::State::t state(x,y,z);
 \end{lstlisting}
-where these states correspond to the unconstrained, inequality constrained, equality constrained, and constrained formulations, respectively.  The variables \texttt{x}, \texttt{y}, and \texttt{z} correspond to elements in the domain of the objective, codomain of the equality constraints, and codomain of the inequality constraints, respectively.  Finally, the first template parameter denotes the floating point precision used by the optimization.  The remaining template parameters denote the vector space used by each of the elements, \texttt{x}, \texttt{y}, and \texttt{z}. 
