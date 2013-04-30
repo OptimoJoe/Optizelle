@@ -197,7 +197,7 @@ Default:      &Off\\
 Dependencies: &\texttt{BLAS\_LIBRARY}, \texttt{LAPACK\_LIBRARY},
               \texttt{JSONCPP\_INCLUDE\_DIR}, \texttt{JSONCPP\_LIBRARY}\\
 Autodetect?:  &No\\
-Description:  &Enables the the library build for peopt.  This includes the
+Description:  &Enables the the library build for PEOpt.  This includes the
               built-in vector spaces for real vectors or cone programming.\\
 \\
 Flag:         &\texttt{ENABLE\_CPP\_EXAMPLES}\\
@@ -206,7 +206,7 @@ Default:      &Off\\
 Dependencies: &\texttt{ENABLE\_CPP\_LIBRARY}\\
 Autodetect?:  &No\\
 Description:  &Enables the build and installation of simple examples that
-              demonstrate the use of peopt.  These examples are installed to
+              demonstrate the use of PEOpt.  These examples are installed to
               the directory
               \url{${CMAKE_INSTALL_PREFIX}/share/peopt/cpp/examples}.\\
 \\
@@ -218,7 +218,7 @@ Dependencies: &\texttt{ENABLE\_CPP\_LIBRARY},
               \texttt{BOOST\_UNIT\_TEST\_LIBRARY}\\
 Autodetect?:  &No\\
 Description:  &Enables the build and installation of unit tests that help
-              validate the peopt code.  These tests are installed to the
+              validate the PEOpt code.  These tests are installed to the
               directory \url{${CMAKE_INSTALL_PREFIX}/share/peopt/cpp/unit}.\\
 \\
 Flag:         &\texttt{ENABLE\_OPENMP}\\
@@ -226,7 +226,7 @@ Type:         &Bool\\
 Default:      &Off\\
 Dependencies: &\texttt{ENABLE\_CPP\_LIBRARY}\\
 Autodetect?:  &No\\
-Description:  &Toggles whether or not the peopt library should be compiled
+Description:  &Toggles whether or not the PEOpt library should be compiled
               using OpenMP.  This primarily affect whether or not the
               prepackaged vector spaces are coded to run in parallel using
               threads.\\
@@ -237,7 +237,7 @@ Default:      &Off\\
 Dependencies: &\texttt{ENABLE\_CPP\_LIBRARY}, \texttt{PYTHON\_INCLUDE\_DIR}, \texttt{PYTHON\_LIBRARY}\\
 Autodetect?:  &No\\
 Description:  &Enables the build and installation of the Python wrappers for
-              peopt.  The resulting Python module is installed to
+              PEOpt.  The resulting Python module is installed to
               \url{${CMAKE_INSTALL_PREFIX}/share/peopt/python}.  As such, make
               sure that the PYTHONPATH includes this directory.  In addition,
               using this module assumes that libpeopt\_complete.so can be found
@@ -249,7 +249,7 @@ Default:      &Off\\
 Dependencies: &\texttt{ENABLE\_PYTHON\_LIBRARY}\\
 Autodetect?:  &No\\
 Description:  &Enables the build and installation of examples that use the
-              Python wrappers for peopt.  These examples are installed into
+              Python wrappers for PEOpt.  These examples are installed into
               the directory
               \url{${CMAKE_INSTALL_PREFIX}/share/peopt/python/examples.}\\
 \\
@@ -260,7 +260,7 @@ Dependencies: &\texttt{ENABLE\_CPP\_LIBRARY}, \texttt{MATLAB\_INCLUDE\_DIR},
               \texttt{MATLAB\_LIBRARY}, \texttt{MATLAB\_MEX\_EXTENSION}\\
 Autodetect?:  &No\\
 Description:  &Enables the build and installation of the MATLAB wrappers for
-              peopt.  The resulting MATLAB mex file is installed to
+              PEOpt.  The resulting MATLAB mex file is installed to
               \url{${CMAKE_INSTALL_PREFIX}/share/peopt/matlab}.  As such, make
               sure that the MATLAB path includes this directory. \\
 \\
@@ -270,7 +270,7 @@ Default:      &Off\\
 Dependencies: &\texttt{ENABLE\_MATLAB\_LIBRARY}\\
 Autodetect?:  &No\\
 Description:  &Enables the build and installation of examples that use the
-              MATLAB wrappers for peopt.  These examples are installed into
+              MATLAB wrappers for PEOpt.  These examples are installed into
               the directory
               \url{${CMAKE_INSTALL_PREFIX}/share/peopt/matlab/examples}.\\
 \\
@@ -383,7 +383,7 @@ $$\begin{array}{l}
     \min\limits_{x\in X} \{ f(x) : g(x)=0 \},\\
     \min\limits_{x\in X} \{ f(x) : g(x)=0, h(x)\succeq 0 \},
 \end{array}$$
-respectively.  Since these formulations neccessitate different algorithms, the overall structure of PEOpt and the algorithms themselves have been segregated into these categories.
+respectively.  Since these formulations necessitate different algorithms, the overall structure of PEOpt and the algorithms themselves have been segregated into these categories.
 
         In order to interface to optimize the above formulations, we follow the general procedure
 \begin{enumerate}
@@ -490,7 +490,7 @@ In code, we implement these operators as
 
 \section{Define an Initial Guess} 
 
-        The class \texttt{peopt::Rm} used in each of our examples defines an algebra for vectors in $\re^m$.  Underneith, the storage used for these vectors is simply a \texttt{std::vector}.  As such, we define our initial guess using this class.
+        The class \texttt{peopt::Rm} used in each of our examples defines an algebra for vectors in $\re^m$.  Underneath, the storage used for these vectors is simply a \texttt{std::vector}.  As such, we define our initial guess using this class.
 
         As an example, our initial guess for the Rosenbrock function was $\begin{bmatrix}-1.2 & 1\end{bmatrix}^T$.  We implement this in code as
 \input{initialGuessExample.tex}
@@ -512,7 +512,7 @@ where these states correspond to the unconstrained, inequality constrained, equa
 
 \section{Set the Optimization Parameters}
 
-        For each optimization problem, the parameters required for an efficient optimization solve can vary wildy.  Nevertheless, the parameters that guide this process reside within the state object.  There are two mechanisms for modifying these entires.  First, the state object created in Section \ref{sec:State} is simply a class with a variety of elements.  These can be modified directly.  Alternatively, if the PEOpt library is installed, we can use the JSON reader.  The syntax for reading a parameter file in JSON format from file is
+        For each optimization problem, the parameters required for an efficient optimization solve can vary wildly.  Nevertheless, the parameters that guide this process reside within the state object.  There are two mechanisms for modifying these entries.  First, the state object created in Section \ref{sec:State} is simply a class with a variety of elements.  These can be modified directly.  Alternatively, if the PEOpt library is installed, we can use the JSON reader.  The syntax for reading a parameter file in JSON format from file is
 \input{jsonReaderSpecification.tex}
 where these four different commands correspond to unconstrained, inequality constrained, equality constrained, and constrained formulations, respectively.  As before, the template parameters denote first the precision required and then the vector spaces used by the optimization.
 
@@ -542,7 +542,7 @@ These commands accept three input arguments: the messaging object, the bundle of
 
 \chapter{Input Specifications}\label{ch:Input}
 
-        The parameters that guide the optimization solver have a dramatic effect on the performance of the internal algorithms.  As such, we catalog these parmametrs and their affect below. 
+        The parameters that guide the optimization solver have a dramatic effect on the performance of the internal algorithms.  As such, we catalog these parameters and their affect below. 
 
 \begin{longtable}{llp{0.4\textwidth}}
 \multicolumn{3}{p{\textwidth}}{\bf Parameters for: Unconstrained, Inequality Constrained, Equality Constrained, Constrained}\\
@@ -569,7 +569,7 @@ Name & Default & Description\\
     & Numbers of vectors stored and used in the orthogonalization of truncated-CG or truncated-MINRES.  In exact arithmetic, the number can be provably 0. In practice, if memory is available, it may be worthwhile to over orthogonalize. \\
 \\
 \texttt{eps\_krylov} & $10^{-2}$
-    & Relative stopping criteria for truncated-CG or truncated-MINRES.  In truncated-CG, the stopping criteria when solving the system $Ax=b$ with preconditioner $B$ is $\|B(Ax_k-b)\|\leq \epsilon\|B(Ax_0-b)\|$.  In truncated-MINRES, the stopping critiera is $\|Ax_k-b\|_B \leq \epsilon\|Ax_0-b\|_B$.\\
+    & Relative stopping criteria for truncated-CG or truncated-MINRES.  In truncated-CG, the stopping criteria when solving the system $Ax=b$ with preconditioner $B$ is $\|B(Ax_k-b)\|\leq \epsilon\|B(Ax_0-b)\|$.  In truncated-MINRES, the stopping criteria is $\|Ax_k-b\|_B \leq \epsilon\|Ax_0-b\|_B$.\\
 \\
 \texttt{krylov\_solver} & \texttt{ConjugateDirection}
     & Linear system solver used when solving the optimality conditions.  This can either be \texttt{ConjugateDirection} or \texttt{MINRES}.\\
@@ -583,7 +583,7 @@ Name & Default & Description\\
     & Hessian approximation for the objective function.  This can be either \texttt{UserDefined}, \texttt{Identity}, \texttt{ScaledIdentity}, \texttt{BFGS}, or \texttt{SR1}.  If \texttt{UserDefined} is chosen, PEOpt uses the \texttt{hessvec} calculation inside of the objective function to calculate the Hessian-vector product.  Otherwise, the \texttt{Identity}, \texttt{BFGS}, and \texttt{SR1} approximations corresponds to the identity operator, BFGS, and SR1 operators, respectively.  Finally, the \texttt{ScaledIdentity} option directs PEOpt to use a scaled version of the identity matrix defined as $\|\nabla f(x)\|/(2\Delta) I$ where $\Delta$ denotes the trust-region radius.  This forces the algorithm to take a steepest-descent step the size of the trust-region at every iteration.  This implements a steepest-descent algorithm with a trust-region method. \\
 \\
 \texttt{msg\_level} & 1
-    & Controls the amount of diagonstic output produced by PEOpt.  Here, 0 denotes no output and 1 denotes print information about each optimization iteration.\\
+    & Controls the amount of diagnostic output produced by PEOpt.  Here, 0 denotes no output and 1 denotes print information about each optimization iteration.\\
 \\
 \texttt{delta} & 1.0
     & Initial size of the trust-region radius\\
@@ -601,7 +601,7 @@ Name & Default & Description\\
     & Maximum number of line-search iterations conducted before checking for a reduction in the objective value.\\
 \\
 \texttt{dir} & \texttt{SteepestDescent}
-    & Line-search direction taken by a line-search algorithm.  This can be either \texttt{SteepestDescent}, \texttt{FletcherReeves}, \texttt{PolakRibiere}, \texttt{HestenesStiefel}, \texttt{BFGS}, or \texttt{NewtonCG}.  The \texttt{FletcherReeves}, \texttt{PolakRibiere}, and \texttt{HestenesStiefel} directions corresponds to different flavors of Nonlinear-CG.  The \texttt{BFGS} direction implements a standard BFGS algorithm.  Finally, \texttt{NewtonCG} defines a a Newton-CG algorithm that uses the current Hessian approximation defined by \texttt{H\_type} in order to calculate the direction.\\
+    & Line-search direction taken by a line-search algorithm.  This can be either \texttt{SteepestDescent}, \texttt{FletcherReeves}, \texttt{PolakRibiere}, \texttt{HestenesStiefel}, \texttt{BFGS}, or \texttt{NewtonCG}.  The \texttt{FletcherReeves}, \texttt{PolakRibiere}, and \texttt{HestenesStiefel} directions corresponds to different flavors of Nonlinear-CG.  The \texttt{BFGS} direction implements a standard BFGS algorithm.  Finally, \texttt{NewtonCG} defines a Newton-CG algorithm that uses the current Hessian approximation defined by \texttt{H\_type} in order to calculate the direction.\\
 \\
 \texttt{kind} & \texttt{GoldenSection}
     & Kind of line-search algorithm used in a line-search algorithm.  This can be either \texttt{GoldenSection}, \texttt{BackTracking}, \texttt{TwoPointA}, or \texttt{TwoPointB}.  The algorithms \texttt{GoldenSection} and \texttt{BackTracking} correspond to a golden section search and a back tracking line-search, respectively.  \texttt{TwoPointA} and \texttt{TwoPointB} correspond to a line-search based on a two-point approximation of the Hessian.  This is used by the Barzilai-Borwein algorithm for unconstrained optimization.  If either \texttt{TwoPointA} or \texttt{TwoPointB} are chosen, it is important to set \texttt{dir} to \texttt{SteepestDescent}.\\
@@ -609,7 +609,7 @@ Name & Default & Description\\
 \multicolumn{3}{p{\textwidth}}{\bf Parameters for: Inequality Constrained, Constrained}\\
 Name & Default & Description\\
 \texttt{eps\_mu} & $10^{-8}$
-    & Absolute tolerance for the interior point stopping critieria.  PEOpts defines the estimate of the infeasibility with respect to the complementary slackness stopping condition as $\langle z,h(x) \rangle/\langle e,e\rangle$ where $z$ denotes the inequality multiplier and $e$ denotes the identity element for the inequality algebra.  For linear bound constraints, this is the vector of all ones, so $\langle e,e\rangle=m$ where $m$ denotes the number of variables.  Hence, the stopping criteria for the inequality constraints is $\mu < \epsilon$.  Since we always choose a starting inequality multiplier so that $\langle z,h(x) \rangle/\langle e,e\rangle=1$, this tolerance is effectively a relative tolerance as well.\\
+    & Absolute tolerance for the interior point stopping criteria.  PEOpt defines the estimate of the infeasibility with respect to the complementary slackness stopping condition as $\langle z,h(x) \rangle/\langle e,e\rangle$ where $z$ denotes the inequality multiplier and $e$ denotes the identity element for the inequality algebra.  For linear bound constraints, this is the vector of all ones, so $\langle e,e\rangle=m$ where $m$ denotes the number of variables.  Hence, the stopping criteria for the inequality constraints is $\mu < \epsilon$.  Since we always choose a starting inequality multiplier so that $\langle z,h(x) \rangle/\langle e,e\rangle=1$, this tolerance is effectively a relative tolerance as well.\\
 \\
 \texttt{sigma} & $0.5$
     & Rate at which PEOpt attempts to decrease the interior point parameter.  Specifically, if the current estimate of the interior point parameter is $\mu$, then we attempt to reduce $\mu$ to $\sigma \mu$.\\
@@ -631,11 +631,11 @@ Name & Default & Description\\
 \\
 \texttt{rho} & 1.0 & Initial penalty parameter used in the augmented Lagrangian.  For globalization purposes, the equality constrained algorithm uses an augmented Lagrangian of the form $f(x)+\langle y,g(x)\rangle+\rho\|g(x)\|^2$.  For the constrained algorithms, PEOpt uses an augmented Lagrangian of the form $f(x)+\langle y,g(x)\rangle+\rho\|g(x)\|^2-\mu \textnormal{barr}(h(x))$ where $\textnormal{barr}(x)$ denotes the barrier functioned defined in the inequality algebra.\\
 \\
-\texttt{rho\_bar} & $10^{-8}$ & Fixed increase in the interior point parameter.\\
+\texttt{rho\_bar} & $10^{-8}$ & Fixed increase in the penalty parameter in the augmented Lagrangian merit function.\\
 \\
 \texttt{eps\_constr} & $10^{-8}$ & Relative stopping tolerance for feasibility with respect to the equality constraint.  PEOpt requires that $\|g(x_k)\|<\epsilon\|g(x_0)||$ in order to terminate where $x_k$ denotes the solution at the $k$-th iteration.\\
 \\
-\texttt{xi\_all} & $10^{-4}$ & Relative stopping tolerance for all of the augmented system solves, \texttt{xi\_qn}, \texttt{xi\_pg}, \texttt{xi\_proj}, \texttt{xi\_proj}, \texttt{xi\_tang}, and \texttt{xi\_lmh}, described below.
+\texttt{xi\_all} & $10^{-4}$ & Relative stopping tolerance for all of the augmented system solves, \texttt{xi\_qn}, \texttt{xi\_pg}, \texttt{xi\_proj}, \texttt{xi\_proj}, \texttt{xi\_tang}, and \texttt{xi\_lmh}, described below.\\
 \\
 \texttt{xi\_qn} & \texttt{xi\_all} & Relative stopping tolerance for the augmented system solve associated with the quasi-Newton step.\\
 \\
@@ -645,7 +645,7 @@ Name & Default & Description\\
 \\
 \texttt{xi\_tang} & \texttt{xi\_all} & Relative stopping tolerance for the augmented system solve associated with the tangential step computation after solving the tangential subproblem. \\
 \\
-\texttt{xi\_lmh} & \texttt{xi\_all} & Relative stopping tolerance for the augmented system solve associated with the equality multiplier computation.
+\texttt{xi\_lmh} & \texttt{xi\_all} & Relative stopping tolerance for the augmented system solve associated with the equality multiplier computation.\\
 \\
 \texttt{xi\_lmg} & $10^4$ & Absolute tolerance on the residual of the equality multiplier solve. \\
 \\
@@ -657,26 +657,26 @@ Name & Default & Description\\
 \\
 \texttt{PSchur\_left\_type} & \texttt{Identity} & Type of left Schur preconditioner used by PEOpt during an augmented system solve.  This can be either \texttt{Identity} or \texttt{UserDefined}.  An augmented system solve finds the solution of a linear system where the operator has the form $\begin{bmatrix} I & g^\prime(x)^*\\g^\prime(x) & 0\end{bmatrix}$.  The Schur preconditioner for this problem is an operator of the form $\begin{bmatrix} I & 0\\ 0 & B\end{bmatrix}$ where $B$ is the operator specified by this parameter.  Note, if we specify $B=(g^\prime(x)g^\prime(x)^*)^{-1}$, then the augmented system solves in 3 iterations.\\
 \\
-\texttt{PSchur\_right\_type} & \texttt{Identity} & Type of right Schur preconditioner used by PEOpt during an augmented system solve.  This can be eiter \texttt{Identity} or \texttt{UserDefined}.
+\texttt{PSchur\_right\_type} & \texttt{Identity} & Type of right Schur preconditioner used by PEOpt during an augmented system solve.  This can be either \texttt{Identity} or \texttt{UserDefined}.
 \end{longtable}
 
 \chapter{Output}\label{ch:Output}
 
-        PEOpt generates a series of diagnostics while running that give information about the behavior and performance of the underlying algorithm.  This information is organized into columns that are exactly 10 characters wide.  Each column always has some sort of information, which makes the output easy to parse using standard Unix utitlities such as \texttt{cut} or \texttt{awk}.  As far as the information in the columns themselves, we detail their meaning in the following table.
+        PEOpt generates a series of diagnostics while running that give information about the behavior and performance of the underlying algorithm.  This information is organized into columns that are exactly 10 characters wide.  Each column always has some sort of information, which makes the output easy to parse using standard Unix utilities such as \texttt{cut} or \texttt{awk}.  As far as the information in the columns themselves, we detail their meaning in the following table.
 
-\begin{longtable}{lp{0.6\textwidth}}
+\begin{longtable}{lp{0.8\textwidth}}
 \multicolumn{2}{p{\textwidth}}{\bf Output for: Unconstrained, Inequality Constrained, Equality Constrained, Constrained}\\
 Name & Description\\
 \texttt{Iter} & Current optimization iteration.  If the value of this entry is \texttt{*}, that means that a trust-region algorithm has rejected a step due to an unfavorable actual versus predicted reduction. \\
 \\
 \texttt{f(x)} & Value of the objective function at the start of the specified iteration.\\
 \\
-\texttt{merit(x)} & Value of the merit function at the start of the iteration.  For an unconstrained problem, this is simply $f(x)$.  For an inequality constrained problem, PEOpt returns $f(x)-\mu \textnormal{barr}(x)$ where $\textnormal{barr}(x)$ denotes the value of the barrier function from the inequality algebra.  For an equality constrained problem, PEOpt gives $f(x)-\langle y, g(x)\rangle + \rho \|g(x)\|^2$.  For a constrained peoblem, PEOpt defines this quantity as $f(x)-\langle y, g(x)\rangle + \rho \|g(x)\|^2 - \mu\textnormal{barr}(x)$.\\
+\texttt{merit(x)} & Value of the merit function at the start of the iteration.  For an unconstrained problem, this is simply $f(x)$.  For an inequality constrained problem, PEOpt returns $f(x)-\mu \textnormal{barr}(x)$ where $\textnormal{barr}(x)$ denotes the value of the barrier function from the inequality algebra.  For an equality constrained problem, PEOpt gives $f(x)-\langle y, g(x)\rangle + \rho \|g(x)\|^2$.  For a constrained problem, PEOpt defines this quantity as $f(x)-\langle y, g(x)\rangle + \rho \|g(x)\|^2 - \mu\textnormal{barr}(x)$.\\
 \\
 \texttt{||grad||} & Norm of the gradient of either the objective function or the Lagrangian.  In each case, this denotes the norm of the optimality conditions.  In the unconstrained case, PEOpt defines this quantity as $\|\nabla f(x)\|$.  In the inequality constrained case, this becomes $\|\ineqGradLag{x}{z}\|$.  In the equality constrained case, this is $\|\eqGradLag{x}{y}\|$.  In the fully constrained case, this quantity denotes $\|\conGradLag{x}{y}{z}\|$.\\\\
 \texttt{||dx||} & Norm of the step taken during the last iteration. \\
 \\
-\texttt{ared} & Actual reduction defined as $\textnormal{merit}(x_k)-\textnormal{merit}{x_{k+1}}$ where $x_k$ denotes the iterate at the previous step and $x_{k+1}$ denotes the current iterate.\\
+\texttt{ared} & Actual reduction defined as $\textnormal{merit}(x_k)-\textnormal{merit}(x_{k+1})$ where $x_k$ denotes the iterate at the previous step and $x_{k+1}$ denotes the current iterate.\\
 \\
 \texttt{pred} & Predicted reduction defined as $\textnormal{merit}(x_k)-\textnormal{model}(\delta x)$ where $x_k$ denotes the iterate at the previous step and $\delta x$ denotes the current step.  Depending on the formulation, PEOpt uses a different model, but these models generally correspond to a quadratic approximation to the merit function.\\
 \\
@@ -684,7 +684,7 @@ Name & Description\\
 \\
 \texttt{KryIter} & Number of iterations used by truncated-CG or MINRES when solving the optimality system.\\
 \\
-\texttt{KryErr} & Error in truncated-CG or MINRES when solving the optimality system.  For truncated-CG, this is defined as $\|B(Ax-b)\|$ where we are solving the system $Ax=b$ with the preconditioner $B$.  For truncated-MINRES, this becomes $\|Ax-b\|_B$.
+\texttt{KryErr} & Error in truncated-CG or MINRES when solving the optimality system.  For truncated-CG, this is defined as $\|B(Ax-b)\|$ where we are solving the system $Ax=b$ with the preconditioner $B$.  For truncated-MINRES, this becomes $\|Ax-b\|_B$.\\
 \\
 \texttt{KryWhy} & Why the truncated-CG or MINRES solve terminated.  This value can be either \texttt{RelErrSml}, the relative error is small, \texttt{NegCurv}, detected negative curvature, \texttt{IterExcd}, number of iterations exceeded, \texttt{TrstReg}, step violates the trust-region, \texttt{Unstable}, loss of orthogonality in the system, or \texttt{InvldCnt}, an invalid center for the trust-region radius.\\
 \\
@@ -727,7 +727,7 @@ Note, the functions \texttt{prod}, \texttt{id}, \texttt{linv}, \texttt{barr}, \t
 
 \subsection{copy}
         
-        The \texttt{copy} function copies the data from x to y using already initalized vectors.  Hence, it implements a shallow copy.
+        The \texttt{copy} function copies the data from x to y using already initialized vectors.  Hence, it implements a shallow copy.
 
 \subsection{scal}
 
@@ -754,11 +754,11 @@ Note, PEOpt restricts the formulations to real vector spaces.  Note, for $\ell^2
 
 \subsection{prod}
 
-        The function \texttt{prod} defines a pseudo-Jordan product between two elements.  We say pseudo-Jordan in the sense that we do not require a full Euclidean-Jordan algebra.  Instead, we drop the requirement for communtitivity.  Hence, for linear bound constraints, we define that
+        The function \texttt{prod} defines a pseudo-Jordan product between two elements.  We say pseudo-Jordan in the sense that we do not require a full Euclidean-Jordan algebra.  Instead, we drop the requirement for commutativity.  Hence, for linear bound constraints, we define that
 $$
         [x\circ y]_i = x_iy_i.
 $$
-Hence, the product denotes the pointwise or Hadamard product.  For second-order cone cosntraints, we define that
+Hence, the product denotes the pointwise or Hadamard product.  For second-order cone constraints, we define that
 $$
         \begin{bmatrix}x_0\\\bar{x}\end{bmatrix} \circ \begin{bmatrix}y_0\\\bar{y}\end{bmatrix}=\begin{bmatrix} x_0y_0 + \bar{x}^T\bar{y}\\x_0 \bar{y} + y_0 \bar{x}\end{bmatrix}.
 $$
@@ -774,7 +774,7 @@ but the inverse operation we discuss below will be far more inefficient.
 
 \subsection{id} 
 
-       The function \texttt{id} transforms a vector into the identiy element for the inequality algebra.  Hence, it returns an element $e$ so that $x\circ e=x$.   For linear bound constraints, $e$ denotes the vector of all ones.  For second-order cone constraints, $e=\begin{bmatrix} 1 & 0 & \dots & 0\end{bmatrix}^T$.  For semidefinite constraints, $e=I$.
+       The function \texttt{id} transforms a vector into the identity element for the inequality algebra.  Hence, it returns an element $e$ so that $x\circ e=x$.   For linear bound constraints, $e$ denotes the vector of all ones.  For second-order cone constraints, $e=\begin{bmatrix} 1 & 0 & \dots & 0\end{bmatrix}^T$.  For semidefinite constraints, $e=I$.
 
 \subsection{linv}
 
@@ -782,10 +782,10 @@ but the inverse operation we discuss below will be far more inefficient.
 $$
         \textnormal{Arw}\left(\begin{bmatrix}x_0\\\bar{x}\end{bmatrix}\right) =
 \begin{bmatrix}
-        x_0 & \bar{x}^T\\\bar{x} & x0 I
+        x_0 & \bar{x}^T\\\bar{x} & x_0 I
 \end{bmatrix}.
 $$
-For semidefinite constraints, we can either define that $L(X)=X$ or that $L(X)=\frac{X\cdot + \cdot X}{2}$.  Generally, it's preferable to use the first definition since $L(X)^{-1}=X^{-1}$.  In the second case, PEOpt requires the solution of the Sylvester equations.
+For semidefinite constraints, we can either define that $L(X)=X$ or that $L(X)=\frac{X\cdot + \cdot X}{2}$.  Generally, it is preferable to use the first definition since $L(X)^{-1}=X^{-1}$.  In the second case, PEOpt requires the solution of the Sylvester equations.
 
 \subsection{barr}
 
@@ -813,10 +813,10 @@ where $\textnormal{det}(X)$ denotes the determinant of $X$.
 $$
     \textnormal{srch}(x,y)=\arg\max\limits_{\alpha\geq 0} \{ \alpha\in\re : \alpha x + y \succeq 0\}
 $$
-where we assume $y\succ 0$.  Hence, $\alpha$ denotes the maximum distance we can move in the direction $x$ from $y$ so that $\alpha x + y$ remains feasible.
+where we assume $y\succ 0$.  Hence, $\alpha$ denotes the maximum distance PEOpt can move in the direction $x$ from $y$ so that $\alpha x + y$ remains feasible.
 
 \subsection{symm}
 
-        The function \texttt{symm} denotes the symmetrization operator.  We require this operator since we relax the commutivity requirement from the Euclidan-Jordan algebra.  For linear bound constraints and second-order cone constraints, this operation does nothing.  In addition, for semidefinite constraints where $X\circ Y=\frac{XY+YX}{2}$, this operation does nothing.  However, for semidefinite constraints where $X\circ Y=XY$, we define $\textnormal{symm}(X)=\frac{X+X^T}{2}$.
+        The function \texttt{symm} denotes the symmetrization operator.  PEOpt requires this operator since we relax the commutativity requirement from the Euclidean-Jordan algebra.  For linear bound constraints and second-order cone constraints, this operation does nothing.  In addition, for semidefinite constraints where $X\circ Y=\frac{XY+YX}{2}$, this operation does nothing.  However, for semidefinite constraints where $X\circ Y=XY$, PEOpt requires $\textnormal{symm}(X)=\frac{X+X^T}{2}$.
 
 \end{document}
