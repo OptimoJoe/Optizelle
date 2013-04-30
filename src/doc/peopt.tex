@@ -371,9 +371,30 @@ Description:  &The extension of mex files on the system.  This can be found
        
 \chapter{Basic API}\label{ch:Basic}
 
-        The basic interface to PEOpt is centered around defining the appropriate functions for optimization, settings the appropriate parameters, and then calling the optimization routines.  Each one of these steps has a well-define interface that we define below.
+       PEOpt organizes its algorithms into four different categories: unconstrained, inequality constrained, equality constrained, and constrained.  These categories correspond to the formulations
+$$\begin{array}{l}
+    \min\limits_{x\in X} f(x),\\
+    \min\limits_{x\in X} \{ f(x) : h(x)\succeq 0\},\\
+    \min\limits_{x\in X} \{ f(x) : g(x)=0 \},\\
+    \min\limits_{x\in X} \{ f(x) : g(x)=0, h(x)\succeq 0 \},
+\end{array}$$
+respectively.  Since these formulations neccessitate different algorithms, the overall structure of PEOpt and the algorithms themselves have been segregated into these categories.
 
-\section{Defining the Objective Function}
+        In order to interface to optimize the above formulations, we follow the general procedure
+\begin{enumerate}
+    \item Define the objective function.
+    \item (Optional) Define the constraints.
+    \item Define an initial guess for the optimization.
+    \item (Optional) Allocate memory for elements in the codomain of the constraints.  These are the Lagrange multipliers. 
+    \item Create an optimization state.
+    \item Set the optimization parameters.
+    \item Accumulate all the functions required for optimization into a single bundle.
+    \item Call the appropriate optimization routine.
+    \item Extract the solution.
+\end{enumerate}
+We discuss how to implement each of the above steps below. 
+
+\section{Define the Objective Function}
 
         PEOpt defines the objective function as a class that inherits from\linebreak\texttt{peopt::ScalarValuedFunction}, which PEOpt defines as
 \input{objectiveSpecification.tex}
@@ -401,7 +422,7 @@ $$
 Using PEOpt's internal vector spaces, we implement these operators as
 \input{objectiveExample.tex}
 
-\section{Defining the Constraints}
+\section{Define the Constraints}
 
         PEOpt defines the constraints as a vector-valued function that inherits from \texttt{peopt::VectorValuedFunction}, which PEOpt defines as
 \input{constraintSpecification.tex}
@@ -462,9 +483,30 @@ Then, we have that
 In code, we implement these operators as
 \input{constraintExample.tex}
 
+\section{Define an Initial Guess} 
 
+        The class \texttt{peopt::Rm} used in each of our examples defines an algebra for vectors in $\re^m$.  Underneith, the storage used for these vectors is simply a \texttt{std::vector}.  As such, we define our initial guess using this class.
+
+        As an example, our initial guess for the Rosenbrock function was $\begin{bmatrix}-1.2 & 1\end{bmatrix}^T$.  We implement this in code as
+\input{initialGuessExample.tex}
+
+\section{Allocate Memory for Elements in the Codomain of the Constraints}
+
+        As with our initial guess, we also use the class \texttt{peopt::Rm} to represent elements in the codomain of our constraints.  These elements correspond to the Lagrange multipliers or dual variables for the constrained algorithms, but, beyond label, we require no additional information about duality theory.  In addition, these elements are purely used for allocating memory.  This means that the value of these vectors when passed to PEOpt is ignored.
+
+        For example, if we have a single equality constraint, we allocate memory for the codomain as
+\input{allocateCodomainExample.tex}
+
+\section{Create an Optimization State}
+
+        In PEOpt, the optimization state contains an entire description of the current state of the optimization algorithm.  This is unique to the particular optimization formulation, but all algorithms in a particular formulations share the same state.  Most algorithms do not require information about all of these pieces, but they are present to make it easier to switch from one algorithm to another.  For example, trust-region and line-search algorithms share several components, but the trust-region radius is unique to trust-region algorithms and the line-search step length is unique to line-search algorithms.  Nevertheless, we may want to switch from one algorithm to another, so they share the same components.
+
+        In order to define an optimization state, we instantiate the state class within the particular class of formulation we require.  The syntax is
+\input{stateSpecification.tex}
+  
 
 \chapter{Input Specifications}\label{ch:Input}
 \chapter{Output}\label{ch:Output}
 \chapter{Advanced API}\label{ch:Advanced}
+
 \end{document}

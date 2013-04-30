@@ -6,6 +6,9 @@ add_latex_document(peopt.tex DEFAULT_PDF
            simple_con_code.tex simple_con_input.tex simple_con_output.tex
            objectiveSpecification.tex objectiveExample.tex
            constraintSpecification.tex constraintExample.tex
+           initialGuessExample.tex
+           allocateCodomainExample.tex
+           stateSpecification.tex
 )
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/peopt.pdf
     DESTINATION share/peopt/doc)

@@ -52,14 +52,6 @@ int main(){
     std::vector <double> x(2);
     x[0]=-1.2; x[1]=1.;
 
-    // Create a direction for the finite difference tests
-    std::vector <double> dx(2);
-    dx[0]=-.5; dx[1]=.5;
-
-    // Create another direction for the finite difference tests
-    std::vector <double> dxx(2);
-    dxx[0]=.75; dxx[1]=.25;
-
     // Create an unconstrained state based on this vector
     peopt::Unconstrained <double,peopt::Rm>::State::t state(x);
 
