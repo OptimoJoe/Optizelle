@@ -1,7 +1,7 @@
-Pretty Efficient Optimization (peopt) v0.3.0
+Parameter Estimation Using Optimization (PEOpt) 
 
 --------------------------------DESCRIPTION---------------------------------
-The library peopt contains a collection of routines implementing matrix-free
+The library PEOpt contains a collection of routines implementing matrix-free
 algorithms for optimization.  This includes unconstrained as well as
 general inequality constrained problems.  Its particular focus is on providing
 abstractions for users who require control of the underlying linear algebra
@@ -16,7 +16,7 @@ In order to install a headers only installation with no examples or unit tests,
     cmake -DCMAKE_INSTALL_PREFIX=/dir/to/install/location ../src
     make install
 
-This installs the appropriate peopt headers to the directory
+This installs the appropriate PEOpt headers to the directory
 
     /dir/to/install/location/include/peopt
 
@@ -31,14 +31,14 @@ options.  In this case, we build with the following:
     make
     make install
 
-For a detailed description of the peopt specific flags, see below
+For a detailed description of the PEOpt specific flags, see below
 
 Flag:         ENABLE_CPP_LIBRARY
 Type:         Bool
 Default:      Off
 Dependencies: BLAS_LIBRARY, LAPACK_LIBRARY, JSONCPP_INCLUDE_DIR, JSONCPP_LIBRARY
 Autodetect?:  No
-Description:  Enables the the library build for peopt.  This includes the
+Description:  Enables the the library build for PEOpt.  This includes the
               built-in vector spaces for real vectors or cone programming.
 
 Flag:         ENABLE_CPP_EXAMPLES
@@ -47,7 +47,7 @@ Default:      Off
 Dependencies: ENABLE_CPP_LIBRARY
 Autodetect?:  No
 Description:  Enables the build and installation of simple examples that
-              demonstrate the use of peopt.  These examples are installed to
+              demonstrate the use of PEOpt.  These examples are installed to
               the directory ${CMAKE_INSTALL_PREFIX}/share/peopt/cpp/examples.
 
 Flag:         ENABLE_CPP_UNIT
@@ -57,7 +57,7 @@ Dependencies: ENABLE_CPP_LIBRARY, BOOST_UNIT_TEST_INCLUDE_DIR,
               BOOST_UNIT_TEST_LIBRARY
 Autodetect?:  No
 Description:  Enables the build and installation of unit tests that help
-              validate the peopt code.  These tests are installed to the
+              validate the PEOpt code.  These tests are installed to the
               directory ${CMAKE_INSTALL_PREFIX}/share/peopt/cpp/unit.
 
 Flag:         ENABLE_OPENMP
@@ -65,7 +65,7 @@ Type:         Bool
 Default:      Off
 Dependencies: ENABLE_CPP_LIBRARY
 Autodetect?:  No
-Description:  Toggles whether or not the peopt library should be compiled
+Description:  Toggles whether or not the PEOpt library should be compiled
               using OpenMP.  This primarily affect whether or not the
               prepackaged vector spaces are coded to run in parallel using
               threads.
@@ -76,7 +76,7 @@ Default:      Off
 Dependencies: ENABLE_CPP_LIBRARY, PYTHON_INCLUDE_DIR, PYTHON_LIBRARY
 Autodetect?:  No
 Description:  Enables the build and installation of the Python wrappers for
-              peopt.  The resulting Python module is installed to
+              PEOpt.  The resulting Python module is installed to
               ${CMAKE_INSTALL_PREFIX}/share/peopt/python.  As such, make
               sure that the PYTHONPATH includes this directory.  In addition,
               using this module assumes that libpeopt_complete.so can be found
@@ -88,7 +88,7 @@ Default:      Off
 Dependencies: ENABLE_PYTHON_LIBRARY
 Autodetect?:  No
 Description:  Enables the build and installation of examples that use the
-              Python wrappers for peopt.  These examples are installed into
+              Python wrappers for PEOpt.  These examples are installed into
               the directory ${CMAKE_INSTALL_PREFIX}/share/peopt/python/examples.
 
 Flag:         ENABLE_MATLAB
@@ -98,7 +98,7 @@ Dependencies: ENABLE_CPP_LIBRARY, MATLAB_INCLUDE_DIR, MATLAB_LIBRARY,
               MATLAB_MEX_EXTENSION
 Autodetect?:  No
 Description:  Enables the build and installation of the MATLAB wrappers for
-              peopt.  The resulting MATLAB mex file is installed to
+              PEOpt.  The resulting MATLAB mex file is installed to
               ${CMAKE_INSTALL_PREFIX}/share/peopt/matlab.  As such, make
               sure that the MATLAB path includes this directory. 
 
@@ -108,7 +108,7 @@ Default:      Off
 Dependencies: ENABLE_MATLAB_LIBRARY
 Autodetect?:  No
 Description:  Enables the build and installation of examples that use the
-              MATLAB wrappers for peopt.  These examples are installed into
+              MATLAB wrappers for PEOpt.  These examples are installed into
               the directory ${CMAKE_INSTALL_PREFIX}/share/peopt/matlab/examples.
 
 Flag:         BLAS_LIBRARY 
