@@ -551,7 +551,7 @@ Name & Default & Description\\
     & Relative tolerance for the gradient stopping criteria.  In unconstrained problems, PEOpt terminates when $\| \nabla f(x_k) \| \leq \epsilon \| \nabla f(x_0) \|$ where $x_k$ denotes the solution at the $k$-th iteration.  For inequality constrained problems, the gradient stopping criteria is $\| \ineqGradLag{x_k}{z_k} \| \leq \epsilon \| \ineqGradLag{x_0}{z_0}) \|$.  For equality constrained problems, this becomes $\| \eqGradLag{x_k}{y_k} \| \leq \epsilon \| \eqGradLag{x_0}{y_0} \|$.  Finally, for constrained problems, the stopping criteria is $\| \conGradLag{x_k}{y_k}{z_k} \| \leq \epsilon \| \conGradLag{x_0}{y_0}{z_0} \|$.\\
 \\
 \texttt{eps\_dx} & $10^{-8}$
-    & Relative tolerance for the step length stopping criteria.  In unconstrained problems, PEOpt terminates when $\|\delta x\| \leq \epsilon \|\nabla f(x_0)\|$ where $\delta x$ denotes the step in the optimization variables at the current iteration and $x_0$ denotes the initial guess provided to the optimization.  For inequality constrained problems, PEOpt terminates when $\|\delta x\| \leq \epsilon \| \ineqGradLag{x_0}{z_0} \|$.  For equality constrained problems, this becomes $\|\delta x\| \leq \epsilon \| \eqGradLag{x_0}{y_0} \|$.  For constrained problems, this becomes $\|\delta x\| \leq \epsilon \| \conGradLag{x_0}{y_0}{z_0} \|$.
+    & Relative tolerance for the step length stopping criteria.  In unconstrained problems, PEOpt terminates when $\|\delta x\| \leq \epsilon \|\nabla f(x_0)\|$ where $\delta x$ denotes the step in the optimization variables at the current iteration and $x_0$ denotes the initial guess provided to the optimization.  For inequality constrained problems, PEOpt terminates when $\|\delta x\| \leq \epsilon \| \ineqGradLag{x_0}{z_0} \|$.  For equality constrained problems, this becomes $\|\delta x\| \leq \epsilon \| \eqGradLag{x_0}{y_0} \|$.  For constrained problems, this becomes $\|\delta x\| \leq \epsilon \| \conGradLag{x_0}{y_0}{z_0} \|$.\\
 \\
 \texttt{stored\_history} & 0
     & Number of vectors stored for use with quasi-Newton methods such as SR1 and BFGS\\
@@ -575,7 +575,7 @@ Name & Default & Description\\
     & Linear system solver used when solving the optimality conditions.  This can either be \texttt{ConjugateDirection} or \texttt{MINRES}.\\
 \\
 \texttt{algorithm\_class} & \texttt{TrustRegion}
-    & Class of algorithm used in optimization.  This can either be \texttt{TrustRegion}, \texttt{LineSearch}, or \texttt{UserDefined}.
+    & Class of algorithm used in optimization.  This can either be \texttt{TrustRegion}, \texttt{LineSearch}, or \texttt{UserDefined}.\\
 \\
 \texttt{PH\_type} & \texttt{Identity}
     & Preconditioner used when solving the optimality conditions.  This can be either \texttt{Identity}, \texttt{InvBFGS}, or \texttt{InvSR1}, which correspond to the identity operator, a BFGS-based preconditioner, or a SR1 based preconditioner, respectively.\\
