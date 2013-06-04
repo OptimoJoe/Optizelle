@@ -13,14 +13,15 @@ namespace {
 
     // Define the quadratic function 
     // 
-    // f(x,y)=(x-1)^2+(x-2)^2
+    // f(x,y,z)=(x-1)^2+(2y-2)^2+(3z-3)^2
     //
+    // This has a minimum at (1,1,1).
     struct Quad : public peopt::ScalarValuedFunction <double,peopt::Rm> {
         typedef peopt::Rm <double> X;
 
-        // Evaluation of the quadratic function 
+        // Evaluation of the quadratic function
         double operator () (const X::Vector& x) const {
-            return sq(x[0]-1.)+sq(x[1]-2.);
+            return sq(x[0]-1.)+sq(2*x[1]-2.)+sq(3*x[2]-3.);
         }
 
         // Gradient
@@ -29,7 +30,8 @@ namespace {
             X::Vector& g
         ) const {
             g[0]=2*x[0]-2;
-            g[1]=2*x[1]-4;
+            g[1]=8*x[1]-8;
+            g[2]=18*x[2]-18;
         }
 
         // Hessian-vector product
@@ -39,7 +41,24 @@ namespace {
             X::Vector& H_dx
         ) const {
             H_dx[0]= 2*dx[0];
-            H_dx[1]= 2*dx[1]; 
+            H_dx[1]= 8*dx[1]; 
+            H_dx[2]= 18*dx[2]; 
+        }
+    };
+
+    // Define an almost perfect preconditioner for the Hessian
+    struct QuadHInv : public peopt::Operator <double,peopt::Rm,peopt::Rm> {
+    public:
+        typedef peopt::Rm <double> X;
+        typedef X::Vector X_Vector;
+    private:
+        X_Vector& x;
+    public:
+        QuadHInv(X::Vector& x_) : x(x_) {}
+        void operator () (const X_Vector& dx,X_Vector &result) const {
+            result[0]=dx[0]/2.;
+            result[1]=dx[1]/8.;
+            result[2]=dx[2];
         }
     };
 }
@@ -50,9 +69,9 @@ BOOST_AUTO_TEST_CASE(tr_newton) {
     // Create a type shortcut
     using peopt::Rm;
 
-    // Create an initial guess 
-    std::vector <double> x(2);
-    x[0] = -1.2; x[1] = 1.; 
+    // Generate an initial guess 
+    std::vector <double> x(3);
+    x[0]=-1.2; x[1]=1.1; x[2]=2.;
     
     // Create an unconstrained state based on this vector
     peopt::Unconstrained <double,Rm>::State::t state(x);
@@ -61,6 +80,7 @@ BOOST_AUTO_TEST_CASE(tr_newton) {
     state.H_type = peopt::Operators::UserDefined;
     state.iter_max = 50;
     state.eps_krylov = 1e-10;
+    state.delta = 100.;
     state.msg_level = 0;
     
     // Create the bundle of functions 
@@ -71,18 +91,19 @@ BOOST_AUTO_TEST_CASE(tr_newton) {
     peopt::Unconstrained <double,Rm>::Algorithms
         ::getMin(peopt::Messaging(),fns,state);
     
-    // Check the relative error between the true solution, (1,2), and that
-    // found in the state
-    std::vector <double> x_star(2);
-    x_star[0] = 1.0; x_star[1]=2.0;
+    // Check the relative error between the true solution and that found in
+    // the state
+    std::vector <double> x_star(3);
+    x_star[0] = 1.0; x_star[1]=1.0; x_star[2]=1.0;
     std::vector <double> residual = x_star;
     Rm <double>::axpy(-1,state.x.front(),residual);
     double err=std::sqrt(Rm <double>::innr(residual,residual))
         /(1+sqrt(Rm <double>::innr(x_star,x_star)));
     BOOST_CHECK(err < 1e-6);
 
-    // Check that the number of iterations is 1
-    BOOST_CHECK(state.iter == 3);
+    // Check the number of iterations.  Since this is quadratic, Newton's
+    // method should work in a single iteration.
+    BOOST_CHECK(state.iter == 2);
 }
 
 BOOST_AUTO_TEST_CASE(ncg_fletcher_reeves) {
@@ -90,8 +111,8 @@ BOOST_AUTO_TEST_CASE(ncg_fletcher_reeves) {
     using peopt::Rm;
 
     // Create an initial guess 
-    std::vector <double> x(2);
-    x[0] = -1.2; x[1] = 1.; 
+    std::vector <double> x(3);
+    x[0]=-1.2; x[1]=1.1; x[2]=2.;
     
     // Create an unconstrained state based on this vector
     peopt::Unconstrained <double,Rm>::State::t state(x);
@@ -99,8 +120,9 @@ BOOST_AUTO_TEST_CASE(ncg_fletcher_reeves) {
     // Setup some algorithmic parameters
     state.algorithm_class = peopt::AlgorithmClass::LineSearch;
     state.dir = peopt::LineSearchDirection::FletcherReeves;
-    state.H_type = peopt::Operators::UserDefined;
+    state.linesearch_iter_max=200;
     state.iter_max = 50;
+    state.eps_grad = 1e-7;
     state.msg_level = 0;
     
     // Create the bundle of functions 
@@ -111,18 +133,19 @@ BOOST_AUTO_TEST_CASE(ncg_fletcher_reeves) {
     peopt::Unconstrained <double,Rm>::Algorithms
         ::getMin(peopt::Messaging(),fns,state);
     
-    // Check the relative error between the true solution, (1,2), and that
-    // found in the state
-    std::vector <double> x_star(2);
-    x_star[0] = 1.0; x_star[1]=2.0;
+    // Check the relative error between the true solution and that found in 
+    // the state
+    std::vector <double> x_star(3);
+    x_star[0] = 1.0; x_star[1]=1.0; x_star[2]=1.0;
     std::vector <double> residual = x_star;
     Rm <double>::axpy(-1,state.x.front(),residual);
     double err=std::sqrt(Rm <double>::innr(residual,residual))
         /(1+sqrt(Rm <double>::innr(x_star,x_star)));
     BOOST_CHECK(err < 1e-6);
 
-    // Check the number of iterations 
-    BOOST_CHECK(state.iter == 5);
+    // Check the number of iterations.  With an exact line-search, this should
+    // be the number of variables+1.
+    BOOST_CHECK(state.iter == 4);
 }
 
 BOOST_AUTO_TEST_CASE(ncg_polak_ribiere){
@@ -130,8 +153,8 @@ BOOST_AUTO_TEST_CASE(ncg_polak_ribiere){
     using peopt::Rm;
 
     // Create an initial guess 
-    std::vector <double> x(2);
-    x[0] = -1.2; x[1] = 1.; 
+    std::vector <double> x(3);
+    x[0]=-1.2; x[1]=1.1; x[2]=2.;
     
     // Create an unconstrained state based on this vector
     peopt::Unconstrained <double,Rm>::State::t state(x);
@@ -139,8 +162,8 @@ BOOST_AUTO_TEST_CASE(ncg_polak_ribiere){
     // Setup some algorithmic parameters
     state.algorithm_class = peopt::AlgorithmClass::LineSearch;
     state.dir = peopt::LineSearchDirection::PolakRibiere;
-    state.H_type = peopt::Operators::UserDefined;
     state.iter_max = 50;
+    state.linesearch_iter_max=200;
     state.msg_level = 0;
     
     // Create the bundle of functions 
@@ -151,18 +174,19 @@ BOOST_AUTO_TEST_CASE(ncg_polak_ribiere){
     peopt::Unconstrained <double,Rm>::Algorithms
         ::getMin(peopt::Messaging(),fns,state);
     
-    // Check the relative error between the true solution, (1,2), and that
-    // found in the state
-    std::vector <double> x_star(2);
-    x_star[0] = 1.0; x_star[1]=2.0;
+    // Check the relative error between the true solution and that found in 
+    // the state
+    std::vector <double> x_star(3);
+    x_star[0] = 1.0; x_star[1]=1.0; x_star[2]=1.0;
     std::vector <double> residual = x_star;
     Rm <double>::axpy(-1,state.x.front(),residual);
     double err=std::sqrt(Rm <double>::innr(residual,residual))
         /(1+sqrt(Rm <double>::innr(x_star,x_star)));
     BOOST_CHECK(err < 1e-6);
 
-    // Check the number of iterations 
-    BOOST_CHECK(state.iter == 6);
+    // Check the number of iterations.  With an exact line-search, this should
+    // be the number of variables+1.
+    BOOST_CHECK(state.iter == 4);
 }
 
 BOOST_AUTO_TEST_CASE(ncg_hestenes_stiefel){
@@ -170,8 +194,8 @@ BOOST_AUTO_TEST_CASE(ncg_hestenes_stiefel){
     using peopt::Rm;
 
     // Create an initial guess 
-    std::vector <double> x(2);
-    x[0] = -1.2; x[1] = 1.; 
+    std::vector <double> x(3);
+    x[0]=-1.2; x[1]=1.1; x[2]=2.;
     
     // Create an unconstrained state based on this vector
     peopt::Unconstrained <double,Rm>::State::t state(x);
@@ -179,8 +203,8 @@ BOOST_AUTO_TEST_CASE(ncg_hestenes_stiefel){
     // Setup some algorithmic parameters
     state.algorithm_class = peopt::AlgorithmClass::LineSearch;
     state.dir = peopt::LineSearchDirection::HestenesStiefel;
-    state.H_type = peopt::Operators::UserDefined;
     state.iter_max = 50;
+    state.linesearch_iter_max=200;
     state.msg_level = 0;
     
     // Create the bundle of functions 
@@ -191,36 +215,149 @@ BOOST_AUTO_TEST_CASE(ncg_hestenes_stiefel){
     peopt::Unconstrained <double,Rm>::Algorithms
         ::getMin(peopt::Messaging(),fns,state);
     
-    // Check the relative error between the true solution, (1,2), and that
-    // found in the state
-    std::vector <double> x_star(2);
-    x_star[0] = 1.0; x_star[1]=2.0;
+    // Check the relative error between the true solution and that found in 
+    // the state
+    std::vector <double> x_star(3);
+    x_star[0] = 1.0; x_star[1]=1.0; x_star[2]=1.0;
     std::vector <double> residual = x_star;
     Rm <double>::axpy(-1,state.x.front(),residual);
     double err=std::sqrt(Rm <double>::innr(residual,residual))
         /(1+sqrt(Rm <double>::innr(x_star,x_star)));
     BOOST_CHECK(err < 1e-6);
 
-    // Check the number of iterations 
-    BOOST_CHECK(state.iter == 9);
+    // Check the number of iterations.  With an exact line-search, this should
+    // be the number of variables+1.
+    BOOST_CHECK(state.iter == 4);
+}
 
+BOOST_AUTO_TEST_CASE(precon_ncg_fletcher_reeves) {
+    // Create a type shortcut
+    using peopt::Rm;
+
+    // Create an initial guess 
+    std::vector <double> x(3);
+    x[0]=-1.2; x[1]=1.1; x[2]=2.;
+    
     // Create an unconstrained state based on this vector
-    peopt::Unconstrained <double,Rm>::State::t state0(x);
+    peopt::Unconstrained <double,Rm>::State::t state(x);
 
     // Setup some algorithmic parameters
-    state0.algorithm_class = peopt::AlgorithmClass::LineSearch;
-    state0.dir = peopt::LineSearchDirection::HestenesStiefel;
-    state0.H_type = peopt::Operators::UserDefined;
-    state0.iter_max = 50;
-    state0.msg_level = 0;
-    state0.linesearch_iter_max = 10;
+    state.algorithm_class = peopt::AlgorithmClass::LineSearch;
+    state.dir = peopt::LineSearchDirection::FletcherReeves;
+    state.PH_type = peopt::Operators::UserDefined;
+    state.linesearch_iter_max=200;
+    state.iter_max = 50;
+    state.eps_grad = 1e-7;
+    state.msg_level = 0;
+    
+    // Create the bundle of functions 
+    peopt::Unconstrained <double,Rm>::Functions::t fns;
+    fns.f.reset(new Quad);
+    fns.PH.reset(new QuadHInv(state.x.back())); 
 
     // Solve the optimization problem
     peopt::Unconstrained <double,Rm>::Algorithms
-        ::getMin(peopt::Messaging(),fns,state0);
+        ::getMin(peopt::Messaging(),fns,state);
+    
+    // Check the relative error between the true solution and that found in 
+    // the state
+    std::vector <double> x_star(3);
+    x_star[0] = 1.0; x_star[1]=1.0; x_star[2]=1.0;
+    std::vector <double> residual = x_star;
+    Rm <double>::axpy(-1,state.x.front(),residual);
+    double err=std::sqrt(Rm <double>::innr(residual,residual))
+        /(1+sqrt(Rm <double>::innr(x_star,x_star)));
+    BOOST_CHECK(err < 1e-6);
 
-    // Check the number of iterations.  This should be lower than above.
-    BOOST_CHECK(state0.iter == 6);
+    // Check the number of iterations.  We knock out two eigenvalues with
+    // the preconditioner, so this should be the number of (variables+1)-1.
+    BOOST_CHECK(state.iter == 3);
+}
+
+BOOST_AUTO_TEST_CASE(precon_ncg_polak_ribiere){
+    // Create a type shortcut
+    using peopt::Rm;
+
+    // Create an initial guess 
+    std::vector <double> x(3);
+    x[0]=-1.2; x[1]=1.1; x[2]=2.;
+    
+    // Create an unconstrained state based on this vector
+    peopt::Unconstrained <double,Rm>::State::t state(x);
+
+    // Setup some algorithmic parameters
+    state.algorithm_class = peopt::AlgorithmClass::LineSearch;
+    state.dir = peopt::LineSearchDirection::PolakRibiere;
+    state.PH_type = peopt::Operators::UserDefined;
+    state.iter_max = 50;
+    state.linesearch_iter_max=200;
+    state.msg_level = 0;
+    
+    // Create the bundle of functions 
+    peopt::Unconstrained <double,Rm>::Functions::t fns;
+    fns.f.reset(new Quad);
+    fns.PH.reset(new QuadHInv(state.x.back())); 
+
+    // Solve the optimization problem
+    peopt::Unconstrained <double,Rm>::Algorithms
+        ::getMin(peopt::Messaging(),fns,state);
+    
+    // Check the relative error between the true solution and that found in 
+    // the state
+    std::vector <double> x_star(3);
+    x_star[0] = 1.0; x_star[1]=1.0; x_star[2]=1.0;
+    std::vector <double> residual = x_star;
+    Rm <double>::axpy(-1,state.x.front(),residual);
+    double err=std::sqrt(Rm <double>::innr(residual,residual))
+        /(1+sqrt(Rm <double>::innr(x_star,x_star)));
+    BOOST_CHECK(err < 1e-6);
+
+    // Check the number of iterations.  We knock out two eigenvalues with
+    // the preconditioner, so this should be the number of (variables+1)-1.
+    BOOST_CHECK(state.iter == 3);
+}
+
+BOOST_AUTO_TEST_CASE(precon_ncg_hestenes_stiefel){
+    // Create a type shortcut
+    using peopt::Rm;
+
+    // Create an initial guess 
+    std::vector <double> x(3);
+    x[0]=-1.2; x[1]=1.1; x[2]=2.;
+    
+    // Create an unconstrained state based on this vector
+    peopt::Unconstrained <double,Rm>::State::t state(x);
+
+    // Setup some algorithmic parameters
+    state.algorithm_class = peopt::AlgorithmClass::LineSearch;
+    state.dir = peopt::LineSearchDirection::HestenesStiefel;
+    state.PH_type = peopt::Operators::UserDefined;
+    state.iter_max = 50;
+    state.linesearch_iter_max=200;
+    state.msg_level = 0;
+    
+    // Create the bundle of functions 
+    peopt::Unconstrained <double,Rm>::Functions::t fns;
+    fns.f.reset(new Quad);
+    fns.PH.reset(new QuadHInv(state.x.back())); 
+
+    // Solve the optimization problem
+    peopt::Unconstrained <double,Rm>::Algorithms
+        ::getMin(peopt::Messaging(),fns,state);
+    
+    // Check the relative error between the true solution and that found in 
+    // the state
+    std::vector <double> x_star(3);
+    x_star[0] = 1.0; x_star[1]=1.0; x_star[2]=1.0;
+    std::vector <double> residual = x_star;
+    Rm <double>::axpy(-1,state.x.front(),residual);
+    double err=std::sqrt(Rm <double>::innr(residual,residual))
+        /(1+sqrt(Rm <double>::innr(x_star,x_star)));
+    BOOST_CHECK(err < 1e-6);
+
+    // Check the number of iterations.  We knock out two eigenvalues with
+    // the preconditioner, so this should be the number of (variables+1)-1.
+    BOOST_CHECK(state.iter == 3);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

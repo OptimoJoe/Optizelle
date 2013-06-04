@@ -79,6 +79,7 @@ if(ENABLE_CPP_LIBRARY)
         add_subdirectory(cpp/examples/nw_sqp_exercise)
         add_subdirectory(cpp/examples/simple_constrained)
         add_subdirectory(cpp/examples/sdpa_sparse_format)
+        add_subdirectory(cpp/examples/preconditioned_nonlinear_cg)
     endif()
     
     # Check if we want to build the unit tests

@@ -130,8 +130,9 @@ namespace peopt {
                     .get("eta1",state.eta1).asDouble());
                 state.eta2=Real(root["peopt"]
                     .get("eta2",state.eta2).asDouble());
-                state.alpha=Real(root["peopt"]
-                    .get("alpha",state.alpha).asDouble());
+                state.alpha0=Real(root["peopt"]
+                    .get("alpha0",state.alpha0).asDouble());
+                state.c1=Real(root["peopt"].get("c1",state.c1).asDouble());
                 state.linesearch_iter_max=Natural(root["peopt"]
                     .get("linesearch_iter_max",
                         Json::Value::UInt64(state.linesearch_iter_max))
@@ -195,7 +196,8 @@ namespace peopt {
                 root["peopt"]["delta"]=state.delta;
                 root["peopt"]["eta1"]=state.eta1;
                 root["peopt"]["eta2"]=state.eta2;
-                root["peopt"]["alpha"]=state.alpha;
+                root["peopt"]["alpha0"]=state.alpha0;
+                root["peopt"]["c1"]=state.c1;
                 root["peopt"]["linesearch_iter_max"]
                     =Json::Value::UInt64(state.linesearch_iter_max);
                 root["peopt"]["eps_ls"]=state.eps_ls;

@@ -42,6 +42,23 @@ namespace {
             H_dx[1]= -400*x[0]*dx[0] + 200*dx[1];
         }
     };
+
+    // Define a perfect preconditioner for the Hessian
+    struct RosenHInv : public peopt::Operator <double,peopt::Rm,peopt::Rm> {
+    public:
+        typedef peopt::Rm <double> X;
+        typedef X::Vector X_Vector;
+    private:
+        X_Vector& x;
+    public:
+        RosenHInv(X::Vector& x_) : x(x_) {}
+        void operator () (const X_Vector& dx,X_Vector &result) const {
+            double one_over_det=1./(400000.*x[0]*x[0]-80000.*x[1]+400.);
+            result[0]=one_over_det*(200.*dx[0]+400.*x[0]*dx[1]);
+            result[1]=one_over_det*
+                (400.*x[0]*dx[0]+(1200.*x[0]*x[0]-400.*x[1]+2.)*dx[1]);
+        }
+    };
 }
 
 BOOST_AUTO_TEST_SUITE(rosenbrock)
@@ -85,8 +102,52 @@ BOOST_AUTO_TEST_CASE(newton_cg) {
         /(1+sqrt(Rm <double>::innr(x_star,x_star)));
     BOOST_CHECK(err < 1e-6);
 
-    // Check that the number of iterations is 18 
-    BOOST_CHECK(state.iter == 17);
+    // Check the number of iterations 
+    BOOST_CHECK(state.iter == 16);
+}
+
+BOOST_AUTO_TEST_CASE(newton_cg_backtracking) {
+    // Create a type shortcut
+    using peopt::Rm;
+
+    // Create an initial guess for Rosenbrock 
+    std::vector <double> x(2);
+    x[0] = -1.2; x[1] = 1.; 
+    
+    // Create an unconstrained state based on this vector
+    peopt::Unconstrained <double,Rm>::State::t state(x);
+
+    // Setup some algorithmic parameters
+    state.algorithm_class = peopt::AlgorithmClass::LineSearch;
+    state.dir = peopt::LineSearchDirection::NewtonCG;
+    state.kind = peopt::LineSearchKind::BackTracking;
+    state.H_type = peopt::Operators::UserDefined;
+    state.eps_krylov = 1e-2;
+    state.iter_max = 100;
+    state.eps_grad = 1e-9;
+    state.eps_dx = 1e-10;
+    state.msg_level = 0;
+    
+    // Create the bundle of functions 
+    peopt::Unconstrained <double,Rm>::Functions::t fns;
+    fns.f.reset(new Rosen);
+
+    // Solve the optimization problem
+    peopt::Unconstrained <double,Rm>::Algorithms
+        ::getMin(peopt::Messaging(),fns,state);
+    
+    // Check the relative error between the true solution, (1,1), and that
+    // found in the state
+    std::vector <double> x_star(2);
+    x_star[0] = 1.0; x_star[1]=1.0;
+    std::vector <double> residual = x_star;
+    Rm <double>::axpy(-1,state.x.front(),residual);
+    double err=std::sqrt(Rm <double>::innr(residual,residual))
+        /(1+sqrt(Rm <double>::innr(x_star,x_star)));
+    BOOST_CHECK(err < 1e-6);
+
+    // Check the number of iterations 
+    BOOST_CHECK(state.iter == 23);
 }
 
 BOOST_AUTO_TEST_CASE(tr_newton) {
@@ -167,7 +228,7 @@ BOOST_AUTO_TEST_CASE(bfgs) {
     BOOST_CHECK(err < 1e-6);
 
     // Check the number of iterations 
-    BOOST_CHECK(state.iter == 25);
+    BOOST_CHECK(state.iter == 21);
 }
 
 BOOST_AUTO_TEST_CASE(sr1) {
@@ -212,6 +273,132 @@ BOOST_AUTO_TEST_CASE(sr1) {
 
     // Check that the number of iterations is 51
     BOOST_CHECK(state.iter == 50);
+}
+
+BOOST_AUTO_TEST_CASE(precond_ncg_fletcher_reeves) {
+    // Create a type shortcut
+    using peopt::Rm;
+
+    // Create an initial guess for Rosenbrock 
+    std::vector <double> x(2);
+    x[0] = -1.2; x[1] = 1.; 
+    
+    // Create an unconstrained state based on this vector
+    peopt::Unconstrained <double,Rm>::State::t state(x);
+
+    // Setup some algorithmic parameters
+    state.algorithm_class = peopt::AlgorithmClass::LineSearch;
+    state.dir = peopt::LineSearchDirection::FletcherReeves;
+    state.PH_type = peopt::Operators::UserDefined;
+    state.iter_max = 50;
+    state.eps_dx = 1e-10;
+    state.msg_level = 0;
+    
+    // Create the bundle of functions 
+    peopt::Unconstrained <double,Rm>::Functions::t fns;
+    fns.f.reset(new Rosen);
+    fns.PH.reset(new RosenHInv(state.x.back())); 
+
+    // Solve the optimization problem
+    peopt::Unconstrained <double,Rm>::Algorithms
+        ::getMin(peopt::Messaging(),fns,state);
+    
+    // Check the relative error between the true solution, (1,1), and that
+    // found in the state
+    std::vector <double> x_star(2);
+    x_star[0] = 1.0; x_star[1]=1.0;
+    std::vector <double> residual = x_star;
+    Rm <double>::axpy(-1,state.x.front(),residual);
+    double err=std::sqrt(Rm <double>::innr(residual,residual))
+        /(1+sqrt(Rm <double>::innr(x_star,x_star)));
+    BOOST_CHECK(err < 1e-6);
+
+    // Check the number of iterations 
+    BOOST_CHECK(state.iter == 27);
+}
+
+BOOST_AUTO_TEST_CASE(precond_ncg_polak_ribiere) {
+    // Create a type shortcut
+    using peopt::Rm;
+
+    // Create an initial guess for Rosenbrock 
+    std::vector <double> x(2);
+    x[0] = -1.2; x[1] = 1.; 
+    
+    // Create an unconstrained state based on this vector
+    peopt::Unconstrained <double,Rm>::State::t state(x);
+
+    // Setup some algorithmic parameters
+    state.algorithm_class = peopt::AlgorithmClass::LineSearch;
+    state.dir = peopt::LineSearchDirection::PolakRibiere;
+    state.PH_type = peopt::Operators::UserDefined;
+    state.iter_max = 50;
+    state.eps_dx = 1e-10;
+    state.msg_level = 0;
+    
+    // Create the bundle of functions 
+    peopt::Unconstrained <double,Rm>::Functions::t fns;
+    fns.f.reset(new Rosen);
+    fns.PH.reset(new RosenHInv(state.x.back())); 
+
+    // Solve the optimization problem
+    peopt::Unconstrained <double,Rm>::Algorithms
+        ::getMin(peopt::Messaging(),fns,state);
+    
+    // Check the relative error between the true solution, (1,1), and that
+    // found in the state
+    std::vector <double> x_star(2);
+    x_star[0] = 1.0; x_star[1]=1.0;
+    std::vector <double> residual = x_star;
+    Rm <double>::axpy(-1,state.x.front(),residual);
+    double err=std::sqrt(Rm <double>::innr(residual,residual))
+        /(1+sqrt(Rm <double>::innr(x_star,x_star)));
+    BOOST_CHECK(err < 1e-6);
+
+    // Check the number of iterations 
+    BOOST_CHECK(state.iter == 28);
+}
+
+BOOST_AUTO_TEST_CASE(precond_ncg_hestenes_stiefel) {
+    // Create a type shortcut
+    using peopt::Rm;
+
+    // Create an initial guess for Rosenbrock 
+    std::vector <double> x(2);
+    x[0] = -1.2; x[1] = 1.; 
+    
+    // Create an unconstrained state based on this vector
+    peopt::Unconstrained <double,Rm>::State::t state(x);
+
+    // Setup some algorithmic parameters
+    state.algorithm_class = peopt::AlgorithmClass::LineSearch;
+    state.dir = peopt::LineSearchDirection::HestenesStiefel;
+    state.PH_type = peopt::Operators::UserDefined;
+    state.iter_max = 50;
+    state.eps_dx = 1e-10;
+    state.msg_level = 0;
+    
+    // Create the bundle of functions 
+    peopt::Unconstrained <double,Rm>::Functions::t fns;
+    fns.f.reset(new Rosen);
+    fns.PH.reset(new RosenHInv(state.x.back())); 
+
+    // Solve the optimization problem
+    peopt::Unconstrained <double,Rm>::Algorithms
+        ::getMin(peopt::Messaging(),fns,state);
+    
+    // Check the relative error between the true solution, (1,1), and that
+    // found in the state
+    std::vector <double> x_star(2);
+    x_star[0] = 1.0; x_star[1]=1.0;
+    std::vector <double> residual = x_star;
+    Rm <double>::axpy(-1,state.x.front(),residual);
+    double err=std::sqrt(Rm <double>::innr(residual,residual))
+        /(1+sqrt(Rm <double>::innr(x_star,x_star)));
+    BOOST_CHECK(err < 1e-6);
+
+    // Check the number of iterations 
+    BOOST_CHECK(state.iter == 23);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

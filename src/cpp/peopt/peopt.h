@@ -259,7 +259,7 @@ namespace peopt{
         };
 
         // Converts the stopping condition to a string 
-        inline std::string to_string(t opt_stop){
+        inline std::string to_string(const t& opt_stop){
             switch(opt_stop){
             case NotConverged:
                 return "NotConverged";
@@ -279,7 +279,7 @@ namespace peopt{
         }
 
         // Converts a string to a stopping condition
-        inline t from_string(std::string opt_stop){
+        inline t from_string(const std::string& opt_stop){
             if(opt_stop=="NotConverged")
                 return NotConverged;
             else if(opt_stop=="RelativeGradientSmall")
@@ -327,7 +327,7 @@ namespace peopt{
         };
         
         // Converts the operator type to a string 
-        inline std::string to_string(t op){
+        inline std::string to_string(const t& op){
             switch(op){
             case Identity:
                 return "Identity";
@@ -349,7 +349,7 @@ namespace peopt{
         }
         
         // Converts a string to a operator 
-        inline t from_string(std::string op){
+        inline t from_string(const std::string& op){
             if(op=="Identity")
                 return Identity; 
             else if(op=="ScaledIdentity")
@@ -398,7 +398,7 @@ namespace peopt{
         };
         
         // Converts the line-search direction to a string 
-        inline std::string to_string(t dir){
+        inline std::string to_string(const t& dir){
             switch(dir){
             case SteepestDescent:
                 return "SteepestDescent";
@@ -418,7 +418,7 @@ namespace peopt{
         }
         
         // Converts a string to a line-search direction 
-        inline t from_string(std::string dir){
+        inline t from_string(const std::string& dir){
             if(dir=="SteepestDescent")
                 return SteepestDescent; 
             else if(dir=="FletcherReeves")
@@ -462,7 +462,7 @@ namespace peopt{
         };
             
         // Converts the line-search kind to a string 
-        inline std::string to_string(t kind){
+        inline std::string to_string(const t& kind){
             switch(kind){
             case Brents:
                 return "Brents";
@@ -480,7 +480,7 @@ namespace peopt{
         }
         
         // Converts a string to a line-search kind 
-        inline t from_string(std::string kind){
+        inline t from_string(const std::string& kind){
             if(kind=="Brents")
                 return Brents; 
             else if(kind=="GoldenSection")
@@ -509,6 +509,22 @@ namespace peopt{
                     return false;
             }
         };
+
+        // Determine whether or not the line-search checks the sufficient
+        // decrease condition.
+        inline bool is_sufficient_decrease(const t& kind) {
+            switch(kind){
+            case GoldenSection:
+            case BackTracking:
+            case Brents:
+                return true;
+            case TwoPointA:
+            case TwoPointB:
+                return false;
+            default:
+                throw;
+            }
+        }
     };
     
     namespace OptimizationLocation{
@@ -1026,6 +1042,17 @@ namespace peopt{
 
         // Blank separator for printing
         const std::string blankSeparator = ".         ";
+   
+        // Return whether the line-search hit the bounds when it
+        // terminated.  This is important to determine if we need
+        // to find a different area to bracket.
+        namespace LineSearchTermination{
+            enum t{
+                Min,
+                Max,
+                Between
+            };
+        }
     }
 
     // A collection of miscellaneous diagnostics that help determine errors.
@@ -1897,8 +1924,14 @@ namespace peopt{
 
                 // ------------- LINE-SEARCH ------------- 
 
-                // Line-search step length
+                // Base line-search step length
+                Real alpha0;
+                
+                // Actual line-search step length
                 Real alpha;
+
+                // Parameter that helps govern the sufficient decrease
+                Real c1;
 
                 // Current number of iterations used in the line-search
                 Natural linesearch_iter;
@@ -1964,7 +1997,9 @@ namespace peopt{
                 state.ared=std::numeric_limits<Real>::quiet_NaN();
                 state.pred=std::numeric_limits<Real>::quiet_NaN();
                 state.rejected_trustregion=0;
-                state.alpha=Real(1.);
+                state.alpha0=Real(1.);
+                state.alpha=std::numeric_limits<Real>::quiet_NaN();
+                state.c1=Real(1e-4);
                 state.linesearch_iter=0;
                 state.linesearch_iter_max=5;
                 state.linesearch_iter_total=0;
@@ -2116,11 +2151,22 @@ namespace peopt{
                         "must satisfy the relationship that eta1 < eta2: "
                         "eta1 = " << state.eta1 << ", eta2 = " << state.eta2;
 
-                // Check that the line-search step length is positive 
+                // Check that the base line-search step length is positive 
+                else if(state.alpha0 <= Real(0.)) 
+                    ss << "The base line-search step length must be positive: "
+                        "alpha0 = " << state.alpha0;
+
+                // Check that the actual line-search step length is positive 
                 else if(state.alpha <= Real(0.)) 
-                    ss << "The line-search step length must be positive: "
-                        "alpha = " << state.alpha;
-                
+                    ss << "The actual line-search step length must be positive:"
+                        " alpha = " << state.alpha;
+
+                // Check that the sufficient decrease parameter lies between
+                // 0 and 1.
+                else if(state.c1 <= Real(0.) || state.c1 >= Real(1.)) 
+                    ss << "The sufficient decrease parameter must lie between"
+                        "0 and 1: c1 = " << state.c1;
+
                 // Check that the stopping tolerance for the line-search
                 // methods is positive
                 else if(state.eps_ls <= Real(0.)) 
@@ -2159,7 +2205,9 @@ namespace peopt{
                         name == "eta2" || 
                         name == "ared" || 
                         name == "pred" || 
+                        name == "alpha0" || 
                         name == "alpha" || 
+                        name == "c1" || 
                         name == "eps_ls"
                     ) 
                         return true;
@@ -2383,8 +2431,12 @@ namespace peopt{
                 reals.second.push_back(state.ared);
                 reals.first.push_back("pred");
                 reals.second.push_back(state.pred);
+                reals.first.push_back("alpha0");
+                reals.second.push_back(state.alpha0);
                 reals.first.push_back("alpha");
                 reals.second.push_back(state.alpha);
+                reals.first.push_back("c1");
+                reals.second.push_back(state.c1);
                 reals.first.push_back("eps_ls");
                 reals.second.push_back(state.eps_ls);
 
@@ -2518,7 +2570,9 @@ namespace peopt{
                     else if(*name=="eta2") state.eta2=*real;
                     else if(*name=="ared") state.ared=*real;
                     else if(*name=="pred") state.pred=*real;
+                    else if(*name=="alpha0") state.alpha0=*real;
                     else if(*name=="alpha") state.alpha=*real;
+                    else if(*name=="c1") state.c1=*real;
                     else if(*name=="eps_ls") state.eps_ls=*real;
                 }
             
@@ -3375,6 +3429,7 @@ namespace peopt{
                 const Natural& linesearch_iter=state.linesearch_iter;
                 const Real& ared=state.ared;
                 const Real& pred=state.pred;
+                const Real& alpha=state.alpha;
                 const AlgorithmClass::t& algorithm_class=state.algorithm_class;
                 const LineSearchDirection::t& dir=state.dir;
                 const Natural& rejected_trustregion=state.rejected_trustregion;
@@ -3412,9 +3467,12 @@ namespace peopt{
                 out.push_back(atos <> (f_x));
                 out.push_back(atos <> (merit_x));
                 out.push_back(atos <> (norm_grad));
-                if(!opt_begin)
-                    out.push_back(atos <> (norm_dx));
-                else
+                if(!opt_begin) {
+                    if(algorithm_class==AlgorithmClass::LineSearch)
+                        out.push_back(atos <> (alpha*norm_dx));
+                    else
+                        out.push_back(atos <> (norm_dx));
+                } else
                     out.push_back(blankSeparator);
 
                 // In case we're using a Krylov method
@@ -3869,6 +3927,7 @@ namespace peopt{
                 // Create some shortcuts 
                 const ScalarValuedFunctionModifications <Real,XX>&
                     f_mod=*(fns.f_mod);
+                const Operator <Real,XX,XX>& PH=*(fns.PH);
                 const X_Vector& x=state.x.front();
                 const X_Vector& grad=state.grad.front();
                 X_Vector& dx=state.dx.front();
@@ -3877,8 +3936,9 @@ namespace peopt{
                 X_Vector grad_step; X::init(grad,grad_step);
                 f_mod.grad_step(x,grad,grad_step);
 
-                // We take the steepest descent direction
-                X::copy(grad_step,dx);
+                // We take the steepest descent direction and apply the
+                // preconditioner.
+                PH(grad_step,dx);
                 X::scal(Real(-1.),dx);
             }
     
@@ -3892,11 +3952,20 @@ namespace peopt{
                 // Create some shortcuts 
                 const ScalarValuedFunctionModifications <Real,XX>&
                     f_mod=*(fns.f_mod);
+                const Operator <Real,XX,XX>& PH=*(fns.PH);
                 const X_Vector& x=state.x.front();
                 const X_Vector& grad=state.grad.front();
-                const X_Vector& dx_old=state.dx_old.front();
+                const Real& alpha=state.alpha;
+                X_Vector& dx_old=state.dx_old.front();
                 Natural& iter=state.iter;
                 X_Vector& dx=state.dx.front();
+
+                // Scale dx by 1/alpha.  In our algorithms, we always stored
+                // alpha*dx in order to better integrate with trust-region
+                // algorithms.  In nonlinear-CG, the formulas assume that
+                // we have not stored the scaled direction.  Hence, we scale
+                // it here and fix it at the end of the routine.
+                X::scal(1./alpha,dx_old);
 
                 // Determine the gradient for the step computation
                 X_Vector grad_step; X::init(grad,grad_step);
@@ -3922,8 +3991,8 @@ namespace peopt{
                         break;
                     }
 
-                    // Find -grad+beta*dx_old
-                    X::copy(grad_step,dx);
+                    // Find -PH grad+beta*dx_old.  
+                    PH(grad_step,dx);
                     X::scal(Real(-1.),dx);
                     X::axpy(beta,dx_old,dx);
 
@@ -3931,6 +4000,9 @@ namespace peopt{
                     // hard check that we have a descent direction
                     if(X::innr(dx,grad_step) > 0) X::scal(Real(-1.),dx);
                 }
+
+                // Undo the scaling of the previous search direction
+                X::scal(alpha,dx_old);
             }
 
             // Fletcher-Reeves CG search direction
@@ -3941,6 +4013,7 @@ namespace peopt{
                 // Create some shortcuts 
                 const ScalarValuedFunctionModifications <Real,XX>&
                     f_mod=*(fns.f_mod);
+                const Operator <Real,XX,XX>& PH=*(fns.PH);
                 const X_Vector& x=state.x.front();
                 const X_Vector& grad=state.grad.front();
                 const X_Vector& grad_old=state.grad_old.front();
@@ -3953,9 +4026,17 @@ namespace peopt{
                     X::init(grad,grad_old_step);
                     f_mod.grad_step(x,grad_old,grad_old_step);
 
+                // Apply the preconditioner to the gradients 
+                X_Vector PH_grad_step;
+                    X::init(grad_step,PH_grad_step);
+                    PH(grad_step,PH_grad_step);
+                X_Vector PH_grad_old_step;
+                    X::init(grad_old_step,PH_grad_old_step);
+                    PH(grad_old_step,PH_grad_old_step);
+
                 // Return the momentum parameter
-                return X::innr(grad_step,grad_step)
-                    / X::innr(grad_old_step,grad_old_step);
+                return X::innr(grad_step,PH_grad_step)
+                    / X::innr(grad_old_step,PH_grad_old_step);
             }
         
             // Polak-Ribiere CG search direction
@@ -3966,6 +4047,7 @@ namespace peopt{
                 // Create some shortcuts 
                 const ScalarValuedFunctionModifications <Real,XX>&
                     f_mod=*(fns.f_mod);
+                const Operator <Real,XX,XX>& PH=*(fns.PH);
                 const X_Vector& x=state.x.front();
                 const X_Vector& grad=state.grad.front();
                 const X_Vector& grad_old=state.grad_old.front();
@@ -3980,10 +4062,18 @@ namespace peopt{
                 X_Vector grad_m_gradold; X::init(grad,grad_m_gradold);
                 X::copy(grad_step,grad_m_gradold);
                 X::axpy(Real(-1.),grad_old_step,grad_m_gradold);
+                
+                // Apply the preconditioner to the gradients 
+                X_Vector PH_grad_step;
+                    X::init(grad_step,PH_grad_step);
+                    PH(grad_step,PH_grad_step);
+                X_Vector PH_grad_old_step;
+                    X::init(grad_old_step,PH_grad_old_step);
+                    PH(grad_old_step,PH_grad_old_step);
                     
                 // Return the momentum parameter
-                return X::innr(grad_step,grad_m_gradold)
-                    / X::innr(grad_old_step,grad_old_step);
+                return X::innr(PH_grad_step,grad_m_gradold)
+                    / X::innr(PH_grad_old_step,grad_old_step);
             }
             
             // Hestenes-Stiefel search direction
@@ -3995,11 +4085,11 @@ namespace peopt{
                 // Create some shortcuts 
                 const ScalarValuedFunctionModifications <Real,XX>&
                     f_mod=*(fns.f_mod);
+                const Operator <Real,XX,XX>& PH=*(fns.PH);
                 const X_Vector& x=state.x.front();
                 const X_Vector& grad=state.grad.front();
                 const X_Vector& grad_old=state.grad_old.front();
                 const X_Vector& dx_old=state.dx_old.front();
-                const Real& alpha=state.alpha;
 
                 // Determine the gradient for the step computation
                 X_Vector grad_step;
@@ -4013,19 +4103,16 @@ namespace peopt{
                 X_Vector grad_m_gradold; X::init(grad,grad_m_gradold);
                 X::copy(grad_step,grad_m_gradold);
                 X::axpy(Real(-1.),grad_old_step,grad_m_gradold);
+                
+                // Apply the preconditioner to the gradient
+                X_Vector PH_grad_step;
+                    X::init(grad_step,PH_grad_step);
+                    PH(grad_step,PH_grad_step);
                     
-                // Return the momentum parameter.  Note, we scale things by
-                // alpha here, which is not in the standard Hestenes-Stiefel
-                // formula.  Internal to this code, we scale our search
-                // directions by alpha at every iteration.  This allows us
-                // to use the update x+dx for both trust-region and line-search
-                // methods.  Now, the formulas for Hestenes-Stiefel assume
-                // that the directions have not been scaled.  Therefore,
-                // dx_old really needs to be (1/alpha)dx_old to get rid of
-                // the scaling.  The alpha on top is just an algebraic
-                // rearrangement.
-                return alpha*X::innr(grad_step,grad_m_gradold)
+                // Return the momentum parameter.
+                Real beta=X::innr(PH_grad_step,grad_m_gradold)
                     / X::innr(dx_old,grad_m_gradold);
+                return beta < Real(0.) ? Real(0.) : beta;
             }
 
             // BFGS search direction
@@ -4056,9 +4143,8 @@ namespace peopt{
                 X::scal(Real(-1.),dx);
             }
 
-            // Compute a Golden-Section search between eps and 2*alpha where
-            // alpha is the last line search parameter.
-            static void goldenSection(
+            // Compute a Golden-Section search between 0 and alpha0. 
+            static LineSearchTermination::t goldenSection(
                 const typename Functions::t& fns,
                 typename State::t& state
             ) {
@@ -4067,12 +4153,13 @@ namespace peopt{
                 const ScalarValuedFunctionModifications <Real,XX>&
                     f_mod=*(fns.f_mod);
                 const X_Vector& x=state.x.front();
+                const X_Vector& dx=state.dx.front();
                 const Natural& iter_max=state.linesearch_iter_max;
-                Real& alpha=state.alpha;
-                X_Vector& dx=state.dx.front();
+                const Real& alpha0=state.alpha0;
                 Natural& iter_total=state.linesearch_iter_total;
                 Natural& iter=state.linesearch_iter;
                 Real& f_xpdx=state.f_xpdx;
+                Real& alpha=state.alpha;
                 
                 // Create one work element that holds x+mu dx or x+lambda dx 
                 X_Vector x_p_dx; X::init(x,x_p_dx);
@@ -4082,7 +4169,7 @@ namespace peopt{
 
                 // Find a bracket for the linesearch such that a < b
                 Real a=Real(0.);
-                Real b=Real(2.)*alpha;
+                Real b=alpha0;
 
                 // Find two new points between a and b, mu and lambda,
                 // such that lambda < mu
@@ -4142,11 +4229,56 @@ namespace peopt{
                 iter_total += iter;
 
                 // Once we're finished narrowing in on a solution, take our best
-                // guess for the line search parameter
+                // guess for the line search parameter and adjust the step
+                // length
                 alpha=merit_lambda < merit_mu ? lambda : mu;
 
                 // Save the objective value at this step
                 f_xpdx=merit_lambda < merit_mu ? f_lambda : f_mu;
+
+                // Determine whether or not we hit the bounds
+                if(a==Real(0.))
+                    return LineSearchTermination::Min;
+                else if(b==alpha0)
+                    return LineSearchTermination::Max;
+                else
+                    return LineSearchTermination::Between;
+            }
+            
+            // This doesn't really do anything save setting the line-search
+            // parameter to the be the base line-search parameter and evaluating
+            // the objective at x+alpha dx.  Really, we're using the safe
+            // guard procedure that checks the sufficient decrease condition
+            // in order to do the line-search.
+            static void backTracking(
+                const typename Functions::t& fns,
+                typename State::t& state
+            ) {
+                // Create some shortcuts
+                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
+                const X_Vector& x=state.x.front();
+                const X_Vector& dx=state.dx.front();
+                const Real& alpha0=state.alpha0;
+                Natural& iter_total=state.linesearch_iter_total;
+                Natural& iter=state.linesearch_iter;
+                Real& f_xpdx=state.f_xpdx;
+                Real& alpha=state.alpha;
+                            
+                // Set alpha to the base alpha 
+                alpha=alpha0;
+               
+                // Determine x+alpha dx 
+                X_Vector x_p_adx;
+                    X::init(x,x_p_adx);
+                    X::copy(x,x_p_adx);
+                    X::axpy(alpha,dx,x_p_adx);
+    
+                // Determine the objective function evaluated at x+dx
+                f_xpdx=f(x_p_adx);
+
+                // Set the number of line-search iterations
+                iter=1;
+                iter_total+=iter;
             }
 
             // Find the line search parameter based on the 2-point approximation
@@ -4169,16 +4301,12 @@ namespace peopt{
                 Natural& iter_total=state.linesearch_iter_total;
                 Natural& iter=state.linesearch_iter;
                 Real& f_xpdx=state.f_xpdx;
-                
-                // Create elements for delta_x and delta_grad as well as one
-                // work element for storing x+alpha dx 
-                X_Vector delta_x; X::init(x,delta_x);
-                X_Vector delta_grad; X::init(x,delta_grad);
-                X_Vector x_p_dx; X::init(x,x_p_dx);
 
                 // Find delta_x
-                X::copy(x,delta_x);
-                X::axpy(Real(-1.),x_old,delta_x);
+                X_Vector delta_x;
+                    X::init(x,delta_x);
+                    X::copy(x,delta_x);
+                    X::axpy(Real(-1.),x_old,delta_x);
 
                 // Determine the gradient for the step computation
                 X_Vector grad_step;
@@ -4190,8 +4318,10 @@ namespace peopt{
                     f_mod.grad_step(x,grad_old,grad_old_step);
 
                 // Find delta_grad
-                X::copy(grad_step,delta_grad);
-                X::axpy(Real(-1.),grad_old_step,delta_grad);
+                X_Vector delta_grad;
+                    X::init(x,delta_grad);
+                    X::copy(grad_step,delta_grad);
+                    X::axpy(Real(-1.),grad_old_step,delta_grad);
 
                 // Find alpha
                 if(kind==LineSearchKind::TwoPointA)
@@ -4201,74 +4331,17 @@ namespace peopt{
                     alpha=X::innr(delta_x,delta_x)/X::innr(delta_x,delta_grad);
 
                 // Save the objective value at this step
-                X::copy(x,x_p_dx);
-                X::axpy(alpha,dx,x_p_dx);
-                f_xpdx=f(x_p_dx);
+                X_Vector x_p_adx;
+                    X::init(x,x_p_adx);
+                    X::copy(x,x_p_adx);
+                    X::axpy(alpha,dx,x_p_adx);
+                f_xpdx=f(x_p_adx);
 
                 // Since we do one function evaluation, increase the linesearch
                 // iteration by one
                 iter=1; iter_total++;
             }
             
-            // Compute a backtracking line-search. 
-            static void backTracking(
-                const typename Functions::t& fns,
-                typename State::t& state
-            ) {
-                // Create some shortcuts
-                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
-                const ScalarValuedFunctionModifications <Real,XX>& f_mod 
-                    = *(fns.f_mod);
-                const X_Vector& x=state.x.front();
-                const Natural& iter_max=state.linesearch_iter_max;
-                Real& alpha=state.alpha;
-                X_Vector& dx=state.dx.front();
-                Natural& iter_total=state.linesearch_iter_total;
-                Natural& iter=state.linesearch_iter;
-                Real& f_xpdx=state.f_xpdx;
-                
-                // Create one work element for holding x+alpha s
-                X_Vector x_p_dx; X::init(x,x_p_dx);
-
-                // Store the best merit value and alpha that we used to find it.
-                // Our initial guess will be at alpha*2.
-                Real alpha_best=Real(2.)*alpha;
-                X::copy(x,x_p_dx);
-                X::axpy(alpha_best,dx,x_p_dx);
-                Real f_best=f(x_p_dx);
-                Real merit_best=f_mod.merit(x_p_dx,f_best);
-
-                // Evaluate the merit iter_max times at a distance of
-                // 2*alpha, alpha, alpha/2, ....  Then, pick the best one.
-                // Note, we start iter at 1 since we've already done one
-                // iteration above.
-                Real alpha0=alpha;
-                for(iter=1;iter<iter_max;iter++){
-                    // Evaluate f(x+alpha*dx)
-                    X::copy(x,x_p_dx);
-                    X::axpy(alpha0,dx,x_p_dx);
-                    f_xpdx=f(x_p_dx);
-                    Real merit_xpdx=f_mod.merit(x_p_dx,f_xpdx);
-
-                    // If this is better than our best guess so far, save it
-                    if(merit_xpdx < merit_best){
-                        f_best=f_xpdx;
-                        merit_best=merit_xpdx;
-                        alpha_best=alpha0;
-                    }
-
-                    // Reduce the size of alpha
-                    alpha0 /= Real(2.);
-                }
-
-                // Save the best merit value and alpha found
-                alpha=alpha_best;
-                f_xpdx=f_best;
-
-                // Indicate how many iterations we used to find this value
-                iter_total+=iter;
-            }
-
             // Finds a trial step using a line-search for globalization
             static void getStepLS(
                 const Messaging& msg,
@@ -4287,7 +4360,6 @@ namespace peopt{
                 const LineSearchDirection::t& dir=state.dir;
                 const LineSearchKind::t& kind=state.kind;
                 const Natural& iter=state.iter;
-                const Natural& linesearch_iter_max=state.linesearch_iter_max;
                 const Real& f_x=state.f_x;
                 const Real& eps_dx=state.eps_dx;
                 const Real& norm_dxtyp=state.norm_dxtyp;
@@ -4296,8 +4368,10 @@ namespace peopt{
                 const Natural& krylov_orthog_max=state.krylov_orthog_max;
                 const KrylovSolverTruncated::t& krylov_solver
                     = state.krylov_solver;
+                const Real& c1=state.c1;
                 X_Vector& dx=state.dx.front();
                 Real& f_xpdx=state.f_xpdx;
+                Real& alpha0=state.alpha0;
                 Real& alpha=state.alpha;
                 Real& krylov_rel_err=state.krylov_rel_err;
                 Natural& krylov_iter=state.krylov_iter;
@@ -4396,121 +4470,119 @@ namespace peopt{
                     krylov_iter_total += krylov_iter;
                     break;
                 }}
-                    
+
                 // Manipulate the state if required
                 smanip(fns,state,OptimizationLocation::BeforeLineSearch);
 
-                // Do a line-search in the specified direction
-                X_Vector x_p_dx; X::init(x,x_p_dx);
-                Real merit_x(std::numeric_limits <Real>::quiet_NaN());
-                Real merit_xpdx(std::numeric_limits <Real>::quiet_NaN());
-                switch(kind){
-                case LineSearchKind::GoldenSection:
-                    // Continue doing a line-search until we get a reduction
-                    // in the merit value.
+                // Do the sufficient decrease line-search
+                if(LineSearchKind::is_sufficient_decrease(kind) || iter==1) {
+                    // Determine merit(x)
+                    Real merit_x = f_mod.merit(x,f_x);
+                    
+                    // Determine the gradient at x
+                    X_Vector grad_step;
+                        X::init(x,grad_step);
+                        f_mod.grad_step(x,grad,grad_step);
+                
+                    // Allocate memory for x+alpha dx 
+                    X_Vector x_p_adx;
+                        X::init(x,x_p_adx);
+
+                    // Keep track of whether or not we hit a bound with the
+                    // line-search
+                    LineSearchTermination::t ls_why
+                        = LineSearchTermination::Between;
+
+                    // Save the original line search base
+                    Real alpha0_orig=alpha0;
+
+                    // Keep track of whether the sufficient decrease condition
+                    // is satisfied.
+                    bool sufficient_decrease=false;
                     do {
-                        // Conduct the golden section search
-                        goldenSection(fns,state);
+                        // Do the line-search
+                        if(kind==LineSearchKind::GoldenSection ||
+                            (!LineSearchKind::is_sufficient_decrease(kind) &&
+                            iter==1)
+                        )
+                            ls_why=goldenSection(fns,state);
+                        else if(kind==LineSearchKind::BackTracking)
+                            backTracking(fns,state);
+                        else if(kind==LineSearchKind::Brents) 
+                            msg.error("Brent's linesearch is not currently "
+                                "implemented.");
 
-                        // Find x+alpha dx
-                        X::copy(x,x_p_dx);
-                        X::axpy(alpha,dx,x_p_dx);
+                        // Determine x+dx 
+                        X::copy(x,x_p_adx);
+                        X::axpy(alpha,dx,x_p_adx);
+                
+                        // Determine the merit function evaluated at x+dx.  This
+                        // assumes that the line-search algorithms already
+                        // evaluated f(x+alpha dx) and stored it in f_xpdx.
+                        Real merit_xpdx=f_mod.merit(x_p_adx,f_xpdx);
 
-                        // If we have no reduction in the merit, print
-                        // some diagnostic information.
-                        merit_x = f_mod.merit(x,f_x);
-                        merit_xpdx = f_mod.merit(x_p_dx,f_xpdx);
-                        if(merit_xpdx > merit_x || merit_xpdx!=merit_xpdx) {
+                        // Determine if we've satisfied the sufficient decrease
+                        // condition.  Also make sure that we don't generate
+                        // a NaN
+                        sufficient_decrease = 
+                            (merit_xpdx==merit_xpdx) &&
+                            merit_xpdx < merit_x+c1*alpha*X::innr(grad_step,dx);
 
-                            // Determine the size of the step
-                            Real norm_dx=alpha*sqrt(X::innr(dx,dx));
+                        // If we've not satisfied the sufficient decrease
+                        // condition, cut the step
+                        if( !sufficient_decrease ) {
+
+                            // Decrease the size of the base line-search
+                            // parameter 
+                            alpha0/=Real(2.);
 
                             // Check if the step becomes so small that we're not
                             // making progress.  In this case, take a zero step 
                             // and allow the stopping conditions to exit
-                            if(norm_dx < eps_dx*norm_dxtyp) {
-                                alpha=0.;
+                            if(alpha*sqrt(X::innr(dx,dx)) < eps_dx*norm_dxtyp) {
+                                X::scal(Real(0.),dx);
                                 break;
                             }
 
                             // Manipulate the state if required
                             smanip(fns,state,
                                 OptimizationLocation::AfterRejectedLineSearch);
-
-                            // We reduce alpha by a factor of four when we
-                            // reject the step since the line-search always
-                            // looks twice alpha out in the direction of the 
-                            // search direction.  By reducing alpha by a factor
-                            // of four we insure that the next line-search
-                            // examines a unique set of points.
-                            alpha /= Real(4.);
                         }
 
-                    // If we don't decrease the merit , try again 
-                    } while(merit_x < merit_xpdx || merit_xpdx!=merit_xpdx);
-                    break;
-                case LineSearchKind::BackTracking:
-                    // Continue doing a line-search until we get a reduction
-                    // in the merit value.
-                    do {
-                        // Conduct the backtracking search
-                        backTracking(fns,state);
+                    // Continue as long as we haven't satisfied the sufficient
+                    // decrease condition.
+                    } while( !sufficient_decrease );
+                
+                    // If the line-search hit one of the bounds, change the base
+                    // line-search parameter.
+                    switch(ls_why){
+                    case LineSearchTermination::Min:
+                        alpha0/=Real(2.);
+                        break;
+                    case LineSearchTermination::Max:
+                        alpha0*=Real(2.);
+                        break;
+                    case LineSearchTermination::Between:
+                        break;
+                    }
 
-                        // Find x+alpha dx
-                        X::copy(x,x_p_dx);
-                        X::axpy(alpha,dx,x_p_dx);
+                    // If we're doing a backtracking line-search, restore the
+                    // original line-search parameter base.  Basically, this
+                    // line-search doesn't have a mechanism for changing the
+                    // base dynamically, so we're assuming the user set a 
+                    // reasonable value.  Since the safe guarding modifies
+                    // the base line-search parameter, we need to restore it
+                    // here.
+                    if(kind==LineSearchKind::BackTracking)
+                        alpha0=alpha0_orig;
 
-                        // If we have no reduction in the merit, print
-                        // some diagnostic information.
-                        merit_x = f_mod.merit(x,f_x);
-                        merit_xpdx = f_mod.merit(x_p_dx,f_xpdx);
-                        if(merit_xpdx > merit_x || merit_xpdx!=merit_xpdx) {
-                            // Determine the size of the step
-                            Real norm_dx=alpha*sqrt(X::innr(dx,dx));
+                // Do the line-searches that are not based on sufficient
+                // decrease
+                } else 
+                    twoPoint(fns,state);
 
-                            // Check if the step becomes so small that we're not
-                            // making progress.  In this case, take a zero step 
-                            // and allow the stopping conditions to exit
-                            if(norm_dx < eps_dx*norm_dxtyp) {
-                                alpha = Real(0.);
-                                break;
-                            }
-
-                            // Manipulate the state if required
-                            smanip(fns,state,
-                                OptimizationLocation::AfterRejectedLineSearch);
-
-                            // We set alpha to be four times less than the
-                            // minimimum alpha we searched before.  We do this
-                            // since the line-search always looks twice alpha
-                            // out in the beginning of the search.  In addition,
-                            // we use a loop here instead of the pow routine
-                            // since the cmath pow routine requires an integer
-                            // second argument and, depending on the
-                            // architecture, our internally defined integer
-                            // may be too large for the routine.  This is
-                            // unlikely, but some versions of gcc complain.
-                            for(Natural i=1;i<=linesearch_iter_max+1;i++)
-                                alpha = alpha/Real(2.);
-                        }
-
-                    // If we don't decrease the merit, try again 
-                    } while(merit_x < merit_xpdx || merit_xpdx!=merit_xpdx);
-                    break;
-                case LineSearchKind::TwoPointA:
-                case LineSearchKind::TwoPointB:
-                    if(iter>1)
-                        twoPoint(fns,state);
-                    else
-                        goldenSection(fns,state);
-                    break;
-                case LineSearchKind::Brents:
-                    msg.error(
-                        "Brent's linesearch is not currently implemented.");
-                    break;
-                }
-            
-                // Scale the line-search direction by the line search parameter 
+                // Adjust the size of the step (apply the line-search 
+                // parameter.)
                 X::scal(alpha,dx);
             }
 
@@ -8959,16 +9031,15 @@ namespace peopt{
                 const VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
                 X_Vector& dx=state.dx.front();
                 Z_Vector& dz=state.dz.front();
-                Real& alpha=state.alpha;
 
                 // Create a fake step.  In the case of a trust-region
                 // method this is just the step.  In the case of
-                // a line-search method this is 2 alpha s.  This represents
+                // a line-search method this is alpha0 dx.  This represents
                 // the farthest either method will attempt to step.
                 X_Vector dx_; X::init(x,dx_);
                 X::copy(dx,dx_);
                 if(algorithm_class==AlgorithmClass::LineSearch)
-                    X::scal(Real(2.)*alpha,dx_);
+                    X::scal(state.alpha0,dx_);
                 
                 // Determine how far we can go in the primal variable
                 
@@ -9013,7 +9084,7 @@ namespace peopt{
                 // If we're doing a line-search method, make sure
                 // we can't line-search past this point
                 else
-                    alpha *= beta_x;
+                    state.alpha0 *= beta_x;
             }
             
             // Conduct a line search that preserves positivity of both the
@@ -9037,16 +9108,15 @@ namespace peopt{
                 const Z_Vector& h_x=state.h_x.front();
                 const VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
                 X_Vector& dx=state.dx.front();
-                Real& alpha=state.alpha;
 
                 // Create a fake step.  In the case of a trust-region
                 // method this is just the step.  In the case of
-                // a line-search method this is 2 alpha s.  This represents
+                // a line-search method this is alpha0 dx.  This represents
                 // the farthest either method will attempt to step.
                 X_Vector dx_; X::init(x,dx_);
                 X::copy(dx,dx_);
                 if(algorithm_class==AlgorithmClass::LineSearch)
-                    X::scal(Real(2.)*alpha,dx_);
+                    X::scal(state.alpha0,dx_);
                 
                 // Determine how far we can go in the primal variable
                 
@@ -9129,7 +9199,7 @@ namespace peopt{
                 // If we're doing a line-search method, make sure
                 // we can't line-search past this point
                 else
-                    alpha *= alpha0;
+                    state.alpha0 *= alpha0;
 
             }
             // Conduct a line search that preserves positivity of the
@@ -9147,16 +9217,15 @@ namespace peopt{
                 const Z_Vector& h_x=state.h_x.front();
                 const VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
                 X_Vector& dx=state.dx.front();
-                Real& alpha=state.alpha;
 
                 // Create a fake step.  In the case of a trust-region
                 // method this is just the step.  In the case of
-                // a line-search method this is 2 alpha s.  This represents
+                // a line-search method this is alpha0 dx.  This represents
                 // the farthest either method will attempt to step.
                 X_Vector dx_; X::init(x,dx_);
                 X::copy(dx,dx_);
                 if(algorithm_class==AlgorithmClass::LineSearch)
-                    X::scal(Real(2.)*alpha,dx_);
+                    X::scal(state.alpha0,dx_);
                 
                 // Determine how far we can go in the primal variable
                 
@@ -9191,9 +9260,9 @@ namespace peopt{
                 // If we're doing a line-search method, make sure
                 // we can't line-search past this point
                 else
-                    alpha *= beta_x;
+                    state.alpha0 *= beta_x;
             }
-
+            
             // This adds the interior point through use of a state manipulator.
             template <typename ProblemClass>
             struct InteriorPointManipulator

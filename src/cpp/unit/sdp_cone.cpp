@@ -140,7 +140,7 @@ BOOST_AUTO_TEST_CASE(newton_cg) {
     state.iter_max = 100;
     state.msg_level = 0;
     state.eps_dx = 1e-16;
-    state.eps_grad = 1e-9;
+    state.eps_grad = 1e-13;
     state.eps_mu = 1e-11;
     state.sigma = 0.1;
     state.gamma = 0.99;
@@ -160,7 +160,7 @@ BOOST_AUTO_TEST_CASE(newton_cg) {
     BOOST_CHECK(err < 1e-6);
 
     // Check the number of iterations 
-    BOOST_CHECK(state.iter == 14);
+    BOOST_CHECK(state.iter == 15);
 }
 
 BOOST_AUTO_TEST_CASE(tr_newton) {
