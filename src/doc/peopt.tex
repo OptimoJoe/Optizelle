@@ -88,9 +88,31 @@
 
         The PEOpt (\underline{P}arameter \underline{E}stimation Using \underline{Opt}imization) library contains a collection of routines used to solve a variety of nonlinear optimization problems.  It focuses on open ended abstractions that make it easy to interface to existing applications.
 
+\subparagraph{Algorithms}
+        PEOpt provides the following algorithms 
+\begin{center}\begin{tabular}{l|p{0.6\textwidth}}
+Problem Class & Algorithms\\\hline
+Unconstrained & Steepest Descent, Preconditioned Nonlinear-CG (Fletcher-Reeves, Polak-Ribiere, Hestenes-Stiefel), BFGS, Newton-CG, SR1, Trust-Region Newton (Truncated-CG and Truncated-MINRES), Barzilai-Borwein Two-Point Approximation\\\\
+Equality Constrained & Inexact Composite Step SQP\\\\
+Inequality Constrained & Primal-Dual Interior Point Method for Cone Constraints (Linear, Second-Order Cone, and Semidefinite), Log-Barrier Method for Cone Constraints\\\\
+Constrained & Any combination of the above .
+\end{tabular}\end{center}
+Changing from one algorithm to another is as simple as changing one parameter in the input deck.
+
+\subparagraph{Extensible Linear Algebra}
+Although PEOpt provides a default interface where the optimization variables are represented by C++ STL vectors, PEOpt's vector and linear algebra can be fully replaced by the user.  This means PEOpt can use arbitrary vectors, structures, or classes as its optimization variables.  This includes distributed vectors that use MPI.  In addition, PEOpt may utilize user defined preconditioning software provided by the user.  Together, this allows PEOpt to more easily integrate into an existing software package.
+
+\subparagraph{Multiple Programming Languages} PEOpt provides interfaces for C++, MATLAB, and Python.
+
+\subparagraph{Sophisticated Control of the Optimization Algorithm} PEOpt allows the user to insert arbitrary code into the optimization algorithm.  This allows  custom processing code to manipulate the optimization iterates between iterations.  For example, in signal processing applications, the optimization iterates can be run through a band-pass filter at the end of each optimization iteration.
+
+\subparagraph{Customized Restarts} PEOpt supports user defined restart procedures, which allow the entire state of the optimization algorithm to be transferred to the user and then written to disk.  This allows PEOpt to stopped and started at the user convenience.  It also enables sophisticated diagnostics to be run on the performance of the optimization algorithms.
+
+        Simple examples of PEOpt applications are provided below.
+
 \section{Unconstrained Optimization}
 
-        The PEopt unconstrained optimization routines solve problems of the form
+        The PEOpt unconstrained optimization routines solve problems of the form
 $$
         \min_{x\in X} f(x)
 $$
@@ -191,6 +213,14 @@ make install
 The command \texttt{ccmake} executes the curses version of CMake, which displays several different options.  The PEOpt specific flags are
 \begin{center}
 \begin{longtable}{lp{0.75\textwidth}}
+Flag:         &\texttt{ENABLE\_DOCUMENTATION}\\
+Type:         &Bool\\
+Default:      &Off\\
+Dependencies: &None\\
+Autodetect?:  &No\\
+Description:  &Enables the build of the PEOpt manual from the LaTeX source.  It
+              builds a pdf file of the manual.\\
+\\
 Flag:         &\texttt{ENABLE\_CPP\_LIBRARY}\\
 Type:         &Bool\\
 Default:      &Off\\

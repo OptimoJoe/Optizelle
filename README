@@ -33,6 +33,14 @@ options.  In this case, we build with the following:
 
 For a detailed description of the PEOpt specific flags, see below
 
+Flag:         ENABLE_DOCUMENTATION
+Type:         Bool
+Default:      Off
+Dependencies: None
+Autodetect?:  No
+Description:  Enables the build of the PEOpt manual from the LaTeX source.  It
+              builds a pdf file of the manual.
+
 Flag:         ENABLE_CPP_LIBRARY
 Type:         Bool
 Default:      Off
