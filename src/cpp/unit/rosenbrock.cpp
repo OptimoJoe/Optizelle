@@ -103,7 +103,7 @@ BOOST_AUTO_TEST_CASE(newton_cg) {
     BOOST_CHECK(err < 1e-6);
 
     // Check the number of iterations 
-    BOOST_CHECK(state.iter == 16);
+    BOOST_CHECK(state.iter == 19);
 }
 
 BOOST_AUTO_TEST_CASE(newton_cg_backtracking) {
@@ -228,7 +228,7 @@ BOOST_AUTO_TEST_CASE(bfgs) {
     BOOST_CHECK(err < 1e-6);
 
     // Check the number of iterations 
-    BOOST_CHECK(state.iter == 21);
+    BOOST_CHECK(state.iter == 27);
 }
 
 BOOST_AUTO_TEST_CASE(sr1) {
@@ -292,6 +292,7 @@ BOOST_AUTO_TEST_CASE(precond_ncg_fletcher_reeves) {
     state.PH_type = peopt::Operators::UserDefined;
     state.iter_max = 50;
     state.eps_dx = 1e-10;
+    state.linesearch_iter_max = 7;
     state.msg_level = 0;
     
     // Create the bundle of functions 
@@ -356,7 +357,7 @@ BOOST_AUTO_TEST_CASE(precond_ncg_polak_ribiere) {
     BOOST_CHECK(err < 1e-6);
 
     // Check the number of iterations 
-    BOOST_CHECK(state.iter == 28);
+    BOOST_CHECK(state.iter == 30);
 }
 
 BOOST_AUTO_TEST_CASE(precond_ncg_hestenes_stiefel) {
@@ -398,7 +399,7 @@ BOOST_AUTO_TEST_CASE(precond_ncg_hestenes_stiefel) {
     BOOST_CHECK(err < 1e-6);
 
     // Check the number of iterations 
-    BOOST_CHECK(state.iter == 23);
+    BOOST_CHECK(state.iter == 24);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -1,15 +1,33 @@
-/* Copyright 2013 Sandia Corporation. Under the terms of Contract DE-AC04-94AL85000 with Sandia Corporation, the U.S. Government retains certain rights in this software.
+/*
+Copyright 2013 Sandia Corporation. Under the terms of Contract
+DE-AC04-94AL85000 with Sandia Corporation, the U.S. Government retains certain
+rights in this software.
 
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
 
-    * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+    * Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimer.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+    * Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
 
-Author: Joseph Young (josyoun@sandia.gov) */
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Author: Joseph Young (josyoun@sandia.gov)
+*/
 
 #ifndef PEOPT_H
 #define PEOPT_H
@@ -2156,15 +2174,10 @@ namespace peopt{
                     ss << "The base line-search step length must be positive: "
                         "alpha0 = " << state.alpha0;
 
-                // Check that the actual line-search step length is positive 
-                else if(state.alpha <= Real(0.)) 
-                    ss << "The actual line-search step length must be positive:"
-                        " alpha = " << state.alpha;
-
                 // Check that the sufficient decrease parameter lies between
                 // 0 and 1.
                 else if(state.c1 <= Real(0.) || state.c1 >= Real(1.)) 
-                    ss << "The sufficient decrease parameter must lie between"
+                    ss << "The sufficient decrease parameter must lie between "
                         "0 and 1: c1 = " << state.c1;
 
                 // Check that the stopping tolerance for the line-search
@@ -2172,6 +2185,32 @@ namespace peopt{
                 else if(state.eps_ls <= Real(0.)) 
                     ss << "The tolerance for the line-search stopping "
                         "condition must be positive: eps_ls = " << state.eps_ls;
+
+                // Check that the number of line-search iterations is positve 
+                else if(state.linesearch_iter_max <= 0) 
+                    ss << "The maximum number of line-search iterations must "
+                        "be positive: linesearch_iter_max = "
+                        << state.linesearch_iter_max;
+
+                // If we're using a golden-section search, make sure we allow
+                // at least two iterations.
+                else if(state.kind==LineSearchKind::GoldenSection && 
+                    state.linesearch_iter_max <= 1
+                ) 
+                    ss << "When using a golden-seciton search, we require at "
+                        "least 2 line-search iterations: linesearch_iter_max = "
+                        << state.linesearch_iter_max;
+
+                // If we're using the Barzilai-Borwein two point Hessian
+                // approximation, make sure the direction is steepest descent.
+                else if((state.kind==LineSearchKind::TwoPointA ||
+                    state.kind==LineSearchKind::TwoPointB) &&
+                    state.dir!=LineSearchDirection::SteepestDescent
+                )
+                    ss << "When using the Barzilai-Borwein two point Hessian "
+                        "approximation line-search, the search direction must "
+                        "be set to SteepestDescent: dir = "
+                        << LineSearchDirection::to_string(state.dir);
 
                 // If there's an error, print it
                 if(ss.str()!="") msg.error(ss.str());
@@ -4190,8 +4229,11 @@ namespace peopt{
                 Real f_lambda=f(x_p_dx);
                 Real merit_lambda=f_mod.merit(x_p_dx,f_lambda);
 
-                // Search for a fixed number of iterations 
-                for(iter=0;iter<iter_max;iter++){
+                // Search for a fixed number of iterations.  Note, since we
+                // already evaluated the objective twice above, at mu and
+                // lambda, we've already done two iterations.  Hence, we assume
+                // that iter_max >=2.
+                for(iter=2;iter<iter_max;iter++){
 
                     // If the merit is greater on the left, bracket on the
                     // right.  Alternatively, it's possible that we're going to
