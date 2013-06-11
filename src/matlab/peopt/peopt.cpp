@@ -1147,7 +1147,7 @@ void mexFunction(
             // Save the answer
             mxSetField(pOutput[0],0,"x",state.x.back().release());
             mxSetField(pOutput[0],0,"y",state.y.back().release());
-            mxSetField(pOutput[0],0,"y",state.z.back().release());
+            mxSetField(pOutput[0],0,"z",state.z.back().release());
             mxSetField(pOutput[0],0,"opt_stop",mxCreateString(
                 peopt::StoppingCondition::to_string(state.opt_stop).c_str()));
         } }
