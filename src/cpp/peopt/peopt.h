@@ -7725,6 +7725,9 @@ namespace peopt{
                 
                 // Initialize any remaining functions required for optimization 
                 Functions::init(msg,state,fns);
+                
+                // Check the inputs to the optimization
+                State::check(msg,state);
 
                 // Minimize the problem
                 Unconstrained <Real,XX>::Algorithms
@@ -9500,6 +9503,9 @@ namespace peopt{
                 // Initialize any remaining functions required for optimization 
                 Functions::init(msg,state,fns);
                 
+                // Check the inputs to the optimization
+                State::check(msg,state);
+                
                 // Minimize the problem
                 Unconstrained <Real,XX>::Algorithms
                     ::getMin_(msg,cmanip,fns,state);
@@ -10040,6 +10046,9 @@ namespace peopt{
                 
                 // Initialize any remaining functions required for optimization 
                 Functions::init(msg,state,fns);
+                
+                // Check the inputs to the optimization
+                State::check(msg,state);
                 
                 // Minimize the problem
                 Unconstrained <Real,XX>::Algorithms
