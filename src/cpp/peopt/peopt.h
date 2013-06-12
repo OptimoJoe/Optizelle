@@ -7351,7 +7351,7 @@ namespace peopt{
                 Real& pred=state.pred;
                 Real& rpred=state.rpred;
                 Real& rho=state.rho;
-                Real& alpha=state.alpha;
+                Real& alpha0=state.alpha0;
                 Natural& rejected_trustregion=state.rejected_trustregion;
 
                 // Create a single temporary vector
@@ -7482,19 +7482,19 @@ namespace peopt{
 
                     // In an interior point method, we may truncate the step
                     // and this information is communicated through the
-                    // linesearch parameter, alpha.
-                    alpha = Real(1.);
+                    // base linesearch parameter, alpha0.
+                    alpha0 = Real(1.);
 
                     // Manipulate the state if required
                     smanip(fns,state,
                         OptimizationLocation::BeforeActualVersusPredicted);
 
                     // If need be, shorten the step
-                    X::scal(alpha,dx);
+                    X::scal(alpha0,dx);
 
                     // If we shorten our step, update our Lagrange multiplier
                     // step
-                    if(alpha < Real(1.))
+                    if(alpha0 < Real(1.))
                         lagrangeMultiplierStep(fns,state);
                     
                     // Check whether the step is good
