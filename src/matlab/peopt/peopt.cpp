@@ -1,15 +1,35 @@
-/* Copyright 2013 Sandia Corporation. Under the terms of Contract DE-AC04-94AL85000 with Sandia Corporation, the U.S. Government retains certain rights in this software.
+/*
+Copyright 2013 OptimoJoe.
+
+Copyright 2013 Sandia Corporation. Under the terms of Contract
+DE-AC04-94AL85000 with Sandia Corporation, the U.S. Government retains certain
+rights in this software.
 
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
 
-    * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+    * Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimer.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+    * Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
 
-Author: Joseph Young (josyoun@sandia.gov) */
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Author: Joseph Young (joe@optimojoe.com)
+*/
 
 #include <string>
 #include <sstream>
@@ -200,8 +220,8 @@ public:
     void copy(const MatVector& x) {
         mxArray* input[2]={copy_.get(),x.get()};
         mxArray* output[1];
-        mxArray* err=mexCallMATLABWithTrap(1,output,2,input,"feval");
-        handleException(err,"Error in the vector space copy function");
+        int err=mexCallMATLAB(1,output,2,input,"feval");
+        //handleException(err,"Error in the vector space copy function");
         reset(output[0]);
     }
 
@@ -216,8 +236,8 @@ public:
         mxArray* output[1];
 
         // Compute the scalar multiplication and store the result
-        mxArray* err=mexCallMATLABWithTrap(1,output,3,input,"feval");
-        handleException(err,"Error in the vector space scal function");
+        int err=mexCallMATLAB(1,output,3,input,"feval");
+        //handleException(err,"Error in the vector space scal function");
         reset(output[0]);
     }
 
@@ -228,8 +248,8 @@ public:
         mxArray* output[1];
 
         // Find the zero vector and store the result.
-        mxArray* err=mexCallMATLABWithTrap(1,output,2,input,"feval");
-        handleException(err,"Error in the vector space zero function");
+        int err=mexCallMATLAB(1,output,2,input,"feval");
+        //handleException(err,"Error in the vector space zero function");
         reset(output[0]);
 
     }
@@ -245,8 +265,8 @@ public:
         mxArray* output[1];
 
         // Compute the addition and store the result
-        mxArray* err=mexCallMATLABWithTrap(1,output,4,input,"feval");
-        handleException(err,"Error in the vector space axpy function");
+        int err=mexCallMATLAB(1,output,4,input,"feval");
+        //handleException(err,"Error in the vector space axpy function");
         reset(output[0]);
     }
 
@@ -257,8 +277,8 @@ public:
         mxArray* output[1];
 
         // Compute the inner product 
-        mxArray* err=mexCallMATLABWithTrap(1,output,3,input,"feval");
-        handleException(err,"Error in the vector space innr function");
+        int err=mexCallMATLAB(1,output,3,input,"feval");
+        //handleException(err,"Error in the vector space innr function");
         mxArrayPtr output_(output[0]);
 
         // Get the result of the computation 
@@ -275,8 +295,8 @@ public:
         mxArray* output[1];
 
         // Compute the product and store the result 
-        mxArray* err=mexCallMATLABWithTrap(1,output,3,input,"feval");
-        handleException(err,"Error in the vector space prod function");
+        int err=mexCallMATLAB(1,output,3,input,"feval");
+        //handleException(err,"Error in the vector space prod function");
         reset(output[0]);
     }
 
@@ -287,8 +307,8 @@ public:
         mxArray* output[1];
 
         // Find the identity element and store the result
-        mxArray* err=mexCallMATLABWithTrap(1,output,2,input,"feval");
-        handleException(err,"Error in the vector space id function");
+        int err=mexCallMATLAB(1,output,2,input,"feval");
+        //handleException(err,"Error in the vector space id function");
         reset(output[0]);
     }
 
@@ -299,8 +319,8 @@ public:
         mxArray* output[1];
 
         // Compute the product inverse and store the result 
-        mxArray* err=mexCallMATLABWithTrap(1,output,3,input,"feval");
-        handleException(err,"Error in the vector space linv function");
+        int err=mexCallMATLAB(1,output,3,input,"feval");
+        //handleException(err,"Error in the vector space linv function");
         reset(output[0]);
     }
 
@@ -311,8 +331,8 @@ public:
         mxArray* output[1];
 
         // Compute the barrier function 
-        mxArray* err=mexCallMATLABWithTrap(1,output,2,input,"feval");
-        handleException(err,"Error in the vector space barr function");
+        int err=mexCallMATLAB(1,output,2,input,"feval");
+        //handleException(err,"Error in the vector space barr function");
         mxArrayPtr output_(output[0]);
 
         // Get the result of the computation 
@@ -330,8 +350,8 @@ public:
         mxArray* output[1];
 
         // Compute the search function 
-        mxArray* err=mexCallMATLABWithTrap(1,output,3,input,"feval");
-        handleException(err,"Error in the vector space srch function");
+        int err=mexCallMATLAB(1,output,3,input,"feval");
+        //handleException(err,"Error in the vector space srch function");
         mxArrayPtr output_(output[0]);
         
         // Get the result of the computation 
@@ -349,8 +369,8 @@ public:
         mxArray* output[1];
 
         // Find the symmetrization and store the result
-        mxArray* err=mexCallMATLABWithTrap(1,output,2,input,"feval");
-        handleException(err,"Error in the vector space symm function");
+        int err=mexCallMATLAB(1,output,2,input,"feval");
+        //handleException(err,"Error in the vector space symm function");
         reset(output[0]);
     }
 };
@@ -455,9 +475,9 @@ public:
 
         // Evaluate the function 
         mexCallMATLAB(1,output,2,input,"feval"); 
-        mxArray* err=mexCallMATLABWithTrap(1,output,2,input,"feval");
-        handleException(err,
-            "Error in the scalar valued function (objective) evaluation");
+        int err=mexCallMATLAB(1,output,2,input,"feval");
+        //handleException(err,
+        //    "Error in the scalar valued function (objective) evaluation");
         mxArrayPtr output_(output[0]);
 
         // Get the result of the computation 
@@ -471,9 +491,9 @@ public:
     void grad(const MatVector& x,MatVector& g) const { 
         mxArray* input[2]={grad_.get(),x.get()}; 
         mxArray* output[1];
-        mxArray* err=mexCallMATLABWithTrap(1,output,2,input,"feval");
-        handleException(err,
-            "Error in the scalar valued function (objective) gradient");
+        int err=mexCallMATLAB(1,output,2,input,"feval");
+        //handleException(err,
+        //    "Error in the scalar valued function (objective) gradient");
         g.reset(output[0]);
     }
 
@@ -481,10 +501,10 @@ public:
     void hessvec(const MatVector& x,const MatVector& dx,MatVector& H_dx) const {
         mxArray* input[3]={hessvec_.get(),x.get(),dx.get()}; 
         mxArray* output[1];
-        mxArray* err=mexCallMATLABWithTrap(1,output,3,input,"feval");
-        handleException(err,
+        int err=mexCallMATLAB(1,output,3,input,"feval");
+        /*handleException(err,
             "Error in the scalar valued function (objective) Hessian-vector "
-            "product");
+            "product");*/
         H_dx.reset(output[0]);
     }
 };
@@ -523,9 +543,9 @@ public:
         mxArray* input[2]={eval_.get(),x.get()}; 
         mxArray* output[1];
         mexCallMATLAB(1,output,2,input,"feval");
-        mxArray* err=mexCallMATLABWithTrap(1,output,2,input,"feval");
-        handleException(err,
-            "Error in the vector valued function (constraint) evaluation");
+        int err=mexCallMATLAB(1,output,2,input,"feval");
+        /*handleException(err,
+            "Error in the vector valued function (constraint) evaluation");*/
         y.reset(output[0]);
     }
 
@@ -537,9 +557,9 @@ public:
      ) const { 
         mxArray* input[3]={p_.get(),x.get(),dx.get()}; 
         mxArray* output[1];
-        mxArray* err=mexCallMATLABWithTrap(1,output,3,input,"feval");
-        handleException(err,
-            "Error in the vector valued function (constraint) derivative");
+        int err=mexCallMATLAB(1,output,3,input,"feval");
+        //handleException(err,
+        //    "Error in the vector valued function (constraint) derivative");
         y.reset(output[0]);
      }
 
@@ -551,10 +571,10 @@ public:
      ) const {
         mxArray* input[3]={ps_.get(),x.get(),dy.get()}; 
         mxArray* output[1];
-        mxArray* err=mexCallMATLABWithTrap(1,output,3,input,"feval");
-        handleException(err,
+        int err=mexCallMATLAB(1,output,3,input,"feval");
+        /*handleException(err,
             "Error in the vector valued function (constraint) derivative "
-            "adjoint");
+            "adjoint");*/
         z.reset(output[0]);
      }
      
@@ -567,10 +587,10 @@ public:
      ) const { 
         mxArray* input[4]={pps_.get(),x.get(),dx.get(),dy.get()}; 
         mxArray* output[1];
-        mxArray* err=mexCallMATLABWithTrap(1,output,4,input,"feval");
-        handleException(err,
+        int err=mexCallMATLAB(1,output,4,input,"feval");
+        /*handleException(err,
             "Error in the vector valued function (constraint) second "
-            "derivative adjoint");
+            "derivative adjoint");*/
         z.reset(output[0]);
      }
 };
@@ -600,8 +620,8 @@ public:
     virtual void operator () (const X_Vector& dx,Y_Vector& y) const { 
         mxArray* input[3]={eval_.get(),x.get(),dx.get()}; 
         mxArray* output[1];
-        mxArray* err=mexCallMATLABWithTrap(1,output,3,input,"feval");
-        handleException(err,"Error in the operator");
+        int err=mexCallMATLAB(1,output,3,input,"feval");
+        //handleException(err,"Error in the operator");
         y.reset(output[0]);
     }
 };
@@ -915,13 +935,13 @@ void mexFunction(
     // initialize points for dx, dxx, dy, and dz when doing the finite
     // difference tests
     mxArray* X(mxGetField(pInput[0],0,"X"));
-    std::auto_ptr <MatVector> x;
-    std::auto_ptr <MatVector> dx;
-    std::auto_ptr <MatVector> dxx;
-    std::auto_ptr <MatVector> y;
-    std::auto_ptr <MatVector> dy;
-    std::auto_ptr <MatVector> z;
-    std::auto_ptr <MatVector> dz;
+    std::unique_ptr <MatVector> x;
+    std::unique_ptr <MatVector> dx;
+    std::unique_ptr <MatVector> dxx;
+    std::unique_ptr <MatVector> y;
+    std::unique_ptr <MatVector> dy;
+    std::unique_ptr <MatVector> z;
+    std::unique_ptr <MatVector> dz;
 
     // Check that we have a valid set of optimization points (x,y,z)
     check_optimization_pts(pInput[0],pInput[2]);

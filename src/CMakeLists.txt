@@ -159,6 +159,11 @@ if(ENABLE_CPP_LIBRARY)
         ${JSONCPP_LIBRARIES}
         ${LAPACK_LIBRARIES}
         ${BLAS_LIBRARIES})
+
+    # This is required for Windows to see an import library, which is
+    # required to build a dll.
+    target_link_libraries(peopt_shared peopt_shared_complete)
+
     set_target_properties(peopt_shared peopt_static
         PROPERTIES OUTPUT_NAME peopt)
     set_target_properties(peopt_shared_complete 

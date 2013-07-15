@@ -143,7 +143,7 @@ void parse_sdpa(const std::string fname,SparseSDP <Real>& prob) {
             std::cerr << "Error while parsing the block size." << std::endl;
             exit(EXIT_FAILURE);
         }
-        prob.blk_sizes.push_back(blk_size);
+        prob.blk_sizes.emplace_back(blk_size);
     }
 
     // Check that the number of blocks corresponds to what we parsed
@@ -176,7 +176,7 @@ void parse_sdpa(const std::string fname,SparseSDP <Real>& prob) {
             std::cerr << "Error while parsing the objective." << std::endl;
             exit(EXIT_FAILURE);
         }
-        prob.b.push_back(val);
+        prob.b.emplace_back(val);
     }
 
     // Create structure for the constraint matrices
@@ -219,13 +219,13 @@ void parse_sdpa(const std::string fname,SparseSDP <Real>& prob) {
                     << std::endl;
                 exit(EXIT_FAILURE);
             }
-            prob.A[matno][itok(blkno)].is.push_back(i);
-            prob.A[matno][itok(blkno)].data.push_back(entry);
+            prob.A[matno][itok(blkno)].is.emplace_back(i);
+            prob.A[matno][itok(blkno)].data.emplace_back(entry);
         } else {
             if(i>j) std::swap(i,j);
-            prob.A[matno][itok(blkno)].is.push_back(i);
-            prob.A[matno][itok(blkno)].js.push_back(j);
-            prob.A[matno][itok(blkno)].data.push_back(entry);
+            prob.A[matno][itok(blkno)].is.emplace_back(i);
+            prob.A[matno][itok(blkno)].js.emplace_back(j);
+            prob.A[matno][itok(blkno)].data.emplace_back(entry);
         }
     }
 
@@ -516,8 +516,8 @@ void initSQL(
 
     // If we're in phase-1, add the extra cone for feasibility. 
     if(phase1) {
-        types.push_back(peopt::Cone::Linear);
-        sizes.push_back(2);
+        types.emplace_back(peopt::Cone::Linear);
+        sizes.emplace_back(2);
     }
 
     // Create a new element 
@@ -723,12 +723,12 @@ private:
     typedef typename Rm::Vector Rm_Vector;
 
     // Projection from X to Rm
-    const std::auto_ptr <ProjectX <Real,XX> > proj;
+    const std::unique_ptr <ProjectX <Real,XX> > proj;
 
     // Function modifications used by the inequality constrained problem.  This
-    // needs to be a reference to the auto_ptr since the actual function is
+    // needs to be a reference to the unique_ptr since the actual function is
     // not initialized yet when we grab the reference.
-    const std::auto_ptr
+    const std::unique_ptr
         <peopt::ScalarValuedFunctionModifications <Real,XX> >& f_mod;
 
     // Current iterate
@@ -755,7 +755,7 @@ private:
 public:
     SDPPreconditioner(
         ProjectX <Real,XX>* proj_,
-        const std::auto_ptr<peopt::ScalarValuedFunctionModifications<Real,XX> >&
+        const std::unique_ptr<peopt::ScalarValuedFunctionModifications<Real,XX> >&
             f_mod_,
         const X_Vector& x_
     ) : proj(proj_), f_mod(f_mod_), x(x_), invCondH(1.) {

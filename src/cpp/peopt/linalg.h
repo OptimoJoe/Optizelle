@@ -1,4 +1,6 @@
 /*
+Copyright 2013 OptimoJoe.
+
 Copyright 2013 Sandia Corporation. Under the terms of Contract
 DE-AC04-94AL85000 with Sandia Corporation, the U.S. Government retains certain
 rights in this software.
@@ -26,7 +28,7 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-Author: Joseph Young (josyoun@sandia.gov)
+Author: Joseph Young (joe@optimojoe.com)
 */
 
 #ifndef LINALG_H 
@@ -41,6 +43,7 @@ Author: Joseph Young (josyoun@sandia.gov)
 #include <cstddef>
 #include <iostream>
 #include <cstdlib>
+#include <random>
 
 namespace peopt {
     typedef size_t Natural;
@@ -414,14 +417,14 @@ namespace peopt {
         symv <Real> ('U',m,Real(1.),&(A[0]),m,&(v[0]),1,Real(0.),&(w[0]),1);
         // alpha[0] <- <Av,v>
         std::vector <Real> alpha;
-        alpha.push_back(dot <Real> (m,&(w[0]),1,&(v[0]),1));
+        alpha.emplace_back(dot <Real> (m,&(w[0]),1,&(v[0]),1));
         // w <- Av - <Av,v> v
         axpy <Real> (m,-alpha[0],&(v[0]),1,&(w[0]),1);
 
         // Store the norm of the Arnoldi vector w in the off diagonal part of T.
         // By T, we mean the triagonal matrix such that A = Q T Q'.
         std::vector <Real> beta;
-        beta.push_back(std::sqrt(dot <Real> (m,&(w[0]),1,&(w[0]),1)));
+        beta.emplace_back(std::sqrt(dot <Real> (m,&(w[0]),1,&(w[0]),1)));
 
         // Allocate memory for solving an eigenvalue problem for the Ritz
         // values and vectors later.
@@ -461,13 +464,13 @@ namespace peopt {
 
             // Now, we orthogonalize against v
             // Find the Gram-Schmidt coefficient
-            alpha.push_back(dot <Real> (m,&(w[0]),1,&(v[0]),1));
+            alpha.emplace_back(dot <Real> (m,&(w[0]),1,&(v[0]),1));
             // Orthogonlize w to v
             axpy <Real> (m,-alpha[i+1],&(v[0]),1,&(w[0]),1);
 
             // Store the norm of the Arnoldi vector w in the off diagonal part
             // of T.
-            beta.push_back(std::sqrt(dot <Real> (m,&(w[0]),1,&(w[0]),1)));
+            beta.emplace_back(std::sqrt(dot <Real> (m,&(w[0]),1,&(w[0]),1)));
    
             // Figure out the workspaces for the eigenvalues and eigenvectors
             Natural k=alpha.size();  // Size of the eigenvalue subproblem
@@ -546,9 +549,10 @@ namespace peopt {
         Real norm_v;
         
         // Initialize the first Krylov vector 
-        srand48(1);
+        std::mt19937 gen(1);
+        std::uniform_real_distribution<> dis(0, 1);
         for(Natural i=1;i<=m;i++)
-            V[ijtok(i,1,m)]=drand48();
+            V[ijtok(i,1,m)]=dis(gen);
         norm_v=sqrt(dot <Real> (m,&(V[ijtok(1,1,m)]),1,&(V[ijtok(1,1,m)]),1));
         scal <Real> (m,Real(1.)/norm_v,&(V[ijtok(1,1,m)]),1);
 
@@ -1106,22 +1110,22 @@ namespace peopt {
                 }
 
                 // Store the previous directions
-                Bps.push_back(X_Vector()); X::init(x,Bps.back());
+                Bps.emplace_back(X_Vector()); X::init(x,Bps.back());
                 X::copy(Bp,Bps.back());
                 X::scal(Real(1.)/Anorm_Bp,Bps.back());
                 
-                ABps.push_back(X_Vector()); X::init(x,ABps.back());
+                ABps.emplace_back(X_Vector()); X::init(x,ABps.back());
                 X::copy(ABp,ABps.back());
                 X::scal(Real(1.)/Anorm_Bp,ABps.back());
 
                 // Store the previous residuals
-                rs.push_back(X_Vector()); X::init(x,rs.back());
+                rs.emplace_back(X_Vector()); X::init(x,rs.back());
                 X::copy(r,rs.back());
 
-                Brs.push_back(X_Vector()); X::init(x,Brs.back());
+                Brs.emplace_back(X_Vector()); X::init(x,Brs.back());
                 X::copy(Br,Brs.back());
 
-                norm_Brs.push_back(norm_Br);
+                norm_Brs.emplace_back(norm_Br);
 
                 // Build new pieces of the orthogonality check matrix
                 typename std::list <X_Vector>::reverse_iterator
@@ -1144,7 +1148,7 @@ namespace peopt {
                         // Don't recompute elements that we've already stored
                         if(ii >= iter || jj >= iter) {
                             // < Br_i, r_j > / || Br_i || || Br_j ||
-                            orthog_check.push_back(
+                            orthog_check.emplace_back(
                                 std::pair <std::pair <Natural,Natural> , Real> (
                                     std::pair <Natural,Natural> (ii,jj),
                                     X::innr(*Br_star,*r_star)
@@ -1405,47 +1409,47 @@ namespace peopt {
         // Unconstrained minimum
         std::vector <Real> minus_a(2); minus_a[0]=-a[0]; minus_a[1]=-a[1];
         solve2x2 <Natural,Real> (A,minus_a,z);
-        zs.push_back(z);  
+        zs.emplace_back(z);  
 
         // z1 to the lower bound
         z[0] = lb[0];
         z[1] = -(a[1]+Real(2.)*A[0]*A[1]*z[0])/(Real(2.)*A[2]);
-        zs.push_back(z);
+        zs.emplace_back(z);
        
         // z2 to the lower bound
         z[1] = lb[1];
         z[0] = -(a[0]+Real(2.)*A[0]*A[1]*z[1])/(2*A[0]); 
-        zs.push_back(z);
+        zs.emplace_back(z);
         
         // z1 to the upper bound 
         z[0] = ub[0];
         z[1] = -(a[1]+Real(2.)*A[0]*A[1]*z[0])/(2*A[2]);
-        zs.push_back(z);
+        zs.emplace_back(z);
         
         // z2 to the upper bound
         z[1] = ub[1];
         z[0] = -(a[0]+Real(2.)*A[0]*A[1]*z[1])/(2*A[0]); 
-        zs.push_back(z);
+        zs.emplace_back(z);
        
         // Lower left corner
         z[0] = lb[0];
         z[1] = lb[1]; 
-        zs.push_back(z);
+        zs.emplace_back(z);
         
         // Lower right corner
         z[0] = ub[0];
         z[1] = lb[1]; 
-        zs.push_back(z);
+        zs.emplace_back(z);
 
         // Upper right corner
         z[0] = ub[0];
         z[1] = ub[1]; 
-        zs.push_back(z);
+        zs.emplace_back(z);
 
         // Upper left corner
         z[0] = lb[0];
         z[1] = ub[1]; 
-        zs.push_back(z);
+        zs.emplace_back(z);
 
         // Find the feasible point with the lowest objective value
         for(typename std::list <std::vector <Real> >::iterator zp=zs.begin();
@@ -1584,7 +1588,7 @@ namespace peopt {
         // Clear memory for the list of Krylov vectors and insert the first
         // vector.  This completes #4.
         vs.clear();
-        vs.push_back(X_Vector());
+        vs.emplace_back(X_Vector());
         X::init(rtrue,vs.back());
         X::copy(v,vs.back());
 
@@ -1746,7 +1750,7 @@ namespace peopt {
             // list of Krylov vectros
             X::copy(w,v);
             X::scal(Real(1.)/norm_w,v);
-            vs.push_back(X_Vector()); X::init(x,vs.back());
+            vs.emplace_back(X_Vector()); X::init(x,vs.back());
             X::copy(v,vs.back());
 
             // Apply the existing Givens rotations to the new column of R
@@ -1762,7 +1766,7 @@ namespace peopt {
             }
 
             // Form the new Givens rotation
-            Qts.push_back(std::pair <Real,Real> ());
+            Qts.emplace_back(std::pair <Real,Real> ());
             rotg <Real> (R[(i-1)+i*(i-1)/2],norm_w,
                 Qts.back().first,Qts.back().second);
 
@@ -1856,7 +1860,7 @@ namespace peopt {
             Real beta=X::innr(*Bv,x);
             X::axpy(Real(-1.)*beta,*v,x);
             X::axpy(Real(-1.)*beta,*Bv,Bx);
-            R.push_back(beta);
+            R.emplace_back(beta);
         }
     }
     
@@ -1948,10 +1952,10 @@ namespace peopt {
         X::scal(Real(1.)/Bnorm_r,x_tmp1);
 
         // Insert the first Krylov vector
-        vs.push_back(X_Vector()); X::init(x_tmp1,vs.back());
+        vs.emplace_back(X_Vector()); X::init(x_tmp1,vs.back());
         X::copy(x_tmp1,vs.back());
         
-        Bvs.push_back(X_Vector()); X::init(x_tmp1,Bvs.back());
+        Bvs.emplace_back(X_Vector()); X::init(x_tmp1,Bvs.back());
         B(x_tmp1,Bvs.back());
 
         // Find the initial right hand side for the vector Q' norm(w1) e1.  
@@ -2004,11 +2008,11 @@ namespace peopt {
                 }
 
                 // Store the Krylov vector 
-                vs.push_back(X_Vector()); X::init(x,vs.back());
+                vs.emplace_back(X_Vector()); X::init(x,vs.back());
                 X::copy(x_tmp1,vs.back());
                 X::scal(Real(1.)/Bnorm_v,vs.back());
                 
-                Bvs.push_back(X_Vector()); X::init(x,Bvs.back());
+                Bvs.emplace_back(X_Vector()); X::init(x,Bvs.back());
                 X::copy(x_tmp2,Bvs.back());
                 X::scal(Real(1.)/Bnorm_v,Bvs.back());
                 
@@ -2039,7 +2043,7 @@ namespace peopt {
                     Qts.pop_front();
 
                 // Form the new Givens rotation
-                Qts.push_back(std::pair <Real,Real> ());
+                Qts.emplace_back(std::pair <Real,Real> ());
                 rotg <Real> (
                     R.back(),Bnorm_v,Qts.back().first,Qts.back().second);
 
@@ -2071,7 +2075,7 @@ namespace peopt {
                     B_V_Rinvs.pop_front();
 
                 // Add in the new B V inv(R) vector.
-                B_V_Rinvs.push_back(X_Vector());
+                B_V_Rinvs.emplace_back(X_Vector());
                     X::init(x_tmp1,B_V_Rinvs.back());
                 X::copy(x_tmp1,B_V_Rinvs.back());
 

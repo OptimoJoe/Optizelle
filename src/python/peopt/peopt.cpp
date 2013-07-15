@@ -1,15 +1,35 @@
-/* Copyright 2013 Sandia Corporation. Under the terms of Contract DE-AC04-94AL85000 with Sandia Corporation, the U.S. Government retains certain rights in this software.
+/*
+Copyright 2013 OptimoJoe.
+
+Copyright 2013 Sandia Corporation. Under the terms of Contract
+DE-AC04-94AL85000 with Sandia Corporation, the U.S. Government retains certain
+rights in this software.
 
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
 
-    * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+    * Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimer.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+    * Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
 
-Author: Joseph Young (josyoun@sandia.gov) */
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Author: Joseph Young (joe@optimojoe.com)
+*/
 
 #include <string>
 #include <Python.h>
@@ -20,12 +40,12 @@ Author: Joseph Young (josyoun@sandia.gov) */
 struct PythonMessaging : public peopt::Messaging {
     // Prints a message
     void print(const std::string msg) const {
-        PySys_WriteStdout((msg + '\n').c_str());
+        PySys_WriteStdout("%s\n",msg.c_str());
     }
 
     // Prints an error
     void error(const std::string msg) const {
-        PySys_WriteStderr((msg + '\n').c_str());
+        PySys_WriteStderr("%s\n",msg.c_str());
         throw msg;
     }
 };
@@ -40,7 +60,7 @@ public:
     // On default construction, we just create an empty pointer 
     PyObjectPtr() : ptr(NULL) {}
 
-    // On construction, just initialize the auto_ptr
+    // On construction, just initialize the unique_ptr
     PyObjectPtr(PyObject* ptr_) : ptr(ptr_) {}
 
     // Here, we copy both the pointer and increase the reference count
@@ -761,13 +781,13 @@ extern "C" PyObject* pypeopt(
         // initialize points for dx, dxx, dy, and dz when doing the finite
         // difference tests
         PyObjectPtr X(PyObject_GetAttrString(vs_,"X"));
-        std::auto_ptr <PyVector> x;
-        std::auto_ptr <PyVector> dx;
-        std::auto_ptr <PyVector> dxx;
-        std::auto_ptr <PyVector> y;
-        std::auto_ptr <PyVector> dy;
-        std::auto_ptr <PyVector> z;
-        std::auto_ptr <PyVector> dz;
+        std::unique_ptr <PyVector> x;
+        std::unique_ptr <PyVector> dx;
+        std::unique_ptr <PyVector> dxx;
+        std::unique_ptr <PyVector> y;
+        std::unique_ptr <PyVector> dy;
+        std::unique_ptr <PyVector> z;
+        std::unique_ptr <PyVector> dz;
 
         // Always initialize x
         x.reset(new PyVector(

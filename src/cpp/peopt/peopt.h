@@ -1,4 +1,6 @@
 /*
+Copyright 2013 OptimoJoe.
+
 Copyright 2013 Sandia Corporation. Under the terms of Contract
 DE-AC04-94AL85000 with Sandia Corporation, the U.S. Government retains certain
 rights in this software.
@@ -26,7 +28,7 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-Author: Joseph Young (josyoun@sandia.gov)
+Author: Joseph Young (joe@optimojoe.com)
 */
 
 #ifndef PEOPT_H
@@ -2033,23 +2035,23 @@ namespace peopt{
             // optimization.  
             static void init_vectors_(t& state,const X_Vector& x) {
                 state.x.clear();
-                    state.x.push_back(X_Vector());
+                    state.x.emplace_back(X_Vector());
                     X::init(x,state.x.front());
                     X::copy(x,state.x.front());
                 state.grad.clear();
-                    state.grad.push_back(X_Vector());
+                    state.grad.emplace_back(X_Vector());
                     X::init(x,state.grad.front());
                 state.dx.clear();
-                    state.dx.push_back(X_Vector());
+                    state.dx.emplace_back(X_Vector());
                     X::init(x,state.dx.front()); 
                 state.x_old.clear();
-                    state.x_old.push_back(X_Vector());
+                    state.x_old.emplace_back(X_Vector());
                     X::init(x,state.x_old.front());
                 state.grad_old.clear();
-                    state.grad_old.push_back(X_Vector());
+                    state.grad_old.emplace_back(X_Vector());
                     X::init(x,state.grad_old.front()); 
                 state.dx_old.clear();
-                    state.dx_old.push_back(X_Vector());
+                    state.dx_old.emplace_back(X_Vector());
                     X::init(x,state.dx_old.front()); 
             }
             static void init_vectors(t& state,const X_Vector& x) {
@@ -2396,17 +2398,17 @@ namespace peopt{
                 X_Vectors& xs
             ) {
                 // Move the memory of all variables into the list 
-                xs.first.push_back("x");
+                xs.first.emplace_back("x");
                 xs.second.splice(xs.second.end(),state.x);
-                xs.first.push_back("grad");
+                xs.first.emplace_back("grad");
                 xs.second.splice(xs.second.end(),state.grad);
-                xs.first.push_back("dx");
+                xs.first.emplace_back("dx");
                 xs.second.splice(xs.second.end(),state.dx);
-                xs.first.push_back("x_old");
+                xs.first.emplace_back("x_old");
                 xs.second.splice(xs.second.end(),state.x_old);
-                xs.first.push_back("grad_old");
+                xs.first.emplace_back("grad_old");
                 xs.second.splice(xs.second.end(),state.grad_old);
-                xs.first.push_back("dx_old");
+                xs.first.emplace_back("dx_old");
                 xs.second.splice(xs.second.end(),state.dx_old);
 
                 // Write out the quasi-Newton information with sequential names
@@ -2417,7 +2419,7 @@ namespace peopt{
                 ){
                     std::stringstream ss;
                     ss << "oldY_" << i;
-                    xs.first.push_back(ss.str());
+                    xs.first.emplace_back(ss.str());
                     xs.second.splice(xs.second.end(),state.oldY,y);
                 }}
 
@@ -2429,7 +2431,7 @@ namespace peopt{
                 ){
                     std::stringstream ss;
                     ss << "oldS_" << i;
-                    xs.first.push_back(ss.str());
+                    xs.first.emplace_back(ss.str());
                     xs.second.splice(xs.second.end(),state.oldS,s);
                 }}
             }
@@ -2444,94 +2446,94 @@ namespace peopt{
             ) {
                 
                 // Copy in all the real numbers 
-                reals.first.push_back("eps_grad");
-                reals.second.push_back(state.eps_grad);
-                reals.first.push_back("eps_dx");
-                reals.second.push_back(state.eps_dx);
-                reals.first.push_back("krylov_rel_err");
-                reals.second.push_back(state.krylov_rel_err);
-                reals.first.push_back("eps_krylov");
-                reals.second.push_back(state.eps_krylov);
-                reals.first.push_back("norm_gradtyp");
-                reals.second.push_back(state.norm_gradtyp);
-                reals.first.push_back("norm_dxtyp");
-                reals.second.push_back(state.norm_dxtyp);
-                reals.first.push_back("f_x");
-                reals.second.push_back(state.f_x);
-                reals.first.push_back("f_xpdx");
-                reals.second.push_back(state.f_xpdx);
-                reals.first.push_back("delta");
-                reals.second.push_back(state.delta);
-                reals.first.push_back("eta1");
-                reals.second.push_back(state.eta1);
-                reals.first.push_back("eta2");
-                reals.second.push_back(state.eta2);
-                reals.first.push_back("ared");
-                reals.second.push_back(state.ared);
-                reals.first.push_back("pred");
-                reals.second.push_back(state.pred);
-                reals.first.push_back("alpha0");
-                reals.second.push_back(state.alpha0);
-                reals.first.push_back("alpha");
-                reals.second.push_back(state.alpha);
-                reals.first.push_back("c1");
-                reals.second.push_back(state.c1);
-                reals.first.push_back("eps_ls");
-                reals.second.push_back(state.eps_ls);
+                reals.first.emplace_back("eps_grad");
+                reals.second.emplace_back(state.eps_grad);
+                reals.first.emplace_back("eps_dx");
+                reals.second.emplace_back(state.eps_dx);
+                reals.first.emplace_back("krylov_rel_err");
+                reals.second.emplace_back(state.krylov_rel_err);
+                reals.first.emplace_back("eps_krylov");
+                reals.second.emplace_back(state.eps_krylov);
+                reals.first.emplace_back("norm_gradtyp");
+                reals.second.emplace_back(state.norm_gradtyp);
+                reals.first.emplace_back("norm_dxtyp");
+                reals.second.emplace_back(state.norm_dxtyp);
+                reals.first.emplace_back("f_x");
+                reals.second.emplace_back(state.f_x);
+                reals.first.emplace_back("f_xpdx");
+                reals.second.emplace_back(state.f_xpdx);
+                reals.first.emplace_back("delta");
+                reals.second.emplace_back(state.delta);
+                reals.first.emplace_back("eta1");
+                reals.second.emplace_back(state.eta1);
+                reals.first.emplace_back("eta2");
+                reals.second.emplace_back(state.eta2);
+                reals.first.emplace_back("ared");
+                reals.second.emplace_back(state.ared);
+                reals.first.emplace_back("pred");
+                reals.second.emplace_back(state.pred);
+                reals.first.emplace_back("alpha0");
+                reals.second.emplace_back(state.alpha0);
+                reals.first.emplace_back("alpha");
+                reals.second.emplace_back(state.alpha);
+                reals.first.emplace_back("c1");
+                reals.second.emplace_back(state.c1);
+                reals.first.emplace_back("eps_ls");
+                reals.second.emplace_back(state.eps_ls);
 
                 // Copy in all the natural numbers
-                nats.first.push_back("stored_history");
-                nats.second.push_back(state.stored_history);
-                nats.first.push_back("history_reset");
-                nats.second.push_back(state.history_reset);
-                nats.first.push_back("iter");
-                nats.second.push_back(state.iter);
-                nats.first.push_back("iter_max");
-                nats.second.push_back(state.iter_max);
-                nats.first.push_back("krylov_iter");
-                nats.second.push_back(state.krylov_iter);
-                nats.first.push_back("krylov_iter_max");
-                nats.second.push_back(state.krylov_iter_max);
-                nats.first.push_back("krylov_iter_total");
-                nats.second.push_back(state.krylov_iter_total);
-                nats.first.push_back("krylov_orthog_max");
-                nats.second.push_back(state.krylov_orthog_max);
-                nats.first.push_back("msg_level");
-                nats.second.push_back(state.msg_level);
-                nats.first.push_back("rejected_trustregion");
-                nats.second.push_back(state.rejected_trustregion);
-                nats.first.push_back("linesearch_iter");
-                nats.second.push_back(state.linesearch_iter);
-                nats.first.push_back("linesearch_iter_max");
-                nats.second.push_back(state.linesearch_iter_max);
-                nats.first.push_back("linesearch_iter_total");
-                nats.second.push_back(state.linesearch_iter_total);
+                nats.first.emplace_back("stored_history");
+                nats.second.emplace_back(state.stored_history);
+                nats.first.emplace_back("history_reset");
+                nats.second.emplace_back(state.history_reset);
+                nats.first.emplace_back("iter");
+                nats.second.emplace_back(state.iter);
+                nats.first.emplace_back("iter_max");
+                nats.second.emplace_back(state.iter_max);
+                nats.first.emplace_back("krylov_iter");
+                nats.second.emplace_back(state.krylov_iter);
+                nats.first.emplace_back("krylov_iter_max");
+                nats.second.emplace_back(state.krylov_iter_max);
+                nats.first.emplace_back("krylov_iter_total");
+                nats.second.emplace_back(state.krylov_iter_total);
+                nats.first.emplace_back("krylov_orthog_max");
+                nats.second.emplace_back(state.krylov_orthog_max);
+                nats.first.emplace_back("msg_level");
+                nats.second.emplace_back(state.msg_level);
+                nats.first.emplace_back("rejected_trustregion");
+                nats.second.emplace_back(state.rejected_trustregion);
+                nats.first.emplace_back("linesearch_iter");
+                nats.second.emplace_back(state.linesearch_iter);
+                nats.first.emplace_back("linesearch_iter_max");
+                nats.second.emplace_back(state.linesearch_iter_max);
+                nats.first.emplace_back("linesearch_iter_total");
+                nats.second.emplace_back(state.linesearch_iter_total);
 
                 // Copy in all the parameters
-                params.first.push_back("krylov_solver");
-                params.second.push_back(
+                params.first.emplace_back("krylov_solver");
+                params.second.emplace_back(
                     KrylovSolverTruncated::to_string(
                         state.krylov_solver));
-                params.first.push_back("algorithm_class");
-                params.second.push_back(
+                params.first.emplace_back("algorithm_class");
+                params.second.emplace_back(
                     AlgorithmClass::to_string(state.algorithm_class));
-                params.first.push_back("opt_stop");
-                params.second.push_back(
+                params.first.emplace_back("opt_stop");
+                params.second.emplace_back(
                     StoppingCondition::to_string(state.opt_stop));
-                params.first.push_back("krylov_stop");
-                params.second.push_back(
+                params.first.emplace_back("krylov_stop");
+                params.second.emplace_back(
                     KrylovStop::to_string(state.krylov_stop));
-                params.first.push_back("H_type");
-                params.second.push_back(
+                params.first.emplace_back("H_type");
+                params.second.emplace_back(
                     Operators::to_string(state.H_type));
-                params.first.push_back("PH_type");
-                params.second.push_back(
+                params.first.emplace_back("PH_type");
+                params.second.emplace_back(
                     Operators::to_string(state.PH_type));
-                params.first.push_back("dir");
-                params.second.push_back(
+                params.first.emplace_back("dir");
+                params.second.emplace_back(
                     LineSearchDirection::to_string(state.dir));
-                params.first.push_back("kind");
-                params.second.push_back(
+                params.first.emplace_back("kind");
+                params.second.emplace_back(
                     LineSearchKind::to_string(state.kind));
             }
 
@@ -2733,7 +2735,7 @@ namespace peopt{
             struct t{
             private:
                 // Prevent the use of the copy constructor and the assignment
-                // operator.  Since this class holds a number of auto_ptrs
+                // operator.  Since this class holds a number of unique_ptrs
                 // to different functions, it is not safe to allow them to
                 // be copied.
                 t& operator = (const t&);
@@ -2741,21 +2743,21 @@ namespace peopt{
 
             public:
                 // Objective function
-                std::auto_ptr <ScalarValuedFunction <Real,XX> > f;
+                std::unique_ptr <ScalarValuedFunction <Real,XX> > f;
 
                 // Objective function modifications
-                std::auto_ptr <ScalarValuedFunctionModifications <Real,XX> >
+                std::unique_ptr <ScalarValuedFunctionModifications <Real,XX> >
                     f_mod;
 
                 // Preconditioner for the Hessian of the objective
-                std::auto_ptr <Operator <Real,XX,XX> > PH;
+                std::unique_ptr <Operator <Real,XX,XX> > PH;
 
                 // Symmetric, positive definite operator that changes the
                 // scaling of the trust-region.
-                std::auto_ptr <Operator <Real,XX,XX> > TRS;
+                std::unique_ptr <Operator <Real,XX,XX> > TRS;
 
                 // Initialize all of the pointers to null
-                t() : f(NULL), PH(NULL), TRS(NULL) {}
+                t() : f(nullptr), PH(nullptr), TRS(nullptr) {}
                 
                 // A trick to allow dynamic casting later
                 virtual ~t() {}
@@ -3251,10 +3253,10 @@ namespace peopt{
             private:
 
                 // Hessian approximation
-                std::auto_ptr <Operator <Real,XX,XX> > H;
+                std::unique_ptr <Operator <Real,XX,XX> > H;
 
                 // Underlying function
-                std::auto_ptr <peopt::ScalarValuedFunction <Real,XX> > f;
+                std::unique_ptr <peopt::ScalarValuedFunction <Real,XX> > f;
 
                 // This forces derived classes to call the constructor that
                 // depends on the state
@@ -3268,7 +3270,7 @@ namespace peopt{
                     const Messaging& msg,
                     const typename State::t& state,
                     typename Functions::t& fns
-                ) : f(fns.f) {
+                ) : f(std::move(fns.f)) {
                     // Determine the Hessian approximation
                     switch(state.H_type){
                         case Operators::Identity:
@@ -3312,7 +3314,7 @@ namespace peopt{
                      const X_Vector& dx,
                      X_Vector& H_dx 
                  ) const {
-                     if(H.get()!=NULL) 
+                     if(H.get()!=nullptr) 
                         (*H)(dx,H_dx);
                      else
                         f->hessvec(x,dx,H_dx);
@@ -3322,16 +3324,16 @@ namespace peopt{
             // Check that all the functions are defined
             static void check(const Messaging& msg,const t& fns) {
                 // Check that objective function exists 
-                if(fns.f.get()==NULL)
+                if(fns.f.get()==nullptr)
                     msg.error("Missing an objective function definition.");
                 
                 // Check that objective function modifications exists 
-                if(fns.f_mod.get()==NULL)
+                if(fns.f_mod.get()==nullptr)
                     msg.error("Missing an objective function modification "
                         "definition.");
                 
                 // Check that a preconditioner exists 
-                if(fns.PH.get()==NULL)
+                if(fns.PH.get()==nullptr)
                     msg.error("Missing a preconditioner definition.");
             }
 
@@ -3358,7 +3360,7 @@ namespace peopt{
                         fns.PH.reset(new InvSR1(msg,state));
                         break;
                     case Operators::UserDefined:
-                        if(fns.PH.get()==NULL)
+                        if(fns.PH.get()==nullptr)
                             msg.error("An externally defined preconditioner "
                                 "must be provided explicitly.");
                         break;
@@ -3369,7 +3371,7 @@ namespace peopt{
 
                 // If a trust-region operator has not been provided, use the
                 // identity.
-                if(fns.TRS.get()==NULL)
+                if(fns.TRS.get()==nullptr)
                     fns.TRS.reset(new Identity());
 
                 // Check that all functions are defined (namely, the 
@@ -3409,31 +3411,31 @@ namespace peopt{
                 const LineSearchDirection::t& dir=state.dir;
 
                 // Basic information
-                out.push_back(atos <> ("Iter"));
-                out.push_back(atos <> ("f(x)"));
-                out.push_back(atos <> ("merit(x)"));
-                out.push_back(atos <> ("||grad||"));
-                out.push_back(atos <> ("||dx||"));
+                out.emplace_back(atos <> ("Iter"));
+                out.emplace_back(atos <> ("f(x)"));
+                out.emplace_back(atos <> ("merit(x)"));
+                out.emplace_back(atos <> ("||grad||"));
+                out.emplace_back(atos <> ("||dx||"));
 
                 // In case we're using a Krylov method
                 if(    algorithm_class==AlgorithmClass::TrustRegion
                     || dir==LineSearchDirection::NewtonCG
                 ){
-                    out.push_back(atos <> ("KryIter"));
-                    out.push_back(atos <> ("KryErr"));
-                    out.push_back(atos <> ("KryWhy"));
+                    out.emplace_back(atos <> ("KryIter"));
+                    out.emplace_back(atos <> ("KryErr"));
+                    out.emplace_back(atos <> ("KryWhy"));
                 }
 
                 // In case we're using a line-search method
                 if(algorithm_class==AlgorithmClass::LineSearch) {
-                    out.push_back(atos <> ("LSIter"));
+                    out.emplace_back(atos <> ("LSIter"));
                 }
 
                 // In case we're using a trust-region method 
                 if(algorithm_class==AlgorithmClass::TrustRegion) {
-                    out.push_back(atos <> ("ared"));
-                    out.push_back(atos <> ("pred"));
-                    out.push_back(atos <> ("ared/pred"));
+                    out.emplace_back(atos <> ("ared"));
+                    out.emplace_back(atos <> ("pred"));
+                    out.emplace_back(atos <> ("ared/pred"));
                 }
             }
 
@@ -3500,48 +3502,48 @@ namespace peopt{
 
                 // Basic information
                 if(!noiter)
-                    out.push_back(atos <> (iter));
+                    out.emplace_back(atos <> (iter));
                 else
-                    out.push_back(atos <> ("*"));
-                out.push_back(atos <> (f_x));
-                out.push_back(atos <> (merit_x));
-                out.push_back(atos <> (norm_grad));
+                    out.emplace_back(atos <> ("*"));
+                out.emplace_back(atos <> (f_x));
+                out.emplace_back(atos <> (merit_x));
+                out.emplace_back(atos <> (norm_grad));
                 if(!opt_begin) {
                     if(algorithm_class==AlgorithmClass::LineSearch)
-                        out.push_back(atos <> (alpha*norm_dx));
+                        out.emplace_back(atos <> (alpha*norm_dx));
                     else
-                        out.push_back(atos <> (norm_dx));
+                        out.emplace_back(atos <> (norm_dx));
                 } else
-                    out.push_back(blankSeparator);
+                    out.emplace_back(blankSeparator);
 
                 // In case we're using a Krylov method
                 if(    algorithm_class==AlgorithmClass::TrustRegion
                     || dir==LineSearchDirection::NewtonCG
                 ){
                     if(!opt_begin) {
-                        out.push_back(atos <> (krylov_iter));
-                        out.push_back(atos <> (krylov_rel_err));
-                        out.push_back(atos <> (krylov_stop));
+                        out.emplace_back(atos <> (krylov_iter));
+                        out.emplace_back(atos <> (krylov_rel_err));
+                        out.emplace_back(atos <> (krylov_stop));
                     } else 
-                        for(Natural i=0;i<3;i++) out.push_back(blankSeparator);
+                        for(Natural i=0;i<3;i++) out.emplace_back(blankSeparator);
                 }
 
                 // In case we're using a line-search method
                 if(algorithm_class==AlgorithmClass::LineSearch) {
                     if(!opt_begin)
-                        out.push_back(atos <> (linesearch_iter));
+                        out.emplace_back(atos <> (linesearch_iter));
                     else 
-                        out.push_back(blankSeparator);
+                        out.emplace_back(blankSeparator);
                 }
                 
                 // In case we're using a trust-region method
                 if(algorithm_class==AlgorithmClass::TrustRegion) {
                     if(!opt_begin) {
-                        out.push_back(atos <> (ared));
-                        out.push_back(atos <> (pred));
-                        out.push_back(atos <> (ared/pred));
+                        out.emplace_back(atos <> (ared));
+                        out.emplace_back(atos <> (pred));
+                        out.emplace_back(atos <> (ared/pred));
                     } else  
-                        for(Natural i=0;i<3;i++) out.push_back(blankSeparator);
+                        for(Natural i=0;i<3;i++) out.emplace_back(blankSeparator);
                 }
 
                 // If we needed to do blank insertions, overwrite the elements
@@ -3579,9 +3581,9 @@ namespace peopt{
                 if(    algorithm_class==AlgorithmClass::TrustRegion
                     || dir==LineSearchDirection::NewtonCG
                 ){
-                    out.push_back(atos <> ("KrySubItr"));
-                    out.push_back(atos <> ("KryTotItr"));
-                    out.push_back(atos <> ("KrySubErr"));
+                    out.emplace_back(atos <> ("KrySubItr"));
+                    out.emplace_back(atos <> ("KryTotItr"));
+                    out.emplace_back(atos <> ("KrySubErr"));
                 }
             }
 
@@ -3609,9 +3611,9 @@ namespace peopt{
                 std::list <std::string>::iterator prior=out.end(); prior--;
 
                 // Basic information
-                out.push_back(atos <> (krylov_iter));
-                out.push_back(atos <> (krylov_iter_total));
-                out.push_back(atos <> (krylov_rel_err));
+                out.emplace_back(atos <> (krylov_iter));
+                out.emplace_back(atos <> (krylov_iter_total));
+                out.emplace_back(atos <> (krylov_rel_err));
                 
                 // If we needed to do blank insertions, overwrite the elements
                 // with nothing
@@ -5122,56 +5124,56 @@ namespace peopt{
                 const Y_Vector& y
             ) {
                 state.y.clear();
-                    state.y.push_back(Y_Vector());
+                    state.y.emplace_back(Y_Vector());
                     Y::init(y,state.y.front());
                     Y::copy(y,state.y.front());
                 
                 state.dy.clear();
-                    state.dy.push_back(Y_Vector());
+                    state.dy.emplace_back(Y_Vector());
                     Y::init(y,state.dy.front());
                 
                 state.g_x.clear();
-                    state.g_x.push_back(Y_Vector());
+                    state.g_x.emplace_back(Y_Vector());
                     Y::init(y,state.g_x.front());
                 
                 state.gpxdxn_p_gx.clear();
-                    state.gpxdxn_p_gx.push_back(Y_Vector());
+                    state.gpxdxn_p_gx.emplace_back(Y_Vector());
                     Y::init(y,state.gpxdxn_p_gx.front());
                 
                 state.gpxdxt.clear();
-                    state.gpxdxt.push_back(Y_Vector());
+                    state.gpxdxt.emplace_back(Y_Vector());
                     Y::init(y,state.gpxdxt.front());
                 
                 state.dx_n.clear();
-                    state.dx_n.push_back(X_Vector());
+                    state.dx_n.emplace_back(X_Vector());
                     X::init(x,state.dx_n.front());
                 
                 state.dx_ncp.clear();
-                    state.dx_ncp.push_back(X_Vector());
+                    state.dx_ncp.emplace_back(X_Vector());
                     X::init(x,state.dx_ncp.front());
                 
                 state.dx_t.clear();
-                    state.dx_t.push_back(X_Vector());
+                    state.dx_t.emplace_back(X_Vector());
                     X::init(x,state.dx_t.front());
                 
                 state.dx_t_uncorrected.clear();
-                    state.dx_t_uncorrected.push_back(X_Vector());
+                    state.dx_t_uncorrected.emplace_back(X_Vector());
                     X::init(x,state.dx_t_uncorrected.front());
                 
                 state.dx_tcp_uncorrected.clear();
-                    state.dx_tcp_uncorrected.push_back(X_Vector());
+                    state.dx_tcp_uncorrected.emplace_back(X_Vector());
                     X::init(x,state.dx_tcp_uncorrected.front());
                 
                 state.H_dxn.clear();
-                    state.H_dxn.push_back(X_Vector());
+                    state.H_dxn.emplace_back(X_Vector());
                     X::init(x,state.H_dxn.front());
                 
                 state.W_gradpHdxn.clear();
-                    state.W_gradpHdxn.push_back(X_Vector());
+                    state.W_gradpHdxn.emplace_back(X_Vector());
                     X::init(x,state.W_gradpHdxn.front());
                 
                 state.H_dxtuncorrected.clear();
-                    state.H_dxtuncorrected.push_back(X_Vector());
+                    state.H_dxtuncorrected.emplace_back(X_Vector());
                     X::init(x,state.H_dxtuncorrected.front());
             }
             static void init_vectors(
@@ -5481,31 +5483,31 @@ namespace peopt{
                 X_Vectors& xs,
                 Y_Vectors& ys
             ) {
-                ys.first.push_back("y");
+                ys.first.emplace_back("y");
                 ys.second.splice(ys.second.end(),state.y);
-                ys.first.push_back("dy");
+                ys.first.emplace_back("dy");
                 ys.second.splice(ys.second.end(),state.dy);
-                ys.first.push_back("g_x");
+                ys.first.emplace_back("g_x");
                 ys.second.splice(ys.second.end(),state.g_x);
-                ys.first.push_back("gpxdxn_p_gx");
+                ys.first.emplace_back("gpxdxn_p_gx");
                 ys.second.splice(ys.second.end(),state.gpxdxn_p_gx);
-                ys.first.push_back("gpxdxt");
+                ys.first.emplace_back("gpxdxt");
                 ys.second.splice(ys.second.end(),state.gpxdxt);
-                xs.first.push_back("dx_n");
+                xs.first.emplace_back("dx_n");
                 xs.second.splice(xs.second.end(),state.dx_n);
-                xs.first.push_back("dx_ncp");
+                xs.first.emplace_back("dx_ncp");
                 xs.second.splice(xs.second.end(),state.dx_ncp);
-                xs.first.push_back("dx_t");
+                xs.first.emplace_back("dx_t");
                 xs.second.splice(xs.second.end(),state.dx_t);
-                xs.first.push_back("dx_t_uncorrected");
+                xs.first.emplace_back("dx_t_uncorrected");
                 xs.second.splice(xs.second.end(),state.dx_t_uncorrected);
-                xs.first.push_back("dx_tcp_uncorrected");
+                xs.first.emplace_back("dx_tcp_uncorrected");
                 xs.second.splice(xs.second.end(),state.dx_tcp_uncorrected);
-                xs.first.push_back("H_dxn");
+                xs.first.emplace_back("H_dxn");
                 xs.second.splice(xs.second.end(),state.H_dxn);
-                xs.first.push_back("W_gradpHdxn");
+                xs.first.emplace_back("W_gradpHdxn");
                 xs.second.splice(xs.second.end(),state.W_gradpHdxn);
-                xs.first.push_back("H_dxtuncorrected");
+                xs.first.emplace_back("H_dxtuncorrected");
                 xs.second.splice(xs.second.end(),state.H_dxtuncorrected);
             }
 
@@ -5517,51 +5519,51 @@ namespace peopt{
                 Params& params
             ) { 
                 // Copy in all the real numbers
-                reals.first.push_back("zeta");
-                reals.second.push_back(state.zeta);
-                reals.first.push_back("eta0");
-                reals.second.push_back(state.eta0);
-                reals.first.push_back("rho");
-                reals.second.push_back(state.rho);
-                reals.first.push_back("rho_old");
-                reals.second.push_back(state.rho_old);
-                reals.first.push_back("rho_bar");
-                reals.second.push_back(state.rho_bar);
-                reals.first.push_back("eps_constr");
-                reals.second.push_back(state.eps_constr);
-                reals.first.push_back("xi_qn");
-                reals.second.push_back(state.xi_qn);
-                reals.first.push_back("xi_pg");
-                reals.second.push_back(state.xi_pg);
-                reals.first.push_back("xi_proj");
-                reals.second.push_back(state.xi_proj);
-                reals.first.push_back("xi_tang");
-                reals.second.push_back(state.xi_tang);
-                reals.first.push_back("xi_lmh");
-                reals.second.push_back(state.xi_lmh);
-                reals.first.push_back("xi_lmg");
-                reals.second.push_back(state.xi_lmg);
-                reals.first.push_back("xi_4");
-                reals.second.push_back(state.xi_4);
-                reals.first.push_back("rpred");
-                reals.second.push_back(state.rpred);
-                reals.first.push_back("norm_gxtyp");
-                reals.second.push_back(state.norm_gxtyp);
-                reals.first.push_back("norm_gpxdxnpgx");
-                reals.second.push_back(state.norm_gpxdxnpgx);
+                reals.first.emplace_back("zeta");
+                reals.second.emplace_back(state.zeta);
+                reals.first.emplace_back("eta0");
+                reals.second.emplace_back(state.eta0);
+                reals.first.emplace_back("rho");
+                reals.second.emplace_back(state.rho);
+                reals.first.emplace_back("rho_old");
+                reals.second.emplace_back(state.rho_old);
+                reals.first.emplace_back("rho_bar");
+                reals.second.emplace_back(state.rho_bar);
+                reals.first.emplace_back("eps_constr");
+                reals.second.emplace_back(state.eps_constr);
+                reals.first.emplace_back("xi_qn");
+                reals.second.emplace_back(state.xi_qn);
+                reals.first.emplace_back("xi_pg");
+                reals.second.emplace_back(state.xi_pg);
+                reals.first.emplace_back("xi_proj");
+                reals.second.emplace_back(state.xi_proj);
+                reals.first.emplace_back("xi_tang");
+                reals.second.emplace_back(state.xi_tang);
+                reals.first.emplace_back("xi_lmh");
+                reals.second.emplace_back(state.xi_lmh);
+                reals.first.emplace_back("xi_lmg");
+                reals.second.emplace_back(state.xi_lmg);
+                reals.first.emplace_back("xi_4");
+                reals.second.emplace_back(state.xi_4);
+                reals.first.emplace_back("rpred");
+                reals.second.emplace_back(state.rpred);
+                reals.first.emplace_back("norm_gxtyp");
+                reals.second.emplace_back(state.norm_gxtyp);
+                reals.first.emplace_back("norm_gpxdxnpgx");
+                reals.second.emplace_back(state.norm_gpxdxnpgx);
 
                 // Copy in all the natural numbers
-                nats.first.push_back("augsys_iter_max");
-                nats.second.push_back(state.augsys_iter_max);
-                nats.first.push_back("augsys_rst_freq");
-                nats.second.push_back(state.augsys_rst_freq);
+                nats.first.emplace_back("augsys_iter_max");
+                nats.second.emplace_back(state.augsys_iter_max);
+                nats.first.emplace_back("augsys_rst_freq");
+                nats.second.emplace_back(state.augsys_rst_freq);
 
                 // Copy in all the parameters
-                params.first.push_back("PSchur_left_type");
-                params.second.push_back(
+                params.first.emplace_back("PSchur_left_type");
+                params.second.emplace_back(
                     Operators::to_string(state.PSchur_left_type));
-                params.first.push_back("PSchur_right_type");
-                params.second.push_back(
+                params.first.emplace_back("PSchur_right_type");
+                params.second.emplace_back(
                     Operators::to_string(state.PSchur_right_type));
             }
             
@@ -5771,7 +5773,7 @@ namespace peopt{
             struct t: public virtual Unconstrained <Real,XX>::Functions::t {
             private:
                 // Prevent the use of the copy constructor and the assignment
-                // operator.  Since this class holds a number of auto_ptrs
+                // operator.  Since this class holds a number of unique_ptrs
                 // to different functions, it is not safe to allow them to
                 // be copied.
                 t& operator = (const t&);
@@ -5779,17 +5781,17 @@ namespace peopt{
 
             public:
                 // Equality constraints 
-                std::auto_ptr <VectorValuedFunction <Real,XX,YY> > g;
+                std::unique_ptr <VectorValuedFunction <Real,XX,YY> > g;
 
                 // Left preconditioner for the augmented system
-                std::auto_ptr <Operator <Real,YY,YY> > PSchur_left;
+                std::unique_ptr <Operator <Real,YY,YY> > PSchur_left;
 
                 // Right preconditioner for the augmented system
-                std::auto_ptr <Operator <Real,YY,YY> > PSchur_right;
+                std::unique_ptr <Operator <Real,YY,YY> > PSchur_right;
                 
                 // Initialize all of the pointers to null
-                t() : Unconstrained <Real,XX>::Functions::t(), g(NULL),
-                    PSchur_left(NULL), PSchur_right(NULL) {}
+                t() : Unconstrained <Real,XX>::Functions::t(), g(nullptr),
+                    PSchur_left(nullptr), PSchur_right(nullptr) {}
             };
 
             struct EqualityModifications
@@ -5797,7 +5799,7 @@ namespace peopt{
             {
             private:
                 // Underlying modification.  This takes control of the memory
-                std::auto_ptr <
+                std::unique_ptr <
                     peopt::ScalarValuedFunctionModifications <Real,XX> > f_mod;
 
                 // Equality constraint.
@@ -5861,7 +5863,7 @@ namespace peopt{
                 EqualityModifications(
                     const typename State::t& state,
                     typename Functions::t& fns
-                ) : f_mod(fns.f_mod),
+                ) : f_mod(std::move(fns.f_mod)),
                     g(*(fns.g)),
                     y(state.y.back()),
                     rho(state.rho)
@@ -5992,14 +5994,14 @@ namespace peopt{
                 Unconstrained <Real,XX>::Functions::check(msg,fns);
                 
                 // Check that the equality constraints exist 
-                if(fns.g.get()==NULL)
+                if(fns.g.get()==nullptr)
                     msg.error("Missing the equality constraint definition.");
 
                 // Check that preconditioners exist
-                if(fns.PSchur_left.get()==NULL)
+                if(fns.PSchur_left.get()==nullptr)
                     msg.error("Missing a left preconditioner for the "
                         "augmented system.");
-                if(fns.PSchur_right.get()==NULL)
+                if(fns.PSchur_right.get()==nullptr)
                     msg.error("Missing a right preconditioner for the "
                         "augmented system.");
             }
@@ -6017,7 +6019,7 @@ namespace peopt{
                         fns.PSchur_left.reset(new Identity());
                         break;
                     case Operators::UserDefined:
-                        if(fns.PSchur_left.get()==NULL)
+                        if(fns.PSchur_left.get()==nullptr)
                             msg.error("An externally defined left "
                                 "preconditioner for the augmented system must "
                                 "be provided explicitly.");
@@ -6034,7 +6036,7 @@ namespace peopt{
                         fns.PSchur_right.reset(new Identity());
                         break;
                     case Operators::UserDefined:
-                        if(fns.PSchur_right.get()==NULL)
+                        if(fns.PSchur_right.get()==nullptr)
                             msg.error("An externally defined right "
                                 "preconditioner for the augmented system must "
                                 "be provided explicitly.");
@@ -6047,7 +6049,7 @@ namespace peopt{
 
                 // If a trust-region operator has not been provided, use the
                 // identity.
-                if(fns.TRS.get()==NULL)
+                if(fns.TRS.get()==nullptr)
                     fns.TRS.reset(new typename
                         Unconstrained <Real,XX>::Functions::Identity());
                 
@@ -6085,17 +6087,17 @@ namespace peopt{
                 std::list <std::string>& out
             ) { 
                 // Norm of the constrained 
-                out.push_back(atos <> ("||g(x)||"));
+                out.emplace_back(atos <> ("||g(x)||"));
                     
                 // Trust-region information
-                out.push_back(atos <> ("ared"));
-                out.push_back(atos <> ("pred"));
-                out.push_back(atos <> ("ared/pred"));
+                out.emplace_back(atos <> ("ared"));
+                out.emplace_back(atos <> ("pred"));
+                out.emplace_back(atos <> ("ared/pred"));
                    
                 // Krylov method information
-                out.push_back(atos <> ("KryIter"));
-                out.push_back(atos <> ("KryErr"));
-                out.push_back(atos <> ("KryWhy"));
+                out.emplace_back(atos <> ("KryIter"));
+                out.emplace_back(atos <> ("KryErr"));
+                out.emplace_back(atos <> ("KryWhy"));
             }
             // Combines all of the state headers
             static void getStateHeader(
@@ -6138,23 +6140,23 @@ namespace peopt{
 
                 // Norm of the gradient 
                 Real norm_gx = sqrt(Y::innr(g_x,g_x));
-                out.push_back(atos <> (norm_gx));
+                out.emplace_back(atos <> (norm_gx));
                     
                 // Actual vs. predicted reduction 
                 if(!opt_begin) {
-                    out.push_back(atos <> (ared));
-                    out.push_back(atos <> (pred));
-                    out.push_back(atos <> (ared/pred));
+                    out.emplace_back(atos <> (ared));
+                    out.emplace_back(atos <> (pred));
+                    out.emplace_back(atos <> (ared/pred));
                 } else 
-                    for(Natural i=0;i<3;i++) out.push_back(blankSeparator);
+                    for(Natural i=0;i<3;i++) out.emplace_back(blankSeparator);
                 
                 // Krylov method information
                 if(!opt_begin) {
-                    out.push_back(atos <> (krylov_iter));
-                    out.push_back(atos <> (krylov_rel_err));
-                    out.push_back(atos <> (krylov_stop));
+                    out.emplace_back(atos <> (krylov_iter));
+                    out.emplace_back(atos <> (krylov_rel_err));
+                    out.emplace_back(atos <> (krylov_stop));
                 } else 
-                    for(Natural i=0;i<3;i++) out.push_back(blankSeparator);
+                    for(Natural i=0;i<3;i++) out.emplace_back(blankSeparator);
 
                 // If we needed to do blank insertions, overwrite the elements
                 // with spaces 
@@ -7872,18 +7874,18 @@ namespace peopt{
             ) {
                 // Allocate memory for z
                 state.z.clear();
-                    state.z.push_back(Z_Vector());
+                    state.z.emplace_back(Z_Vector());
                     Z::init(z,state.z.back());
                     Z::copy(z,state.z.back());
 
                 // Allocate memory for dz
                 state.dz.clear();
-                    state.dz.push_back(Z_Vector());
+                    state.dz.emplace_back(Z_Vector());
                     Z::init(z,state.dz.back());
 
                 // Allocate memory for h(x)
                 state.h_x.clear();
-                    state.h_x.push_back(Z_Vector());
+                    state.h_x.emplace_back(Z_Vector());
                     Z::init(z,state.h_x.back());
             }
             static void init_vectors(
@@ -8087,11 +8089,11 @@ namespace peopt{
                 X_Vectors& xs,
                 Z_Vectors& zs
             ) {
-                zs.first.push_back("z");
+                zs.first.emplace_back("z");
                 zs.second.splice(zs.second.end(),state.z);
-                zs.first.push_back("dz");
+                zs.first.emplace_back("dz");
                 zs.second.splice(zs.second.end(),state.dz);
-                zs.first.push_back("h_x");
+                zs.first.emplace_back("h_x");
                 zs.second.splice(zs.second.end(),state.h_x);
             }
             
@@ -8103,25 +8105,25 @@ namespace peopt{
                 Params& params
             ) {
                 // Copy in all the real numbers
-                reals.first.push_back("mu");
-                reals.second.push_back(state.mu);
-                reals.first.push_back("mu_est");
-                reals.second.push_back(state.mu_est);
-                reals.first.push_back("mu_typ");
-                reals.second.push_back(state.mu_typ);
-                reals.first.push_back("eps_mu");
-                reals.second.push_back(state.eps_mu);
-                reals.first.push_back("sigma");
-                reals.second.push_back(state.sigma);
-                reals.first.push_back("gamma");
-                reals.second.push_back(state.gamma);
+                reals.first.emplace_back("mu");
+                reals.second.emplace_back(state.mu);
+                reals.first.emplace_back("mu_est");
+                reals.second.emplace_back(state.mu_est);
+                reals.first.emplace_back("mu_typ");
+                reals.second.emplace_back(state.mu_typ);
+                reals.first.emplace_back("eps_mu");
+                reals.second.emplace_back(state.eps_mu);
+                reals.first.emplace_back("sigma");
+                reals.second.emplace_back(state.sigma);
+                reals.first.emplace_back("gamma");
+                reals.second.emplace_back(state.gamma);
 
                 // Copy in all of the parameters
-                params.first.push_back("ipm");
-                params.second.push_back(
+                params.first.emplace_back("ipm");
+                params.second.emplace_back(
                     InteriorPointMethod::to_string(state.ipm));
-                params.first.push_back("cstrat");
-                params.second.push_back(
+                params.first.emplace_back("cstrat");
+                params.second.emplace_back(
                     CentralityStrategy::to_string(state.cstrat));
             }
             
@@ -8281,7 +8283,7 @@ namespace peopt{
             struct t: public virtual Unconstrained <Real,XX>::Functions::t {
             private:
                 // Prevent the use of the copy constructor and the assignment
-                // operator.  Since this class holds a number of auto_ptrs
+                // operator.  Since this class holds a number of unique_ptrs
                 // to different functions, it is not safe to allow them to
                 // be copied.
                 t& operator = (const t&);
@@ -8289,10 +8291,10 @@ namespace peopt{
 
             public:
                 // Inequality constraints 
-                std::auto_ptr <VectorValuedFunction <Real,XX,ZZ> > h;
+                std::unique_ptr <VectorValuedFunction <Real,XX,ZZ> > h;
                 
                 // Initialize all of the pointers to null
-                t() : Unconstrained <Real,XX>::Functions::t(), h(NULL) {}
+                t() : Unconstrained <Real,XX>::Functions::t(), h(nullptr) {}
             };
 
             struct InequalityModifications
@@ -8300,7 +8302,7 @@ namespace peopt{
             {
             private:
                 // Underlying modification.  This takes control of the memory
-                std::auto_ptr <
+                std::unique_ptr <
                     peopt::ScalarValuedFunctionModifications <Real,XX> > f_mod;
 
                 // Inequality constraint.
@@ -8409,7 +8411,7 @@ namespace peopt{
                 InequalityModifications(
                     const typename State::t& state,
                     typename Functions::t& fns
-                ) : f_mod(fns.f_mod),
+                ) : f_mod(std::move(fns.f_mod)),
                     h(*(fns.h)),
                     z(state.z.front()),
                     mu(state.mu),
@@ -8550,7 +8552,7 @@ namespace peopt{
                 Unconstrained <Real,XX>::Functions::check(msg,fns);
                 
                 // Check that the inequality constraints exist 
-                if(fns.h.get()==NULL)
+                if(fns.h.get()==nullptr)
                     msg.error("Missing the inequality constraint definition.");
             }
 
@@ -8572,7 +8574,7 @@ namespace peopt{
                 fns.TRS.reset(
                     new typename Algorithms::TrustRegionScaling(fns,state));
 #else
-                if(fns.TRS.get()==NULL)
+                if(fns.TRS.get()==nullptr)
                     fns.TRS.reset(new typename Unconstrained <Real,XX>
                         ::Functions::Identity());
 #endif
@@ -8606,8 +8608,8 @@ namespace peopt{
             ) {
                 // Print out the current interior point parameter and
                 // the estimate of the interior point parameter.
-                out.push_back(atos <> ("mu"));
-                out.push_back(atos <> ("mu_est"));
+                out.emplace_back(atos <> ("mu"));
+                out.emplace_back(atos <> ("mu_est"));
             }
 
             // Combines all of the state headers
@@ -8637,8 +8639,8 @@ namespace peopt{
                 std::list <std::string>::iterator prior=out.end(); prior--;
 
                 // Interior point information
-                out.push_back(atos <> (mu));
-                out.push_back(atos <> (mu_est));
+                out.emplace_back(atos <> (mu));
+                out.emplace_back(atos <> (mu_est));
 
                 // If we needed to do blank insertions, overwrite the elements
                 // with spaces 
@@ -9860,7 +9862,7 @@ namespace peopt{
             {
             private:
                 // Prevent the use of the copy constructor and the assignment
-                // operator.  Since this class holds a number of auto_ptrs
+                // operator.  Since this class holds a number of unique_ptrs
                 // to different functions, it is not safe to allow them to
                 // be copied.
                 t& operator = (const t&);
