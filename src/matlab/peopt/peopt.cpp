@@ -78,37 +78,12 @@ public:
 };
 
 // Handles a Matlab exception
-void handleException(mxArray* err,std::string msg) {
+void handleException(int err,std::string msg) {
     if(err) {
-        // In the cass of an exception, grab the report
-        mxArray* input[1]={err};
-        mxArray* output[1];
-        mexCallMATLAB(1,output,1,input,"getReport");
-
-        // Turn the report into a string
-        mwSize char_limit=256;
-        char report_[char_limit];
-        mxGetString(output[0],report_,char_limit);
-
-        // The report has extra information that we don't want.  Hence,
-        // we eliminate both the first line as well as the last two lines.
-        // The first line is supposed to say what function this occured in,
-        // but Matlab gets a little confused since we're doing mex trickery.
-        // The last two lines will automatically be repeated by mexErrMsgTxt.
-        std::string report=report_;
-        size_t pos=report.find("\n");
-        report = report.substr(pos+1);
-        pos = report.rfind("\n");
-        report = report.substr(0,pos);
-        pos = report.rfind("\n");
-        report = report.substr(0,pos);
-        pos = report.rfind("\n");
-        report = report.substr(0,pos);
-
-        // Now, tack on our additional error message and then return control
+        // Print out our error message and then return control
         // to Matlab.
         std::stringstream ss;
-        ss << msg << std::endl << std::endl << report;
+        ss << msg << std::endl; 
         mexErrMsgTxt(ss.str().c_str());
     }
 }
@@ -221,7 +196,7 @@ public:
         mxArray* input[2]={copy_.get(),x.get()};
         mxArray* output[1];
         int err=mexCallMATLAB(1,output,2,input,"feval");
-        //handleException(err,"Error in the vector space copy function");
+        handleException(err,"Error in the vector space copy function");
         reset(output[0]);
     }
 
@@ -237,7 +212,7 @@ public:
 
         // Compute the scalar multiplication and store the result
         int err=mexCallMATLAB(1,output,3,input,"feval");
-        //handleException(err,"Error in the vector space scal function");
+        handleException(err,"Error in the vector space scal function");
         reset(output[0]);
     }
 
@@ -249,7 +224,7 @@ public:
 
         // Find the zero vector and store the result.
         int err=mexCallMATLAB(1,output,2,input,"feval");
-        //handleException(err,"Error in the vector space zero function");
+        handleException(err,"Error in the vector space zero function");
         reset(output[0]);
 
     }
@@ -266,7 +241,7 @@ public:
 
         // Compute the addition and store the result
         int err=mexCallMATLAB(1,output,4,input,"feval");
-        //handleException(err,"Error in the vector space axpy function");
+        handleException(err,"Error in the vector space axpy function");
         reset(output[0]);
     }
 
@@ -278,7 +253,7 @@ public:
 
         // Compute the inner product 
         int err=mexCallMATLAB(1,output,3,input,"feval");
-        //handleException(err,"Error in the vector space innr function");
+        handleException(err,"Error in the vector space innr function");
         mxArrayPtr output_(output[0]);
 
         // Get the result of the computation 
@@ -296,7 +271,7 @@ public:
 
         // Compute the product and store the result 
         int err=mexCallMATLAB(1,output,3,input,"feval");
-        //handleException(err,"Error in the vector space prod function");
+        handleException(err,"Error in the vector space prod function");
         reset(output[0]);
     }
 
@@ -308,7 +283,7 @@ public:
 
         // Find the identity element and store the result
         int err=mexCallMATLAB(1,output,2,input,"feval");
-        //handleException(err,"Error in the vector space id function");
+        handleException(err,"Error in the vector space id function");
         reset(output[0]);
     }
 
@@ -320,7 +295,7 @@ public:
 
         // Compute the product inverse and store the result 
         int err=mexCallMATLAB(1,output,3,input,"feval");
-        //handleException(err,"Error in the vector space linv function");
+        handleException(err,"Error in the vector space linv function");
         reset(output[0]);
     }
 
@@ -332,7 +307,7 @@ public:
 
         // Compute the barrier function 
         int err=mexCallMATLAB(1,output,2,input,"feval");
-        //handleException(err,"Error in the vector space barr function");
+        handleException(err,"Error in the vector space barr function");
         mxArrayPtr output_(output[0]);
 
         // Get the result of the computation 
@@ -351,7 +326,7 @@ public:
 
         // Compute the search function 
         int err=mexCallMATLAB(1,output,3,input,"feval");
-        //handleException(err,"Error in the vector space srch function");
+        handleException(err,"Error in the vector space srch function");
         mxArrayPtr output_(output[0]);
         
         // Get the result of the computation 
@@ -370,7 +345,7 @@ public:
 
         // Find the symmetrization and store the result
         int err=mexCallMATLAB(1,output,2,input,"feval");
-        //handleException(err,"Error in the vector space symm function");
+        handleException(err,"Error in the vector space symm function");
         reset(output[0]);
     }
 };
@@ -476,8 +451,8 @@ public:
         // Evaluate the function 
         mexCallMATLAB(1,output,2,input,"feval"); 
         int err=mexCallMATLAB(1,output,2,input,"feval");
-        //handleException(err,
-        //    "Error in the scalar valued function (objective) evaluation");
+        handleException(err,
+            "Error in the scalar valued function (objective) evaluation");
         mxArrayPtr output_(output[0]);
 
         // Get the result of the computation 
@@ -492,8 +467,8 @@ public:
         mxArray* input[2]={grad_.get(),x.get()}; 
         mxArray* output[1];
         int err=mexCallMATLAB(1,output,2,input,"feval");
-        //handleException(err,
-        //    "Error in the scalar valued function (objective) gradient");
+        handleException(err,
+            "Error in the scalar valued function (objective) gradient");
         g.reset(output[0]);
     }
 
@@ -502,9 +477,9 @@ public:
         mxArray* input[3]={hessvec_.get(),x.get(),dx.get()}; 
         mxArray* output[1];
         int err=mexCallMATLAB(1,output,3,input,"feval");
-        /*handleException(err,
+        handleException(err,
             "Error in the scalar valued function (objective) Hessian-vector "
-            "product");*/
+            "product");
         H_dx.reset(output[0]);
     }
 };
@@ -544,8 +519,8 @@ public:
         mxArray* output[1];
         mexCallMATLAB(1,output,2,input,"feval");
         int err=mexCallMATLAB(1,output,2,input,"feval");
-        /*handleException(err,
-            "Error in the vector valued function (constraint) evaluation");*/
+        handleException(err,
+            "Error in the vector valued function (constraint) evaluation");
         y.reset(output[0]);
     }
 
@@ -558,8 +533,8 @@ public:
         mxArray* input[3]={p_.get(),x.get(),dx.get()}; 
         mxArray* output[1];
         int err=mexCallMATLAB(1,output,3,input,"feval");
-        //handleException(err,
-        //    "Error in the vector valued function (constraint) derivative");
+        handleException(err,
+            "Error in the vector valued function (constraint) derivative");
         y.reset(output[0]);
      }
 
@@ -572,9 +547,9 @@ public:
         mxArray* input[3]={ps_.get(),x.get(),dy.get()}; 
         mxArray* output[1];
         int err=mexCallMATLAB(1,output,3,input,"feval");
-        /*handleException(err,
+        handleException(err,
             "Error in the vector valued function (constraint) derivative "
-            "adjoint");*/
+            "adjoint");
         z.reset(output[0]);
      }
      
@@ -588,9 +563,9 @@ public:
         mxArray* input[4]={pps_.get(),x.get(),dx.get(),dy.get()}; 
         mxArray* output[1];
         int err=mexCallMATLAB(1,output,4,input,"feval");
-        /*handleException(err,
+        handleException(err,
             "Error in the vector valued function (constraint) second "
-            "derivative adjoint");*/
+            "derivative adjoint");
         z.reset(output[0]);
      }
 };
@@ -607,12 +582,17 @@ private:
 
     // The base point around where we evaluate the operator
     X_Vector& x; 
+
+    // Name of the operator
+    std::string name;
     
 public:
     // When we construct the function, we read in all the names from the
     // Matlab structure.  We need to check the structure prior to
     // constructing this object.
-    MatlabOperator(mxArray* f,X_Vector& x_) : x(x_) {
+    MatlabOperator(mxArray* f,X_Vector& x_,std::string name_)
+        :  eval_(nullptr), x(x_), name(name_)
+    {
         eval_.reset(mxDuplicateArray(mxGetField(f,0,"eval"))); 
     }
 
@@ -621,7 +601,7 @@ public:
         mxArray* input[3]={eval_.get(),x.get(),dx.get()}; 
         mxArray* output[1];
         int err=mexCallMATLAB(1,output,3,input,"feval");
-        //handleException(err,"Error in the operator");
+        handleException(err,"Error in the operator " + name);
         y.reset(output[0]);
     }
 };
@@ -1079,7 +1059,7 @@ void mexFunction(
             // If we have a preconditioner, add it
             if(mxGetField(pInput[1],0,"PH")!=NULL)
                 fns.PH.reset(new MatlabOperator
-                    (mxGetField(pInput[1],0,"PH"),state.x.back()));
+                    (mxGetField(pInput[1],0,"PH"),state.x.back(),"PH"));
 
             // Read the parameters and optimize
             peopt::json::Unconstrained <double,MatlabVS>
@@ -1100,7 +1080,7 @@ void mexFunction(
             // If we have a preconditioner, add it
             if(mxGetField(pInput[1],0,"PH")!=NULL)
                 fns.PH.reset(new MatlabOperator
-                    (mxGetField(pInput[1],0,"PH"),state.x.back()));
+                    (mxGetField(pInput[1],0,"PH"),state.x.back(),"PH"));
 
             // Read the parameters and optimize
             peopt::json::InequalityConstrained <double,MatlabVS,MatlabVS>
@@ -1122,13 +1102,15 @@ void mexFunction(
             // If we have a preconditioner, add it
             if(mxGetField(pInput[1],0,"PH")!=NULL)
                 fns.PH.reset(new MatlabOperator
-                    (mxGetField(pInput[1],0,"PH"),state.x.back()));
+                    (mxGetField(pInput[1],0,"PH"),state.x.back(),"PH"));
             if(mxGetField(pInput[1],0,"PSchur_left")!=NULL)
                 fns.PSchur_left.reset(new MatlabOperator
-                    (mxGetField(pInput[1],0,"PSchur_left"),state.x.back()));
+                    (mxGetField(pInput[1],0,"PSchur_left"),state.x.back(),
+                    "PSchur_left"));
             if(mxGetField(pInput[1],0,"PSchur_right")!=NULL)
                 fns.PSchur_right.reset(new MatlabOperator
-                    (mxGetField(pInput[1],0,"PSchur_right"),state.x.back()));
+                    (mxGetField(pInput[1],0,"PSchur_right"),state.x.back(),
+                    "PSchur_right"));
 
             // Read the parameters and optimize
             peopt::json::EqualityConstrained <double,MatlabVS,MatlabVS>
@@ -1150,13 +1132,15 @@ void mexFunction(
             // If we have a preconditioner, add it
             if(mxGetField(pInput[1],0,"PH")!=NULL)
                 fns.PH.reset(new MatlabOperator
-                    (mxGetField(pInput[1],0,"PH"),state.x.back()));
+                    (mxGetField(pInput[1],0,"PH"),state.x.back(),"PH"));
             if(mxGetField(pInput[1],0,"PSchur_left")!=NULL)
                 fns.PSchur_left.reset(new MatlabOperator
-                    (mxGetField(pInput[1],0,"PSchur_left"),state.x.back()));
+                    (mxGetField(pInput[1],0,"PSchur_left"),state.x.back(),
+                    "PSchur_left"));
             if(mxGetField(pInput[1],0,"PSchur_right")!=NULL)
                 fns.PSchur_right.reset(new MatlabOperator
-                    (mxGetField(pInput[1],0,"PSchur_right"),state.x.back()));
+                    (mxGetField(pInput[1],0,"PSchur_right"),state.x.back(),
+                    "PSchur_right"));
 
             // Read the parameters and optimize
             peopt::json::Constrained <double,MatlabVS,MatlabVS,MatlabVS>
