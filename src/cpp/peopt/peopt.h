@@ -2014,11 +2014,11 @@ namespace peopt{
                 state.delta=Real(1.);
                 state.eta1=Real(.1);
                 state.eta2=Real(.9);
-                state.ared=std::numeric_limits<Real>::quiet_NaN();
-                state.pred=std::numeric_limits<Real>::quiet_NaN();
+                state.ared=Real(1.)
+                state.pred=Real(1.)
                 state.rejected_trustregion=0;
                 state.alpha0=Real(1.);
-                state.alpha=std::numeric_limits<Real>::quiet_NaN();
+                state.alpha=Real(1.);
                 state.c1=Real(1e-4);
                 state.linesearch_iter=0;
                 state.linesearch_iter_max=5;
