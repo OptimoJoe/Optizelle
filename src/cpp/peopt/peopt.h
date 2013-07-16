@@ -2014,8 +2014,8 @@ namespace peopt{
                 state.delta=Real(1.);
                 state.eta1=Real(.1);
                 state.eta2=Real(.9);
-                state.ared=Real(1.)
-                state.pred=Real(1.)
+                state.ared=Real(1.);
+                state.pred=Real(1.);
                 state.rejected_trustregion=0;
                 state.alpha0=Real(1.);
                 state.alpha=Real(1.);
