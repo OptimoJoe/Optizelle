@@ -11,6 +11,7 @@ set(unit_srcs
     "linear_algebra.cpp"
     "unit.cpp")
 include_directories(${BOOST_UNIT_TEST_INCLUDE_DIRS})
+include_directories(${JSONCPP_INCLUDE_DIRS})
 add_executable(unit ${unit_srcs})
 target_link_libraries(unit
     peopt_static

@@ -84,6 +84,10 @@ int main(){
     std::cout << "The optimal point is: (" << opt_x[0] << ','
 	<< opt_x[1] << ')' << std::endl;
 
+    // Write out the final answer to file
+    peopt::json::Unconstrained <double,peopt::Rm>::write_restart(
+        peopt::Messaging(),"rosenbrock.perst",state);
+
     // Successful termination
     return EXIT_SUCCESS;
 }

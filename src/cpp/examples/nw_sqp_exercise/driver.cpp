@@ -364,4 +364,8 @@ int main(){
             std::cout << " ;";
         std::cout << std::endl;
     }
+
+    // Write out the final answer to file
+    peopt::json::EqualityConstrained<double,peopt::Rm,peopt::Rm>::write_restart(
+        peopt::Messaging(),"nw_sqp_exercise.perst",state);
 }

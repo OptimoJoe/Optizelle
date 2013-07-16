@@ -138,6 +138,10 @@ int main(){
         << "The optimal point is: (" << opt_x[0] << ','
 	<< opt_x[1] << ')' << std::endl;
 
+    // Write out the final answer to file
+    peopt::json::InequalityConstrained<double,peopt::Rm,peopt::Rm>
+        ::write_restart(peopt::Messaging(),"simple_inequality.perst",state);
+
     // Return that the program exited properly
     return EXIT_SUCCESS;
 }

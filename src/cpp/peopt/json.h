@@ -44,7 +44,7 @@ namespace peopt {
         // Parses a JSON file and returns the root
         static Json::Value parse(
             const peopt::Messaging& msg,
-            const std::string fname
+            const std::string& fname
         ) {
             // Read in the input file
             Json::Value root;
@@ -59,9 +59,246 @@ namespace peopt {
             file.close();
             return root;
         }
+       
+        // Writes a JSON spec to file
+        static void write(
+            const peopt::Messaging& msg,
+            const std::string& fname,
+            const Json::Value& root
+        ) {
+            // Create a string with the above output
+            Json::StyledWriter writer;
+            std::string output = writer.write(root);
+
+            // Open a file for writing
+            std::ofstream fout(fname.c_str());
+            if(fout.fail())
+                msg.error("While writing the restart file, unable to open "
+                    "the file: " + fname + ".");
+
+            // Write out the json tree
+            fout << output;
+            if(fout.fail())
+                msg.error("While writing the restart file, unable to write "
+                    "the json tree.");
+
+            // Close the file
+            fout.close();
+        }
+
+        // A helper class to help with serialization of vectors into jsoncpp 
+        // objects.
+        template <typename Real,template <typename> class XX>
+        struct Serialization {
+            static void serialize(
+                const typename XX <Real>::Vector& x,
+                const std::string& vs,
+                const std::string& name,
+                Json::Value& root
+            ) { }
+            static void deserialize(
+                const Json::Value& root,
+                const std::string& vs,
+                const std::string& name,
+                typename XX <Real>::Vector& x
+            ) { }
+        };
+
+        // Routines to serialize lists of elements for restarting
+        struct Serialize{
+       
+            // Vectors 
+            template <typename Real,template <typename> class XX>
+            static void vectors(
+                const std::pair <
+                    std::list <std::string>,
+                    std::list <typename XX <Real>::Vector>
+                >& xs,
+                const std::string& vs,
+                Json::Value& root
+            ) {
+                // Create some type shortcuts
+                typedef XX <Real> X;
+                typedef typename X::Vector X_Vector;
+
+                // Loop over all the vectors and serialize things
+                typename std::list <X_Vector>::const_iterator x
+                    =xs.second.begin();
+                for(typename std::list <std::string>::const_iterator
+                        name=xs.first.begin();
+                    name!=xs.first.end();
+                    name++, x++
+                )
+                    Serialization <Real,XX>::serialize(*x,vs,*name,root);
+            }
+            
+
+            // Reals 
+            template <typename Real>
+            static void reals(
+                const std::pair <
+                    std::list <std::string>,
+                    std::list <Real>
+                >& reals,
+                const std::string& vs,
+                Json::Value& root
+            ) {
+                // Loop over all the reals and serialize things
+                typename std::list <Real>::const_iterator real 
+                    =reals.second.begin();
+                for(typename std::list <std::string>::const_iterator
+                        name=reals.first.begin();
+                    name!=reals.first.end();
+                    name++, real++
+                )
+                    root[vs][*name]=*real;
+            }
+
+            // Naturals 
+            static void naturals(
+                const std::pair <
+                    std::list <std::string>,
+                    std::list <Natural>
+                >& nats,
+                const std::string& vs,
+                Json::Value& root
+            ) {
+                // Loop over all the naturals and serialize things
+                typename std::list <Natural>::const_iterator nat 
+                    =nats.second.begin();
+                for(typename std::list <std::string>::const_iterator
+                        name=nats.first.begin();
+                    name!=nats.first.end();
+                    name++, nat++
+                )
+                    root[vs][*name]=*nat;
+            }
+
+            // Parameters 
+            static void parameters(
+                const std::pair <
+                    std::list <std::string>,
+                    std::list <std::string>
+                >& params,
+                const std::string& vs,
+                Json::Value& root
+            ) {
+                // Loop over all the parameters and serialize things
+                typename std::list <std::string>::const_iterator param 
+                    =params.second.begin();
+                for(typename std::list <std::string>::const_iterator
+                        name=params.first.begin();
+                    name!=params.first.end();
+                    name++, param++
+                )
+                    root[vs][*name]=*param;
+            }
+        };
+        
+        // Routines to deserialize lists of elements for restarting
+        struct Deserialize{
+
+            // Vectors
+            template <typename Real,template <typename> class XX>
+            static void vectors(
+                const Json::Value& root,
+                const std::string& vs,
+                std::pair <
+                    std::list <std::string>,
+                    std::list <typename XX <Real>::Vector>
+                >& xs
+            ) {
+                // Create some type shortcuts
+                typedef XX <Real> X;
+                typedef typename X::Vector X_Vector;
+
+                // Loop over all the names in the root
+                for(Json::ValueIterator itr=root[vs].begin();
+                    itr!=root[vs].end();
+                    itr++
+                ){
+                    // Grab the vector
+                    xs.first.emplace_back(itr.key().asString());
+                    xs.second.emplace_back(X_Vector());
+                    Serialization <Real,XX>::deserialize(
+                        root,vs,xs.first.back(),xs.second.back());
+                }
+            }
+            
+            // Reals 
+            template <typename Real>
+            void reals(
+                const Json::Value& root,
+                const std::string& vs,
+                std::pair <
+                    std::list <std::string>,
+                    std::list <Real>
+                >& reals
+            ) {
+                // Loop over all the names in the root
+                for(Json::ValueIterator itr=root[vs].begin();
+                    itr!=root[vs].end();
+                    itr++
+                ){
+                    // Grab the real 
+                    reals.first.emplace_back(itr.key().asString());
+                    reals.second.emplace_back(
+                        Real(root[vs][reals.first.back()].asDouble()));
+                }
+            }
+            
+            // Naturals 
+            void naturals(
+                const Json::Value& root,
+                const std::string& vs,
+                std::pair <
+                    std::list <std::string>,
+                    std::list <Natural>
+                >& nats
+            ) {
+                // Loop over all the names in the root
+                for(Json::ValueIterator itr=root[vs].begin();
+                    itr!=root[vs].end();
+                    itr++
+                ){
+                    // Grab the natural 
+                    nats.first.emplace_back(itr.key().asString());
+                    nats.second.emplace_back(
+                        root[vs][nats.first.back()].asUInt64());
+                }
+            }
+            
+            // Parameters 
+            void parameters(
+                const Json::Value& root,
+                const std::string& vs,
+                std::pair <
+                    std::list <std::string>,
+                    std::list <std::string>
+                >& params
+            ) {
+                // Loop over all the names in the root
+                for(Json::ValueIterator itr=root[vs].begin();
+                    itr!=root[vs].end();
+                    itr++
+                ){
+                    // Grab the parameter 
+                    params.first.emplace_back(itr.key().asString());
+                    params.second.emplace_back(
+                        root[vs][params.first.back()].asString());
+                }
+            }
+        };
 
         template <typename Real,template <typename> class XX> 
         struct Unconstrained {
+            // Create some type shortcuts
+            typedef typename peopt::Unconstrained <Real,XX>::X_Vectors
+                X_Vectors; 
+            typedef typename peopt::Unconstrained <Real,XX>::Reals Reals;
+            typedef typename peopt::Unconstrained <Real,XX>::Nats Nats;
+            typedef typename peopt::Unconstrained <Real,XX>::Params Params; 
+
             // Read parameters from file
             static void read_(
                 const peopt::Messaging& msg,
@@ -234,6 +471,59 @@ namespace peopt {
             ) {
                 return Unconstrained <Real,XX>::to_string_(state);
             }
+
+            // Write all parameters to file
+            static void write_restart(
+                const peopt::Messaging& msg,
+                const std::string fname,
+                typename peopt::Unconstrained <Real,XX>::State::t& state
+            ) {
+                // Do a release 
+                X_Vectors xs;
+                Reals reals;
+                Nats nats;
+                Params params;
+                peopt::Unconstrained <Real,XX>::Restart::release(
+                    state,xs,reals,nats,params);
+
+                // Serialize everything
+                Json::Value root;
+                Serialize::vectors <Real,XX>(xs,"X_Vectors",root);
+                Serialize::reals <Real> (reals,"Reals",root);
+                Serialize::naturals(nats,"Naturals",root);
+                Serialize::parameters(params,"Parameters",root);
+                
+                // Create a string with the above output
+                write(msg,fname,root);
+
+                // Recapture the state
+                peopt::Unconstrained <Real,XX>::Restart::capture(
+                    msg,state,xs,reals,nats,params);
+            }
+
+            // Read all the parameters from file
+            static void read_restart(
+                const peopt::Messaging& msg,
+                const std::string fname,
+                typename peopt::Unconstrained <Real,XX>::State::t& state
+            ) {
+                // Read in the input file
+                Json::Value root=parse(msg,fname);
+
+                // Extract everything from the parsed json file 
+                X_Vectors xs;
+                Reals reals;
+                Nats nats;
+                Params params;
+                Deserialize::vectors <Real,XX>(root,"X_Vectors",xs);
+                Deserialize::reals <Real> (root,"Reals",reals);
+                Deserialize::naturals(root,"Naturals",nats);
+                Deserialize::parameters(root,"Parameters",params);
+               
+                // Move this information into the state
+                peopt::Unconstrained <Real,XX>::Restart::capture(
+                    state,xs,reals,nats,params);
+            }
         };
 
         template <
@@ -242,6 +532,18 @@ namespace peopt {
             template <typename> class YY
         > 
         struct EqualityConstrained {
+            // Create some type shortcuts
+            typedef typename peopt::EqualityConstrained<Real,XX,YY>::X_Vectors
+                X_Vectors; 
+            typedef typename peopt::EqualityConstrained<Real,XX,YY>::Y_Vectors
+                Y_Vectors; 
+            typedef typename peopt::EqualityConstrained <Real,XX,YY>::Reals
+                Reals;
+            typedef typename peopt::EqualityConstrained <Real,XX,YY>::Nats
+                Nats;
+            typedef typename peopt::EqualityConstrained <Real,XX,YY>::Params
+                Params; 
+
             // Read parameters from file
             static void read_(
                 const peopt::Messaging& msg,
@@ -368,6 +670,65 @@ namespace peopt {
                 return ucon.substr(0,ucon.size()-8)+",\n"+
                        econ.substr(17,econ.size());
             }
+
+            // Write all parameters to file
+            static void write_restart(
+                const peopt::Messaging& msg,
+                const std::string fname,
+                typename peopt::EqualityConstrained <Real,XX,YY>::State::t&
+                    state
+            ) {
+                // Do a release 
+                X_Vectors xs;
+                Y_Vectors ys;
+                Reals reals;
+                Nats nats;
+                Params params;
+                peopt::EqualityConstrained <Real,XX,YY>::Restart::release(
+                    state,xs,ys,reals,nats,params);
+
+                // Serialize everything
+                Json::Value root;
+                Serialize::vectors <Real,XX>(xs,"X_Vectors",root);
+                Serialize::vectors <Real,YY>(ys,"Y_Vectors",root);
+                Serialize::reals <Real> (reals,"Reals",root);
+                Serialize::naturals(nats,"Naturals",root);
+                Serialize::parameters(params,"Parameters",root);
+                
+                // Create a string with the above output
+                write(msg,fname,root);
+
+                // Recapture the state
+                peopt::EqualityConstrained<Real,XX,YY>::Restart::capture(
+                    msg,state,xs,ys,reals,nats,params);
+            }
+
+            // Read all the parameters from file
+            static void read_restart(
+                const peopt::Messaging& msg,
+                const std::string fname,
+                typename peopt::EqualityConstrained <Real,XX,YY>::State::t&
+                    state
+            ) {
+                // Read in the input file
+                Json::Value root=parse(msg,fname);
+
+                // Extract everything from the parsed json file 
+                X_Vectors xs;
+                Y_Vectors ys;
+                Reals reals;
+                Nats nats;
+                Params params;
+                Deserialize::vectors <Real,XX>(root,"X_Vectors",xs);
+                Deserialize::vectors <Real,YY>(root,"Y_Vectors",ys);
+                Deserialize::reals <Real> (root,"Reals",reals);
+                Deserialize::naturals(root,"Naturals",nats);
+                Deserialize::parameters(root,"Parameters",params);
+               
+                // Move this information into the state
+                peopt::EqualityConstrained <Real,XX,YY>::Restart::capture(
+                    state,xs,ys,reals,nats,params);
+            }
         };
 
         template < typename Real,
@@ -375,6 +736,18 @@ namespace peopt {
             template <typename> class ZZ 
         > 
         struct InequalityConstrained {
+            // Create some type shortcuts
+            typedef typename peopt::InequalityConstrained<Real,XX,ZZ>::X_Vectors
+                X_Vectors; 
+            typedef typename peopt::InequalityConstrained<Real,XX,ZZ>::Z_Vectors
+                Z_Vectors; 
+            typedef typename peopt::InequalityConstrained <Real,XX,ZZ>::Reals
+                Reals;
+            typedef typename peopt::InequalityConstrained <Real,XX,ZZ>::Nats
+                Nats;
+            typedef typename peopt::InequalityConstrained <Real,XX,ZZ>::Params
+                Params; 
+
             // Read parameters from file
             static void read_(
                 const peopt::Messaging& msg,
@@ -454,6 +827,65 @@ namespace peopt {
                 return ucon.substr(0,ucon.size()-8)+",\n"+
                        icon.substr(17,icon.size());
             }
+
+            // Write all parameters to file
+            static void write_restart(
+                const peopt::Messaging& msg,
+                const std::string fname,
+                typename peopt::InequalityConstrained <Real,XX,ZZ>::State::t&
+                    state
+            ) {
+                // Do a release 
+                X_Vectors xs;
+                Z_Vectors zs;
+                Reals reals;
+                Nats nats;
+                Params params;
+                peopt::InequalityConstrained <Real,XX,ZZ>::Restart::release(
+                    state,xs,zs,reals,nats,params);
+
+                // Serialize everything
+                Json::Value root;
+                Serialize::vectors <Real,XX>(xs,"X_Vectors",root);
+                Serialize::vectors <Real,ZZ>(zs,"Z_Vectors",root);
+                Serialize::reals <Real> (reals,"Reals",root);
+                Serialize::naturals(nats,"Naturals",root);
+                Serialize::parameters(params,"Parameters",root);
+                
+                // Create a string with the above output
+                write(msg,fname,root);
+
+                // Recapture the state
+                peopt::InequalityConstrained<Real,XX,ZZ>::Restart::capture(
+                    msg,state,xs,zs,reals,nats,params);
+            }
+
+            // Read all the parameters from file
+            static void read_restart(
+                const peopt::Messaging& msg,
+                const std::string fname,
+                typename peopt::InequalityConstrained <Real,XX,ZZ>::State::t&
+                    state
+            ) {
+                // Read in the input file
+                Json::Value root=parse(msg,fname);
+
+                // Extract everything from the parsed json file 
+                X_Vectors xs;
+                Z_Vectors zs;
+                Reals reals;
+                Nats nats;
+                Params params;
+                Deserialize::vectors <Real,XX>(root,"X_Vectors",xs);
+                Deserialize::vectors <Real,ZZ>(root,"Z_Vectors",zs);
+                Deserialize::reals <Real> (root,"Reals",reals);
+                Deserialize::naturals(root,"Naturals",nats);
+                Deserialize::parameters(root,"Parameters",params);
+               
+                // Move this information into the state
+                peopt::InequalityConstrained <Real,XX,ZZ>::Restart::capture(
+                    state,xs,zs,reals,nats,params);
+            }
         };
 
         template < typename Real,
@@ -462,6 +894,17 @@ namespace peopt {
             template <typename> class ZZ 
         > 
         struct Constrained {
+            // Create some type shortcuts
+            typedef typename peopt::Constrained<Real,XX,YY,ZZ>::X_Vectors
+                X_Vectors; 
+            typedef typename peopt::Constrained<Real,XX,YY,ZZ>::Y_Vectors
+                Y_Vectors; 
+            typedef typename peopt::Constrained<Real,XX,YY,ZZ>::Z_Vectors
+                Z_Vectors; 
+            typedef typename peopt::Constrained <Real,XX,YY,ZZ>::Reals Reals;
+            typedef typename peopt::Constrained <Real,XX,YY,ZZ>::Nats Nats;
+            typedef typename peopt::Constrained <Real,XX,YY,ZZ>::Params Params; 
+
             // Read parameters from file
             static void read_(
                 const peopt::Messaging& msg,
@@ -513,6 +956,68 @@ namespace peopt {
                 return ucon.substr(0,ucon.size()-8)+",\n"+
                        econ.substr(17,econ.size()-8)+",\n";
                        icon.substr(17,icon.size());
+            }
+            
+            // Write all parameters to file
+            static void write_restart(
+                const peopt::Messaging& msg,
+                const std::string fname,
+                typename peopt::Constrained <Real,XX,YY,ZZ>::State::t&
+                    state
+            ) {
+                // Do a release 
+                X_Vectors xs;
+                Y_Vectors ys;
+                Z_Vectors zs;
+                Reals reals;
+                Nats nats;
+                Params params;
+                peopt::Constrained <Real,XX,YY,ZZ>::Restart::release(
+                    state,xs,ys,zs,reals,nats,params);
+
+                // Serialize everything
+                Json::Value root;
+                Serialize::vectors <Real,XX>(xs,"X_Vectors",root);
+                Serialize::vectors <Real,YY>(ys,"Y_Vectors",root);
+                Serialize::vectors <Real,ZZ>(zs,"Z_Vectors",root);
+                Serialize::reals <Real> (reals,"Reals",root);
+                Serialize::naturals(nats,"Naturals",root);
+                Serialize::parameters(params,"Parameters",root);
+                
+                // Create a string with the above output
+                write(msg,fname,root);
+
+                // Recapture the state
+                peopt::Constrained<Real,XX,YY,ZZ>::Restart::capture(
+                    msg,state,xs,ys,zs,reals,nats,params);
+            }
+            
+            // Read all the parameters from file
+            static void read_restart(
+                const peopt::Messaging& msg,
+                const std::string fname,
+                typename peopt::Constrained <Real,XX,YY,ZZ>::State::t& state
+            ) {
+                // Read in the input file
+                Json::Value root=parse(msg,fname);
+
+                // Extract everything from the parsed json file 
+                X_Vectors xs;
+                Y_Vectors ys;
+                Z_Vectors zs;
+                Reals reals;
+                Nats nats;
+                Params params;
+                Deserialize::vectors <Real,XX>(root,"X_Vectors",xs);
+                Deserialize::vectors <Real,YY>(root,"Y_Vectors",ys);
+                Deserialize::vectors <Real,ZZ>(root,"Z_Vectors",zs);
+                Deserialize::reals <Real> (root,"Reals",reals);
+                Deserialize::naturals(root,"Naturals",nats);
+                Deserialize::parameters(root,"Parameters",params);
+               
+                // Move this information into the state
+                peopt::Constrained <Real,XX,YY,ZZ>::Restart::capture(
+                    state,xs,ys,zs,reals,nats,params);
             }
         };
     };

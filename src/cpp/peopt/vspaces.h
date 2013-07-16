@@ -36,8 +36,10 @@ Author: Joseph Young (joe@optimojoe.com)
 #include <cmath>
 #include "linalg.h"
 #include "peopt.h"
+#include "json.h"
 
 namespace peopt {
+    using namespace peopt;
 
     // Vector space for the nonnegative orthant.  For basic vectors
     // in R^m, use this.
@@ -162,6 +164,30 @@ namespace peopt {
         // Symmetrization, x <- symm(x) such that L(symm(x)) is a symmetric
         // operator.
         static void symm(Vector& x) { }
+    };
+
+    // Serialization utility for the Rm vector space
+    template <typename Real>
+    struct json::Serialization <Real,Rm> {
+        static void serialize (
+            const typename Rm <Real>::Vector& x,
+            const std::string& vs,
+            const std::string& name,
+            Json::Value& root
+        ) {
+            for(int i=0;i<x.size();i++)
+                root[vs][name][i]=x[i];
+        }
+        static void deserialize (
+            const Json::Value& root,
+            const std::string& vs,
+            const std::string& name,
+            typename Rm <Real>::Vector& x
+        ) {
+            x.resize(root[vs][name].size());
+            for(int i=0;i<x.size();i++)
+                x[i]=Real(root[vs][name][i].asDouble());
+        }
     };
 
     // Different cones used in SQL problems

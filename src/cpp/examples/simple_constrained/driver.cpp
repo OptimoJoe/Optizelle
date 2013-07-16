@@ -186,6 +186,10 @@ int main(){
         << "The optimal point is: (" << opt_x[0] << ','
 	<< opt_x[1] << ')' << std::endl;
 
+    // Write out the final answer to file
+    peopt::json::Constrained<double,peopt::Rm,peopt::Rm,peopt::Rm>
+        ::write_restart(peopt::Messaging(),"simple_constrained.perst",state);
+
     // Return that the program exited properly
     return EXIT_SUCCESS;
 }
