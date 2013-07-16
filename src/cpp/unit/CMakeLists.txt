@@ -13,10 +13,18 @@ set(unit_srcs
 include_directories(${BOOST_UNIT_TEST_INCLUDE_DIRS})
 include_directories(${JSONCPP_INCLUDE_DIRS})
 add_executable(unit ${unit_srcs})
+add_executable(diff_restart diff_restart.cpp)
 target_link_libraries(unit
     peopt_static
     ${BOOST_UNIT_TEST_LIBRARIES}
     ${LAPACK_LIBRARIES}
     ${BLAS_LIBRARIES})
-install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/unit
+target_link_libraries(diff_restart
+    peopt_static
+    ${JSONCPP_LIBRARIES}
+    ${LAPACK_LIBRARIES}
+    ${BLAS_LIBRARIES})
+install(PROGRAMS
+    ${CMAKE_CURRENT_BINARY_DIR}/unit
+    ${CMAKE_CURRENT_BINARY_DIR}/diff_restart
     DESTINATION share/peopt/cpp/unit)
