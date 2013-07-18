@@ -175,7 +175,7 @@ namespace peopt {
             const std::string& name,
             Json::Value& root
         ) {
-            for(int i=0;i<x.size();i++)
+            for(Natural i=0;i<x.size();i++)
                 root[vs][name][i]=x[i];
         }
         static void deserialize (
@@ -185,7 +185,7 @@ namespace peopt {
             typename Rm <Real>::Vector& x
         ) {
             x.resize(root[vs][name].size());
-            for(int i=0;i<x.size();i++)
+            for(Natural i=0;i<x.size();i++)
                 x[i]=Real(root[vs][name][i].asDouble());
         }
     };
@@ -196,6 +196,45 @@ namespace peopt {
             Linear,             // Nonnegative orthant
             Quadratic,          // Second order cone
             Semidefinite        // Cone of positive semidefinite matrices 
+        };
+
+        // Converts the cone to a string
+        static std::string to_string(t cone){
+            switch(cone){
+            case Linear:
+                return "Linear";
+            case Quadratic:
+                return "Quadratic";
+            case Semidefinite:
+                return "Semidefinite";
+            default:
+                throw;
+            }
+        }
+        
+        // Converts a string to a cone 
+        static t from_string(std::string cone){
+            if(cone=="Linear")
+                return Linear;
+            else if(cone=="Quadratic")
+                return Quadratic;
+            else if(cone=="Semidefinite")
+                return Semidefinite;
+            else
+                throw;
+        }
+
+        // Checks whether or not a string is valid
+        struct is_valid : public std::unary_function<std::string, bool> {
+            bool operator () (const std::string& name) const {
+                if( name=="Linear" ||
+                    name=="Quadratic" ||
+                    name=="Semidefinite"
+                )
+                    return true;
+                else
+                    return false;
+            }
         };
     };
 
@@ -1812,6 +1851,85 @@ namespace peopt {
                     break;
                 } }
             }
+        }
+    };
+
+    // Serialization utility for the SQL vector space
+    template <typename Real>
+    struct json::Serialization <Real,SQL> {
+        static void serialize (
+            const typename SQL <Real>::Vector& x,
+            const std::string& vs,
+            const std::string& name,
+            Json::Value& root
+        ) {
+            for(Natural i=0;i<x.data.size();i++)
+                root[vs][name]["data"][i]=x.data[i];
+
+            for(Natural i=0;i<x.offsets.size();i++)
+                root[vs][name]["offsets"][i]=x.offsets[i];
+
+            for(Natural i=0;i<x.types.size();i++)
+                root[vs][name]["types"][i]=Cone::to_string(x.types[i]);
+
+            for(Natural i=0;i<x.sizes.size();i++)
+                root[vs][name]["sizes"][i]=x.sizes[i];
+
+            for(Natural i=0;i<x.inverse.size();i++)
+                root[vs][name]["inverse"][i]=x.inverse[i];
+
+            for(Natural i=0;i<x.inverse_offsets.size();i++)
+                root[vs][name]["inverse_offsets"][i]=x.inverse_offsets[i];
+
+            for(Natural i=0;i<x.inverse_base.size();i++)
+                root[vs][name]["inverse_base"][i]=x.inverse_base[i];
+
+            for(Natural i=0;i<x.inverse_base_offsets.size();i++)
+                root[vs][name]["inverse_base_offsets"][i]
+                    =x.inverse_base_offsets[i];
+        }
+        static void deserialize (
+            const Json::Value& root,
+            const std::string& vs,
+            const std::string& name,
+            typename Rm <Real>::Vector& x
+        ) {
+            x.data.resize(root[vs][name]["data"].size());
+            for(Natural i=0;i<x.size();i++)
+                x.data[i]=Real(root[vs][name]["data"][i].asDouble());
+
+            x.offsets.resize(root[vs][name]["offsets"].size());
+            for(Natural i=0;i<x.size();i++)
+                x.offsets[i]=root[vs][name]["offsets"][i].asUInt64();
+
+            x.types.resize(root[vs][name]["types"].size());
+            for(Natural i=0;i<x.size();i++)
+                x.types[i]
+                    =Cone::from_string(root[vs][name]["types"][i].asString());
+
+            x.sizes.resize(root[vs][name]["sizes"].size());
+            for(Natural i=0;i<x.size();i++)
+                x.sizes[i]=root[vs][name]["sizes"][i].asUInt64();
+            
+            x.inverse.resize(root[vs][name]["inverse"].size());
+            for(Natural i=0;i<x.size();i++)
+                x.inverse[i]=Real(root[vs][name]["inverse"][i].asDouble());
+            
+            x.inverse_offsets.resize(root[vs][name]["inverse_offsets"].size());
+            for(Natural i=0;i<x.size();i++)
+                x.inverse_offsets[i]
+                    =root[vs][name]["inverse_offsets"][i].asUInt64();
+            
+            x.inverse_base.resize(root[vs][name]["inverse_base"].size());
+            for(Natural i=0;i<x.size();i++)
+                x.inverse_base[i]
+                    =Real(root[vs][name]["inverse_base"][i].asDouble());
+            
+            x.inverse_base_offsets
+                .resize(root[vs][name]["inverse_base_offsets"].size());
+            for(Natural i=0;i<x.size();i++)
+                x.inverse_base_offsets[i]
+                    =root[vs][name]["inverse_base_offsets"][i].asUInt64();
         }
     };
 }

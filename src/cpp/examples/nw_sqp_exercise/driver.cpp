@@ -282,9 +282,16 @@ struct MyEq
     }
 };
 
-int main(){
+int main(int argc,char* argv[]){
     // Create a type shortcut
     using peopt::Rm;
+
+    // Read in the name for the input file
+    if(argc!=2) {
+        std::cerr << "nw_sqp_exercise parameters>" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    std::string fname(argv[1]);
 
     // Generate an initial guess for the primal
     std::vector <double> x(5);
@@ -321,7 +328,7 @@ int main(){
 
     // Read the parameters from file
     peopt::json::EqualityConstrained <double,peopt::Rm,peopt::Rm>::read(
-        peopt::Messaging(),"nw_sqp_exercise.peopt",state);
+        peopt::Messaging(),fname,state);
     
     // Create a bundle of functions
     peopt::EqualityConstrained <double,Rm,Rm>::Functions::t fns;
@@ -368,4 +375,7 @@ int main(){
     // Write out the final answer to file
     peopt::json::EqualityConstrained<double,peopt::Rm,peopt::Rm>::write_restart(
         peopt::Messaging(),"nw_sqp_exercise.perst",state);
+
+    // Successful termination
+    return EXIT_SUCCESS;
 }

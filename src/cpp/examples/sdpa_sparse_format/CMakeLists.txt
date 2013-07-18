@@ -1,7 +1,6 @@
 project(sdpa_sparse_format)
-set(sdpa_sparse_format_srcs "driver.cpp")
 include_directories(${JSONCPP_INCLUDE_DIRS})
-add_executable(sdpa_sparse_format ${sdpa_sparse_format_srcs})
+add_executable(sdpa_sparse_format "driver.cpp")
 target_link_libraries(sdpa_sparse_format
     peopt_static
     ${JSONCPP_LIBRARIES}

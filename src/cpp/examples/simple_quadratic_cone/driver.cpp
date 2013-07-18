@@ -97,13 +97,19 @@ struct MyIneq :
     }
 };
 
-
-int main(){
+int main(int argc,char* argv[]){
     // Create some type shortcuts
     typedef peopt::Rm <double> X;
     typedef peopt::SQL <double> Z;
     typedef X::Vector X_Vector;
     typedef Z::Vector Z_Vector;
+
+    // Read in the name for the input file
+    if(argc!=2) {
+        std::cerr << "simple_quadratic_cone <parameters>" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    std::string fname(argv[1]);
 
     // Generate an initial guess for the primal
     X_Vector x(2);
@@ -120,7 +126,7 @@ int main(){
 
     // Read the parameters from file
     peopt::json::InequalityConstrained <double,peopt::Rm,peopt::SQL>::read(
-        peopt::Messaging(),"simple_quadratic_cone.peopt",state);
+        peopt::Messaging(),fname,state);
     
     // Create a bundle of functions
     peopt::InequalityConstrained<double,peopt::Rm,peopt::SQL>::Functions::t fns;
@@ -140,4 +146,11 @@ int main(){
     std::cout << std::setprecision(16) << std::scientific 
         << "The optimal point is: (" << opt_x[0] << ','
 	<< opt_x[1] << ')' << std::endl;
+
+    // Write out the final answer to file
+    peopt::json::InequalityConstrained <double,peopt::Rm,peopt::SQL>
+        ::write_restart(peopt::Messaging(),"simple_quadratic_cone.perst",state);
+
+    // Successful termination
+    return EXIT_SUCCESS;
 }

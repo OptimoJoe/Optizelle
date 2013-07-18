@@ -63,12 +63,25 @@ if(ENABLE_CPP_LIBRARY)
     # Set the include path to include cpp since we will likely need the
     # peopt header file
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/cpp)
+    
+    # Check if we want to build the unit tests
+    set(ENABLE_CPP_UNIT OFF CACHE BOOL "Enable unit tests for C++?")
+    if(ENABLE_CPP_UNIT)
+        # Turn on testing
+        enable_testing()
 
-    # Check if we want to build the C++ examples
+        # Basic unit tests and utility functions
+        add_subdirectory(cpp/unit/capture_and_release)
+        add_subdirectory(cpp/unit/derivative_check)
+        add_subdirectory(cpp/unit/linear_algebra)
+        add_subdirectory(cpp/unit/utility)
+    endif()
+
+    # Check if we want to build the C++ examples.  
     set(ENABLE_CPP_EXAMPLES OFF CACHE BOOL "Enable examples for C++?")
-    if(ENABLE_CPP_EXAMPLES)
-        add_subdirectory(cpp/examples/diagnostic_checks)
-        add_subdirectory(cpp/examples/rosenbrock_custom_VS)
+
+    # Many of these examples are also unit test
+    if(ENABLE_CPP_EXAMPLES OR ENABLE_CPP_UNIT)
         add_subdirectory(cpp/examples/rosenbrock)
         add_subdirectory(cpp/examples/quadratic)
         add_subdirectory(cpp/examples/simple_inequality)
@@ -78,17 +91,14 @@ if(ENABLE_CPP_LIBRARY)
         add_subdirectory(cpp/examples/simple_equality)
         add_subdirectory(cpp/examples/nw_sqp_exercise)
         add_subdirectory(cpp/examples/simple_constrained)
-        add_subdirectory(cpp/examples/sdpa_sparse_format)
         add_subdirectory(cpp/examples/preconditioned_nonlinear_cg)
     endif()
-    
-    # Check if we want to build the unit tests
-    set(ENABLE_CPP_UNIT OFF CACHE BOOL "Enable unit tests for C++?")
-    if(ENABLE_CPP_UNIT)
-        # Assuming we enable the unit tests, we require the
-        # boost_unit_test_framework library and headers
-        find_package(BoostUnitTest REQUIRED)
-        add_subdirectory(cpp/unit)
+
+    # Though, some examples are just examples
+    if(ENABLE_CPP_EXAMPLES) 
+        add_subdirectory(cpp/examples/diagnostic_checks)
+        add_subdirectory(cpp/examples/rosenbrock_custom_VS)
+        add_subdirectory(cpp/examples/sdpa_sparse_format)
     endif()
     
     # Check if we want to build the Python libraries

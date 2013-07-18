@@ -243,9 +243,7 @@ Description:  &Enables the build and installation of simple examples that
 Flag:         &\texttt{ENABLE\_CPP\_UNIT}\\
 Type:         &Bool\\
 Default:      &Off\\
-Dependencies: &\texttt{ENABLE\_CPP\_LIBRARY},
-              \texttt{BOOST\_UNIT\_TEST\_INCLUDE\_DIR},
-              \texttt{BOOST\_UNIT\_TEST\_LIBRARY}\\
+Dependencies: &\texttt{ENABLE\_CPP\_LIBRARY}\\
 Autodetect?:  &No\\
 Description:  &Enables the build and installation of unit tests that help
               validate the PEOpt code.  These tests are installed to the
@@ -326,23 +324,6 @@ Description:  &A semicolon separated list of the complete path and library used
               order to successfully compile a LAPACK dependent application.
               For example, using ATLAS LAPACK, one possible entry is:
               \url{/usr/lib/liblapack.a;/usr/lib/libcblas.a;/usr/lib/libgfortran.so.3}\\
-\\
-Flag:         &\texttt{BOOST\_UNIT\_TEST\_INCLUDE\_DIR} \\
-Type:         &Path \\
-Default:      &None \\
-Dependencies: &\texttt{ENABLE\_CPP\_UNIT} \\
-Autodetect?:  &Yes \\
-Description:  &A path that indicates where the boost headers for unit testing
-              have been installed.  The actual header must be found at
-              \url{${BOOST_UNIT_TEST_INCLUDE_DIR}/boost/test/unit_test.hpp}.\\
-\\
-Flag:         &\texttt{BOOST\_UNIT\_TEST\_LIBRARY}\\
-Type:         &Path \\
-Default:      &None \\
-Dependencies: &\texttt{ENABLE\_CPP\_UNIT}\\
-Autodetect?:  &Yes \\
-Description:  &The complete path and library for the boost unit test
-              framework. \\
 \\
 Flag:         &\texttt{JSONCPP\_INCLUDE\_DIR} \\
 Type:         &Path \\

@@ -71,7 +71,14 @@ public:
     }
 };
 
-int main(){
+int main(int argc,char* argv[]){
+    // Read in the name for the input file
+    if(argc!=2) {
+        std::cerr << "preconditioned_nonlinear_cg <parameters>" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    std::string fname(argv[1]);
+
     // Generate an initial guess for Rosenbrock
     std::vector <double> x(2);
     x[0]=-1.2; x[1]=1.;
@@ -81,7 +88,7 @@ int main(){
 
     // Read the parameters from file
     peopt::json::Unconstrained <double,peopt::Rm>
-        ::read(peopt::Messaging(),"preconditioned_nonlinear_cg.peopt",state);
+        ::read(peopt::Messaging(),fname,state);
 
     // Create the bundle of functions 
     peopt::Unconstrained <double,peopt::Rm>::Functions::t fns;
@@ -101,6 +108,10 @@ int main(){
     const std::vector <double>& opt_x=*(state.x.begin());
     std::cout << "The optimal point is: (" << opt_x[0] << ','
 	<< opt_x[1] << ')' << std::endl;
+
+    // Write out the final answer to file
+    peopt::json::Unconstrained <double,peopt::Rm>::write_restart(
+        peopt::Messaging(),"preconditioned_nonlinear_cg.perst",state);
 
     // Successful termination
     return EXIT_SUCCESS;

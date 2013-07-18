@@ -99,7 +99,14 @@ struct MyIneq
     }
 };
 
-int main(){
+int main(int argc,char* argv[]){
+    // Read in the name for the input file
+    if(argc!=2) {
+        std::cerr << "rosenbrock <parameters>" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    std::string fname(argv[1]);
+
     // Create a type shortcut
     using peopt::Rm;
 
@@ -116,7 +123,7 @@ int main(){
 
     // Read the parameters from file
     peopt::json::InequalityConstrained <double,peopt::Rm,peopt::Rm>
-        ::read(peopt::Messaging(),"simple_inequality.peopt",state);
+        ::read(peopt::Messaging(),fname,state);
     
     // Create a bundle of functions
     peopt::InequalityConstrained <double,Rm,Rm>::Functions::t fns;

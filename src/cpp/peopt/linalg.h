@@ -1720,7 +1720,7 @@ namespace peopt {
             
         // If for some bizarre reason, we're already optimal, don't do any work 
         gmanip(0,x,b,eps);
-        if(norm_rtrue < eps) iter_max=0;	
+        if(norm_rtrue <= eps) iter_max=0;	
 
         // Iterate until the maximum iteration
         Natural iter;
@@ -1797,7 +1797,7 @@ namespace peopt {
 
             // Determine if we should exit since the norm of the true residual
             // is small
-            if(norm_rtrue < eps) break;	
+            if(norm_rtrue <= eps) break;	
 
             // If we've hit the restart frequency, reset the Krylov spaces and
             // factorizations

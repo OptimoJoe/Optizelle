@@ -54,7 +54,31 @@ struct Rosen
     }
 };
 
-int main(){
+// Define a perfect preconditioner for the Hessian
+struct RosenHInv : public peopt::Operator <double,peopt::Rm,peopt::Rm> {
+public:
+    typedef peopt::Rm <double> X;
+    typedef X::Vector X_Vector;
+private:
+    X_Vector& x;
+public:
+    RosenHInv(X::Vector& x_) : x(x_) {}
+    void operator () (const X_Vector& dx,X_Vector &result) const {
+        double one_over_det=1./(400000.*x[0]*x[0]-80000.*x[1]+400.);
+        result[0]=one_over_det*(200.*dx[0]+400.*x[0]*dx[1]);
+        result[1]=one_over_det*
+            (400.*x[0]*dx[0]+(1200.*x[0]*x[0]-400.*x[1]+2.)*dx[1]);
+    }
+};
+
+int main(int argc,char* argv[]){
+    // Read in the name for the input file
+    if(argc!=2) {
+        std::cerr << "rosenbrock <parameters>" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    std::string fname(argv[1]);
+
     // Generate an initial guess for Rosenbrock
     std::vector <double> x(2);
     x[0]=-1.2; x[1]=1.;
@@ -64,11 +88,12 @@ int main(){
 
     // Read the parameters from file
     peopt::json::Unconstrained <double,peopt::Rm>
-        ::read(peopt::Messaging(),"rosenbrock.peopt",state);
+        ::read(peopt::Messaging(),fname,state);
 
     // Create the bundle of functions 
     peopt::Unconstrained <double,peopt::Rm>::Functions::t fns;
     fns.f.reset(new Rosen);
+    fns.PH.reset(new RosenHInv(state.x.back()));
     
     // Solve the optimization problem
     peopt::Unconstrained <double,peopt::Rm>::Algorithms

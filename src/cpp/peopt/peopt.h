@@ -2146,9 +2146,9 @@ namespace peopt{
                     ss << "The objective value at the trial step must be a "
                         "number: f_xpdx = " << state.f_xpdx;
 
-                // Check that the trust-region radius is positive
-                else if(state.delta<=Real(0.))
-                    ss << "The trust-region radius must be positive: delta = "
+                // Check that the trust-region radius is nonnegative 
+                else if(state.delta<Real(0.))
+                    ss<< "The trust-region radius must be nonnegative: delta = "
                         << state.delta; 
 
                 // Check that the predicted vs. actual reduction tolerance
@@ -8153,7 +8153,7 @@ namespace peopt{
                         xs.first.erase(name0);
                 }
 
-                typename std::list <X_Vector>::iterator z
+                typename std::list <Z_Vector>::iterator z
                     =zs.second.begin();
                 for(typename std::list <std::string>::iterator name
                         =zs.first.begin();

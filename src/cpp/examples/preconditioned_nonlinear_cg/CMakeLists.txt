@@ -1,13 +1,31 @@
 project(preconditioned_nonlinear_cg)
-set(preconditioned_nonlinear_cg_srcs "driver.cpp")
 include_directories(${JSONCPP_INCLUDE_DIRS})
-add_executable(preconditioned_nonlinear_cg ${preconditioned_nonlinear_cg_srcs})
+add_executable(preconditioned_nonlinear_cg "driver.cpp")
 target_link_libraries(preconditioned_nonlinear_cg
     peopt_static
     ${JSONCPP_LIBRARIES}
     ${LAPACK_LIBRARIES}
     ${BLAS_LIBRARIES})
-install(FILES driver.cpp preconditioned_nonlinear_cg.peopt
-    DESTINATION share/peopt/cpp/examples/preconditioned_nonlinear_cg)
-install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/preconditioned_nonlinear_cg
-    DESTINATION share/peopt/cpp/examples/preconditioned_nonlinear_cg)
+
+if(ENABLE_CPP_EXAMPLES)
+    install(FILES driver.cpp preconditioned_nonlinear_cg.peopt
+        DESTINATION share/peopt/cpp/examples/preconditioned_nonlinear_cg)
+    install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/preconditioned_nonlinear_cg
+        DESTINATION share/peopt/cpp/examples/preconditioned_nonlinear_cg)
+endif()
+
+# Run some unit tests
+file(GLOB_RECURSE peopts ${CMAKE_CURRENT_SOURCE_DIR} "unit/*.peopt")
+list(SORT peopts)
+file(GLOB_RECURSE pebases ${CMAKE_CURRENT_SOURCE_DIR} "*unit/*.pebase")
+list(SORT pebases)
+list(LENGTH peopts len1)
+math(EXPR len2 "${len1} - 1")
+foreach(index RANGE ${len2})
+    list(GET peopts ${index} peopt)
+    list(GET pebases ${index} pebase)
+    add_test(${peopt} preconditioned_nonlinear_cg ${peopt})
+    add_test(${pebase}
+        "${CMAKE_CURRENT_BINARY_DIR}/../../unit/utility/diff_restart"
+        ${pebase} preconditioned_nonlinear_cg.perst)
+endforeach()

@@ -97,7 +97,14 @@ struct MyEq
     }
 };
 
-int main(){
+int main(int argc,char* argv[]){
+    // Read in the name for the input file
+    if(argc!=2) {
+        std::cerr << "simple_equalty <parameters>" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    std::string fname(argv[1]);
+
     // Create a type shortcut
     using peopt::Rm;
 
@@ -113,7 +120,7 @@ int main(){
 
     // Read the parameters from file
     peopt::json::EqualityConstrained <double,peopt::Rm,peopt::Rm>
-        ::read(peopt::Messaging(),"simple_equality.peopt",state);
+        ::read(peopt::Messaging(),fname,state);
     
     // Create a bundle of functions
     peopt::EqualityConstrained <double,Rm,Rm>::Functions::t fns;
@@ -134,6 +141,10 @@ int main(){
     std::cout << std::scientific << std::setprecision(16)
         << "The optimal point is: (" << opt_x[0] << ','
 	<< opt_x[1] << ')' << std::endl;
+
+    // Write out the final answer to file
+    peopt::json::EqualityConstrained <double,peopt::Rm,peopt::Rm>
+        ::write_restart(peopt::Messaging(),"simple_equality.perst",state);
 
     // Return that we've exited successfuly
     return EXIT_SUCCESS;

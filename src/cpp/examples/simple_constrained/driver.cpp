@@ -144,7 +144,14 @@ struct MyIneq
     }
 };
 
-int main(){
+int main(int argc,char* argv[]){
+    // Read in the name for the input file
+    if(argc!=2) {
+        std::cerr << "simple_constrained <parameters>" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    std::string fname(argv[1]);
+
     // Create a type shortcut
     using peopt::Rm;
 
@@ -163,7 +170,7 @@ int main(){
 
     // Read the parameters from file
     peopt::json::Constrained <double,Rm,Rm,Rm>::read(
-        peopt::Messaging(),"simple_constrained.peopt",state);
+        peopt::Messaging(),fname,state);
     
     // Create a bundle of functions
     peopt::Constrained <double,Rm,Rm,Rm>::Functions::t fns;
@@ -190,6 +197,10 @@ int main(){
     peopt::json::Constrained<double,peopt::Rm,peopt::Rm,peopt::Rm>
         ::write_restart(peopt::Messaging(),"simple_constrained.perst",state);
 
-    // Return that the program exited properly
+    // Write out the final answer to file
+    peopt::json::Constrained <double,Rm,Rm,Rm>::write_restart(
+        peopt::Messaging(),"simple_constrained.perst",state);
+
+    // Successful termination
     return EXIT_SUCCESS;
 }

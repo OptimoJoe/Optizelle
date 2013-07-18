@@ -176,10 +176,17 @@ public:
     }
 };
 
-int main(){
+int main(int argc,char* argv[]){
     // Create a type shortcut
     using peopt::Rm;
     typedef double Real;
+
+    // Read in the name for the input file
+    if(argc!=2) {
+        std::cerr << "simple_infeasible_inequality <parameters>" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    std::string fname(argv[1]);
 
     // Set the amount of infeasibility that we want to allow
     const Real epsilon(1e-8);
@@ -212,7 +219,7 @@ int main(){
 
     // Read the parameters from file
     peopt::json::Constrained <Real,Rm,Rm,Rm>::read(
-        peopt::Messaging(),"simple_infeasible_inequality.peopt",state);
+        peopt::Messaging(),fname,state);
     
     // Create a bundle of functions
     peopt::Constrained <Real,Rm,Rm,Rm>::Functions::t fns;
@@ -261,4 +268,11 @@ int main(){
     std::cout << std::scientific << std::setprecision(16)
         << "The optimal point is: (" << opt_x[0] << ','
 	<< opt_x[1] << ')' << std::endl;
+
+    // Write out the final answer to file
+    peopt::json::Constrained <Real,Rm,Rm,Rm>::write_restart(
+        peopt::Messaging(),"simple_infeasible_inequality.perst",state);
+
+    // Successful termination
+    return EXIT_SUCCESS;
 }
