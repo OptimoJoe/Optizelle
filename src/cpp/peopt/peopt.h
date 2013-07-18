@@ -6400,7 +6400,7 @@ namespace peopt{
                 BlockDiagonalPreconditioner PAugSys_r (I,*(fns.PSchur_right));
 
                 // Solve the augmented system for the Newton step
-                std::pair <Real,Natural> err_iter = peopt::gmres <Real,XXxYY> (
+                peopt::gmres <Real,XXxYY> (
                     AugmentedSystem(state,fns,x),
                     b0,
                     Real(1.), // This will be overwritten by the manipulator
@@ -6553,7 +6553,7 @@ namespace peopt{
                 BlockDiagonalPreconditioner PAugSys_r (I,*(fns.PSchur_right));
 
                 // Solve the augmented system for the nullspace projection 
-                std::pair <Real,Natural> err_iter = peopt::gmres <Real,XXxYY> (
+                peopt::gmres <Real,XXxYY> (
                     AugmentedSystem(state,fns,x),
                     b0,
                     Real(1.), // This will be overwritten by the manipulator
@@ -6664,8 +6664,7 @@ namespace peopt{
                         PAugSys_r(I,*(fns.PSchur_right));
 
                     // Solve the augmented system for the nullspace projection 
-                    std::pair <Real,Natural> err_iter
-                        = peopt::gmres <Real,XXxYY> (
+                    peopt::gmres <Real,XXxYY> (
                         AugmentedSystem(state,fns,x),
                         b0,
                         Real(1.), // This will be overwritten by the manipulator
@@ -6854,7 +6853,7 @@ namespace peopt{
                 BlockDiagonalPreconditioner PAugSys_r(I,*(fns.PSchur_right));
 
                 // Solve the augmented system for the tangential step 
-                std::pair <Real,Natural> err_iter = peopt::gmres <Real,XXxYY> (
+                peopt::gmres <Real,XXxYY> (
                     AugmentedSystem(state,fns,x),
                     b0,
                     Real(1.), // This will be overwritten by the manipulator
@@ -6944,7 +6943,7 @@ namespace peopt{
 
                 // Solve the augmented system for the initial Lagrange
                 // multiplier 
-                std::pair <Real,Natural> err_iter = peopt::gmres <Real,XXxYY> (
+                peopt::gmres <Real,XXxYY> (
                     AugmentedSystem(state,fns,x),
                     b0,
                     Real(1.), // This will be overwritten by the manipulator
@@ -7027,7 +7026,7 @@ namespace peopt{
                 X::copy(x_p_dx,x);
 
                 // Solve the augmented system for the Lagrange multiplier step 
-                std::pair <Real,Natural> err_iter = peopt::gmres <Real,XXxYY> (
+                peopt::gmres <Real,XXxYY> (
                     AugmentedSystem(state,fns,x),
                     b0,
                     Real(1.), // This will be overwritten by the manipulator
@@ -8133,26 +8132,6 @@ namespace peopt{
                 X_Vectors& xs,
                 Z_Vectors& zs
             ) {
-                typename std::list <X_Vector>::iterator x
-                    =xs.second.begin();
-                for(typename std::list <std::string>::iterator name
-                        =xs.first.begin();
-                    name!=xs.first.end();
-                ) {
-                    // Make a copy of the current iterators.  We use these
-                    // to remove elements
-                    typename std::list <std::string>::iterator name0 = name;
-                    typename std::list <X_Vector>::iterator x0 = x;
-
-                    // Increment our primary iterators 
-                    name++; x++;
-
-                    // Remove the string corresponding to the element just
-                    // spliced if splicing occured.
-                    if(xs.first.size() != xs.second.size())
-                        xs.first.erase(name0);
-                }
-
                 typename std::list <Z_Vector>::iterator z
                     =zs.second.begin();
                 for(typename std::list <std::string>::iterator name
