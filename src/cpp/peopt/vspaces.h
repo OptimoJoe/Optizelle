@@ -1518,7 +1518,7 @@ namespace peopt {
                 } case Cone::Semidefinite: {
                     // Get the Schur complement of the block.  With any luck
                     // these are cached.
-                    peopt::SQL <double>::get_inverse(x,blk,Xinv);
+                    peopt::SQL <Real>::get_inverse(x,blk,Xinv);
 
                     // Multiply out the result
                     peopt::symm <Real> ('L','U',m,m,Real(1.),
@@ -1932,5 +1932,20 @@ namespace peopt {
                     =root[vs][name]["inverse_base_offsets"][i].asUInt64();
         }
     };
+
+    // Optimization problems instantiated on these vector spaces.  In theory,
+    // this should help our compilation times.
+    extern template struct Unconstrained<double,Rm>;
+    extern template struct Unconstrained<float,Rm>;
+    extern template struct EqualityConstrained<double,Rm,Rm>;
+    extern template struct EqualityConstrained<float,Rm,Rm>;
+    extern template struct InequalityConstrained<double,Rm,Rm>;
+    extern template struct InequalityConstrained<float,Rm,Rm>;
+    extern template struct InequalityConstrained<double,Rm,SQL>;
+    extern template struct InequalityConstrained<float,Rm,SQL>;
+    extern template struct Constrained<double,Rm,Rm,Rm>;
+    extern template struct Constrained<float,Rm,Rm,Rm>;
+    extern template struct Constrained<double,Rm,Rm,SQL>;
+    extern template struct Constrained<float,Rm,Rm,SQL>;
 }
 #endif

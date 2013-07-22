@@ -10,8 +10,11 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/..)
 # Grabs the FortranCInterface header
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
+# Grabs the jsoncpp headers
+include_directories(${JSONCPP_INCLUDE_DIRS})
+
 # Compile the rest of the library
-set(peopt_cpp_srcs "peopt.cpp" "linalg.cpp")
+set(peopt_cpp_srcs "vspaces.cpp" "peopt.cpp" "linalg.cpp")
 add_library(peopt_cpp OBJECT ${peopt_cpp_srcs})
 
 # Install the headers associated with the library.  

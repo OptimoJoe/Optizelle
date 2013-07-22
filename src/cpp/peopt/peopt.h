@@ -56,6 +56,12 @@ Author: Joseph Young (joe@optimojoe.com)
     Name& operator = (Name&); \
     ~Name();
 
+// For the function modifications, we disallow the copy constructor and
+// assignment operator.
+#define MODIFICATIONS_CLASS(Name) \
+    Name(Name&); \
+    Name& operator = (Name&);
+
 namespace peopt{
 
     // A simple scalar valued function interface, f : X -> R
@@ -90,15 +96,11 @@ namespace peopt{
     >
     struct ScalarValuedFunctionModifications {
     private:
+        MODIFICATIONS_CLASS(ScalarValuedFunctionModifications); 
+
         // Create some type shortcuts
         typedef XX <Real> X;
         typedef typename X::Vector Vector;
-
-        // Disallow the copy constructor and the assignment operator
-        ScalarValuedFunctionModifications(
-            const ScalarValuedFunctionModifications&);
-        ScalarValuedFunctionModifications& operator = (
-            const ScalarValuedFunctionModifications&);
 
     public:
         // Use an empty default constructor
@@ -5344,6 +5346,8 @@ namespace peopt{
                 : public peopt::ScalarValuedFunctionModifications <Real,XX>
             {
             private:
+                MODIFICATIONS_CLASS(EqualityModifications); 
+
                 // Underlying modification.  This takes control of the memory
                 std::unique_ptr <
                     peopt::ScalarValuedFunctionModifications <Real,XX> > f_mod;
@@ -5399,12 +5403,7 @@ namespace peopt{
                     // grad <- grad f(x) + g'(x)*y 
                     X::axpy(Real(1.),gpxsy,grad_lag);
                 }
-                
-                // Disallow the default and copy constructors as the assignment
-                // operator
-                EqualityModifications() {}
-                EqualityModifications(const EqualityModifications&);
-                EqualityModifications& operator =(const EqualityModifications&);
+
             public:
                 EqualityModifications(
                     const typename State::t& state,
@@ -6638,7 +6637,7 @@ namespace peopt{
                 BlockDiagonalPreconditioner PAugSys_r(I,*(fns.PSchur_right));
 
                 // Solve the augmented system for the Lagrange multiplier step 
-                std::pair <Real,Natural> err_iter = peopt::gmres <Real,XXxYY> (
+                peopt::gmres <Real,XXxYY> (
                     AugmentedSystem(state,fns,x),
                     b0,
                     Real(1.), // This will be overwritten by the manipulator
@@ -7830,6 +7829,8 @@ namespace peopt{
                 : public peopt::ScalarValuedFunctionModifications <Real,XX>
             {
             private:
+                MODIFICATIONS_CLASS(InequalityModifications); 
+
                 // Underlying modification.  This takes control of the memory
                 std::unique_ptr <
                     peopt::ScalarValuedFunctionModifications <Real,XX> > f_mod;
@@ -7929,13 +7930,6 @@ namespace peopt{
                     // grad_schur<- grad f(x) - mu h'(x)* (inv(L(h(x))) e)
                     X::axpy(-mu,hpxs_invLhx_e,grad_schur);
                 }
-                
-                // Disallow the default and copy constructors as the assignment
-                // operator
-                InequalityModifications() {}
-                InequalityModifications(const InequalityModifications&);
-                InequalityModifications&
-                    operator = (const InequalityModifications&);
             public:
                 InequalityModifications(
                     const typename State::t& state,
