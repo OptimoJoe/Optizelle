@@ -88,6 +88,10 @@ namespace peopt {
         a=r;
         b=z;
     }
+    template <>
+    void rotg(double a,double b,double& c,double& s);
+    template <>
+    void rotg(float a,float b,float& c,float& s);
 
     template <typename Real>
     void rot(Integer n,Real* x,Integer incx,Real* y,Integer incy,Real c,Real s){
@@ -101,7 +105,14 @@ namespace peopt {
             x[ix] = temp;
         }
     }
-
+    template <>
+    void rot <double> (
+        Integer n,double* x,Integer incx,double* y,Integer incy,
+        double c,double s);
+    template <>
+    void rot <float> (
+        Integer n,float* x,Integer incx,float* y,Integer incy,
+        float c,float s);
 
     template <typename Real>
     void copy(Integer n,const Real* x,Integer incx,Real* y,Integer incy) {
@@ -112,10 +123,24 @@ namespace peopt {
         )
             y[iy]=x[ix];
     }
+    template <>
+    void copy <double> (Integer n,const double* x,Integer incx,double* y,
+        Integer incy);
+    template <>
+    void copy <float> (Integer n,const float* x,Integer incx,float* y,
+        Integer incy);
     
     template <typename Real>
     void axpy(Integer n,Real alpha,const Real* x,Integer incx,
         Real* y,Integer incy);
+    template <>
+    void axpy <double> (
+        Integer n,double alpha,const double* x,Integer incx,double* y,
+        Integer incy);
+    template <>
+    void axpy <float> (
+        Integer n,float alpha,const float* x,Integer incx,float* y,
+        Integer incy);
     
     template <typename Real>
     void scal(Integer n,const Real alpha,Real* x,Integer incx) {
@@ -126,25 +151,64 @@ namespace peopt {
         )
             x[ix]*=alpha;
     }
+    template <>
+    void scal <double> (Integer n,double alpha,double* x,Integer incx);
+    template <>
+    void scal <float> (Integer n,float alpha,float* x,Integer incx);
     
     template <typename Real>
     Real dot(Integer n,const Real* x,Integer incx,const Real* y,Integer incy);
+    template <>
+    double dot <double> (
+        Integer n,const double* x,Integer incx,const double* y,Integer incy);
+    template <>
+    float dot <float> (
+        Integer n,const float* x,Integer incx,const float* y,Integer incy);
+    
 
     template <typename Real>
     void gemv(char trans,Integer m,Integer n,Real alpha,const Real* A,
         Integer lda,const Real* x,Integer incx,Real beta,Real* y,Integer incy);
+    template <>
+    void gemv(char trans,Integer m,Integer n,double alpha,const double* A,
+        Integer lda,const double* x,Integer incx,double beta,double* y,
+        Integer incy);
+    template <>
+    void gemv(char trans,Integer m,Integer n,float alpha,const float* A,
+        Integer lda,const float* x,Integer incx,float beta,float* y,
+        Integer incy);
     
     template <typename Real>
     void symv(char uplo,Integer n,Real alpha,const Real* A,Integer lda,
         const Real* x,Integer incx,Real beta,Real* y,Integer incy);
+    template <>
+    void symv(char uplo,Integer n,double alpha,const double* A,Integer lda,
+        const double* x,Integer incx,double beta,double* y,Integer incy);
+    template <>
+    void symv(char uplo,Integer n,float alpha,const float* A,Integer lda,
+        const float* x,Integer incx,float beta,float* y,Integer incy);
 
     template <typename Real>
     void spmv(char uplo,Integer n,Real alpha,const Real* Ap,
         const Real* x,Integer incx,Real beta,Real* y,Integer incy);
+    template <>
+    void spmv(char uplo,Integer n,double alpha,const double* Ap,
+        const double* x,Integer incx,double beta,double* y,Integer incy);
+    template <>
+    void spmv(char uplo,Integer n,float alpha,const float* Ap,
+        const float* x,Integer incx,float beta,float* y,Integer incy);
     
     template <typename Real>
     void trsv(char uplo,char trans,char diag,Integer n,const Real* A,
         Integer lda,Real* x,Integer incx); 
+    template <>
+    void trsv(
+        char uplo,char trans,char diag,Integer n,const double* A,Integer lda,
+        double* x,Integer incx);
+    template <>
+    void trsv(
+        char uplo,char trans,char diag,Integer n,const float* A,Integer lda,
+        float* x,Integer incx);
     
     // NOTE: this routine is not fully general.  It only implements what we
     // need.
@@ -219,34 +283,95 @@ namespace peopt {
             }
         }
     }
+    template <>
+    void tpsv(
+        char uplo,char trans,char diag,Integer n,const double* Ap,double* x,
+        Integer incx);
+    template <>
+    void tpsv(
+        char uplo,char trans,char diag,Integer n,const float* Ap,float* x,
+        Integer incx);
 
     template <typename Real>
     void gemm(char transa,char transb,Integer m,Integer n,Integer k,Real alpha,
         const Real* A,Integer lda,const Real* B,Integer ldb,Real beta,
         Real* C,Integer ldc);
+    template <>
+    void gemm(
+        char transa,char transb,Integer m,Integer n,Integer k,double alpha,
+        const double* A,Integer lda,const double* B,Integer ldb,double beta,
+        double* C,Integer ldc);
+    template <>
+    void gemm(
+        char transa,char transb,Integer m,Integer n,Integer k,float alpha,
+        const float* A,Integer lda,const float* B,Integer ldb,float beta,
+        float* C,Integer ldc);
     
     template <typename Real>
     void symm(char side,char uplo,Integer m,Integer n,Real alpha,const Real* A,
         Integer lda,const Real* B,Integer ldb,Real beta,Real* C,Integer ldc);
+    template <>
+    void symm(
+        char side,char uplo,Integer m,Integer n,double alpha,const double* A,
+        Integer lda,const double* B,Integer ldb,double beta,double* C,
+        Integer ldc);
+    template <>
+    void symm(
+        char side,char uplo,Integer m,Integer n,float alpha,const float* A,
+        Integer lda,const float* B,Integer ldb,float beta,float* C,
+        Integer ldc);
+
     
     template <typename Real>
     void syr2k(char uplo,char trans,Integer n,Integer k,Real alpha,
         const Real* A,Integer lda,const Real* B,Integer ldb,
         Real beta,Real* C,Integer ldc);
+    template <>
+    void syr2k(char uplo,char trans,Integer n,Integer k,double alpha,
+        const double* A,Integer lda,const double* B,Integer ldb,double beta,
+        double* C,Integer ldc);
+    template <>
+    void syr2k(char uplo,char trans,Integer n,Integer k,float alpha,
+        const float* A,Integer lda,const float* B,Integer ldb,float beta,
+        float* C,Integer ldc);
 
     template <typename Real>
     Real lamch(char cmach);
+    template <>
+    double lamch(char cmach); 
+    template <>
+    float lamch(char cmach);
 
     template <typename Real>
     void syevr(char jobz,char range,char uplo,Integer n,Real *A,Integer lda,
         Real vl,Real vu,Integer il,Integer iu,Real abstol,Integer& m,
         Real* w,Real* z,Integer ldz,Integer* isuppz,Real* work,Integer lwork,
         Integer* iwork,Integer liwork,Integer& info);
+    template <>
+    void syevr(char jobz,char range,char uplo,Integer n,double *A,Integer lda,
+        double vl,double vu,Integer il,Integer iu,double abstol,Integer& m,
+        double* w,double* z,Integer ldz,Integer* isuppz,double* work,
+        Integer lwork,Integer* iwork,Integer liwork,Integer& info);
+    template <>
+    void syevr(char jobz,char range,char uplo,Integer n,float *A,Integer lda,
+        float vl,float vu,Integer il,Integer iu,float abstol,Integer& m,
+        float* w,float* z,Integer ldz,Integer* isuppz,float* work,
+        Integer lwork,Integer* iwork,Integer liwork,Integer& info);
     
     template <typename Real>
     void stemr(char jobz,char range,Integer n,Real *D,Real *E,Real vl,Real vu,
         Integer il,Integer iu,Integer& m,Real* w,Real* z,Integer ldz,
         Integer nzc,Integer* isuppz,Integer& tryrac,Real* work,
+        Integer lwork,Integer* iwork,Integer liwork,Integer& info);
+    template <>
+    void stemr(char jobz,char range,Integer n,double *D,double *E,double vl,
+        double vu,Integer il,Integer iu,Integer& m,double* w,double* z,
+        Integer ldz,Integer nzc,Integer* isuppz,Integer& tryrac,double* work,
+        Integer lwork,Integer* iwork,Integer liwork,Integer& info);
+    template <>
+    void stemr(char jobz,char range,Integer n,float *D,float *E,float vl,
+        float vu,Integer il,Integer iu,Integer& m,float* w,float* z,
+        Integer ldz,Integer nzc,Integer* isuppz,Integer& tryrac,float* work,
         Integer lwork,Integer* iwork,Integer liwork,Integer& info);
     
     template <typename Real>
@@ -254,76 +379,193 @@ namespace peopt {
         Integer il,Integer iu,Real abstol, Integer& m,Real* w,Real* z,
         Integer ldz,Integer* isuppz,Real* work,Integer lwork,Integer* iwork,
         Integer liwork,Integer& info);
+    template <>
+    void stevr(char jobz,char range,Integer n,double *D,double *E,double vl,
+        double vu,Integer il,Integer iu,double abstol,Integer& m,double* w,
+        double* z,Integer ldz,Integer* isuppz,double* work,Integer lwork,
+        Integer* iwork,Integer liwork,Integer& info);
+    template <>
+    void stevr(char jobz,char range,Integer n,float *D,float *E,float vl,
+        float vu,Integer il,Integer iu,float abstol,Integer& m,float* w,
+        float* z,Integer ldz,Integer* isuppz,float* work,Integer lwork,
+        Integer* iwork,Integer liwork,Integer& info);
 
     template <typename Real>
     void spevx(char jobz,char range,char uplo,Integer n,Real* Ap,
         Real vl,Real vu,Integer il,Integer iu,Real abstol,Integer& m,
         Real* w,Real* z,Integer ldz,Real* work,Integer* iwork,
         Integer* ifail,Integer& info);
+    template <>
+    void spevx(char jobz,char range,char uplo,Integer n,double* Ap,
+        double vl,double vu,Integer il,Integer iu,double abstol,Integer& m,
+        double* w,double* z,Integer ldz,double* work,Integer* iwork,
+        Integer* ifail,Integer& info);
+    template <>
+    void spevx(char jobz,char range,char uplo,Integer n,float* Ap,
+        float vl,float vu,Integer il,Integer iu,float abstol,Integer& m,
+        float* w,float* z,Integer ldz,float* work,Integer* iwork,
+        Integer* ifail,Integer& info);
 
     template <typename Real>
     void tptrs(char uplo,char trans,char diag,Integer n,Integer nrhs,
         Real const * const Ap,Real* B,Integer ldb,Integer& info);
+    template <>
+    void tptrs(char uplo,char trans,char diag,Integer n,Integer nrhs,
+        double const * const Ap,double* B,Integer ldb,Integer& info);
+    template <>
+    void tptrs(char uplo,char trans,char diag,Integer n,Integer nrhs,
+        float const * const Ap,float* B,Integer ldb,Integer& info);
 
     template <typename Real>
     void tprfs(char uplo,char trans,char diag,Integer n,Integer nrhs,
         Real const * const Ap,Real const * const B,Integer ldb,
         Real const * const X,Integer ldx,Real* ferr,Real* berr,Real* work,
         Integer* iwork,Integer& info);
+    template <>
+    void tprfs(char uplo,char trans,char diag,Integer n,Integer nrhs,
+        double const * const Ap,double const * const B,Integer ldb,
+        double const * const X,Integer ldx,double* ferr,double* berr,
+        double* work,Integer* iwork,Integer& info);
+    template <>
+    void tprfs(char uplo,char trans,char diag,Integer n,Integer nrhs,
+        float const * const Ap,float const * const B,Integer ldb,
+        float const * const X,Integer ldx,float* ferr,float* berr,
+        float* work,Integer* iwork,Integer& info);
 
     template <typename Real>
     void trcon(char norm,char uplo,char diag,Integer n,
         Real const * const A,Integer lda,Real& rcond,Real* work,Integer* iwork,
         Integer& info);
+    template <>
+    void trcon(char norm,char uplo,char diag,Integer n,
+        double const * const A,Integer lda,double& rcond,double* work,
+        Integer* iwork,Integer& info);
+    template <>
+    void trcon(char norm,char uplo,char diag,Integer n,
+        float const * const A,Integer lda,float& rcond,float* work,
+        Integer* iwork,Integer& info);
 
     template <typename Real>
     void tpcon(char norm,char uplo,char diag,Integer n,
         Real const * const Ap,Real& rcond,Real* work,Integer* iwork,
         Integer& info);
+    template <>
+    void tpcon(char norm,char uplo,char diag,Integer n,
+        double const * const Ap,double& rcond,double* work,Integer* iwork,
+        Integer& info);
+    template <>
+    void tpcon(char norm,char uplo,char diag,Integer n,
+        float const * const Ap,float& rcond,float* work,Integer* iwork,
+        Integer& info);
 
     template <typename Real>
     void potrf(char uplo,Integer n,Real* A,Integer lda,Integer& info);
+    template <>
+    void potrf(char uplo,Integer n,double* A,Integer lda,Integer& info);
+    template <>
+    void potrf(char uplo,Integer n,float* A,Integer lda,Integer& info);
     
     template <typename Real>
     void potri(char uplo,Integer n,Real* A,Integer lda,Integer& info);
+    template <>
+    void potri(char uplo,Integer n,double* A,Integer lda,Integer& info);
+    template <>
+    void potri(char uplo,Integer n,float* A,Integer lda,Integer& info);
     
     template <typename Real>
     void pftrf(char transr,char uplo,Integer n,Real* Arf,Integer& info);
+    template <>
+    void pftrf(char transr,char uplo,Integer n,double* Arf,Integer& info);
+    template <>
+    void pftrf(char transr,char uplo,Integer n,float* Arf,Integer& info);
 
     template <typename Real>
     void trtri(char uplo,char diag,Integer n,Real* A,Integer lda,Integer& info);
+    template <>
+    void trtri(
+        char uplo,char diag,Integer n,double* A,Integer lda,Integer& info);
+    template <>
+    void trtri(
+        char uplo,char diag,Integer n,float* A,Integer lda,Integer& info);
 
     template <typename Real>
     void spgst(Integer itype,char uplo,Integer n,Real* Ap,Real const * const Bp,
         Integer& info);
+    template <>
+    void spgst(Integer itype,char uplo,Integer n,double* Ap,
+        double const * const Bp,Integer& info);
+    template <>
+    void spgst(Integer itype,char uplo,Integer n,float* Ap,
+        float const * const Bp,Integer& info);
 
     template <typename Real>
     void geqrf(Integer m,Integer n,Real* A,Integer lda,Real* tau,
         Real* work,Integer lwork,Integer& info);
+    template <>
+    void geqrf(Integer m,Integer n,double* A,Integer lda,double* tau,
+        double* work,Integer lwork,Integer& info);
+    template <>
+    void geqrf(Integer m,Integer n,float* A,Integer lda,float* tau,
+        float* work,Integer lwork,Integer& info);
 
     template <typename Real>
     void orgqr(Integer m,Integer n,Integer k,Real* A,Integer lda,Real* tau,
         Real* work,Integer lwork,Integer& info);
+    template <>
+    void orgqr(Integer m,Integer n,Integer k,double* A,Integer lda,double* tau,
+        double* work,Integer lwork,Integer& info);
+    template <>
+    void orgqr(Integer m,Integer n,Integer k,float* A,Integer lda,float* tau,
+        float* work,Integer lwork,Integer& info);
 
     template <typename Real>
     void trttf(char transr,char uplo,Integer n,Real const * const A,Integer lda,
         Real* Arf,Integer& info);
+    template <>
+    void trttf(char transr,char uplo,Integer n,double const * const A,
+        Integer lda,double* Arf,Integer& info);
+    template <>
+    void trttf(char transr,char uplo,Integer n,float const * const A,
+        Integer lda,float* Arf,Integer& info);
 
     template <typename Real>
     void trttp(char uplo,Integer n,Real const * const A,Integer lda,
         Real* Ap,Integer& info);
+    template <>
+    void trttp(char uplo,Integer n,double const * const A,Integer lda,
+        double* Ap,Integer& info);
+    template <>
+    void trttp(char uplo,Integer n,float const * const A,Integer lda,
+        float* Ap,Integer& info);
 
     template <typename Real>
     void tfttr(char transr,char uplo,Integer n,Real const * const Arf,Real* A,
         Integer lda,Integer& info);
+    template <>
+    void tfttr(char transr,char uplo,Integer n,double const * const Arf,
+        double* A,Integer lda,Integer& info);
+    template <>
+    void tfttr(char transr,char uplo,Integer n,float const * const Arf,
+        float* A,Integer lda,Integer& info);
 
     template <typename Real>
     void tfttp(char transr,char uplo,Integer n,Real const * const Arf,Real* Ap,
         Integer& info);
+    template <>
+    void tfttp(char transr,char uplo,Integer n,double const * const Arf,
+        double* Ap,Integer& info);
+    void tfttp(char transr,char uplo,Integer n,float const * const Arf,
+        float* Ap,Integer& info);
 
     template <typename Real>
     void tpttr(char uplo,Integer n,Real const * const A,Real* Ap,Integer lda,
         Integer& info);
+    template <>
+    void tpttr(char uplo,Integer n,double const * const Ap,double* A,
+        Integer lda,Integer& info);
+    template <>
+    void tpttr(char uplo,Integer n,float const * const Ap,float* A,
+        Integer lda,Integer& info);
 
     // Indexing function for matrices
     Natural ijtok(Natural i,Natural j,Natural m);

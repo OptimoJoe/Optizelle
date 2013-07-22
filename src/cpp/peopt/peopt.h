@@ -47,6 +47,15 @@ Author: Joseph Young (joe@optimojoe.com)
 #include<numeric>
 #include<peopt/linalg.h>
 
+// Putting this into the private section of a class prevents its construction.
+// Essentially, we use this trick in order to create modules like in ML.  It
+// also allows us to created templated namespaces.
+#define MODULE_CLASS(Name) \
+    Name(); \
+    Name(Name&); \
+    Name& operator = (Name&); \
+    ~Name();
+
 namespace peopt{
 
     // A simple scalar valued function interface, f : X -> R
@@ -205,18 +214,13 @@ namespace peopt{
     // Defines how we output messages to the user
     struct Messaging {
         // Prints a message
-        virtual void print(const std::string msg) const {
-            std::cout << msg << std::endl;
-        }
+        virtual void print(const std::string& msg) const;
 
         // Prints an error
-        virtual void error(const std::string msg) const {
-            std::cerr << msg << std::endl;
-            exit(EXIT_FAILURE);
-        }
+        virtual void error(const std::string& msg) const;
 
         // Allow a derived class to deallocate memory
-        virtual ~Messaging() {}
+        virtual ~Messaging();
     };
 
     // Which algorithm class do we use
@@ -228,44 +232,16 @@ namespace peopt{
         };
 
         // Converts the algorithm class to a string
-        static std::string to_string(t algorithm_class){
-            switch(algorithm_class){
-            case TrustRegion:
-                return "TrustRegion";
-            case LineSearch:
-                return "LineSearch";
-            case UserDefined:
-                return "UserDefined";
-            default:
-                throw;
-            }
-        }
+        std::string to_string(const t& algorithm_class);
         
         // Converts a string to an algorithm class 
-        static t from_string(std::string algorithm_class){
-            if(algorithm_class=="TrustRegion")
-                return TrustRegion;
-            else if(algorithm_class=="LineSearch")
-                return LineSearch;
-            else if(algorithm_class=="UserDefined")
-                return UserDefined;
-            else
-                throw;
-        }
+        t from_string(const std::string& algorithm_class);
 
         // Checks whether or not a string is valid
         struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (const std::string& name) const {
-                if( name=="TrustRegion" ||
-                    name=="LineSearch" ||
-                    name=="UserDefined"
-                )
-                    return true;
-                else
-                    return false;
-            }
+            bool operator () (const std::string& name) const;
         };
-    };
+    }
 
     // Reasons why we stop the algorithm
     namespace StoppingCondition{
@@ -279,59 +255,16 @@ namespace peopt{
         };
 
         // Converts the stopping condition to a string 
-        inline std::string to_string(const t& opt_stop){
-            switch(opt_stop){
-            case NotConverged:
-                return "NotConverged";
-            case RelativeGradientSmall:
-                return "RelativeGradientSmall";
-            case RelativeStepSmall:
-                return "RelativeStepSmall";
-            case MaxItersExceeded:
-                return "MaxItersExceeded";
-            case InteriorPointInstability:
-                return "InteriorPointInstability";
-            case UserDefined:
-                return "UserDefined";
-            default:
-                throw;
-            }
-        }
+        std::string to_string(const t& opt_stop);
 
         // Converts a string to a stopping condition
-        inline t from_string(const std::string& opt_stop){
-            if(opt_stop=="NotConverged")
-                return NotConverged;
-            else if(opt_stop=="RelativeGradientSmall")
-                return RelativeGradientSmall;
-            else if(opt_stop=="RelativeStepSmall")
-                return RelativeStepSmall;
-            else if(opt_stop=="MaxItersExceeded")
-                return MaxItersExceeded;
-            else if(opt_stop=="InteriorPointInstability")
-                return InteriorPointInstability; 
-            else if(opt_stop=="UserDefined")
-                return UserDefined;
-            else
-                throw;
-        }
+        t from_string(const std::string& opt_stop);
 
         // Checks whether or not a string is valid
         struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (const std::string& name) const {
-                if( name=="NotConverged" ||
-                    name=="RelativeGradientSmall" ||
-                    name=="RelativeStepSmall" ||
-                    name=="MaxItersExceeded" ||
-                    name=="InteriorPointInstability" ||
-                    name=="UserDefined"
-                )
-                    return true;
-                else
-                    return false;
-            }
+            bool operator () (const std::string& name) const; 
         };
-    };
+    }
 
     // Various operators for both Hessian approximations and preconditioners
     namespace Operators{
@@ -347,64 +280,16 @@ namespace peopt{
         };
         
         // Converts the operator type to a string 
-        inline std::string to_string(const t& op){
-            switch(op){
-            case Identity:
-                return "Identity";
-            case ScaledIdentity:
-                return "ScaledIdentity";
-            case BFGS:
-                return "BFGS";
-            case InvBFGS:
-                return "InvBFGS";
-            case SR1:
-                return "SR1";
-            case InvSR1:
-                return "InvSR1";
-            case UserDefined:
-                return "UserDefined";
-            default:
-                throw;
-            }
-        }
+        std::string to_string(const t& op);
         
         // Converts a string to a operator 
-        inline t from_string(const std::string& op){
-            if(op=="Identity")
-                return Identity; 
-            else if(op=="ScaledIdentity")
-                return ScaledIdentity; 
-            else if(op=="BFGS")
-                return BFGS; 
-            else if(op=="InvBFGS")
-                return InvBFGS; 
-            else if(op=="SR1")
-                return SR1; 
-            else if(op=="InvSR1")
-                return InvSR1; 
-            else if(op=="UserDefined")
-                return UserDefined; 
-            else
-                throw;
-        }
+        t from_string(const std::string& op);
 
         // Checks whether or not a string is valid
         struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (const std::string& name) const {
-                if( name=="Identity" ||
-                    name=="ScaledIdentity" ||
-                    name=="BFGS" ||
-                    name=="InvBFGS" ||
-                    name=="SR1" ||
-                    name=="InvSR1" ||
-                    name=="UserDefined" 
-                )
-                    return true;
-                else
-                    return false;
-            }
+            bool operator () (const std::string& name) const;
         };
-    };
+    }
 
     // Different kinds of search directions 
     namespace LineSearchDirection{
@@ -418,59 +303,16 @@ namespace peopt{
         };
         
         // Converts the line-search direction to a string 
-        inline std::string to_string(const t& dir){
-            switch(dir){
-            case SteepestDescent:
-                return "SteepestDescent";
-            case FletcherReeves:
-                return "FletcherReeves";
-            case PolakRibiere:
-                return "PolakRibiere";
-            case HestenesStiefel:
-                return "HestenesStiefel";
-            case BFGS:
-                return "BFGS";
-            case NewtonCG:
-                return "NewtonCG";
-            default:
-                throw;
-            }
-        }
+        std::string to_string(const t& dir);
         
         // Converts a string to a line-search direction 
-        inline t from_string(const std::string& dir){
-            if(dir=="SteepestDescent")
-                return SteepestDescent; 
-            else if(dir=="FletcherReeves")
-                return FletcherReeves; 
-            else if(dir=="PolakRibiere")
-                return PolakRibiere; 
-            else if(dir=="HestenesStiefel")
-                return HestenesStiefel; 
-            else if(dir=="BFGS")
-                return BFGS; 
-            else if(dir=="NewtonCG")
-                return NewtonCG; 
-            else
-                throw;
-        }
+        t from_string(const std::string& dir);
 
         // Checks whether or not a string is valid
         struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (const std::string& name) const {
-                if( name=="SteepestDescent" ||
-                    name=="FletcherReeves" ||
-                    name=="PolakRibiere" ||
-                    name=="HestenesStiefel" ||
-                    name=="BFGS" ||
-                    name=="NewtonCG"
-                )
-                    return true;
-                else
-                    return false;
-            }
+            bool operator () (const std::string& name) const;
         };
-    };
+    }
 
     namespace LineSearchKind{
         enum t{
@@ -482,70 +324,20 @@ namespace peopt{
         };
             
         // Converts the line-search kind to a string 
-        inline std::string to_string(const t& kind){
-            switch(kind){
-            case Brents:
-                return "Brents";
-            case GoldenSection:
-                return "GoldenSection";
-            case BackTracking:
-                return "BackTracking";
-            case TwoPointA:
-                return "TwoPointA";
-            case TwoPointB:
-                return "TwoPointB";
-            default:
-                throw;
-            }
-        }
+        std::string to_string(const t& kind);
         
         // Converts a string to a line-search kind 
-        inline t from_string(const std::string& kind){
-            if(kind=="Brents")
-                return Brents; 
-            else if(kind=="GoldenSection")
-                return GoldenSection; 
-            else if(kind=="BackTracking")
-                return BackTracking; 
-            else if(kind=="TwoPointA")
-                return TwoPointA; 
-            else if(kind=="TwoPointB")
-                return TwoPointB; 
-            else
-                throw;
-        }
+        t from_string(const std::string& kind);
 
         // Checks whether or not a string is valid
         struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (const std::string& name) const {
-                if( name=="Brents" ||
-                    name=="GoldenSection" ||
-                    name=="BackTracking" ||
-                    name=="TwoPointA" ||
-                    name=="TwoPointB" 
-                )
-                    return true;
-                else
-                    return false;
-            }
+            bool operator () (const std::string& name) const; 
         };
 
         // Determine whether or not the line-search checks the sufficient
         // decrease condition.
-        inline bool is_sufficient_decrease(const t& kind) {
-            switch(kind){
-            case GoldenSection:
-            case BackTracking:
-            case Brents:
-                return true;
-            case TwoPointA:
-            case TwoPointB:
-                return false;
-            default:
-                throw;
-            }
-        }
-    };
+        bool is_sufficient_decrease(const t& kind);
+    }
     
     namespace OptimizationLocation{
         enum t{
@@ -615,124 +407,16 @@ namespace peopt{
         };
             
         // Converts the optimization location to a string 
-        inline std::string to_string(t loc){
-            switch(loc){
-            case BeginningOfOptimization:
-                return "BeginningOfOptimization";
-            case BeforeInitialFuncAndGrad:
-                return "BeforeInitialFuncAndGrad";
-            case AfterInitialFuncAndGrad:
-                return "AfterInitialFuncAndGrad";
-            case BeforeOptimizationLoop:
-                return "BeforeOptimizationLoop";
-            case BeforeSaveOld:
-                return "BeforeSaveOld";
-            case BeforeStep:
-                return "BeforeStep";
-            case BeforeGetStep:
-                return "BeforeGetStep";
-            case GetStep:
-                return "GetStep";
-            case AfterStepBeforeGradient:
-                return "AfterStepBeforeGradient";
-            case AfterGradient:
-                return "AfterGradient";
-            case BeforeQuasi:
-                return "BeforeQuasi";
-            case AfterQuasi:
-                return "AfterQuasi";
-            case EndOfOptimizationIteration:
-                return "EndOfOptimizationIteration";
-            case BeforeLineSearch:
-                return "BeforeLineSearch";
-            case AfterRejectedTrustRegion:
-                return "AfterRejectedTrustRegion";
-            case AfterRejectedLineSearch:
-                return "AfterRejectedLineSearch";
-            case BeforeActualVersusPredicted:
-                return "BeforeActualVersusPredicted";
-            case EndOfKrylovIteration:
-                return "EndOfKrylovIteration";
-            case EndOfOptimization:
-                return "EndOfOptimization";
-            default:
-                throw;
-            }
-        }
+        std::string to_string(const t& loc);
         
         // Converts a string to a line-search kind 
-        inline t from_string(std::string loc){
-            if(loc=="BeginningOfOptimization")
-                return BeginningOfOptimization;
-            else if(loc=="BeforeInitialFuncAndGrad")
-                return BeforeInitialFuncAndGrad;
-            else if(loc=="AfterInitialFuncAndGrad")
-                return AfterInitialFuncAndGrad;
-            else if(loc=="BeforeOptimizationLoop")
-                return BeforeOptimizationLoop;
-            else if(loc=="BeforeSaveOld")
-                return BeforeSaveOld; 
-            else if(loc=="BeforeStep")
-                return BeforeStep; 
-            else if(loc=="BeforeGetStep")
-                return BeforeGetStep; 
-            else if(loc=="GetStep")
-                return GetStep; 
-            else if(loc=="AfterStepBeforeGradient")
-                return AfterStepBeforeGradient; 
-            else if(loc=="AfterGradient")
-                return AfterGradient;
-            else if(loc=="BeforeQuasi")
-                return BeforeQuasi;
-            else if(loc=="AfterQuasi")
-                return AfterQuasi;
-            else if(loc=="EndOfOptimizationIteration")
-                return EndOfOptimizationIteration; 
-            else if(loc=="BeforeLineSearch")
-                return BeforeLineSearch;
-            else if(loc=="AfterRejectedTrustRegion")
-                return AfterRejectedTrustRegion;
-            else if(loc=="AfterRejectedLineSearch")
-                return AfterRejectedLineSearch;
-            else if(loc=="BeforeActualVersusPredicted")
-                return BeforeActualVersusPredicted;
-            else if(loc=="EndOfKrylovIteration")
-                return EndOfKrylovIteration;
-            else if(loc=="EndOfOptimization")
-                return EndOfOptimization;
-            else
-                throw;
-        }
+        t from_string(const std::string& loc);
 
         // Checks whether or not a string is valid
         struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (const std::string& name) const {
-                if( name=="BeginningOfOptimization" ||
-                    name=="BeforeInitialFuncAndGrad" ||
-                    name=="AfterInitialFuncAndGrad" ||
-                    name=="BeforeOptimizationLoop" ||
-                    name=="BeforeSaveOld" || 
-                    name=="BeforeStep" || 
-                    name=="BeforeGetStep" || 
-                    name=="GetStep" || 
-                    name=="AfterStepBeforeGradient" ||
-                    name=="AfterGradient" ||
-                    name=="BeforeQuasi" ||
-                    name=="AfterQuasi" ||
-                    name=="EndOfOptimizationIteration" ||
-                    name=="BeforeLineSearch" ||
-                    name=="AfterRejectedTrustRegion" ||
-                    name=="AfterRejectedLineSearch" ||
-                    name=="BeforeActualVersusPredicted" ||
-                    name=="EndOfKrylovIteration" ||
-                    name=="EndOfOptimization"
-                )
-                    return true;
-                else
-                    return false;
-            }
+            bool operator () (const std::string& name) const;
         };
-    };
+    }
     
     // Different problem classes that we allow 
     namespace ProblemClass{
@@ -744,49 +428,16 @@ namespace peopt{
         };
 
         // Converts the problem class to a string
-        inline std::string to_string(t problem_class){
-            switch(problem_class){
-            case Unconstrained:
-                return "Unconstrained";
-            case EqualityConstrained:
-                return "EqualityConstrained";
-            case InequalityConstrained:
-                return "InequalityConstrained";
-            case Constrained:
-                return "Constrained";
-            default:
-                    throw;
-            }
-        }
+        std::string to_string(const t& problem_class);
 
         // Converts a string to a problem class 
-        inline t from_string(std::string problem_class){
-            if(problem_class=="Unconstrained")
-                return Unconstrained;
-            else if(problem_class=="EqualityConstrained")
-                return EqualityConstrained;
-            else if(problem_class=="InequalityConstrained")
-                return InequalityConstrained;
-            else if(problem_class=="Constrained")
-                return Constrained;
-            else
-                throw;
-        }
+        t from_string(const std::string& problem_class);
 
         // Checks whether or not a string is valid
         struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (const std::string& name) const {
-                if( name=="Unconstrained" ||
-                    name=="EqualityConstrained" ||
-                    name=="InequalityConstrained" ||
-                    name=="Constrained" 
-                )
-                    return true;
-                else
-                    return false;
-            }
+            bool operator () (const std::string& name) const;
         };
-    };
+    }
     
     // Different truncated Krylov solvers 
     namespace KrylovSolverTruncated{
@@ -796,37 +447,14 @@ namespace peopt{
         };
 
         // Converts the problem class to a string
-        inline std::string to_string(t truncated_krylov){
-            switch(truncated_krylov){
-            case ConjugateDirection:
-                return "ConjugateDirection";
-            case MINRES:
-                return "MINRES";
-            default:
-                    throw;
-            }
-        }
+        std::string to_string(const t& truncated_krylov);
 
         // Converts a string to a problem class 
-        inline t from_string(std::string truncated_krylov){
-            if(truncated_krylov=="ConjugateDirection")
-                return ConjugateDirection;
-            else if(truncated_krylov=="MINRES")
-                return MINRES;
-            else
-                throw;
-        }
+        t from_string(const std::string& truncated_krylov);
 
         // Checks whether or not a string is valid
         struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (const std::string& name) const {
-                if( name=="ConjugateDirection" ||
-                    name=="MINRES" 
-                )
-                    return true;
-                else
-                    return false;
-            }
+            bool operator () (const std::string& name) const;
         };
     };
     
@@ -841,44 +469,16 @@ namespace peopt{
         };
         
         // Converts the interior point method to a string 
-        inline std::string to_string(t ipm){
-            switch(ipm){
-            case PrimalDual:
-                return "PrimalDual";
-            case PrimalDualLinked:
-                return "PrimalDualLinked";
-            case LogBarrier:
-                return "LogBarrier";
-            default:
-                throw;
-            }
-        }
+        std::string to_string(const t& ipm);
         
         // Converts a string to an interior point method 
-        inline t from_string(std::string ipm){
-            if(ipm=="PrimalDual")
-                return PrimalDual; 
-            else if(ipm=="PrimalDualLinked")
-                return PrimalDualLinked; 
-            else if(ipm=="LogBarrier")
-                return LogBarrier; 
-            else
-                throw;
-        }
+        t from_string(const std::string& ipm);
 
         // Checks whether or not a string is valid
         struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (const std::string& name) const {
-                if( name=="PrimalDual" ||
-                    name=="PrimalDualLinked" ||
-                    name=="LogBarrier"
-                )
-                    return true;
-                else
-                    return false;
-            }
+            bool operator () (const std::string& name) const;
         };
-    };
+    }
     
     // Different schemes for adjusting the interior point centrality 
     namespace CentralityStrategy{
@@ -893,190 +493,31 @@ namespace peopt{
         };
         
         // Converts the centrality strategy to a string
-        inline std::string to_string(t cstrat){
-            switch(cstrat){
-            case Constant:
-                return "Constant";
-            case StairStep:
-                return "StairStep";
-            case PredictorCorrector:
-                return "PredictorCorrector";
-            default:
-                throw;
-            }
-        }
+        std::string to_string(const t& cstrat);
         
         // Converts a string to the cstrat
-        inline t from_string(std::string cstrat){
-            if(cstrat=="Constant")
-                return Constant; 
-            else if(cstrat=="StairStep")
-                return StairStep; 
-            else if(cstrat=="PredictorCorrector")
-                return PredictorCorrector; 
-            else
-                throw;
-        }
+        t from_string(const std::string& cstrat);
 
         // Checks whether or not a string is valid
         struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (const std::string& name) const {
-                if( name=="Constant" ||
-                    name=="StairStep" ||
-                    name=="PredictorCorrector" 
-                )
-                    return true;
-                else
-                    return false;
-            }
+            bool operator () (const std::string& name) const;
         };
-    };
-
-
-    // A collection of short routines that are only required locally
-    namespace {
-        // Returns the smallest positive non-Nan number between the two. 
-        // If both are NaN, it will return NaN.
-        template <typename Real>
-        Real get_smallest(const Real x,const Real y) {
-            return (x < y) || (y != y) ? x : y;
-        }
-
-        // Different nonlinear-CG directions 
-        struct NonlinearCGDirections {
-            enum t{
-                HestenesStiefel,        
-                PolakRibiere,           
-                FletcherReeves          
-            };
-        };
-            
-        // Checks whether all the labels in the list labels are actually
-        // labels stored in the is_label function.  If not, this function
-        // throws an error.
-        template <typename is_label>
-        void checkLabels(
-            const Messaging& msg,
-            const std::list <std::string>& labels, 
-            const std::string& kind
-        ) {
-                // Create a base message
-                const std::string base
-                    ="During serialization, found an invalid ";
-
-                // Check the labels
-                std::list <std::string>::const_iterator name = find_if(
-                    labels.begin(), labels.end(),
-                    std::not1(is_label()));
-
-                if(name!=labels.end()) {
-                    std::stringstream ss;
-                    ss << base << kind << *name;
-                    msg.error(ss.str());
-                }
-        }
-
-        // Combines two strings in a funny sort of way.  Basically, given
-        // a and b, if a is empty, this function returns b.  However, if
-        // a is nonempty, it returns a.
-        struct combineStrings : public std::binary_function
-            <std::string,std::string,std::string>
-        {
-            std::string operator() (std::string a,std::string b) const {
-                if(a=="") return b; else return a;
-            }
-        };
-      
-        // This checks the parameters and prints and error in there's a problem.
-        template <typename checkParamVal>
-        void checkParams(
-            const Messaging& msg,
-            const std::pair <std::list <std::string>,std::list <std::string> >&
-                params 
-        ) {
-            std::string err=std::inner_product(
-                params.first.begin(),
-                params.first.end(),
-                params.second.begin(),
-                std::string(""),
-                checkParamVal(),
-                combineStrings()
-            );
-            if(err!="") msg.error(err);
-        }
-
-        // Converts a variety of basic datatypes to strings
-        inline std::ostream& formatReal(std::ostream& out) {
-            return out<<std::setprecision(2) << std::scientific << std::setw(10)
-                << std::left;
-        }
-        inline std::ostream& formatInt(std::ostream& out) {
-            return out << std::setw(10) << std::left;
-        }
-        inline std::ostream& formatString(std::ostream& out) {
-            return out << std::setw(10) << std::left;
-        }
-        
-        // Converts anything to a string.
-        template <typename T>
-        std::string atos(T x);
-        template <>
-        inline std::string atos <double> (double x){
-            std::stringstream ss;
-            ss << formatReal << x;
-            return ss.str();
-        }
-        template <>
-        inline std::string atos <Natural> (Natural x){
-            std::stringstream ss;
-            ss << formatInt << x;
-            return ss.str();
-        }
-        template <>
-        inline std::string atos <const char*> (const char* x){
-            std::stringstream ss;
-            ss << formatString << x;
-            return ss.str();
-        }
-        template <>
-        inline std::string atos <KrylovStop::t> (KrylovStop::t x){
-            std::stringstream ss;
-            // Converts the Krylov stopping condition to a shorter string 
-            switch(x){
-            case KrylovStop::NegativeCurvature:
-                return atos <> ("NegCurv");
-            case KrylovStop::RelativeErrorSmall:
-                return atos <> ("RelErrSml");
-            case KrylovStop::MaxItersExceeded:
-                return atos <> ("IterExcd");
-            case KrylovStop::TrustRegionViolated:
-                return atos <> ("TrstReg");
-            case KrylovStop::Instability:
-                return atos <> ("Unstable");
-            case KrylovStop::InvalidTrustRegionCenter:
-                return atos <> ("InvldCnt");
-            default:
-                throw;
-            }
-        }
-
-        // Blank separator for printing
-        const std::string blankSeparator = ".         ";
-   
-        // Return whether the line-search hit the bounds when it
-        // terminated.  This is important to determine if we need
-        // to find a different area to bracket.
-        namespace LineSearchTermination{
-            enum t{
-                Min,
-                Max,
-                Between
-            };
-        }
     }
 
     // A collection of miscellaneous diagnostics that help determine errors.
-    namespace Diagnostics {
+    struct Diagnostics {
+    private:
+        MODULE_CLASS(Diagnostics);
+
+    protected:
+        // Returns the smallest positive non-Nan number between the two. 
+        // If both are NaN, it will return NaN.
+        template <typename Real>
+        static Real get_smallest(const Real x,const Real y) {
+            return (x < y) || (y != y) ? x : y;
+        }
+
+    public:
         // Performs a 4-point finite difference directional derivative on
         // a scalar valued function f : X->R.  In other words, <- f'(x)dx.  We
         // accomplish this by doing a finite difference calculation on f.
@@ -1084,7 +525,7 @@ namespace peopt{
             typename Real,
             template <typename> class XX
         >
-        Real directionalDerivative(
+        static Real directionalDerivative(
             const ScalarValuedFunction<Real,XX>& f,
             const typename XX <Real>::Vector& x,
             const typename XX <Real>::Vector& dx,
@@ -1131,7 +572,7 @@ namespace peopt{
             typename Real,
             template <typename> class XX
         >
-        void directionalDerivative(
+        static void directionalDerivative(
             const ScalarValuedFunction<Real,XX>& f,
             const typename XX <Real>::Vector& x,
             const typename XX <Real>::Vector& dx,
@@ -1187,7 +628,7 @@ namespace peopt{
             template <typename> class XX,
             template <typename> class YY 
         >
-        void directionalDerivative(
+        static void directionalDerivative(
             const VectorValuedFunction<Real,XX,YY>& f,
             const typename XX <Real>::Vector& x,
             const typename XX <Real>::Vector& dx,
@@ -1247,7 +688,7 @@ namespace peopt{
             template <typename> class XX,
             template <typename> class YY 
         >
-        void directionalDerivative(
+        static void directionalDerivative(
             const VectorValuedFunction<Real,XX,YY>& f,
             const typename XX <Real>::Vector& x,
             const typename XX <Real>::Vector& dx,
@@ -1305,7 +746,7 @@ namespace peopt{
             typename Real,
             template <typename> class XX
         >
-        Real gradientCheck(
+        static Real gradientCheck(
             const Messaging& msg,
             const ScalarValuedFunction<Real,XX>& f,
             const typename XX <Real>::Vector& x,
@@ -1354,7 +795,7 @@ namespace peopt{
             typename Real,
             template <typename> class XX
         >
-        Real hessianCheck(
+        static Real hessianCheck(
             const Messaging& msg,
             const ScalarValuedFunction<Real,XX>& f,
             const typename XX <Real>::Vector& x,
@@ -1411,7 +852,7 @@ namespace peopt{
             typename Real,
             template <typename> class XX
         >
-        Real hessianSymmetryCheck(
+        static Real hessianSymmetryCheck(
             const Messaging& msg,
             const ScalarValuedFunction<Real,XX>& f,
             const typename XX <Real>::Vector& x,
@@ -1459,7 +900,7 @@ namespace peopt{
             template <typename> class XX,
             template <typename> class YY 
         >
-        Real derivativeCheck(
+        static Real derivativeCheck(
             const Messaging& msg,
             const VectorValuedFunction<Real,XX,YY>& f,
             const typename XX <Real>::Vector& x,
@@ -1521,7 +962,7 @@ namespace peopt{
             template <typename> class XX,
             template <typename> class YY 
         >
-        Real derivativeAdjointCheck(
+        static Real derivativeAdjointCheck(
             const Messaging& msg,
             const VectorValuedFunction<Real,XX,YY>& f,
             const typename XX <Real>::Vector& x,
@@ -1572,7 +1013,7 @@ namespace peopt{
             template <typename> class XX,
             template <typename> class YY 
         >
-        Real secondDerivativeCheck(
+        static Real secondDerivativeCheck(
             const Messaging& msg,
             const VectorValuedFunction<Real,XX,YY>& f,
             const typename XX <Real>::Vector& x,
@@ -1625,8 +1066,7 @@ namespace peopt{
             // Return the function's smallest relative error
             return min_rel_err; 
         }
-    }
-
+    };
 
     // A function that has free reign to manipulate or analyze the state.
     // This should be used cautiously.
@@ -1773,6 +1213,82 @@ namespace peopt{
             smanip(fns,state,loc);
         }
     };
+
+    // A series of utiilty functions used by the routines below, but do
+    // not need to be exposed to the user.
+    struct Utility {
+    public:
+        template <
+            typename Real,
+            template <typename> class XX
+        > 
+        friend class Unconstrained;
+        template <
+            typename Real,
+            template <typename> class XX,
+            template <typename> class YY
+        > 
+        friend class EqualityConstrained;
+        template <
+            typename Real,
+            template <typename> class XX,
+            template <typename> class ZZ
+        > 
+        friend class InequalityConstrained;
+        template <
+            typename Real,
+            template <typename> class XX,
+            template <typename> class YY,
+            template <typename> class ZZ
+        > 
+        friend class Constrained;
+    private:
+        MODULE_CLASS(Utility);
+    protected:
+        // Checks whether all the labels in the list labels are actually
+        // labels stored in the is_label function.  If not, this function
+        // throws an error.
+        static void checkLabels(
+            const Messaging& msg,
+            const std::function<bool(const std::string&)>& is_label,
+            const std::list <std::string>& labels, 
+            const std::string& kind
+        );
+
+        // Combines two strings in a funny sort of way.  Basically, given
+        // a and b, if a is empty, this function returns b.  However, if
+        // a is nonempty, it returns a.
+        struct combineStrings : public std::binary_function
+            <const std::string&,const std::string&,std::basic_string <char> >
+        {
+            std::basic_string <char> operator() (
+                const std::string& a,const std::string& b) const;
+        };
+      
+        // This checks the parameters and prints and error in there's a problem.
+        static void checkParams(
+            const Messaging& msg,
+            const std::function
+                <std::string(const std::string&,const std::string&)>&
+                checkParamVal,
+            const std::pair <std::list <std::string>,std::list <std::string> >&
+                params 
+        );
+
+        // Converts a variety of basic datatypes to strings
+        static std::ostream& formatReal(std::ostream& out);
+        static std::ostream& formatInt(std::ostream& out);
+        static std::ostream& formatString(std::ostream& out); 
+
+        // Converts anything to a string.
+        static std::string atos(const double& x);
+        static std::string atos(const Natural& x);
+        static std::string atos(const char* x);
+        static std::string atos(const KrylovStop::t& x);
+
+        // Blank separator for printing
+        static const std::string blankSeparator;
+    };
        
     // Routines that manipulate and support problems of the form
     // 
@@ -1785,8 +1301,28 @@ namespace peopt{
     > 
     struct Unconstrained {
     private:
-        // This is a templated namespace.  Do not allow construction.
-        Unconstrained();
+        MODULE_CLASS(Unconstrained);
+
+    protected:
+        // Different nonlinear-CG directions 
+        struct NonlinearCGDirections {
+            enum t{
+                HestenesStiefel,        
+                PolakRibiere,           
+                FletcherReeves          
+            };
+        };
+   
+        // Return whether the line-search hit the bounds when it
+        // terminated.  This is important to determine if we need
+        // to find a different area to bracket.
+        struct LineSearchTermination{
+            enum t{
+                Min,
+                Max,
+                Between
+            };
+        };
 
     public:
         // Create some type shortcuts
@@ -2231,7 +1767,9 @@ namespace peopt{
 
         public:
             // Checks whether we have a valid real label.
-            struct is_real : public std::unary_function<std::string, bool> {
+            struct is_real :
+                public std::unary_function<const std::string&, bool>
+            {
                 bool operator () (const std::string& name) const {
                     if( name == "eps_grad" || 
                         name == "eps_dx" || 
@@ -2258,7 +1796,9 @@ namespace peopt{
             };
 
             // Checks whether we have a valid natural number label.
-            struct is_nat : public std::unary_function<std::string, bool> {
+            struct is_nat :
+                public std::unary_function<const std::string&, bool>
+            {
                 bool operator () (const std::string& name) const {
                     if( name == "stored_history" ||
                         name == "history_reset" || 
@@ -2281,7 +1821,9 @@ namespace peopt{
             };
            
             // Checks whether we have a valid parameter label.
-            struct is_param : public std::unary_function<std::string, bool> {
+            struct is_param:
+                public std::unary_function<const std::string&, bool>
+            {
                 bool operator () (const std::string& name) const {
                     if( name == "krylov_solver" ||
                         name == "algorithm_class" || 
@@ -2324,23 +1866,23 @@ namespace peopt{
                 const Params& params,
                 const X_Vectors& xs
             ) {
-                peopt::checkLabels <is_real> (msg,reals.first," real name: ");
-                peopt::checkLabels <is_nat> (msg,nats.first," natural name: ");
-                peopt::checkLabels <is_param>
-                    (msg,params.first," paramater name: ");
-                peopt::checkLabels <is_x> (msg,xs.first," variable name: ");
+                Utility::checkLabels(msg,is_real(),reals.first," real name: ");
+                Utility::checkLabels(msg,is_nat(),nats.first," natural name: ");
+                Utility::checkLabels
+                    (msg,is_param(),params.first," paramater name: ");
+                Utility::checkLabels(msg,is_x(),xs.first," variable name: ");
             }
 
             // Checks whether or not the value used to represent a parameter
             // is valid.  This function returns a string with the error
             // if there is one.  Otherwise, it returns an empty string.
             struct checkParamVal : public std::binary_function
-                <std::string,std::string,std::string>
+                <const std::string&,const std::string&,std::string>
             {
                 std::string operator() (
-                    std::string label,
-                    std::string val
-                ) {
+                    const std::string& label,
+                    const std::string& val
+                ) const {
                     // Create a base message
                     const std::string base
                         ="During serialization, found an invalid ";
@@ -2708,7 +2250,7 @@ namespace peopt{
                 checkLabels(msg,reals,nats,params,xs);
 
                 // Check the strings used to represent parameters
-                checkParams <checkParamVal> (msg,params);
+                Utility::checkParams(msg,checkParamVal(),params);
 
                 // Copy in the variables 
                 Unconstrained <Real,XX>::Restart::vectorsToState(state,xs);
@@ -3411,31 +2953,31 @@ namespace peopt{
                 const LineSearchDirection::t& dir=state.dir;
 
                 // Basic information
-                out.emplace_back(atos <> ("Iter"));
-                out.emplace_back(atos <> ("f(x)"));
-                out.emplace_back(atos <> ("merit(x)"));
-                out.emplace_back(atos <> ("||grad||"));
-                out.emplace_back(atos <> ("||dx||"));
+                out.emplace_back(Utility::atos("Iter"));
+                out.emplace_back(Utility::atos("f(x)"));
+                out.emplace_back(Utility::atos("merit(x)"));
+                out.emplace_back(Utility::atos("||grad||"));
+                out.emplace_back(Utility::atos("||dx||"));
 
                 // In case we're using a Krylov method
                 if(    algorithm_class==AlgorithmClass::TrustRegion
                     || dir==LineSearchDirection::NewtonCG
                 ){
-                    out.emplace_back(atos <> ("KryIter"));
-                    out.emplace_back(atos <> ("KryErr"));
-                    out.emplace_back(atos <> ("KryWhy"));
+                    out.emplace_back(Utility::atos("KryIter"));
+                    out.emplace_back(Utility::atos("KryErr"));
+                    out.emplace_back(Utility::atos("KryWhy"));
                 }
 
                 // In case we're using a line-search method
                 if(algorithm_class==AlgorithmClass::LineSearch) {
-                    out.emplace_back(atos <> ("LSIter"));
+                    out.emplace_back(Utility::atos("LSIter"));
                 }
 
                 // In case we're using a trust-region method 
                 if(algorithm_class==AlgorithmClass::TrustRegion) {
-                    out.emplace_back(atos <> ("ared"));
-                    out.emplace_back(atos <> ("pred"));
-                    out.emplace_back(atos <> ("ared/pred"));
+                    out.emplace_back(Utility::atos("ared"));
+                    out.emplace_back(Utility::atos("pred"));
+                    out.emplace_back(Utility::atos("ared/pred"));
                 }
             }
 
@@ -3502,48 +3044,50 @@ namespace peopt{
 
                 // Basic information
                 if(!noiter)
-                    out.emplace_back(atos <> (iter));
+                    out.emplace_back(Utility::atos(iter));
                 else
-                    out.emplace_back(atos <> ("*"));
-                out.emplace_back(atos <> (f_x));
-                out.emplace_back(atos <> (merit_x));
-                out.emplace_back(atos <> (norm_grad));
+                    out.emplace_back(Utility::atos("*"));
+                out.emplace_back(Utility::atos(f_x));
+                out.emplace_back(Utility::atos(merit_x));
+                out.emplace_back(Utility::atos(norm_grad));
                 if(!opt_begin) {
                     if(algorithm_class==AlgorithmClass::LineSearch)
-                        out.emplace_back(atos <> (alpha*norm_dx));
+                        out.emplace_back(Utility::atos(alpha*norm_dx));
                     else
-                        out.emplace_back(atos <> (norm_dx));
+                        out.emplace_back(Utility::atos(norm_dx));
                 } else
-                    out.emplace_back(blankSeparator);
+                    out.emplace_back(Utility::blankSeparator);
 
                 // In case we're using a Krylov method
                 if(    algorithm_class==AlgorithmClass::TrustRegion
                     || dir==LineSearchDirection::NewtonCG
                 ){
                     if(!opt_begin) {
-                        out.emplace_back(atos <> (krylov_iter));
-                        out.emplace_back(atos <> (krylov_rel_err));
-                        out.emplace_back(atos <> (krylov_stop));
+                        out.emplace_back(Utility::atos(krylov_iter));
+                        out.emplace_back(Utility::atos(krylov_rel_err));
+                        out.emplace_back(Utility::atos(krylov_stop));
                     } else 
-                        for(Natural i=0;i<3;i++) out.emplace_back(blankSeparator);
+                        for(Natural i=0;i<3;i++)
+                            out.emplace_back(Utility::blankSeparator);
                 }
 
                 // In case we're using a line-search method
                 if(algorithm_class==AlgorithmClass::LineSearch) {
                     if(!opt_begin)
-                        out.emplace_back(atos <> (linesearch_iter));
+                        out.emplace_back(Utility::atos(linesearch_iter));
                     else 
-                        out.emplace_back(blankSeparator);
+                        out.emplace_back(Utility::blankSeparator);
                 }
                 
                 // In case we're using a trust-region method
                 if(algorithm_class==AlgorithmClass::TrustRegion) {
                     if(!opt_begin) {
-                        out.emplace_back(atos <> (ared));
-                        out.emplace_back(atos <> (pred));
-                        out.emplace_back(atos <> (ared/pred));
+                        out.emplace_back(Utility::atos(ared));
+                        out.emplace_back(Utility::atos(pred));
+                        out.emplace_back(Utility::atos(ared/pred));
                     } else  
-                        for(Natural i=0;i<3;i++) out.emplace_back(blankSeparator);
+                        for(Natural i=0;i<3;i++)
+                            out.emplace_back(Utility::blankSeparator);
                 }
 
                 // If we needed to do blank insertions, overwrite the elements
@@ -3553,7 +3097,7 @@ namespace peopt{
                         x!=out.end();
                         x++
                     )
-                        (*x)=blankSeparator;
+                        (*x)=Utility::blankSeparator;
             }
 
             // Combines all of the state information
@@ -3581,9 +3125,9 @@ namespace peopt{
                 if(    algorithm_class==AlgorithmClass::TrustRegion
                     || dir==LineSearchDirection::NewtonCG
                 ){
-                    out.emplace_back(atos <> ("KrySubItr"));
-                    out.emplace_back(atos <> ("KryTotItr"));
-                    out.emplace_back(atos <> ("KrySubErr"));
+                    out.emplace_back(Utility::atos("KrySubItr"));
+                    out.emplace_back(Utility::atos("KryTotItr"));
+                    out.emplace_back(Utility::atos("KrySubErr"));
                 }
             }
 
@@ -3611,9 +3155,9 @@ namespace peopt{
                 std::list <std::string>::iterator prior=out.end(); prior--;
 
                 // Basic information
-                out.emplace_back(atos <> (krylov_iter));
-                out.emplace_back(atos <> (krylov_iter_total));
-                out.emplace_back(atos <> (krylov_rel_err));
+                out.emplace_back(Utility::atos(krylov_iter));
+                out.emplace_back(Utility::atos(krylov_iter_total));
+                out.emplace_back(Utility::atos(krylov_rel_err));
                 
                 // If we needed to do blank insertions, overwrite the elements
                 // with nothing
@@ -3985,7 +3529,7 @@ namespace peopt{
     
             // Nonlinear Conjugate Gradient
             static void NonlinearCG(
-                const NonlinearCGDirections::t dir,
+                const typename NonlinearCGDirections::t dir,
                 const typename Functions::t& fns,
                 typename State::t& state
             ) {
@@ -4185,7 +3729,7 @@ namespace peopt{
             }
 
             // Compute a Golden-Section search between 0 and alpha0. 
-            static LineSearchTermination::t goldenSection(
+            static typename LineSearchTermination::t goldenSection(
                 const typename Functions::t& fns,
                 typename State::t& state
             ) {
@@ -4534,7 +4078,7 @@ namespace peopt{
 
                     // Keep track of whether or not we hit a bound with the
                     // line-search
-                    LineSearchTermination::t ls_why
+                    typename LineSearchTermination::t ls_why
                         = LineSearchTermination::Between;
 
                     // Save the original line search base
@@ -4880,8 +4424,7 @@ namespace peopt{
     > 
     struct EqualityConstrained {
     private:
-        // This is a templated namespace.  Do not allow construction.
-        EqualityConstrained();
+        MODULE_CLASS(EqualityConstrained);
 
     public:
         // Create some shortcuts for some type names
@@ -5324,7 +4867,9 @@ namespace peopt{
 
         public:
             // Checks whether we have a valid real label.
-            struct is_real : public std::unary_function<std::string, bool> {
+            struct is_real :
+                public std::unary_function<const std::string&, bool>
+            {
                 bool operator () (const std::string& name) const {
                     if( typename Unconstrained <Real,XX>::Restart
                             ::is_real()(name) ||
@@ -5352,7 +4897,9 @@ namespace peopt{
             };
             
             // Checks whether we have a valid natural number label.
-            struct is_nat : public std::unary_function<std::string, bool> {
+            struct is_nat :
+                public std::unary_function<const std::string&, bool>
+            {
                 bool operator () (const std::string& name) const {
                     if( typename Unconstrained <Real,XX>::Restart
                         ::is_nat()(name) ||
@@ -5366,7 +4913,9 @@ namespace peopt{
             };
            
             // Checks whether we have a valid parameter label.
-            struct is_param : public std::unary_function<std::string, bool> {
+            struct is_param :
+                public std::unary_function<const std::string&, bool>
+            {
                 bool operator () (const std::string& name) const {
                     if( typename Unconstrained <Real,XX>::Restart
                             ::is_param()(name) ||
@@ -5423,28 +4972,25 @@ namespace peopt{
                 const X_Vectors& xs,
                 const Y_Vectors& ys
             ) {
-                peopt::checkLabels <is_real>
-                    (msg,reals.first," real name: ");
-                peopt::checkLabels <is_nat>
-                    (msg,nats.first," natural name: ");
-                peopt::checkLabels <is_param>
-                    (msg,params.first," paramater name: ");
-                peopt::checkLabels <is_x>
-                    (msg,xs.first," variable name: ");
-                peopt::checkLabels <is_y>
-                    (msg,ys.first," equality multiplier name: ");
+                Utility::checkLabels(msg,is_real(),reals.first," real name: ");
+                Utility::checkLabels(msg,is_nat(),nats.first," natural name: ");
+                Utility::checkLabels(
+                    msg,is_param(),params.first," paramater name: ");
+                Utility::checkLabels(msg,is_x(),xs.first," variable name: ");
+                Utility::checkLabels(
+                    msg,is_y(),ys.first," equality multiplier name: ");
             }
             
             // Checks whether or not the value used to represent a parameter
             // is valid.  This function returns a string with the error
             // if there is one.  Otherwise, it returns an empty string.
             struct checkParamVal : public std::binary_function
-                <std::string,std::string,std::string>
+                <const std::string&,const std::string&,std::string>
             {
                 std::string operator() (
-                    std::string label,
-                    std::string val
-                ) {
+                    const std::string& label,
+                    const std::string& val
+                ) const {
 
                     // Create a base message
                     const std::string base
@@ -5742,7 +5288,7 @@ namespace peopt{
                 checkLabels(msg,reals,nats,params,xs,ys);
 
                 // Check the strings used to represent parameters
-                checkParams <checkParamVal> (msg,params);
+                Utility::checkParams(msg,checkParamVal(),params);
 
                 // Copy in the variables 
                 Unconstrained <Real,XX>::Restart::vectorsToState(state,xs);
@@ -6087,17 +5633,17 @@ namespace peopt{
                 std::list <std::string>& out
             ) { 
                 // Norm of the constrained 
-                out.emplace_back(atos <> ("||g(x)||"));
+                out.emplace_back(Utility::atos("||g(x)||"));
                     
                 // Trust-region information
-                out.emplace_back(atos <> ("ared"));
-                out.emplace_back(atos <> ("pred"));
-                out.emplace_back(atos <> ("ared/pred"));
+                out.emplace_back(Utility::atos("ared"));
+                out.emplace_back(Utility::atos("pred"));
+                out.emplace_back(Utility::atos("ared/pred"));
                    
                 // Krylov method information
-                out.emplace_back(atos <> ("KryIter"));
-                out.emplace_back(atos <> ("KryErr"));
-                out.emplace_back(atos <> ("KryWhy"));
+                out.emplace_back(Utility::atos("KryIter"));
+                out.emplace_back(Utility::atos("KryErr"));
+                out.emplace_back(Utility::atos("KryWhy"));
             }
             // Combines all of the state headers
             static void getStateHeader(
@@ -6140,23 +5686,25 @@ namespace peopt{
 
                 // Norm of the gradient 
                 Real norm_gx = sqrt(Y::innr(g_x,g_x));
-                out.emplace_back(atos <> (norm_gx));
+                out.emplace_back(Utility::atos(norm_gx));
                     
                 // Actual vs. predicted reduction 
                 if(!opt_begin) {
-                    out.emplace_back(atos <> (ared));
-                    out.emplace_back(atos <> (pred));
-                    out.emplace_back(atos <> (ared/pred));
+                    out.emplace_back(Utility::atos(ared));
+                    out.emplace_back(Utility::atos(pred));
+                    out.emplace_back(Utility::atos(ared/pred));
                 } else 
-                    for(Natural i=0;i<3;i++) out.emplace_back(blankSeparator);
+                    for(Natural i=0;i<3;i++)
+                        out.emplace_back(Utility::blankSeparator);
                 
                 // Krylov method information
                 if(!opt_begin) {
-                    out.emplace_back(atos <> (krylov_iter));
-                    out.emplace_back(atos <> (krylov_rel_err));
-                    out.emplace_back(atos <> (krylov_stop));
+                    out.emplace_back(Utility::atos(krylov_iter));
+                    out.emplace_back(Utility::atos(krylov_rel_err));
+                    out.emplace_back(Utility::atos(krylov_stop));
                 } else 
-                    for(Natural i=0;i<3;i++) out.emplace_back(blankSeparator);
+                    for(Natural i=0;i<3;i++)
+                        out.emplace_back(Utility::blankSeparator);
 
                 // If we needed to do blank insertions, overwrite the elements
                 // with spaces 
@@ -6165,7 +5713,7 @@ namespace peopt{
                         x!=out.end();
                         x++
                     )
-                        (*x)=blankSeparator;
+                        (*x)=Utility::blankSeparator;
             }
 
             // Combines all of the state information
@@ -7747,10 +7295,9 @@ namespace peopt{
         template <typename> class XX,
         template <typename> class ZZ
     > 
-    struct InequalityConstrained : public virtual Unconstrained <Real,XX> {
+    struct InequalityConstrained {
     private:
-        // This is a templated namespace.  Do not allow construction.
-        InequalityConstrained();
+        MODULE_CLASS(InequalityConstrained);
 
     public:
         // Create some shortcuts for some type names
@@ -7956,7 +7503,9 @@ namespace peopt{
 
         public:
             // Checks whether we have a valid real label.
-            struct is_real : public std::unary_function<std::string, bool> {
+            struct is_real :
+                public std::unary_function<const std::string&, bool>
+            {
                 bool operator () (const std::string& name) const {
                     if( typename Unconstrained <Real,XX>::Restart
                             ::is_real()(name) ||
@@ -7974,7 +7523,9 @@ namespace peopt{
             };
             
             // Checks whether we have a valid natural number label.
-            struct is_nat : public std::unary_function<std::string, bool> {
+            struct is_nat :
+                public std::unary_function<const std::string&, bool>
+            {
                 bool operator () (const std::string& name) const {
                     if( typename Unconstrained <Real,XX>::Restart
                         ::is_nat()(name)
@@ -7986,7 +7537,9 @@ namespace peopt{
             };
            
             // Checks whether we have a valid parameter label.
-            struct is_param : public std::unary_function<std::string, bool> {
+            struct is_param :
+                public std::unary_function<const std::string&, bool>
+            {
                 bool operator () (const std::string& name) const {
                     if( typename Unconstrained <Real,XX>::Restart
                             ::is_param()(name) ||
@@ -8033,28 +7586,25 @@ namespace peopt{
                 const X_Vectors& xs,
                 const Z_Vectors& zs
             ) {
-                peopt::checkLabels <is_real>
-                    (msg,reals.first," real name: ");
-                peopt::checkLabels <is_nat>
-                    (msg,nats.first," natural name: ");
-                peopt::checkLabels <is_param>
-                    (msg,params.first," paramater name: ");
-                peopt::checkLabels <is_x>
-                    (msg,xs.first," variable name: ");
-                peopt::checkLabels <is_z>
-                    (msg,zs.first," inequality multiplier name: ");
+                Utility::checkLabels(msg,is_real(),reals.first," real name: ");
+                Utility::checkLabels(msg,is_nat(),nats.first," natural name: ");
+                Utility::checkLabels(
+                    msg,is_param(),params.first," paramater name: ");
+                Utility::checkLabels(msg,is_x(),xs.first," variable name: ");
+                Utility::checkLabels(
+                    msg,is_z(),zs.first," inequality multiplier name: ");
             }
             
             // Checks whether or not the value used to represent a parameter
             // is valid.  This function returns a string with the error
             // if there is one.  Otherwise, it returns an empty string.
             struct checkParamVal : public std::binary_function
-                <std::string,std::string,std::string>
+                <const std::string&,const std::string&,std::string>
             {
                 std::string operator() (
-                    std::string label,
-                    std::string val
-                ) {
+                    const std::string& label,
+                    const std::string& val
+                ) const {
 
                     // Create a base message
                     const std::string base
@@ -8231,7 +7781,7 @@ namespace peopt{
                 checkLabels(msg,reals,nats,params,xs,zs);
 
                 // Check the strings used to represent parameters
-                checkParams <checkParamVal> (msg,params);
+                Utility::checkParams(msg,checkParamVal(),params);
 
                 // Copy in the variables 
                 Unconstrained <Real,XX>::Restart::vectorsToState(state,xs);
@@ -8587,8 +8137,8 @@ namespace peopt{
             ) {
                 // Print out the current interior point parameter and
                 // the estimate of the interior point parameter.
-                out.emplace_back(atos <> ("mu"));
-                out.emplace_back(atos <> ("mu_est"));
+                out.emplace_back(Utility::atos("mu"));
+                out.emplace_back(Utility::atos("mu_est"));
             }
 
             // Combines all of the state headers
@@ -8618,8 +8168,8 @@ namespace peopt{
                 std::list <std::string>::iterator prior=out.end(); prior--;
 
                 // Interior point information
-                out.emplace_back(atos <> (mu));
-                out.emplace_back(atos <> (mu_est));
+                out.emplace_back(Utility::atos(mu));
+                out.emplace_back(Utility::atos(mu_est));
 
                 // If we needed to do blank insertions, overwrite the elements
                 // with spaces 
@@ -8628,7 +8178,7 @@ namespace peopt{
                         x!=out.end();
                         x++
                     )
-                        (*x)=blankSeparator;
+                        (*x)=Utility::blankSeparator;
             }
 
             // Combines all of the state information
@@ -9508,8 +9058,7 @@ namespace peopt{
     > 
     struct Constrained {
     private:
-        // This is a templated namespace.  Do not allow construction.
-        Constrained();
+        MODULE_CLASS(Constrained);
 
     public:
         // Create some shortcuts for some type names
@@ -9621,7 +9170,9 @@ namespace peopt{
 
         public:
             // Checks whether we have a valid real label.
-            struct is_real : public std::unary_function<std::string, bool> {
+            struct is_real :
+                public std::unary_function<const std::string&, bool>
+            {
                 bool operator () (const std::string& name) const {
                     if( typename EqualityConstrained <Real,XX,YY>::Restart
                             ::is_real()(name) ||
@@ -9635,7 +9186,9 @@ namespace peopt{
             };
             
             // Checks whether we have a valid natural number label.
-            struct is_nat : public std::unary_function<std::string, bool> {
+            struct is_nat :
+                public std::unary_function<const std::string&, bool>
+            {
                 bool operator () (const std::string& name) const {
                     if( typename EqualityConstrained <Real,XX,YY>::Restart
                             ::is_nat()(name) ||
@@ -9649,7 +9202,9 @@ namespace peopt{
             };
            
             // Checks whether we have a valid parameter label.
-            struct is_param : public std::unary_function<std::string, bool> {
+            struct is_param :
+                public std::unary_function<const std::string&, bool>
+            {
                 bool operator () (const std::string& name) const {
                     if( typename EqualityConstrained <Real,XX,YY>::Restart
                             ::is_param()(name) ||
@@ -9710,30 +9265,27 @@ namespace peopt{
                 const Y_Vectors& ys,
                 const Z_Vectors& zs
             ) {
-                peopt::checkLabels <is_real>
-                    (msg,reals.first," real name: ");
-                peopt::checkLabels <is_nat>
-                    (msg,nats.first," natural name: ");
-                peopt::checkLabels <is_param>
-                    (msg,params.first," paramater name: ");
-                peopt::checkLabels <is_x>
-                    (msg,xs.first," variable name: ");
-                peopt::checkLabels <is_y>
-                    (msg,ys.first," equality multiplier name: ");
-                peopt::checkLabels <is_z>
-                    (msg,zs.first," inequality multiplier name: ");
+                Utility::checkLabels(msg,is_real(),reals.first," real name: ");
+                Utility::checkLabels(msg,is_nat(),nats.first," natural name: ");
+                Utility::checkLabels(
+                    msg,is_param(),params.first," paramater name: ");
+                Utility::checkLabels(msg,is_x(),xs.first," variable name: ");
+                Utility::checkLabels(
+                    msg,is_y(),ys.first," equality multiplier name: ");
+                Utility::checkLabels(
+                    msg,is_z(),zs.first," inequality multiplier name: ");
             }
             
             // Checks whether or not the value used to represent a parameter
             // is valid.  This function returns a string with the error
             // if there is one.  Otherwise, it returns an empty string.
             struct checkParamVal : public std::binary_function
-                <std::string,std::string,std::string>
+                <const std::string&,const std::string&,std::string>
             {
                 std::string operator() (
-                    std::string label,
-                    std::string val
-                ) {
+                    const std::string& label,
+                    const std::string& val
+                ) const {
 
                     // Create a base message
                     const std::string base
@@ -9803,7 +9355,7 @@ namespace peopt{
                 checkLabels(msg,reals,nats,params,xs,ys,zs);
 
                 // Check the strings used to represent parameters
-                checkParams <checkParamVal> (msg,params);
+                Utility::checkParams(msg,checkParamVal(),params);
 
                 // Copy in the variables 
                 Unconstrained <Real,XX>::Restart::vectorsToState(state,xs);

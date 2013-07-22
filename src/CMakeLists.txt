@@ -1,20 +1,9 @@
 # This is the minimum required for the library install
-#cmake_minimum_required(VERSION 2.8.9)
-
-# This is the minimum required for the header only install
-cmake_minimum_required(VERSION 2.4)
-project(peopt)
+cmake_minimum_required(VERSION 2.8.9)
 
 # Add a module directory in case we need to find some packages
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
     "${CMAKE_SOURCE_DIR}/cmake/Modules/")
-
-# If we don't compile anything, install the basic headers
-install(FILES
-    ${CMAKE_SOURCE_DIR}/cpp/peopt/peopt.h
-    ${CMAKE_SOURCE_DIR}/cpp/peopt/json.h
-    ${CMAKE_SOURCE_DIR}/cpp/peopt/linalg.h
-    DESTINATION include/peopt)
 
 # See if we're going to build the documentation for the package
 set(ENABLE_DOCUMENTATION OFF CACHE BOOL "Enable documentation generation?")
