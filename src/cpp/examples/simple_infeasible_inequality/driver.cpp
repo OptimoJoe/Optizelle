@@ -3,6 +3,7 @@
 #include "peopt/json.h"
 #include <iostream>
 #include <iomanip>
+#include <random>
 
 // Optimize a simple optimization problem with an optimal solution of (1/3,1/3),
 //
@@ -196,23 +197,24 @@ int main(int argc,char* argv[]){
     x[0]=Real(0.); x[1]=Real(0.); x[2]=Real(5.); x[3]=-Real(5.);
 
     // Generate some perturbations for the primal
-    srand48(1);
+    std::mt19937 gen(1);
+    std::uniform_real_distribution<> dis(0, 1);
     std::vector <Real> dx(4);
-    dx[0]=Real(drand48()); dx[1]=Real(drand48());
-    dx[2]=Real(drand48()); dx[3]=Real(drand48());
+    dx[0]=Real(dis(gen)); dx[1]=Real(dis(gen));
+    dx[2]=Real(dis(gen)); dx[3]=Real(dis(gen));
     
     std::vector <Real> dxx(4);
-    dxx[0]=Real(drand48()); dxx[1]=Real(drand48());
-    dxx[2]=Real(drand48()); dxx[3]=Real(drand48());
+    dxx[0]=Real(dis(gen)); dxx[1]=Real(dis(gen));
+    dxx[2]=Real(dis(gen)); dxx[3]=Real(dis(gen));
 
     // Generate a vector for the equality multiplier 
     std::vector <Real> y(1);
-    y[0]=Real(drand48());
+    y[0]=Real(dis(gen));
 
     // Generate a vector for the inequality multiplier
     std::vector <Real> z(3);
-    z[0]=Real(drand48()); z[1]=Real(drand48());
-    z[2]=Real(drand48()); 
+    z[0]=Real(dis(gen)); z[1]=Real(dis(gen));
+    z[2]=Real(dis(gen)); 
 
     // Create an optimization state
     peopt::Constrained <Real,Rm,Rm,Rm>::State::t state(x,y,z);
