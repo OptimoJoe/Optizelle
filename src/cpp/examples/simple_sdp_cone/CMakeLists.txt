@@ -10,7 +10,7 @@ target_link_libraries(simple_sdp_cone
 if(ENABLE_CPP_EXAMPLES)
     install(FILES driver.cpp simple_sdp_cone.peopt
         DESTINATION share/peopt/cpp/examples/simple_sdp_cone)
-    install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/simple_sdp_cone
+    install(TARGETS simple_sdp_cone
         DESTINATION share/peopt/cpp/examples/simple_sdp_cone)
 endif()
 

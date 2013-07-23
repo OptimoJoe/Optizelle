@@ -10,7 +10,7 @@ target_link_libraries(rosenbrock
 if(ENABLE_CPP_EXAMPLES)
     install(FILES driver.cpp rosenbrock.peopt
         DESTINATION share/peopt/cpp/examples/rosenbrock)
-    install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/rosenbrock
+    install(TARGETS rosenbrock 
         DESTINATION share/peopt/cpp/examples/rosenbrock)
 endif()
 

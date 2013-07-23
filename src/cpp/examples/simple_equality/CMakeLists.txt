@@ -10,7 +10,7 @@ target_link_libraries(simple_equality
 if(ENABLE_CPP_EXAMPLES)
     install(FILES driver.cpp simple_equality.peopt
         DESTINATION share/peopt/cpp/examples/simple_equality)
-    install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/simple_equality
+    install(TARGETS simple_equality
         DESTINATION share/peopt/cpp/examples/simple_equality)
 endif()
 

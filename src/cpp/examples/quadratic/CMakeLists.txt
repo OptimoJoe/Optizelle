@@ -10,7 +10,7 @@ target_link_libraries(quadratic
 if(ENABLE_CPP_EXAMPLES)
     install(FILES driver.cpp quadratic.peopt
         DESTINATION share/peopt/cpp/examples/quadratic)
-    install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/quadratic
+    install(TARGETS quadratic
         DESTINATION share/peopt/cpp/examples/quadratic)
 endif()
 

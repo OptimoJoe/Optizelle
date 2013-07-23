@@ -10,7 +10,7 @@ target_link_libraries(nw_sqp_exercise
 if(ENABLE_CPP_EXAMPLES)
     install(FILES driver.cpp nw_sqp_exercise.peopt
         DESTINATION share/peopt/cpp/examples/nw_sqp_exercise)
-    install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/nw_sqp_exercise
+    install(TARGETS nw_sqp_exercise
         DESTINATION share/peopt/cpp/examples/nw_sqp_exercise)
 endif()
 

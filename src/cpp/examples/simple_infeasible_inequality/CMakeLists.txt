@@ -10,7 +10,7 @@ target_link_libraries(simple_infeasible_inequality
 if(ENABLE_CPP_EXAMPLES)
     install(FILES driver.cpp simple_infeasible_inequality.peopt
         DESTINATION share/peopt/cpp/examples/simple_infeasible_inequality)
-    install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/simple_infeasible_inequality
+    install(TARGETS simple_infeasible_inequality
         DESTINATION share/peopt/cpp/examples/simple_infeasible_inequality)
 endif()
 

@@ -10,7 +10,7 @@ target_link_libraries(simple_quadratic_cone
 if(ENABLE_CPP_EXAMPLES)
     install(FILES driver.cpp simple_quadratic_cone.peopt
         DESTINATION share/peopt/cpp/examples/simple_quadratic_cone)
-    install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/simple_quadratic_cone
+    install(TARGETS simple_quadratic_cone
         DESTINATION share/peopt/cpp/examples/simple_quadratic_cone)
 endif()
 

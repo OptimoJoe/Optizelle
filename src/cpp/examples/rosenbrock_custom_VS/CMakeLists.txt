@@ -6,5 +6,5 @@ target_link_libraries(rosenbrock_custom_VS
     ${BLAS_LIBRARIES})
 install(FILES driver.cpp
     DESTINATION share/peopt/cpp/examples/rosenbrock_custom_VS)
-install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/rosenbrock_custom_VS 
+install(TARGETS rosenbrock_custom_VS 
     DESTINATION share/peopt/cpp/examples/rosenbrock_custom_VS)

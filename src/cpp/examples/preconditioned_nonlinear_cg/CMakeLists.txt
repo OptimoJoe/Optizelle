@@ -10,7 +10,7 @@ target_link_libraries(preconditioned_nonlinear_cg
 if(ENABLE_CPP_EXAMPLES)
     install(FILES driver.cpp preconditioned_nonlinear_cg.peopt
         DESTINATION share/peopt/cpp/examples/preconditioned_nonlinear_cg)
-    install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/preconditioned_nonlinear_cg
+    install(TARGETS preconditioned_nonlinear_cg
         DESTINATION share/peopt/cpp/examples/preconditioned_nonlinear_cg)
 endif()
 
