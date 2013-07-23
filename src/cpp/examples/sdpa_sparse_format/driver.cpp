@@ -856,7 +856,8 @@ bool initPhase1X(
     // This gives us a couple of scenarios.  First, we don't have to worry
     // about delta being 0 since e is strictly feasible.  Second, if delta > 0,
     // we can simply set y=-2/delta then we're strictly feasible.  Third,
-    // if delta < 0, we're strictly feasible and we can set y=0.
+    // if delta < 0, we're strictly feasible and we can set y=0.  Finally,
+    // if delta=infinity, we're also feasible.
     SDPIneq <Real> h(prob);
 
     // xx <- x_1
@@ -876,7 +877,8 @@ bool initPhase1X(
     Real delta = SQL::srch(h_xx,e);
 
     // Determine if we're feasible
-    bool feasible = delta < Real(0.);
+    bool feasible = delta < Real(0.)
+        || delta > std::numeric_limits <Real>::max();
 
     // Set y so that we're guaranteed to be feasible
     x[m] = !feasible ? -Real(2.)/delta : Real(0.);
