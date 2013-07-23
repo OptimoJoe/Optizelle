@@ -8,19 +8,8 @@ abstractions for users who require control of the underlying linear algebra
 and communication structure.  As such, it is particularly well suited for
 large scale optimization.
 
--------------------------HEADERS ONLY INSTALLATION--------------------------
-In order to install a headers only installation with no examples or unit tests,
 
-    mkdir build
-    cd build
-    cmake -DCMAKE_INSTALL_PREFIX=/dir/to/install/location ../src
-    make install
-
-This installs the appropriate PEOpt headers to the directory
-
-    /dir/to/install/location/include/peopt
-
----------------------------ADVANCED INSTALLATION----------------------------
+--------------------------------INSTALLATION--------------------------------
 The following flags can be configured inside of cmake.  We recommend using
 ccmake or a graphical utility in order to manage the dependencies between
 options.  In this case, we build with the following:

@@ -176,30 +176,8 @@ In order to minimize this formulation in PEOpt, we use the code in Listing \ref{
 
 \chapter{Installation}\label{ch:Install}
 
-    Depending on the requirements of the application, PEOpt has several different build an installation methods.  In the most simple case, PEOpt can be incorporated into a project as a header taken from the source directory.  In a more complete case, PEOpt uses CMake in order to manage the installation of several supporting libraries.  We discuss these methods below.
-
-        Outside the installation mechanism, there are two primary modes in which we access the PEOpt routines: headers only and as a library.  In headers only mode, PEOpt enables access to the core optimization and verification routines, which include utilities such as finite-difference tests.  In library mode, PEOpt also includes predefined vector spaces as well as parameter readers that read in parameter files in JSON format.
-
-\section{Header Only Installation with No Build System}
-
-        At its core, PEOpt requires two headers: \url{peopt.h} and \url{linalg.h} found in the \url{./src/cpp/peopt} directory.  Copy these files to a directory labeled \url{peopt} in the incorporating projects source tree.  Then, add the
-\begin{verbatim}
-#include <peopt/peopt.h>
-\end{verbatim}
-directive to the source files where PEOpt is used.
-
-
-\section{Header Only Installation with CMake}
-
-        In order to do a header only installation with CMake, we require CMake version 2.4 or better.  In the base PEOpt directory, execute the following commands
-\begin{verbatim}
-mkdir build
-cd build
-cmake -DCMAKE_INSTALL_PREFIX=/dir/to/install/location ../src
-make install
-\end{verbatim}
-This installs the appropriate PEOpt headers to the directory \url{/dir/to/install/location/include/peopt}.
-
+    PEOpt uses CMake as its build mechanism.  Using CMake, we choose which options to include in our installation.  In the most simple case, we build only the C++ library.  In a more complete case, we build the C++, MATLAB, and Python libraries complete with their unit tests and accompaning examples.  We discuss these methods below.
+    
 \section{Library Installation with CMake}
 
         In order to fully install PEOpt using CMake, we require CMake version 2.8.9 or better.  Then, in the base PEOpt directory, execute the following commands
