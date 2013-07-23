@@ -136,24 +136,12 @@ if(ENABLE_CPP_LIBRARY)
     endif()
 
     # Build the library
-    if(ENABLE_PYTHON)
-        add_library(peopt_shared SHARED
-            $<TARGET_OBJECTS:peopt_cpp>
-            $<TARGET_OBJECTS:peopt_python>)
-        add_library(peopt_shared_complete SHARED
-            $<TARGET_OBJECTS:peopt_cpp>
-            $<TARGET_OBJECTS:peopt_python>)
-        add_library(peopt_static STATIC 
-            $<TARGET_OBJECTS:peopt_cpp>
-            $<TARGET_OBJECTS:peopt_python>)
-    else()
-        add_library(peopt_shared SHARED
-            $<TARGET_OBJECTS:peopt_cpp>)
-        add_library(peopt_shared_complete SHARED
-            $<TARGET_OBJECTS:peopt_cpp>)
-        add_library(peopt_static STATIC 
-            $<TARGET_OBJECTS:peopt_cpp>)
-    endif()
+    add_library(peopt_shared SHARED
+        $<TARGET_OBJECTS:peopt_cpp>)
+    add_library(peopt_shared_complete SHARED
+        $<TARGET_OBJECTS:peopt_cpp>)
+    add_library(peopt_static STATIC 
+        $<TARGET_OBJECTS:peopt_cpp>)
     target_link_libraries(peopt_shared_complete
         ${JSONCPP_LIBRARIES}
         ${LAPACK_LIBRARIES}
