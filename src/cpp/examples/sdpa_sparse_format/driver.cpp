@@ -5,6 +5,7 @@
 #include <string>
 #include <cstdlib>
 #include <algorithm>
+#include <random>
 #include "peopt/peopt.h"
 #include "peopt/vspaces.h"
 #include "peopt/json.h"
@@ -838,8 +839,10 @@ bool initPhase1X(
     // Set the size of the primary part of x
     Natural m = prob.A.size()-1;
     x.resize(m+2);
+    std::mt19937 gen(1);
+    std::uniform_real_distribution<> dis(0, 1);
     for(Natural i=0;i<x.size();i++)
-        x[i]=drand48();
+        x[i]=Real(dis(gen));
 
     // Create the identity element
     typename SQL::Vector e;
@@ -904,8 +907,10 @@ void initZ(
     initSQL <Real> (prob,z,phase1);
 
     // Randomize the elements in z
+    std::mt19937 gen(1);
+    std::uniform_real_distribution<> dis(0, 1);
     for(Natural i=0;i<z.data.size();i++)
-        z.data[i]=Real(drand48());
+        z.data[i]=Real(dis(gen));
 }
 
 // Parse the value epsilon for the phase-1 problem.  In addition,
@@ -959,9 +964,6 @@ int main(int argc,char* argv[]) {
 
     // Sort the indices of the resulting problem
     sort_sdp <Real> (prob);
-
-    // Initialize our random seed
-    srand48(1);
 
     // Create an initial guess for the problem
     Rm::Vector x;
