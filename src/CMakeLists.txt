@@ -81,13 +81,13 @@ if(ENABLE_CPP_LIBRARY)
         add_subdirectory(cpp/examples/nw_sqp_exercise)
         add_subdirectory(cpp/examples/simple_constrained)
         add_subdirectory(cpp/examples/preconditioned_nonlinear_cg)
+        add_subdirectory(cpp/examples/sdpa_sparse_format)
     endif()
 
     # Though, some examples are just examples
     if(ENABLE_CPP_EXAMPLES) 
         add_subdirectory(cpp/examples/diagnostic_checks)
         add_subdirectory(cpp/examples/rosenbrock_custom_VS)
-        add_subdirectory(cpp/examples/sdpa_sparse_format)
     endif()
     
     # Check if we want to build the Python libraries

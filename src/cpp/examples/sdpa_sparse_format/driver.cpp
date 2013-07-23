@@ -937,14 +937,16 @@ int main(int argc,char* argv[]) {
     typedef peopt::SQL <Real> SQL;
 
     // Check that we have sufficient inputs
-    if(argc!=2) {
-        std::cerr << "Usage: sdpa_sparse_format <problem>"
-            << std::endl;
+    if(argc!=4) {
+        std::cerr << "Usage: sdpa_sparse_format <problem> <phase-1 parameters> "
+            << "<phase-2 parameters>" << std::endl;
         exit(EXIT_FAILURE);
     }
     
-    // Grab the filename
+    // Grab the filenames
     std::string fname(argv[1]);
+    std::string phase1_params(argv[2]);
+    std::string phase2_params(argv[3]);
 
     // Grab the settings for the phase-1 problem and whether or not we
     // need to do finite difference tests.
@@ -954,11 +956,8 @@ int main(int argc,char* argv[]) {
 
     // Note, we're going to ignore the values of epsilon and beta from this
     // parsing.  Mostly, it's just easier not to have two different routines.
-    parseSDPSettings(peopt::Messaging(),"sdpa_sparse_format.peopt",
-        epsilon,phase2_fd_tests);
-
-    parseSDPSettings(peopt::Messaging(),"sdpa_sparse_format_phase1.peopt",
-        epsilon,phase1_fd_tests);
+    parseSDPSettings(peopt::Messaging(),phase2_params,epsilon,phase2_fd_tests);
+    parseSDPSettings(peopt::Messaging(),phase1_params,epsilon,phase1_fd_tests);
 
     // Parse the file sparse SDPA file
     SparseSDP <Real> prob;
@@ -987,7 +986,7 @@ int main(int argc,char* argv[]) {
 
     // Read the parameters from file
     peopt::json::InequalityConstrained <Real,peopt::Rm,peopt::SQL>::read(
-        peopt::Messaging(),"sdpa_sparse_format_phase1.peopt",phase1_state);
+        peopt::Messaging(),phase1_params,phase1_state);
 
     // Create the bundle of phase-1 functions
     peopt::InequalityConstrained <Real,peopt::Rm,peopt::SQL>::Functions::t
@@ -1063,7 +1062,7 @@ int main(int argc,char* argv[]) {
 
     // Read the parameters from file
     peopt::json::InequalityConstrained <Real,peopt::Rm,peopt::SQL>::read(
-        peopt::Messaging(),"sdpa_sparse_format.peopt",state);
+        peopt::Messaging(),phase2_params,state);
 
     // Create the bundle of functions
     peopt::InequalityConstrained <Real,peopt::Rm,peopt::SQL>::Functions::t
@@ -1113,4 +1112,8 @@ int main(int argc,char* argv[]) {
     // Return the objective function
     std::cout << "Objective value: " << std::setprecision(16)
         << std::scientific << state.f_x << std::endl;
+
+    // Write out the final answer to file
+    peopt::json::InequalityConstrained <Real,peopt::Rm,peopt::SQL>
+        ::write_restart(peopt::Messaging(),"sdpa_sparse_format.perst",state);
 }
