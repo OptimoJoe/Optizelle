@@ -115,7 +115,7 @@ int main() {
     CHECK(err < 1e-12);
     err=peopt::Diagnostics::derivativeAdjointCheck <>
         (peopt::Messaging(),g,x,dx,dy);
-    CHECK(err < 1e-15);
+    CHECK(err < 1e-12);
     err=peopt::Diagnostics::secondDerivativeCheck <>
         (peopt::Messaging(),g,x,dx,dy);
     CHECK(err < 1e-12);

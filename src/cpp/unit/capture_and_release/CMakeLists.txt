@@ -1,8 +1,5 @@
 project(capture_and_release)
 
-include_directories(${JSONCPP_INCLUDE_DIRS})
-include_directories(../utility)
-
 add_executable(unconstrained unconstrained.cpp)
 add_executable(equality_constrained equality_constrained.cpp)
 add_executable(inequality_constrained inequality_constrained.cpp)

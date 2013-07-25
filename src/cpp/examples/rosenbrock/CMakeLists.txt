@@ -1,5 +1,4 @@
 project(rosenbrock)
-include_directories(${JSONCPP_INCLUDE_DIRS})
 add_executable(rosenbrock "driver.cpp")
 target_link_libraries(rosenbrock
     peopt_static

@@ -8,7 +8,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
 # See if we're going to build the documentation for the package
 set(ENABLE_DOCUMENTATION OFF CACHE BOOL "Enable documentation generation?")
 if(ENABLE_DOCUMENTATION)
-    include(UseLATEX)
     add_subdirectory(doc)
 endif()
         
@@ -16,26 +15,11 @@ endif()
 # or if we build the library.
 set(ENABLE_CPP_LIBRARY OFF CACHE BOOL "Enable libraries for C++?")
 if(ENABLE_CPP_LIBRARY)
-    # Show the available options once the library is enabled
-    mark_as_advanced(CLEAR
-        ENABLE_CPP_EXAMPLES
-        ENABLE_CPP_UNIT
-        ENABLE_PYTHON
-        ENABLE_MATLAB
-        ENABLE_OPENMP)
-
-    # Turn on position independent code immediately.  This simplifies
-    # building both static and shared libraries.
-    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
-    # In order to build the library, especially the complete library with
-    # all dependencies, find the required dependencies 
-    enable_language(Fortran)
-    find_package(JsonCpp REQUIRED)
-    find_package(BLAS REQUIRED)
-    find_package(LAPACK REQUIRED)
+    # Enable ctest
+    enable_testing()
 
     # Figure out if we should look for OpenMP
+    mark_as_advanced(CLEAR ENABLE_OPENMP)
     set(ENABLE_OPENMP OFF CACHE BOOL "Enable OpenMP?")
     if(ENABLE_OPENMP)
         # If we enable OpenMP, go ahead and make it required and find the
@@ -46,120 +30,26 @@ if(ENABLE_CPP_LIBRARY)
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
     endif()
 
-    # Add in the directory with the library sources
-    add_subdirectory(cpp/peopt)
+    # Set the peopt include directories
+    set(PEOPT_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/cpp)
 
-    # Set the include path to include cpp since we will likely need the
-    # peopt header file
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/cpp)
-    
-    # Check if we want to build the unit tests
-    set(ENABLE_CPP_UNIT OFF CACHE BOOL "Enable unit tests for C++?")
-    if(ENABLE_CPP_UNIT)
-        # Turn on testing
-        enable_testing()
+    # Grab our third party library dependencies
+    add_subdirectory(thirdparty)
 
-        # Basic unit tests and utility functions
-        add_subdirectory(cpp/unit/capture_and_release)
-        add_subdirectory(cpp/unit/derivative_check)
-        add_subdirectory(cpp/unit/linear_algebra)
-        add_subdirectory(cpp/unit/utility)
-    endif()
+    # Compile our C++ pieces 
+    add_subdirectory(cpp)
 
-    # Check if we want to build the C++ examples.  
-    set(ENABLE_CPP_EXAMPLES OFF CACHE BOOL "Enable examples for C++?")
+    # Compile our Python pieces
+    add_subdirectory(python)
 
-    # Many of these examples are also unit test
-    if(ENABLE_CPP_EXAMPLES OR ENABLE_CPP_UNIT)
-        add_subdirectory(cpp/examples/rosenbrock)
-        add_subdirectory(cpp/examples/quadratic)
-        add_subdirectory(cpp/examples/simple_inequality)
-        add_subdirectory(cpp/examples/simple_infeasible_inequality)
-        add_subdirectory(cpp/examples/simple_quadratic_cone)
-        add_subdirectory(cpp/examples/simple_sdp_cone)
-        add_subdirectory(cpp/examples/simple_equality)
-        add_subdirectory(cpp/examples/nw_sqp_exercise)
-        add_subdirectory(cpp/examples/simple_constrained)
-        add_subdirectory(cpp/examples/preconditioned_nonlinear_cg)
-        add_subdirectory(cpp/examples/sdpa_sparse_format)
-    endif()
-
-    # Though, some examples are just examples
-    if(ENABLE_CPP_EXAMPLES) 
-        add_subdirectory(cpp/examples/diagnostic_checks)
-        add_subdirectory(cpp/examples/rosenbrock_custom_VS)
-    endif()
-    
-    # Check if we want to build the Python libraries
-    set(ENABLE_PYTHON OFF CACHE BOOL "Enable the Python build?")
-    if(ENABLE_PYTHON)
-        # Make sure we can find the Python libraries and then add the
-        # directory with the sources.
-        find_package(PythonLibs)
-        add_subdirectory(python/peopt)
-        
-        # Check if we want to add examples for Python
-        set(ENABLE_PYTHON_EXAMPLES OFF CACHE BOOL "Enable examples for Python?")
-        mark_as_advanced(CLEAR ENABLE_PYTHON_EXAMPLES)
-        if(ENABLE_PYTHON_EXAMPLES)
-            add_subdirectory(python/examples/diagnostic_checks)
-            add_subdirectory(python/examples/rosenbrock)
-            add_subdirectory(python/examples/simple_inequality)
-        endif()
-    else()
-        set(ENABLE_PYTHON_EXAMPLES OFF CACHE BOOL "Enable examples for Python?"
-            FORCE)
-        mark_as_advanced(FORCE ENABLE_PYTHON_EXAMPLES)
-    endif()
-    
-    # Check if we want to build the MATLAB interface 
-    set(ENABLE_MATLAB OFF CACHE BOOL "Enable the MATLAB build?")
-    if(ENABLE_MATLAB)
-        # Make sure we can find the MATLAB libraries and then add the
-        # directory with the sources.
-        find_package(MATLAB)
-        add_subdirectory(matlab/peopt)
-
-        # Check if we want to add examples for MATLAB 
-        set(ENABLE_MATLAB_EXAMPLES OFF CACHE BOOL "Enable examples for MATLAB?")
-        mark_as_advanced(CLEAR ENABLE_MATLAB_EXAMPLES)
-        if(ENABLE_MATLAB_EXAMPLES)
-            add_subdirectory(matlab/examples/diagnostic_checks)
-            add_subdirectory(matlab/examples/rosenbrock)
-            add_subdirectory(matlab/examples/rosenbrock_ineq)
-            add_subdirectory(matlab/examples/parest)
-        endif()
-    else()
-        set(ENABLE_MATLAB_EXAMPLES OFF CACHE BOOL "Enable examples for MATLAB?"
-            FORCE)
-        mark_as_advanced(FORCE ENABLE_MATLAB_EXAMPLES)
-    endif()
-
-    # Build the library
-    add_library(peopt_shared SHARED
-        $<TARGET_OBJECTS:peopt_cpp>)
-    add_library(peopt_shared_complete SHARED
-        $<TARGET_OBJECTS:peopt_cpp>)
-    add_library(peopt_static STATIC 
-        $<TARGET_OBJECTS:peopt_cpp>)
-    target_link_libraries(peopt_shared_complete
-        ${JSONCPP_LIBRARIES}
-        ${LAPACK_LIBRARIES}
-        ${BLAS_LIBRARIES})
-
-    # This is required for Windows to see an import library, which is
-    # required to build a dll.
-    target_link_libraries(peopt_shared peopt_shared_complete)
-
-    set_target_properties(peopt_shared peopt_static
-        PROPERTIES OUTPUT_NAME peopt)
-    set_target_properties(peopt_shared_complete 
-        PROPERTIES OUTPUT_NAME peopt_complete)
-    install(TARGETS peopt_shared peopt_shared_complete peopt_static
-        DESTINATION lib)
+    # Compile our MATLAB pieces
+    add_subdirectory(matlab)
 
 # Hide some options if the library is not enabled
 else()
+    set(ENABLE_BUILD_JSONCPP OFF CACHE BOOL "Build jsoncpp from source?" FORCE)
+    set(ENABLE_BUILD_BLAS_AND_LAPACK OFF CACHE BOOL
+        "Build BLAS and LAPACK from source?" FORCE)
     set(ENABLE_CPP_EXAMPLES OFF CACHE BOOL "Enable examples for C++?" FORCE)
     set(ENABLE_CPP_UNIT OFF CACHE BOOL "Enable unit tests for C++?" FORCE)
     set(ENABLE_PYTHON OFF CACHE BOOL "Enable the Python build?" FORCE)
@@ -170,6 +60,8 @@ else()
         FORCE)
     set(ENABLE_OPENMP OFF CACHE BOOL "Enable OpenMP?" FORCE)
     mark_as_advanced(FORCE
+        ENABLE_BUILD_JSONCPP
+        ENABLE_BUILD_BLAS_AND_LAPACK
         ENABLE_CPP_EXAMPLES
         ENABLE_CPP_UNIT
         ENABLE_PYTHON

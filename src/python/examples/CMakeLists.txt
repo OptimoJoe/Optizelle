@@ -1,0 +1,3 @@
+add_subdirectory(diagnostic_checks)
+add_subdirectory(rosenbrock)
+add_subdirectory(simple_inequality)

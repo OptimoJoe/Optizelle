@@ -1,8 +1,5 @@
 project(derivative_check)
 
-include_directories(${JSONCPP_INCLUDE_DIRS})
-include_directories(../utility)
-
 add_executable(scalar_valued scalar_valued.cpp)
 add_executable(vector_valued vector_valued.cpp)
 

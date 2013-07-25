@@ -1,5 +1,4 @@
 project(nw_sqp_exercise)
-include_directories(${JSONCPP_INCLUDE_DIRS})
 add_executable(nw_sqp_exercise "driver.cpp")
 target_link_libraries(nw_sqp_exercise
     peopt_static

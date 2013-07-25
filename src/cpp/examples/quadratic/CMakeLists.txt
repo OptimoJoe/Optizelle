@@ -1,5 +1,4 @@
 project(quadratic)
-include_directories(${JSONCPP_INCLUDE_DIRS})
 add_executable(quadratic "driver.cpp")
 target_link_libraries(quadratic
     peopt_static

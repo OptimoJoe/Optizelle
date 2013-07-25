@@ -1,7 +1,7 @@
 project(peopt_matlab)
 
 set(peopt_matlab_srcs "peopt.cpp")
-include_directories(${MATLAB_INCLUDE_DIRS} ${JSONCPP_INCLUDE_DIRS})
+include_directories(${MATLAB_INCLUDE_DIRS})
 add_library(peopt_matlab SHARED ${peopt_matlab_srcs})
 target_link_libraries(peopt_matlab
     peopt_static

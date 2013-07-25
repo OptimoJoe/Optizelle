@@ -1,5 +1,4 @@
 project(preconditioned_nonlinear_cg)
-include_directories(${JSONCPP_INCLUDE_DIRS})
 add_executable(preconditioned_nonlinear_cg "driver.cpp")
 target_link_libraries(preconditioned_nonlinear_cg
     peopt_static

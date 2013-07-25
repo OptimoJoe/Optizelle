@@ -1,5 +1,4 @@
 project(simple_inequality)
-include_directories(${JSONCPP_INCLUDE_DIRS})
 add_executable(simple_inequality "driver.cpp")
 target_link_libraries(simple_inequality
     peopt_static

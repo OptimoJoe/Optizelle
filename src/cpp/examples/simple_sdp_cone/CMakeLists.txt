@@ -1,5 +1,4 @@
 project(simple_sdp_cone)
-include_directories(${JSONCPP_INCLUDE_DIRS})
 add_executable(simple_sdp_cone "driver.cpp")
 target_link_libraries(simple_sdp_cone
     peopt_static

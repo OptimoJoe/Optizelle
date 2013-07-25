@@ -1,8 +1,5 @@
 project(linear_algebra)
 
-include_directories(${JSONCPP_INCLUDE_DIRS})
-include_directories(../utility)
-
 add_executable(gmres_full gmres_full.cpp)
 add_executable(gmres_left_preconditioner gmres_left_preconditioner.cpp)
 add_executable(gmres_restart gmres_restart.cpp)

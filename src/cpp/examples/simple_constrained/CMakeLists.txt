@@ -1,5 +1,4 @@
 project(simple_constrained)
-include_directories(${JSONCPP_INCLUDE_DIRS})
 add_executable(simple_constrained "driver.cpp")
 target_link_libraries(simple_constrained
     peopt_static

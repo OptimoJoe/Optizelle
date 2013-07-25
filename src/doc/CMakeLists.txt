@@ -1,4 +1,5 @@
 project(doc)
+include(UseLATEX)
 add_latex_document(peopt.tex DEFAULT_PDF
     INPUTS rosen_code.tex rosen_input.tex rosen_output.tex
            simple_ineq_code.tex simple_ineq_input.tex simple_ineq_output.tex

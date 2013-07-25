@@ -1,7 +1,7 @@
 project(peopt_python)
 
 set(peopt_python_srcs "peopt.cpp")
-include_directories(${PYTHON_INCLUDE_DIRS} ${JSONCPP_INCLUDE_DIRS})
+include_directories(${PYTHON_INCLUDE_DIRS})
 add_library(peopt_python SHARED
     $<TARGET_OBJECTS:peopt_cpp>
     ${peopt_python_srcs})
