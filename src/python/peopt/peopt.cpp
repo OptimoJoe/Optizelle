@@ -31,8 +31,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 Author: Joseph Young (joe@optimojoe.com)
 */
 
-#include <string>
 #include <Python.h>
+#include <string>
 #include "peopt/peopt.h"
 #include "peopt/json.h"
 
