@@ -305,9 +305,6 @@ namespace peopt {
                 const std::string fname,
                 typename peopt::Unconstrained <Real,XX>::State::t& state
             ) {
-                // Create a type shortcut
-                typedef typename std::vector<Real>::size_type Natural;
-
                 // Base error message
                 const std::string base = "Invalid JSON parameter: ";
 

@@ -625,23 +625,26 @@ struct MatlabMessaging : public peopt::Messaging {
 void check_fns(
     const mxArray* X,
     std::string ops[],
-    int nops,
+    peopt::Natural nops,
     std::string type,
     std::string name
 ) {
+    // Create a type shortcut
+    typedef peopt::Natural Natural;
+
     // The argument should be a structure array
     if(!mxIsStruct(X))
         MatlabMessaging().error("The " + type + " " + name +
             " must be a structure array.");
 
     // Check that the structure contains all the functions
-    for(int i=0;i<nops;i++)
+    for(Natural i=0;i<nops;i++)
         if(mxGetField(X,0,ops[i].c_str())==NULL)
             MatlabMessaging().error("Missing the " + ops[i] + 
                 " function in the " + type + " " + name +".");
     
     // Check that all of the listed functions are really functions 
-    for(int i=0;i<nops;i++)
+    for(Natural i=0;i<nops;i++)
         if(!mxIsClass(mxGetField(X,0,ops[i].c_str()),"function_handle"))
             MatlabMessaging().error("The field " + ops[i] +
                 " in the " + type + " " + name + " must be a function.");
