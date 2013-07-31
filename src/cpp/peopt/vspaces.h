@@ -176,7 +176,7 @@ namespace peopt {
             Json::Value& root
         ) {
             for(Natural i=0;i<x.size();i++)
-                root[vs][name][i]=x[i];
+                root[vs][name][Json::ArrayIndex(i)]=x[i];
         }
         static void deserialize (
             const Json::Value& root,
@@ -186,7 +186,7 @@ namespace peopt {
         ) {
             x.resize(root[vs][name].size());
             for(Natural i=0;i<x.size();i++)
-                x[i]=Real(root[vs][name][i].asDouble());
+                x[i]=Real(root[vs][name][Json::ArrayIndex(i)].asDouble());
         }
     };
 
@@ -1864,28 +1864,31 @@ namespace peopt {
             Json::Value& root
         ) {
             for(Natural i=0;i<x.data.size();i++)
-                root[vs][name]["data"][i]=x.data[i];
+                root[vs][name]["data"][Json::ArrayIndex(i)]=x.data[i];
 
             for(Natural i=0;i<x.offsets.size();i++)
-                root[vs][name]["offsets"][i]=x.offsets[i];
+                root[vs][name]["offsets"][Json::ArrayIndex(i)]=x.offsets[i];
 
             for(Natural i=0;i<x.types.size();i++)
-                root[vs][name]["types"][i]=Cone::to_string(x.types[i]);
+                root[vs][name]["types"][Json::ArrayIndex(i)]
+                    =Cone::to_string(x.types[i]);
 
             for(Natural i=0;i<x.sizes.size();i++)
-                root[vs][name]["sizes"][i]=x.sizes[i];
+                root[vs][name]["sizes"][Json::ArrayIndex(i)]=x.sizes[i];
 
             for(Natural i=0;i<x.inverse.size();i++)
-                root[vs][name]["inverse"][i]=x.inverse[i];
+                root[vs][name]["inverse"][Json::ArrayIndex(i)]=x.inverse[i];
 
             for(Natural i=0;i<x.inverse_offsets.size();i++)
-                root[vs][name]["inverse_offsets"][i]=x.inverse_offsets[i];
+                root[vs][name]["inverse_offsets"][Json::ArrayIndex(i)]
+                    =x.inverse_offsets[i];
 
             for(Natural i=0;i<x.inverse_base.size();i++)
-                root[vs][name]["inverse_base"][i]=x.inverse_base[i];
+                root[vs][name]["inverse_base"][Json::ArrayIndex(i)]
+                    =x.inverse_base[i];
 
             for(Natural i=0;i<x.inverse_base_offsets.size();i++)
-                root[vs][name]["inverse_base_offsets"][i]
+                root[vs][name]["inverse_base_offsets"][Json::ArrayIndex(i)]
                     =x.inverse_base_offsets[i];
         }
         static void deserialize (
@@ -1896,40 +1899,47 @@ namespace peopt {
         ) {
             x.data.resize(root[vs][name]["data"].size());
             for(Natural i=0;i<x.size();i++)
-                x.data[i]=Real(root[vs][name]["data"][i].asDouble());
+                x.data[i]=Real(root[vs][name]["data"][Json::ArrayIndex(i)]
+                    .asDouble());
 
             x.offsets.resize(root[vs][name]["offsets"].size());
             for(Natural i=0;i<x.size();i++)
-                x.offsets[i]=root[vs][name]["offsets"][i].asUInt64();
+                x.offsets[i]=root[vs][name]["offsets"][Json::ArrayIndex(i)]
+                    .asUInt64();
 
             x.types.resize(root[vs][name]["types"].size());
             for(Natural i=0;i<x.size();i++)
-                x.types[i]
-                    =Cone::from_string(root[vs][name]["types"][i].asString());
+                x.types[i]=Cone::from_string(
+                    root[vs][name]["types"][Json::ArrayIndex(i)].asString());
 
             x.sizes.resize(root[vs][name]["sizes"].size());
             for(Natural i=0;i<x.size();i++)
-                x.sizes[i]=root[vs][name]["sizes"][i].asUInt64();
+                x.sizes[i]
+                    =root[vs][name]["sizes"][Json::ArrayIndex(i)].asUInt64();
             
             x.inverse.resize(root[vs][name]["inverse"].size());
             for(Natural i=0;i<x.size();i++)
-                x.inverse[i]=Real(root[vs][name]["inverse"][i].asDouble());
+                x.inverse[i]=Real(root[vs][name]["inverse"][Json::ArrayIndex(i)]
+                    .asDouble());
             
             x.inverse_offsets.resize(root[vs][name]["inverse_offsets"].size());
             for(Natural i=0;i<x.size();i++)
                 x.inverse_offsets[i]
-                    =root[vs][name]["inverse_offsets"][i].asUInt64();
+                    =root[vs][name]["inverse_offsets"][Json::ArrayIndex(i)]
+                        .asUInt64();
             
             x.inverse_base.resize(root[vs][name]["inverse_base"].size());
             for(Natural i=0;i<x.size();i++)
                 x.inverse_base[i]
-                    =Real(root[vs][name]["inverse_base"][i].asDouble());
+                    =Real(root[vs][name]["inverse_base"][Json::ArrayIndex(i)]
+                        .asDouble());
             
             x.inverse_base_offsets
                 .resize(root[vs][name]["inverse_base_offsets"].size());
             for(Natural i=0;i<x.size();i++)
                 x.inverse_base_offsets[i]
-                    =root[vs][name]["inverse_base_offsets"][i].asUInt64();
+                    =root[vs][name]["inverse_base_offsets"][Json::ArrayIndex(i)]
+                        .asUInt64();
         }
     };
 
