@@ -609,14 +609,14 @@ public:
 // A messaging utility that hooks directly into Matlab
 struct MatlabMessaging : public peopt::Messaging {
     // Prints a message
-    void print(const std::string msg) const {
+    void print(const std::string& msg) const {
         std::string msg_ = msg + "\n";
         mexPrintf(msg_.c_str());
         mexEvalString("drawnow");
     }
 
     // Prints an error
-    void error(const std::string msg) const {
+    void error(const std::string& msg) const {
         mexErrMsgTxt(msg.c_str());
     }
 };
