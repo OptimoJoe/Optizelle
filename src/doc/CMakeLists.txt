@@ -1,6 +1,6 @@
 project(doc)
 include(UseLATEX)
-add_latex_document(peopt.tex DEFAULT_PDF
+add_latex_document(optizelle.tex DEFAULT_PDF
     INPUTS rosen_code.tex rosen_input.tex rosen_output.tex
            simple_ineq_code.tex simple_ineq_input.tex simple_ineq_output.tex
            simple_eq_code.tex simple_eq_input.tex simple_eq_output.tex
@@ -18,5 +18,5 @@ add_latex_document(peopt.tex DEFAULT_PDF
            messagingSpecification.tex
            vectorSpaceSpecification.tex
 )
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/peopt.pdf
-    DESTINATION share/peopt/doc)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/optizelle.pdf
+    DESTINATION share/optizelle/doc)

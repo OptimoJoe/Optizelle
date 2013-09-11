@@ -4,13 +4,13 @@
 #include <cmath>
 #include <iomanip>
 #include <sstream>
-#include "peopt/json.h"
-#include "peopt/vspaces.h"
+#include "optizelle/json.h"
+#include "optizelle/vspaces.h"
 
 int main(int argc,char* argv[]) {
     // Do some type shortcuts
     typedef size_t Natural;
-    typedef peopt::Rm <double> Rm;
+    typedef Optizelle::Rm <double> Rm;
 
     // Make sure we have the correct number of arguments
     if(argc!=3) {
@@ -19,8 +19,8 @@ int main(int argc,char* argv[]) {
     }
 
     // Parse the JSON files 
-    Json::Value baseline = peopt::json::parse(peopt::Messaging(),argv[1]);
-    Json::Value test = peopt::json::parse(peopt::Messaging(),argv[2]);
+    Json::Value baseline = Optizelle::json::parse(Optizelle::Messaging(),argv[1]);
+    Json::Value test = Optizelle::json::parse(Optizelle::Messaging(),argv[2]);
 
     // Set a tolerance for our differences
     const double tol=0.05;
@@ -72,10 +72,10 @@ int main(int argc,char* argv[]) {
                 }
             } else if(category.key().asString()=="X_Vectors") {
                 Rm::Vector x;
-                    peopt::json::Serialization <double,peopt::Rm>::deserialize(
+                    Optizelle::json::Serialization <double,Optizelle::Rm>::deserialize(
                         baseline,category.memberName(),variable.memberName(),x);
                 Rm::Vector y;
-                    peopt::json::Serialization <double,peopt::Rm>::deserialize(
+                    Optizelle::json::Serialization <double,Optizelle::Rm>::deserialize(
                         test,category.memberName(),variable.memberName(),y);
                 Rm::Vector diff;
                     Rm::init(x,diff);

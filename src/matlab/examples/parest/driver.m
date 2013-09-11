@@ -8,7 +8,7 @@
 
 function run()
 
-% Make sure that peopt is in the path
+% Make sure that Optizelle is in the path
 addpath('../../');
 
 % Create the vector spaces
@@ -88,11 +88,11 @@ pts.dy=randn(n,1);
 
 % Test the full-space functions 
 fprintf('---------Diagnostics on the equality constrained problem---------\n');
-peopt(VS,fns,pts);
+Optizelle(VS,fns,pts);
 
 % Solve the full-space problem 
 fprintf('\n------------Solving the full-space problem------------\n');
-sol=peopt(VS,fns,pts,'parest.peopt');
+sol=Optizelle(VS,fns,pts,'parest.param');
 fprintf('\nWe converged due to: %s\n',sol.opt_stop);
 
 % Form the solution operator.  The user must specify this
@@ -117,11 +117,11 @@ pts.dy=randn(n,1);
 
 % Test the unconstrained functions 
 fprintf('\n------------Diagnostics on the unconstrained problem------------\n');
-peopt(VS,fns,pts);
+Optizelle(VS,fns,pts);
 
 % Solve the reduced-space problem 
 fprintf('\n------------Solving the reduced-space problem------------\n');
-sol=peopt(VS,fns,pts,'parest.peopt');
+sol=Optizelle(VS,fns,pts,'parest.param');
 fprintf('\nWe converged due to: %s\n',sol.opt_stop);
 end
 

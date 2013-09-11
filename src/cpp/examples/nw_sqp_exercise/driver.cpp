@@ -1,11 +1,11 @@
-#include "peopt/peopt.h"
-#include "peopt/vspaces.h"
-#include "peopt/json.h"
-#include <iostream>
-#include <iomanip>
-
 // Exercise 18.2 in Numerical Optimization by Nocedal and Wright.  This has
 // an optimal solution of x = (-1.71,1.59,1.82.-0.763,-0.763).
+
+#include "optizelle/optizelle.h"
+#include "optizelle/vspaces.h"
+#include "optizelle/json.h"
+#include <iostream>
+#include <iomanip>
 
 // Squares its input
 template <typename Real>
@@ -41,8 +41,8 @@ int ijktol(int i,int j,int k,int m,int n) {
 // 
 // f(x) = exp(x1 x2 x3 x4 x5) - (1/2) (x1^3 + x2^3 + 1)^2
 //
-struct MyObj : public peopt::ScalarValuedFunction <double,peopt::Rm> {
-    typedef peopt::Rm <double> X;
+struct MyObj : public Optizelle::ScalarValuedFunction <double,Optizelle::Rm> {
+    typedef Optizelle::Rm <double> X;
     typedef double Real;
 
     // Evaluation 
@@ -171,10 +171,10 @@ struct MyObj : public peopt::ScalarValuedFunction <double,peopt::Rm> {
 //       [ x1^3 + x2^3 + 1                       ]
 //
 struct MyEq
-    : public peopt::VectorValuedFunction <double,peopt::Rm,peopt::Rm>
+    : public Optizelle::VectorValuedFunction <double,Optizelle::Rm,Optizelle::Rm>
 {
-    typedef peopt::Rm <double> X;
-    typedef peopt::Rm <double> Y;
+    typedef Optizelle::Rm <double> X;
+    typedef Optizelle::Rm <double> Y;
     typedef double Real;
 
     // y=g(x) 
@@ -284,7 +284,7 @@ struct MyEq
 
 int main(int argc,char* argv[]){
     // Create a type shortcut
-    using peopt::Rm;
+    using Optizelle::Rm;
 
     // Read in the name for the input file
     if(argc!=2) {
@@ -324,36 +324,36 @@ int main(int argc,char* argv[]){
     dy[itok(3)]=1.3; 
 
     // Create an optimization state
-    peopt::EqualityConstrained <double,Rm,Rm>::State::t state(x,y);
+    Optizelle::EqualityConstrained <double,Rm,Rm>::State::t state(x,y);
 
     // Read the parameters from file
-    peopt::json::EqualityConstrained <double,peopt::Rm,peopt::Rm>::read(
-        peopt::Messaging(),fname,state);
+    Optizelle::json::EqualityConstrained <double,Optizelle::Rm,Optizelle::Rm>::read(
+        Optizelle::Messaging(),fname,state);
     
     // Create a bundle of functions
-    peopt::EqualityConstrained <double,Rm,Rm>::Functions::t fns;
+    Optizelle::EqualityConstrained <double,Rm,Rm>::Functions::t fns;
     fns.f.reset(new MyObj);
     fns.g.reset(new MyEq);
    
     // Do some finite difference checks on these functions
-    peopt::Diagnostics::gradientCheck <> (peopt::Messaging(),*(fns.f),x,dx);
-    peopt::Diagnostics::hessianCheck <> (peopt::Messaging(),*(fns.f),x,dx);
-    peopt::Diagnostics::hessianSymmetryCheck <>
-        (peopt::Messaging(),*(fns.f),x,dx,dxx);
-    peopt::Diagnostics::derivativeCheck <>
-        (peopt::Messaging(),*(fns.g),x,dx,dy);
-    peopt::Diagnostics::derivativeAdjointCheck <>
-        (peopt::Messaging(),*(fns.g),x,dx,dy);
-    peopt::Diagnostics::secondDerivativeCheck <>
-        (peopt::Messaging(),*(fns.g),x,dx,dy);
+    Optizelle::Diagnostics::gradientCheck <> (Optizelle::Messaging(),*(fns.f),x,dx);
+    Optizelle::Diagnostics::hessianCheck <> (Optizelle::Messaging(),*(fns.f),x,dx);
+    Optizelle::Diagnostics::hessianSymmetryCheck <>
+        (Optizelle::Messaging(),*(fns.f),x,dx,dxx);
+    Optizelle::Diagnostics::derivativeCheck <>
+        (Optizelle::Messaging(),*(fns.g),x,dx,dy);
+    Optizelle::Diagnostics::derivativeAdjointCheck <>
+        (Optizelle::Messaging(),*(fns.g),x,dx,dy);
+    Optizelle::Diagnostics::secondDerivativeCheck <>
+        (Optizelle::Messaging(),*(fns.g),x,dx,dy);
 
     // Solve the optimization problem
-    peopt::EqualityConstrained <double,Rm,Rm>::Algorithms
-        ::getMin(peopt::Messaging(),fns,state);
+    Optizelle::EqualityConstrained <double,Rm,Rm>::Algorithms
+        ::getMin(Optizelle::Messaging(),fns,state);
 
     // Print out the reason for convergence
     std::cout << "The algorithm converged due to: " <<
-        peopt::StoppingCondition::to_string(state.opt_stop) << std::endl;
+        Optizelle::StoppingCondition::to_string(state.opt_stop) << std::endl;
 
     // Print out the final answer
     const std::vector <double>& opt_x=*(state.x.begin());
@@ -373,8 +373,8 @@ int main(int argc,char* argv[]){
     }
 
     // Write out the final answer to file
-    peopt::json::EqualityConstrained<double,peopt::Rm,peopt::Rm>::write_restart(
-        peopt::Messaging(),"nw_sqp_exercise.perst",state);
+    Optizelle::json::EqualityConstrained<double,Optizelle::Rm,Optizelle::Rm>::write_restart(
+        Optizelle::Messaging(),"nw_sqp_exercise.rst",state);
 
     // Successful termination
     return EXIT_SUCCESS;

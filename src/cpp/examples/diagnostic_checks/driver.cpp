@@ -2,7 +2,7 @@
 // define a scalar valued function (for the objective) and a vector valued
 // function (for the constraints), and then run a series of diagnostic
 // checks on them.
-#include "peopt/peopt.h"
+#include "optizelle/optizelle.h"
 
 // Defines the vector space used for optimization.
 template <typename Real>
@@ -79,7 +79,7 @@ Real quint(Real x){
 // 
 // f(x,y)=(1-x)^2+100(y-x^2)^2
 //
-struct Rosen : public peopt::ScalarValuedFunction <double,MyHS> {
+struct Rosen : public Optizelle::ScalarValuedFunction <double,MyHS> {
     typedef MyHS <double> X;
 
     // Evaluation of the Rosenbrock function
@@ -113,7 +113,7 @@ struct Rosen : public peopt::ScalarValuedFunction <double,MyHS> {
 //       [ 3 x1^2 x2 + x2 ^3 ]
 //       [ log(x1) + 3 x2 ^5 ]
 //
-struct Utility  : public peopt::VectorValuedFunction
+struct Utility  : public Optizelle::VectorValuedFunction
     <double,MyHS,MyHS>
 {
     typedef MyHS <double> X;
@@ -188,9 +188,9 @@ int main() {
 
     // Do two finite difference checks and then check the symmetry of the
     // Hessian
-    peopt::Diagnostics::gradientCheck <> (peopt::Messaging(),f,x,dx);
-    peopt::Diagnostics::hessianCheck <> (peopt::Messaging(),f,x,dx);
-    peopt::Diagnostics::hessianSymmetryCheck <> (peopt::Messaging(),f,x,dx,dxx);
+    Optizelle::Diagnostics::gradientCheck <> (Optizelle::Messaging(),f,x,dx);
+    Optizelle::Diagnostics::hessianCheck <> (Optizelle::Messaging(),f,x,dx);
+    Optizelle::Diagnostics::hessianSymmetryCheck <> (Optizelle::Messaging(),f,x,dx,dxx);
 
     // Create some vectors in R^3 for testing the vector-valued function. 
     std::vector <double> dy(3);
@@ -201,7 +201,7 @@ int main() {
 
     // Do the finite difference tests and check whether or not the
     // derivative is adjoint to the derivative adjoint.
-    peopt::Diagnostics::derivativeCheck <> (peopt::Messaging(),g,x,dx,dy);
-    peopt::Diagnostics::derivativeAdjointCheck <>(peopt::Messaging(),g,x,dx,dy);
-    peopt::Diagnostics::secondDerivativeCheck <>(peopt::Messaging(),g,x,dx,dy);
+    Optizelle::Diagnostics::derivativeCheck <> (Optizelle::Messaging(),g,x,dx,dy);
+    Optizelle::Diagnostics::derivativeAdjointCheck <>(Optizelle::Messaging(),g,x,dx,dy);
+    Optizelle::Diagnostics::secondDerivativeCheck <>(Optizelle::Messaging(),g,x,dx,dy);
 }

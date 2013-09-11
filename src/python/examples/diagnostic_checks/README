@@ -1,11 +1,11 @@
 In the following example, we show how to setup a vector space and define
 functions for optimization.  Then, we pass these specifications into
-the diagnostic checks for peopt.  In these checks, we conduct a number
+the diagnostic checks for Optizelle.  In these checks, we conduct a number
 of finite difference tests in addition to symmetry tests of different
 operators.  In order to run the example, call
 
     python2.7 driver.py
     
-Alternatively, if the PYTHONPATH does not include peopt, call
+Alternatively, if the PYTHONPATH does not include Optizelle, call
 
     PYTHONPATH="../.." python2.7 driver.py

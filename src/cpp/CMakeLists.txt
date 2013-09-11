@@ -2,11 +2,11 @@
 enable_language(CXX)
 
 # Set common includes
-include_directories(${PEOPT_INCLUDE_DIRS})
+include_directories(${OPTIZELLE_INCLUDE_DIRS})
 include_directories(${JSONCPP_INCLUDE_DIRS})
 
-# Build the peopt library 
-add_subdirectory(peopt)
+# Build the Optizelle library 
+add_subdirectory(optizelle)
 
 # Check if we want to build the unit tests
 mark_as_advanced(CLEAR ENABLE_CPP_UNIT)

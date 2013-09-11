@@ -1,10 +1,3 @@
-#include "peopt/peopt.h"
-#include "peopt/vspaces.h"
-#include "peopt/json.h"
-#include <iostream>
-#include <iomanip>
-#include <random>
-
 // Optimize a simple optimization problem with an optimal solution of (1/3,1/3),
 //
 // min x + y
@@ -20,6 +13,13 @@
 //     epsilon >= w             
 //     z = w
 
+#include "optizelle/optizelle.h"
+#include "optizelle/vspaces.h"
+#include "optizelle/json.h"
+#include <iostream>
+#include <iomanip>
+#include <random>
+
 // Squares its input
 template <typename Real>
 Real sq(Real x){
@@ -31,8 +31,8 @@ Real sq(Real x){
 // f(x,y,z,w)=x+y
 //
 template <typename Real>
-struct MyObj : public peopt::ScalarValuedFunction <Real,peopt::Rm> {
-    typedef peopt::Rm <Real> X;
+struct MyObj : public Optizelle::ScalarValuedFunction <Real,Optizelle::Rm> {
+    typedef Optizelle::Rm <Real> X;
     typedef typename X::Vector X_Vector;
 
     // Evaluation 
@@ -64,13 +64,13 @@ struct MyObj : public peopt::ScalarValuedFunction <Real,peopt::Rm> {
 // Define a single equality where
 // g(x,y,z,w) = z - w = 0
 template <typename Real>
-struct MyEq : public peopt::VectorValuedFunction <Real,peopt::Rm,peopt::Rm> {
+struct MyEq : public Optizelle::VectorValuedFunction <Real,Optizelle::Rm,Optizelle::Rm> {
 private:
     Real epsilon;
 public:
-    typedef peopt::Rm <Real> X;
+    typedef Optizelle::Rm <Real> X;
     typedef typename X::Vector X_Vector;
-    typedef peopt::Rm <Real> Y;
+    typedef Optizelle::Rm <Real> Y;
     typedef typename Y::Vector Y_Vector;
 
     // y=g(x) 
@@ -121,13 +121,13 @@ public:
 //              [ epsilon >= w     ]
 //
 template <typename Real>
-struct MyIneq : public peopt::VectorValuedFunction <Real,peopt::Rm,peopt::Rm> {
+struct MyIneq : public Optizelle::VectorValuedFunction <Real,Optizelle::Rm,Optizelle::Rm> {
 private:
     Real epsilon;
 public:
-    typedef peopt::Rm <Real> X;
+    typedef Optizelle::Rm <Real> X;
     typedef typename X::Vector X_Vector;
-    typedef peopt::Rm <Real> Z;
+    typedef Optizelle::Rm <Real> Z;
     typedef typename Z::Vector Z_Vector;
 
     // Read in the amount of allowable infeasibility into the problem
@@ -179,7 +179,7 @@ public:
 
 int main(int argc,char* argv[]){
     // Create a type shortcut
-    using peopt::Rm;
+    using Optizelle::Rm;
     typedef double Real;
 
     // Read in the name for the input file
@@ -217,53 +217,53 @@ int main(int argc,char* argv[]){
     z[2]=Real(dis(gen)); 
 
     // Create an optimization state
-    peopt::Constrained <Real,Rm,Rm,Rm>::State::t state(x,y,z);
+    Optizelle::Constrained <Real,Rm,Rm,Rm>::State::t state(x,y,z);
 
     // Read the parameters from file
-    peopt::json::Constrained <Real,Rm,Rm,Rm>::read(
-        peopt::Messaging(),fname,state);
+    Optizelle::json::Constrained <Real,Rm,Rm,Rm>::read(
+        Optizelle::Messaging(),fname,state);
     
     // Create a bundle of functions
-    peopt::Constrained <Real,Rm,Rm,Rm>::Functions::t fns;
+    Optizelle::Constrained <Real,Rm,Rm,Rm>::Functions::t fns;
     fns.f.reset(new MyObj <Real>);
     fns.g.reset(new MyEq <Real>);
     fns.h.reset(new MyIneq <Real>(epsilon));
 
     // Do some finite difference tests 
     std::cout << "Finite difference test on the objective." << std::endl;
-    peopt::Diagnostics::gradientCheck <> (
-        peopt::Messaging(),*fns.f,x,dx);
-    peopt::Diagnostics::hessianCheck <> (
-        peopt::Messaging(),*fns.f,x,dx);
-    peopt::Diagnostics::hessianSymmetryCheck <> (
-        peopt::Messaging(),*fns.f,x,dx,dxx);
+    Optizelle::Diagnostics::gradientCheck <> (
+        Optizelle::Messaging(),*fns.f,x,dx);
+    Optizelle::Diagnostics::hessianCheck <> (
+        Optizelle::Messaging(),*fns.f,x,dx);
+    Optizelle::Diagnostics::hessianSymmetryCheck <> (
+        Optizelle::Messaging(),*fns.f,x,dx,dxx);
     
     std::cout << std::endl
         << "Finite difference test on the equality constraint." << std::endl;
-    peopt::Diagnostics::derivativeCheck <> (
-        peopt::Messaging(),*fns.g,x,dx,y);
-    peopt::Diagnostics::derivativeAdjointCheck <> (
-        peopt::Messaging(),*fns.g,x,dx,y);
-    peopt::Diagnostics::secondDerivativeCheck <> (
-        peopt::Messaging(),*fns.g,x,dx,y);
+    Optizelle::Diagnostics::derivativeCheck <> (
+        Optizelle::Messaging(),*fns.g,x,dx,y);
+    Optizelle::Diagnostics::derivativeAdjointCheck <> (
+        Optizelle::Messaging(),*fns.g,x,dx,y);
+    Optizelle::Diagnostics::secondDerivativeCheck <> (
+        Optizelle::Messaging(),*fns.g,x,dx,y);
 
     std::cout << std::endl
         << "Finite difference test on the inequality constraint." << std::endl;
-    peopt::Diagnostics::derivativeCheck <> (
-        peopt::Messaging(),*fns.h,x,dx,z);
-    peopt::Diagnostics::derivativeAdjointCheck <> (
-        peopt::Messaging(),*fns.h,x,dx,z);
-    peopt::Diagnostics::secondDerivativeCheck <> (
-        peopt::Messaging(),*fns.h,x,dx,z);
+    Optizelle::Diagnostics::derivativeCheck <> (
+        Optizelle::Messaging(),*fns.h,x,dx,z);
+    Optizelle::Diagnostics::derivativeAdjointCheck <> (
+        Optizelle::Messaging(),*fns.h,x,dx,z);
+    Optizelle::Diagnostics::secondDerivativeCheck <> (
+        Optizelle::Messaging(),*fns.h,x,dx,z);
 
     // Solve the optimization problem
     std::cout << std::endl << "Solving the optimization problem." << std::endl;
-    peopt::Constrained <Real,Rm,Rm,Rm>::Algorithms
-        ::getMin(peopt::Messaging(),fns,state);
+    Optizelle::Constrained <Real,Rm,Rm,Rm>::Algorithms
+        ::getMin(Optizelle::Messaging(),fns,state);
 
     // Print out the reason for convergence
     std::cout << "The algorithm converged due to: " <<
-        peopt::StoppingCondition::to_string(state.opt_stop) << std::endl;
+        Optizelle::StoppingCondition::to_string(state.opt_stop) << std::endl;
 
     // Print out the final answer
     const std::vector <Real>& opt_x=*(state.x.begin());
@@ -272,8 +272,8 @@ int main(int argc,char* argv[]){
 	<< opt_x[1] << ')' << std::endl;
 
     // Write out the final answer to file
-    peopt::json::Constrained <Real,Rm,Rm,Rm>::write_restart(
-        peopt::Messaging(),"simple_infeasible_inequality.perst",state);
+    Optizelle::json::Constrained <Real,Rm,Rm,Rm>::write_restart(
+        Optizelle::Messaging(),"simple_infeasible_inequality.rst",state);
 
     // Successful termination
     return EXIT_SUCCESS;

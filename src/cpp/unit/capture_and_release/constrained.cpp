@@ -1,12 +1,12 @@
-#include "peopt/peopt.h"
-#include "peopt/vspaces.h"
+#include "optizelle/optizelle.h"
+#include "optizelle/vspaces.h"
 #include "unit.h"
 
 // This tests our ability to capture and release from the optimization state
 
 int main() {
     // Create a type shortcut
-    using peopt::Rm;
+    using Optizelle::Rm;
 
     // Create some arbitrary vector in R^2
     std::vector <double> x(2);
@@ -21,16 +21,16 @@ int main() {
     z[0] = 6.7; z[1] = 7.8; z[2]=8.9; z[3]=9.10;
 
     // Create an unconstrained state based on this vector
-    peopt::Constrained <double,Rm,Rm,Rm>::State::t state(x,y,z);
+    Optizelle::Constrained <double,Rm,Rm,Rm>::State::t state(x,y,z);
 
     // Do a release 
-    peopt::Constrained <double,Rm,Rm,Rm>::X_Vectors xs;
-    peopt::Constrained <double,Rm,Rm,Rm>::Y_Vectors ys;
-    peopt::Constrained <double,Rm,Rm,Rm>::Z_Vectors zs;
-    peopt::Constrained <double,Rm,Rm,Rm>::Reals reals;
-    peopt::Constrained <double,Rm,Rm,Rm>::Nats nats;
-    peopt::Constrained <double,Rm,Rm,Rm>::Params params;
-    peopt::Constrained <double,Rm,Rm,Rm>::Restart
+    Optizelle::Constrained <double,Rm,Rm,Rm>::X_Vectors xs;
+    Optizelle::Constrained <double,Rm,Rm,Rm>::Y_Vectors ys;
+    Optizelle::Constrained <double,Rm,Rm,Rm>::Z_Vectors zs;
+    Optizelle::Constrained <double,Rm,Rm,Rm>::Reals reals;
+    Optizelle::Constrained <double,Rm,Rm,Rm>::Nats nats;
+    Optizelle::Constrained <double,Rm,Rm,Rm>::Params params;
+    Optizelle::Constrained <double,Rm,Rm,Rm>::Restart
         ::release(state,xs,ys,zs,reals,nats,params);
 
     // Check that the state has empty slots for the variables
@@ -58,8 +58,8 @@ int main() {
     CHECK(state.h_x.size()==0);
 
     // Capture the state
-    peopt::Constrained <double,Rm,Rm,Rm>::Restart
-        ::capture(peopt::Messaging(),state,xs,ys,zs,reals,nats,params);
+    Optizelle::Constrained <double,Rm,Rm,Rm>::Restart
+        ::capture(Optizelle::Messaging(),state,xs,ys,zs,reals,nats,params);
 
     // Check that we actually have memory in these slots
     CHECK(state.x.size()==1);

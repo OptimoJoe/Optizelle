@@ -1,12 +1,12 @@
-#include "peopt/peopt.h"
-#include "peopt/vspaces.h"
-#include "peopt/json.h"
+// Optimize a simple optimization problem with an optimal 
+// solution of (1/3,1/3)
+
+#include "optizelle/optizelle.h"
+#include "optizelle/vspaces.h"
+#include "optizelle/json.h"
 #include <iostream>
 #include <iomanip>
 #include <cstdlib>
-
-// Optimize a simple optimization problem with an optimal 
-// solution of (1/3,1/3)
 
 // Squares its input
 template <typename Real>
@@ -19,9 +19,9 @@ Real sq(Real x){
 // f(x,y)=(x+1)^2+(y+1)^2
 //
 struct MyObj
-    : public peopt::ScalarValuedFunction <double,peopt::Rm>
+    : public Optizelle::ScalarValuedFunction <double,Optizelle::Rm>
 {
-    typedef peopt::Rm <double> X;
+    typedef Optizelle::Rm <double> X;
 
     // Evaluation 
     double operator () (const X::Vector& x) const {
@@ -53,10 +53,10 @@ struct MyObj
 // g(x,y)= [ x + 2y = 1 ] 
 //
 struct MyEq
-    :public peopt::VectorValuedFunction<double,peopt::Rm,peopt::Rm>
+    :public Optizelle::VectorValuedFunction<double,Optizelle::Rm,Optizelle::Rm>
 {
-    typedef peopt::Rm <double> X;
-    typedef peopt::Rm <double> Y;
+    typedef Optizelle::Rm <double> X;
+    typedef Optizelle::Rm <double> Y;
 
     // y=g(x) 
     void operator () (
@@ -101,10 +101,10 @@ struct MyEq
 // h(x,y)= [ 2x + y >= 1 ] 
 //
 struct MyIneq
-    :public peopt::VectorValuedFunction<double,peopt::Rm,peopt::Rm>
+    :public Optizelle::VectorValuedFunction<double,Optizelle::Rm,Optizelle::Rm>
 {
-    typedef peopt::Rm <double> X;
-    typedef peopt::Rm <double> Y;
+    typedef Optizelle::Rm <double> X;
+    typedef Optizelle::Rm <double> Y;
 
     // y=h(x) 
     void operator () (
@@ -153,7 +153,7 @@ int main(int argc,char* argv[]){
     std::string fname(argv[1]);
 
     // Create a type shortcut
-    using peopt::Rm;
+    using Optizelle::Rm;
 
     // Generate an initial guess for the primal
     std::vector <double> x(2);
@@ -166,25 +166,25 @@ int main(int argc,char* argv[]){
     std::vector <double> z(1);
 
     // Create an optimization state
-    peopt::Constrained <double,Rm,Rm,Rm>::State::t state(x,y,z);
+    Optizelle::Constrained <double,Rm,Rm,Rm>::State::t state(x,y,z);
 
     // Read the parameters from file
-    peopt::json::Constrained <double,Rm,Rm,Rm>::read(
-        peopt::Messaging(),fname,state);
+    Optizelle::json::Constrained <double,Rm,Rm,Rm>::read(
+        Optizelle::Messaging(),fname,state);
     
     // Create a bundle of functions
-    peopt::Constrained <double,Rm,Rm,Rm>::Functions::t fns;
+    Optizelle::Constrained <double,Rm,Rm,Rm>::Functions::t fns;
     fns.f.reset(new MyObj);
     fns.g.reset(new MyEq);
     fns.h.reset(new MyIneq);
     
     // Solve the optimization problem
-    peopt::Constrained <double,Rm,Rm,Rm>::Algorithms
-        ::getMin(peopt::Messaging(),fns,state);
+    Optizelle::Constrained <double,Rm,Rm,Rm>::Algorithms
+        ::getMin(Optizelle::Messaging(),fns,state);
 
     // Print out the reason for convergence
     std::cout << "The algorithm converged due to: " <<
-        peopt::StoppingCondition::to_string(state.opt_stop) <<
+        Optizelle::StoppingCondition::to_string(state.opt_stop) <<
         std::endl;
 
     // Print out the final answer
@@ -194,12 +194,8 @@ int main(int argc,char* argv[]){
 	<< opt_x[1] << ')' << std::endl;
 
     // Write out the final answer to file
-    peopt::json::Constrained<double,peopt::Rm,peopt::Rm,peopt::Rm>
-        ::write_restart(peopt::Messaging(),"simple_constrained.perst",state);
-
-    // Write out the final answer to file
-    peopt::json::Constrained <double,Rm,Rm,Rm>::write_restart(
-        peopt::Messaging(),"simple_constrained.perst",state);
+    Optizelle::json::Constrained <double,Rm,Rm,Rm>::write_restart(
+        Optizelle::Messaging(),"simple_constrained.rst",state);
 
     // Successful termination
     return EXIT_SUCCESS;

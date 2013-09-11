@@ -1,8 +1,8 @@
 \begin{lstlisting}[style=C++]
-    peopt::Unconstrained <double,Rm>::Functions::t fns;
-    peopt::InequalityConstrained <double,Rm>::Functions::t fns;
-    peopt::EqualityConstrained <double,Rm>::Functions::t fns;
-    peopt::Constrained <double,Rm,Rm,Rm>::Functions::t fns;
+    Optizelle::Unconstrained <double,Rm>::Functions::t fns;
+    Optizelle::InequalityConstrained <double,Rm>::Functions::t fns;
+    Optizelle::EqualityConstrained <double,Rm>::Functions::t fns;
+    Optizelle::Constrained <double,Rm,Rm,Rm>::Functions::t fns;
 
     fns.f.reset(new MyObj);
     fns.g.reset(new MyEq);

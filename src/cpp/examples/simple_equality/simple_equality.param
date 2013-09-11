@@ -1,0 +1,9 @@
+{
+   "Optizelle" : {
+      "msg_level" : 1,
+      "H_type" : "UserDefined",
+      "iter_max" : 100,
+      "eps_dx" : 1e-16,
+      "eps_grad" : 1e-8
+   }
+}

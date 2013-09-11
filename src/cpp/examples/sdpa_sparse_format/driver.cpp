@@ -1,3 +1,5 @@
+// Loads and solve a linear SDP stored in the sparse SDPA format.
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -6,9 +8,9 @@
 #include <cstdlib>
 #include <algorithm>
 #include <random>
-#include "peopt/peopt.h"
-#include "peopt/vspaces.h"
-#include "peopt/json.h"
+#include "optizelle/optizelle.h"
+#include "optizelle/vspaces.h"
+#include "optizelle/json.h"
 
 typedef size_t Natural;
 typedef ptrdiff_t Integer;
@@ -321,12 +323,12 @@ void sort_sdp (SparseSDP <Real>& prob) {
 // f(x)=<b,x> 
 //
 template <typename Real>
-struct SDPObj : public peopt::ScalarValuedFunction <Real,peopt::Rm> {
+struct SDPObj : public Optizelle::ScalarValuedFunction <Real,Optizelle::Rm> {
 private:
     const SparseSDP <Real>& prob;
         
 public:
-    typedef peopt::Rm <Real> Rm;
+    typedef Optizelle::Rm <Real> Rm;
     typedef typename Rm::Vector X_Vector;
 
     // Grab a reference to the underlying SDP problem
@@ -361,10 +363,10 @@ public:
 // h(x) = A1*x1 + ... + Am*xm - A0 >= 0
 //
 template <typename Real>
-struct SDPIneq : public peopt::VectorValuedFunction <Real,peopt::Rm,peopt::SQL>{
+struct SDPIneq : public Optizelle::VectorValuedFunction <Real,Optizelle::Rm,Optizelle::SQL>{
 public:
-    typedef peopt::Rm <Real> X;
-    typedef peopt::SQL <Real> Z;
+    typedef Optizelle::Rm <Real> X;
+    typedef Optizelle::SQL <Real> Z;
     typedef typename X::Vector X_Vector;
     typedef typename Z::Vector Z_Vector;
 
@@ -497,32 +499,32 @@ public:
 template <typename Real>
 void initSQL(
     const SparseSDP <Real>& prob,
-    typename peopt::SQL <Real>::Vector& x,
+    typename Optizelle::SQL <Real>::Vector& x,
     const bool phase1=false
 ) {
     // Create a type shortcut
-    typedef peopt::SQL <Real> SQL;
+    typedef Optizelle::SQL <Real> SQL;
 
     // Figure out the structure of the codomain of the inequality
     // constraint h 
-    std::vector <peopt::Natural> sizes(prob.blk_sizes.size());
-    std::vector <peopt::Cone::t> types(prob.blk_sizes.size());
+    std::vector <Optizelle::Natural> sizes(prob.blk_sizes.size());
+    std::vector <Optizelle::Cone::t> types(prob.blk_sizes.size());
     for(Natural i=0;i<sizes.size();i++) {
         sizes[i]=abs(prob.blk_sizes[i]);
         if(prob.blk_sizes[i]<0)
-            types[i]=peopt::Cone::Linear;
+            types[i]=Optizelle::Cone::Linear;
         else
-            types[i]=peopt::Cone::Semidefinite;
+            types[i]=Optizelle::Cone::Semidefinite;
     }
 
     // If we're in phase-1, add the extra cone for feasibility. 
     if(phase1) {
-        types.emplace_back(peopt::Cone::Linear);
+        types.emplace_back(Optizelle::Cone::Linear);
         sizes.emplace_back(2);
     }
 
     // Create a new element 
-    typename SQL::Vector xx(peopt::Messaging(),types,sizes);
+    typename SQL::Vector xx(Optizelle::Messaging(),types,sizes);
 
     // Initialize the memory for the user input
     SQL::init(xx,x);
@@ -533,8 +535,8 @@ void initSQL(
 // f(x,y) = y2 
 //
 template <typename Real>
-struct Phase1Obj : public peopt::ScalarValuedFunction <Real,peopt::Rm> {
-    typedef peopt::Rm <Real> Rm;
+struct Phase1Obj : public Optizelle::ScalarValuedFunction <Real,Optizelle::Rm> {
+    typedef Optizelle::Rm <Real> Rm;
     typedef typename Rm::Vector X_Vector;
 
     // We basically have an empty constructor .
@@ -578,14 +580,14 @@ struct Phase1Obj : public peopt::ScalarValuedFunction <Real,peopt::Rm> {
 //
 template <typename Real>
 struct Phase1Ineq
-    : public peopt::VectorValuedFunction <Real,peopt::Rm,peopt::SQL>
+    : public Optizelle::VectorValuedFunction <Real,Optizelle::Rm,Optizelle::SQL>
 {
 public:
-    typedef peopt::Rm <Real> Rm;
-    typedef peopt::SQL <Real> SQL;
+    typedef Optizelle::Rm <Real> Rm;
+    typedef Optizelle::SQL <Real> SQL;
     
     typedef typename Rm::Vector X_Vector;
-    typedef peopt::SQL <Real> Z;
+    typedef Optizelle::SQL <Real> Z;
     typedef typename Z::Vector Z_Vector;
 
 private:
@@ -593,7 +595,7 @@ private:
     const SDPIneq <Real> h;
 
     // Identity vector
-    mutable typename peopt::SQL <Real>::Vector e;
+    mutable typename Optizelle::SQL <Real>::Vector e;
     
     // Extent to which we push for positive definiteness 
     const Real epsilon;
@@ -698,7 +700,7 @@ void create_ei(const Natural& i,std::vector <Real>& ei) {
 // Projects X to Rm
 template <typename Real,template <typename> class XX>
 struct ProjectX {
-    virtual typename peopt::Rm <Real>::Vector * operator () (
+    virtual typename Optizelle::Rm <Real>::Vector * operator () (
         typename XX <Real>::Vector& x
     ) const = 0;
     virtual ~ProjectX() {}
@@ -706,19 +708,19 @@ struct ProjectX {
 
 // Projects Rm to Rm
 template <typename Real>
-struct ProjectRm : public ProjectX <Real,peopt::Rm> {
-    typename peopt::Rm <Real>::Vector * operator () (
-        typename peopt::Rm <Real>::Vector& x
+struct ProjectRm : public ProjectX <Real,Optizelle::Rm> {
+    typename Optizelle::Rm <Real>::Vector * operator () (
+        typename Optizelle::Rm <Real>::Vector& x
     ) const {
         return &x;
     }
 };
 
 template <typename Real,template <typename> class XX>
-struct SDPPreconditioner : public peopt::Operator <Real,XX,XX> {
+struct SDPPreconditioner : public Optizelle::Operator <Real,XX,XX> {
 private:
     // Create some type shortcuts
-    typedef peopt::Rm <Real> Rm;
+    typedef Optizelle::Rm <Real> Rm;
     typedef XX <Real> X;
     typedef typename X::Vector X_Vector;
     typedef typename Rm::Vector Rm_Vector;
@@ -730,7 +732,7 @@ private:
     // needs to be a reference to the unique_ptr since the actual function is
     // not initialized yet when we grab the reference.
     const std::unique_ptr
-        <peopt::ScalarValuedFunctionModifications <Real,XX> >& f_mod;
+        <Optizelle::ScalarValuedFunctionModifications <Real,XX> >& f_mod;
 
     // Current iterate
     const X_Vector& x;
@@ -756,7 +758,7 @@ private:
 public:
     SDPPreconditioner(
         ProjectX <Real,XX>* proj_,
-        const std::unique_ptr<peopt::ScalarValuedFunctionModifications<Real,XX> >&
+        const std::unique_ptr<Optizelle::ScalarValuedFunctionModifications<Real,XX> >&
             f_mod_,
         const X_Vector& x_
     ) : proj(proj_), f_mod(f_mod_), x(x_), invCondH(1.) {
@@ -775,7 +777,7 @@ public:
         Natural m = (*proj)(ei)->size();
 
         // See if we need to recalculate the preconditioner
-        if( peopt::rel_err_cached <Real,XX> (x,x_last) >=
+        if( Optizelle::rel_err_cached <Real,XX> (x,x_last) >=
             std::numeric_limits <Real>::epsilon()*1e1
         ){
             // Cache the values
@@ -798,18 +800,18 @@ public:
                 Rm_Vector* const P_x_tmp2=(*proj)(x_tmp2);
 
                 // Copy in the column into the correct place
-                peopt::copy <Real> (m,&((*P_x_tmp2)[0]),1,&(H[i*m]),1);
+                Optizelle::copy <Real> (m,&((*P_x_tmp2)[0]),1,&(H[i*m]),1);
             }
 
             // Find the condition number of H
             Integer info(0);
             std::vector <Real> work(3*m);
             std::vector <Integer> iwork(m);
-            peopt::trcon('I','U','N',m,&(H[0]),m,invCondH,&(work[0]),
+            Optizelle::trcon('I','U','N',m,&(H[0]),m,invCondH,&(work[0]),
                 &(iwork[0]),info);
 
             // Find the Choleski factorization of H
-            peopt::potrf <Real> ('U',m,&(H[0]),m,info);
+            Optizelle::potrf <Real> ('U',m,&(H[0]),m,info);
         }
 
         // Start by copying over the direction
@@ -820,8 +822,8 @@ public:
         if(invCondH >= std::numeric_limits <Real>::epsilon()*1e3) {
             // Do the triangular solve for y
             Rm_Vector* P_PHdx=(*proj)(PH_dx);
-            peopt::trsv <Real> ('U','T','N',m,&(H[0]),m,&((*P_PHdx)[0]),1);
-            peopt::trsv <Real> ('U','N','N',m,&(H[0]),m,&((*P_PHdx)[0]),1);
+            Optizelle::trsv <Real> ('U','T','N',m,&(H[0]),m,&((*P_PHdx)[0]),1);
+            Optizelle::trsv <Real> ('U','N','N',m,&(H[0]),m,&((*P_PHdx)[0]),1);
         }
     }
 };
@@ -830,11 +832,11 @@ public:
 template <typename Real>
 bool initPhase1X(
     const SparseSDP <Real> prob,
-    typename peopt::Rm <Real>::Vector& x
+    typename Optizelle::Rm <Real>::Vector& x
 ){
     // Create some type shortcuts
-    typedef typename peopt::Rm <Real> Rm;
-    typedef typename peopt::SQL <Real> SQL;
+    typedef typename Optizelle::Rm <Real> Rm;
+    typedef typename Optizelle::SQL <Real> SQL;
 
     // Set the size of the primary part of x
     Natural m = prob.A.size()-1;
@@ -892,7 +894,7 @@ bool initPhase1X(
 template <typename Real>
 void initPhase1DX(
     const SparseSDP<Real>prob,
-    typename peopt::Rm <Real>::Vector& dx
+    typename Optizelle::Rm <Real>::Vector& dx
 ){
     // First, initialize the perturbation just like x
     initPhase1X <Real> (prob,dx);
@@ -902,7 +904,7 @@ void initPhase1DX(
 template <typename Real>
 void initZ(
     const SparseSDP <Real> prob,
-    typename peopt::SQL <Real>::Vector& z,
+    typename Optizelle::SQL <Real>::Vector& z,
     const bool phase1=false 
 ) {
     // Allocate memory for z
@@ -919,12 +921,12 @@ void initZ(
 // parse whether or not we want finite difference tests.
 template <typename Real>
 void parseSDPSettings(
-    const peopt::Messaging& msg,
+    const Optizelle::Messaging& msg,
     const std::string& fname,
     Real& epsilon,
     bool& fd_tests
 ) {
-    Json::Value root=peopt::json::parse(msg,fname);
+    Json::Value root=Optizelle::json::parse(msg,fname);
     epsilon=Real(root["sdp_settings"].get("epsilon",1.).asDouble());
     fd_tests=root["sdp_settings"].get("fd_tests",false).asBool();
 }
@@ -933,8 +935,8 @@ void parseSDPSettings(
 int main(int argc,char* argv[]) {
     // Type shortcuts
     typedef double Real;
-    typedef peopt::Rm <Real> Rm;
-    typedef peopt::SQL <Real> SQL;
+    typedef Optizelle::Rm <Real> Rm;
+    typedef Optizelle::SQL <Real> SQL;
 
     // Check that we have sufficient inputs
     if(argc!=4) {
@@ -956,8 +958,8 @@ int main(int argc,char* argv[]) {
 
     // Note, we're going to ignore the values of epsilon and beta from this
     // parsing.  Mostly, it's just easier not to have two different routines.
-    parseSDPSettings(peopt::Messaging(),phase2_params,epsilon,phase2_fd_tests);
-    parseSDPSettings(peopt::Messaging(),phase1_params,epsilon,phase1_fd_tests);
+    parseSDPSettings(Optizelle::Messaging(),phase2_params,epsilon,phase2_fd_tests);
+    parseSDPSettings(Optizelle::Messaging(),phase1_params,epsilon,phase1_fd_tests);
 
     // Parse the file sparse SDPA file
     SparseSDP <Real> prob;
@@ -981,19 +983,19 @@ int main(int argc,char* argv[]) {
         initZ <Real> (prob,z_phase1,true);
 
     // Create the phase-1 state 
-    peopt::InequalityConstrained <Real,peopt::Rm,peopt::SQL>::State::t
+    Optizelle::InequalityConstrained <Real,Optizelle::Rm,Optizelle::SQL>::State::t
         phase1_state(x,z_phase1);
 
     // Read the parameters from file
-    peopt::json::InequalityConstrained <Real,peopt::Rm,peopt::SQL>::read(
-        peopt::Messaging(),phase1_params,phase1_state);
+    Optizelle::json::InequalityConstrained <Real,Optizelle::Rm,Optizelle::SQL>::read(
+        Optizelle::Messaging(),phase1_params,phase1_state);
 
     // Create the bundle of phase-1 functions
-    peopt::InequalityConstrained <Real,peopt::Rm,peopt::SQL>::Functions::t
+    Optizelle::InequalityConstrained <Real,Optizelle::Rm,Optizelle::SQL>::Functions::t
         phase1_fns;
     phase1_fns.f.reset(new Phase1Obj <Real> ()); 
     phase1_fns.h.reset(new Phase1Ineq <Real> (prob,epsilon));
-    phase1_fns.PH.reset(new SDPPreconditioner <Real,peopt::Rm> (
+    phase1_fns.PH.reset(new SDPPreconditioner <Real,Optizelle::Rm> (
         new ProjectRm <Real> (),phase1_fns.f_mod,phase1_state.x.front()));
 
     if(phase1_fd_tests) {
@@ -1003,22 +1005,22 @@ int main(int argc,char* argv[]) {
             << std::endl << std::endl;
 
         std::cout << "Finite difference test on the objective." << std::endl;
-        peopt::Diagnostics::gradientCheck <> (
-            peopt::Messaging(),*phase1_fns.f,x,dx);
-        peopt::Diagnostics::hessianCheck <> (
-            peopt::Messaging(),*phase1_fns.f,x,dx);
-        peopt::Diagnostics::hessianSymmetryCheck <> (
-            peopt::Messaging(),*phase1_fns.f,x,dx,dxx);
+        Optizelle::Diagnostics::gradientCheck <> (
+            Optizelle::Messaging(),*phase1_fns.f,x,dx);
+        Optizelle::Diagnostics::hessianCheck <> (
+            Optizelle::Messaging(),*phase1_fns.f,x,dx);
+        Optizelle::Diagnostics::hessianSymmetryCheck <> (
+            Optizelle::Messaging(),*phase1_fns.f,x,dx,dxx);
         
         std::cout << std::endl
             << "Finite difference test on the inequality constraint."
             << std::endl;
-        peopt::Diagnostics::derivativeCheck <> (
-            peopt::Messaging(),*phase1_fns.h,x,dx,z_phase1);
-        peopt::Diagnostics::derivativeAdjointCheck <> (
-            peopt::Messaging(),*phase1_fns.h,x,dx,z_phase1);
-        peopt::Diagnostics::secondDerivativeCheck <> (
-            peopt::Messaging(),*phase1_fns.h,x,dx,z_phase1);
+        Optizelle::Diagnostics::derivativeCheck <> (
+            Optizelle::Messaging(),*phase1_fns.h,x,dx,z_phase1);
+        Optizelle::Diagnostics::derivativeAdjointCheck <> (
+            Optizelle::Messaging(),*phase1_fns.h,x,dx,z_phase1);
+        Optizelle::Diagnostics::secondDerivativeCheck <> (
+            Optizelle::Messaging(),*phase1_fns.h,x,dx,z_phase1);
     }
 
     // Solve the phase-1 problem if we're infeasible.
@@ -1027,12 +1029,12 @@ int main(int argc,char* argv[]) {
             "Solving the phase-1 problem for an initial solution." << std::endl;
 
         // Solve the SDP 
-        peopt::InequalityConstrained <Real,peopt::Rm,peopt::SQL>::Algorithms
-            ::getMin(peopt::Messaging(),phase1_fns,phase1_state);
+        Optizelle::InequalityConstrained <Real,Optizelle::Rm,Optizelle::SQL>::Algorithms
+            ::getMin(Optizelle::Messaging(),phase1_fns,phase1_state);
 
         // Tell us why the problem converged
         std::cout << "Phase-1 problem converged due to: "
-            << peopt::StoppingCondition::to_string(phase1_state.opt_stop)
+            << Optizelle::StoppingCondition::to_string(phase1_state.opt_stop)
             << std::endl;
 
         // Check if we're feasible
@@ -1057,19 +1059,19 @@ int main(int argc,char* argv[]) {
         initZ <Real> (prob,z);
 
     // Create the optimization state 
-    peopt::InequalityConstrained <Real,peopt::Rm,peopt::SQL>::State::t
+    Optizelle::InequalityConstrained <Real,Optizelle::Rm,Optizelle::SQL>::State::t
         state(x,z);
 
     // Read the parameters from file
-    peopt::json::InequalityConstrained <Real,peopt::Rm,peopt::SQL>::read(
-        peopt::Messaging(),phase2_params,state);
+    Optizelle::json::InequalityConstrained <Real,Optizelle::Rm,Optizelle::SQL>::read(
+        Optizelle::Messaging(),phase2_params,state);
 
     // Create the bundle of functions
-    peopt::InequalityConstrained <Real,peopt::Rm,peopt::SQL>::Functions::t
+    Optizelle::InequalityConstrained <Real,Optizelle::Rm,Optizelle::SQL>::Functions::t
         fns;
     fns.f.reset(new SDPObj <Real> (prob));
     fns.h.reset(new SDPIneq <Real> (prob));
-    fns.PH.reset(new SDPPreconditioner <Real,peopt::Rm> (
+    fns.PH.reset(new SDPPreconditioner <Real,Optizelle::Rm> (
         new ProjectRm <Real> (),fns.f_mod,state.x.front()));
     
     // Run some finite difference tests on this problem 
@@ -1079,34 +1081,34 @@ int main(int argc,char* argv[]) {
             << std::endl << std::endl;;
 
         std::cout << "Finite difference test on the objective." << std::endl;
-        peopt::Diagnostics::gradientCheck <> (
-            peopt::Messaging(),*fns.f,x,dx);
-        peopt::Diagnostics::hessianCheck <> (
-            peopt::Messaging(),*fns.f,x,dx);
-        peopt::Diagnostics::hessianSymmetryCheck <> (
-            peopt::Messaging(),*fns.f,x,dx,dxx);
+        Optizelle::Diagnostics::gradientCheck <> (
+            Optizelle::Messaging(),*fns.f,x,dx);
+        Optizelle::Diagnostics::hessianCheck <> (
+            Optizelle::Messaging(),*fns.f,x,dx);
+        Optizelle::Diagnostics::hessianSymmetryCheck <> (
+            Optizelle::Messaging(),*fns.f,x,dx,dxx);
         
         std::cout << std::endl
             << "Finite difference test on the inequality constraint."
             << std::endl;
-        peopt::Diagnostics::derivativeCheck <> (
-            peopt::Messaging(),*fns.h,x,dx,z);
-        peopt::Diagnostics::derivativeAdjointCheck <> (
-            peopt::Messaging(),*fns.h,x,dx,z);
-        peopt::Diagnostics::secondDerivativeCheck <> (
-            peopt::Messaging(),*fns.h,x,dx,z);
+        Optizelle::Diagnostics::derivativeCheck <> (
+            Optizelle::Messaging(),*fns.h,x,dx,z);
+        Optizelle::Diagnostics::derivativeAdjointCheck <> (
+            Optizelle::Messaging(),*fns.h,x,dx,z);
+        Optizelle::Diagnostics::secondDerivativeCheck <> (
+            Optizelle::Messaging(),*fns.h,x,dx,z);
     }
     
     // Keep our user informed
     std::cout << std::endl << "Solving the SDP probem: " << fname << std::endl;
 
     // Solve the SDP 
-    peopt::InequalityConstrained<Real,peopt::Rm,peopt::SQL>::Algorithms::getMin(
-        peopt::Messaging(),fns,state);
+    Optizelle::InequalityConstrained<Real,Optizelle::Rm,Optizelle::SQL>::Algorithms::getMin(
+        Optizelle::Messaging(),fns,state);
 
     // Tell us why the problem converged
     std::cout << "SDP problem converged due to: "
-        << peopt::StoppingCondition::to_string(state.opt_stop)
+        << Optizelle::StoppingCondition::to_string(state.opt_stop)
         << std::endl;
 
     // Return the objective function
@@ -1114,6 +1116,6 @@ int main(int argc,char* argv[]) {
         << std::scientific << state.f_x << std::endl;
 
     // Write out the final answer to file
-    peopt::json::InequalityConstrained <Real,peopt::Rm,peopt::SQL>
-        ::write_restart(peopt::Messaging(),"sdpa_sparse_format.perst",state);
+    Optizelle::json::InequalityConstrained <Real,Optizelle::Rm,Optizelle::SQL>
+        ::write_restart(Optizelle::Messaging(),"sdpa_sparse_format.rst",state);
 }

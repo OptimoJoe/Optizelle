@@ -1,6 +1,6 @@
-#include "peopt/peopt.h"
-#include "peopt/vspaces.h"
-#include "peopt/linalg.h"
+#include "optizelle/optizelle.h"
+#include "optizelle/vspaces.h"
+#include "optizelle/linalg.h"
 #include "linear_algebra.h"
 #include "unit.h"
 
@@ -16,7 +16,7 @@
 // radius of 7.5, it should only move half the distance.
 int main() {
     // Create a type shortcut
-    typedef peopt::Rm <double> X;
+    typedef Optizelle::Rm <double> X;
     typedef X::Vector X_Vector;
 
     // Set the size of the problem
@@ -63,8 +63,8 @@ int main() {
     // Solve this linear system
     double residual_err0, residual_err; 
     Natural iter;
-    peopt::KrylovStop::t krylov_stop;
-    peopt::truncated_cd <double,peopt::Rm>
+    Optizelle::KrylovStop::t krylov_stop;
+    Optizelle::truncated_cd <double,Optizelle::Rm>
         (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,false,x,x_cp,
             residual_err0,residual_err,iter,krylov_stop);
 
@@ -77,9 +77,9 @@ int main() {
     x_star[0] = 1.5; 
     x_star[1] = 2.; 
     std::vector <double> residual = x_star;
-    peopt::Rm <double>::axpy(-1,x,residual);
-    double err=std::sqrt(peopt::Rm <double>::innr(residual,residual))
-        /(1+sqrt(peopt::Rm <double>::innr(x_star,x_star)));
+    Optizelle::Rm <double>::axpy(-1,x,residual);
+    double err=std::sqrt(Optizelle::Rm <double>::innr(residual,residual))
+        /(1+sqrt(Optizelle::Rm <double>::innr(x_star,x_star)));
     CHECK(err < 1e-14);
 
     // Declare success

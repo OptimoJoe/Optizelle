@@ -7,13 +7,14 @@ In order to run the problem, call
 
     python2.7 driver.py
     
-Alternatively, if the PYTHONPATH does not include peopt, call
+Alternatively, if the PYTHONPATH does not include Optizelle, call
 
     PYTHONPATH="../.." python2.7 driver.py
 
-Now, in order to modify the algorithm, we modify the run.peopt parameter file.
-In this file, we see several sections such as "peopt", "peopt_TR_Newton", and
-so on.  The only section read by peopt is the "peopt" section.  The other
-section are different ways of modifying the optimization algorithm and are
-present as comments.  In other words, in order to change the algorithm, copy
-one of the other sections into the "peopt" section.
+Now, in order to modify the algorithm, we modify the rosenbrock.param parameter
+file.  In this file, we see several sections such as "Optizelle",
+"Optizelle_TR_Newton", and so on.  The only section read by Optizelle is the
+"Optizelle" section.  The other section are different ways of modifying the 
+optimization algorithm and are present as comments.  In other words, in order 
+to change the algorithm, copy one of the other sections into the "Optizelle"
+section.

@@ -1,5 +1,5 @@
-#include "peopt/peopt.h"
-#include "peopt/vspaces.h"
+#include "optizelle/optizelle.h"
+#include "optizelle/vspaces.h"
 #include "unit.h"
 
 // This tests our ability to do derivative and symmetry checks on vector-valued
@@ -36,11 +36,11 @@ namespace {
     //         [ 3 x^2 y + y^3]
     //         [ log(x) + 3y^5]
     //
-    struct Utility  : public peopt::VectorValuedFunction
-        <double,peopt::Rm,peopt::Rm>
+    struct Utility  : public Optizelle::VectorValuedFunction
+        <double,Optizelle::Rm,Optizelle::Rm>
     {
-        typedef peopt::Rm <double> X;
-        typedef peopt::Rm <double> Y;
+        typedef Optizelle::Rm <double> X;
+        typedef Optizelle::Rm <double> Y;
 
         // y=g(x) 
         void operator () (
@@ -110,14 +110,14 @@ int main() {
     Utility g;
 
     // Do the finite difference tests
-    double err=peopt::Diagnostics::derivativeCheck <>
-        (peopt::Messaging(),g,x,dx,dy);
+    double err=Optizelle::Diagnostics::derivativeCheck <>
+        (Optizelle::Messaging(),g,x,dx,dy);
     CHECK(err < 1e-12);
-    err=peopt::Diagnostics::derivativeAdjointCheck <>
-        (peopt::Messaging(),g,x,dx,dy);
+    err=Optizelle::Diagnostics::derivativeAdjointCheck <>
+        (Optizelle::Messaging(),g,x,dx,dy);
     CHECK(err < 1e-12);
-    err=peopt::Diagnostics::secondDerivativeCheck <>
-        (peopt::Messaging(),g,x,dx,dy);
+    err=Optizelle::Diagnostics::secondDerivativeCheck <>
+        (Optizelle::Messaging(),g,x,dx,dy);
     CHECK(err < 1e-12);
 
     // If we've made it this far, we're successful

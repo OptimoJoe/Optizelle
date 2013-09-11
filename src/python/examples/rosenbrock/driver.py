@@ -1,7 +1,7 @@
 # In this example, we setup and minimize the Rosenbrock function
 
-# Load in peopt
-import peopt
+# Load in Optizelle 
+import Optizelle 
 from math import *
 
 # Create a vector space 
@@ -53,5 +53,5 @@ class fns:
 class pts:
     x = [-1.2,1]
 
-sol = peopt.getMin(vs(),fns(),pts(),'rosenbrock.peopt')
+sol = Optizelle.getMin(vs(),fns(),pts(),'rosenbrock.param')
 print sol[0]

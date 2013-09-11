@@ -6,19 +6,19 @@ add_executable(inequality_constrained inequality_constrained.cpp)
 add_executable(constrained constrained.cpp)
 
 target_link_libraries(unconstrained
-    peopt_static
+    optizelle_static
     ${LAPACK_LIBRARIES}
     ${BLAS_LIBRARIES})
 target_link_libraries(equality_constrained
-    peopt_static
+    optizelle_static
     ${LAPACK_LIBRARIES}
     ${BLAS_LIBRARIES})
 target_link_libraries(inequality_constrained
-    peopt_static
+    optizelle_static
     ${LAPACK_LIBRARIES}
     ${BLAS_LIBRARIES})
 target_link_libraries(constrained
-    peopt_static
+    optizelle_static
     ${LAPACK_LIBRARIES}
     ${BLAS_LIBRARIES})
 

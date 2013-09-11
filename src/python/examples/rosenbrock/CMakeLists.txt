@@ -1,3 +1,3 @@
 project(rosenbrock)
-install(FILES README driver.py rosenbrock.peopt 
-    DESTINATION share/peopt/python/examples/rosenbrock)
+install(FILES README driver.py rosenbrock.param
+    DESTINATION share/optizelle/python/examples/rosenbrock)

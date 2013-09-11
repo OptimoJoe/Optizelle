@@ -1,10 +1,10 @@
 # In this example, we demonstrate how to set up the functions and vector spaces
-# required to optimize in peopt.  Then, we run a series of diagnostic tests
+# required to optimize in Optizelle.  Then, we run a series of diagnostic tests
 # that help us debug whether or not our functions are correctly implemented.
 # These tests include finite difference tests in addition to other checks.
 
-# Load in peopt
-import peopt
+# Load in Optizelle
+import Optizelle
 from math import *
 
 # Create a vector space 
@@ -114,4 +114,4 @@ class pts:
     y = [7,8,9]
     dy = [9,10,11]
 
-peopt.diagnostics(vs(),fns(),pts())
+Optizelle.diagnostics(vs(),fns(),pts())

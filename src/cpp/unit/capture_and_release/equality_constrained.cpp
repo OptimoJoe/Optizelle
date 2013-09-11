@@ -1,12 +1,12 @@
-#include "peopt/peopt.h"
-#include "peopt/vspaces.h"
+#include "optizelle/optizelle.h"
+#include "optizelle/vspaces.h"
 #include "unit.h"
 
 // This tests our ability to capture and release from the optimization state
 
 int main() {
     // Create a type shortcut
-    using peopt::Rm;
+    using Optizelle::Rm;
 
     // Create some arbitrary vector in R^2
     std::vector <double> x(2);
@@ -17,15 +17,15 @@ int main() {
     y[0] = 3.4; y[1] = 4.5; y[2]=5.6;
 
     // Create an unconstrained state based on this vector
-    peopt::EqualityConstrained <double,Rm,Rm>::State::t state(x,y);
+    Optizelle::EqualityConstrained <double,Rm,Rm>::State::t state(x,y);
 
     // Do a release 
-    peopt::EqualityConstrained <double,Rm,Rm>::X_Vectors xs;
-    peopt::EqualityConstrained <double,Rm,Rm>::Y_Vectors ys;
-    peopt::EqualityConstrained <double,Rm,Rm>::Reals reals;
-    peopt::EqualityConstrained <double,Rm,Rm>::Nats nats;
-    peopt::EqualityConstrained <double,Rm,Rm>::Params params;
-    peopt::EqualityConstrained <double,Rm,Rm>::Restart
+    Optizelle::EqualityConstrained <double,Rm,Rm>::X_Vectors xs;
+    Optizelle::EqualityConstrained <double,Rm,Rm>::Y_Vectors ys;
+    Optizelle::EqualityConstrained <double,Rm,Rm>::Reals reals;
+    Optizelle::EqualityConstrained <double,Rm,Rm>::Nats nats;
+    Optizelle::EqualityConstrained <double,Rm,Rm>::Params params;
+    Optizelle::EqualityConstrained <double,Rm,Rm>::Restart
         ::release(state,xs,ys,reals,nats,params);
 
     // Check that the state has empty slots for the variables
@@ -51,8 +51,8 @@ int main() {
     CHECK(state.H_dxtuncorrected.size()==0);
 
     // Capture the state
-    peopt::EqualityConstrained <double,Rm,Rm>::Restart
-        ::capture(peopt::Messaging(),state,xs,ys,reals,nats,params);
+    Optizelle::EqualityConstrained <double,Rm,Rm>::Restart
+        ::capture(Optizelle::Messaging(),state,xs,ys,reals,nats,params);
 
     // Check that we actually have memory in these slots
     CHECK(state.x.size()==1);

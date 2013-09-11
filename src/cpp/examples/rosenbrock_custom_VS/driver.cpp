@@ -6,7 +6,7 @@
 #include <vector>
 #include <iostream>
 #include <string>
-#include "peopt/peopt.h"
+#include "optizelle/optizelle.h"
 
 // Defines the vector space used for optimization.
 template <typename Real>
@@ -65,7 +65,7 @@ Real sq(Real x){
 // 
 // f(x,y)=(1-x)^2+100(y-x^2)^2
 //
-struct Rosen : public peopt::ScalarValuedFunction <double,MyHS> {
+struct Rosen : public Optizelle::ScalarValuedFunction <double,MyHS> {
     typedef MyHS <double> X;
 
     // Evaluation of the Rosenbrock function
@@ -108,52 +108,52 @@ int main(){
     dxx[0]=.75; dxx[1]=.25;
 
     // Create an unconstrained state based on this vector
-    peopt::Unconstrained <double,MyHS>::State::t state(x);
+    Optizelle::Unconstrained <double,MyHS>::State::t state(x);
 
     // Setup some algorithmic parameters
     #if 1
     // Trust-Region Newton's method
-    state.H_type = peopt::Operators::UserDefined;
+    state.H_type = Optizelle::Operators::UserDefined;
     state.iter_max = 50;
     state.eps_krylov = 1e-10;
     #endif
 
     // BFGS
     #if 0
-    state.algorithm_class = peopt::AlgorithmClass::LineSearch;
-    state.dir = peopt::LineSearchDirection::BFGS;
+    state.algorithm_class = Optizelle::AlgorithmClass::LineSearch;
+    state.dir = Optizelle::LineSearchDirection::BFGS;
     state.stored_history = 10;
     state.iter_max = 100;
     #endif
     
     // Newton-CG 
     #if 0
-    state.algorithm_class = peopt::AlgorithmClass::LineSearch;
-    state.dir = peopt::LineSearchDirection::NewtonCG;
-    state.H_type = peopt::Operators::UserDefined;
+    state.algorithm_class = Optizelle::AlgorithmClass::LineSearch;
+    state.dir = Optizelle::LineSearchDirection::NewtonCG;
+    state.H_type = Optizelle::Operators::UserDefined;
     state.eps_krylov = 1e-2;
     state.iter_max = 50;
     #endif
 
     // Create the bundle of functions 
-    peopt::Unconstrained <double,MyHS>::Functions::t fns;
+    Optizelle::Unconstrained <double,MyHS>::Functions::t fns;
     fns.f.reset(new Rosen);
     
     // Do some finite difference tests on the Rosenbrock function
-    peopt::Diagnostics::gradientCheck <> (peopt::Messaging(),*(fns.f),x,dx);
-    peopt::Diagnostics::hessianCheck <> (peopt::Messaging(),*(fns.f),x,dx);
-    peopt::Diagnostics::hessianSymmetryCheck <> (peopt::Messaging(),*(fns.f),
+    Optizelle::Diagnostics::gradientCheck <> (Optizelle::Messaging(),*(fns.f),x,dx);
+    Optizelle::Diagnostics::hessianCheck <> (Optizelle::Messaging(),*(fns.f),x,dx);
+    Optizelle::Diagnostics::hessianSymmetryCheck <> (Optizelle::Messaging(),*(fns.f),
         x,dx,dxx);
     
     // Solve the optimization problem
-    peopt::Unconstrained <double,MyHS>::Algorithms
-        ::getMin(peopt::Messaging(),fns,state);
+    Optizelle::Unconstrained <double,MyHS>::Algorithms
+        ::getMin(Optizelle::Messaging(),fns,state);
 
     // Setup the optimization problem
 
     // Print out the reason for convergence
     std::cout << "The algorithm converged due to: " <<
-        peopt::StoppingCondition::to_string(state.opt_stop) << std::endl;
+        Optizelle::StoppingCondition::to_string(state.opt_stop) << std::endl;
 
     // Print out the final answer
     const std::vector <double>& opt_x=*(state.x.begin());

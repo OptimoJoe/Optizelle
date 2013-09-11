@@ -1,8 +1,8 @@
 # In this example, we setup and minimize the problem
 # min (x+1)^2+(y+1)^2 st x + 2y >= 1, 2x + y >=1
 
-# Load in peopt
-import peopt
+# Load in Optizelle 
+import Optizelle 
 from math import *
 
 # Create a vector space 
@@ -112,6 +112,6 @@ class pts:
     z = [1.,1.]
     dz = [9.,10.]
 
-#peopt.diagnostics(vs(),fns(),pts())
-sol = peopt.getMin(vs(),fns(),pts(),'simple_inequality.peopt')
+#Optizelle.diagnostics(vs(),fns(),pts())
+sol = Optizelle.getMin(vs(),fns(),pts(),'simple_inequality.param')
 print sol[0]

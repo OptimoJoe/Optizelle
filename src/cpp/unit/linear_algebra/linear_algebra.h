@@ -1,13 +1,13 @@
 #ifndef LINEAR_ALGEBRA_H
 #define LINEAR_ALGEBRA_H
-#include "peopt/peopt.h"
-#include "peopt/vspaces.h"
+#include "optizelle/optizelle.h"
+#include "optizelle/vspaces.h"
 
 // Functions and definitions used by all the linear algebra tests 
-typedef peopt::Natural Natural;
+typedef Optizelle::Natural Natural;
 
 template <typename Real>
-struct BasicOperator : public peopt::Operator <Real,peopt::Rm,peopt::Rm> {
+struct BasicOperator : public Optizelle::Operator <Real,Optizelle::Rm,Optizelle::Rm> {
 private:
     // Create some type shortcuts
     typedef std::vector <Real> X_Vector;
@@ -36,7 +36,7 @@ public:
 
 // Create the identity operator
 template <typename Real>
-struct IdentityOperator : public peopt::Operator <Real,peopt::Rm,peopt::Rm> {
+struct IdentityOperator : public Optizelle::Operator <Real,Optizelle::Rm,Optizelle::Rm> {
 private:
     // Create some type shortcuts
     typedef std::vector <Real> X_Vector;
@@ -48,7 +48,7 @@ public:
 
     // Just copy the input to the output 
     void operator () (const X_Vector& x,Y_Vector &y) const  {
-        peopt::Rm <Real>::copy(x,y);
+        Optizelle::Rm <Real>::copy(x,y);
     }
 };
 

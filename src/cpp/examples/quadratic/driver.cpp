@@ -1,15 +1,15 @@
 // This example minimizes a simple quadratic function.  In order
-// to modify the parameters, look at the file quadratic.peopt.  Only the
-// peopt section is run, so copy in different parameter selections
+// to modify the parameters, look at the file quadratic.param.  Only the
+// Optizelle section is run, so copy in different parameter selections
 // into that header in order to experiment.
 // For reference, the optimal solution to this function is is (1,1,1).
 
 #include <vector>
 #include <iostream>
 #include <string>
-#include "peopt/peopt.h"
-#include "peopt/vspaces.h"
-#include "peopt/json.h"
+#include "optizelle/optizelle.h"
+#include "optizelle/vspaces.h"
+#include "optizelle/json.h"
 
 // Squares its input
 template <typename Real>
@@ -21,8 +21,8 @@ Real sq(Real x){
 // 
 // f(x,y,z)=(x-1)^2+(2y-2)^2+(3z-3)^2
 //
-struct Quad : public peopt::ScalarValuedFunction <double,peopt::Rm> {
-    typedef peopt::Rm <double> X;
+struct Quad : public Optizelle::ScalarValuedFunction <double,Optizelle::Rm> {
+    typedef Optizelle::Rm <double> X;
 
     // Evaluation of the quadratic function
     double operator () (const X::Vector& x) const {
@@ -52,9 +52,9 @@ struct Quad : public peopt::ScalarValuedFunction <double,peopt::Rm> {
 };
 
 // Define an almost perfect preconditioner for the Hessian
-struct QuadHInv : public peopt::Operator <double,peopt::Rm,peopt::Rm> {
+struct QuadHInv : public Optizelle::Operator <double,Optizelle::Rm,Optizelle::Rm> {
 public:
-    typedef peopt::Rm <double> X;
+    typedef Optizelle::Rm <double> X;
     typedef X::Vector X_Vector;
 private:
     X_Vector& x;
@@ -88,32 +88,32 @@ int main(int argc,char* argv[]){
     dxx[0]=.75; dxx[1]=.25;; dxx[2]=1.25;
 
     // Create an unconstrained state based on this vector
-    peopt::Unconstrained <double,peopt::Rm>::State::t state(x);
+    Optizelle::Unconstrained <double,Optizelle::Rm>::State::t state(x);
 
     // Read the parameters from file
-    peopt::json::Unconstrained <double,peopt::Rm>::read(peopt::Messaging(),
+    Optizelle::json::Unconstrained <double,Optizelle::Rm>::read(Optizelle::Messaging(),
         fname,state);
 
     // Create the bundle of functions 
-    peopt::Unconstrained <double,peopt::Rm>::Functions::t fns;
+    Optizelle::Unconstrained <double,Optizelle::Rm>::Functions::t fns;
     fns.f.reset(new Quad);
     fns.PH.reset(new QuadHInv(state.x.back())); 
     
     // Do some finite difference tests on the quadratic function
-    peopt::Diagnostics::gradientCheck <> (peopt::Messaging(),*(fns.f),x,dx);
-    peopt::Diagnostics::hessianCheck <> (peopt::Messaging(),*(fns.f),x,dx);
-    peopt::Diagnostics::hessianSymmetryCheck <> (peopt::Messaging(),*(fns.f),
+    Optizelle::Diagnostics::gradientCheck <> (Optizelle::Messaging(),*(fns.f),x,dx);
+    Optizelle::Diagnostics::hessianCheck <> (Optizelle::Messaging(),*(fns.f),x,dx);
+    Optizelle::Diagnostics::hessianSymmetryCheck <> (Optizelle::Messaging(),*(fns.f),
         x,dx,dxx);
     
     // Solve the optimization problem
-    peopt::Unconstrained <double,peopt::Rm>::Algorithms
-        ::getMin(peopt::Messaging(),fns,state);
+    Optizelle::Unconstrained <double,Optizelle::Rm>::Algorithms
+        ::getMin(Optizelle::Messaging(),fns,state);
 
     // Setup the optimization problem
 
     // Print out the reason for convergence
     std::cout << "The algorithm converged due to: " <<
-        peopt::StoppingCondition::to_string(state.opt_stop) << std::endl;
+        Optizelle::StoppingCondition::to_string(state.opt_stop) << std::endl;
 
     // Print out the final answer
     const std::vector <double>& opt_x=*(state.x.begin());
@@ -121,8 +121,8 @@ int main(int argc,char* argv[]){
 	<< opt_x[1] << ',' << opt_x[2] << ')' << std::endl;
 
     // Write out the final answer to file
-    peopt::json::Unconstrained <double,peopt::Rm>::write_restart(
-        peopt::Messaging(),"quadratic.perst",state);
+    Optizelle::json::Unconstrained <double,Optizelle::Rm>::write_restart(
+        Optizelle::Messaging(),"quadratic.rst",state);
 
     // Successful termination
     return EXIT_SUCCESS;

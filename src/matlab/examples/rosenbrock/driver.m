@@ -1,6 +1,6 @@
 % This finds the minimum of the Rosenbrock function.
 
-% Make sure that peopt is in the path
+% Make sure that Optizelle is in the path
 addpath('../../');
 
 % Create the vector spaces
@@ -38,5 +38,5 @@ fns.f=f;
 pts.x=[-1.2;0.5];
 
 % Optimize the problem 
-sol=peopt(VS,fns,pts,'rosenbrock.peopt');
+sol=Optizelle(VS,fns,pts,'rosenbrock.param');
 sol.x

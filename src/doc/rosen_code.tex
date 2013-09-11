@@ -3,9 +3,9 @@
 #include <iostream>
 #include <string>
 #include <cstdlib>
-#include "peopt/peopt.h"
-#include "peopt/vspaces.h"
-#include "peopt/json.h"
+#include "Optizelle/Optizelle.h"
+#include "Optizelle/vspaces.h"
+#include "Optizelle/json.h"
 
 // Squares its input
 template <typename Real>
@@ -18,9 +18,9 @@ Real sq(Real x){
 // f(x,y)=(1-x)^2+100(y-x^2)^2
 //
 struct Rosen
-    : public peopt::ScalarValuedFunction <double,peopt::Rm>
+    : public Optizelle::ScalarValuedFunction <double,Optizelle::Rm>
 {
-    typedef peopt::Rm <double> X;
+    typedef Optizelle::Rm <double> X;
 
     // Evaluation of the Rosenbrock function
     double operator () (const X::Vector& x) const {
@@ -53,23 +53,23 @@ int main(){
     x[0]=-1.2; x[1]=1.;
 
     // Create an unconstrained state based on this vector
-    peopt::Unconstrained <double,peopt::Rm>::State::t state(x);
+    Optizelle::Unconstrained <double,Optizelle::Rm>::State::t state(x);
 
     // Read the parameters from file
-    peopt::json::Unconstrained <double,peopt::Rm>
-        ::read(peopt::Messaging(),"rosenbrock.peopt",state);
+    Optizelle::json::Unconstrained <double,Optizelle::Rm>
+        ::read(Optizelle::Messaging(),"rosenbrock.param",state);
 
     // Create the bundle of functions 
-    peopt::Unconstrained <double,peopt::Rm>::Functions::t fns;
+    Optizelle::Unconstrained <double,Optizelle::Rm>::Functions::t fns;
     fns.f.reset(new Rosen);
 
     // Solve the optimization problem
-    peopt::Unconstrained <double,peopt::Rm>::Algorithms
-        ::getMin(peopt::Messaging(),fns,state);
+    Optizelle::Unconstrained <double,Optizelle::Rm>::Algorithms
+        ::getMin(Optizelle::Messaging(),fns,state);
 
     // Print out the reason for convergence
     std::cout << "The algorithm converged due to: " <<
-        peopt::StoppingCondition::to_string(state.opt_stop) <<
+        Optizelle::StoppingCondition::to_string(state.opt_stop) <<
         std::endl;
 
     // Print out the final answer

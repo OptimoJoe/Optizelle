@@ -18,35 +18,35 @@ add_executable(tminres_tr_stopping_moved_center
     tminres_tr_stopping_moved_center.cpp)
 
 target_link_libraries(gmres_full
-    peopt_static ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
+    optizelle_static ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
 target_link_libraries(gmres_left_preconditioner
-    peopt_static ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
+    optizelle_static ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
 target_link_libraries(gmres_restart
-    peopt_static ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
+    optizelle_static ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
 target_link_libraries(gmres_right_preconditioner
-    peopt_static ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
+    optizelle_static ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
 target_link_libraries(tcd_basic
-    peopt_static ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
+    optizelle_static ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
 target_link_libraries(tcd_cp
-    peopt_static ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
+    optizelle_static ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
 target_link_libraries(tcd_nullspace_solve
-    peopt_static ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
+    optizelle_static ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
 target_link_libraries(tcd_starting_solution
-    peopt_static ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
+    optizelle_static ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
 target_link_libraries(tcd_tr_stopping
-    peopt_static ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
+    optizelle_static ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
 target_link_libraries(tcd_tr_stopping_moved_center
-    peopt_static ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
+    optizelle_static ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
 target_link_libraries(tminres_basic
-    peopt_static ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
+    optizelle_static ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
 target_link_libraries(tminres_cp
-    peopt_static ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
+    optizelle_static ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
 target_link_libraries(tminres_nullspace_solve
-    peopt_static ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
+    optizelle_static ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
 target_link_libraries(tminres_tr_stopping
-    peopt_static ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
+    optizelle_static ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
 target_link_libraries(tminres_tr_stopping_moved_center
-    peopt_static ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
+    optizelle_static ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
 
 add_test(linear_algebra/gmres_full gmres_full)
 add_test(linear_algebra/gmres_left_preconditioner gmres_left_preconditioner)

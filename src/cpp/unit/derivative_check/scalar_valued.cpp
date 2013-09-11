@@ -1,7 +1,7 @@
 // This tests our ability to do derivative and symmetry checks on scalar-valued
 // functions.
-#include "peopt/peopt.h"
-#include "peopt/vspaces.h"
+#include "optizelle/optizelle.h"
+#include "optizelle/vspaces.h"
 #include "unit.h"
 
 namespace {
@@ -15,8 +15,8 @@ namespace {
     // 
     // f(x,y)=(1-x)^2+100(y-x^2)^2
     //
-    struct Rosen : public peopt::ScalarValuedFunction <double,peopt::Rm> {
-        typedef peopt::Rm <double> X;
+    struct Rosen : public Optizelle::ScalarValuedFunction <double,Optizelle::Rm> {
+        typedef Optizelle::Rm <double> X;
 
         // Evaluation of the Rosenbrock function
         double operator () (const X::Vector& x) const {
@@ -58,12 +58,12 @@ int main() {
     Rosen f;
 
     // Do the finite difference tests
-    double err=peopt::Diagnostics::gradientCheck <> (peopt::Messaging(),f,x,dx);
+    double err=Optizelle::Diagnostics::gradientCheck <> (Optizelle::Messaging(),f,x,dx);
     CHECK(err < 1e-11);
-    err=peopt::Diagnostics::hessianCheck <> (peopt::Messaging(),f,x,dx);
+    err=Optizelle::Diagnostics::hessianCheck <> (Optizelle::Messaging(),f,x,dx);
     CHECK(err < 1e-14);
-    err=peopt::Diagnostics::hessianSymmetryCheck <>
-        (peopt::Messaging(),f,x,dx,dxx);
+    err=Optizelle::Diagnostics::hessianSymmetryCheck <>
+        (Optizelle::Messaging(),f,x,dx,dxx);
     CHECK(err < 1e-12);
 
     // If we've made it this far, we're successful

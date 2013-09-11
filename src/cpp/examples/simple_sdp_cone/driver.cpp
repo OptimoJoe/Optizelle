@@ -1,18 +1,18 @@
+// Optimize a simple problem with an optimal solution of (0.5,.25)
+
 #include <iostream>
 #include <iomanip>
-#include "peopt/peopt.h"
-#include "peopt/vspaces.h"
-#include "peopt/json.h"
-
-// Optimize a simple problem with an optimal solution of (0.5,.25)
+#include "optizelle/optizelle.h"
+#include "optizelle/vspaces.h"
+#include "optizelle/json.h"
 
 // Define a simple objective where 
 // 
 // f(x,y)=-x+y
 //
-struct MyObj : public peopt::ScalarValuedFunction <double,peopt::Rm> {
+struct MyObj : public Optizelle::ScalarValuedFunction <double,Optizelle::Rm> {
     typedef double Real;
-    typedef peopt::Rm <Real> X;
+    typedef Optizelle::Rm <Real> X;
 
     // Evaluation 
     double operator () (const X::Vector& x) const {
@@ -45,10 +45,10 @@ struct MyObj : public peopt::ScalarValuedFunction <double,peopt::Rm> {
 //          [ x 1 ]
 //
 struct MyIneq 
-    : public peopt::VectorValuedFunction <double,peopt::Rm,peopt::SQL> 
+    : public Optizelle::VectorValuedFunction <double,Optizelle::Rm,Optizelle::SQL> 
 {
-    typedef peopt::Rm <double> X;
-    typedef peopt::SQL <double> Y;
+    typedef Optizelle::Rm <double> X;
+    typedef Optizelle::SQL <double> Y;
     typedef double Real;
 
     // y=h(x) 
@@ -98,8 +98,8 @@ struct MyIneq
     
 int main(int argc,char* argv[]){
     // Create some type shortcuts
-    typedef peopt::Rm <double> X;
-    typedef peopt::SQL <double> Z;
+    typedef Optizelle::Rm <double> X;
+    typedef Optizelle::SQL <double> Z;
     typedef X::Vector X_Vector;
     typedef Z::Vector Z_Vector;
 
@@ -115,32 +115,32 @@ int main(int argc,char* argv[]){
     x[0]=1.2; x[1]=3.1;
 
     // Generate an initial guess for the dual
-    std::vector <peopt::Natural> sizes(1); sizes[0]=2;
-    std::vector <peopt::Cone::t> types(1); types[0]=peopt::Cone::Semidefinite;
-    Z_Vector z(peopt::Messaging(),types,sizes);
+    std::vector <Optizelle::Natural> sizes(1); sizes[0]=2;
+    std::vector <Optizelle::Cone::t> types(1); types[0]=Optizelle::Cone::Semidefinite;
+    Z_Vector z(Optizelle::Messaging(),types,sizes);
     Z::id(z);
 
     // Create an optimization state
-    peopt::InequalityConstrained <double,peopt::Rm,peopt::SQL>::State::t
+    Optizelle::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>::State::t
         state(x,z);
     
     // Read the parameters from file
-    peopt::json::InequalityConstrained <double,peopt::Rm,peopt::SQL>::read(
-        peopt::Messaging(),fname,state);
+    Optizelle::json::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>::read(
+        Optizelle::Messaging(),fname,state);
 
     // Create a bundle of functions
-    peopt::InequalityConstrained <double,peopt::Rm,peopt::SQL>::Functions::t
+    Optizelle::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>::Functions::t
         fns;
     fns.f.reset(new MyObj);
     fns.h.reset(new MyIneq);
 
     // Solve the optimization problem
-    peopt::InequalityConstrained <double,peopt::Rm,peopt::SQL>::Algorithms
-        ::getMin(peopt::Messaging(),fns,state);
+    Optizelle::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>::Algorithms
+        ::getMin(Optizelle::Messaging(),fns,state);
 
     // Print out the reason for convergence
     std::cout << "The algorithm converged due to: " <<
-        peopt::StoppingCondition::to_string(state.opt_stop) << std::endl;
+        Optizelle::StoppingCondition::to_string(state.opt_stop) << std::endl;
 
     // Print out the final answer
     const std::vector <double>& opt_x=*(state.x.begin());
@@ -149,8 +149,8 @@ int main(int argc,char* argv[]){
 	<< opt_x[1] << ')' << std::endl;
 
     // Write out the final answer to file
-    peopt::json::InequalityConstrained <double,peopt::Rm,peopt::SQL>
-        ::write_restart(peopt::Messaging(),"simple_sdp_cone.perst",state);
+    Optizelle::json::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>
+        ::write_restart(Optizelle::Messaging(),"simple_sdp_cone.rst",state);
 
     // Successful termination
     return EXIT_SUCCESS;

@@ -30,8 +30,8 @@ if(ENABLE_CPP_LIBRARY)
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
     endif()
 
-    # Set the peopt include directories
-    set(PEOPT_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/cpp)
+    # Set the Optizelle include directories
+    set(OPTIZELLE_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/cpp)
 
     # Grab our third party library dependencies
     add_subdirectory(thirdparty)

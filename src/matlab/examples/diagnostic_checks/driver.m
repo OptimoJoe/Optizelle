@@ -1,7 +1,7 @@
 % This demonstrates how to run a finite difference check on both the
 % objective functions as well as the constraints
 
-% Make sure that peopt is in the path
+% Make sure that Optizelle is in the path
 addpath('../../');
 
 % Create the vector spaces
@@ -114,4 +114,4 @@ pts.z=randn(2,1);
 pts.dz=randn(2,1);
 
 % Test the mex file
-peopt(VS,fns,pts);
+Optizelle(VS,fns,pts);

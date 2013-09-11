@@ -5,10 +5,10 @@
 //         [ x + 2y - 1            ] 
 //
 struct MyEq
-    :public peopt::VectorValuedFunction<double,peopt::Rm,peopt::Rm>
+    :public Optizelle::VectorValuedFunction<double,Optizelle::Rm,Optizelle::Rm>
 {
-    typedef peopt::Rm <double> X;
-    typedef peopt::Rm <double> Y;
+    typedef Optizelle::Rm <double> X;
+    typedef Optizelle::Rm <double> Y;
 
     // y=g(x) 
     void operator () (

@@ -1,12 +1,12 @@
-#include "peopt/peopt.h"
-#include "peopt/vspaces.h"
-#include "peopt/linalg.h"
+#include "optizelle/optizelle.h"
+#include "optizelle/vspaces.h"
+#include "optizelle/linalg.h"
 #include "linear_algebra.h"
 #include "unit.h"
 
 int main() {
     // Create a type shortcut
-    typedef peopt::Rm <double> X;
+    typedef Optizelle::Rm <double> X;
     typedef X::Vector X_Vector;
 
     // Set the size of the problem
@@ -41,10 +41,10 @@ int main() {
     X::zero (x);
 
     // Create an empty GMRES manipulator
-    peopt::GMRESManipulator <double,peopt::Rm> gmanip;
+    Optizelle::GMRESManipulator <double,Optizelle::Rm> gmanip;
 
     // Solve this linear system
-    std::pair <double,Natural> err_iter = peopt::gmres <double,peopt::Rm>
+    std::pair <double,Natural> err_iter = Optizelle::gmres <double,Optizelle::Rm>
         (A,b,eps_krylov,iter_max,rst_freq,Ml_inv,Mr_inv,gmanip,x);
 
     // Check the error is less than our tolerance 

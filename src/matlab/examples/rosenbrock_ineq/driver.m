@@ -1,6 +1,6 @@
 % This finds the minimum of the Rosenbrock function with simple inequalities.
 
-% Make sure peopt is in the path
+% Make sure Optizelle is in the path
 addpath('../../');
 
 % Create the vector spaces
@@ -65,5 +65,5 @@ pts.x=[2;2.1];
 pts.z=[1;1];
 
 % Test the mex file
-sol=peopt(VS,fns,pts,'rosenbrock_ineq.peopt');
+sol=Optizelle(VS,fns,pts,'rosenbrock_ineq.param');
 sol.x

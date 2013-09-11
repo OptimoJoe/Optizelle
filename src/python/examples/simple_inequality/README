@@ -7,6 +7,6 @@ In order to run the problem, call
 
     python2.7 driver.py
     
-Alternatively, if the PYTHONPATH does not include peopt, call
+Alternatively, if the PYTHONPATH does not include Optizelle, call
 
     PYTHONPATH="../.." python2.7 driver.py

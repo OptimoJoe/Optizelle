@@ -1,0 +1,11 @@
+{
+   "Optizelle" : {
+      "msg_level" : 1,
+      "algorithm_class" : "LineSearch",
+      "H_type" : "UserDefined",
+      "dir" : "NewtonCG",
+      "iter_max" : 50,
+      "linesearch_iter_max" : 200,
+      "eps_krylov" : 1e-2
+   }
+}

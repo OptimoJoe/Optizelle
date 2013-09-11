@@ -1,12 +1,12 @@
-#include "peopt/peopt.h"
-#include "peopt/vspaces.h"
-#include "peopt/json.h"
+// Optimize a simple optimization problem with an optimal solution 
+// of (2-sqrt(2)/2,2-sqrt(2)/2).
+
+#include "optizelle/optizelle.h"
+#include "optizelle/vspaces.h"
+#include "optizelle/json.h"
 #include <iostream>
 #include <iomanip>
 #include <cstdlib>
-
-// Optimize a simple optimization problem with an optimal solution 
-// of (2-sqrt(2)/2,2-sqrt(2)/2).
 
 // Squares its input
 template <typename Real>
@@ -19,9 +19,9 @@ Real sq(Real x){
 // f(x,y)=x^2+y^2
 //
 struct MyObj
-    : public peopt::ScalarValuedFunction <double,peopt::Rm>
+    : public Optizelle::ScalarValuedFunction <double,Optizelle::Rm>
 {
-    typedef peopt::Rm <double> X;
+    typedef Optizelle::Rm <double> X;
 
     // Evaluation 
     double operator () (const X::Vector& x) const {
@@ -53,10 +53,10 @@ struct MyObj
 // g(x,y)= [ (x-2)^2 + (y-2)^2 = 1 ] 
 //
 struct MyEq
-    :public peopt::VectorValuedFunction<double,peopt::Rm,peopt::Rm>
+    :public Optizelle::VectorValuedFunction<double,Optizelle::Rm,Optizelle::Rm>
 {
-    typedef peopt::Rm <double> X;
-    typedef peopt::Rm <double> Y;
+    typedef Optizelle::Rm <double> X;
+    typedef Optizelle::Rm <double> Y;
 
     // y=g(x) 
     void operator () (
@@ -106,7 +106,7 @@ int main(int argc,char* argv[]){
     std::string fname(argv[1]);
 
     // Create a type shortcut
-    using peopt::Rm;
+    using Optizelle::Rm;
 
     // Generate an initial guess 
     std::vector <double> x(2);
@@ -116,24 +116,24 @@ int main(int argc,char* argv[]){
     std::vector <double> y(1);
 
     // Create an optimization state
-    peopt::EqualityConstrained <double,Rm,Rm>::State::t state(x,y);
+    Optizelle::EqualityConstrained <double,Rm,Rm>::State::t state(x,y);
 
     // Read the parameters from file
-    peopt::json::EqualityConstrained <double,peopt::Rm,peopt::Rm>
-        ::read(peopt::Messaging(),fname,state);
+    Optizelle::json::EqualityConstrained <double,Optizelle::Rm,Optizelle::Rm>
+        ::read(Optizelle::Messaging(),fname,state);
     
     // Create a bundle of functions
-    peopt::EqualityConstrained <double,Rm,Rm>::Functions::t fns;
+    Optizelle::EqualityConstrained <double,Rm,Rm>::Functions::t fns;
     fns.f.reset(new MyObj);
     fns.g.reset(new MyEq);
 
     // Solve the optimization problem
-    peopt::EqualityConstrained <double,Rm,Rm>::Algorithms
-        ::getMin(peopt::Messaging(),fns,state);
+    Optizelle::EqualityConstrained <double,Rm,Rm>::Algorithms
+        ::getMin(Optizelle::Messaging(),fns,state);
 
     // Print out the reason for convergence
     std::cout << "The algorithm converged due to: " <<
-        peopt::StoppingCondition::to_string(state.opt_stop) <<
+        Optizelle::StoppingCondition::to_string(state.opt_stop) <<
         std::endl;
 
     // Print out the final answer
@@ -143,8 +143,8 @@ int main(int argc,char* argv[]){
 	<< opt_x[1] << ')' << std::endl;
 
     // Write out the final answer to file
-    peopt::json::EqualityConstrained <double,peopt::Rm,peopt::Rm>
-        ::write_restart(peopt::Messaging(),"simple_equality.perst",state);
+    Optizelle::json::EqualityConstrained <double,Optizelle::Rm,Optizelle::Rm>
+        ::write_restart(Optizelle::Messaging(),"simple_equality.rst",state);
 
     // Return that we've exited successfuly
     return EXIT_SUCCESS;
