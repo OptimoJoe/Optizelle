@@ -1,9 +1,6 @@
-# This is the minimum required for the library install
-cmake_minimum_required(VERSION 2.8.9)
-
 # Add a module directory in case we need to find some packages
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
-    "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+    "${CMAKE_SOURCE_DIR}/src/cmake/Modules/")
 
 # See if we're going to build the documentation for the package
 set(ENABLE_DOCUMENTATION OFF CACHE BOOL "Enable documentation generation?")
@@ -15,8 +12,6 @@ endif()
 # or if we build the library.
 set(ENABLE_CPP_LIBRARY OFF CACHE BOOL "Enable libraries for C++?")
 if(ENABLE_CPP_LIBRARY)
-    # Enable ctest
-    enable_testing()
 
     # Figure out if we should look for OpenMP
     mark_as_advanced(CLEAR ENABLE_OPENMP)
