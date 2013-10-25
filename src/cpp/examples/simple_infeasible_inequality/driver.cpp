@@ -273,7 +273,7 @@ int main(int argc,char* argv[]){
 
     // Write out the final answer to file
     Optizelle::json::Constrained <Real,Rm,Rm,Rm>::write_restart(
-        Optizelle::Messaging(),"simple_infeasible_inequality.rst",state);
+        Optizelle::Messaging(),"solution.json",state);
 
     // Successful termination
     return EXIT_SUCCESS;

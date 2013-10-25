@@ -111,7 +111,7 @@ int main(int argc,char* argv[]){
 
     // Write out the final answer to file
     Optizelle::json::Unconstrained <double,Optizelle::Rm>::write_restart(
-        Optizelle::Messaging(),"preconditioned_nonlinear_cg.rst",state);
+        Optizelle::Messaging(),"solution.json",state);
 
     // Successful termination
     return EXIT_SUCCESS;

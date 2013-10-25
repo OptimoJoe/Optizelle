@@ -1,0 +1,16 @@
+{
+   "Optizelle" : {
+      "msg_level" : 1,
+      "algorithm_class" : "LineSearch",
+      "dir" : "PolakRibiere",
+      "PH_type" : "UserDefined",
+      "iter_max" : 50,
+      "eps_dx" : 1e-10
+   },
+   "Naturals" : {
+      "iter" : 30 
+   },
+   "X_Vectors" : {
+      "x" : [ 1.0, 1.0 ] 
+   }
+}

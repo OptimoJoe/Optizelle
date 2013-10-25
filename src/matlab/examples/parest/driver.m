@@ -92,7 +92,7 @@ Optizelle(VS,fns,pts);
 
 % Solve the full-space problem 
 fprintf('\n------------Solving the full-space problem------------\n');
-sol=Optizelle(VS,fns,pts,'parest.param');
+sol=Optizelle(VS,fns,pts,'parest.json');
 fprintf('\nWe converged due to: %s\n',sol.opt_stop);
 
 % Form the solution operator.  The user must specify this
@@ -121,7 +121,7 @@ Optizelle(VS,fns,pts);
 
 % Solve the reduced-space problem 
 fprintf('\n------------Solving the reduced-space problem------------\n');
-sol=Optizelle(VS,fns,pts,'parest.param');
+sol=Optizelle(VS,fns,pts,'parest.json');
 fprintf('\nWe converged due to: %s\n',sol.opt_stop);
 end
 

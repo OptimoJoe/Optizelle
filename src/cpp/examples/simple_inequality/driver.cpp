@@ -147,7 +147,7 @@ int main(int argc,char* argv[]){
 
     // Write out the final answer to file
     Optizelle::json::InequalityConstrained<double,Rm,Rm>
-        ::write_restart(Optizelle::Messaging(),"simple_inequality.rst",state);
+        ::write_restart(Optizelle::Messaging(),"solution.json",state);
 
     // Return that the program exited properly
     return EXIT_SUCCESS;

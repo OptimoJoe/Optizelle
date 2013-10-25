@@ -113,5 +113,5 @@ class pts:
     dz = [9.,10.]
 
 #Optizelle.diagnostics(vs(),fns(),pts())
-sol = Optizelle.getMin(vs(),fns(),pts(),'simple_inequality.param')
+sol = Optizelle.getMin(vs(),fns(),pts(),'simple_inequality.json')
 print sol[0]

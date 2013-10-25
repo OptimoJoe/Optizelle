@@ -1,0 +1,20 @@
+{
+   "Optizelle" : {
+      "msg_level" : 1,
+      "H_type" : "UserDefined",
+      "iter_max" : 50,
+      "eps_krylov" : 1e-12
+   },
+   "Naturals" : {
+      "iter" : 22
+   },
+   "Parameters" : {
+      "H_type" : "UserDefined",
+      "PH_type" : "Identity",
+      "algorithm_class" : "TrustRegion",
+      "krylov_solver" : "ConjugateDirection"
+   },
+   "X_Vectors" : {
+      "x" : [ 1.0, 1.0 ] 
+   }
+}

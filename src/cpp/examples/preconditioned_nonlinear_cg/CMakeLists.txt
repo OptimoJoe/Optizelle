@@ -7,24 +7,21 @@ target_link_libraries(preconditioned_nonlinear_cg
     ${BLAS_LIBRARIES})
 
 if(ENABLE_CPP_EXAMPLES)
-    install(FILES driver.cpp preconditioned_nonlinear_cg.param
+    install(FILES driver.cpp preconditioned_nonlinear_cg.json
         DESTINATION share/optizelle/cpp/examples/preconditioned_nonlinear_cg)
     install(TARGETS preconditioned_nonlinear_cg
         DESTINATION share/optizelle/cpp/examples/preconditioned_nonlinear_cg)
 endif()
 
 # Run some unit tests
-file(GLOB_RECURSE params ${CMAKE_CURRENT_SOURCE_DIR} "unit/*.param")
-list(SORT params)
-file(GLOB_RECURSE rsts ${CMAKE_CURRENT_SOURCE_DIR} "*unit/*.rst")
-list(SORT rsts)
-list(LENGTH params len1)
+file(GLOB_RECURSE units ${CMAKE_CURRENT_SOURCE_DIR} "unit/*.json")
+list(SORT units)
+list(LENGTH units len1)
 math(EXPR len2 "${len1} - 1")
 foreach(index RANGE ${len2})
-    list(GET params ${index} param)
-    list(GET rsts ${index} rst)
-    add_test(${param} preconditioned_nonlinear_cg ${param})
-    add_test(${rst}
+    list(GET units ${index} unit)
+    add_test("Execution_of_${unit}" preconditioned_nonlinear_cg ${unit})
+    add_test("Solution_to_${unit}"
         "${CMAKE_CURRENT_BINARY_DIR}/../../unit/utility/diff_restart"
-        ${rst} preconditioned_nonlinear_cg.rst)
+        ${unit} solution.json)
 endforeach()

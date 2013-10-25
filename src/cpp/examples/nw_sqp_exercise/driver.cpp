@@ -288,7 +288,7 @@ int main(int argc,char* argv[]){
 
     // Read in the name for the input file
     if(argc!=2) {
-        std::cerr << "nw_sqp_exercise parameters>" << std::endl;
+        std::cerr << "nw_sqp_exercise <parameters>" << std::endl;
         exit(EXIT_FAILURE);
     }
     std::string fname(argv[1]);
@@ -374,7 +374,7 @@ int main(int argc,char* argv[]){
 
     // Write out the final answer to file
     Optizelle::json::EqualityConstrained<double,Optizelle::Rm,Optizelle::Rm>::write_restart(
-        Optizelle::Messaging(),"nw_sqp_exercise.rst",state);
+        Optizelle::Messaging(),"solution.json",state);
 
     // Successful termination
     return EXIT_SUCCESS;

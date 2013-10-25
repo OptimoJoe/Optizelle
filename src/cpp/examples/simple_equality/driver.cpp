@@ -144,7 +144,7 @@ int main(int argc,char* argv[]){
 
     // Write out the final answer to file
     Optizelle::json::EqualityConstrained <double,Optizelle::Rm,Optizelle::Rm>
-        ::write_restart(Optizelle::Messaging(),"simple_equality.rst",state);
+        ::write_restart(Optizelle::Messaging(),"solution.json",state);
 
     // Return that we've exited successfuly
     return EXIT_SUCCESS;

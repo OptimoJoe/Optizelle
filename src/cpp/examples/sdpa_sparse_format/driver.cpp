@@ -1117,5 +1117,5 @@ int main(int argc,char* argv[]) {
 
     // Write out the final answer to file
     Optizelle::json::InequalityConstrained <Real,Optizelle::Rm,Optizelle::SQL>
-        ::write_restart(Optizelle::Messaging(),"sdpa_sparse_format.rst",state);
+        ::write_restart(Optizelle::Messaging(),"solution.json",state);
 }

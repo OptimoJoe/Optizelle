@@ -65,5 +65,5 @@ pts.x=[2;2.1];
 pts.z=[1;1];
 
 % Test the mex file
-sol=Optizelle(VS,fns,pts,'rosenbrock_ineq.param');
+sol=Optizelle(VS,fns,pts,'rosenbrock_ineq.json');
 sol.x

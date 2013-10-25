@@ -149,7 +149,7 @@ int main(int argc,char* argv[]){
 
     // Write out the final answer to file
     Optizelle::json::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>
-        ::write_restart(Optizelle::Messaging(),"simple_quadratic_cone.rst",state);
+        ::write_restart(Optizelle::Messaging(),"solution.json",state);
 
     // Successful termination
     return EXIT_SUCCESS;

@@ -38,5 +38,5 @@ fns.f=f;
 pts.x=[-1.2;0.5];
 
 % Optimize the problem 
-sol=Optizelle(VS,fns,pts,'rosenbrock.param');
+sol=Optizelle(VS,fns,pts,'rosenbrock.json');
 sol.x

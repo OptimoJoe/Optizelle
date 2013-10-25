@@ -53,5 +53,5 @@ class fns:
 class pts:
     x = [-1.2,1]
 
-sol = Optizelle.getMin(vs(),fns(),pts(),'rosenbrock.param')
+sol = Optizelle.getMin(vs(),fns(),pts(),'rosenbrock.json')
 print sol[0]

@@ -195,7 +195,7 @@ int main(int argc,char* argv[]){
 
     // Write out the final answer to file
     Optizelle::json::Constrained <double,Rm,Rm,Rm>::write_restart(
-        Optizelle::Messaging(),"simple_constrained.rst",state);
+        Optizelle::Messaging(),"solution.json",state);
 
     // Successful termination
     return EXIT_SUCCESS;
