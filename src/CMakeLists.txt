@@ -13,6 +13,10 @@ endif()
 set(ENABLE_CPP_LIBRARY OFF CACHE BOOL "Enable libraries for C++?")
 if(ENABLE_CPP_LIBRARY)
 
+    # Add some useful macros for unit testing
+    include(AddOptizelleTest)
+    include(AddSDPATest)
+
     # Figure out if we should look for OpenMP
     mark_as_advanced(CLEAR ENABLE_OPENMP)
     set(ENABLE_OPENMP OFF CACHE BOOL "Enable OpenMP?")
