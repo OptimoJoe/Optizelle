@@ -7,7 +7,7 @@ target_link_libraries(nw_sqp_exercise
     ${BLAS_LIBRARIES})
 
 if(ENABLE_CPP_EXAMPLES)
-    install(FILES driver.cpp nw_sqp_exercise.param
+    install(FILES driver.cpp nw_sqp_exercise.json
         DESTINATION share/optizelle/cpp/examples/nw_sqp_exercise)
     install(TARGETS nw_sqp_exercise
         DESTINATION share/optizelle/cpp/examples/nw_sqp_exercise)
