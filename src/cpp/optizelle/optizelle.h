@@ -225,7 +225,7 @@ namespace Optizelle{
 
     // Which algorithm class do we use
     namespace AlgorithmClass{
-        enum t{
+        enum t : Natural{
             TrustRegion,            // Trust-Region algorithms
             LineSearch,             // Line-search algorithms
             UserDefined             // User provides the iterate 
@@ -245,7 +245,7 @@ namespace Optizelle{
 
     // Reasons why we stop the algorithm
     namespace StoppingCondition{
-        enum t{
+        enum t : Natural{
             NotConverged,            // Algorithm did not converge
             RelativeGradientSmall,   // Relative gradient was sufficiently small
             RelativeStepSmall,       // Relative change in the step is small
@@ -268,7 +268,7 @@ namespace Optizelle{
 
     // Various operators for both Hessian approximations and preconditioners
     namespace Operators{
-        enum t{
+        enum t : Natural{
             Identity,          // Identity approximation
             ScaledIdentity,    // Scaled identity approximation
             BFGS,              // BFGS approximation
@@ -293,7 +293,7 @@ namespace Optizelle{
 
     // Different kinds of search directions 
     namespace LineSearchDirection{
-        enum t{
+        enum t : Natural{
             SteepestDescent,          // SteepestDescent 
             FletcherReeves,           // Fletcher-Reeves CG
             PolakRibiere,             // Polak-Ribiere CG
@@ -316,7 +316,7 @@ namespace Optizelle{
 
     // Different sorts of line searches
     namespace LineSearchKind{
-        enum t{
+        enum t : Natural{
             Brents,           // Brent's minimization
             GoldenSection,    // Golden-section search 
             BackTracking,     // BackTracking search 
@@ -342,7 +342,7 @@ namespace Optizelle{
     
     // Different points in the optimization algorithm
     namespace OptimizationLocation{
-        enum t{
+        enum t : Natural{
             // Occurs at the start of the optimization function 
             BeginningOfOptimization,
 
@@ -422,7 +422,7 @@ namespace Optizelle{
     
     // Different problem classes
     namespace ProblemClass{
-        enum t{
+        enum t : Natural{
             Unconstrained,         // Unconstrained optimization 
             EqualityConstrained,   // Equality constrained optimization 
             InequalityConstrained, // Inequality constrained optimization 
@@ -443,7 +443,7 @@ namespace Optizelle{
     
     // Different truncated Krylov solvers 
     namespace KrylovSolverTruncated{
-        enum t{
+        enum t : Natural{
             ConjugateDirection,         // Conjugate direction 
             MINRES                      // MINRES 
         };
@@ -463,7 +463,7 @@ namespace Optizelle{
     
     // Different kinds of interior point methods
     namespace InteriorPointMethod{
-        enum t{
+        enum t : Natural{
             PrimalDual,          // Standard primal-dual interior point method 
             PrimalDualLinked,    // A primal dual IPM, but the primal and dual
                                  // variables are kept in lock step.
@@ -484,7 +484,7 @@ namespace Optizelle{
     
     // Different schemes for adjusting the interior point centrality 
     namespace CentralityStrategy{
-        enum t{
+        enum t : Natural{
             Constant,           // We keep sigma fixed at each iteration.
             StairStep,          // If the relative improvement in the
                                 // interior point parameter does not exceed
@@ -1308,7 +1308,7 @@ namespace Optizelle{
     protected:
         // Different nonlinear-CG directions 
         struct NonlinearCGDirections {
-            enum t{
+            enum t : Natural{
                 HestenesStiefel,        
                 PolakRibiere,           
                 FletcherReeves          
@@ -1319,7 +1319,7 @@ namespace Optizelle{
         // terminated.  This is important to determine if we need
         // to find a different area to bracket.
         struct LineSearchTermination{
-            enum t{
+            enum t : Natural{
                 Min,
                 Max,
                 Between
