@@ -6,7 +6,7 @@ include(FortranCInterface)
 FortranCInterface_HEADER(FortranCInterface.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
-# Turn on position independent code.  This simplifies  building both static
+# Turn on position independent code.  This simplifies building both static
 # and shared libraries.
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
