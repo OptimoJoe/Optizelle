@@ -68,12 +68,12 @@ namespace Optizelle {
 
         // y <- alpha * x + y.
         static void axpy(const Real& alpha, const Vector& x, Vector& y) {
-            Optizelle::axpy <Real> (x.size(),alpha,&(x.front()),1,&(y.front()),1);
+            Optizelle::axpy<Real>(x.size(),alpha,&(x.front()),1,&(y.front()),1);
         }
 
         // innr <- <x,y>.
         static Real innr(const Vector& x,const Vector& y) {
-            return Optizelle::dot <Real> (x.size(),&(x.front()),1,&(y.front()),1);
+            return Optizelle::dot<Real>(x.size(),&(x.front()),1,&(y.front()),1);
         }
 
         // x <- 0.
@@ -581,7 +581,7 @@ namespace Optizelle {
                             1,&(y.front(blk)),1);
 
                     // zbar = ybar
-                    Optizelle::copy <Real> (mbar,&(y.bar(blk)),1,&(z.bar(blk)),1);
+                    Optizelle::copy<Real>(mbar,&(y.bar(blk)),1,&(z.bar(blk)),1);
                         
                     // zbar = x0 ybar
                     Optizelle::scal <Real> (mbar,x.naught(blk),&(z.bar(blk)),1);
@@ -807,7 +807,7 @@ namespace Optizelle {
                     // Find the Choleski factorization of X
                     U.resize(m*m);
                     Integer info;
-                    Optizelle::copy <Real> (m*m,&(x.front(blk)),1,&(U.front()),1);
+                    Optizelle::copy<Real>(m*m,&(x.front(blk)),1,&(U.front()),1);
                     Optizelle::potrf <Real> ('U',m,&(U.front()),m,info);
 
                     // Find the log-determinant of the Choleski factor
@@ -960,16 +960,16 @@ namespace Optizelle {
 
                     // Convert X and Y to rectangular packed storage
                     Xrf.resize(m*(m+1)/2);
-                    Optizelle::trttf <Real> ('N','U',m,&(x(blk,1,1)),m,&(Xrf[0]),
+                    Optizelle::trttf <Real>('N','U',m,&(x(blk,1,1)),m,&(Xrf[0]),
                         info);
 
                     Yrf.resize(m*(m+1)/2);
-                    Optizelle::trttf <Real> ('N','U',m,&(y(blk,1,1)),m,&(Yrf[0]),
+                    Optizelle::trttf <Real>('N','U',m,&(y(blk,1,1)),m,&(Yrf[0]),
                         info);
 
                     // Solve the generalized eigenvalue problem X v = lambda Y v
                     Real abs_tol=1e-2;
-                    std::pair <Real,Real> lambda_err = Optizelle::gsyiram <Real> (
+                    std::pair<Real,Real>lambda_err = Optizelle::gsyiram <Real> (
                         m,&(Xrf[0]),&(Yrf[0]),20,
                         std::numeric_limits <Natural>::max(),abs_tol);
 
@@ -1008,7 +1008,8 @@ namespace Optizelle {
                         // Basically, we find X+alpha0 Y and try to take
                         // the Choleski factorization.  If that fails, we're
                         // infeasible and we do a backtracking line search.
-                        Optizelle::copy <Real> (m*(m+1)/2,&(Yrf[0]),1,&(Zrf[0]),1);
+                        Optizelle::copy <Real> (
+                            m*(m+1)/2,&(Yrf[0]),1,&(Zrf[0]),1);
                         Optizelle::axpy <Real> (m*(m+1)/2,alpha0,&(Xrf[0]),1,
                             &(Zrf[0]),1);
                         pftrf('N','U',m,&(Zrf[0]),info);
@@ -1358,10 +1359,12 @@ namespace Optizelle {
 
                     // Find the first element
                     z.naught(blk)=
-                        Optizelle::dot<Real>(m,&(x.front(blk)),1,&(y.front(blk)),1);
+                        Optizelle::dot<Real>(
+                            m,&(x.front(blk)),1,&(y.front(blk)),1);
 
                     // zbar = ybar
-                    Optizelle::copy <Real> (mbar,&(y.bar(blk)),1,&(z.bar(blk)),1);
+                    Optizelle::copy <Real> (
+                        mbar,&(y.bar(blk)),1,&(z.bar(blk)),1);
                         
                     // zbar = x0 ybar
                     Optizelle::scal <Real> (mbar,x.naught(blk),&(z.bar(blk)),1);
@@ -1488,7 +1491,8 @@ namespace Optizelle {
                     // a <- 1 / (x0 - (1/x0) <x_bar,x_bar>) * y0
                     Real a = y.naught(blk) / (
                         x.naught(blk) - (Real(1.)/x.naught(blk)) *
-                        Optizelle::dot<Real>(mbar,&(x.bar(blk)),1,&(x.bar(blk)),1));
+                        Optizelle::dot<Real>(
+                            mbar,&(x.bar(blk)),1,&(x.bar(blk)),1));
 
                     // b <- - (1/x0) <xbar,invSchur(x)(y_bar)>
                     Real b = -Optizelle::dot <Real> (mbar,
@@ -1500,7 +1504,8 @@ namespace Optizelle {
                     z(blk,1) = a + b;
                     
                     // z_bar <- invSchur(x)(x_bar)
-                    Optizelle::copy <Real> (mbar,&(x.bar(blk)),1,&(z.bar(blk)),1);
+                    Optizelle::copy <Real> (
+                        mbar,&(x.bar(blk)),1,&(z.bar(blk)),1);
                     invSchur(mbar,&(x.front(blk)),&(z.bar(blk)));
 
                     // zbar <- (-y0/x0) invSchur(x)(x_bar)
@@ -1572,8 +1577,10 @@ namespace Optizelle {
                     // Find the Choleski factorization of X
                     U.resize(m*m);
                     Integer info;
-                    Optizelle::copy <Real> (m*m,&(x.front(blk)),1,&(U.front()),1);
-                    Optizelle::potrf <Real> ('U',m,&(U.front()),m,info);
+                    Optizelle::copy <Real> (
+                        m*m,&(x.front(blk)),1,&(U.front()),1);
+                    Optizelle::potrf <Real> (
+                        'U',m,&(U.front()),m,info);
 
                     Real log_det(0.);
                     #ifdef _OPENMP
@@ -1593,7 +1600,7 @@ namespace Optizelle {
         }
 
         // Line search, srch <- argmax {alpha \in Real >= 0 : alpha x + y >= 0}
-        // where y > 0.  If the argmax is infinity, then return Real(-1.).
+        // where y > 0.
         static Real srch(const Vector& x,const Vector& y) {
             // Line search parameter
             Real alpha=std::numeric_limits <Real>::infinity();
@@ -1723,16 +1730,16 @@ namespace Optizelle {
 
                     // Convert X and Y to rectangular packed storage
                     Xrf.resize(m*(m+1)/2);
-                    Optizelle::trttf <Real> ('N','U',m,&(x(blk,1,1)),m,&(Xrf[0]),
+                    Optizelle::trttf <Real>('N','U',m,&(x(blk,1,1)),m,&(Xrf[0]),
                         info);
 
                     Yrf.resize(m*(m+1)/2);
-                    Optizelle::trttf <Real> ('N','U',m,&(y(blk,1,1)),m,&(Yrf[0]),
+                    Optizelle::trttf <Real>('N','U',m,&(y(blk,1,1)),m,&(Yrf[0]),
                         info);
 
                     // Solve the generalized eigenvalue problem X v = lambda Y v
                     Real abs_tol=1e-2;
-                    std::pair <Real,Real> lambda_err = Optizelle::gsyiram <Real> (
+                    std::pair <Real,Real> lambda_err=Optizelle::gsyiram <Real> (
                         m,&(Xrf[0]),&(Yrf[0]),20,20,abs_tol);
 
                     // IRAM converges from the right, but we really need a lower
@@ -1770,7 +1777,8 @@ namespace Optizelle {
                         // Basically, we find X+alpha0 Y and try to take
                         // the Choleski factorization.  If that fails, we're
                         // infeasible and we do a backtracking line search.
-                        Optizelle::copy <Real> (m*(m+1)/2,&(Yrf[0]),1,&(Zrf[0]),1);
+                        Optizelle::copy <Real> (
+                            m*(m+1)/2,&(Yrf[0]),1,&(Zrf[0]),1);
                         Optizelle::axpy <Real> (m*(m+1)/2,alpha0,&(Xrf[0]),1,
                             &(Zrf[0]),1);
                         pftrf('N','U',m,&(Zrf[0]),info);
@@ -1836,7 +1844,8 @@ namespace Optizelle {
 
                     // Create a copy of X
                     std::vector <Real> Xk(m*m);
-                    Optizelle::copy<Real> (m*m,&(x.front(blk)),1,&(Xk.front()),1);
+                    Optizelle::copy<Real> (
+                        m*m,&(x.front(blk)),1,&(Xk.front()),1);
 
                     // X <- (X+X')/2
                     syr2k <Real> ('U','N',m,m,Real(0.5),&(Xk.front()),m,
