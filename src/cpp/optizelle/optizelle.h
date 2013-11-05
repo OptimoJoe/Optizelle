@@ -314,6 +314,7 @@ namespace Optizelle{
         };
     }
 
+    // Different sorts of line searches
     namespace LineSearchKind{
         enum t{
             Brents,           // Brent's minimization
@@ -339,6 +340,7 @@ namespace Optizelle{
         bool is_sufficient_decrease(const t& kind);
     }
     
+    // Different points in the optimization algorithm
     namespace OptimizationLocation{
         enum t{
             // Occurs at the start of the optimization function 
@@ -418,7 +420,7 @@ namespace Optizelle{
         };
     }
     
-    // Different problem classes that we allow 
+    // Different problem classes
     namespace ProblemClass{
         enum t{
             Unconstrained,         // Unconstrained optimization 
