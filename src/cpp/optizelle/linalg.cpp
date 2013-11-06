@@ -831,4 +831,58 @@ namespace Optizelle {
     Natural itok(Natural i) {
         return i-Natural(1);
     }
+    
+    namespace KrylovStop{
+        // Converts the Krylov stopping condition to a string 
+        std::string to_string(t krylov_stop){
+            switch(krylov_stop){
+            case NegativeCurvature:
+                return "NegativeCurvature";
+            case RelativeErrorSmall:
+                return "RelativeErrorSmall";
+            case MaxItersExceeded:
+                return "MaxItersExceeded";
+            case TrustRegionViolated:
+                return "TrustRegionViolated";
+            case Instability:
+                return "Instability";
+            case InvalidTrustRegionCenter:
+                return "InvalidTrustRegionCenter";
+            default:
+                throw;
+            }
+        }
+        
+        // Converts a string to a Krylov stopping condition
+        t from_string(std::string krylov_stop){
+            if(krylov_stop=="NegativeCurvature")
+                return NegativeCurvature;
+            else if(krylov_stop=="RelativeErrorSmall")
+                return RelativeErrorSmall;
+            else if(krylov_stop=="MaxItersExceeded")
+                return MaxItersExceeded;
+            else if(krylov_stop=="TrustRegionViolated")
+                return TrustRegionViolated;
+            else if(krylov_stop=="Instability")
+                return Instability;
+            else if(krylov_stop=="InvalidTrustRegionCenter")
+                return InvalidTrustRegionCenter;
+            else
+                throw;
+        }
+
+        // Checks whether or not a string is valid
+        bool is_valid::operator () (const std::string& name) const {
+            if( name=="NegativeCurvature" ||
+                name=="RelativeErrorSmall" ||
+                name=="MaxItersExceeded" ||
+                name=="TrustRegionViolated" ||
+                name=="Instability" ||
+                name=="InvalidTrustRegionCenter"
+            )
+                return true;
+            else
+                return false;
+        }
+    }
 }

@@ -1055,7 +1055,7 @@ namespace Optizelle {
     }
 
     // Reasons we stop the Krylov method
-    struct KrylovStop{
+    namespace KrylovStop{
         enum t{
             NegativeCurvature,        // Negative curvature detected
             RelativeErrorSmall,       // Relative error is small
@@ -1071,59 +1071,16 @@ namespace Optizelle {
         };
 
         // Converts the Krylov stopping condition to a string 
-        static std::string to_string(t krylov_stop){
-            switch(krylov_stop){
-            case NegativeCurvature:
-                return "NegativeCurvature";
-            case RelativeErrorSmall:
-                return "RelativeErrorSmall";
-            case MaxItersExceeded:
-                return "MaxItersExceeded";
-            case TrustRegionViolated:
-                return "TrustRegionViolated";
-            case Instability:
-                return "Instability";
-            case InvalidTrustRegionCenter:
-                return "InvalidTrustRegionCenter";
-            default:
-                throw;
-            }
-        }
+        std::string to_string(t krylov_stop);
         
         // Converts a string to a Krylov stopping condition
-        static t from_string(std::string krylov_stop){
-            if(krylov_stop=="NegativeCurvature")
-                return NegativeCurvature;
-            else if(krylov_stop=="RelativeErrorSmall")
-                return RelativeErrorSmall;
-            else if(krylov_stop=="MaxItersExceeded")
-                return MaxItersExceeded;
-            else if(krylov_stop=="TrustRegionViolated")
-                return TrustRegionViolated;
-            else if(krylov_stop=="Instability")
-                return Instability;
-            else if(krylov_stop=="InvalidTrustRegionCenter")
-                return InvalidTrustRegionCenter;
-            else
-                throw;
-        }
+        t from_string(std::string krylov_stop);
 
         // Checks whether or not a string is valid
         struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (const std::string& name) const {
-                if( name=="NegativeCurvature" ||
-                    name=="RelativeErrorSmall" ||
-                    name=="MaxItersExceeded" ||
-                    name=="TrustRegionViolated" ||
-                    name=="Instability" ||
-                    name=="InvalidTrustRegionCenter"
-                )
-                    return true;
-                else
-                    return false;
-            }
+            bool operator () (const std::string& name) const;
         };
-    };
+    }
 
     // A orthogonalizes a vector Bx to a list of other Bxs.  
     template <
