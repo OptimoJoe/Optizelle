@@ -1467,8 +1467,8 @@ namespace Optizelle{
                 // accepted
                 Real eta1;
 
-                // Trust-region parameter for checking whether a step has been
-                // accepted
+                // Trust-region parameter for checking whether we enlarge 
+                // the trust-region radius 
                 Real eta2;
 
                 // Actual reduction 
