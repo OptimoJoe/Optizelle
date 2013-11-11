@@ -7338,21 +7338,19 @@ namespace Optizelle{
                 t(const t&);
 
             public:
-                // Lagrange multiplier (dual variable) for the inequality
-                // constraints 
+                // Inequality multiplier (dual variable or Lagrange multiplier)
                 std::list <Z_Vector> z;
                 
-                // Step in the Lagrange multiplier 
+                // Step in the inequality multiplier 
                 std::list <Z_Vector> dz;
 
                 // The inequality constraint evaluated at x.  In theory,
                 // we can always just evaluate this when we need it.  However,
                 // we do require its computation both in the gradient as well
                 // as Hessian calculations.  More specifically, when computing
-                // with SDP constraints, we require the Schur factorization
-                // of this quantity in order to solve the Sylvester equations
-                // for Linv(h(x)).  By caching it, we have the ability
-                // to cache the Schur factorization.
+                // with SDP constraints, we require a factorization of this
+                // quantity.  By caching it, we have the ability to cache the
+                // factorization.
                 std::list <Z_Vector> h_x;
 
                 // Interior point parameter
