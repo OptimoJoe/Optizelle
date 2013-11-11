@@ -1444,9 +1444,10 @@ namespace Optizelle{
                 // Old trial step 
                 std::list <X_Vector> dx_old;
 
-                // Contains the prior iteration information for the
-                // quasi-Newton operators
+                // Difference in prior gradients
                 std::list <X_Vector> oldY;
+
+                // Difference in prior steps
                 std::list <X_Vector> oldS;
 
                 // Current value of the objective function 
