@@ -4511,11 +4511,10 @@ namespace Optizelle{
                 t(const t&);
 
             public:
-                // The Lagrange multiplier (dual variable) for the equality
-                // constraints
+                // Equality multiplier (dual variable or Lagrange multiplier)
                 std::list <Y_Vector> y;
 
-                // The Lagrange multiplier step
+                // Step in the equality multiplier 
                 std::list <Y_Vector> dy;
 
                 // The fraction of the total trust-region used for the
