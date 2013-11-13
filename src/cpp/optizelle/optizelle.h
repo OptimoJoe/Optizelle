@@ -4542,7 +4542,7 @@ namespace Optizelle{
                 Real xi_pg;     // Projection of the gradient
                 Real xi_proj;   // Null-space projection
                 Real xi_tang;   // Tangential step
-                Real xi_lmh;    // Lagrange multiplier
+                Real xi_lmh;    // Equality multiplier
 
                 // Sets all the inexactness tolerances 
                 void xi_all(const Real& xi) {
