@@ -4554,19 +4554,21 @@ namespace Optizelle{
                 }
 
                 // Absolute tolerance on the residual of the equality 
-                // multiplier solve.
+                // multiplier solve
                 Real xi_lmg;
 
                 // Tolerance for how much error is acceptable after computing
                 // the tangential step given the result from the tangential
-                // subproblem;
+                // subproblem
                 Real xi_4;
 
                 // Residual term in the predicted reduction
                 Real rpred;
 
-                // Preconditioners for the augmented system
+                // Left preconditioner for the augmented system
                 Operators::t PSchur_left_type;
+                
+                // Right preconditioner for the augmented system
                 Operators::t PSchur_right_type;
 
                 // Maximum number of iterations used when solving the augmented
@@ -4617,11 +4619,12 @@ namespace Optizelle{
                 // W_gradpHdxn as well as the predicted reduction.
                 std::list <X_Vector> H_dxn;
 
-                // Quantity grad f(x) + g'(x)*y + H dx_n.  This is required
-                // in the tangential subproblem and the predicted reduction.
+                // Quantity grad f(x) + g'(x)*y + H dx_n projected into the
+                // null-space of the constraints.  This is required in the
+                // tangential subproblem and the predicted reduction.
                 std::list <X_Vector> W_gradpHdxn;
                 
-                // Hessian applied to the uncorrected tangential step.  THis
+                // Hessian applied to the uncorrected tangential step.  This
                 // is needed in the predicted reduction.
                 std::list <X_Vector> H_dxtuncorrected;
                 
