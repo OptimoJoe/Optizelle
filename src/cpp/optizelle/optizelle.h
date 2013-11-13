@@ -4553,7 +4553,7 @@ namespace Optizelle{
                     xi_lmh = xi;
                 }
 
-                // Absolute tolerance on the residual of the Lagrange
+                // Absolute tolerance on the residual of the equality 
                 // multiplier solve.
                 Real xi_lmg;
 
