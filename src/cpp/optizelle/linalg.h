@@ -577,7 +577,7 @@ namespace Optizelle {
     // Indexing for vectors 
     Natural itok(Natural i);
 
-    // A simple operator specification, A : X->Y
+    // A linear operator specification, A : X->Y
     template <
         typename Real,
         template <typename> class X,
@@ -589,7 +589,7 @@ namespace Optizelle {
         typedef typename X <Real>::Vector X_Vector;
         typedef typename Y <Real>::Vector Y_Vector;
     public:
-        // Basic application
+        // y = A(x)
         virtual void operator () (const X_Vector& x,Y_Vector &y) const = 0;
 
         // Allow a derived class to deallocate memory 

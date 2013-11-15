@@ -62,7 +62,7 @@ Author: Joseph Young (joe@optimojoe.com)
 
 namespace Optizelle{
 
-    // A simple scalar valued function interface, f : X -> R
+    // A scalar valued function interface, f : X -> R
     template <
         typename Real,
         template <typename> class XX
@@ -169,7 +169,7 @@ namespace Optizelle{
     };
 
 
-    // A simple vector valued function interface, f : X -> Y
+    // A vector valued function interface, f : X -> Y
     template <
         typename Real,
         template <typename> class XX,
