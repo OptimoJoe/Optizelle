@@ -1349,7 +1349,7 @@ namespace Optizelle{
             State();
 
         public:
-            // The actual internal state of the optimization
+            // Internal state of the optimization
             struct t {
             private:
                 // Prevent the use of the copy constructor and the assignment
@@ -4499,7 +4499,7 @@ namespace Optizelle{
             State();
 
         public:
-            // The actual internal state of the optimization
+            // Internal state of the optimization
             struct t: public virtual Unconstrained <Real,XX>::State::t {
             private:
                 // Prevent the use of the copy constructor and the assignment
@@ -7328,7 +7328,7 @@ namespace Optizelle{
             State();
 
         public:
-            // The actual internal state of the optimization
+            // Internal state of the optimization
             struct t: public virtual Unconstrained <Real,XX>::State::t {
             private:
                 // Prevent the use of the copy constructor and the assignment
@@ -9086,7 +9086,7 @@ namespace Optizelle{
             State();
 
         public:
-            // The actual internal state of the optimization
+            // Internal state of the optimization
             struct t: 
                 public EqualityConstrained <Real,XX,YY>::State::t,
                 public InequalityConstrained <Real,XX,ZZ>::State::t
