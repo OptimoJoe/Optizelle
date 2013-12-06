@@ -11,7 +11,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Compile the rest of the library
-set(optizelle_cpp_srcs "vspaces.cpp" "optizelle.cpp" "linalg.cpp")
+set(optizelle_cpp_srcs "vspaces.cpp" "optizelle.cpp" "linalg.cpp" "json.cpp")
 add_library(optizelle_cpp OBJECT ${optizelle_cpp_srcs})
     
 # Build the libraries 

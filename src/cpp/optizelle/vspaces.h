@@ -164,29 +164,31 @@ namespace Optizelle {
         static void symm(Vector& x) { }
     };
 
-    // Serialization utility for the Rm vector space
-    template <typename Real>
-    struct json::Serialization <Real,Rm> {
-        static void serialize (
-            const typename Rm <Real>::Vector& x,
-            const std::string& vs,
-            const std::string& name,
-            Json::Value& root
-        ) {
-            for(Natural i=0;i<x.size();i++)
-                root[vs][name][Json::ArrayIndex(i)]=x[i];
-        }
-        static void deserialize (
-            const Json::Value& root,
-            const std::string& vs,
-            const std::string& name,
-            typename Rm <Real>::Vector& x
-        ) {
-            x.resize(root[vs][name].size());
-            for(Natural i=0;i<x.size();i++)
-                x[i]=Real(root[vs][name][Json::ArrayIndex(i)].asDouble());
-        }
-    };
+    namespace json {
+        // Serialization utility for the Rm vector space
+        template <typename Real>
+        struct Serialization <Real,Rm> {
+            static void serialize (
+                const typename Rm <Real>::Vector& x,
+                const std::string& vs,
+                const std::string& name,
+                Json::Value& root
+            ) {
+                for(Natural i=0;i<x.size();i++)
+                    root[vs][name][Json::ArrayIndex(i)]=x[i];
+            }
+            static void deserialize (
+                const Json::Value& root,
+                const std::string& vs,
+                const std::string& name,
+                typename Rm <Real>::Vector& x
+            ) {
+                x.resize(root[vs][name].size());
+                for(Natural i=0;i<x.size();i++)
+                    x[i]=Real(root[vs][name][Json::ArrayIndex(i)].asDouble());
+            }
+        };
+    }
 
     // Different cones used in SQL problems
     namespace Cone {
@@ -1861,96 +1863,98 @@ namespace Optizelle {
         }
     };
 
-    // Serialization utility for the SQL vector space
-    template <typename Real>
-    struct json::Serialization <Real,SQL> {
-        static void serialize (
-            const typename SQL <Real>::Vector& x,
-            const std::string& vs,
-            const std::string& name,
-            Json::Value& root
-        ) {
-            for(Natural i=0;i<x.data.size();i++)
-                root[vs][name]["data"][Json::ArrayIndex(i)]=x.data[i];
+    namespace json {
+        // Serialization utility for the SQL vector space
+        template <typename Real>
+        struct Serialization <Real,SQL> {
+            static void serialize (
+                const typename SQL <Real>::Vector& x,
+                const std::string& vs,
+                const std::string& name,
+                Json::Value& root
+            ) {
+                for(Natural i=0;i<x.data.size();i++)
+                    root[vs][name]["data"][Json::ArrayIndex(i)]=x.data[i];
 
-            for(Natural i=0;i<x.offsets.size();i++)
-                root[vs][name]["offsets"][Json::ArrayIndex(i)]
-                    =Json::Value::UInt64(x.offsets[i]);
+                for(Natural i=0;i<x.offsets.size();i++)
+                    root[vs][name]["offsets"][Json::ArrayIndex(i)]
+                        =Json::Value::UInt64(x.offsets[i]);
 
-            for(Natural i=0;i<x.types.size();i++)
-                root[vs][name]["types"][Json::ArrayIndex(i)]
-                    =Cone::to_string(x.types[i]);
+                for(Natural i=0;i<x.types.size();i++)
+                    root[vs][name]["types"][Json::ArrayIndex(i)]
+                        =Cone::to_string(x.types[i]);
 
-            for(Natural i=0;i<x.sizes.size();i++)
-                root[vs][name]["sizes"][Json::ArrayIndex(i)]
-                    =Json::Value::UInt64(x.sizes[i]);
+                for(Natural i=0;i<x.sizes.size();i++)
+                    root[vs][name]["sizes"][Json::ArrayIndex(i)]
+                        =Json::Value::UInt64(x.sizes[i]);
 
-            for(Natural i=0;i<x.inverse.size();i++)
-                root[vs][name]["inverse"][Json::ArrayIndex(i)]=x.inverse[i];
+                for(Natural i=0;i<x.inverse.size();i++)
+                    root[vs][name]["inverse"][Json::ArrayIndex(i)]=x.inverse[i];
 
-            for(Natural i=0;i<x.inverse_offsets.size();i++)
-                root[vs][name]["inverse_offsets"][Json::ArrayIndex(i)]
-                    =Json::Value::UInt64(x.inverse_offsets[i]);
+                for(Natural i=0;i<x.inverse_offsets.size();i++)
+                    root[vs][name]["inverse_offsets"][Json::ArrayIndex(i)]
+                        =Json::Value::UInt64(x.inverse_offsets[i]);
 
-            for(Natural i=0;i<x.inverse_base.size();i++)
-                root[vs][name]["inverse_base"][Json::ArrayIndex(i)]
-                    =x.inverse_base[i];
+                for(Natural i=0;i<x.inverse_base.size();i++)
+                    root[vs][name]["inverse_base"][Json::ArrayIndex(i)]
+                        =x.inverse_base[i];
 
-            for(Natural i=0;i<x.inverse_base_offsets.size();i++)
-                root[vs][name]["inverse_base_offsets"][Json::ArrayIndex(i)]
-                    =Json::Value::UInt64(x.inverse_base_offsets[i]);
-        }
-        static void deserialize (
-            const Json::Value& root,
-            const std::string& vs,
-            const std::string& name,
-            typename Rm <Real>::Vector& x
-        ) {
-            x.data.resize(root[vs][name]["data"].size());
-            for(Natural i=0;i<x.size();i++)
-                x.data[i]=Real(root[vs][name]["data"][Json::ArrayIndex(i)]
-                    .asDouble());
-
-            x.offsets.resize(root[vs][name]["offsets"].size());
-            for(Natural i=0;i<x.size();i++)
-                x.offsets[i]=root[vs][name]["offsets"][Json::ArrayIndex(i)]
-                    .asUInt64();
-
-            x.types.resize(root[vs][name]["types"].size());
-            for(Natural i=0;i<x.size();i++)
-                x.types[i]=Cone::from_string(
-                    root[vs][name]["types"][Json::ArrayIndex(i)].asString());
-
-            x.sizes.resize(root[vs][name]["sizes"].size());
-            for(Natural i=0;i<x.size();i++)
-                x.sizes[i]
-                    =root[vs][name]["sizes"][Json::ArrayIndex(i)].asUInt64();
-            
-            x.inverse.resize(root[vs][name]["inverse"].size());
-            for(Natural i=0;i<x.size();i++)
-                x.inverse[i]=Real(root[vs][name]["inverse"][Json::ArrayIndex(i)]
-                    .asDouble());
-            
-            x.inverse_offsets.resize(root[vs][name]["inverse_offsets"].size());
-            for(Natural i=0;i<x.size();i++)
-                x.inverse_offsets[i]
-                    =root[vs][name]["inverse_offsets"][Json::ArrayIndex(i)]
-                        .asUInt64();
-            
-            x.inverse_base.resize(root[vs][name]["inverse_base"].size());
-            for(Natural i=0;i<x.size();i++)
-                x.inverse_base[i]
-                    =Real(root[vs][name]["inverse_base"][Json::ArrayIndex(i)]
+                for(Natural i=0;i<x.inverse_base_offsets.size();i++)
+                    root[vs][name]["inverse_base_offsets"][Json::ArrayIndex(i)]
+                        =Json::Value::UInt64(x.inverse_base_offsets[i]);
+            }
+            static void deserialize (
+                const Json::Value& root,
+                const std::string& vs,
+                const std::string& name,
+                typename Rm <Real>::Vector& x
+            ) {
+                x.data.resize(root[vs][name]["data"].size());
+                for(Natural i=0;i<x.size();i++)
+                    x.data[i]=Real(root[vs][name]["data"][Json::ArrayIndex(i)]
                         .asDouble());
-            
-            x.inverse_base_offsets
-                .resize(root[vs][name]["inverse_base_offsets"].size());
-            for(Natural i=0;i<x.size();i++)
-                x.inverse_base_offsets[i]
-                    =root[vs][name]["inverse_base_offsets"][Json::ArrayIndex(i)]
+
+                x.offsets.resize(root[vs][name]["offsets"].size());
+                for(Natural i=0;i<x.size();i++)
+                    x.offsets[i]=root[vs][name]["offsets"][Json::ArrayIndex(i)]
                         .asUInt64();
-        }
-    };
+
+                x.types.resize(root[vs][name]["types"].size());
+                for(Natural i=0;i<x.size();i++)
+                    x.types[i]=Cone::from_string(root[vs][name]["types"]
+                        [Json::ArrayIndex(i)].asString());
+
+                x.sizes.resize(root[vs][name]["sizes"].size());
+                for(Natural i=0;i<x.size();i++)
+                    x.sizes[i]=root[vs][name]["sizes"][Json::ArrayIndex(i)]
+                        .asUInt64();
+                
+                x.inverse.resize(root[vs][name]["inverse"].size());
+                for(Natural i=0;i<x.size();i++)
+                    x.inverse[i]=Real(root[vs][name]["inverse"]
+                        [Json::ArrayIndex(i)].asDouble());
+                
+                x.inverse_offsets.resize(root[vs][name]["inverse_offsets"]
+                    .size());
+                for(Natural i=0;i<x.size();i++)
+                    x.inverse_offsets[i]
+                        =root[vs][name]["inverse_offsets"][Json::ArrayIndex(i)]
+                            .asUInt64();
+                
+                x.inverse_base.resize(root[vs][name]["inverse_base"].size());
+                for(Natural i=0;i<x.size();i++)
+                    x.inverse_base[i]=Real(root[vs][name]["inverse_base"]
+                            [Json::ArrayIndex(i)].asDouble());
+                
+                x.inverse_base_offsets.resize(root[vs][name]
+                    ["inverse_base_offsets"].size());
+                for(Natural i=0;i<x.size();i++)
+                    x.inverse_base_offsets[i]=root[vs][name]
+                        ["inverse_base_offsets"][Json::ArrayIndex(i)]
+                        .asUInt64();
+            }
+        };
+    }
 
     // Optimization problems instantiated on these vector spaces.  In theory,
     // this should help our compilation times.

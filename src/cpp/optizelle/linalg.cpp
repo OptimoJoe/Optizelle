@@ -29,7 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 Author: Joseph Young (joe@optimojoe.com)
 */
 
-#include "linalg.h"
+#include "optizelle/linalg.h"
 #include "FortranCInterface.h"
 using Optizelle::Integer;
 extern "C" {
