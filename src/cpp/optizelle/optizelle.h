@@ -2397,7 +2397,9 @@ namespace Optizelle{
                             "the number of stored trial step differences.");
 
                     // Allocate memory for work
-                    std::list <X_Vector> work(oldY.size(),p);
+                    std::list <X_Vector> work;
+                    for(int i=0;i<oldY.size();i++)
+                        work.emplace_back(std::move(X_Vector()));
                     for(typename std::list <X_Vector>::iterator w=work.begin();
                         w!=work.end();
                         w++
@@ -2556,7 +2558,9 @@ namespace Optizelle{
                             "the number of stored trial step differences.");
 
                     // Allocate memory for work
-                    std::list <X_Vector> work(oldY.size(),p);
+                    std::list <X_Vector> work;
+                    for(int i=0;i<oldY.size();i++)
+                        work.emplace_back(std::move(X_Vector()));
                     for(typename std::list <X_Vector>::iterator w=work.begin();
                         w!=work.end();
                         w++
@@ -4249,8 +4253,8 @@ namespace Optizelle{
                     return;
 
                 // Insert these into the quasi-Newton storage
-                oldS.push_front(s);
-                oldY.push_front(y);
+                oldS.emplace_front(std::move(s));
+                oldY.emplace_front(std::move(y));
 
                 // Determine if we need to free some memory
                 if(oldS.size()>state.stored_history){
