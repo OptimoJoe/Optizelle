@@ -7323,7 +7323,7 @@ namespace Optizelle{
         typedef std::pair < std::list <std::string>,
                             std::list <Z_Vector> > Z_Vectors;
 
-        // Functions that manipulate the internal state of the optimization 
+        // Routines that manipulate the internal state of the optimization 
         // algorithm.
         struct State {
         private:
