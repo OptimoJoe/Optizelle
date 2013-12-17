@@ -1,18 +1,37 @@
 project(optizelle_python)
 
-set(optizelle_python_srcs "optizelle.cpp")
+# Turn on position independent code.
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+# Grab the current directory for some Python includes
+set(OPTIZELLE_PYTHON_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
+
+# Compile the generic python optimization sources
+set(optizelle_python_srcs "Utility.cpp")
 include_directories(${PYTHON_INCLUDE_DIRS})
-add_library(optizelle_python SHARED
-    $<TARGET_OBJECTS:optizelle_cpp>
-    ${optizelle_python_srcs})
+include_directories(${OPTIZELLE_PYTHON_INCLUDE_DIRS})
+add_library(optizelle_python SHARED ${optizelle_python_srcs})
 target_link_libraries(optizelle_python
     optizelle_static
     ${PYTHON_LIBRARIES}
     ${JSONCPP_LIBRARIES}
     ${LAPACK_LIBRARIES}
     ${BLAS_LIBRARIES})
-set_target_properties(optizelle_python PROPERTIES OUTPUT_NAME optizelle_python)
-set_target_properties(optizelle_python PROPERTIES PREFIX "") 
-set_target_properties(optizelle_python PROPERTIES SUFFIX .pylib) 
-install(FILES Optizelle.py DESTINATION share/optizelle/python)
-install(TARGETS optizelle_python DESTINATION share/optizelle/python)
+set_target_properties(optizelle_python
+    PROPERTIES OUTPUT_NAME Utility)
+set_target_properties(optizelle_python
+    PROPERTIES PREFIX "") 
+
+# Compile the different problem classes and utility functions
+add_subdirectory(Unconstrained)
+add_subdirectory(InequalityConstrained)
+add_subdirectory(EqualityConstrained)
+add_subdirectory(Constrained)
+add_subdirectory(json)
+
+install(
+    FILES __init__.py
+    DESTINATION share/optizelle/python/Optizelle)
+install(
+    TARGETS optizelle_python 
+    DESTINATION share/optizelle/python/Optizelle)

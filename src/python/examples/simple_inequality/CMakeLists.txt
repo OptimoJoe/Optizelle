@@ -1,3 +1,3 @@
 project(simple_inequality)
-install(FILES README driver.py simple_inequality.json
+install(FILES simple_inequality.py simple_inequality.json
     DESTINATION share/optizelle/python/examples/simple_inequality)
