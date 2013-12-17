@@ -102,7 +102,7 @@ struct MyIneq
 int main(int argc,char* argv[]){
     // Read in the name for the input file
     if(argc!=2) {
-        std::cerr << "rosenbrock <parameters>" << std::endl;
+        std::cerr << "simple_inequality <parameters>" << std::endl;
         exit(EXIT_FAILURE);
     }
     std::string fname(argv[1]);
