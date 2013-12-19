@@ -41,15 +41,15 @@ namespace Optizelle {
     namespace json {
         // Parses a JSON file and returns the root
         Json::Value parse(
-            const Optizelle::Messaging& msg,
-            const std::string& fname
+            Optizelle::Messaging const & msg,
+            std::string const & fname
         ); 
        
         // Writes a JSON spec to file
         void write(
-            const Optizelle::Messaging& msg,
-            const std::string& fname,
-            const Json::Value& root
+            Optizelle::Messaging const & msg,
+            std::string const & fname,
+            Json::Value const & root
         ); 
 
         // A helper class to help with serialization of vectors into jsoncpp 
@@ -58,15 +58,15 @@ namespace Optizelle {
         struct Serialization {
             static void serialize(
                 const typename XX <Real>::Vector& x,
-                const std::string& vs,
-                const std::string& name,
-                Json::Value& root
+                std::string const & vs,
+                std::string const & name,
+                Json::Value & root
             ) { }
             static void deserialize(
-                const Json::Value& root,
-                const std::string& vs,
-                const std::string& name,
-                typename XX <Real>::Vector& x
+                Json::Value const & root,
+                std::string const & vs,
+                std::string const & name,
+                typename XX <Real>::Vector & x
             ) { }
         };
 
@@ -75,12 +75,12 @@ namespace Optizelle {
             // Vectors 
             template <typename Real,template <typename> class XX>
             void vectors(
-                const std::pair <
+                std::pair <
                     std::list <std::string>,
                     std::list <typename XX <Real>::Vector>
-                >& xs,
-                const std::string& vs,
-                Json::Value& root
+                > const & xs,
+                std::string const & vs,
+                Json::Value & root
             ) {
                 // Create some type shortcuts
                 typedef XX <Real> X;
@@ -101,12 +101,12 @@ namespace Optizelle {
             // Reals 
             template <typename Real>
             void reals(
-                const std::pair <
+                std::pair <
                     std::list <std::string>,
                     std::list <Real>
-                >& reals,
-                const std::string& vs,
-                Json::Value& root
+                > const & reals,
+                std::string const & vs,
+                Json::Value & root
             ) {
                 // Loop over all the reals and serialize things
                 typename std::list <Real>::const_iterator real 
@@ -121,22 +121,22 @@ namespace Optizelle {
 
             // Naturals 
             void naturals(
-                const std::pair <
+                std::pair <
                     std::list <std::string>,
                     std::list <Natural>
-                >& nats,
-                const std::string& vs,
-                Json::Value& root
+                > const & nats,
+                std::string const & vs,
+                Json::Value & root
             );
 
             // Parameters 
             void parameters(
-                const std::pair <
+                std::pair <
                     std::list <std::string>,
                     std::list <std::string>
-                >& params,
-                const std::string& vs,
-                Json::Value& root
+                > const & params,
+                std::string const & vs,
+                Json::Value & root
             );
         }
         
@@ -146,12 +146,12 @@ namespace Optizelle {
             // Vectors
             template <typename Real,template <typename> class XX>
             static void vectors(
-                const Json::Value& root,
-                const std::string& vs,
+                Json::Value const & root,
+                std::string const & vs,
                 std::pair <
                     std::list <std::string>,
                     std::list <typename XX <Real>::Vector>
-                >& xs
+                > & xs
             ) {
                 // Create some type shortcuts
                 typedef XX <Real> X;
@@ -173,12 +173,12 @@ namespace Optizelle {
             // Reals 
             template <typename Real>
             void reals(
-                const Json::Value& root,
-                const std::string& vs,
+                Json::Value const & root,
+                std::string const & vs,
                 std::pair <
                     std::list <std::string>,
                     std::list <Real>
-                >& reals
+                > & reals
             ) {
                 // Loop over all the names in the root
                 for(Json::ValueIterator itr=root[vs].begin();
@@ -194,22 +194,22 @@ namespace Optizelle {
             
             // Naturals 
             void naturals(
-                const Json::Value& root,
-                const std::string& vs,
+                Json::Value const & root,
+                std::string const & vs,
                 std::pair <
                     std::list <std::string>,
                     std::list <Natural>
-                >& nats
+                > & nats
             );
             
             // Parameters 
             void parameters(
-                const Json::Value& root,
-                const std::string& vs,
+                Json::Value const & root,
+                std::string const & vs,
                 std::pair <
                     std::list <std::string>,
                     std::list <std::string>
-                >& params
+                > & params
             );
         }
 
@@ -224,12 +224,12 @@ namespace Optizelle {
 
             // Read parameters from file
             static void read_(
-                const Optizelle::Messaging& msg,
-                const std::string fname,
-                typename Optizelle::Unconstrained <Real,XX>::State::t& state
+                Optizelle::Messaging const & msg,
+                std::string const & fname,
+                typename Optizelle::Unconstrained <Real,XX>::State::t & state
             ) {
                 // Base error message
-                const std::string base = "Invalid JSON parameter: ";
+                std::string const base = "Invalid JSON parameter: ";
 
                 // Read in the input file
                 Json::Value root=parse(msg,fname);
@@ -333,8 +333,8 @@ namespace Optizelle {
                     msg.error(base + kind + " is not a valid kind.");
             }
             static void read(
-                const Optizelle::Messaging& msg,
-                const std::string fname,
+                Optizelle::Messaging const & msg,
+                std::string const & fname,
                 typename Optizelle::Unconstrained <Real,XX>::State::t& state
             ) {
                 Unconstrained <Real,XX>::read_(msg,fname,state);
@@ -342,7 +342,7 @@ namespace Optizelle {
 
             // Convert parameters to a string 
             static std::string to_string_(
-                typename Optizelle::Unconstrained <Real,XX>::State::t& state
+                typename Optizelle::Unconstrained <Real,XX>::State::t & state
             ) {
                 // Create a new root for writing
                 Json::Value root;
@@ -395,9 +395,9 @@ namespace Optizelle {
 
             // Write all parameters to file
             static void write_restart(
-                const Optizelle::Messaging& msg,
-                const std::string fname,
-                typename Optizelle::Unconstrained <Real,XX>::State::t& state
+                Optizelle::Messaging const & msg,
+                std::string const & fname,
+                typename Optizelle::Unconstrained <Real,XX>::State::t & state
             ) {
                 // Do a release 
                 X_Vectors xs;
@@ -424,9 +424,9 @@ namespace Optizelle {
 
             // Read all the parameters from file
             static void read_restart(
-                const Optizelle::Messaging& msg,
-                const std::string fname,
-                typename Optizelle::Unconstrained <Real,XX>::State::t& state
+                Optizelle::Messaging const & msg,
+                std::string const & fname,
+                typename Optizelle::Unconstrained <Real,XX>::State::t & state
             ) {
                 // Read in the input file
                 Json::Value root=parse(msg,fname);
@@ -454,11 +454,11 @@ namespace Optizelle {
         > 
         struct EqualityConstrained {
             // Create some type shortcuts
-            typedef typename
-                Optizelle::EqualityConstrained<Real,XX,YY>::X_Vectors
+            typedef
+                typename Optizelle::EqualityConstrained<Real,XX,YY>::X_Vectors
                 X_Vectors; 
-            typedef typename
-                Optizelle::EqualityConstrained<Real,XX,YY>::Y_Vectors
+            typedef
+                typename Optizelle::EqualityConstrained<Real,XX,YY>::Y_Vectors
                 Y_Vectors; 
             typedef typename Optizelle::EqualityConstrained <Real,XX,YY>::Reals
                 Reals;
@@ -469,13 +469,13 @@ namespace Optizelle {
 
             // Read parameters from file
             static void read_(
-                const Optizelle::Messaging& msg,
-                const std::string fname,
-                typename Optizelle::EqualityConstrained <Real,XX,YY>::State::t&
+                Optizelle::Messaging const & msg,
+                std::string const & fname,
+                typename Optizelle::EqualityConstrained <Real,XX,YY>::State::t &
                     state
             ) {
                 // Base error message
-                const std::string base = "Invalid JSON parameter: ";
+                std::string const base = "Invalid JSON parameter: ";
 
                 // Read in the input file
                 Json::Value root=parse(msg,fname);
@@ -536,9 +536,9 @@ namespace Optizelle {
                         + " is not a valid PSchur_right_type");
             }
             static void read(
-                const Optizelle::Messaging& msg,
-                const std::string fname,
-                typename Optizelle::EqualityConstrained <Real,XX,YY>::State::t&
+                Optizelle::Messaging const & msg,
+                std::string const & fname,
+                typename Optizelle::EqualityConstrained <Real,XX,YY>::State::t &
                     state
             ) {
                 Unconstrained <Real,XX>::read_(msg,fname,state);
@@ -547,7 +547,7 @@ namespace Optizelle {
 
             // Convert parameters to a string 
             static std::string to_string_(
-                typename Optizelle::EqualityConstrained <Real,XX,YY>::State::t&
+                typename Optizelle::EqualityConstrained <Real,XX,YY>::State::t &
                     state
             ) {
                 // Create a new root for writing
@@ -582,7 +582,7 @@ namespace Optizelle {
                 return writer.write(root);
             }
             static std::string to_string(
-                typename Optizelle::EqualityConstrained <Real,XX,YY>::State::t&
+                typename Optizelle::EqualityConstrained <Real,XX,YY>::State::t &
                     state
             ) {
                 std::string ucon
@@ -595,9 +595,9 @@ namespace Optizelle {
 
             // Write all parameters to file
             static void write_restart(
-                const Optizelle::Messaging& msg,
-                const std::string fname,
-                typename Optizelle::EqualityConstrained <Real,XX,YY>::State::t&
+                Optizelle::Messaging const & msg,
+                std::string const & fname,
+                typename Optizelle::EqualityConstrained <Real,XX,YY>::State::t &
                     state
             ) {
                 // Do a release 
@@ -627,9 +627,9 @@ namespace Optizelle {
 
             // Read all the parameters from file
             static void read_restart(
-                const Optizelle::Messaging& msg,
-                const std::string fname,
-                typename Optizelle::EqualityConstrained <Real,XX,YY>::State::t&
+                Optizelle::Messaging const & msg,
+                std::string const & fname,
+                typename Optizelle::EqualityConstrained <Real,XX,YY>::State::t &
                     state
             ) {
                 // Read in the input file
@@ -659,30 +659,30 @@ namespace Optizelle {
         > 
         struct InequalityConstrained {
             // Create some type shortcuts
-            typedef typename
-                Optizelle::InequalityConstrained<Real,XX,ZZ>::X_Vectors
+            typedef 
+                typename Optizelle::InequalityConstrained<Real,XX,ZZ>::X_Vectors
                 X_Vectors; 
-            typedef typename
-                Optizelle::InequalityConstrained<Real,XX,ZZ>::Z_Vectors
+            typedef
+                typename Optizelle::InequalityConstrained<Real,XX,ZZ>::Z_Vectors
                 Z_Vectors; 
-            typedef typename
-                Optizelle::InequalityConstrained <Real,XX,ZZ>::Reals
+            typedef 
+                typename Optizelle::InequalityConstrained <Real,XX,ZZ>::Reals
                 Reals;
             typedef typename Optizelle::InequalityConstrained <Real,XX,ZZ>::Nats
                 Nats;
-            typedef typename
-                Optizelle::InequalityConstrained <Real,XX,ZZ>::Params
+            typedef 
+                typename Optizelle::InequalityConstrained <Real,XX,ZZ>::Params
                 Params; 
 
             // Read parameters from file
             static void read_(
-                const Optizelle::Messaging& msg,
-                const std::string fname,
+                Optizelle::Messaging const & msg,
+                std::string const & fname,
                 typename Optizelle::InequalityConstrained<Real,XX,ZZ>::State::t&
                     state
             ) {
                 // Base error message
-                const std::string base = "Invalid JSON parameter: ";
+                std::string const base = "Invalid JSON parameter: ";
 
                 // Read in the input file
                 Json::Value root=parse(msg,fname);
@@ -712,8 +712,8 @@ namespace Optizelle {
                     msg.error(base + cstrat + " is not a valid cstrat.");
             }
             static void read(
-                const Optizelle::Messaging& msg,
-                const std::string fname,
+                Optizelle::Messaging const & msg,
+                std::string const & fname,
                 typename Optizelle::InequalityConstrained<Real,XX,ZZ>::State::t&
                     state
             ) {
@@ -757,8 +757,8 @@ namespace Optizelle {
 
             // Write all parameters to file
             static void write_restart(
-                const Optizelle::Messaging& msg,
-                const std::string fname,
+                Optizelle::Messaging const & msg,
+                std::string const & fname,
                 typename Optizelle::InequalityConstrained<Real,XX,ZZ>::State::t&
                     state
             ) {
@@ -789,8 +789,8 @@ namespace Optizelle {
 
             // Read all the parameters from file
             static void read_restart(
-                const Optizelle::Messaging& msg,
-                const std::string fname,
+                Optizelle::Messaging const & msg,
+                std::string const & fname,
                 typename Optizelle::InequalityConstrained<Real,XX,ZZ>::State::t&
                     state
             ) {
@@ -830,25 +830,15 @@ namespace Optizelle {
                 Z_Vectors; 
             typedef typename Optizelle::Constrained <Real,XX,YY,ZZ>::Reals
                 Reals;
-            typedef typename Optizelle::Constrained <Real,XX,YY,ZZ>::Nats Nats;
+            typedef typename Optizelle::Constrained <Real,XX,YY,ZZ>::Nats
+                Nats;
             typedef typename Optizelle::Constrained <Real,XX,YY,ZZ>::Params
                 Params; 
 
             // Read parameters from file
-            static void read_(
-                const Optizelle::Messaging& msg,
-                const std::string fname,
-                typename Optizelle::Constrained <Real,XX,YY,ZZ>::State::t&
-                    state
-            ) {
-                // Read in the input file
-                Json::Value root=parse(msg,fname);
-
-                // Read in the parameters
-            }
             static void read(
-                const Optizelle::Messaging& msg,
-                const std::string fname,
+                Optizelle::Messaging const & msg,
+                std::string const & fname,
                 typename Optizelle::Constrained <Real,XX,YY,ZZ>::State::t&
                     state
             ) {
@@ -858,20 +848,6 @@ namespace Optizelle {
             }
 
             // Convert parameters to a string 
-            static std::string to_string_(
-                typename Optizelle::Constrained <Real,XX,YY,ZZ>::State::t&
-                    state
-            ) {
-                // Create a new root for writing
-                Json::Value root;
-
-                // Create a string with the above output
-                Json::StyledWriter writer;
-                
-                // Write the optimization parameters
-
-                return writer.write(root);
-            }
             static std::string to_string(
                 typename Optizelle::Constrained <Real,XX,YY,ZZ>::State::t&
                     state
@@ -889,9 +865,9 @@ namespace Optizelle {
             
             // Write all parameters to file
             static void write_restart(
-                const Optizelle::Messaging& msg,
-                const std::string fname,
-                typename Optizelle::Constrained <Real,XX,YY,ZZ>::State::t&
+                Optizelle::Messaging const & msg,
+                std::string const & fname,
+                typename Optizelle::Constrained <Real,XX,YY,ZZ>::State::t &
                     state
             ) {
                 // Do a release 
@@ -923,8 +899,8 @@ namespace Optizelle {
             
             // Read all the parameters from file
             static void read_restart(
-                const Optizelle::Messaging& msg,
-                const std::string fname,
+                Optizelle::Messaging const & msg,
+                std::string const & fname,
                 typename Optizelle::Constrained <Real,XX,YY,ZZ>::State::t& state
             ) {
                 // Read in the input file

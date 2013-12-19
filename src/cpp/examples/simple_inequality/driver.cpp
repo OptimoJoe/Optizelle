@@ -10,7 +10,7 @@
 
 // Squares its input
 template <typename Real>
-Real sq(Real x){
+Real sq(Real const & x){
     return x*x; 
 }
 
@@ -140,10 +140,9 @@ int main(int argc,char* argv[]){
         std::endl;
 
     // Print out the final answer
-    const std::vector <double>& opt_x=*(state.x.begin());
     std::cout << std::scientific << std::setprecision(16)
-        << "The optimal point is: (" << opt_x[0] << ','
-	<< opt_x[1] << ')' << std::endl;
+        << "The optimal point is: (" << state.x[0] << ','
+	<< state.x[1] << ')' << std::endl;
 
     // Write out the final answer to file
     Optizelle::json::InequalityConstrained<double,Rm,Rm>

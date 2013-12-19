@@ -93,7 +93,7 @@ int main(int argc,char* argv[]){
     // Create the bundle of functions 
     Optizelle::Unconstrained <double,Optizelle::Rm>::Functions::t fns;
     fns.f.reset(new Rosen);
-    fns.PH.reset(new RosenHInv(state.x.back()));
+    fns.PH.reset(new RosenHInv(state.x));
     
     // Solve the optimization problem
     Optizelle::Unconstrained <double,Optizelle::Rm>::Algorithms
@@ -105,9 +105,8 @@ int main(int argc,char* argv[]){
         std::endl;
 
     // Print out the final answer
-    const std::vector <double>& opt_x=*(state.x.begin());
-    std::cout << "The optimal point is: (" << opt_x[0] << ','
-	<< opt_x[1] << ')' << std::endl;
+    std::cout << "The optimal point is: (" << state.x[0] << ','
+	<< state.x[1] << ')' << std::endl;
 
     // Write out the final answer to file
     Optizelle::json::Unconstrained <double,Optizelle::Rm>::write_restart(

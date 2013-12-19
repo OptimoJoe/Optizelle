@@ -19,7 +19,7 @@ int main(int argc,char* argv[]) {
     }
 
     // Parse the JSON files 
-    Json::Value baseline = Optizelle::json::parse(Optizelle::Messaging(),argv[1]);
+    Json::Value baseline=Optizelle::json::parse(Optizelle::Messaging(),argv[1]);
     Json::Value test = Optizelle::json::parse(Optizelle::Messaging(),argv[2]);
 
     // Set a tolerance for our differences
@@ -62,7 +62,8 @@ int main(int argc,char* argv[]) {
                 }
             } else if(category.key().asString()=="Parameters") {
                 std::string x = (*variable).asString();
-                std::string y = test[category.memberName()][variable.memberName()]
+                std::string y =
+                    test[category.memberName()][variable.memberName()]
                     .asString();
                 if(x!=y) {
                     std::cout << "Mismatch in " << category.memberName()
@@ -72,13 +73,14 @@ int main(int argc,char* argv[]) {
                 }
             } else if(category.key().asString()=="X_Vectors") {
                 Rm::Vector x;
-                    Optizelle::json::Serialization <double,Optizelle::Rm>::deserialize(
-                        baseline,category.memberName(),variable.memberName(),x);
+                    Optizelle::json::Serialization <double,Optizelle::Rm>
+                        ::deserialize(baseline,category.memberName(),
+                            variable.memberName(),x);
                 Rm::Vector y;
-                    Optizelle::json::Serialization <double,Optizelle::Rm>::deserialize(
-                        test,category.memberName(),variable.memberName(),y);
-                Rm::Vector diff;
-                    Rm::init(x,diff);
+                    Optizelle::json::Serialization <double,Optizelle::Rm>
+                        ::deserialize(test,category.memberName(),
+                            variable.memberName(),y);
+                Rm::Vector diff(Rm::init(x));
                     Rm::copy(x,diff);
                     Rm::axpy(-1.,y,diff);
                 if(Rm::innr(diff,diff) > tol * tol * Rm::innr(x,x)) {

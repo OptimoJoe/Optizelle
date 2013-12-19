@@ -12,15 +12,16 @@
 #include "optizelle/vspaces.h"
 #include "optizelle/json.h"
 
-typedef size_t Natural;
-typedef ptrdiff_t Integer;
+// Grab the Optizelle Natural and Integer types
+using Optizelle::Natural;
+using Optizelle::Integer;
 
 // Index vectors starting from 1
-inline Natural itok(Natural i) {
+inline Natural itok(Natural const & i) {
     return i-1;
 }
 // Index packed matrices starting from 1
-inline Natural ijtokp(Natural i,Natural j) {
+inline Natural ijtokp(Natural const & i,Natural const & j) {
     return i+j*(j-1)/2-1;
 }
 
@@ -52,13 +53,13 @@ struct SparseSDP {
 };
 
 // Clears out whitespace
-void eat_whitespace(std::stringstream& sin) {
+void eat_whitespace(std::stringstream & sin) {
     while(!sin.eof() && (sin.peek() == ' ' || sin.peek()=='\t'))
         sin.get();
 }
 
 // Clears out the formating characters
-void eat_formatting(std::stringstream& sin) {
+void eat_formatting(std::stringstream & sin) {
     while(!sin.eof() && (sin.peek() == ' ' || sin.peek()=='\t' ||
         sin.peek()==',' || sin.peek() =='(' || sin.peek() == ')' ||
         sin.peek()=='{' || sin.peek() == '}')
@@ -68,7 +69,7 @@ void eat_formatting(std::stringstream& sin) {
 
 // Reads in the sparse SDPA format
 template <typename Real>
-void parse_sdpa(const std::string fname,SparseSDP <Real>& prob) {
+void parse_sdpa(std::string const & fname,SparseSDP <Real> & prob) {
     // Open the file
     std::ifstream fin(fname.c_str());
 
@@ -238,29 +239,29 @@ void parse_sdpa(const std::string fname,SparseSDP <Real>& prob) {
 
 // Used for doing a tagged sort on sparse matrices
 struct MatComparison{
-    const std::vector <Natural>& is;
-    const std::vector <Natural>& js;
+    std::vector <Natural> const & is;
+    std::vector <Natural> const & js;
     MatComparison(
-        const std::vector <Natural>& is_,
-        const std::vector <Natural>& js_
+        std::vector <Natural> const & is_,
+        std::vector <Natural> const & js_
     ) : is(is_), js(js_) {}
-    bool operator () (Natural k,Natural l) {
+    bool operator () (Natural const & k,Natural const & l) {
         return ijtokp(is[k],js[k]) < ijtokp(is[l],js[l]);
     }
 };
 
 // Used for doing a tagged sort on digonal matrices 
 struct DiagComparison{
-    const std::vector <Natural>& is;
-    DiagComparison(const std::vector <Natural>& is_) : is(is_) {}
-    bool operator () (Natural k,Natural l) {
+    std::vector <Natural> const & is;
+    DiagComparison(std::vector <Natural> const & is_) : is(is_) {}
+    bool operator () (Natural const & k,Natural const & l) {
         return is[k] < is[l];
     }
 };
 
 // Sorts the indices used in the SDP problem first by column and then by row.
 template <typename Real>
-void sort_sdp (SparseSDP <Real>& prob) {
+void sort_sdp (SparseSDP <Real> & prob) {
     // Loop over the constraints
     for(Natural i=0;i<prob.A.size();i++) {
         // Loop over the blocks
@@ -325,33 +326,33 @@ void sort_sdp (SparseSDP <Real>& prob) {
 template <typename Real>
 struct SDPObj : public Optizelle::ScalarValuedFunction <Real,Optizelle::Rm> {
 private:
-    const SparseSDP <Real>& prob;
+    SparseSDP <Real> const & prob;
         
 public:
     typedef Optizelle::Rm <Real> Rm;
     typedef typename Rm::Vector X_Vector;
 
     // Grab a reference to the underlying SDP problem
-    SDPObj(const SparseSDP <Real>& prob_) : prob(prob_) {}
+    SDPObj(SparseSDP <Real> const & prob_) : prob(prob_) {}
 
     // Evaluation 
-    double operator () (const X_Vector& x) const {
+    double operator () (X_Vector const & x) const {
         return Rm::innr(prob.b,x);
     }
 
     // Gradient
     void grad(
-        const X_Vector& x,
-        X_Vector& grad 
+        X_Vector const & x,
+        X_Vector & grad 
     ) const {
         Rm::copy(prob.b,grad);
     }
 
     // Hessian-vector product
     void hessvec(
-        const X_Vector& x,
-        const X_Vector& dx,
-        X_Vector& H_dx
+        X_Vector const & x,
+        X_Vector const & dx,
+        X_Vector & H_dx
     ) const {
         Rm::zero(H_dx);
     }
@@ -363,7 +364,9 @@ public:
 // h(x) = A1*x1 + ... + Am*xm - A0 >= 0
 //
 template <typename Real>
-struct SDPIneq : public Optizelle::VectorValuedFunction <Real,Optizelle::Rm,Optizelle::SQL>{
+struct SDPIneq :
+    public Optizelle::VectorValuedFunction <Real,Optizelle::Rm,Optizelle::SQL>
+{
 public:
     typedef Optizelle::Rm <Real> X;
     typedef Optizelle::SQL <Real> Z;
@@ -371,14 +374,14 @@ public:
     typedef typename Z::Vector Z_Vector;
 
 private:
-    const SparseSDP <Real>& prob;
+    SparseSDP <Real> const & prob;
 
     // z=h(x), except that we de start with A_start.  Mostly, this is
     // to toggle whether we start from A0 or A1.
     template <Natural start>
     void eval_from(
-        const X_Vector& x,
-        Z_Vector& z
+        X_Vector const & x,
+        Z_Vector & z
     ) const {
         // Zero out the solution
         Z::zero(z);
@@ -427,30 +430,30 @@ private:
 
 public:
     // Grab a reference to the underlying SDP problem
-    SDPIneq(const SparseSDP <Real>& prob_) : prob(prob_) {}
+    SDPIneq(SparseSDP <Real> const & prob_) : prob(prob_) {}
 
     // z=h(x) 
     void operator () (
-        const X_Vector& x,
-        Z_Vector& z
+        X_Vector const & x,
+        Z_Vector & z
     ) const {
         eval_from <0> (x,z);
     }
 
     // z=h'(x)dx
     void p(
-        const X_Vector& x,
-        const X_Vector& dx,
-        Z_Vector& z
+        X_Vector const & x,
+        X_Vector const & dx,
+        Z_Vector & z
     ) const {
         eval_from <1> (dx,z);
     }
 
     // xhat=h'(x)*dz
     void ps(
-        const X_Vector& x,
-        const Z_Vector& dz,
-        X_Vector& xhat 
+        X_Vector const & x,
+        Z_Vector const & dz,
+        X_Vector & xhat 
     ) const {
         // Zero out the solution
         X::zero(xhat);
@@ -486,10 +489,10 @@ public:
 
     // xhat=(h''(x)dx)*dz
     void pps(
-        const X_Vector& x,
-        const X_Vector& dx,
-        const Z_Vector& dz,
-        X_Vector& xhat 
+        X_Vector const & x,
+        X_Vector const & dx,
+        Z_Vector const & dz,
+        X_Vector & xhat 
     ) const {
         X::zero(xhat);
     }
@@ -497,9 +500,8 @@ public:
 
 // Initializes an SQL vector 
 template <typename Real>
-void initSQL(
-    const SparseSDP <Real>& prob,
-    typename Optizelle::SQL <Real>::Vector& x,
+typename Optizelle::SQL <Real>::Vector initSQL(
+    SparseSDP <Real> const & prob,
     const bool phase1=false
 ) {
     // Create a type shortcut
@@ -527,7 +529,7 @@ void initSQL(
     typename SQL::Vector xx(Optizelle::Messaging(),types,sizes);
 
     // Initialize the memory for the user input
-    SQL::init(xx,x);
+    return(std::move(SQL::init(xx)));
 }
 
 // Define the phase-1 objective where 
@@ -543,15 +545,15 @@ struct Phase1Obj : public Optizelle::ScalarValuedFunction <Real,Optizelle::Rm> {
     Phase1Obj() {} 
 
     // Evaluation 
-    double operator () (const X_Vector& x) const {
+    double operator () (X_Vector const & x) const {
         // Just return y2
         return x.back();
     }
 
     // Gradient
     void grad(
-        const X_Vector& x,
-        X_Vector& grad 
+        X_Vector const & x,
+        X_Vector & grad 
     ) const {
         // grad <- 0
         Rm::zero(grad);
@@ -562,9 +564,9 @@ struct Phase1Obj : public Optizelle::ScalarValuedFunction <Real,Optizelle::Rm> {
 
     // Hessian-vector product
     void hessvec(
-        const X_Vector& x,
-        const X_Vector& dx,
-        X_Vector& H_dx
+        X_Vector const & x,
+        X_Vector const & dx,
+        X_Vector & H_dx
     ) const {
         // H_dx <- 0
         Rm::zero(H_dx);
@@ -598,24 +600,26 @@ private:
     mutable typename Optizelle::SQL <Real>::Vector e;
     
     // Extent to which we push for positive definiteness 
-    const Real epsilon;
+    Real const & epsilon;
 
 public:
     // Grab a reference to the SDP inequality, the identity element, and
     // the amount of infeasibility we want to allow
     Phase1Ineq(
-        const SparseSDP <Real>& prob,
-        const Real& epsilon_
-    ) : h(prob), epsilon(epsilon_) { 
-        // Initialize memory for the identity element 
-        initSQL(prob,e); 
+        SparseSDP <Real> const & prob,
+        Real const & epsilon_
+    ) : h(prob),
+        e(initSQL(prob)),
+        epsilon(epsilon_)
+    { 
+        // Set the identity element 
         SQL::id(e);
     }
 
     // z=hh(x,y) 
     void operator () (
-        const X_Vector& x,
-        Z_Vector& z
+        X_Vector const & x,
+        Z_Vector & z
     ) const {
         // z <- h(x)
         h(x,z);
@@ -636,9 +640,9 @@ public:
 
     // z=hh'(x,y)(dx,dy)
     void p(
-        const X_Vector& x,
-        const X_Vector& dx,
-        Z_Vector& z
+        X_Vector const & x,
+        X_Vector const & dx,
+        Z_Vector & z
     ) const {
         // z <- h'(x)dx
         h.p(x,dx,z);
@@ -659,9 +663,9 @@ public:
 
     // xhat=hh'(x,y)*dz
     void ps(
-        const X_Vector& x,
-        const Z_Vector& dz,
-        X_Vector& xhat 
+        X_Vector const & x,
+        Z_Vector const & dz,
+        X_Vector & xhat 
     ) const {
         // xhat_1 <- h'(x)*dx
         h.ps(x,dz,xhat);
@@ -680,10 +684,10 @@ public:
 
     // xhat=(hh''(x,y)(dx,dy)*dz
     void pps(
-        const X_Vector& x,
-        const X_Vector& dx,
-        const Z_Vector& dz,
-        X_Vector& xhat 
+        X_Vector const & x,
+        X_Vector const & dx,
+        Z_Vector const & dz,
+        X_Vector & xhat 
     ) const {
         Rm::zero(xhat);
     }
@@ -691,7 +695,7 @@ public:
 
 // Creates the ith cannonical vector
 template <typename Real>
-void create_ei(const Natural& i,std::vector <Real>& ei) {
+void create_ei(Natural const & i,std::vector <Real> & ei) {
     for(Natural j=0;j<ei.size();j++) {
         ei[j] = Real(i==j);
     }
@@ -701,7 +705,7 @@ void create_ei(const Natural& i,std::vector <Real>& ei) {
 template <typename Real,template <typename> class XX>
 struct ProjectX {
     virtual typename Optizelle::Rm <Real>::Vector * operator () (
-        typename XX <Real>::Vector& x
+        typename XX <Real>::Vector & x
     ) const = 0;
     virtual ~ProjectX() {}
 };
@@ -710,7 +714,7 @@ struct ProjectX {
 template <typename Real>
 struct ProjectRm : public ProjectX <Real,Optizelle::Rm> {
     typename Optizelle::Rm <Real>::Vector * operator () (
-        typename Optizelle::Rm <Real>::Vector& x
+        typename Optizelle::Rm <Real>::Vector & x
     ) const {
         return &x;
     }
@@ -735,7 +739,7 @@ private:
         <Optizelle::ScalarValuedFunctionModifications <Real,XX> >& f_mod;
 
     // Current iterate
-    const X_Vector& x;
+    X_Vector const & x;
 
     // Workspace 
     mutable X_Vector x_tmp1;
@@ -758,21 +762,25 @@ private:
 public:
     SDPPreconditioner(
         ProjectX <Real,XX>* proj_,
-        const std::unique_ptr<Optizelle::ScalarValuedFunctionModifications<Real,XX> >&
-            f_mod_,
-        const X_Vector& x_
-    ) : proj(proj_), f_mod(f_mod_), x(x_), invCondH(1.) {
-        X::init(x,x_tmp1);
-        X::init(x,x_tmp2);
-        X::init(x,x_last.second);
-            x_last.first=false;
-        Rm_Vector const * const P_x=(*proj)(const_cast <X_Vector&>(x));
+        const std::unique_ptr<
+            Optizelle::ScalarValuedFunctionModifications<Real,XX> >& f_mod_,
+        X_Vector const & x_
+    ) : proj(proj_),
+        f_mod(f_mod_),
+        x(x_),
+        x_tmp1(X::init(x_)),
+        x_tmp2(X::init(x_)),
+        x_last(false,X::init(x_)),
+        H(),
+        ei(X::init(x_)),
+        invCondH(1.)
+    { 
+        Rm_Vector const * const P_x=(*proj)(const_cast <X_Vector &>(x));
         H.resize(P_x->size()*P_x->size());
-        X::init(x,ei);
     }
 
     // Basic application
-    void operator () (const X_Vector& dx,X_Vector &PH_dx) const {
+    void operator () (X_Vector const & dx,X_Vector & PH_dx) const {
         // Determine the size of the projected vector
         Natural m = (*proj)(ei)->size();
 
@@ -831,7 +839,7 @@ public:
 // Creates an initial guess for x
 template <typename Real>
 bool initPhase1X(
-    const SparseSDP <Real> prob,
+    SparseSDP <Real> const & prob,
     typename Optizelle::Rm <Real>::Vector& x
 ){
     // Create some type shortcuts
@@ -847,8 +855,7 @@ bool initPhase1X(
         x[i]=Real(dis(gen));
 
     // Create the identity element
-    typename SQL::Vector e;
-    initSQL <Real> (prob,e);
+    typename SQL::Vector e(initSQL <Real> (prob));
     SQL::id(e);
     
     // Determine how infeasible we are.  Basically, we find delta such that
@@ -863,15 +870,13 @@ bool initPhase1X(
     SDPIneq <Real> h(prob);
 
     // xx <- x_1
-    typename Rm::Vector xx;
-        Rm::init(x,xx);
+    typename Rm::Vector xx(Rm::init(x));
         Rm::copy(x,xx);
         xx.pop_back();
         xx.pop_back();
 
     // h_xx <- h(xx)
-    typename SQL::Vector h_xx;
-        SQL::init(e,h_xx);
+    typename SQL::Vector h_xx(SQL::init(e));
         h(xx,h_xx);
 
     // Figure out the extent of our infeasibility.  Use the formula above
@@ -893,8 +898,8 @@ bool initPhase1X(
 // Creates an initial guess for dx
 template <typename Real>
 void initPhase1DX(
-    const SparseSDP<Real>prob,
-    typename Optizelle::Rm <Real>::Vector& dx
+    SparseSDP<Real> const & prob,
+    typename Optizelle::Rm <Real>::Vector & dx
 ){
     // First, initialize the perturbation just like x
     initPhase1X <Real> (prob,dx);
@@ -902,29 +907,31 @@ void initPhase1DX(
 
 // Create an initial guess for z
 template <typename Real>
-void initZ(
-    const SparseSDP <Real> prob,
-    typename Optizelle::SQL <Real>::Vector& z,
-    const bool phase1=false 
+typename Optizelle::SQL <Real>::Vector initZ(
+    SparseSDP <Real> const & prob,
+    bool const phase1=false 
 ) {
     // Allocate memory for z
-    initSQL <Real> (prob,z,phase1);
+    typename Optizelle::SQL <Real>::Vector z(initSQL <Real> (prob,phase1));
 
     // Randomize the elements in z
     std::mt19937 gen(1);
     std::uniform_real_distribution<> dis(0, 1);
     for(Natural i=0;i<z.data.size();i++)
         z.data[i]=Real(dis(gen));
+
+    // Return z
+    return std::move(z);
 }
 
 // Parse the value epsilon for the phase-1 problem.  In addition,
 // parse whether or not we want finite difference tests.
 template <typename Real>
 void parseSDPSettings(
-    const Optizelle::Messaging& msg,
-    const std::string& fname,
-    Real& epsilon,
-    bool& fd_tests
+    Optizelle::Messaging const & msg,
+    std::string const & fname,
+    Real & epsilon,
+    bool & fd_tests
 ) {
     Json::Value root=Optizelle::json::parse(msg,fname);
     epsilon=Real(root["sdp_settings"].get("epsilon",1.).asDouble());
@@ -958,8 +965,10 @@ int main(int argc,char* argv[]) {
 
     // Note, we're going to ignore the values of epsilon and beta from this
     // parsing.  Mostly, it's just easier not to have two different routines.
-    parseSDPSettings(Optizelle::Messaging(),phase2_params,epsilon,phase2_fd_tests);
-    parseSDPSettings(Optizelle::Messaging(),phase1_params,epsilon,phase1_fd_tests);
+    parseSDPSettings(
+        Optizelle::Messaging(),phase2_params,epsilon,phase2_fd_tests);
+    parseSDPSettings(
+        Optizelle::Messaging(),phase1_params,epsilon,phase1_fd_tests);
 
     // Parse the file sparse SDPA file
     SparseSDP <Real> prob;
@@ -979,24 +988,23 @@ int main(int argc,char* argv[]) {
         initPhase1DX <Real> (prob,dxx);
 
     // Create an initial guess for the inequality multiplier
-    SQL::Vector z_phase1;
-        initZ <Real> (prob,z_phase1,true);
+    SQL::Vector z_phase1(initZ <Real> (prob,true));
 
     // Create the phase-1 state 
-    Optizelle::InequalityConstrained <Real,Optizelle::Rm,Optizelle::SQL>::State::t
-        phase1_state(x,z_phase1);
+    Optizelle::InequalityConstrained <Real,Optizelle::Rm,Optizelle::SQL>
+        ::State::t phase1_state(x,z_phase1);
 
     // Read the parameters from file
-    Optizelle::json::InequalityConstrained <Real,Optizelle::Rm,Optizelle::SQL>::read(
-        Optizelle::Messaging(),phase1_params,phase1_state);
+    Optizelle::json::InequalityConstrained <Real,Optizelle::Rm,Optizelle::SQL>
+        ::read(Optizelle::Messaging(),phase1_params,phase1_state);
 
     // Create the bundle of phase-1 functions
-    Optizelle::InequalityConstrained <Real,Optizelle::Rm,Optizelle::SQL>::Functions::t
-        phase1_fns;
+    Optizelle::InequalityConstrained <Real,Optizelle::Rm,Optizelle::SQL>
+        ::Functions::t phase1_fns;
     phase1_fns.f.reset(new Phase1Obj <Real> ()); 
     phase1_fns.h.reset(new Phase1Ineq <Real> (prob,epsilon));
     phase1_fns.PH.reset(new SDPPreconditioner <Real,Optizelle::Rm> (
-        new ProjectRm <Real> (),phase1_fns.f_mod,phase1_state.x.front()));
+        new ProjectRm <Real> (),phase1_fns.f_mod,phase1_state.x));
 
     if(phase1_fd_tests) {
         // Run some finite difference tests on this problem 
@@ -1029,8 +1037,9 @@ int main(int argc,char* argv[]) {
             "Solving the phase-1 problem for an initial solution." << std::endl;
 
         // Solve the SDP 
-        Optizelle::InequalityConstrained <Real,Optizelle::Rm,Optizelle::SQL>::Algorithms
-            ::getMin(Optizelle::Messaging(),phase1_fns,phase1_state);
+        Optizelle::InequalityConstrained <Real,Optizelle::Rm,Optizelle::SQL>
+            ::Algorithms::getMin(Optizelle::Messaging(),phase1_fns,
+                phase1_state);
 
         // Tell us why the problem converged
         std::cout << "Phase-1 problem converged due to: "
@@ -1038,8 +1047,8 @@ int main(int argc,char* argv[]) {
             << std::endl;
 
         // Check if we're feasible
-        Natural m = phase1_state.x.front().size()-2;
-        if(phase1_state.x.front()[m] <= Real(0.)) {
+        Natural m = phase1_state.x.size()-2;
+        if(phase1_state.x[m] <= Real(0.)) {
             std::cout << "Phase-1 problem failed to find a feasible solution."
                 << std::endl;
             exit(EXIT_FAILURE);
@@ -1047,7 +1056,7 @@ int main(int argc,char* argv[]) {
     }
 
     // Copy the solution back into the variable x
-    Rm::copy(phase1_state.x.front(),x);
+    Rm::copy(phase1_state.x,x);
 
     // Eliminate the extra entries between phase-1 and 2 
     x.pop_back(); x.pop_back();
@@ -1055,24 +1064,23 @@ int main(int argc,char* argv[]) {
     dxx.pop_back(); dxx.pop_back();
     
     // Create an inequality multiplier
-    SQL::Vector z;
-        initZ <Real> (prob,z);
+    SQL::Vector z(initZ <Real> (prob));
 
     // Create the optimization state 
-    Optizelle::InequalityConstrained <Real,Optizelle::Rm,Optizelle::SQL>::State::t
-        state(x,z);
+    Optizelle::InequalityConstrained <Real,Optizelle::Rm,Optizelle::SQL>
+        ::State::t state(x,z);
 
     // Read the parameters from file
-    Optizelle::json::InequalityConstrained <Real,Optizelle::Rm,Optizelle::SQL>::read(
-        Optizelle::Messaging(),phase2_params,state);
+    Optizelle::json::InequalityConstrained <Real,Optizelle::Rm,Optizelle::SQL>
+        ::read(Optizelle::Messaging(),phase2_params,state);
 
     // Create the bundle of functions
-    Optizelle::InequalityConstrained <Real,Optizelle::Rm,Optizelle::SQL>::Functions::t
-        fns;
+    Optizelle::InequalityConstrained <Real,Optizelle::Rm,Optizelle::SQL>
+        ::Functions::t fns;
     fns.f.reset(new SDPObj <Real> (prob));
     fns.h.reset(new SDPIneq <Real> (prob));
     fns.PH.reset(new SDPPreconditioner <Real,Optizelle::Rm> (
-        new ProjectRm <Real> (),fns.f_mod,state.x.front()));
+        new ProjectRm <Real> (),fns.f_mod,state.x));
     
     // Run some finite difference tests on this problem 
     if(phase2_fd_tests) {
@@ -1103,8 +1111,8 @@ int main(int argc,char* argv[]) {
     std::cout << std::endl << "Solving the SDP probem: " << fname << std::endl;
 
     // Solve the SDP 
-    Optizelle::InequalityConstrained<Real,Optizelle::Rm,Optizelle::SQL>::Algorithms::getMin(
-        Optizelle::Messaging(),fns,state);
+    Optizelle::InequalityConstrained<Real,Optizelle::Rm,Optizelle::SQL>
+        ::Algorithms::getMin(Optizelle::Messaging(),fns,state);
 
     // Tell us why the problem converged
     std::cout << "SDP problem converged due to: "

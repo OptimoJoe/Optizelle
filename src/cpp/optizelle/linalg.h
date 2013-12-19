@@ -48,12 +48,12 @@ namespace Optizelle {
     typedef ptrdiff_t Integer;
 
     template <typename Real>
-    Real sq(Real x) {
+    Real sq(Real const & x) {
         return x*x;
     }
 
     template <typename Real>
-    int sgn(Real val) {
+    int sgn(Real const & val) {
         return (Real(0) < val) - (val < Real(0));
     }
     
@@ -113,7 +113,7 @@ namespace Optizelle {
         float c,float s);
 
     template <typename Real>
-    void copy(Integer n,const Real* x,Integer incx,Real* y,Integer incy) {
+    void copy(Integer n,Real const * const x,Integer incx,Real* y,Integer incy){
         if(n<=0) return;
         for(Integer i=0,ix=0,iy=0;
             i<n;
@@ -122,22 +122,22 @@ namespace Optizelle {
             y[iy]=x[ix];
     }
     template <>
-    void copy <double> (Integer n,const double* x,Integer incx,double* y,
+    void copy <double> (Integer n,double const * const x,Integer incx,double* y,
         Integer incy);
     template <>
-    void copy <float> (Integer n,const float* x,Integer incx,float* y,
+    void copy <float> (Integer n,float const * const x,Integer incx,float* y,
         Integer incy);
     
     template <typename Real>
-    void axpy(Integer n,Real alpha,const Real* x,Integer incx,
+    void axpy(Integer n,Real alpha,Real const * const x,Integer incx,
         Real* y,Integer incy);
     template <>
     void axpy <double> (
-        Integer n,double alpha,const double* x,Integer incx,double* y,
+        Integer n,double alpha,double const * const x,Integer incx,double* y,
         Integer incy);
     template <>
     void axpy <float> (
-        Integer n,float alpha,const float* x,Integer incx,float* y,
+        Integer n,float alpha,float const * const x,Integer incx,float* y,
         Integer incy);
     
     template <typename Real>
@@ -155,64 +155,68 @@ namespace Optizelle {
     void scal <float> (Integer n,float alpha,float* x,Integer incx);
     
     template <typename Real>
-    Real dot(Integer n,const Real* x,Integer incx,const Real* y,Integer incy);
+    Real dot(Integer n,Real const * const x,Integer incx,Real const * const y,
+        Integer incy);
     template <>
     double dot <double> (
-        Integer n,const double* x,Integer incx,const double* y,Integer incy);
+        Integer n,double const * const x,Integer incx,double const * const y,
+        Integer incy);
     template <>
     float dot <float> (
-        Integer n,const float* x,Integer incx,const float* y,Integer incy);
+        Integer n,float const * const x,Integer incx,float const * const y,
+        Integer incy);
     
 
     template <typename Real>
-    void gemv(char trans,Integer m,Integer n,Real alpha,const Real* A,
-        Integer lda,const Real* x,Integer incx,Real beta,Real* y,Integer incy);
-    template <>
-    void gemv(char trans,Integer m,Integer n,double alpha,const double* A,
-        Integer lda,const double* x,Integer incx,double beta,double* y,
+    void gemv(char trans,Integer m,Integer n,Real alpha,Real const * const A,
+        Integer lda,Real const * const x,Integer incx,Real beta,Real* y,
         Integer incy);
     template <>
-    void gemv(char trans,Integer m,Integer n,float alpha,const float* A,
-        Integer lda,const float* x,Integer incx,float beta,float* y,
+    void gemv(char trans,Integer m,Integer n,double alpha,double const *const A,
+        Integer lda,double const * const x,Integer incx,double beta,double* y,
+        Integer incy);
+    template <>
+    void gemv(char trans,Integer m,Integer n,float alpha,float const * const A,
+        Integer lda,float const * const x,Integer incx,float beta,float* y,
         Integer incy);
     
     template <typename Real>
-    void symv(char uplo,Integer n,Real alpha,const Real* A,Integer lda,
-        const Real* x,Integer incx,Real beta,Real* y,Integer incy);
+    void symv(char uplo,Integer n,Real alpha,Real const * const A,Integer lda,
+        Real const * const x,Integer incx,Real beta,Real* y,Integer incy);
     template <>
-    void symv(char uplo,Integer n,double alpha,const double* A,Integer lda,
-        const double* x,Integer incx,double beta,double* y,Integer incy);
+    void symv(char uplo,Integer n,double alpha,double const*const A,Integer lda,
+        double const * const x,Integer incx,double beta,double* y,Integer incy);
     template <>
-    void symv(char uplo,Integer n,float alpha,const float* A,Integer lda,
-        const float* x,Integer incx,float beta,float* y,Integer incy);
+    void symv(char uplo,Integer n,float alpha,float const * const A,Integer lda,
+        float const * const x,Integer incx,float beta,float* y,Integer incy);
 
     template <typename Real>
-    void spmv(char uplo,Integer n,Real alpha,const Real* Ap,
-        const Real* x,Integer incx,Real beta,Real* y,Integer incy);
+    void spmv(char uplo,Integer n,Real alpha,Real const * const Ap,
+        Real const * const x,Integer incx,Real beta,Real* y,Integer incy);
     template <>
-    void spmv(char uplo,Integer n,double alpha,const double* Ap,
-        const double* x,Integer incx,double beta,double* y,Integer incy);
+    void spmv(char uplo,Integer n,double alpha,double const * const Ap,
+        double const * const x,Integer incx,double beta,double* y,Integer incy);
     template <>
-    void spmv(char uplo,Integer n,float alpha,const float* Ap,
-        const float* x,Integer incx,float beta,float* y,Integer incy);
+    void spmv(char uplo,Integer n,float alpha,float const * const Ap,
+        float const * const x,Integer incx,float beta,float* y,Integer incy);
     
     template <typename Real>
-    void trsv(char uplo,char trans,char diag,Integer n,const Real* A,
+    void trsv(char uplo,char trans,char diag,Integer n,Real const * const A,
         Integer lda,Real* x,Integer incx); 
     template <>
     void trsv(
-        char uplo,char trans,char diag,Integer n,const double* A,Integer lda,
-        double* x,Integer incx);
+        char uplo,char trans,char diag,Integer n,double const * const A,
+        Integer lda,double* x,Integer incx);
     template <>
     void trsv(
-        char uplo,char trans,char diag,Integer n,const float* A,Integer lda,
-        float* x,Integer incx);
+        char uplo,char trans,char diag,Integer n,float const * const A,
+        Integer lda,float* x,Integer incx);
     
     // NOTE: this routine is not fully general.  It only implements what we
     // need.
     template <typename Real>
-    void tpsv(char uplo,char trans,char diag,Integer n,const Real* Ap,Real* x,
-        Integer incx
+    void tpsv(char uplo,char trans,char diag,Integer n,Real const * const Ap,
+        Real* x,Integer incx
     ) {
         // Test the input parameters.
         Integer info=0;
@@ -283,55 +287,56 @@ namespace Optizelle {
     }
     template <>
     void tpsv(
-        char uplo,char trans,char diag,Integer n,const double* Ap,double* x,
-        Integer incx);
+        char uplo,char trans,char diag,Integer n,double const * const Ap,
+        double* x,Integer incx);
     template <>
     void tpsv(
-        char uplo,char trans,char diag,Integer n,const float* Ap,float* x,
-        Integer incx);
+        char uplo,char trans,char diag,Integer n,float const * const Ap,
+        float* x,Integer incx);
 
     template <typename Real>
     void gemm(char transa,char transb,Integer m,Integer n,Integer k,Real alpha,
-        const Real* A,Integer lda,const Real* B,Integer ldb,Real beta,
-        Real* C,Integer ldc);
+        Real const * const A,Integer lda,Real const * const B,Integer ldb,
+        Real beta,Real* C,Integer ldc);
     template <>
     void gemm(
         char transa,char transb,Integer m,Integer n,Integer k,double alpha,
-        const double* A,Integer lda,const double* B,Integer ldb,double beta,
-        double* C,Integer ldc);
+        double const * const A,Integer lda,double const * const B,Integer ldb,
+        double beta,double* C,Integer ldc);
     template <>
     void gemm(
         char transa,char transb,Integer m,Integer n,Integer k,float alpha,
-        const float* A,Integer lda,const float* B,Integer ldb,float beta,
-        float* C,Integer ldc);
+        float const * const A,Integer lda,float const * const B,Integer ldb,
+        float beta,float* C,Integer ldc);
     
     template <typename Real>
-    void symm(char side,char uplo,Integer m,Integer n,Real alpha,const Real* A,
-        Integer lda,const Real* B,Integer ldb,Real beta,Real* C,Integer ldc);
+    void symm(char side,char uplo,Integer m,Integer n,Real alpha,
+        Real const * const A,Integer lda,Real const * const B,Integer ldb,
+        Real beta,Real* C,Integer ldc);
     template <>
     void symm(
-        char side,char uplo,Integer m,Integer n,double alpha,const double* A,
-        Integer lda,const double* B,Integer ldb,double beta,double* C,
-        Integer ldc);
+        char side,char uplo,Integer m,Integer n,double alpha,
+        double const * const A,Integer lda,double const * const B,Integer ldb,
+        double beta,double* C,Integer ldc);
     template <>
     void symm(
-        char side,char uplo,Integer m,Integer n,float alpha,const float* A,
-        Integer lda,const float* B,Integer ldb,float beta,float* C,
-        Integer ldc);
+        char side,char uplo,Integer m,Integer n,float alpha,
+        float const * const A,Integer lda,float const * const B,Integer ldb,
+        float beta,float* C,Integer ldc);
 
     
     template <typename Real>
     void syr2k(char uplo,char trans,Integer n,Integer k,Real alpha,
-        const Real* A,Integer lda,const Real* B,Integer ldb,
+        Real const * const A,Integer lda,Real const * const B,Integer ldb,
         Real beta,Real* C,Integer ldc);
     template <>
     void syr2k(char uplo,char trans,Integer n,Integer k,double alpha,
-        const double* A,Integer lda,const double* B,Integer ldb,double beta,
-        double* C,Integer ldc);
+        double const * const A,Integer lda,double const * const B,Integer ldb,
+        double beta,double* C,Integer ldc);
     template <>
     void syr2k(char uplo,char trans,Integer n,Integer k,float alpha,
-        const float* A,Integer lda,const float* B,Integer ldb,float beta,
-        float* C,Integer ldc);
+        float const * const A,Integer lda,float const * const B,Integer ldb,
+        float beta,float* C,Integer ldc);
 
     template <typename Real>
     Real lamch(char cmach);
@@ -566,16 +571,16 @@ namespace Optizelle {
         Integer lda,Integer& info);
 
     // Indexing function for matrices
-    Natural ijtok(Natural i,Natural j,Natural m);
+    Natural ijtok(Natural const & i,Natural const & j,Natural const & m);
 
     // Indexing for packed storage where i<=j
-    Natural ijtokp(Natural i,Natural j); 
+    Natural ijtokp(Natural const & i,Natural const & j); 
 
     // Indexing formula for symmetric matrices in RPF format where i<=j.
-    Natural ijtokrf(Natural const& i,Natural const& j,Natural const& m);
+    Natural ijtokrf(Natural const & i,Natural const & j,Natural const & m);
 
     // Indexing for vectors 
-    Natural itok(Natural i);
+    Natural itok(Natural const & i);
 
     // A linear operator specification, A : X->Y
     template <
@@ -584,13 +589,12 @@ namespace Optizelle {
         template <typename> class Y
     >
     struct Operator {
-    private:
         // Create some type shortcuts
         typedef typename X <Real>::Vector X_Vector;
         typedef typename Y <Real>::Vector Y_Vector;
-    public:
+
         // y = A(x)
-        virtual void operator () (const X_Vector& x,Y_Vector &y) const = 0;
+        virtual void operator () (X_Vector const & x,Y_Vector &y) const = 0;
 
         // Allow a derived class to deallocate memory 
         virtual ~Operator() {}
@@ -603,11 +607,11 @@ namespace Optizelle {
     */
     template <typename Real>
     void sylvester(
-        const Natural m,
-        const Real* V,
-        const Real* D,
-        const Real* B,
-        Real* X
+        Natural const & m,
+        Real const * const V,
+        Real const * const D,
+        Real const * const B,
+        Real * X
     ) {
 
         // Find V' B V
@@ -643,10 +647,10 @@ namespace Optizelle {
     // that lambda_min(A) < alpha where alpha is returned from this function.
     template <typename Real>
     Real lanczos(
-        const Natural m,
-        const Real* A,
-        const Natural max_iter,
-        const Real tol
+        Natural const & m,
+        Real const * const A,
+        Natural const & max_iter,
+        Real const & tol
     ) {
         // Create the initial Krylov vector
         std::vector <Real> v(m,Real(1./std::sqrt(Real(m))));
@@ -749,11 +753,11 @@ namespace Optizelle {
     // rectangular packed format (RPF).
     template <typename Real>
     std::pair <Real,Real> syiram(
-        Natural const& m,
+        Natural const & m,
         Real const * const Ap,
-        Natural const& iter_innr_max,
-        Natural const& iter_outr_max,
-        Real const& tol
+        Natural const & iter_innr_max,
+        Natural const & iter_outr_max,
+        Real const & tol
     ) {
         // Allocate memory for solving a dense eigenvalue problem in LAPACK.
         Integer eig_size = m<=iter_innr_max ? m : iter_innr_max;
@@ -972,12 +976,12 @@ namespace Optizelle {
     // B is positive definite.
     template <typename Real>
     std::pair <Real,Real> gsyiram(
-        Natural const& m,
+        Natural const & m,
         Real const * const Arf,
         Real const * const Brf,
-        Natural const& iter_innr_max,
-        Natural const& iter_outr_max,
-        Real const& tol
+        Natural const & iter_innr_max,
+        Natural const & iter_outr_max,
+        Real const & tol
     ) {
         // First, make a copy of Brf since the Choleski factorization is
         // destructive
@@ -1014,12 +1018,12 @@ namespace Optizelle {
     // (output) r2 : Second root, if it exists
     template <typename Real>
     void quad_equation(
-        const Real& a,
-        const Real& b,
-        const Real& c,
-        Natural& nroots,
-        Real& r1,
-        Real& r2
+        Real const & a,
+        Real const & b,
+        Real const & c,
+        Natural & nroots,
+        Real & r1,
+        Real & r2
     ) {
 
         // It's sort of hard to tell if we have a quadratic or a linear since
@@ -1071,14 +1075,14 @@ namespace Optizelle {
         };
 
         // Converts the Krylov stopping condition to a string 
-        std::string to_string(t krylov_stop);
+        std::string to_string(t const & krylov_stop);
         
         // Converts a string to a Krylov stopping condition
-        t from_string(std::string krylov_stop);
+        t from_string(std::string const & krylov_stop);
 
         // Checks whether or not a string is valid
         struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (const std::string& name) const;
+            bool operator () (std::string const & name) const;
         };
     }
 
@@ -1088,10 +1092,10 @@ namespace Optizelle {
         template <typename> class XX
     >
     void Aorthogonalize(
-        const std::list <typename XX <Real>::Vector>& Bvs,
-        const std::list <typename XX <Real>::Vector>& ABvs,
-        typename XX <Real>::Vector& Bx,
-        typename XX <Real>::Vector& ABx
+        std::list <typename XX <Real>::Vector> const & Bvs,
+        std::list <typename XX <Real>::Vector> const & ABvs,
+        typename XX <Real>::Vector & Bx,
+        typename XX <Real>::Vector & ABx
     ) {
         // Create some type shortcuts
         typedef XX <Real> X;
@@ -1137,22 +1141,22 @@ namespace Optizelle {
         template <typename> class XX
     >
     void truncated_cd(
-        const Operator <Real,XX,XX>& A,
-        const typename XX <Real>::Vector& b,
-        const Operator <Real,XX,XX>& B,
-        const Operator <Real,XX,XX>& C,
-        const Real eps,
-        const Natural iter_max,
-        const Natural orthog_max,
-        const Real delta,
-        const typename XX <Real>::Vector& x_cntr,
-	const bool do_orthog_check,
-        typename XX <Real>::Vector& x,
-        typename XX <Real>::Vector& x_cp,
-        Real& norm_Br0,
-        Real& norm_Br,
-        Natural& iter,
-        KrylovStop::t& krylov_stop
+        Operator <Real,XX,XX> const & A,
+        typename XX <Real>::Vector const & b,
+        Operator <Real,XX,XX> const & B,
+        Operator <Real,XX,XX> const & C,
+        Real const & eps,
+        Natural const & iter_max,
+        Natural const & orthog_max,
+        Real const & delta,
+        typename XX <Real>::Vector const & x_cntr,
+	bool const & do_orthog_check,
+        typename XX <Real>::Vector & x,
+        typename XX <Real>::Vector & x_cp,
+        Real & norm_Br0,
+        Real & norm_Br,
+        Natural & iter,
+        KrylovStop::t & krylov_stop
     ){
 
         // Create some type shortcuts
@@ -1164,8 +1168,8 @@ namespace Optizelle {
 
         // Allocate memory for the projected search direction and the
         // the operator applied to the projection
-        X_Vector Bp; X::init(x,Bp);
-        X_Vector ABp; X::init(x,ABp);
+        X_Vector Bp(X::init(x));
+        X_Vector ABp(X::init(x));
 
         // Allocate memory for the previous search directions
         std::list <X_Vector> Bps;
@@ -1202,8 +1206,8 @@ namespace Optizelle {
 
         // Allocate memory for and find the initial residual, A*x-b = -b.
         // Also, allocate memory for the projected residual.
-        X_Vector r; X::init(x,r);
-        X_Vector Br; X::init(x,Br);
+        X_Vector r(X::init(x));
+        X_Vector Br(X::init(x));
         X::copy(b,r);
         X::scal(Real(-1.),r);
 
@@ -1214,11 +1218,11 @@ namespace Optizelle {
         // norm implicitely, which involves additional inner products and adding
         // the results together.  This can have some numerical difficulties,
         // so we just sacrifice the additional memory.
-        X_Vector x_tmp1; X::init(x,x_tmp1); 
-        X_Vector x_tmp2; X::init(x,x_tmp2);
+        X_Vector x_tmp1(X::init(x));
+        X_Vector x_tmp2(X::init(x));
 
         // Allocate memory for the quantity x-x_cntr
-        X_Vector x_m_xcntr; X::init(x,x_m_xcntr);
+        X_Vector x_m_xcntr(X::init(x));
         X::copy(x_cntr,x_m_xcntr);
         X::scal(Real(-1.),x_m_xcntr);
 
@@ -1307,19 +1311,19 @@ namespace Optizelle {
                 }
 
                 // Store the previous directions
-                Bps.emplace_back(X_Vector()); X::init(x,Bps.back());
+                Bps.emplace_back(std::move(X::init(x)));
                 X::copy(Bp,Bps.back());
                 X::scal(Real(1.)/Anorm_Bp,Bps.back());
                 
-                ABps.emplace_back(X_Vector()); X::init(x,ABps.back());
+                ABps.emplace_back(std::move(X::init(x)));
                 X::copy(ABp,ABps.back());
                 X::scal(Real(1.)/Anorm_Bp,ABps.back());
 
                 // Store the previous residuals
-                rs.emplace_back(X_Vector()); X::init(x,rs.back());
+                rs.emplace_back(std::move(X::init(x)));
                 X::copy(r,rs.back());
 
-                Brs.emplace_back(X_Vector()); X::init(x,Brs.back());
+                Brs.emplace_back(std::move(X::init(x)));
                 X::copy(Br,Brs.back());
 
                 norm_Brs.emplace_back(norm_Br);
@@ -1515,7 +1519,7 @@ namespace Optizelle {
     void solve2x2(
         std::vector <Real> A,
         std::vector <Real> b,
-        std::vector <Real>& x
+        std::vector <Real> & x
     ) {
         // Find the largest element of A in absolute value.  Store in i.
         Natural i=0;  Real val=fabs(A[0]);
@@ -1566,9 +1570,9 @@ namespace Optizelle {
     // (return) objective value
     template <typename Real>
     Real obj2x2(
-        const std::vector <Real>& A,
-        const std::vector <Real>& a,
-        const std::vector <Real>& x
+        std::vector <Real> const & A,
+        std::vector <Real> const & a,
+        std::vector <Real> const & x
     ) {
         return (A[0]*x[0]+a[0])*x[0] + (A[2]*x[1]+a[1])*x[1]
             + Real(2.)*A[1]*x[0]*x[1];
@@ -1589,11 +1593,11 @@ namespace Optizelle {
     // (output) x : The optimal solution.
     template <typename Real>
     void quad2x2(
-        const std::vector <Real>& A,
-        const std::vector <Real>& a,
-        const std::vector <Real>& lb,
-        const std::vector <Real>& ub,
-        std::vector <Real>& x
+        std::vector <Real> const & A,
+        std::vector <Real> const & a,
+        std::vector <Real> const & lb,
+        std::vector <Real> const & ub,
+        std::vector <Real> & x
     ) {
 
         // Store the best objective function up until this point
@@ -1670,9 +1674,9 @@ namespace Optizelle {
         template <typename> class XX
     >
     void orthogonalize(
-        const std::list <typename XX <Real>::Vector>& vs,
-        typename XX <Real>::Vector& x,
-        Real* R
+        std::list <typename XX <Real>::Vector> const & vs,
+        typename XX <Real>::Vector & x,
+        Real * R
     ) {
         // Create some type shortcuts
         typedef XX <Real> X;
@@ -1697,13 +1701,13 @@ namespace Optizelle {
         template <typename> class XX
     >
     void solveInKrylov(
-        const Natural& m,
-        const Real* R,
-        const Real* Qt_e1,
-        const std::list <typename XX <Real>::Vector>& vs,
-        const Operator <Real,XX,XX>& Mr_inv,
-        const typename XX <Real>::Vector& x,
-        typename XX <Real>::Vector& dx
+        Natural const & m,
+        Real const * const R,
+        Real const * const Qt_e1,
+        std::list <typename XX <Real>::Vector> const & vs,
+        Operator <Real,XX,XX> const & Mr_inv,
+        typename XX <Real>::Vector const & x,
+        typename XX <Real>::Vector & dx
     ) {
         // Create some type shortcuts
         typedef XX <Real> X;
@@ -1713,7 +1717,7 @@ namespace Optizelle {
         std::vector <Real> y(m);
 
         // Create one temporary element required to solve for the iterate
-        X_Vector V_y; X::init(x,V_y);
+        X_Vector V_y(X::init(x));
 
         // Solve the system for y
         copy <Real> (m,&(Qt_e1[0]),1,&(y[0]),1);
@@ -1757,15 +1761,15 @@ namespace Optizelle {
         template <typename> class XX
     >
     void resetGMRES(
-        const typename XX <Real>::Vector& rtrue,
-        const Operator <Real,XX,XX>& Ml_inv,
-        const Natural& rst_freq,
-        typename XX <Real>::Vector& v,
-        std::list <typename XX <Real>::Vector>& vs,
-        typename XX <Real>::Vector& r,
-        Real& norm_r,
-        std::vector <Real>& Qt_e1,
-        std::list <std::pair<Real,Real> >& Qts
+        typename XX <Real>::Vector const & rtrue,
+        Operator <Real,XX,XX> const & Ml_inv,
+        Natural const & rst_freq,
+        typename XX <Real>::Vector & v,
+        std::list <typename XX <Real>::Vector> & vs,
+        typename XX <Real>::Vector & r,
+        Real & norm_r,
+        std::vector <Real> & Qt_e1,
+        std::list <std::pair<Real,Real> > & Qts
     ){
         // Create some type shortcuts
         typedef XX <Real> X;
@@ -1785,8 +1789,7 @@ namespace Optizelle {
         // Clear memory for the list of Krylov vectors and insert the first
         // vector.  This completes #4.
         vs.clear();
-        vs.emplace_back(X_Vector());
-        X::init(rtrue,vs.back());
+        vs.emplace_back(std::move(X::init(rtrue)));
         X::copy(v,vs.back());
 
         // Find the initial right hand side for the vector Q' norm(w1) e1.  This
@@ -1806,10 +1809,10 @@ namespace Optizelle {
     struct GMRESManipulator {
         // Application
         virtual void operator () (
-            const Natural& iter,
-            const typename XX <Real>::Vector& x,
-            const typename XX <Real>::Vector& b,
-            Real& eps
+            Natural const & iter,
+            typename XX <Real>::Vector const & x,
+            typename XX <Real>::Vector const & b,
+            Real & eps
         ) const {}
 
         // Allow the derived class to deallocate memory
@@ -1836,15 +1839,15 @@ namespace Optizelle {
         template <typename> class XX
     >
     std::pair <Real,Natural> gmres(
-        const Operator <Real,XX,XX>& A,
-        const typename XX <Real>::Vector& b,
+        Operator <Real,XX,XX> const & A,
+        typename XX <Real>::Vector const & b,
         Real eps,
         Natural iter_max,
         Natural rst_freq,
-        const Operator <Real,XX,XX>& Ml_inv,
-        const Operator <Real,XX,XX>& Mr_inv,
-        const GMRESManipulator <Real,XX>& gmanip,
-        typename XX <Real>::Vector& x
+        Operator <Real,XX,XX> const & Ml_inv,
+        Operator <Real,XX,XX> const & Mr_inv,
+        GMRESManipulator <Real,XX> const & gmanip,
+        typename XX <Real>::Vector & x
     ){
 
         // Create some type shortcuts
@@ -1858,16 +1861,16 @@ namespace Optizelle {
         rst_freq = rst_freq == 0 ? iter_max : rst_freq;
 
         // Allocate memory for the residual
-        X_Vector r; X::init(x,r);
+        X_Vector r(X::init(x));
         
         // Allocate memory for the iterate update 
-        X_Vector dx; X::init(x,dx);
+        X_Vector dx(X::init(x));
         
         // Allocate memory for x + dx 
-        X_Vector x_p_dx; X::init(x,x_p_dx);
+        X_Vector x_p_dx(X::init(x));
         
         // Allocate memory for the true residual
-        X_Vector rtrue; X::init(x,rtrue);
+        X_Vector rtrue(X::init(x));
         
         // Allocate memory for the norm of the true, preconditioned, and
         // original true norm of the residual
@@ -1881,10 +1884,10 @@ namespace Optizelle {
         std::vector <Real> R(rst_freq*(rst_freq+1)/2);
 
         // Allocate memory for the normalized Krylov vector
-        X_Vector v; X::init(x,v);
+        X_Vector v(X::init(x));
 
         // Allocate memory for w, the orthogonalized, but not normalized vector
-        X_Vector w; X::init(x,w);
+        X_Vector w(X::init(x));
 
         // Allocate memory for the list of Krylov vectors
         std::list <X_Vector> vs;
@@ -1899,7 +1902,7 @@ namespace Optizelle {
         std::list <std::pair<Real,Real> > Qts;
 
         // Allocate a temporary work element
-        X_Vector A_Mrinv_v; X::init(x,A_Mrinv_v);
+        X_Vector A_Mrinv_v(X::init(x));
 
         // Allocate memory for the subiteration number of GMRES taking into
         // account restarting
@@ -1947,7 +1950,7 @@ namespace Optizelle {
             // list of Krylov vectros
             X::copy(w,v);
             X::scal(Real(1.)/norm_w,v);
-            vs.emplace_back(X_Vector()); X::init(x,vs.back());
+            vs.emplace_back(std::move(X::init(x)));
             X::copy(v,vs.back());
 
             // Apply the existing Givens rotations to the new column of R
@@ -2035,11 +2038,11 @@ namespace Optizelle {
         template <typename> class XX
     >
     void Borthogonalize(
-        const std::list <typename XX <Real>::Vector>& vs,
-        const std::list <typename XX <Real>::Vector>& Bvs,
-        typename XX <Real>::Vector& x,
-        typename XX <Real>::Vector& Bx,
-        std::list <Real>& R
+        std::list <typename XX <Real>::Vector> const & vs,
+        std::list <typename XX <Real>::Vector> const & Bvs,
+        typename XX <Real>::Vector & x,
+        typename XX <Real>::Vector & Bx,
+        std::list <Real> & R
     ) {
         // Create some type shortcuts
         typedef XX <Real> X;
@@ -2085,21 +2088,21 @@ namespace Optizelle {
         template <typename> class XX
     >
     void truncated_minres(
-        const Operator <Real,XX,XX>& A,
-        const typename XX <Real>::Vector& b,
-        const Operator <Real,XX,XX>& B,
-        const Operator <Real,XX,XX>& C,
-        const Real eps,
-        const Natural iter_max,
+        Operator <Real,XX,XX> const & A,
+        typename XX <Real>::Vector const & b,
+        Operator <Real,XX,XX> const & B,
+        Operator <Real,XX,XX> const & C,
+        Real const & eps,
+        Natural const & iter_max,
         Natural orthog_max,
-        const Real delta,
-        const typename XX <Real>::Vector& x_cntr,
-        typename XX <Real>::Vector& x,
-        typename XX <Real>::Vector& x_cp,
-        Real& Bnorm_r0,
-        Real& Bnorm_r,
-        Natural& iter,
-        KrylovStop::t& krylov_stop
+        Real const & delta,
+        typename XX <Real>::Vector const & x_cntr,
+        typename XX <Real>::Vector & x,
+        typename XX <Real>::Vector & x_cp,
+        Real & Bnorm_r0,
+        Real & Bnorm_r,
+        Natural & iter,
+        KrylovStop::t & krylov_stop
     ){
 
         // Create some type shortcuts
@@ -2113,12 +2116,12 @@ namespace Optizelle {
         X::zero(x);
 
         // Allocate memory for the iterate update 
-        X_Vector dx; X::init(x,dx);
+        X_Vector dx(X::init(x));
 
         // Allocate memory for a few more temps 
-        X_Vector ABv_last; X::init(x,ABv_last);
-        X_Vector x_tmp1; X::init(x,x_tmp1);
-        X_Vector x_tmp2; X::init(x,x_tmp2);
+        X_Vector ABv_last(X::init(x));
+        X_Vector x_tmp1(X::init(x));
+        X_Vector x_tmp2(X::init(x));
 
         // Allocate memory for the final column of the R matrix in the
         // QR factorization of T where
@@ -2149,10 +2152,10 @@ namespace Optizelle {
         X::scal(Real(1.)/Bnorm_r,x_tmp1);
 
         // Insert the first Krylov vector
-        vs.emplace_back(X_Vector()); X::init(x_tmp1,vs.back());
+        vs.emplace_back(std::move(X::init(x_tmp1)));
         X::copy(x_tmp1,vs.back());
         
-        Bvs.emplace_back(X_Vector()); X::init(x_tmp1,Bvs.back());
+        Bvs.emplace_back(std::move(X::init(x_tmp1)));
         B(x_tmp1,Bvs.back());
 
         // Find the initial right hand side for the vector Q' norm(w1) e1.  
@@ -2160,7 +2163,7 @@ namespace Optizelle {
         Qt_e1[1] = Real(0.);
 
         // Allocate memory for the quantity x-x_cntr
-        X_Vector x_m_xcntr; X::init(x,x_m_xcntr);
+        X_Vector x_m_xcntr(X::init(x));
         X::copy(x_cntr,x_m_xcntr);
         X::scal(Real(-1.),x_m_xcntr);
 
@@ -2205,11 +2208,11 @@ namespace Optizelle {
                 }
 
                 // Store the Krylov vector 
-                vs.emplace_back(X_Vector()); X::init(x,vs.back());
+                vs.emplace_back(X::init(x));
                 X::copy(x_tmp1,vs.back());
                 X::scal(Real(1.)/Bnorm_v,vs.back());
                 
-                Bvs.emplace_back(X_Vector()); X::init(x,Bvs.back());
+                Bvs.emplace_back(X::init(x));
                 X::copy(x_tmp2,Bvs.back());
                 X::scal(Real(1.)/Bnorm_v,Bvs.back());
                 
@@ -2272,8 +2275,7 @@ namespace Optizelle {
                     B_V_Rinvs.pop_front();
 
                 // Add in the new B V inv(R) vector.
-                B_V_Rinvs.emplace_back(X_Vector());
-                    X::init(x_tmp1,B_V_Rinvs.back());
+                B_V_Rinvs.emplace_back(std::move(X::init(x_tmp1)));
                 X::copy(x_tmp1,B_V_Rinvs.back());
 
                 // Solve for the new iterate update
@@ -2442,15 +2444,14 @@ namespace Optizelle {
     // determining the relative error between a vector and some cached value.
     template <typename Real,template <typename> class XX>
     Real rel_err_cached(
-        const typename XX <Real>::Vector& x,
-        const std::pair <bool,typename XX <Real>::Vector>& x_cached
+        typename XX <Real>::Vector const & x,
+        std::pair <bool,typename XX <Real>::Vector> const & x_cached
     ) {
         // Create a type shortcut
         typedef XX <Real> X;
 
         // Create some workspace
-        typename X::Vector x_tmp1;
-            X::init(x,x_tmp1);
+        typename X::Vector x_tmp1(X::init(x));
 
         // If we've not been cached yet, return infinity
         if(!x_cached.first)

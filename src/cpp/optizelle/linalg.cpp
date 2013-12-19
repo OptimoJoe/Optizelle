@@ -319,13 +319,13 @@ namespace Optizelle {
     }
 
     template <>
-    void copy <double> (Integer n,const double* x,Integer incx,double* y,
+    void copy <double> (Integer n,double const * const x,Integer incx,double* y,
         Integer incy
     ) {
         dcopy_fortran(&n,const_cast <double*> (x),&incx,y,&incy);
     }
     template <>
-    void copy <float> (Integer n,const float* x,Integer incx,float* y,
+    void copy <float> (Integer n,float const * const x,Integer incx,float* y,
         Integer incy
     ) {
         scopy_fortran(&n,const_cast <float*> (x),&incx,y,&incy);
@@ -333,14 +333,14 @@ namespace Optizelle {
 
     template <>
     void axpy <double> (
-        Integer n,double alpha,const double* x,Integer incx,double* y,
+        Integer n,double alpha,double const * const x,Integer incx,double* y,
         Integer incy
     ) {
         daxpy_fortran(&n,&alpha,const_cast <double*> (x),&incx,y,&incy);
     }
     template <>
     void axpy <float> (
-        Integer n,float alpha,const float* x,Integer incx,float* y,
+        Integer n,float alpha,float const * const x,Integer incx,float* y,
         Integer incy
     ) {
         saxpy_fortran(&n,&alpha,const_cast <float*> (x),&incx,y,&incy);
@@ -357,30 +357,32 @@ namespace Optizelle {
 
     template <>
     double dot <double> (
-        Integer n,const double* x,Integer incx,const double* y,Integer incy
+        Integer n,double const * const x,Integer incx,double const * const y,
+        Integer incy
     ) {
         return ddot_fortran(&n,const_cast <double*> (x),&incx,
             const_cast <double*> (y),&incy);
     }
     template <>
     float dot <float> (
-        Integer n,const float* x,Integer incx,const float* y,Integer incy
+        Integer n,float const * const x,Integer incx,float const * const y,
+        Integer incy
     ) {
         return sdot_fortran(&n,const_cast <float*> (x),&incx,
             const_cast <float*> (y),&incy);
     }
 
     template <>
-    void gemv(char trans,Integer m,Integer n,double alpha,const double* A,
-        Integer lda,const double* x,Integer incx,double beta,double* y,
+    void gemv(char trans,Integer m,Integer n,double alpha,double const *const A,
+        Integer lda,double const * const x,Integer incx,double beta,double* y,
         Integer incy
     ) {
         dgemv_fortran(&trans,&m,&n,&alpha,const_cast <double*> (A),&lda,
             const_cast <double*> (x),&incx,&beta,y,&incy);
     }
     template <>
-    void gemv(char trans,Integer m,Integer n,float alpha,const float* A,
-        Integer lda,const float* x,Integer incx,float beta,float* y,
+    void gemv(char trans,Integer m,Integer n,float alpha,float const * const A,
+        Integer lda,float const * const x,Integer incx,float beta,float* y,
         Integer incy
     ) {
         sgemv_fortran(&trans,&m,&n,&alpha,const_cast <float*> (A),&lda,
@@ -388,30 +390,30 @@ namespace Optizelle {
     }
     
     template <>
-    void symv(char uplo,Integer n,double alpha,const double* A,Integer lda,
-        const double* x,Integer incx,double beta,double* y,Integer incy
+    void symv(char uplo,Integer n,double alpha,double const*const A,Integer lda,
+        double const * const x,Integer incx,double beta,double* y,Integer incy
     ) {
         dsymv_fortran(&uplo,&n,&alpha,const_cast <double*> (A),
             &lda,const_cast <double*> (x),&incx,&beta,y,&incy); 
     }
     template <>
-    void symv(char uplo,Integer n,float alpha,const float* A,Integer lda,
-        const float* x,Integer incx,float beta,float* y,Integer incy
+    void symv(char uplo,Integer n,float alpha,float const * const A,Integer lda,
+        float const * const x,Integer incx,float beta,float* y,Integer incy
     ) {
         ssymv_fortran(&uplo,&n,&alpha,const_cast <float*> (A),
             &lda,const_cast <float*> (x),&incx,&beta,y,&incy); 
     }
 
     template <>
-    void spmv(char uplo,Integer n,double alpha,const double* Ap,
-        const double* x,Integer incx,double beta,double* y,Integer incy
+    void spmv(char uplo,Integer n,double alpha,double const * const Ap,
+        double const * const x,Integer incx,double beta,double* y,Integer incy
     ) {
         dspmv_fortran(&uplo,&n,&alpha,const_cast <double*> (Ap),
             const_cast <double*> (x),&incx,&beta,y,&incy);
     }
     template <>
-    void spmv(char uplo,Integer n,float alpha,const float* Ap,
-        const float* x,Integer incx,float beta,float* y,Integer incy
+    void spmv(char uplo,Integer n,float alpha,float const * const Ap,
+        float const * const x,Integer incx,float beta,float* y,Integer incy
     ) {
         sspmv_fortran(&uplo,&n,&alpha,const_cast <float*> (Ap),
             const_cast <float*> (x),&incx,&beta,y,&incy);
@@ -419,16 +421,16 @@ namespace Optizelle {
     
     template <>
     void trsv(
-        char uplo,char trans,char diag,Integer n,const double* A,Integer lda,
-        double* x,Integer incx
+        char uplo,char trans,char diag,Integer n,double const * const A,
+        Integer lda,double* x,Integer incx
     ) {
         dtrsv_fortran(&uplo,&trans,&diag,&n,const_cast <double*> (A),&lda,x,
             &incx);
     }
     template <>
     void trsv(
-        char uplo,char trans,char diag,Integer n,const float* A,Integer lda,
-        float* x,Integer incx
+        char uplo,char trans,char diag,Integer n,float const * const A,
+        Integer lda,float* x,Integer incx
     ) {
         strsv_fortran(&uplo,&trans,&diag,&n,const_cast <float*> (A),&lda,x,
             &incx);
@@ -436,15 +438,15 @@ namespace Optizelle {
     
     template <>
     void tpsv(
-        char uplo,char trans,char diag,Integer n,const double* Ap,double* x,
-        Integer incx
+        char uplo,char trans,char diag,Integer n,double const * const Ap,
+        double* x,Integer incx
     ) {
         dtpsv_fortran(&uplo,&trans,&diag,&n,const_cast <double*> (Ap),x,&incx);
     }
     template <>
     void tpsv(
-        char uplo,char trans,char diag,Integer n,const float* Ap,float* x,
-        Integer incx
+        char uplo,char trans,char diag,Integer n,float const * const Ap,
+        float* x,Integer incx
     ) {
         stpsv_fortran(&uplo,&trans,&diag,&n,const_cast <float*> (Ap),x,&incx);
     }
@@ -452,8 +454,8 @@ namespace Optizelle {
     template <>
     void gemm(
         char transa,char transb,Integer m,Integer n,Integer k,double alpha,
-        const double* A,Integer lda,const double* B,Integer ldb,double beta,
-        double* C,Integer ldc
+        double const * const A,Integer lda,double const * const B,Integer ldb,
+        double beta,double* C,Integer ldc
     ) {
         dgemm_fortran(&transa,&transb,&m,&n,&k,&alpha,const_cast <double*> (A),
             &lda,const_cast <double*> (B),&ldb,&beta,C,&ldc); 
@@ -461,8 +463,8 @@ namespace Optizelle {
     template <>
     void gemm(
         char transa,char transb,Integer m,Integer n,Integer k,float alpha,
-        const float* A,Integer lda,const float* B,Integer ldb,float beta,
-        float* C,Integer ldc
+        float const * const A,Integer lda,float const * const B,Integer ldb,
+        float beta,float* C,Integer ldc
     ) {
         sgemm_fortran(&transa,&transb,&m,&n,&k,&alpha,const_cast <float*> (A),
             &lda,const_cast <float*> (B),&ldb,&beta,C,&ldc); 
@@ -470,18 +472,18 @@ namespace Optizelle {
 
     template <>
     void symm(
-        char side,char uplo,Integer m,Integer n,double alpha,const double* A,
-        Integer lda,const double* B,Integer ldb,double beta,double* C,
-        Integer ldc
+        char side,char uplo,Integer m,Integer n,double alpha,
+        double const * const A,Integer lda,double const * const B,Integer ldb,
+        double beta,double* C,Integer ldc
     ) {
         dsymm_fortran(&side,&uplo,&m,&n,&alpha,const_cast <double*> (A),
             &lda,const_cast <double*> (B),&ldb,&beta,C,&ldc); 
     }
     template <>
     void symm(
-        char side,char uplo,Integer m,Integer n,float alpha,const float* A,
-        Integer lda,const float* B,Integer ldb,float beta,float* C,
-        Integer ldc
+        char side,char uplo,Integer m,Integer n,float alpha,
+        float const * const A,Integer lda,float const * const B,Integer ldb,
+        float beta,float* C,Integer ldc
     ) {
         ssymm_fortran(&side,&uplo,&m,&n,&alpha,const_cast <float*> (A),
             &lda,const_cast <float*> (B),&ldb,&beta,C,&ldc); 
@@ -489,16 +491,16 @@ namespace Optizelle {
 
     template <>
     void syr2k(char uplo,char trans,Integer n,Integer k,double alpha,
-        const double* A,Integer lda,const double* B,Integer ldb,double beta,
-        double* C,Integer ldc
+        double const * const A,Integer lda,double const * const B,Integer ldb,
+        double beta,double* C,Integer ldc
     ) {
         dsyr2k_fortran(&uplo,&trans,&n,&k,&alpha,const_cast <double*> (A),&lda,
             const_cast <double*> (B),&ldb,&beta,C,&ldc);
     }
     template <>
     void syr2k(char uplo,char trans,Integer n,Integer k,float alpha,
-        const float* A,Integer lda,const float* B,Integer ldb,float beta,
-        float* C,Integer ldc
+        float const * const A,Integer lda,float const * const B,Integer ldb,
+        float beta,float* C,Integer ldc
     ) {
         ssyr2k_fortran(&uplo,&trans,&n,&k,&alpha,const_cast <float*> (A),&lda,
             const_cast <float*> (B),&ldb,&beta,C,&ldc);
@@ -808,18 +810,18 @@ namespace Optizelle {
     // Indexing function for matrices.  This assumes that the upper left 
     // corner has index (1,1).  Basically, we're using the indexing scheme
     // of math and Fortran and not of C.
-    Natural ijtok(Natural i,Natural j,Natural m){
+    Natural ijtok(Natural const & i,Natural const & j,Natural const & m){
         return i-1+(j-1)*m;
     }
 
     // Indexing for packed storage where i<=j.  This assumes the upper left
     // corner has index (1,1).
-    Natural ijtokp(Natural i,Natural j) {
+    Natural ijtokp(Natural const & i,Natural const & j) {
         return i-1 + j*(j-1)/2;
     }
     
     // Indexing formula for symmetric matrices in RPF format where i<=j.
-    Natural ijtokrf(Natural const& i,Natural const& j,Natural const& m) {
+    Natural ijtokrf(Natural const & i,Natural const & j,Natural const & m) {
         // Determine k where m = 2k when m is even or m = 2k+1 when m is odd
         const Natural k = m/2; 
 
@@ -828,13 +830,13 @@ namespace Optizelle {
     }
 
     // Indexing for vectors.  Assumes the first index is 1.
-    Natural itok(Natural i) {
+    Natural itok(Natural const & i) {
         return i-Natural(1);
     }
     
     namespace KrylovStop{
         // Converts the Krylov stopping condition to a string 
-        std::string to_string(t krylov_stop){
+        std::string to_string(t const & krylov_stop){
             switch(krylov_stop){
             case NegativeCurvature:
                 return "NegativeCurvature";
@@ -854,7 +856,7 @@ namespace Optizelle {
         }
         
         // Converts a string to a Krylov stopping condition
-        t from_string(std::string krylov_stop){
+        t from_string(std::string const & krylov_stop){
             if(krylov_stop=="NegativeCurvature")
                 return NegativeCurvature;
             else if(krylov_stop=="RelativeErrorSmall")
@@ -872,7 +874,7 @@ namespace Optizelle {
         }
 
         // Checks whether or not a string is valid
-        bool is_valid::operator () (const std::string& name) const {
+        bool is_valid::operator () (std::string const & name) const {
             if( name=="NegativeCurvature" ||
                 name=="RelativeErrorSmall" ||
                 name=="MaxItersExceeded" ||

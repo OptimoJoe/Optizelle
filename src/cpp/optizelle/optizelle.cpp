@@ -29,18 +29,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 Author: Joseph Young (joe@optimojoe.com)
 */
 
-#include<optizelle/linalg.h>
 #include<optizelle/optizelle.h>
 
 namespace Optizelle{
 
     // Prints a message
-    void Messaging::print(const std::string& msg) const {
+    void Messaging::print(std::string const & msg) const {
         std::cout << msg << std::endl;
     }
 
     // Prints an error
-    void Messaging::error(const std::string& msg) const {
+    void Messaging::error(std::string const & msg) const {
         std::cerr << msg << std::endl;
         exit(EXIT_FAILURE);
     }
@@ -50,7 +49,7 @@ namespace Optizelle{
 
     // Converts the algorithm class to a string
     std::string AlgorithmClass::to_string(
-        const AlgorithmClass::t& algorithm_class
+        AlgorithmClass::t const & algorithm_class
     ){
         switch(algorithm_class){
         case TrustRegion:
@@ -66,7 +65,7 @@ namespace Optizelle{
     
     // Converts a string to an algorithm class 
     AlgorithmClass::t AlgorithmClass::from_string(
-        const std::string& algorithm_class
+        std::string const & algorithm_class
     ){
         if(algorithm_class=="TrustRegion")
             return TrustRegion;
@@ -79,7 +78,7 @@ namespace Optizelle{
     }
 
     // Checks whether or not a string is valid
-    bool AlgorithmClass::is_valid::operator () (const std::string& name) const {
+    bool AlgorithmClass::is_valid::operator () (std::string const & name)const {
         if( name=="TrustRegion" ||
             name=="LineSearch" ||
             name=="UserDefined"
@@ -91,7 +90,7 @@ namespace Optizelle{
 
     // Converts the stopping condition to a string 
     std::string StoppingCondition::to_string(
-        const StoppingCondition::t& opt_stop
+        StoppingCondition::t const & opt_stop
     ){
         switch(opt_stop){
         case NotConverged:
@@ -113,7 +112,7 @@ namespace Optizelle{
 
     // Converts a string to a stopping condition
     StoppingCondition::t StoppingCondition::from_string(
-        const std::string& opt_stop
+        std::string const & opt_stop
     ){
         if(opt_stop=="NotConverged")
             return StoppingCondition::NotConverged;
@@ -133,7 +132,7 @@ namespace Optizelle{
 
     // Checks whether or not a string is valid
     bool StoppingCondition::is_valid::operator () (
-        const std::string& name
+        std::string const & name
     ) const {
         if( name=="NotConverged" ||
             name=="RelativeGradientSmall" ||
@@ -148,7 +147,7 @@ namespace Optizelle{
     }
 
     // Converts the operator type to a string 
-    std::string Operators::to_string(const Operators::t& op){
+    std::string Operators::to_string(Operators::t const & op){
         switch(op){
         case Operators::Identity:
             return "Identity";
@@ -170,7 +169,7 @@ namespace Optizelle{
     }
     
     // Converts a string to a operator 
-    Operators::t Operators::from_string(const std::string& op){
+    Operators::t Operators::from_string(std::string const & op){
         if(op=="Identity")
             return Operators::Identity; 
         else if(op=="ScaledIdentity")
@@ -190,7 +189,7 @@ namespace Optizelle{
     }
 
     // Checks whether or not a string is valid
-    bool Operators::is_valid::operator () (const std::string& name) const {
+    bool Operators::is_valid::operator () (std::string const & name) const {
         if( name=="Identity" ||
             name=="ScaledIdentity" ||
             name=="BFGS" ||
@@ -205,7 +204,7 @@ namespace Optizelle{
     }
 
     // Converts the line-search direction to a string 
-    std::string LineSearchDirection::to_string(const t& dir){
+    std::string LineSearchDirection::to_string(t const & dir){
         switch(dir){
         case LineSearchDirection::SteepestDescent:
             return "SteepestDescent";
@@ -226,7 +225,7 @@ namespace Optizelle{
     
     // Converts a string to a line-search direction 
     LineSearchDirection::t LineSearchDirection::from_string(
-        const std::string& dir
+        std::string const & dir
     ){
         if(dir=="SteepestDescent")
             return LineSearchDirection::SteepestDescent; 
@@ -246,7 +245,7 @@ namespace Optizelle{
 
     // Checks whether or not a string is valid
     bool LineSearchDirection::is_valid::operator () (
-        const std::string& name
+        std::string const & name
     ) const {
         if( name=="SteepestDescent" ||
             name=="FletcherReeves" ||
@@ -261,7 +260,7 @@ namespace Optizelle{
     }
 
     // Converts the line-search kind to a string 
-    std::string LineSearchKind::to_string(const t& kind){
+    std::string LineSearchKind::to_string(t const & kind){
         switch(kind){
         case LineSearchKind::Brents:
             return "Brents";
@@ -279,7 +278,7 @@ namespace Optizelle{
     }
     
     // Converts a string to a line-search kind 
-    LineSearchKind::t LineSearchKind::from_string(const std::string& kind){
+    LineSearchKind::t LineSearchKind::from_string(std::string const & kind){
         if(kind=="Brents")
             return LineSearchKind::Brents; 
         else if(kind=="GoldenSection")
@@ -295,7 +294,7 @@ namespace Optizelle{
     }
 
     // Checks whether or not a string is valid
-    bool LineSearchKind::is_valid::operator () (const std::string& name) const {
+    bool LineSearchKind::is_valid::operator () (std::string const & name)const {
         if( name=="Brents" ||
             name=="GoldenSection" ||
             name=="BackTracking" ||
@@ -309,7 +308,7 @@ namespace Optizelle{
 
     // Determine whether or not the line-search checks the sufficient
     // decrease condition.
-    bool LineSearchKind::is_sufficient_decrease(const LineSearchKind::t& kind) {
+    bool LineSearchKind::is_sufficient_decrease(LineSearchKind::t const & kind){
         switch(kind){
         case LineSearchKind::GoldenSection:
         case LineSearchKind::BackTracking:
@@ -325,7 +324,7 @@ namespace Optizelle{
     
     // Converts the optimization location to a string 
     std::string OptimizationLocation::to_string(
-        const OptimizationLocation::t& loc
+        OptimizationLocation::t const & loc
     ){
         switch(loc){
         case OptimizationLocation::BeginningOfOptimization:
@@ -373,7 +372,7 @@ namespace Optizelle{
     
     // Converts a string to a line-search kind 
     OptimizationLocation::t OptimizationLocation::from_string(
-        const std::string& loc
+        std::string const & loc
     ){
         if(loc=="BeginningOfOptimization")
             return OptimizationLocation::BeginningOfOptimization;
@@ -419,7 +418,7 @@ namespace Optizelle{
 
     // Checks whether or not a string is valid
     bool OptimizationLocation::is_valid::operator () (
-        const std::string& name
+        std::string const & name
     ) const {
         if( name=="BeginningOfOptimization" ||
             name=="BeforeInitialFuncAndGrad" ||
@@ -447,7 +446,7 @@ namespace Optizelle{
     }
     
     // Converts the problem class to a string
-    std::string ProblemClass::to_string(const ProblemClass::t& problem_class){
+    std::string ProblemClass::to_string(ProblemClass::t const & problem_class){
         switch(problem_class){
         case ProblemClass::Unconstrained:
             return "Unconstrained";
@@ -463,7 +462,7 @@ namespace Optizelle{
     }
 
     // Converts a string to a problem class 
-    ProblemClass::t ProblemClass::from_string(const std::string& problem_class){
+    ProblemClass::t ProblemClass::from_string(std::string const &problem_class){
         if(problem_class=="Unconstrained")
             return ProblemClass::Unconstrained;
         else if(problem_class=="EqualityConstrained")
@@ -477,7 +476,7 @@ namespace Optizelle{
     }
 
     // Checks whether or not a string is valid
-    bool ProblemClass::is_valid::operator () (const std::string& name) const {
+    bool ProblemClass::is_valid::operator () (std::string const & name) const {
         if( name=="Unconstrained" ||
             name=="EqualityConstrained" ||
             name=="InequalityConstrained" ||
@@ -504,7 +503,7 @@ namespace Optizelle{
 
     // Converts a string to a problem class 
     KrylovSolverTruncated::t KrylovSolverTruncated::from_string(
-        const std::string& truncated_krylov
+        std::string const & truncated_krylov
     ){
         if(truncated_krylov=="ConjugateDirection")
             return KrylovSolverTruncated::ConjugateDirection;
@@ -516,7 +515,7 @@ namespace Optizelle{
 
     // Checks whether or not a string is valid
     bool KrylovSolverTruncated::is_valid::operator () (
-        const std::string& name
+        std::string const & name
     ) const {
         if( name=="ConjugateDirection" ||
             name=="MINRES" 
@@ -528,7 +527,7 @@ namespace Optizelle{
     
     // Converts the interior point method to a string 
     std::string InteriorPointMethod::to_string(
-        const InteriorPointMethod::t& ipm
+        InteriorPointMethod::t const & ipm
     ){
         switch(ipm){
         case InteriorPointMethod::PrimalDual:
@@ -544,7 +543,7 @@ namespace Optizelle{
     
     // Converts a string to an interior point method 
     InteriorPointMethod::t InteriorPointMethod::from_string(
-        const std::string& ipm
+        std::string const & ipm
     ){
         if(ipm=="PrimalDual")
             return InteriorPointMethod::PrimalDual; 
@@ -558,7 +557,7 @@ namespace Optizelle{
 
     // Checks whether or not a string is valid
     bool InteriorPointMethod::is_valid::operator () (
-        const std::string& name
+        std::string const & name
     ) const {
         if( name=="PrimalDual" ||
             name=="PrimalDualLinked" ||
@@ -571,7 +570,7 @@ namespace Optizelle{
     
     // Converts the centrality strategy to a string
     std::string CentralityStrategy::to_string(
-        const CentralityStrategy::t& cstrat
+        CentralityStrategy::t const & cstrat
     ){
         switch(cstrat){
         case CentralityStrategy::Constant:
@@ -587,7 +586,7 @@ namespace Optizelle{
     
     // Converts a string to the cstrat
     CentralityStrategy::t CentralityStrategy::from_string(
-        const std::string& cstrat
+        std::string const & cstrat
     ){
         if(cstrat=="Constant")
             return CentralityStrategy::Constant; 
@@ -601,7 +600,7 @@ namespace Optizelle{
 
     // Checks whether or not a string is valid
     bool CentralityStrategy::is_valid::operator () (
-        const std::string& name
+        std::string const & name
     ) const {
         if( name=="Constant" ||
             name=="StairStep" ||
@@ -616,10 +615,10 @@ namespace Optizelle{
     // labels stored in the is_label function.  If not, this function
     // throws an error.
     void Utility::checkLabels(
-        const Messaging& msg,
-        const std::function<bool(const std::string&)>& is_label,
-        const std::list <std::string>& labels, 
-        const std::string& kind
+        Messaging const & msg,
+        std::function<bool(std::string const &)> const & is_label,
+        std::list <std::string> const & labels, 
+        std::string const & kind
     ) {
         // Create a base message
         const std::string base
@@ -641,18 +640,18 @@ namespace Optizelle{
     // a and b, if a is empty, this function returns b.  However, if
     // a is nonempty, it returns a.
     std::basic_string <char> Utility::combineStrings::operator()(
-        const std::string& a,const std::string& b
+        std::string const & a,std::string const & b
     ) const {
         if(a=="") return b; else return a;
     }
       
     // This checks the parameters and prints and error in there's a problem.
     void Utility::checkParams(
-        const Messaging& msg,
-        const std::function
-            <std::string(const std::string&,const std::string&)>&
+        Messaging const & msg,
+        std::function
+            <std::string(std::string const &,std::string const &)> const &
             checkParamVal,
-        const std::pair <std::list <std::string>,std::list <std::string> >&
+        std::pair <std::list <std::string>,std::list <std::string> > const &
             params 
     ) {
         std::string err=std::inner_product (
@@ -667,34 +666,34 @@ namespace Optizelle{
     }
   
     // Converts a variety of basic datatypes to strings
-    std::ostream& Utility::formatReal(std::ostream& out) {
+    std::ostream& Utility::formatReal(std::ostream & out) {
         return out<<std::setprecision(2) << std::scientific << std::setw(10)
             << std::left;
     }
-    std::ostream& Utility::formatInt(std::ostream& out) {
+    std::ostream& Utility::formatInt(std::ostream & out) {
         return out << std::setw(10) << std::left;
     }
-    std::ostream& Utility::formatString(std::ostream& out) {
+    std::ostream& Utility::formatString(std::ostream & out) {
         return out << std::setw(10) << std::left;
     }
     
     // Converts anything to a string.
-    std::string Utility::atos(const double& x){
+    std::string Utility::atos(double const & x){
         std::stringstream ss;
         ss << formatReal << x;
         return ss.str();
     }
-    std::string Utility::atos(const Natural& x){
+    std::string Utility::atos(Natural const & x){
         std::stringstream ss;
         ss << formatInt << x;
         return ss.str();
     }
-    std::string Utility::atos(const char* x){
+    std::string Utility::atos(std::string const & x){
         std::stringstream ss;
         ss << formatString << x;
         return ss.str();
     }
-    std::string Utility::atos(const KrylovStop::t& x){
+    std::string Utility::atos(KrylovStop::t const & x){
         std::stringstream ss;
         // Converts the Krylov stopping condition to a shorter string 
         switch(x){
@@ -714,7 +713,4 @@ namespace Optizelle{
             throw;
         }
     }
-
-    // Blank separator for printing
-    const std::string Utility::blankSeparator = ".         ";
 }

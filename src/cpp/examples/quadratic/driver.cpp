@@ -13,7 +13,7 @@
 
 // Squares its input
 template <typename Real>
-Real sq(Real x){
+Real sq(Real const & x){
     return x*x; 
 }
 
@@ -91,19 +91,21 @@ int main(int argc,char* argv[]){
     Optizelle::Unconstrained <double,Optizelle::Rm>::State::t state(x);
 
     // Read the parameters from file
-    Optizelle::json::Unconstrained <double,Optizelle::Rm>::read(Optizelle::Messaging(),
-        fname,state);
+    Optizelle::json::Unconstrained <double,Optizelle::Rm>::read(
+        Optizelle::Messaging(),fname,state);
 
     // Create the bundle of functions 
     Optizelle::Unconstrained <double,Optizelle::Rm>::Functions::t fns;
     fns.f.reset(new Quad);
-    fns.PH.reset(new QuadHInv(state.x.back())); 
+    fns.PH.reset(new QuadHInv(state.x)); 
     
     // Do some finite difference tests on the quadratic function
-    Optizelle::Diagnostics::gradientCheck <> (Optizelle::Messaging(),*(fns.f),x,dx);
-    Optizelle::Diagnostics::hessianCheck <> (Optizelle::Messaging(),*(fns.f),x,dx);
-    Optizelle::Diagnostics::hessianSymmetryCheck <> (Optizelle::Messaging(),*(fns.f),
-        x,dx,dxx);
+    Optizelle::Diagnostics::gradientCheck <> (
+        Optizelle::Messaging(),*(fns.f),x,dx);
+    Optizelle::Diagnostics::hessianCheck <> (
+        Optizelle::Messaging(),*(fns.f),x,dx);
+    Optizelle::Diagnostics::hessianSymmetryCheck <> (
+        Optizelle::Messaging(),*(fns.f),x,dx,dxx);
     
     // Solve the optimization problem
     Optizelle::Unconstrained <double,Optizelle::Rm>::Algorithms
@@ -116,9 +118,8 @@ int main(int argc,char* argv[]){
         Optizelle::StoppingCondition::to_string(state.opt_stop) << std::endl;
 
     // Print out the final answer
-    const std::vector <double>& opt_x=*(state.x.begin());
-    std::cout << "The optimal point is: (" << opt_x[0] << ','
-	<< opt_x[1] << ',' << opt_x[2] << ')' << std::endl;
+    std::cout << "The optimal point is: (" << state.x[0] << ','
+	<< state.x[1] << ',' << state.x[2] << ')' << std::endl;
 
     // Write out the final answer to file
     Optizelle::json::Unconstrained <double,Optizelle::Rm>::write_restart(

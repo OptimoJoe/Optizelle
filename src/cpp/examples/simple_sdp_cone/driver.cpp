@@ -115,38 +115,39 @@ int main(int argc,char* argv[]){
     x[0]=1.2; x[1]=3.1;
 
     // Generate an initial guess for the dual
-    std::vector <Optizelle::Natural> sizes(1); sizes[0]=2;
-    std::vector <Optizelle::Cone::t> types(1); types[0]=Optizelle::Cone::Semidefinite;
+    std::vector <Optizelle::Natural> sizes(1);
+        sizes[0]=2;
+    std::vector <Optizelle::Cone::t> types(1);
+        types[0]=Optizelle::Cone::Semidefinite;
     Z_Vector z(Optizelle::Messaging(),types,sizes);
     Z::id(z);
 
     // Create an optimization state
-    Optizelle::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>::State::t
-        state(x,z);
+    Optizelle::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>
+        ::State::t state(x,z);
     
     // Read the parameters from file
-    Optizelle::json::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>::read(
-        Optizelle::Messaging(),fname,state);
+    Optizelle::json::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>
+        ::read(Optizelle::Messaging(),fname,state);
 
     // Create a bundle of functions
-    Optizelle::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>::Functions::t
-        fns;
+    Optizelle::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>
+        ::Functions::t fns;
     fns.f.reset(new MyObj);
     fns.h.reset(new MyIneq);
 
     // Solve the optimization problem
-    Optizelle::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>::Algorithms
-        ::getMin(Optizelle::Messaging(),fns,state);
+    Optizelle::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>
+        ::Algorithms::getMin(Optizelle::Messaging(),fns,state);
 
     // Print out the reason for convergence
     std::cout << "The algorithm converged due to: " <<
         Optizelle::StoppingCondition::to_string(state.opt_stop) << std::endl;
 
     // Print out the final answer
-    const std::vector <double>& opt_x=*(state.x.begin());
     std::cout << std::setprecision(16) << std::scientific 
-        << "The optimal point is: (" << opt_x[0] << ','
-	<< opt_x[1] << ')' << std::endl;
+        << "The optimal point is: (" << state.x[0] << ','
+	<< state.x[1] << ')' << std::endl;
 
     // Write out the final answer to file
     Optizelle::json::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>

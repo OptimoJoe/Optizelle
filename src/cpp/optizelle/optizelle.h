@@ -45,20 +45,27 @@ Author: Joseph Young (joe@optimojoe.com)
 #include<numeric>
 #include<optizelle/linalg.h>
 
-// Putting this into the private section of a class prevents its construction.
-// Essentially, we use this trick in order to create modules like in ML.  It
-// also allows us to created templated namespaces.
-#define MODULE_CLASS(Name) \
-    Name(); \
-    Name(Name&); \
-    Name& operator = (Name&); \
-    ~Name();
+// Putting this into a class prevents its construction.  Essentially, we use
+// this trick in order to create modules like in ML.  It also allows us to
+// created templated namespaces.
+#define NO_CONSTRUCTORS(Name) \
+    Name() = delete; \
+    Name(Name const &) = delete; \
+    Name & operator = (Name const &) = delete; \
+    ~Name() = delete;
 
-// For the function modifications, we disallow the copy constructor and
-// assignment operator.
-#define MODIFICATIONS_CLASS(Name) \
-    Name(Name&); \
-    Name& operator = (Name&);
+// Disallows copying or assigning.  This is useful for things like the
+// StateManipulator or FunctionModification classes.
+#define NO_COPY_ASSIGNMENT(Name) \
+    Name(Name const &) = delete; \
+    Name & operator = (Name const &) = delete;
+
+// Disallows copying, assigning, or default construction.  This is useful for
+// for things like the State::t types.
+#define NO_DEFAULT_COPY_ASSIGNMENT(Name) \
+    Name() = delete; \
+    Name(Name const &) = delete; \
+    Name& operator = (Name const &) = delete;
 
 namespace Optizelle{
 
@@ -68,20 +75,18 @@ namespace Optizelle{
         template <typename> class XX
     >
     struct ScalarValuedFunction {
-    private:
         // Create some type shortcuts
         typedef XX <Real> X;
         typedef typename X::Vector Vector;
 
-    public:
         // <- f(x) 
-        virtual Real operator () (const Vector& x) const = 0;
+        virtual Real operator () (Vector const & x) const = 0;
 
         // grad = grad f(x) 
-        virtual void grad(const Vector& x,Vector& grad) const = 0;
+        virtual void grad(Vector const & x,Vector & grad) const = 0;
 
         // H_dx = hess f(x) dx 
-        virtual void hessvec(const Vector& x,const Vector& dx,Vector& H_dx)
+        virtual void hessvec(Vector const & x,Vector const & dx,Vector & H_dx)
             const = 0;
 
         // Allow a derived class to deallocate memory
@@ -93,14 +98,13 @@ namespace Optizelle{
         template <typename> class XX
     >
     struct ScalarValuedFunctionModifications {
-    private:
-        MODIFICATIONS_CLASS(ScalarValuedFunctionModifications); 
-
         // Create some type shortcuts
         typedef XX <Real> X;
         typedef typename X::Vector Vector;
 
-    public:
+        // Disallow constructors
+        NO_COPY_ASSIGNMENT(ScalarValuedFunctionModifications); 
+
         // Use an empty default constructor
         ScalarValuedFunctionModifications() {}
 
@@ -108,14 +112,14 @@ namespace Optizelle{
         virtual ~ScalarValuedFunctionModifications() {}
 
         // Merit function additions to the objective
-        virtual Real merit(const Vector& x,const Real& f_x) const {
+        virtual Real merit(Vector const & x,Real const & f_x) const {
             return f_x;
         }
 
         // Stopping condition modification of the gradient
         virtual void grad_stop(
-            const Vector& x,
-            const Vector& grad,
+            Vector const & x,
+            Vector const & grad,
             Vector& grad_stop
         ) const {
             X::copy(grad,grad_stop);
@@ -123,8 +127,8 @@ namespace Optizelle{
 
         // Diagnostic modification of the gradient
         virtual void grad_diag(
-            const Vector& x,
-            const Vector& grad,
+            Vector const & x,
+            Vector const & grad,
             Vector& grad_diag
         ) const {
             X::copy(grad,grad_diag);
@@ -132,8 +136,8 @@ namespace Optizelle{
 
         // Modification of the gradient when finding a trial step
         virtual void grad_step(
-            const Vector& x,
-            const Vector& grad,
+            Vector const & x,
+            Vector const & grad,
             Vector& grad_step
         ) const {
             X::copy(grad,grad_step);
@@ -141,8 +145,8 @@ namespace Optizelle{
 
         // Modification of the gradient for a quasi-Newton method 
         virtual void grad_quasi(
-            const Vector& x,
-            const Vector& grad,
+            Vector const & x,
+            Vector const & grad,
             Vector& grad_quasi
         ) const {
             X::copy(grad,grad_quasi);
@@ -150,8 +154,8 @@ namespace Optizelle{
 
         // Modification of the gradient when solving for the equality multiplier
         virtual void grad_mult(
-            const Vector& x,
-            const Vector& grad,
+            Vector const & x,
+            Vector const & grad,
             Vector& grad_mult
         ) const {
             X::copy(grad,grad_mult);
@@ -159,9 +163,9 @@ namespace Optizelle{
 
         // Modification of the Hessian-vector product when finding a trial step
         virtual void hessvec_step(
-            const Vector& x,
-            const Vector& dx,
-            const Vector& H_dx,
+            Vector const & x,
+            Vector const & dx,
+            Vector const & H_dx,
             Vector& Hdx_step 
         ) const {
             X::copy(H_dx,Hdx_step);
@@ -183,28 +187,28 @@ namespace Optizelle{
         typedef typename Y::Vector Y_Vector; 
 
         // y=f(x)
-        virtual void operator () (const X_Vector& x,Y_Vector& y) const = 0;
+        virtual void operator () (X_Vector const & x,Y_Vector & y) const = 0;
 
          // y=f'(x)dx 
          virtual void p(
-             const X_Vector& x,
-             const X_Vector& dx,
-             Y_Vector& y
+             X_Vector const & x,
+             X_Vector const & dx,
+             Y_Vector & y
          ) const = 0;
 
          // z=f'(x)*dy
          virtual void ps(
-             const X_Vector& x,
-             const Y_Vector& dy,
-             X_Vector& z
+             X_Vector const & x,
+             Y_Vector const & dy,
+             X_Vector & z
          ) const= 0;
          
          // z=(f''(x)dx)*dy
          virtual void pps(
-             const X_Vector& x,
-             const X_Vector& dx,
-             const Y_Vector& dy,
-             X_Vector& z
+             X_Vector const & x,
+             X_Vector const & dx,
+             Y_Vector const & dy,
+             X_Vector & z
          ) const = 0;
          
          // Allow a derived class to deallocate memory
@@ -214,10 +218,10 @@ namespace Optizelle{
     // Defines how we output messages to the user
     struct Messaging {
         // Prints a message
-        virtual void print(const std::string& msg) const;
+        virtual void print(std::string const & msg) const;
 
         // Prints an error
-        virtual void error(const std::string& msg) const;
+        virtual void error(std::string const & msg) const;
 
         // Allow a derived class to deallocate memory
         virtual ~Messaging();
@@ -232,14 +236,14 @@ namespace Optizelle{
         };
 
         // Converts the algorithm class to a string
-        std::string to_string(const t& algorithm_class);
+        std::string to_string(t const & algorithm_class);
         
         // Converts a string to an algorithm class 
-        t from_string(const std::string& algorithm_class);
+        t from_string(std::string const & algorithm_class);
 
         // Checks whether or not a string is valid
         struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (const std::string& name) const;
+            bool operator () (std::string const & name) const;
         };
     }
 
@@ -255,14 +259,14 @@ namespace Optizelle{
         };
 
         // Converts the stopping condition to a string 
-        std::string to_string(const t& opt_stop);
+        std::string to_string(t const & opt_stop);
 
         // Converts a string to a stopping condition
-        t from_string(const std::string& opt_stop);
+        t from_string(std::string const & opt_stop);
 
         // Checks whether or not a string is valid
         struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (const std::string& name) const; 
+            bool operator () (std::string const & name) const; 
         };
     }
 
@@ -280,14 +284,14 @@ namespace Optizelle{
         };
         
         // Converts the operator type to a string 
-        std::string to_string(const t& op);
+        std::string to_string(t const & op);
         
         // Converts a string to a operator 
-        t from_string(const std::string& op);
+        t from_string(std::string const & op);
 
         // Checks whether or not a string is valid
         struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (const std::string& name) const;
+            bool operator () (std::string const & name) const;
         };
     }
 
@@ -303,14 +307,14 @@ namespace Optizelle{
         };
         
         // Converts the line-search direction to a string 
-        std::string to_string(const t& dir);
+        std::string to_string(t const & dir);
         
         // Converts a string to a line-search direction 
-        t from_string(const std::string& dir);
+        t from_string(std::string const & dir);
 
         // Checks whether or not a string is valid
         struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (const std::string& name) const;
+            bool operator () (std::string const & name) const;
         };
     }
 
@@ -325,19 +329,19 @@ namespace Optizelle{
         };
             
         // Converts the line-search kind to a string 
-        std::string to_string(const t& kind);
+        std::string to_string(t const & kind);
         
         // Converts a string to a line-search kind 
-        t from_string(const std::string& kind);
+        t from_string(std::string const & kind);
 
         // Checks whether or not a string is valid
         struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (const std::string& name) const; 
+            bool operator () (std::string const & name) const; 
         };
 
         // Determine whether or not the line-search checks the sufficient
         // decrease condition.
-        bool is_sufficient_decrease(const t& kind);
+        bool is_sufficient_decrease(t const & kind);
     }
     
     // Different points in the optimization algorithm
@@ -409,14 +413,14 @@ namespace Optizelle{
         };
             
         // Converts the optimization location to a string 
-        std::string to_string(const t& loc);
+        std::string to_string(t const & loc);
         
         // Converts a string to a line-search kind 
-        t from_string(const std::string& loc);
+        t from_string(std::string const & loc);
 
         // Checks whether or not a string is valid
         struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (const std::string& name) const;
+            bool operator () (std::string const & name) const;
         };
     }
     
@@ -430,14 +434,14 @@ namespace Optizelle{
         };
 
         // Converts the problem class to a string
-        std::string to_string(const t& problem_class);
+        std::string to_string(t const & problem_class);
 
         // Converts a string to a problem class 
-        t from_string(const std::string& problem_class);
+        t from_string(std::string const & problem_class);
 
         // Checks whether or not a string is valid
         struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (const std::string& name) const;
+            bool operator () (std::string const & name) const;
         };
     }
     
@@ -449,14 +453,14 @@ namespace Optizelle{
         };
 
         // Converts the problem class to a string
-        std::string to_string(const t& truncated_krylov);
+        std::string to_string(t const & truncated_krylov);
 
         // Converts a string to a problem class 
-        t from_string(const std::string& truncated_krylov);
+        t from_string(std::string const & truncated_krylov);
 
         // Checks whether or not a string is valid
         struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (const std::string& name) const;
+            bool operator () (std::string const & name) const;
         };
     };
     
@@ -471,14 +475,14 @@ namespace Optizelle{
         };
         
         // Converts the interior point method to a string 
-        std::string to_string(const t& ipm);
+        std::string to_string(t const & ipm);
         
         // Converts a string to an interior point method 
-        t from_string(const std::string& ipm);
+        t from_string(std::string const & ipm);
 
         // Checks whether or not a string is valid
         struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (const std::string& name) const;
+            bool operator () (std::string const & name) const;
         };
     }
     
@@ -495,31 +499,26 @@ namespace Optizelle{
         };
         
         // Converts the centrality strategy to a string
-        std::string to_string(const t& cstrat);
+        std::string to_string(t const & cstrat);
         
         // Converts a string to the cstrat
-        t from_string(const std::string& cstrat);
+        t from_string(std::string const & cstrat);
 
         // Checks whether or not a string is valid
         struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (const std::string& name) const;
+            bool operator () (std::string const & name) const;
         };
     }
 
     // A collection of miscellaneous diagnostics that help determine errors.
-    struct Diagnostics {
-    private:
-        MODULE_CLASS(Diagnostics);
-
-    protected:
+    namespace Diagnostics {
         // Returns the smallest positive non-Nan number between the two. 
         // If both are NaN, it will return NaN.
         template <typename Real>
-        static Real get_smallest(const Real x,const Real y) {
+        Real get_smallest(const Real x,const Real y) {
             return (x < y) || (y != y) ? x : y;
         }
 
-    public:
         // Performs a 4-point finite difference directional derivative on
         // a scalar valued function f : X->R.  In other words, <- f'(x)dx.  We
         // accomplish this by doing a finite difference calculation on f.
@@ -527,18 +526,18 @@ namespace Optizelle{
             typename Real,
             template <typename> class XX
         >
-        static Real directionalDerivative(
-            const ScalarValuedFunction<Real,XX>& f,
-            const typename XX <Real>::Vector& x,
-            const typename XX <Real>::Vector& dx,
-            const Real& epsilon
+        Real directionalDerivative(
+            ScalarValuedFunction<Real,XX> const & f,
+            typename XX <Real>::Vector const & x,
+            typename XX <Real>::Vector const & dx,
+            Real const & epsilon
         ){
             // Create some type shortcuts
             typedef XX <Real> X;
             typedef typename X::Vector X_Vector;
 
             // Create an element for x+eps dx, x-eps dx, etc. 
-            X_Vector x_op_dx; X::init(x,x_op_dx);
+            X_Vector x_op_dx(X::init(x));
 
             // f(x+eps dx)
             X::copy(x,x_op_dx);
@@ -574,11 +573,11 @@ namespace Optizelle{
             typename Real,
             template <typename> class XX
         >
-        static void directionalDerivative(
-            const ScalarValuedFunction<Real,XX>& f,
-            const typename XX <Real>::Vector& x,
-            const typename XX <Real>::Vector& dx,
-            const Real& epsilon,
+        void directionalDerivative(
+            ScalarValuedFunction<Real,XX> const & f,
+            typename XX <Real>::Vector const & x,
+            typename XX <Real>::Vector const & dx,
+            Real const & epsilon,
             typename XX <Real>::Vector& dd
         ){
             // Create some type shortcuts
@@ -586,10 +585,10 @@ namespace Optizelle{
             typedef typename X::Vector X_Vector;
 
             // Create an element for x+eps dx, x-eps dx, etc. 
-            X_Vector x_op_dx; X::init(x,x_op_dx);
+            X_Vector x_op_dx(X::init(x));
 
             // Create an element to store the gradient at this point 
-            X_Vector fgrad_x_op_dx; X::init(x,fgrad_x_op_dx);
+            X_Vector fgrad_x_op_dx(X::init(x));
 
             // Zero out the directional derivative
             X::zero(dd);
@@ -630,11 +629,11 @@ namespace Optizelle{
             template <typename> class XX,
             template <typename> class YY 
         >
-        static void directionalDerivative(
-            const VectorValuedFunction<Real,XX,YY>& f,
-            const typename XX <Real>::Vector& x,
-            const typename XX <Real>::Vector& dx,
-            const Real& epsilon,
+        void directionalDerivative(
+            VectorValuedFunction<Real,XX,YY> const & f,
+            typename XX <Real>::Vector const & x,
+            typename XX <Real>::Vector const & dx,
+            Real const & epsilon,
             typename YY <Real>::Vector& dd
         ){
             // Create some type shortcuts
@@ -644,10 +643,10 @@ namespace Optizelle{
             typedef typename Y::Vector Y_Vector;
 
             // Create an element for x+eps dx, x-eps dx, etc. 
-            X_Vector x_op_dx; X::init(x,x_op_dx);
+            X_Vector x_op_dx(X::init(x));
 
             // Create an element for f(x+eps dx), etc.
-            Y_Vector f_x_op_dx; Y::init(dd,f_x_op_dx);
+            Y_Vector f_x_op_dx(Y::init(dd));
             
             // Zero out the directional derivative
             Y::zero(dd);
@@ -690,12 +689,12 @@ namespace Optizelle{
             template <typename> class XX,
             template <typename> class YY 
         >
-        static void directionalDerivative(
-            const VectorValuedFunction<Real,XX,YY>& f,
-            const typename XX <Real>::Vector& x,
-            const typename XX <Real>::Vector& dx,
-            const typename YY <Real>::Vector& dy,
-            const Real& epsilon,
+        void directionalDerivative(
+            VectorValuedFunction<Real,XX,YY> const & f,
+            typename XX <Real>::Vector const & x,
+            typename XX <Real>::Vector const & dx,
+            typename YY <Real>::Vector const & dy,
+            Real const & epsilon,
             typename XX <Real>::Vector& dd
         ){
             // Create some type shortcuts
@@ -705,10 +704,10 @@ namespace Optizelle{
             typedef typename Y::Vector Y_Vector;
 
             // Create an element for x+eps dx, x-eps dx, etc. 
-            X_Vector x_op_dx; X::init(x,x_op_dx);
+            X_Vector x_op_dx(X::init(x));
 
             // Create an element for f'(x+eps dx)*dy, etc.
-            X_Vector fps_xopdx_dy; X::init(dd,fps_xopdx_dy);
+            X_Vector fps_xopdx_dy(X::init(dd));
 
             // Zero out the directional derivative
             X::zero(dd);
@@ -748,18 +747,18 @@ namespace Optizelle{
             typename Real,
             template <typename> class XX
         >
-        static Real gradientCheck(
-            const Messaging& msg,
-            const ScalarValuedFunction<Real,XX>& f,
-            const typename XX <Real>::Vector& x,
-            const typename XX <Real>::Vector& dx
+        Real gradientCheck(
+            Messaging const & msg,
+            ScalarValuedFunction<Real,XX> const & f,
+            typename XX <Real>::Vector const & x,
+            typename XX <Real>::Vector const & dx
         ) {
             // Create some type shortcuts
             typedef XX <Real> X;
             typedef typename X::Vector X_Vector;
 
             // Calculate the gradient at the point x
-            X_Vector f_grad; X::init(x,f_grad);
+            X_Vector f_grad(X::init(x));
             f.grad(x,f_grad);
 
             // Begin by calculating the directional derivative via the gradient
@@ -797,11 +796,11 @@ namespace Optizelle{
             typename Real,
             template <typename> class XX
         >
-        static Real hessianCheck(
-            const Messaging& msg,
-            const ScalarValuedFunction<Real,XX>& f,
-            const typename XX <Real>::Vector& x,
-            const typename XX <Real>::Vector& dx
+        Real hessianCheck(
+            Messaging const & msg,
+            ScalarValuedFunction<Real,XX> const & f,
+            typename XX <Real>::Vector const & x,
+            typename XX <Real>::Vector const & dx
         ) {
             // Create some type shortcuts
             typedef XX <Real> X;
@@ -810,10 +809,10 @@ namespace Optizelle{
             // Create an element for the residual between the directional 
             // derivative computed Hessian-vector product and the true 
             // Hessian-vector product.
-            X_Vector res; X::init(x,res);
+            X_Vector res(X::init(x));
 
             // Calculate hess f in the direction dx.  
-            X_Vector hess_f_dx; X::init(x,hess_f_dx);
+            X_Vector hess_f_dx(X::init(x));
             f.hessvec(x,dx,hess_f_dx);
 
             // Compute an ensemble of finite difference tests in a linear manner
@@ -854,23 +853,23 @@ namespace Optizelle{
             typename Real,
             template <typename> class XX
         >
-        static Real hessianSymmetryCheck(
-            const Messaging& msg,
-            const ScalarValuedFunction<Real,XX>& f,
-            const typename XX <Real>::Vector& x,
-            const typename XX <Real>::Vector& dx,
-            const typename XX <Real>::Vector& dxx
+        Real hessianSymmetryCheck(
+            Messaging const & msg,
+            ScalarValuedFunction<Real,XX> const & f,
+            typename XX <Real>::Vector const & x,
+            typename XX <Real>::Vector const & dx,
+            typename XX <Real>::Vector const & dxx
         ) {
             // Create some type shortcuts
             typedef XX <Real> X;
             typedef typename X::Vector X_Vector;
 
             // Calculate hess f in the direction dx.  
-            X_Vector H_x_dx; X::init(x,H_x_dx);
+            X_Vector H_x_dx(X::init(x));
             f.hessvec(x,dx,H_x_dx);
             
             // Calculate hess f in the direction dxx.  
-            X_Vector H_x_dxx; X::init(x,H_x_dxx);
+            X_Vector H_x_dxx(X::init(x));
             f.hessvec(x,dxx,H_x_dxx);
             
             // Calculate <H(x)dx,dxx>
@@ -902,12 +901,12 @@ namespace Optizelle{
             template <typename> class XX,
             template <typename> class YY 
         >
-        static Real derivativeCheck(
-            const Messaging& msg,
-            const VectorValuedFunction<Real,XX,YY>& f,
-            const typename XX <Real>::Vector& x,
-            const typename XX <Real>::Vector& dx,
-            const typename YY <Real>::Vector& y
+        Real derivativeCheck(
+            Messaging const & msg,
+            VectorValuedFunction<Real,XX,YY> const & f,
+            typename XX <Real>::Vector const & x,
+            typename XX <Real>::Vector const & dx,
+            typename YY <Real>::Vector const & y
         ) {
             // Create some type shortcuts
             typedef XX <Real> X;
@@ -917,10 +916,10 @@ namespace Optizelle{
 
             // Create an element for the residual between the directional 
             // derivative and the true derivative.
-            Y_Vector res; Y::init(y,res);
+            Y_Vector res(Y::init(y));
 
             // Calculate f'(x)dx 
-            Y_Vector fp_x_dx; Y::init(y,fp_x_dx);
+            Y_Vector fp_x_dx(Y::init(y));
             f.p(x,dx,fp_x_dx);
 
             // Compute an ensemble of finite difference tests in a linear manner
@@ -964,12 +963,12 @@ namespace Optizelle{
             template <typename> class XX,
             template <typename> class YY 
         >
-        static Real derivativeAdjointCheck(
-            const Messaging& msg,
-            const VectorValuedFunction<Real,XX,YY>& f,
-            const typename XX <Real>::Vector& x,
-            const typename XX <Real>::Vector& dx,
-            const typename YY <Real>::Vector& dy
+        Real derivativeAdjointCheck(
+            Messaging const & msg,
+            VectorValuedFunction<Real,XX,YY> const & f,
+            typename XX <Real>::Vector const & x,
+            typename XX <Real>::Vector const & dx,
+            typename YY <Real>::Vector const & dy
         ) {
             // Create some type shortcuts
             typedef XX <Real> X;
@@ -978,11 +977,11 @@ namespace Optizelle{
             typedef typename Y::Vector Y_Vector;
 
             // Calculate f'(x)dx 
-            Y_Vector fp_x_dx; Y::init(dy,fp_x_dx);
+            Y_Vector fp_x_dx(Y::init(dy));
             f.p(x,dx,fp_x_dx);
             
             // Calculate f'(x)*dy 
-            X_Vector fps_x_dy; X::init(dx,fps_x_dy);
+            X_Vector fps_x_dy(X::init(dx));
             f.ps(x,dy,fps_x_dy);
 
             // Calculate <f'(x)dx,dy>
@@ -1015,12 +1014,12 @@ namespace Optizelle{
             template <typename> class XX,
             template <typename> class YY 
         >
-        static Real secondDerivativeCheck(
-            const Messaging& msg,
-            const VectorValuedFunction<Real,XX,YY>& f,
-            const typename XX <Real>::Vector& x,
-            const typename XX <Real>::Vector& dx,
-            const typename YY <Real>::Vector& dy
+        Real secondDerivativeCheck(
+            Messaging const & msg,
+            VectorValuedFunction<Real,XX,YY> const & f,
+            typename XX <Real>::Vector const & x,
+            typename XX <Real>::Vector const & dx,
+            typename YY <Real>::Vector const & dy
         ) {
             // Create some type shortcuts
             typedef XX <Real> X;
@@ -1030,10 +1029,10 @@ namespace Optizelle{
 
             // Create an element for the residual between the directional 
             // derivative and the true derivative.
-            X_Vector res; X::init(x,res);
+            X_Vector res(X::init(x));
 
             // Calculate (f''(x)dx)*dy
-            X_Vector fpps_x_dx_dy; X::init(dx,fpps_x_dx_dy);
+            X_Vector fpps_x_dx_dy(X::init(dx));
             f.pps(x,dx,dy,fpps_x_dx_dy);
 
             // Compute an ensemble of finite difference tests in a linear manner
@@ -1068,18 +1067,23 @@ namespace Optizelle{
             // Return the function's smallest relative error
             return min_rel_err; 
         }
-    };
+    }
 
     // A function that has free reign to manipulate or analyze the state.
     // This should be used cautiously.
     template <typename ProblemClass>
-    class StateManipulator {
-    public:
+    struct StateManipulator {
+        // Disallow constructors
+        NO_COPY_ASSIGNMENT(StateManipulator);
+
+        // Default constructor
+        StateManipulator() {}
+        
         // Application
         virtual void operator () (
-            const typename ProblemClass::Functions::t& fns,
-            typename ProblemClass::State::t& state,
-            OptimizationLocation::t loc
+            typename ProblemClass::Functions::t const & fns,
+            typename ProblemClass::State::t & state,
+            OptimizationLocation::t const & loc
         ) const {};
 
         // Allow the derived class to deallocate memory
@@ -1089,34 +1093,36 @@ namespace Optizelle{
     // A state manipulator that's been customized in order to print diagonistic
     // information
     template <typename ProblemClass>
-    class DiagnosticManipulator : public StateManipulator <ProblemClass> {
+    struct DiagnosticManipulator : public StateManipulator <ProblemClass> {
     private:
         // A reference to an existing state manipulator 
-        const StateManipulator <ProblemClass>& smanip;
+        StateManipulator <ProblemClass> const & smanip;
 
         // A reference to the messsaging object
-        const Messaging& msg;
+        Messaging const & msg;
 
     public:
+        // Disallow constructors
+        NO_COPY_ASSIGNMENT(DiagnosticManipulator);
 
         // Create a reference to an existing manipulator 
         explicit DiagnosticManipulator(
-            const StateManipulator <ProblemClass>& smanip_,
-            const Messaging& msg_
+            StateManipulator <ProblemClass> const & smanip_,
+            Messaging const & msg_
         ) : smanip(smanip_), msg(msg_) {}
 
         // Application
         void operator () (
-            const typename ProblemClass::Functions::t& fns,
-            typename ProblemClass::State::t& state,
-            OptimizationLocation::t loc
+            typename ProblemClass::Functions::t const & fns,
+            typename ProblemClass::State:: t& state,
+            OptimizationLocation::t const & loc
         ) const {
 
             // Call the internal manipulator 
             smanip(fns,state,loc);
 
             // Create some shortcuts
-            const Natural& msg_level=state.msg_level;
+            Natural const & msg_level=state.msg_level;
 
             switch(loc){
 
@@ -1189,15 +1195,19 @@ namespace Optizelle{
     };
 
     // This converts one manipulator to another.  In theory, the dynamic
-    // casting can file, so make sure to only use this when compatibility
+    // casting can fail, so make sure to only use this when compatibility
     // can be guaranteed.
     template <typename Internal,typename External> 
     struct ConversionManipulator : public StateManipulator <External> {
     private:
         // A reference to the user-defined state manipulator
-        const StateManipulator<Internal>& smanip;
+        StateManipulator <Internal> const & smanip;
 
     public:
+        // Disallow constructors
+        NO_COPY_ASSIGNMENT(ConversionManipulator);
+
+        // Grab a copy of the internal manipulator
         explicit ConversionManipulator(
             const StateManipulator <Internal>& smanip_
         ) : smanip(smanip_) {}
@@ -1206,91 +1216,62 @@ namespace Optizelle{
         void operator () (
             const typename External::Functions::t& fns_,
             typename External::State::t& state_,
-            OptimizationLocation::t loc
+            OptimizationLocation::t const & loc
         ) const {
             const typename Internal::Functions::t& fns
-                =dynamic_cast <const typename Internal::Functions::t&> (fns_);
+                =dynamic_cast <typename Internal::Functions::t const &> (fns_);
             typename Internal::State::t& state 
-                =dynamic_cast <typename Internal::State::t&> (state_);
+                =dynamic_cast <typename Internal::State::t &> (state_);
             smanip(fns,state,loc);
         }
     };
 
-    // A series of utiilty functions used by the routines below, but do
-    // not need to be exposed to the user.
-    struct Utility {
-    public:
-        template <
-            typename Real,
-            template <typename> class XX
-        > 
-        friend class Unconstrained;
-        template <
-            typename Real,
-            template <typename> class XX,
-            template <typename> class YY
-        > 
-        friend class EqualityConstrained;
-        template <
-            typename Real,
-            template <typename> class XX,
-            template <typename> class ZZ
-        > 
-        friend class InequalityConstrained;
-        template <
-            typename Real,
-            template <typename> class XX,
-            template <typename> class YY,
-            template <typename> class ZZ
-        > 
-        friend class Constrained;
-    private:
-        MODULE_CLASS(Utility);
-    protected:
+    // A series of utiilty functions used by the routines below.
+    namespace Utility {
         // Checks whether all the labels in the list labels are actually
         // labels stored in the is_label function.  If not, this function
         // throws an error.
-        static void checkLabels(
-            const Messaging& msg,
-            const std::function<bool(const std::string&)>& is_label,
-            const std::list <std::string>& labels, 
-            const std::string& kind
+        void checkLabels(
+            Messaging const & msg,
+            std::function<bool(std::string const &)> const & is_label,
+            std::list <std::string> const & labels, 
+            std::string const & kind
         );
 
         // Combines two strings in a funny sort of way.  Basically, given
         // a and b, if a is empty, this function returns b.  However, if
         // a is nonempty, it returns a.
         struct combineStrings : public std::binary_function
-            <const std::string&,const std::string&,std::basic_string <char> >
+            <std::string const &,std::string const &,std::basic_string <char> >
         {
             std::basic_string <char> operator() (
-                const std::string& a,const std::string& b) const;
+                std::string const & a,std::string const & b) const;
         };
       
         // This checks the parameters and prints and error in there's a problem.
-        static void checkParams(
-            const Messaging& msg,
-            const std::function
-                <std::string(const std::string&,const std::string&)>&
+        void checkParams(
+            Messaging const & msg,
+            std::function
+                <std::string(std::string const &,std::string const &)> const &
                 checkParamVal,
-            const std::pair <std::list <std::string>,std::list <std::string> >&
+            std::pair <std::list <std::string>,std::list <std::string> > const &
                 params 
         );
 
         // Converts a variety of basic datatypes to strings
-        static std::ostream& formatReal(std::ostream& out);
-        static std::ostream& formatInt(std::ostream& out);
-        static std::ostream& formatString(std::ostream& out); 
+        std::ostream& formatReal(std::ostream& out);
+        std::ostream& formatInt(std::ostream& out);
+        std::ostream& formatString(std::ostream& out); 
 
         // Converts anything to a string.
-        static std::string atos(const double& x);
-        static std::string atos(const Natural& x);
-        static std::string atos(const char* x);
-        static std::string atos(const KrylovStop::t& x);
+        std::string atos(const double& x);
+        std::string atos(Natural const & x);
+        std::string atos(std::string const & x);
+        std::string atos(KrylovStop::t const & x);
 
         // Blank separator for printing
-        static const std::string blankSeparator;
-    };
+        std::string const blankSeparator = ".         ";
+    }
        
     // Routines that manipulate and support problems of the form
     // 
@@ -1302,9 +1283,6 @@ namespace Optizelle{
         template <typename> class XX
     > 
     struct Unconstrained {
-    private:
-        MODULE_CLASS(Unconstrained);
-
     protected:
         // Different nonlinear-CG directions 
         struct NonlinearCGDirections {
@@ -1339,28 +1317,25 @@ namespace Optizelle{
                             std::list <std::string> > Params; 
         typedef std::pair < std::list <std::string>,
                             std::list <X_Vector> > X_Vectors;
+        
+        // Disallow constructors
+        NO_CONSTRUCTORS(Unconstrained);
 
         // Routines that manipulate the internal state of the optimization 
         // algorithm.
         struct State {
-        private:
-            // This is a namespace inside of a class.  Do not allow
-            // construction.
-            State();
-
-        public:
+            // Disallow constructors
+            NO_CONSTRUCTORS(State);
+                
             // Internal state of the optimization
             struct t {
-            private:
                 // Prevent the use of the copy constructor and the assignment
                 // operator.  Basically, the state can hold a large amount
                 // of memory and the safe way to move this memory around
                 // is through the use of the capture and release methodology
                 // inside of the restart section.
-                t& operator = (const t&);
-                t(const t&);
+                NO_DEFAULT_COPY_ASSIGNMENT(t);
 
-            public:
                 // ------------- GENERIC ------------- 
 
                 // Tolerance for the gradient stopping condition
@@ -1426,23 +1401,23 @@ namespace Optizelle{
                 Real norm_dxtyp;
 
                 // Optimization variable 
-                std::list <X_Vector> x; 
+                X_Vector x; 
                 
                 // Gradient, possibly of the objective, possibly of the
                 // Lagrangian.  It depends on the context.
-                std::list <X_Vector> grad;
+                X_Vector grad;
                 
                 // Trial step 
-                std::list <X_Vector> dx;
+                X_Vector dx;
                 
                 // Old optimization variable 
-                std::list <X_Vector> x_old; 
+                X_Vector x_old; 
                 
                 // Old gradient 
-                std::list <X_Vector> grad_old;
+                X_Vector grad_old;
                 
                 // Old trial step 
-                std::list <X_Vector> dx_old;
+                X_Vector dx_old;
 
                 // Difference in prior gradients
                 std::list <X_Vector> oldY;
@@ -1511,100 +1486,63 @@ namespace Optizelle{
                 LineSearchKind::t kind;
 
                 // Initialization constructors
-                t() {
-                    Unconstrained <Real,XX>::State::init_params(*this);
-                }
-                explicit t(const X_Vector& x) {
-                    Unconstrained <Real,XX>::State::init_params(*this);
-                    Unconstrained <Real,XX>::State::init_vectors(*this,x);
+                explicit t(X_Vector const & x_) :
+                    eps_grad(1e-8),
+                    eps_dx(1e-8),
+                    stored_history(0),
+                    history_reset(5),
+                    iter(1),
+                    iter_max(10),
+                    opt_stop(StoppingCondition::NotConverged),
+                    krylov_iter(0),
+                    krylov_iter_max(10),
+                    krylov_iter_total(0),
+                    krylov_orthog_max(1),
+                    krylov_stop(KrylovStop::RelativeErrorSmall),
+                    krylov_rel_err(0.),
+                    eps_krylov(1e-2),
+                    krylov_solver(KrylovSolverTruncated::ConjugateDirection),
+                    algorithm_class(AlgorithmClass::TrustRegion),
+                    PH_type(Operators::Identity),
+                    H_type(Operators::UserDefined),
+                    norm_gradtyp(std::numeric_limits<Real>::quiet_NaN()),
+                    norm_dxtyp(std::numeric_limits<Real>::quiet_NaN()),
+                    x(X::init(x_)),
+                    grad(X::init(x_)),
+                    dx(X::init(x_)),
+                    x_old(X::init(x_)),
+                    grad_old(X::init(x_)),
+                    dx_old(X::init(x_)),
+                    oldY(),
+                    oldS(), 
+                    f_x(std::numeric_limits<Real>::quiet_NaN()),
+                    f_xpdx(std::numeric_limits<Real>::quiet_NaN()),
+                    msg_level(1),
+                    delta(1.),
+                    eta1(.1),
+                    eta2(.9),
+                    ared(1.),
+                    pred(1.),
+                    rejected_trustregion(0),
+                    alpha0(1.),
+                    alpha(1.),
+                    c1(1e-4),
+                    linesearch_iter(0),
+                    linesearch_iter_max(5),
+                    linesearch_iter_total(0),
+                    eps_ls(1e-2),
+                    dir(LineSearchDirection::SteepestDescent),
+                    kind(LineSearchKind::GoldenSection)
+                {
+                    X::copy(x_,x);
                 }
                 
                 // A trick to allow dynamic casting later
                 virtual ~t() {}
             };
 
-            // This sets all of the parameters possible that don't require
-            // special memory allocation such as variables.
-            static void init_params_(t& state){
-                state.eps_grad=Real(1e-8);
-                state.eps_dx=Real(1e-8);
-                state.stored_history=0;
-                state.history_reset=5;
-                state.iter=1;
-                state.iter_max=10;
-                state.opt_stop=StoppingCondition::NotConverged;
-                state.krylov_iter=0;
-                state.krylov_iter_max=10;
-                state.krylov_iter_total=0;
-                state.krylov_orthog_max=1;
-                state.krylov_stop=KrylovStop::RelativeErrorSmall;
-                state.krylov_rel_err=Real(0.);
-                state.eps_krylov=Real(1e-2);
-                state.krylov_solver
-                    =KrylovSolverTruncated::ConjugateDirection;
-                state.algorithm_class=AlgorithmClass::TrustRegion;
-                state.PH_type=Operators::Identity;
-                state.H_type=Operators::UserDefined;
-                state.norm_gradtyp=std::numeric_limits<Real>::quiet_NaN();
-                state.norm_dxtyp=std::numeric_limits<Real>::quiet_NaN();
-                state.f_x=std::numeric_limits<Real>::quiet_NaN();
-                state.f_xpdx=std::numeric_limits<Real>::quiet_NaN();
-                state.msg_level=1;
-                state.delta=Real(1.);
-                state.eta1=Real(.1);
-                state.eta2=Real(.9);
-                state.ared=Real(1.);
-                state.pred=Real(1.);
-                state.rejected_trustregion=0;
-                state.alpha0=Real(1.);
-                state.alpha=Real(1.);
-                state.c1=Real(1e-4);
-                state.linesearch_iter=0;
-                state.linesearch_iter_max=5;
-                state.linesearch_iter_total=0;
-                state.eps_ls=Real(1e-2);
-                state.dir=LineSearchDirection::SteepestDescent;
-                state.kind=LineSearchKind::GoldenSection;
-            }
-            static void init_params(t& state){
-                Unconstrained <Real,XX>::State::init_params_(state);
-            }
-
-            // This initializes all the variables required for unconstrained
-            // optimization.  
-            static void init_vectors_(t& state,const X_Vector& x) {
-                state.x.clear();
-                    state.x.emplace_back(X_Vector());
-                    X::init(x,state.x.front());
-                    X::copy(x,state.x.front());
-                state.grad.clear();
-                    state.grad.emplace_back(X_Vector());
-                    X::init(x,state.grad.front());
-                state.dx.clear();
-                    state.dx.emplace_back(X_Vector());
-                    X::init(x,state.dx.front()); 
-                state.x_old.clear();
-                    state.x_old.emplace_back(X_Vector());
-                    X::init(x,state.x_old.front());
-                state.grad_old.clear();
-                    state.grad_old.emplace_back(X_Vector());
-                    X::init(x,state.grad_old.front()); 
-                state.dx_old.clear();
-                    state.dx_old.emplace_back(X_Vector());
-                    X::init(x,state.dx_old.front()); 
-            }
-            static void init_vectors(t& state,const X_Vector& x) {
-                Unconstrained <Real,XX>::State::init_vectors_(state,x);
-            }
-
-            // Initialize everything
-            static void init(t& state,const X_Vector& x) {
-                init_params(state);
-                init_vectors(state,x);
-            }
-
             // Check that we have a valid set of parameters.  
-            static void check_(const Messaging& msg,const t& state) {
+            static void check_(Messaging const & msg,t const & state) {
                    
                 // Use this to build an error message
                 std::stringstream ss;
@@ -1756,24 +1694,21 @@ namespace Optizelle{
                 // If there's an error, print it
                 if(ss.str()!="") msg.error(ss.str());
             }
-            static void check(const Messaging& msg,const t& state) {
+            static void check(Messaging const & msg,t const & state) {
                 Unconstrained <Real,XX>::State::check_(msg,state);
             }
         };
 
         // Utilities for restarting the optimization
         struct Restart {
-        private:
-            // This is a namespace inside of a class.  Do not allow
-            // construction.
-            Restart();
+            // Disallow constructors
+            NO_CONSTRUCTORS(Restart);
 
-        public:
             // Checks whether we have a valid real label.
             struct is_real :
-                public std::unary_function<const std::string&, bool>
+                public std::unary_function<std::string const &, bool>
             {
-                bool operator () (const std::string& name) const {
+                bool operator () (std::string const & name) const {
                     if( name == "eps_grad" || 
                         name == "eps_dx" || 
                         name == "krylov_rel_err" || 
@@ -1800,9 +1735,9 @@ namespace Optizelle{
 
             // Checks whether we have a valid natural number label.
             struct is_nat :
-                public std::unary_function<const std::string&, bool>
+                public std::unary_function<std::string const &, bool>
             {
-                bool operator () (const std::string& name) const {
+                bool operator () (std::string const & name) const {
                     if( name == "stored_history" ||
                         name == "history_reset" || 
                         name == "iter" || 
@@ -1825,9 +1760,9 @@ namespace Optizelle{
            
             // Checks whether we have a valid parameter label.
             struct is_param:
-                public std::unary_function<const std::string&, bool>
+                public std::unary_function<std::string const &, bool>
             {
-                bool operator () (const std::string& name) const {
+                bool operator () (std::string const & name) const {
                     if( name == "krylov_solver" ||
                         name == "algorithm_class" || 
                         name == "opt_stop" || 
@@ -1845,7 +1780,7 @@ namespace Optizelle{
             
             // Checks whether we have a valid variable label
             struct is_x : public std::unary_function<std::string, bool> {
-                bool operator () (const std::string& name) const {
+                bool operator () (std::string const & name) const {
                     if( name == "x" || 
                         name == "grad" || 
                         name == "dx" || 
@@ -1863,11 +1798,11 @@ namespace Optizelle{
 
             // Checks whether we have valid labels
             static void checkLabels(
-                const Messaging& msg,
-                const Reals& reals,
-                const Nats& nats,
-                const Params& params,
-                const X_Vectors& xs
+                Messaging const & msg,
+                Reals const & reals,
+                Nats const & nats,
+                Params const & params,
+                X_Vectors const & xs
             ) {
                 Utility::checkLabels(msg,is_real(),reals.first," real name: ");
                 Utility::checkLabels(msg,is_nat(),nats.first," natural name: ");
@@ -1880,11 +1815,11 @@ namespace Optizelle{
             // is valid.  This function returns a string with the error
             // if there is one.  Otherwise, it returns an empty string.
             struct checkParamVal : public std::binary_function
-                <const std::string&,const std::string&,std::string>
+                <std::string const &,std::string const &,std::string>
             {
                 std::string operator() (
-                    const std::string& label,
-                    const std::string& val
+                    std::string const & label,
+                    std::string const & val
                 ) const {
                     // Create a base message
                     const std::string base
@@ -1939,22 +1874,22 @@ namespace Optizelle{
             
             // Copy out all variables.
             static void stateToVectors(
-                typename State::t& state, 
-                X_Vectors& xs
+                typename State::t & state, 
+                X_Vectors & xs
             ) {
                 // Move the memory of all variables into the list 
                 xs.first.emplace_back("x");
-                xs.second.splice(xs.second.end(),state.x);
+                xs.second.emplace_back(std::move(state.x));
                 xs.first.emplace_back("grad");
-                xs.second.splice(xs.second.end(),state.grad);
+                xs.second.emplace_back(std::move(state.grad));
                 xs.first.emplace_back("dx");
-                xs.second.splice(xs.second.end(),state.dx);
+                xs.second.emplace_back(std::move(state.dx));
                 xs.first.emplace_back("x_old");
-                xs.second.splice(xs.second.end(),state.x_old);
+                xs.second.emplace_back(std::move(state.x_old));
                 xs.first.emplace_back("grad_old");
-                xs.second.splice(xs.second.end(),state.grad_old);
+                xs.second.emplace_back(std::move(state.grad_old));
                 xs.first.emplace_back("dx_old");
-                xs.second.splice(xs.second.end(),state.dx_old);
+                xs.second.emplace_back(std::move(state.dx_old));
 
                 // Write out the quasi-Newton information with sequential names
                 {Natural i=1;
@@ -1984,10 +1919,10 @@ namespace Optizelle{
             // Copy out all non-variables.  This includes reals, naturals,
             // and parameters
             static void stateToScalars(
-                typename State::t& state, 
-                Reals& reals,
-                Nats& nats,
-                Params& params
+                typename State::t & state, 
+                Reals & reals,
+                Nats & nats,
+                Params & params
             ) {
                 
                 // Copy in all the real numbers 
@@ -2057,8 +1992,7 @@ namespace Optizelle{
                 // Copy in all the parameters
                 params.first.emplace_back("krylov_solver");
                 params.second.emplace_back(
-                    KrylovSolverTruncated::to_string(
-                        state.krylov_solver));
+                    KrylovSolverTruncated::to_string(state.krylov_solver));
                 params.first.emplace_back("algorithm_class");
                 params.second.emplace_back(
                     AlgorithmClass::to_string(state.algorithm_class));
@@ -2085,11 +2019,10 @@ namespace Optizelle{
             // Copy in all variables.  This assumes that the quasi-Newton
             // information is being read in order.
             static void vectorsToState(
-                typename State::t& state,
-                X_Vectors& xs
+                typename State::t & state,
+                X_Vectors & xs
             ) {
-                typename std::list <X_Vector>::iterator x
-                    =xs.second.begin();
+                typename std::list <X_Vector>::iterator x=xs.second.begin();
                 for(typename std::list <std::string>::iterator name
                         =xs.first.begin();
                     name!=xs.first.end();
@@ -2104,38 +2037,32 @@ namespace Optizelle{
 
                     // Determine which variable we're reading in and then splice
                     // it in the correct location
-                    if(*name0=="x")
-                        state.x.splice(state.x.end(),xs.second,x0);
+                    if(*name0=="x") 
+                        state.x = std::move(*x0);
                     else if(*name0=="grad")
-                        state.grad.splice(state.grad.end(),xs.second,x0);
+                        state.grad = std::move(*x0);
                     else if(*name0=="dx")
-                        state.dx.splice(state.dx.end(),xs.second,x0);
+                        state.dx = std::move(*x0);
                     else if(*name0=="x_old")
-                        state.x_old.splice(state.x_old.end(),xs.second,x0);
+                        state.x_old = std::move(*x0);
                     else if(*name0=="grad_old")
-                        state.grad_old.splice(
-                            state.grad_old.end(),xs.second,x0);
+                        state.grad_old = std::move(*x0);
                     else if(*name0=="dx_old")
-                        state.dx_old.splice(state.dx_old.end(),xs.second,x0);
+                        state.dx_old = std::move(*x0);
                     else if(name0->substr(0,5)=="oldY_")
-                        state.oldY.splice(state.oldY.end(),xs.second,x0);
+                        state.oldY.emplace_back(std::move(*x0));
                     else if(name0->substr(0,5)=="oldS_")
-                        state.oldS.splice(state.oldS.end(),xs.second,x0);
-
-                    // Remove the string corresponding to the element just
-                    // spliced if splicing occured.
-                    if(xs.first.size() != xs.second.size())
-                        xs.first.erase(name0);
+                        state.oldS.emplace_back(std::move(*x0));
                 }
             }
 
             // Copy in all non-variables.  This includes reals, naturals,
             // and parameters
             static void scalarsToState(
-                typename State::t& state,
-                Reals& reals,
-                Nats& nats,
-                Params& params
+                typename State::t & state,
+                Reals & reals,
+                Nats & nats,
+                Params & params
             ) {
                 // Copy in any reals 
                 typename std::list <Real>::iterator real=reals.second.begin();
@@ -2220,11 +2147,11 @@ namespace Optizelle{
             
             // Release the data into structures controlled by the user 
             static void release(
-                typename State::t& state,
-                X_Vectors& xs,
-                Reals& reals,
-                Nats& nats,
-                Params& params
+                typename State::t & state,
+                X_Vectors & xs,
+                Reals & reals,
+                Nats & nats,
+                Params & params
             ) {
                 // Copy out all of the variable information
                 Unconstrained <Real,XX>::Restart::stateToVectors(state,xs);
@@ -2241,12 +2168,12 @@ namespace Optizelle{
             // into vars in order.  In other words, oldY_1 must come before
             // oldY_2, etc.
             static void capture(
-                const Messaging& msg,
-                typename State::t& state,
-                X_Vectors& xs,
-                Reals& reals,
-                Nats& nats,
-                Params& params
+                Messaging const & msg,
+                typename State::t & state,
+                X_Vectors & xs,
+                Reals & reals,
+                Nats & nats,
+                Params & params
             ) {
 
                 // Check the labels on the user input
@@ -2270,23 +2197,17 @@ namespace Optizelle{
         // All the functions required by an optimization algorithm.  Note, this
         // routine owns the memory for these operations.  
         struct Functions {
-        private:
-            // This is a namespace inside of a class.  Do not allow
-            // construction.
-            Functions();
+            // Disallow constructors
+            NO_CONSTRUCTORS(Functions);
 
-        public:
             // Actual storage of the functions required
             struct t{
-            private:
                 // Prevent the use of the copy constructor and the assignment
                 // operator.  Since this class holds a number of unique_ptrs
                 // to different functions, it is not safe to allow them to
                 // be copied.
-                t& operator = (const t&);
-                t(const t&);
-
-            public:
+                NO_COPY_ASSIGNMENT(t);
+                
                 // Objective function
                 std::unique_ptr <ScalarValuedFunction <Real,XX> > f;
 
@@ -2310,7 +2231,7 @@ namespace Optizelle{
 
             // The identity operator 
             struct Identity : public Operator <Real,XX,XX> {
-                void operator () (const X_Vector& dx,X_Vector& result) const{
+                void operator () (X_Vector const & dx,X_Vector & result) const{
                     X::copy(dx,result);
                 }
             };
@@ -2322,30 +2243,29 @@ namespace Optizelle{
             class ScaledIdentity : public Operator <Real,XX,XX> {
             private:
                 // Objective modifications
-                const ScalarValuedFunctionModifications <Real,XX>& f_mod;
+                ScalarValuedFunctionModifications <Real,XX> const & f_mod;
 
                 // Current iterate
-                const X_Vector& x;
+                X_Vector const & x;
 
                 // Gradient of the objective 
-                const X_Vector& grad;
+                X_Vector const & grad;
 
                 // Maximum size of the trust-region radius
-                const Real& delta;
+                Real const & delta;
             public:
                 ScaledIdentity(
-                    const typename Functions::t& fns,
-                    const typename State::t& state
+                    typename Functions::t const & fns,
+                    typename State::t const & state
                 ) : f_mod(*(fns.f_mod)),
-                    x(state.x.back()),
-                    grad(state.grad.back()),
+                    x(state.x),
+                    grad(state.grad),
                     delta(state.delta)
                 {};
 
-                void operator () (const X_Vector& dx,X_Vector& result) const{
+                void operator () (X_Vector const & dx,X_Vector & result) const{
                     // Determine the norm of the gradient
-                    X_Vector grad_step;
-                        X::init(grad,grad_step);
+                    X_Vector grad_step(X::init(grad));
                         f_mod.grad_step(x,grad,grad_step);
                     Real norm_grad=sqrt(X::innr(grad_step,grad_step));
 
@@ -2355,23 +2275,22 @@ namespace Optizelle{
                 }
             };
 
-            // The BFGS Hessian approximation.  
-            /* Note, the formula we normally see for BFGS denotes the inverse
-                Hessian approximation.  This is not the inverse, but the true
-                Hessian approximation. */ 
+            // The BFGS Hessian approximation.  Note, the formula we normally
+            // see for BFGS denotes the inverse Hessian approximation.  This is
+            // not the inverse, but the true Hessian approximation. 
             class BFGS : public Operator <Real,XX,XX> {
             private:
-                // Stored quasi-Newton information
-                const std::list<X_Vector>& oldY;
-                const std::list<X_Vector>& oldS;
-
                 // Messaging device in case the quasi-Newton information is bad
-                const Messaging& msg;
+                Messaging const & msg;
+
+                // Stored quasi-Newton information
+                std::list<X_Vector> const & oldY;
+                std::list<X_Vector> const & oldS;
             public:
                 BFGS(
-                    const Messaging& msg_,
-                    const typename State::t& state
-                ) : oldY(state.oldY), oldS(state.oldS), msg(msg_) {};
+                    Messaging const & msg_,
+                    typename State::t const & state
+                ) : msg(msg_), oldY(state.oldY), oldS(state.oldS) {};
 
                 // Operator interface
                 /* It's not entirely clear to me what the best implementation
@@ -2387,7 +2306,7 @@ namespace Optizelle{
                 current have.  It also works much better with matrices or
                 multivectors of data and we don't require the user to provide
                 these abstractions. */
-                void operator () (const X_Vector& p, X_Vector& result) const{
+                void operator () (X_Vector const & dx, X_Vector & result) const{
 
                     // Check that the number of stored gradient and trial step
                     // differences is the same.
@@ -2399,15 +2318,11 @@ namespace Optizelle{
                     // Allocate memory for work
                     std::list <X_Vector> work;
                     for(int i=0;i<oldY.size();i++)
-                        work.emplace_back(std::move(X_Vector()));
-                    for(typename std::list <X_Vector>::iterator w=work.begin();
-                        w!=work.end();
-                        w++
-                    ) X::init(p,*w);
+                        work.emplace_back(std::move(X::init(dx)));
 
                     // If we have no vectors in our history, we return the
                     // direction
-                    X::copy(p,result);
+                    X::copy(dx,result);
                     if(oldY.size() == 0) return;
 
                     // As a safety check, insure that the inner product
@@ -2450,40 +2365,40 @@ namespace Optizelle{
 
                         // Create some reference to our iterators that are
                         // easier to work with
-                        const X_Vector& si=*si_iter;
-                        const X_Vector& yi=*yi_iter;
-                        const X_Vector& Bisi=*Bisi_iter;
+                        X_Vector const & si=*si_iter;
+                        X_Vector const & yi=*yi_iter;
+                        X_Vector const & Bisi=*Bisi_iter;
 
-                        // Determine <Bisi,si>
+                        // Determine <Bi si,si>
                         Real inner_Bisi_si=X::innr(Bisi,si);
 
                         // Determine <yi,si>
                         Real inner_yi_si=X::innr(yi,si);
 
-                        // Determine <si,Bip>
-                        Real inner_si_Bip=X::innr(si,result);
+                        // Determine <si,Bi dx>
+                        Real inner_si_Bidx=X::innr(si,result);
 
-                        // Determine <yi,p>
-                        Real inner_yi_p=X::innr(yi,p);
+                        // Determine <yi,dx>
+                        Real inner_yi_dx=X::innr(yi,dx);
 
-                        // Determine -<si,Bip>/<Bisi,si> Bisi + Bip.  Store in
-                        // Bip.  This will become B_{i+1}p.
-                        X::axpy(-inner_si_Bip/inner_Bisi_si,Bisi,result);
+                        // Determine -<si,Bi dx>/<Bi si,si> Bisi + Bi dx.
+                        // Store in Bi dx.  This will become B_{i+1} dx.
+                        X::axpy(-inner_si_Bidx/inner_Bisi_si,Bisi,result);
 
-                        // Determine <yi,p>/<yi,si> yi + w where we calculated w
-                        // in the line above.  This completes the calculation of
-                        // B_{i+1}p
-                        X::axpy(inner_yi_p/inner_yi_si,yi,result);
+                        // Determine <yi,dx>/<yi,si> yi + w where we calculated
+                        // w in the line above.  This completes the calculation
+                        // of B_{i+1} dx
+                        X::axpy(inner_yi_dx/inner_yi_si,yi,result);
 
-                        // Check whether or not we've calculated B_{i+1}p for
+                        // Check whether or not we've calculated B_{i+1} dx for
                         // the last time
                         if(Bisi_iter==work.begin()) break;
 
                         // Begin the calculation of B_{i+1}sj
                         while(si_iter!=sj_iter){
                             // Add some additional references to the iterators 
-                            const X_Vector& sj=*sj_iter;
-                            X_Vector& Bisj=*Bisj_iter;
+                            X_Vector const & sj=*sj_iter;
+                            X_Vector & Bisj=*Bisj_iter;
 
                             // Determine <si,Bisj>
                             Real inner_si_Bisj=X::innr(si,Bisj);
@@ -2530,25 +2445,22 @@ namespace Optizelle{
             };
 
             // The SR1 Hessian approximation.  
-            /* The oldY and oldS lists have the same structure as the BFGS
-            preconditioner. */
             class SR1 : public Operator <Real,XX,XX> {
             private:
+                // Messaging device in case the quasi-Newton information is bad
+                Messaging const & msg;
 
                 // Stored quasi-Newton information
-                const std::list<X_Vector>& oldY;
-                const std::list<X_Vector>& oldS;
-
-                // Messaging device in case the quasi-Newton information is bad
-                const Messaging& msg;
+                std::list<X_Vector> const & oldY;
+                std::list<X_Vector> const & oldS;
             public:
                 SR1(
-                    const Messaging& msg_,
-                    const typename State::t& state
-                ) : oldY(state.oldY), oldS(state.oldS), msg(msg_) {};
+                    Messaging const & msg_,
+                    typename State::t const & state
+                ) : msg(msg_), oldY(state.oldY), oldS(state.oldS) {};
                 
                 // Operator interface
-                void operator () (const X_Vector& p,X_Vector& result) const{
+                void operator () (X_Vector const & dx,X_Vector & result) const {
 
                     // Check that the number of stored gradient and trial step
                     // differences is the same.
@@ -2560,15 +2472,11 @@ namespace Optizelle{
                     // Allocate memory for work
                     std::list <X_Vector> work;
                     for(int i=0;i<oldY.size();i++)
-                        work.emplace_back(std::move(X_Vector()));
-                    for(typename std::list <X_Vector>::iterator w=work.begin();
-                        w!=work.end();
-                        w++
-                    ) X::init(p,*w);
+                        work.emplace_back(std::move(X::init(dx)));
 
                     // If we have no vectors in our history, we return the 
                     // direction
-                    X::copy(p,result);
+                    X::copy(dx,result);
                     if(oldY.size() == 0) return;
 
                     // Othwerwise, we copy all of the trial step differences 
@@ -2598,15 +2506,15 @@ namespace Optizelle{
 
                         // Create some reference to our iterators that are 
                         // easier to work with
-                        const X_Vector& si=*si_iter;
-                        const X_Vector& yi=*yi_iter;
-                        const X_Vector& Bisi=*Bisi_iter;
+                        X_Vector const & si=*si_iter;
+                        X_Vector const & yi=*yi_iter;
+                        X_Vector const & Bisi=*Bisi_iter;
 
-                        // Determine <yi,p>
-                        Real inner_yi_p=X::innr(yi,p);
+                        // Determine <yi,dx>
+                        Real inner_yi_dx=X::innr(yi,dx);
 
-                        // Determine <Bisi,p>
-                        Real inner_Bisi_p=X::innr(Bisi,p);
+                        // Determine <Bisi,dx>
+                        Real inner_Bisi_dx=X::innr(Bisi,dx);
 
                         // Determine <yi,si>
                         Real inner_yi_si=X::innr(yi,si);
@@ -2614,13 +2522,13 @@ namespace Optizelle{
                         // Determine <Bisi,si>
                         Real inner_Bisi_si=X::innr(Bisi,si);
 
-                        // Determine (<yi,p>-<Bisi,p>) / (<y_i,s_i>-<Bisi,si>).
+                        // Determine (<yi,p>-<Bisi,dx>) / (<y_i,s_i>-<Bisi,si>).
                         // Store in alpha
-                        Real alpha=(inner_yi_p-inner_Bisi_p)
+                        Real alpha=(inner_yi_dx-inner_Bisi_dx)
                             / (inner_yi_si-inner_Bisi_si);
 
-                        // Determine alpha y_i + Bip.  Store in result (which
-                        // accumulate Bip).
+                        // Determine alpha y_i + Bi dx.  Store in result (which
+                        // accumulate Bi dx).
                         X::axpy(alpha,yi,result);
 
                         // Then, add -alpha*Bisi to this result
@@ -2633,8 +2541,8 @@ namespace Optizelle{
                         // Begin the calculation of B_{i+1}sj
                         while(si_iter!=sj_iter){
                             // Add some additional references to the iterators 
-                            const X_Vector& sj=*sj_iter;
-                            X_Vector& Bisj=*Bisj_iter;
+                            X_Vector const & sj=*sj_iter;
+                            X_Vector & Bisj=*Bisj_iter;
 
                             // Determine <yi,sj>
                             Real inner_yi_sj=X::innr(yi,sj);
@@ -2642,9 +2550,12 @@ namespace Optizelle{
                             // Determine <Bisi,sj>
                             Real inner_Bisi_sj=X::innr(Bisi,sj);
 
-                            // Determine (<yi,p>-<Bisi,p>)/(<y_i,s_i>-<Bisi,si>)
-                            // Store in beta 
-                            Real beta= (inner_yi_sj-inner_Bisi_sj) /
+                            // Determine
+                            // (<yi,dx>-<Bisi,dx>) / (<yi,si>-<Bisi,si>).
+                            // Store in beta.
+                            //
+                            // CHECK THIS FORMULA
+                            Real beta = (inner_yi_sj-inner_Bisi_sj) /
                                 (inner_yi_si-inner_Bisi_si);
                         
                             // Determine beta y_i + Bisj.  Store in Bisj. 
@@ -2683,28 +2594,22 @@ namespace Optizelle{
             };
 
             // The inverse BFGS operator 
-            /* The oldY list has the following structure
-                oldY[0] = y_k = grad J(u_k) - grad J(u_{k-1})
-                oldY[1] = y_{k-1} = grad J(u_{k-1}) - grad J(u_{k-2})
-                The oldS list has the following structure
-                oldS[0] = s_k = u_k - u_k{-1}
-                oldS[1] = s_{k-1} = u_{k-1} - u_k{k-2} */
             class InvBFGS : public Operator <Real,XX,XX> {
             private:
-                // Stored quasi-Newton information
-                const std::list<X_Vector>& oldY;
-                const std::list<X_Vector>& oldS;
-
                 // Messaging device in case the quasi-Newton information is bad
-                const Messaging& msg;
+                Messaging const & msg;
+
+                // Stored quasi-Newton information
+                std::list <X_Vector> const & oldY;
+                std::list <X_Vector> const & oldS;
             public:
                 InvBFGS(
-                    const Messaging& msg_,
-                    const typename State::t& state
-                ) : oldY(state.oldY), oldS(state.oldS), msg(msg_) {};
+                    Messaging const & msg_,
+                    typename State::t const & state
+                ) : msg(msg_), oldY(state.oldY), oldS(state.oldS) {};
                 
                 // Operator interface
-                void operator () (const X_Vector& p,X_Vector& result) const{
+                void operator () (X_Vector const & dx,X_Vector & result) const{
 
                     // Check that the number of stored gradient and trial step
                     // differences is the same.
@@ -2731,8 +2636,8 @@ namespace Optizelle{
                     std::vector <Real> alpha(oldY.size());
                     std::vector <Real> rho(oldY.size());
 
-                    // Before we begin computing, copy p to our result 
-                    X::copy(p,result);
+                    // Before we begin computing, copy dx to our result 
+                    X::copy(dx,result);
 
                     // In order to compute, we first iterate over all the stored
                     // element in the forward direction.  Then, we iterate over
@@ -2744,8 +2649,8 @@ namespace Optizelle{
                     Natural i(0);
                     while(y_iter != oldY.end()){
                         // Find y_k, s_k, and their inner product
-                        const X_Vector& y_k=*(y_iter++);
-                        const X_Vector& s_k=*(s_iter++);
+                        X_Vector const & y_k=*(y_iter++);
+                        X_Vector const & s_k=*(s_iter++);
                         rho[i]=Real(1.)/X::innr(y_k,s_k);
 
                         // Find rho_i <s_i,result>.  Store in alpha_i
@@ -2765,8 +2670,8 @@ namespace Optizelle{
                     // complete the computation
                     while(y_iter != oldY.begin()){
                         // Find y_k and s_k
-                        const X_Vector& s_k=*(--s_iter);
-                        const X_Vector& y_k=*(--y_iter);
+                        X_Vector const & s_k=*(--s_iter);
+                        X_Vector const & y_k=*(--y_iter);
 
                         // beta=rho_i <y_i,result>
                         Real beta= rho[--i] * X::innr(y_k,result);
@@ -2777,21 +2682,20 @@ namespace Optizelle{
                 }
             };
             
-            // The inverse SR1 operator.  
-            /* In this definition, we take a shortcut and simply use the SR1
-                Hessian approximation where we swap Y and S.  The oldY and oldS
-                lists have the same structure as the BFGS operator. */
+            // The inverse SR1 operator.  In this definition, we take a
+            // shortcut and simply use the SR1 Hessian approximation where we
+            // swap Y and S.
             class InvSR1 : public Operator <Real,XX,XX> {
             private:
                 // Store the SR1 operator
                 SR1 sr1;
             public:
                 InvSR1(
-                    const Messaging& msg,
-                    const typename State::t& state
+                    Messaging const & msg,
+                    typename State::t const & state
                 ) : sr1(msg,state) {};
-                void operator () (const X_Vector& p,X_Vector& result) const{
-                    sr1(p,result);
+                void operator () (X_Vector const & dx,X_Vector & result) const{
+                    sr1(dx,result);
                 }
             };
 
@@ -2800,26 +2704,24 @@ namespace Optizelle{
                 : public Optizelle::ScalarValuedFunction <Real,XX>
             {
             private:
-
                 // Hessian approximation
                 std::unique_ptr <Operator <Real,XX,XX> > H;
 
                 // Underlying function
                 std::unique_ptr <Optizelle::ScalarValuedFunction <Real,XX> > f;
 
-                // This forces derived classes to call the constructor that
-                // depends on the state
-                HessianAdjustedFunction() {}
-
             public:
+                // Prevent constructors 
+                NO_DEFAULT_COPY_ASSIGNMENT(HessianAdjustedFunction);
+
                 // The constructor determines whether we really need to build
                 // a Hessian-vector product or if we use an internal
                 // approximation
                 HessianAdjustedFunction(
-                    const Messaging& msg,
-                    const typename State::t& state,
-                    typename Functions::t& fns
-                ) : f(std::move(fns.f)) {
+                    Messaging const & msg,
+                    typename State::t const & state,
+                    typename Functions::t & fns
+                ) : H(nullptr), f(std::move(fns.f)) {
                     // Determine the Hessian approximation
                     switch(state.H_type){
                         case Operators::Identity:
@@ -2843,12 +2745,12 @@ namespace Optizelle{
                 }
 
                  // <- f(x) 
-                 Real operator () (const X_Vector& x) const {
+                 Real operator () (X_Vector const & x) const {
                     return (*f)(x);
                  }
 
                  // grad = grad f(x) 
-                 void grad(const X_Vector& x,X_Vector& grad) const {
+                 void grad(X_Vector const & x,X_Vector & grad) const {
                         f->grad(x,grad);
                  }
 
@@ -2859,9 +2761,9 @@ namespace Optizelle{
                  // routine selects whether or not we use the hessvec 
                  // provided by the user.
                  virtual void hessvec(
-                     const X_Vector& x,
-                     const X_Vector& dx,
-                     X_Vector& H_dx 
+                     X_Vector const & x,
+                     X_Vector const & dx,
+                     X_Vector & H_dx 
                  ) const {
                      if(H.get()!=nullptr) 
                         (*H)(dx,H_dx);
@@ -2871,7 +2773,7 @@ namespace Optizelle{
             };
 
             // Check that all the functions are defined
-            static void check(const Messaging& msg,const t& fns) {
+            static void check(Messaging const & msg,t const & fns) {
                 // Check that objective function exists 
                 if(fns.f.get()==nullptr)
                     msg.error("Missing an objective function definition.");
@@ -2889,9 +2791,9 @@ namespace Optizelle{
             // Initialize any missing functions for just unconstrained
             // optimization.
             static void init_(
-                const Messaging& msg,
-                const typename State::t& state,
-                t& fns
+                Messaging const & msg,
+                typename State::t const & state,
+                t & fns
             ) {
                 // Create the objective modifications
                 fns.f_mod.reset(
@@ -2933,9 +2835,9 @@ namespace Optizelle{
 
             // Initialize any missing functions 
             static void init(
-                const Messaging& msg,
-                const typename State::t& state,
-                t& fns
+                Messaging const & msg,
+                typename State::t const & state,
+                t & fns
             ) {
                 Unconstrained <Real,XX>::Functions::init_(msg,state,fns);
             }
@@ -2943,21 +2845,18 @@ namespace Optizelle{
 
         // Contains functions that assist in creating an output for diagonstics
         struct Printer {
-        private:
-            // This is a namespace inside of a class.  Do not allow
-            // construction.
-            Printer();
+            // Disallow constructors
+            NO_CONSTRUCTORS(Printer);
 
-        public:
             // Gets the header for the state information
             static void getStateHeader_(
-                const typename State::t& state,
-                std::list <std::string>& out
+                typename State::t const & state,
+                std::list <std::string> & out
             ) {
 
                 // Create some shortcuts
-                const AlgorithmClass::t& algorithm_class=state.algorithm_class;
-                const LineSearchDirection::t& dir=state.dir;
+                AlgorithmClass::t const & algorithm_class=state.algorithm_class;
+                LineSearchDirection::t const & dir=state.dir;
 
                 // Basic information
                 out.emplace_back(Utility::atos("Iter"));
@@ -2990,39 +2889,39 @@ namespace Optizelle{
 
             // Combines all of the state headers
             static void getStateHeader(
-                const typename State::t& state,
-                std::list <std::string>& out
+                typename State::t const & state,
+                std::list <std::string> & out
             ) {
                 Unconstrained <Real,XX>::Printer::getStateHeader_(state,out);
             }
 
             // Gets the state information for output
             static void getState_(
-                const typename Functions::t& fns,
-                const typename State::t& state,
-                const bool blank,
-                const bool noiter,
-                std::list <std::string>& out
+                typename Functions::t const & fns,
+                typename State::t const & state,
+                bool const & blank,
+                bool const & noiter,
+                std::list <std::string> & out
             ) {
 
                 // Create some shortcuts
-                const ScalarValuedFunctionModifications <Real,XX>& f_mod
+                ScalarValuedFunctionModifications <Real,XX> const & f_mod
                     = *(fns.f_mod);
-                const X_Vector& x=state.x.back();
-                const X_Vector& dx=state.dx.back();
-                const X_Vector& grad=state.grad.back();
-                const Natural& iter=state.iter;
-                const Real& f_x=state.f_x;
-                const Natural& krylov_iter=state.krylov_iter;
-                const Real& krylov_rel_err=state.krylov_rel_err;
-                const KrylovStop::t& krylov_stop=state.krylov_stop;
-                const Natural& linesearch_iter=state.linesearch_iter;
-                const Real& ared=state.ared;
-                const Real& pred=state.pred;
-                const Real& alpha=state.alpha;
-                const AlgorithmClass::t& algorithm_class=state.algorithm_class;
-                const LineSearchDirection::t& dir=state.dir;
-                const Natural& rejected_trustregion=state.rejected_trustregion;
+                X_Vector const & x=state.x;
+                X_Vector const & dx=state.dx;
+                X_Vector const & grad=state.grad;
+                Natural const & iter=state.iter;
+                Real const & f_x=state.f_x;
+                Natural const & krylov_iter=state.krylov_iter;
+                Real const & krylov_rel_err=state.krylov_rel_err;
+                KrylovStop::t const & krylov_stop=state.krylov_stop;
+                Natural const & linesearch_iter=state.linesearch_iter;
+                Real const & ared=state.ared;
+                Real const & pred=state.pred;
+                Real const & alpha=state.alpha;
+                AlgorithmClass::t const & algorithm_class=state.algorithm_class;
+                LineSearchDirection::t const & dir=state.dir;
+                Natural const & rejected_trustregion=state.rejected_trustregion;
 
                 // Figure out if we're at the absolute beginning of the
                 // optimization.  We have to be a little saavy about this
@@ -3039,8 +2938,7 @@ namespace Optizelle{
                 // Determine some extra diagnostic information
                 Real merit_x=f_mod.merit(x,f_x);
                 Real norm_dx=sqrt(X::innr(dx,dx));
-                X_Vector grad_diag;
-                    X::init(grad,grad_diag);
+                X_Vector grad_diag(X::init(grad));
                     f_mod.grad_diag(x,grad,grad_diag);
                 Real norm_grad=sqrt(X::innr(grad_diag,grad_diag));
 
@@ -3109,11 +3007,11 @@ namespace Optizelle{
 
             // Combines all of the state information
             static void getState(
-                const typename Functions::t& fns,
-                const typename State::t& state,
-                const bool blank,
-                const bool noiter,
-                std::list <std::string>& out
+                typename Functions::t const & fns,
+                typename State::t const & state,
+                bool const & blank,
+                bool const & noiter,
+                std::list <std::string> & out
             ) {
                 Unconstrained <Real,XX>::Printer
                     ::getState_(fns,state,blank,noiter,out);
@@ -3121,12 +3019,12 @@ namespace Optizelle{
 
             // Get the header for the Krylov iteration
             static void getKrylovHeader_(
-                const typename State::t& state,
-                std::list <std::string>& out
+                typename State::t const & state,
+                std::list <std::string> & out
             ) {
                 // Create some shortcuts
-                const AlgorithmClass::t& algorithm_class=state.algorithm_class;
-                const LineSearchDirection::t& dir=state.dir;
+                AlgorithmClass::t const & algorithm_class=state.algorithm_class;
+                LineSearchDirection::t const & dir=state.dir;
 
                 // In case we're using a Krylov method
                 if(    algorithm_class==AlgorithmClass::TrustRegion
@@ -3140,22 +3038,22 @@ namespace Optizelle{
 
             // Combines all of the Krylov headers
             static void getKrylovHeader(
-                const typename State::t& state,
-                std::list <std::string>& out
+                typename State::t const & state,
+                std::list <std::string> & out
             ) {
                 Unconstrained <Real,XX>::Printer::getKrylovHeader_(state,out);
             }
             
             // Get the information for the Krylov iteration
             static void getKrylov_(
-                const typename State::t& state,
-                const bool blank,
-                std::list <std::string>& out
+                typename State::t const & state,
+                bool const & blank,
+                std::list <std::string> & out
             ) {
                 // Create some shortcuts
-                const Natural& krylov_iter=state.krylov_iter;
-                const Natural& krylov_iter_total=state.krylov_iter_total;
-                const Real& krylov_rel_err=state.krylov_rel_err;
+                Natural const & krylov_iter=state.krylov_iter;
+                Natural const & krylov_iter_total=state.krylov_iter_total;
+                Real const & krylov_rel_err=state.krylov_rel_err;
 
                 // Get a iterator to the last element prior to inserting
                 // elements
@@ -3179,9 +3077,9 @@ namespace Optizelle{
 
             // Combines all of the Krylov information
             static void getKrylov(
-                const typename State::t& state,
-                const bool blank,
-                std::list <std::string>& out
+                typename State::t const & state,
+                bool const & blank,
+                std::list <std::string> & out
             ) {
                 Unconstrained <Real,XX>::Printer::getKrylov_(state,blank,out);
             }
@@ -3189,33 +3087,29 @@ namespace Optizelle{
 
         // This contains the different algorithms used for optimization 
         struct Algorithms {
-        private:
-            // This is a namespace inside of a class.  Do not allow
-            // construction.
-            Algorithms();
+            // Disallow constructors
+            NO_CONSTRUCTORS(Algorithms);
 
-        public:
             // Checks a set of stopping conditions
             static StoppingCondition::t checkStop(
-                const typename Functions::t& fns, 
-                const typename State::t& state
+                typename Functions::t const & fns, 
+                typename State::t const & state
             ){
                 // Create some shortcuts
-                const ScalarValuedFunctionModifications <Real,XX>& f_mod
+                ScalarValuedFunctionModifications <Real,XX> const & f_mod
                     = *(fns.f_mod);
-                const X_Vector& x=state.x.back();
-                const X_Vector& grad=state.grad.back();
-                const X_Vector& dx=state.dx.back();
-                const Real& norm_gradtyp=state.norm_gradtyp;
-                const Real& norm_dxtyp=state.norm_dxtyp;
-                const Natural& iter=state.iter;
-                const Natural& iter_max=state.iter_max;
-                const Real& eps_grad=state.eps_grad;
-                const Real& eps_dx=state.eps_dx;
+                X_Vector const & x=state.x;
+                X_Vector const & grad=state.grad;
+                X_Vector const & dx=state.dx;
+                Real const & norm_gradtyp=state.norm_gradtyp;
+                Real const & norm_dxtyp=state.norm_dxtyp;
+                Natural const & iter=state.iter;
+                Natural const & iter_max=state.iter_max;
+                Real const & eps_grad=state.eps_grad;
+                Real const & eps_dx=state.eps_dx;
 
                 // Find both the norm of the gradient and the step
-                X_Vector grad_stop;
-                    X::init(grad,grad_stop);
+                X_Vector grad_stop(X::init(grad));
                 f_mod.grad_stop(x,grad,grad_stop);
                 const Real norm_grad=sqrt(X::innr(grad_stop,grad_stop));
                 const Real norm_dx=sqrt(X::innr(dx,dx));
@@ -3243,13 +3137,13 @@ namespace Optizelle{
             struct HessianOperator : public Operator <Real,XX,XX> {
             private:
                 // Store the objective
-                const ScalarValuedFunction <Real,XX>& f;
+                ScalarValuedFunction <Real,XX> const & f;
 
                 // Objective modifications
-                const ScalarValuedFunctionModifications <Real,XX>& f_mod;
+                ScalarValuedFunctionModifications <Real,XX> const & f_mod;
 
                 // Store a reference to the base of the Hessian-vector product
-                const X_Vector& x;
+                X_Vector const & x;
 
                 // Allocate memory for the Hessian modification
                 mutable X_Vector H_dx;
@@ -3257,15 +3151,16 @@ namespace Optizelle{
             public:
                 // Take in the objective and the base point during construction 
                 HessianOperator(
-                    const ScalarValuedFunction <Real,XX>& f_,
-                    const ScalarValuedFunctionModifications <Real,XX>& f_mod_,
-                    const X_Vector& x_)
-                : f(f_), f_mod(f_mod_), x(x_) {
-                    X::init(x,H_dx);
-                }
+                    ScalarValuedFunction <Real,XX> const & f_,
+                    ScalarValuedFunctionModifications <Real,XX> const & f_mod_,
+                    X_Vector const & x_)
+                : f(f_), f_mod(f_mod_), x(x_), H_dx(X::init(x_))
+                {}
 
                 // Basic application
-                void operator () (const X_Vector& dx,X_Vector &Hdx_step) const {
+                void operator () (X_Vector const & dx,X_Vector & Hdx_step)
+                    const
+                {
                     f.hessvec(x,dx,H_dx);
                     f_mod.hessvec_step(x,dx,H_dx,Hdx_step);
                 }
@@ -3273,27 +3168,27 @@ namespace Optizelle{
         
             // Checks whether we accept or reject a step
             static bool checkStep(
-                const typename Functions::t& fns,
-                typename State::t& state
+                typename Functions::t const & fns,
+                typename State::t & state
             ){
                 // Create some shortcuts
-                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
-                const ScalarValuedFunctionModifications <Real,XX>&
+                ScalarValuedFunction <Real,XX> const & f=*(fns.f);
+                ScalarValuedFunctionModifications <Real,XX> const &
                     f_mod = *(fns.f_mod);
-                const X_Vector& x=state.x.front();
-                const X_Vector& dx=state.dx.front();
-                const X_Vector& grad=state.grad.front();
-                const Real& eta1=state.eta1;
-                const Real& eta2=state.eta2;
-                const Real& f_x=state.f_x;
-                const KrylovStop::t& krylov_stop=state.krylov_stop;
-                Real& delta=state.delta;
-                Real& ared=state.ared;
-                Real& pred=state.pred;
-                Real& f_xpdx=state.f_xpdx;
+                X_Vector const & x=state.x;
+                X_Vector const & dx=state.dx;
+                X_Vector const & grad=state.grad;
+                Real const & eta1=state.eta1;
+                Real const & eta2=state.eta2;
+                Real const & f_x=state.f_x;
+                KrylovStop::t const & krylov_stop=state.krylov_stop;
+                Real & delta=state.delta;
+                Real & ared=state.ared;
+                Real & pred=state.pred;
+                Real & f_xpdx=state.f_xpdx;
                 
                 // Allocate memory for temporaries that we need
-                X_Vector x_p_dx; X::init(x,x_p_dx);
+                X_Vector x_p_dx(X::init(x));
 
                 // Determine x+dx 
                 X::copy(dx,x_p_dx);
@@ -3303,16 +3198,13 @@ namespace Optizelle{
                 Real merit_x = f_mod.merit(x,f_x);
                 
                 // Determine H(x)dx
-                X_Vector H_dx;
-                    X::init(x,H_dx);
+                X_Vector H_dx(X::init(x));
                     f.hessvec(x,dx,H_dx);
-                X_Vector Hdx_step;
-                    X::init(x,Hdx_step);
+                X_Vector Hdx_step(X::init(x));
                     f_mod.hessvec_step(x,dx,H_dx,Hdx_step);
 
                 // Determine the gradient
-                X_Vector grad_step;
-                    X::init(x,grad_step);
+                X_Vector grad_step(X::init(x));
                     f_mod.grad_step(x,grad,grad_step);
 
                 // Calculate the model,
@@ -3364,43 +3256,43 @@ namespace Optizelle{
         
             // Finds the trust-region step
             static void getStepTR(
-                const Messaging& msg,
-                const StateManipulator <Unconstrained <Real,XX> >& smanip,
-                const typename Functions::t& fns,
-                typename State::t& state
+                Messaging const & msg,
+                StateManipulator <Unconstrained <Real,XX> > const & smanip,
+                typename Functions::t const & fns,
+                typename State::t & state
             ){
                 // Create some shortcuts
-                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
-                const ScalarValuedFunctionModifications <Real,XX>& f_mod
+                ScalarValuedFunction <Real,XX> const & f=*(fns.f);
+                ScalarValuedFunctionModifications <Real,XX> const & f_mod
                     = *(fns.f_mod);
-                const Operator <Real,XX,XX>& PH=*(fns.PH);
-                const Operator <Real,XX,XX>& TRS=*(fns.TRS);
-                const Real& eps_dx=state.eps_dx;
-                const Real& eps_krylov=state.eps_krylov;
-                const Natural& krylov_iter_max=state.krylov_iter_max;
-                const Natural& krylov_orthog_max=state.krylov_orthog_max;
-                const Real& delta=state.delta;
-                const X_Vector& x=state.x.front();
-                const X_Vector& grad=state.grad.front();
-                const Real& norm_dxtyp=state.norm_dxtyp;
-                const KrylovSolverTruncated::t& krylov_solver
+                Operator <Real,XX,XX> const & PH=*(fns.PH);
+                Operator <Real,XX,XX> const & TRS=*(fns.TRS);
+                Real const & eps_dx=state.eps_dx;
+                Real const & eps_krylov=state.eps_krylov;
+                Natural const & krylov_iter_max=state.krylov_iter_max;
+                Natural const & krylov_orthog_max=state.krylov_orthog_max;
+                Real const & delta=state.delta;
+                X_Vector const & x=state.x;
+                X_Vector const & grad=state.grad;
+                Real const & norm_dxtyp=state.norm_dxtyp;
+                KrylovSolverTruncated::t const & krylov_solver
                     = state.krylov_solver;
-                Natural& rejected_trustregion=state.rejected_trustregion;
-                X_Vector& dx=state.dx.front();
-                Natural& krylov_iter=state.krylov_iter;
-                Natural& krylov_iter_total=state.krylov_iter_total;
-                Real& krylov_rel_err=state.krylov_rel_err;
+                Natural & rejected_trustregion=state.rejected_trustregion;
+                X_Vector & dx=state.dx;
+                Natural & krylov_iter=state.krylov_iter;
+                Natural & krylov_iter_total=state.krylov_iter_total;
+                Real & krylov_rel_err=state.krylov_rel_err;
                 KrylovStop::t& krylov_stop=state.krylov_stop;
                 std::list <X_Vector>& oldY=state.oldY; 
                 std::list <X_Vector>& oldS=state.oldS; 
-                Natural& history_reset=state.history_reset;
+                Natural & history_reset=state.history_reset;
                 
                 // Allocate some memory for the scaled trial step and the
                 // trust-region center
-                X_Vector x_tmp1; X::init(x,x_tmp1);
-                X_Vector dx_cp; X::init(x,dx_cp);
-                X_Vector grad_step; X::init(x,grad_step);
-                X_Vector minus_grad; X::init(x,minus_grad);
+                X_Vector x_tmp1(X::init(x));
+                X_Vector dx_cp(X::init(x));
+                X_Vector grad_step(X::init(x));
+                X_Vector minus_grad(X::init(x));
 
                 // Find -grad f(x) 
                 f_mod.grad_step(x,grad,grad_step);
@@ -3513,20 +3405,20 @@ namespace Optizelle{
         
             // Steepest descent search direction
             static void SteepestDescent(
-                const typename Functions::t& fns,
-                typename State::t& state
+                typename Functions::t const & fns,
+                typename State::t & state
             ) {
                 // Create some shortcuts 
-                const ScalarValuedFunctionModifications <Real,XX>&
+                ScalarValuedFunctionModifications <Real,XX> const &
                     f_mod=*(fns.f_mod);
-                const Operator <Real,XX,XX>& PH=*(fns.PH);
-                const X_Vector& x=state.x.front();
-                const X_Vector& grad=state.grad.front();
-                X_Vector& dx=state.dx.front();
+                Operator <Real,XX,XX> const & PH=*(fns.PH);
+                X_Vector const & x=state.x;
+                X_Vector const & grad=state.grad;
+                X_Vector & dx=state.dx;
 
                 // Determine the gradient for the step computation
-                X_Vector grad_step; X::init(grad,grad_step);
-                f_mod.grad_step(x,grad,grad_step);
+                X_Vector grad_step(X::init(grad));
+                    f_mod.grad_step(x,grad,grad_step);
 
                 // We take the steepest descent direction and apply the
                 // preconditioner.
@@ -3536,21 +3428,21 @@ namespace Optizelle{
     
             // Nonlinear Conjugate Gradient
             static void NonlinearCG(
-                const typename NonlinearCGDirections::t dir,
-                const typename Functions::t& fns,
-                typename State::t& state
+                typename NonlinearCGDirections::t const & dir,
+                typename Functions::t const & fns,
+                typename State::t & state
             ) {
             
                 // Create some shortcuts 
-                const ScalarValuedFunctionModifications <Real,XX>&
+                ScalarValuedFunctionModifications <Real,XX> const &
                     f_mod=*(fns.f_mod);
-                const Operator <Real,XX,XX>& PH=*(fns.PH);
-                const X_Vector& x=state.x.front();
-                const X_Vector& grad=state.grad.front();
-                const Real& alpha=state.alpha;
-                X_Vector& dx_old=state.dx_old.front();
-                Natural& iter=state.iter;
-                X_Vector& dx=state.dx.front();
+                Operator <Real,XX,XX> const & PH=*(fns.PH);
+                X_Vector const & x=state.x;
+                X_Vector const & grad=state.grad;
+                Real const & alpha=state.alpha;
+                X_Vector & dx_old=state.dx_old;
+                Natural & iter=state.iter;
+                X_Vector & dx=state.dx;
 
                 // Scale dx by 1/alpha.  In our algorithms, we always stored
                 // alpha*dx in order to better integrate with trust-region
@@ -3560,8 +3452,8 @@ namespace Optizelle{
                 X::scal(1./alpha,dx_old);
 
                 // Determine the gradient for the step computation
-                X_Vector grad_step; X::init(grad,grad_step);
-                f_mod.grad_step(x,grad,grad_step);
+                X_Vector grad_step(X::init(grad));
+                    f_mod.grad_step(x,grad,grad_step);
 
                 // If we're on the first iterations, we take the steepest
                 // descent direction
@@ -3599,31 +3491,27 @@ namespace Optizelle{
 
             // Fletcher-Reeves CG search direction
             static Real FletcherReeves(
-                const typename Functions::t& fns,
-                typename State::t& state
+                typename Functions::t const & fns,
+                typename State::t & state
             ) {
                 // Create some shortcuts 
-                const ScalarValuedFunctionModifications <Real,XX>&
+                ScalarValuedFunctionModifications <Real,XX> const &
                     f_mod=*(fns.f_mod);
-                const Operator <Real,XX,XX>& PH=*(fns.PH);
-                const X_Vector& x=state.x.front();
-                const X_Vector& grad=state.grad.front();
-                const X_Vector& grad_old=state.grad_old.front();
+                Operator <Real,XX,XX> const & PH=*(fns.PH);
+                X_Vector const & x=state.x;
+                X_Vector const & grad=state.grad;
+                X_Vector const & grad_old=state.grad_old;
 
                 // Determine the gradient for the step computation
-                X_Vector grad_step;
-                    X::init(grad,grad_step);
+                X_Vector grad_step(X::init(grad));
                     f_mod.grad_step(x,grad,grad_step);
-                X_Vector grad_old_step;
-                    X::init(grad,grad_old_step);
+                X_Vector grad_old_step(X::init(grad));
                     f_mod.grad_step(x,grad_old,grad_old_step);
 
                 // Apply the preconditioner to the gradients 
-                X_Vector PH_grad_step;
-                    X::init(grad_step,PH_grad_step);
+                X_Vector PH_grad_step(X::init(grad_step));
                     PH(grad_step,PH_grad_step);
-                X_Vector PH_grad_old_step;
-                    X::init(grad_old_step,PH_grad_old_step);
+                X_Vector PH_grad_old_step(X::init(grad_old_step));
                     PH(grad_old_step,PH_grad_old_step);
 
                 // Return the momentum parameter
@@ -3633,34 +3521,32 @@ namespace Optizelle{
         
             // Polak-Ribiere CG search direction
             static Real PolakRibiere(
-                const typename Functions::t& fns,
-                typename State::t& state
+                typename Functions::t const & fns,
+                typename State::t & state
             ) {
                 // Create some shortcuts 
-                const ScalarValuedFunctionModifications <Real,XX>&
+                ScalarValuedFunctionModifications <Real,XX> const &
                     f_mod=*(fns.f_mod);
-                const Operator <Real,XX,XX>& PH=*(fns.PH);
-                const X_Vector& x=state.x.front();
-                const X_Vector& grad=state.grad.front();
-                const X_Vector& grad_old=state.grad_old.front();
+                Operator <Real,XX,XX> const & PH=*(fns.PH);
+                X_Vector const & x=state.x;
+                X_Vector const & grad=state.grad;
+                X_Vector const & grad_old=state.grad_old;
 
                 // Determine the gradient for the step computation
-                X_Vector grad_step; X::init(grad,grad_step);
-                X_Vector grad_old_step; X::init(grad,grad_old_step);
-                f_mod.grad_step(x,grad,grad_step);
-                f_mod.grad_step(x,grad_old,grad_old_step);
+                X_Vector grad_step(X::init(grad));
+                    f_mod.grad_step(x,grad,grad_step);
+                X_Vector grad_old_step(X::init(grad));
+                    f_mod.grad_step(x,grad_old,grad_old_step);
 
                 // Find grad-grad_old 
-                X_Vector grad_m_gradold; X::init(grad,grad_m_gradold);
+                X_Vector grad_m_gradold(X::init(grad));
                 X::copy(grad_step,grad_m_gradold);
                 X::axpy(Real(-1.),grad_old_step,grad_m_gradold);
                 
                 // Apply the preconditioner to the gradients 
-                X_Vector PH_grad_step;
-                    X::init(grad_step,PH_grad_step);
+                X_Vector PH_grad_step(X::init(grad_step));
                     PH(grad_step,PH_grad_step);
-                X_Vector PH_grad_old_step;
-                    X::init(grad_old_step,PH_grad_old_step);
+                X_Vector PH_grad_old_step(X::init(grad_old_step));
                     PH(grad_old_step,PH_grad_old_step);
                     
                 // Return the momentum parameter
@@ -3670,35 +3556,32 @@ namespace Optizelle{
             
             // Hestenes-Stiefel search direction
             static Real HestenesStiefel(
-                const typename Functions::t& fns,
-                typename State::t& state
+                typename Functions::t const & fns,
+                typename State::t & state
             ) {
 
                 // Create some shortcuts 
-                const ScalarValuedFunctionModifications <Real,XX>&
+                ScalarValuedFunctionModifications <Real,XX> const &
                     f_mod=*(fns.f_mod);
-                const Operator <Real,XX,XX>& PH=*(fns.PH);
-                const X_Vector& x=state.x.front();
-                const X_Vector& grad=state.grad.front();
-                const X_Vector& grad_old=state.grad_old.front();
-                const X_Vector& dx_old=state.dx_old.front();
+                Operator <Real,XX,XX> const & PH=*(fns.PH);
+                X_Vector const & x=state.x;
+                X_Vector const & grad=state.grad;
+                X_Vector const & grad_old=state.grad_old;
+                X_Vector const & dx_old=state.dx_old;
 
                 // Determine the gradient for the step computation
-                X_Vector grad_step;
-                    X::init(grad,grad_step);
+                X_Vector grad_step(X::init(grad));
                     f_mod.grad_step(x,grad,grad_step);
-                X_Vector grad_old_step;
-                    X::init(grad,grad_old_step);
+                X_Vector grad_old_step(X::init(grad));
                     f_mod.grad_step(x,grad_old,grad_old_step);
 
                 // Find grad-grad_old 
-                X_Vector grad_m_gradold; X::init(grad,grad_m_gradold);
+                X_Vector grad_m_gradold(X::init(grad));
                 X::copy(grad_step,grad_m_gradold);
                 X::axpy(Real(-1.),grad_old_step,grad_m_gradold);
                 
                 // Apply the preconditioner to the gradient
-                X_Vector PH_grad_step;
-                    X::init(grad_step,PH_grad_step);
+                X_Vector PH_grad_step(X::init(grad_step));
                     PH(grad_step,PH_grad_step);
                     
                 // Return the momentum parameter.
@@ -3709,21 +3592,21 @@ namespace Optizelle{
 
             // BFGS search direction
             static void BFGS(
-                const Messaging& msg,
-                const typename Functions::t& fns,
-                typename State::t& state
+                Messaging const & msg,
+                typename Functions::t const & fns,
+                typename State::t & state
             ) {
                 
                 // Create some shortcuts 
-                const ScalarValuedFunctionModifications <Real,XX>&
+                ScalarValuedFunctionModifications <Real,XX> const &
                     f_mod=*(fns.f_mod);
-                const X_Vector& x=state.x.front();
-                const X_Vector& grad=state.grad.front();
-                X_Vector& dx=state.dx.front();
+                X_Vector const & x=state.x;
+                X_Vector const & grad=state.grad;
+                X_Vector & dx=state.dx;
 
                 // Determine the gradient for the step computation
-                X_Vector grad_step; X::init(grad,grad_step);
-                f_mod.grad_step(x,grad,grad_step);
+                X_Vector grad_step(X::init(grad));
+                    f_mod.grad_step(x,grad,grad_step);
 
                 // Create the inverse BFGS operator
                 typename Functions::InvBFGS Hinv(msg,state); 
@@ -3737,24 +3620,24 @@ namespace Optizelle{
 
             // Compute a Golden-Section search between 0 and alpha0. 
             static typename LineSearchTermination::t goldenSection(
-                const typename Functions::t& fns,
-                typename State::t& state
+                typename Functions::t const & fns,
+                typename State::t & state
             ) {
                 // Create some shortcuts
-                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
-                const ScalarValuedFunctionModifications <Real,XX>&
+                ScalarValuedFunction <Real,XX> const & f=*(fns.f);
+                ScalarValuedFunctionModifications <Real,XX> const &
                     f_mod=*(fns.f_mod);
-                const X_Vector& x=state.x.front();
-                const X_Vector& dx=state.dx.front();
-                const Natural& iter_max=state.linesearch_iter_max;
-                const Real& alpha0=state.alpha0;
-                Natural& iter_total=state.linesearch_iter_total;
-                Natural& iter=state.linesearch_iter;
-                Real& f_xpdx=state.f_xpdx;
-                Real& alpha=state.alpha;
+                X_Vector const & x=state.x;
+                X_Vector const & dx=state.dx;
+                Natural const & iter_max=state.linesearch_iter_max;
+                Real const & alpha0=state.alpha0;
+                Natural & iter_total=state.linesearch_iter_total;
+                Natural & iter=state.linesearch_iter;
+                Real & f_xpdx=state.f_xpdx;
+                Real & alpha=state.alpha;
                 
                 // Create one work element that holds x+mu dx or x+lambda dx 
-                X_Vector x_p_dx; X::init(x,x_p_dx);
+                X_Vector x_p_dx(X::init(x));
 
                 // Find 1 over the golden ratio
                 Real beta=Real(2./(1.+sqrt(5.)));
@@ -3846,25 +3729,24 @@ namespace Optizelle{
             // guard procedure that checks the sufficient decrease condition
             // in order to do the line-search.
             static void backTracking(
-                const typename Functions::t& fns,
-                typename State::t& state
+                typename Functions::t const & fns,
+                typename State::t & state
             ) {
                 // Create some shortcuts
-                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
-                const X_Vector& x=state.x.front();
-                const X_Vector& dx=state.dx.front();
-                const Real& alpha0=state.alpha0;
-                Natural& iter_total=state.linesearch_iter_total;
-                Natural& iter=state.linesearch_iter;
-                Real& f_xpdx=state.f_xpdx;
-                Real& alpha=state.alpha;
+                ScalarValuedFunction <Real,XX> const & f=*(fns.f);
+                X_Vector const & x=state.x;
+                X_Vector const & dx=state.dx;
+                Real const & alpha0=state.alpha0;
+                Natural & iter_total=state.linesearch_iter_total;
+                Natural & iter=state.linesearch_iter;
+                Real & f_xpdx=state.f_xpdx;
+                Real & alpha=state.alpha;
                             
                 // Set alpha to the base alpha 
                 alpha=alpha0;
                
                 // Determine x+alpha dx 
-                X_Vector x_p_adx;
-                    X::init(x,x_p_adx);
+                X_Vector x_p_adx(X::init(x));
                     X::copy(x,x_p_adx);
                     X::axpy(alpha,dx,x_p_adx);
     
@@ -3879,42 +3761,38 @@ namespace Optizelle{
             // Find the line search parameter based on the 2-point approximation
             // from Barzilai and Borwein
             static void twoPoint(
-                const typename Functions::t& fns,
-                typename State::t& state
+                typename Functions::t const & fns,
+                typename State::t & state
             ) {
                 // Create some shortcuts
-                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
-                const ScalarValuedFunctionModifications <Real,XX>& f_mod
+                ScalarValuedFunction <Real,XX> const & f=*(fns.f);
+                ScalarValuedFunctionModifications <Real,XX> const & f_mod
                     = *(fns.f_mod);
-                const X_Vector& x=state.x.front();
-                const X_Vector& grad=state.grad.front();
-                const X_Vector& x_old=state.x_old.front();
-                const X_Vector& grad_old=state.grad_old.front();
-                const LineSearchKind::t& kind=state.kind;
-                Real& alpha=state.alpha;
-                X_Vector& dx=state.dx.front();
-                Natural& iter_total=state.linesearch_iter_total;
-                Natural& iter=state.linesearch_iter;
-                Real& f_xpdx=state.f_xpdx;
+                X_Vector const & x=state.x;
+                X_Vector const & grad=state.grad;
+                X_Vector const & x_old=state.x_old;
+                X_Vector const & grad_old=state.grad_old;
+                LineSearchKind::t const & kind=state.kind;
+                Real & alpha=state.alpha;
+                X_Vector & dx=state.dx;
+                Natural & iter_total=state.linesearch_iter_total;
+                Natural & iter=state.linesearch_iter;
+                Real & f_xpdx=state.f_xpdx;
 
                 // Find delta_x
-                X_Vector delta_x;
-                    X::init(x,delta_x);
+                X_Vector delta_x(X::init(x));
                     X::copy(x,delta_x);
                     X::axpy(Real(-1.),x_old,delta_x);
 
                 // Determine the gradient for the step computation
-                X_Vector grad_step;
-                    X::init(grad,grad_step);
+                X_Vector grad_step(X::init(grad));
                     f_mod.grad_step(x,grad,grad_step);
                 
-                X_Vector grad_old_step;
-                    X::init(grad,grad_old_step);
+                X_Vector grad_old_step(X::init(grad));
                     f_mod.grad_step(x,grad_old,grad_old_step);
 
                 // Find delta_grad
-                X_Vector delta_grad;
-                    X::init(x,delta_grad);
+                X_Vector delta_grad(X::init(x));
                     X::copy(grad_step,delta_grad);
                     X::axpy(Real(-1.),grad_old_step,delta_grad);
 
@@ -3926,8 +3804,7 @@ namespace Optizelle{
                     alpha=X::innr(delta_x,delta_x)/X::innr(delta_x,delta_grad);
 
                 // Save the objective value at this step
-                X_Vector x_p_adx;
-                    X::init(x,x_p_adx);
+                X_Vector x_p_adx(X::init(x));
                     X::copy(x,x_p_adx);
                     X::axpy(alpha,dx,x_p_adx);
                 f_xpdx=f(x_p_adx);
@@ -3939,45 +3816,45 @@ namespace Optizelle{
             
             // Finds a trial step using a line-search for globalization
             static void getStepLS(
-                const Messaging& msg,
-                const StateManipulator <Unconstrained <Real,XX> >& smanip,
-                const typename Functions::t& fns,
-                typename State::t& state
+                Messaging const & msg,
+                StateManipulator <Unconstrained <Real,XX> > const & smanip,
+                typename Functions::t const & fns,
+                typename State::t & state
             ){
                 // Create some shortcuts
-                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
-                const ScalarValuedFunctionModifications <Real,XX>& f_mod
+                ScalarValuedFunction <Real,XX> const & f=*(fns.f);
+                ScalarValuedFunctionModifications <Real,XX> const & f_mod
                     = *(fns.f_mod);
-                const Operator <Real,XX,XX>& PH=*(fns.PH);
-                const Operator <Real,XX,XX>& TRS=*(fns.TRS);
-                const X_Vector& x=state.x.front();
-                const X_Vector& grad=state.grad.front();
-                const LineSearchDirection::t& dir=state.dir;
-                const LineSearchKind::t& kind=state.kind;
-                const Natural& iter=state.iter;
-                const Real& f_x=state.f_x;
-                const Real& eps_dx=state.eps_dx;
-                const Real& norm_dxtyp=state.norm_dxtyp;
-                const Real& eps_krylov=state.eps_krylov;
-                const Natural& krylov_iter_max=state.krylov_iter_max;
-                const Natural& krylov_orthog_max=state.krylov_orthog_max;
-                const KrylovSolverTruncated::t& krylov_solver
+                Operator <Real,XX,XX> const & PH=*(fns.PH);
+                Operator <Real,XX,XX> const & TRS=*(fns.TRS);
+                X_Vector const & x=state.x;
+                X_Vector const & grad=state.grad;
+                LineSearchDirection::t const & dir=state.dir;
+                LineSearchKind::t const & kind=state.kind;
+                Natural const & iter=state.iter;
+                Real const & f_x=state.f_x;
+                Real const & eps_dx=state.eps_dx;
+                Real const & norm_dxtyp=state.norm_dxtyp;
+                Real const & eps_krylov=state.eps_krylov;
+                Natural const & krylov_iter_max=state.krylov_iter_max;
+                Natural const & krylov_orthog_max=state.krylov_orthog_max;
+                KrylovSolverTruncated::t const & krylov_solver
                     = state.krylov_solver;
-                const Real& c1=state.c1;
-                X_Vector& dx=state.dx.front();
-                Real& f_xpdx=state.f_xpdx;
-                Real& alpha0=state.alpha0;
-                Real& alpha=state.alpha;
-                Real& krylov_rel_err=state.krylov_rel_err;
-                Natural& krylov_iter=state.krylov_iter;
-                Natural& krylov_iter_total=state.krylov_iter_total;
+                Real const & c1=state.c1;
+                X_Vector & dx=state.dx;
+                Real & f_xpdx=state.f_xpdx;
+                Real & alpha0=state.alpha0;
+                Real & alpha=state.alpha;
+                Real & krylov_rel_err=state.krylov_rel_err;
+                Natural & krylov_iter=state.krylov_iter;
+                Natural & krylov_iter_total=state.krylov_iter_total;
                 KrylovStop::t& krylov_stop=state.krylov_stop;
                 
                 // Manipulate the state if required
                 smanip(fns,state,OptimizationLocation::BeforeGetStep);
 
                 // Create the trust-region center 
-                X_Vector x_cntr; X::init(x,x_cntr);
+                X_Vector x_cntr(X::init(x));
                 X::zero(x_cntr);
 
                 // Find the line-search direction
@@ -4001,12 +3878,10 @@ namespace Optizelle{
                     break;
                 case LineSearchDirection::NewtonCG: {
                     HessianOperator H(f,f_mod,x);
-                    X_Vector dx_cp; X::init(x,dx_cp);
-                    X_Vector grad_step;
-                        X::init(grad,grad_step);
+                    X_Vector dx_cp(X::init(x));
+                    X_Vector grad_step(X::init(grad));
                         f_mod.grad_step(x,grad,grad_step);
-                    X_Vector minus_grad;
-                        X::init(x,minus_grad);
+                    X_Vector minus_grad(X::init(x));
                         X::copy(grad_step,minus_grad);
                         X::scal(Real(-1.),minus_grad);
 
@@ -4075,13 +3950,11 @@ namespace Optizelle{
                     Real merit_x = f_mod.merit(x,f_x);
                     
                     // Determine the gradient at x
-                    X_Vector grad_step;
-                        X::init(x,grad_step);
+                    X_Vector grad_step(X::init(x));
                         f_mod.grad_step(x,grad,grad_step);
                 
                     // Allocate memory for x+alpha dx 
-                    X_Vector x_p_adx;
-                        X::init(x,x_p_adx);
+                    X_Vector x_p_adx(X::init(x));
 
                     // Keep track of whether or not we hit a bound with the
                     // line-search
@@ -4183,13 +4056,13 @@ namespace Optizelle{
 
             // Finds a new trial step
             static void getStep(
-                const Messaging& msg,
-                const StateManipulator <Unconstrained <Real,XX> >& smanip,
-                const typename Functions::t& fns,
-                typename State::t& state
+                Messaging const & msg,
+                StateManipulator <Unconstrained <Real,XX> > const & smanip,
+                typename Functions::t const & fns,
+                typename State::t & state
             ){
                 // Create some shortcuts
-                const AlgorithmClass::t& algorithm_class=state.algorithm_class;
+                AlgorithmClass::t const & algorithm_class=state.algorithm_class;
 
                 // Choose whether we use a line-search or trust-region method
                 switch(algorithm_class){
@@ -4207,39 +4080,37 @@ namespace Optizelle{
 
             // Updates the quasi-Newton information
             static void updateQuasi(
-                const typename Functions::t& fns,
-                typename State::t& state
+                typename Functions::t const & fns,
+                typename State::t & state
             ){
                 // Exit immediately if we're not using a quasi-Newton method
                 if(state.stored_history==0) return;
 
                 // Create some shortcuts
-                const ScalarValuedFunctionModifications <Real,XX>& f_mod
+                ScalarValuedFunctionModifications <Real,XX> const & f_mod
                     = *(fns.f_mod);
-                const X_Vector& x=state.x.front();
-                const X_Vector& grad=state.grad.front();
-                const X_Vector& x_old=state.x_old.front();
-                const X_Vector& grad_old=state.grad_old.front();
+                X_Vector const & x=state.x;
+                X_Vector const & grad=state.grad;
+                X_Vector const & x_old=state.x_old;
+                X_Vector const & grad_old=state.grad_old;
                 const Operators::t& PH_type=state.PH_type;
                 const Operators::t& H_type=state.H_type;
-                const LineSearchDirection::t& dir=state.dir;
+                LineSearchDirection::t const & dir=state.dir;
                 std::list <X_Vector>& oldY=state.oldY;
                 std::list <X_Vector>& oldS=state.oldS;
                
                 // Allocate some temp storage for y and s
-                X_Vector s; X::init(x,s);
-                X_Vector y; X::init(x,y);
+                X_Vector s(X::init(x));
+                X_Vector y(X::init(x));
 
                 // Find s = x-x_old
                 X::copy(x,s);
                 X::axpy(Real(-1.),x_old,s);
                 
                 // Determine the gradient for the quasi-Newton computation 
-                X_Vector grad_quasi;
-                    X::init(grad,grad_quasi);
+                X_Vector grad_quasi(X::init(grad));
                     f_mod.grad_quasi(x,grad,grad_quasi);
-                X_Vector grad_old_quasi;
-                    X::init(grad_old,grad_old_quasi);
+                X_Vector grad_old_quasi(X::init(grad_old));
                     f_mod.grad_quasi(x,grad_old,grad_old_quasi);
 
                 // Find y = grad - grad_old
@@ -4247,8 +4118,9 @@ namespace Optizelle{
                 X::axpy(Real(-1.),grad_old_quasi,y);
 
                 // If we're using BFGS, check that <y,s> > 0
-                if((PH_type==Operators::InvBFGS || H_type==Operators::BFGS
-                    || dir==LineSearchDirection::BFGS)
+                if((PH_type==Operators::InvBFGS ||
+                    H_type==Operators::BFGS ||
+                    dir==LineSearchDirection::BFGS)
                     && X::innr(y,s) <= Real(0.))
                     return;
 
@@ -4265,27 +4137,27 @@ namespace Optizelle{
 
             // Solves an optimization problem
             static void getMin_(
-                const Messaging& msg,
-                const StateManipulator <Unconstrained <Real,XX> >& smanip,
-                typename Functions::t& fns,
-                typename State::t& state
+                Messaging const & msg,
+                StateManipulator <Unconstrained <Real,XX> > const & smanip,
+                typename Functions::t const & fns,
+                typename State::t & state
             ){
                 // Create some shortcuts
-                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
-                const ScalarValuedFunctionModifications <Real,XX>&
+                ScalarValuedFunction <Real,XX> const & f=*(fns.f);
+                ScalarValuedFunctionModifications <Real,XX> const &
                     f_mod=*(fns.f_mod);
-                X_Vector& x=state.x.front();
-                X_Vector& grad=state.grad.front();
-                X_Vector& dx=state.dx.front();
-                X_Vector& x_old=state.x_old.front();
-                X_Vector& grad_old=state.grad_old.front();
-                X_Vector& dx_old=state.dx_old.front();
-                Real& f_x=state.f_x;
-                Real& f_xpdx=state.f_xpdx;
-                Real& norm_gradtyp=state.norm_gradtyp;
-                Real& norm_dxtyp=state.norm_dxtyp;
-                Natural& iter=state.iter;
-                StoppingCondition::t& opt_stop=state.opt_stop;
+                X_Vector & x=state.x;
+                X_Vector & grad=state.grad;
+                X_Vector & dx=state.dx;
+                X_Vector & x_old=state.x_old;
+                X_Vector & grad_old=state.grad_old;
+                X_Vector & dx_old=state.dx_old;
+                Real & f_x=state.f_x;
+                Real & f_xpdx=state.f_xpdx;
+                Real & norm_gradtyp=state.norm_gradtyp;
+                Real & norm_dxtyp=state.norm_dxtyp;
+                Natural & iter=state.iter;
+                StoppingCondition::t & opt_stop=state.opt_stop;
                 
                 // Manipulate the state if required
                 smanip(fns,state,OptimizationLocation::BeginningOfOptimization);
@@ -4303,8 +4175,7 @@ namespace Optizelle{
                     // gradient first and then possibly cache the objective
                     f.grad(x,grad);
                     f_x=f(x);
-                    X_Vector grad_stop;
-                        X::init(grad,grad_stop);
+                    X_Vector grad_stop(X::init(grad));
                         f_mod.grad_stop(x,grad,grad_stop);
                     norm_gradtyp=sqrt(X::innr(grad_stop,grad_stop));
 
@@ -4384,9 +4255,9 @@ namespace Optizelle{
             // Solves an optimization problem where the user doesn't know about
             // the state manipulator
             static void getMin(
-                const Messaging& msg,
-                typename Functions::t& fns,
-                typename State::t& state
+                Messaging const & msg,
+                typename Functions::t & fns,
+                typename State::t & state
             ){
                 // Create an empty state manipulator
                 StateManipulator <Unconstrained <Real,XX> > smanip;
@@ -4398,10 +4269,10 @@ namespace Optizelle{
             // Initializes remaining functions then solves an optimization
             // problem
             static void getMin(
-                const Messaging& msg,
-                const StateManipulator <Unconstrained <Real,XX> >& smanip,
-                typename Functions::t& fns,
-                typename State::t& state
+                Messaging const & msg,
+                StateManipulator <Unconstrained <Real,XX> > const & smanip,
+                typename Functions::t & fns,
+                typename State::t & state
             ){
                 // Initialize any remaining functions required for optimization 
                 Functions::init(msg,state,fns);
@@ -4430,10 +4301,9 @@ namespace Optizelle{
         template <typename> class YY
     > 
     struct EqualityConstrained {
-    private:
-        MODULE_CLASS(EqualityConstrained);
+        // Disallow constructors
+        NO_CONSTRUCTORS(EqualityConstrained);
 
-    public:
         // Create some shortcuts for some type names
         typedef XX <Real> X;
         typedef typename X::Vector X_Vector;
@@ -4457,37 +4327,38 @@ namespace Optizelle{
             typedef std::pair <X_Vector,Y_Vector> Vector;
 
             // Memory allocation and size setting
-            static void init(const Vector& x, Vector& y) {
-                X::init(x.first,y.first);
-                Y::init(x.second,y.second);
+            static Vector init(Vector const & x) {
+                return std::move(std::pair <X_Vector,Y_Vector> (
+                        X::init(x.first),
+                        Y::init(x.second)));
             }
 
             // y <- x (Shallow.  No memory allocation.)
-            static void copy(const Vector& x, Vector& y) {
+            static void copy(Vector const & x, Vector & y) {
                 X::copy(x.first,y.first);
                 Y::copy(x.second,y.second);
             }
 
             // x <- alpha * x
-            static void scal(const Real_& alpha, Vector& x) {
+            static void scal(Real_ const & alpha, Vector & x) {
                 X::scal(alpha,x.first);
                 Y::scal(alpha,x.second);
             }
 
             // x <- 0 
-            static void zero(Vector& x) {
+            static void zero(Vector & x) {
                 X::zero(x.first);
                 Y::zero(x.second);
             }
 
             // y <- alpha * x + y
-            static void axpy(const Real_& alpha, const Vector& x, Vector& y) {
+            static void axpy(Real_ const & alpha, Vector const & x, Vector & y){
                 X::axpy(alpha,x.first,y.first);
                 Y::axpy(alpha,x.second,y.second);
             }
 
             // innr <- <x,y>
-            static Real_ innr(const Vector& x,const Vector& y) {
+            static Real_ innr(Vector const & x,Vector const & y) {
                 return X::innr(x.first,y.first) + Y::innr(x.second,y.second);
             }
         };
@@ -4497,29 +4368,23 @@ namespace Optizelle{
         // Routines that manipulate the internal state of the optimization 
         // algorithm.
         struct State {
-        private:
-            // This is a namespace inside of a class.  Do not allow
-            // construction.
-            State();
+            // Disallow constructors
+            NO_CONSTRUCTORS(State);
 
-        public:
             // Internal state of the optimization
             struct t: public virtual Unconstrained <Real,XX>::State::t {
-            private:
                 // Prevent the use of the copy constructor and the assignment
                 // operator.  Basically, the state can hold a large amount
                 // of memory and the safe way to move this memory around
                 // is through the use of the capture and release methodology
                 // inside of the restart section.
-                t& operator = (const t&);
-                t(const t&);
+                NO_DEFAULT_COPY_ASSIGNMENT(t);
 
-            public:
                 // Equality multiplier (dual variable or Lagrange multiplier)
-                std::list <Y_Vector> y;
+                Y_Vector y;
 
                 // Step in the equality multiplier 
-                std::list <Y_Vector> dy;
+                Y_Vector dy;
 
                 // The fraction of the total trust-region used for the
                 // quasi-norm step
@@ -4549,7 +4414,7 @@ namespace Optizelle{
                 Real xi_lmh;    // Equality multiplier
 
                 // Sets all the inexactness tolerances 
-                void xi_all(const Real& xi) {
+                void xi_all(Real const & xi) {
                     xi_qn = xi;
                     xi_pg = xi;
                     xi_proj = xi;
@@ -4585,7 +4450,7 @@ namespace Optizelle{
                 // Equality constraint evaluated at x.  This is used in the
                 // quasinormal step as well as in the computation of the
                 // linear Taylor series at x in the direciton dx_n.
-                std::list <Y_Vector> g_x;
+                Y_Vector g_x;
 
                 // A typical norm for norm_gx.  Generally, we just take
                 // the value at the first iteration.
@@ -4594,158 +4459,87 @@ namespace Optizelle{
                 // Linear Taylor series at x in the direction dx_n.  This is
                 // used both in the predicted reduction as well as the
                 // residual predicted reduction. 
-                std::list <Y_Vector> gpxdxn_p_gx;
+                Y_Vector gpxdxn_p_gx;
 
                 // Derivative of the constraint applied to the tangential step
                 // this is used in the residual predicted reduction.
-                std::list <Y_Vector> gpxdxt;
+                Y_Vector gpxdxt;
 
                 // Norm of gpxdxn_p_gx.  This is used in the penalty parameter
                 // computation and predicted reduction. 
                 Real norm_gpxdxnpgx;
 
                 // Normal step
-                std::list <X_Vector> dx_n;
+                X_Vector dx_n;
                 
                 // Cauchy point for normal step
-                std::list <X_Vector> dx_ncp;
+                X_Vector dx_ncp;
 
                 // (Corrected) tangential step
-                std::list <X_Vector> dx_t;
+                X_Vector dx_t;
 
                 // Tangential step prior to correction
-                std::list <X_Vector> dx_t_uncorrected;
+                X_Vector dx_t_uncorrected;
                 
                 // Cauchy point for tangential step prior to correction
-                std::list <X_Vector> dx_tcp_uncorrected;
+                X_Vector dx_tcp_uncorrected;
                 
                 // Hessian applied to the normal step.  This is required by
                 // W_gradpHdxn as well as the predicted reduction.
-                std::list <X_Vector> H_dxn;
+                X_Vector H_dxn;
 
                 // Quantity grad f(x) + g'(x)*y + H dx_n projected into the
                 // null-space of the constraints.  This is required in the
                 // tangential subproblem and the predicted reduction.
-                std::list <X_Vector> W_gradpHdxn;
+                X_Vector W_gradpHdxn;
                 
                 // Hessian applied to the uncorrected tangential step.  This
                 // is needed in the predicted reduction.
-                std::list <X_Vector> H_dxtuncorrected;
+                X_Vector H_dxtuncorrected;
                 
                 // Initialization constructors
-                t() {
-                    EqualityConstrained <Real,XX,YY>::State::init_params(*this);
-                }
-                t(const X_Vector& x,const Y_Vector& y) {
-                    EqualityConstrained <Real,XX,YY>::State::init_params(*this);
-                    EqualityConstrained <Real,XX,YY>::State
-                        ::init_vectors(*this,x,y);
+                explicit t(X_Vector const & x_,Y_Vector const & y_) : 
+                    Unconstrained <Real,XX>::State::t(x_),
+                    y(Y::init(y_)),
+                    dy(Y::init(y_)),
+                    zeta(0.8),
+                    eta0(0.5),
+                    rho(1.0),
+                    rho_old(rho),
+                    rho_bar(1e-8),
+                    eps_constr(1e-8),
+                    xi_qn(1e-4),
+                    xi_pg(1e-4),
+                    xi_proj(1e-4),
+                    xi_tang(1e-4),
+                    xi_lmh(1e-4),
+                    xi_lmg(1e4),
+                    xi_4(2.),
+                    rpred(std::numeric_limits<Real>::quiet_NaN()),
+                    PSchur_left_type(Operators::Identity),
+                    PSchur_right_type(Operators::Identity),
+                    augsys_iter_max(100),
+                    augsys_rst_freq(0),
+                    g_x(Y::init(y_)),
+                    norm_gxtyp(std::numeric_limits<Real>::quiet_NaN()),
+                    gpxdxn_p_gx(Y::init(y_)),
+                    gpxdxt(Y::init(y_)),
+                    norm_gpxdxnpgx(std::numeric_limits<Real>::quiet_NaN()),
+                    dx_n(X::init(x_)),
+                    dx_ncp(X::init(x_)),
+                    dx_t(X::init(x_)),
+                    dx_t_uncorrected(X::init(x_)),
+                    dx_tcp_uncorrected(X::init(x_)),
+                    H_dxn(X::init(x_)),
+                    W_gradpHdxn(X::init(x_)),
+                    H_dxtuncorrected(X::init(x_))
+                {
+                    Y::copy(y_,y);
                 }
             };
             
-            // This initializes all the parameters required for equality
-            // constrained optimization.  
-            static void init_params_(t& state) {
-                state.zeta = Real(0.8);
-                state.eta0 = Real(0.5);
-                state.rho = Real(1.0);
-                state.rho_old = state.rho;
-                state.rho_bar = Real(1e-8);
-                state.eps_constr = Real(1e-8);
-                state.xi_all(Real(1e-4));
-                state.xi_lmg = Real(1e4);
-                state.xi_4 = Real(2.);
-                state.rpred=std::numeric_limits<Real>::quiet_NaN();
-                state.norm_gxtyp=std::numeric_limits<Real>::quiet_NaN();
-                state.norm_gpxdxnpgx=std::numeric_limits<Real>::quiet_NaN();
-                state.PSchur_left_type=Operators::Identity;
-                state.PSchur_right_type=Operators::Identity;
-                state.augsys_iter_max = 100;
-                state.augsys_rst_freq = 0;
-            }
-            static void init_params(t& state) {
-                Unconstrained <Real,XX>::State::init_params_(state); 
-                EqualityConstrained <Real,XX,YY>::State::init_params_(state);
-            }
-
-            // This initializes all the variables required for equality
-            // constrained optimization.  
-            static void init_vectors_(
-                t& state,
-                const X_Vector& x,
-                const Y_Vector& y
-            ) {
-                state.y.clear();
-                    state.y.emplace_back(Y_Vector());
-                    Y::init(y,state.y.front());
-                    Y::copy(y,state.y.front());
-                
-                state.dy.clear();
-                    state.dy.emplace_back(Y_Vector());
-                    Y::init(y,state.dy.front());
-                
-                state.g_x.clear();
-                    state.g_x.emplace_back(Y_Vector());
-                    Y::init(y,state.g_x.front());
-                
-                state.gpxdxn_p_gx.clear();
-                    state.gpxdxn_p_gx.emplace_back(Y_Vector());
-                    Y::init(y,state.gpxdxn_p_gx.front());
-                
-                state.gpxdxt.clear();
-                    state.gpxdxt.emplace_back(Y_Vector());
-                    Y::init(y,state.gpxdxt.front());
-                
-                state.dx_n.clear();
-                    state.dx_n.emplace_back(X_Vector());
-                    X::init(x,state.dx_n.front());
-                
-                state.dx_ncp.clear();
-                    state.dx_ncp.emplace_back(X_Vector());
-                    X::init(x,state.dx_ncp.front());
-                
-                state.dx_t.clear();
-                    state.dx_t.emplace_back(X_Vector());
-                    X::init(x,state.dx_t.front());
-                
-                state.dx_t_uncorrected.clear();
-                    state.dx_t_uncorrected.emplace_back(X_Vector());
-                    X::init(x,state.dx_t_uncorrected.front());
-                
-                state.dx_tcp_uncorrected.clear();
-                    state.dx_tcp_uncorrected.emplace_back(X_Vector());
-                    X::init(x,state.dx_tcp_uncorrected.front());
-                
-                state.H_dxn.clear();
-                    state.H_dxn.emplace_back(X_Vector());
-                    X::init(x,state.H_dxn.front());
-                
-                state.W_gradpHdxn.clear();
-                    state.W_gradpHdxn.emplace_back(X_Vector());
-                    X::init(x,state.W_gradpHdxn.front());
-                
-                state.H_dxtuncorrected.clear();
-                    state.H_dxtuncorrected.emplace_back(X_Vector());
-                    X::init(x,state.H_dxtuncorrected.front());
-            }
-            static void init_vectors(
-                t& state,
-                const X_Vector& x,
-                const Y_Vector& y
-            ) {
-                Unconstrained <Real,XX>::State::init_vectors_(state,x); 
-                EqualityConstrained <Real,XX,YY>::State
-                    ::init_vectors_(state,x,y);
-            }
-           
-            // Initializes everything
-            static void init(t& state, const X_Vector& x, const Y_Vector& y) {
-                init_params(state);
-                init_vectors(state,x,y);
-            }
-
             // Check that we have a valid set of parameters.  
-            static void check_(const Messaging& msg,const t& state) {
+            static void check_(Messaging const & msg,t const & state) {
                    
                 // Use this to build an error message
                 std::stringstream ss;
@@ -4861,7 +4655,7 @@ namespace Optizelle{
                         "augmented system must be positive: augsys_iter_max = "
                         << state.augsys_iter_max;
             }
-            static void check(const Messaging& msg,const t& state) {
+            static void check(Messaging const & msg,t const & state) {
                 Unconstrained <Real,XX>::State::check_(msg,state);
                 EqualityConstrained <Real,XX,YY>::State::check_(msg,state);
             }
@@ -4869,17 +4663,14 @@ namespace Optizelle{
         
         // Utilities for restarting the optimization
         struct Restart {
-        private:
-            // This is a namespace inside of a class.  Do not allow
-            // construction.
-            Restart();
+            // Disallow constructors
+            NO_CONSTRUCTORS(Restart);
 
-        public:
             // Checks whether we have a valid real label.
             struct is_real :
-                public std::unary_function<const std::string&, bool>
+                public std::unary_function<std::string const &, bool>
             {
-                bool operator () (const std::string& name) const {
+                bool operator () (std::string const & name) const {
                     if( typename Unconstrained <Real,XX>::Restart
                             ::is_real()(name) ||
                         name == "zeta" ||
@@ -4907,9 +4698,9 @@ namespace Optizelle{
             
             // Checks whether we have a valid natural number label.
             struct is_nat :
-                public std::unary_function<const std::string&, bool>
+                public std::unary_function<std::string const &, bool>
             {
-                bool operator () (const std::string& name) const {
+                bool operator () (std::string const & name) const {
                     if( typename Unconstrained <Real,XX>::Restart
                         ::is_nat()(name) ||
                         name == "augsys_iter_max" ||
@@ -4923,9 +4714,9 @@ namespace Optizelle{
            
             // Checks whether we have a valid parameter label.
             struct is_param :
-                public std::unary_function<const std::string&, bool>
+                public std::unary_function<std::string const &, bool>
             {
-                bool operator () (const std::string& name) const {
+                bool operator () (std::string const & name) const {
                     if( typename Unconstrained <Real,XX>::Restart
                             ::is_param()(name) ||
                         name == "PSchur_right_type" ||
@@ -4939,7 +4730,7 @@ namespace Optizelle{
             
             // Checks whether we have a valid variable label
             struct is_x : public std::unary_function<std::string, bool> {
-                bool operator () (const std::string& name) const {
+                bool operator () (std::string const & name) const {
                     if( typename Unconstrained <Real,XX>::Restart
                             ::is_x()(name) ||
                         name == "dx_n" ||
@@ -4959,7 +4750,7 @@ namespace Optizelle{
             
             // Checks whether we have a valid equality multiplier label
             struct is_y : public std::unary_function<std::string, bool> {
-                bool operator () (const std::string& name) const {
+                bool operator () (std::string const & name) const {
                     if( name == "y" ||
                         name == "dy" ||
                         name == "g_x" ||
@@ -4974,12 +4765,12 @@ namespace Optizelle{
 
             // Checks whether we have valid labels
             static void checkLabels(
-                const Messaging& msg,
-                const Reals& reals,
-                const Nats& nats,
-                const Params& params,
-                const X_Vectors& xs,
-                const Y_Vectors& ys
+                Messaging const & msg,
+                Reals const & reals,
+                Nats const & nats,
+                Params const & params,
+                X_Vectors const & xs,
+                Y_Vectors const & ys
             ) {
                 Utility::checkLabels(msg,is_real(),reals.first," real name: ");
                 Utility::checkLabels(msg,is_nat(),nats.first," natural name: ");
@@ -4994,11 +4785,11 @@ namespace Optizelle{
             // is valid.  This function returns a string with the error
             // if there is one.  Otherwise, it returns an empty string.
             struct checkParamVal : public std::binary_function
-                <const std::string&,const std::string&,std::string>
+                <std::string const &,std::string const &,std::string>
             {
                 std::string operator() (
-                    const std::string& label,
-                    const std::string& val
+                    std::string const & label,
+                    std::string const & val
                 ) const {
 
                     // Create a base message
@@ -5034,44 +4825,44 @@ namespace Optizelle{
             
             // Copy out all equality multipliers 
             static void stateToVectors(
-                typename State::t& state, 
-                X_Vectors& xs,
-                Y_Vectors& ys
+                typename State::t & state, 
+                X_Vectors & xs,
+                Y_Vectors & ys
             ) {
                 ys.first.emplace_back("y");
-                ys.second.splice(ys.second.end(),state.y);
+                ys.second.emplace_back(std::move(state.y));
                 ys.first.emplace_back("dy");
-                ys.second.splice(ys.second.end(),state.dy);
+                ys.second.emplace_back(std::move(state.dy));
                 ys.first.emplace_back("g_x");
-                ys.second.splice(ys.second.end(),state.g_x);
+                ys.second.emplace_back(std::move(state.g_x));
                 ys.first.emplace_back("gpxdxn_p_gx");
-                ys.second.splice(ys.second.end(),state.gpxdxn_p_gx);
+                ys.second.emplace_back(std::move(state.gpxdxn_p_gx));
                 ys.first.emplace_back("gpxdxt");
-                ys.second.splice(ys.second.end(),state.gpxdxt);
+                ys.second.emplace_back(std::move(state.gpxdxt));
                 xs.first.emplace_back("dx_n");
-                xs.second.splice(xs.second.end(),state.dx_n);
+                xs.second.emplace_back(std::move(state.dx_n));
                 xs.first.emplace_back("dx_ncp");
-                xs.second.splice(xs.second.end(),state.dx_ncp);
+                xs.second.emplace_back(std::move(state.dx_ncp));
                 xs.first.emplace_back("dx_t");
-                xs.second.splice(xs.second.end(),state.dx_t);
+                xs.second.emplace_back(std::move(state.dx_t));
                 xs.first.emplace_back("dx_t_uncorrected");
-                xs.second.splice(xs.second.end(),state.dx_t_uncorrected);
+                xs.second.emplace_back(std::move(state.dx_t_uncorrected));
                 xs.first.emplace_back("dx_tcp_uncorrected");
-                xs.second.splice(xs.second.end(),state.dx_tcp_uncorrected);
+                xs.second.emplace_back(std::move(state.dx_tcp_uncorrected));
                 xs.first.emplace_back("H_dxn");
-                xs.second.splice(xs.second.end(),state.H_dxn);
+                xs.second.emplace_back(std::move(state.H_dxn));
                 xs.first.emplace_back("W_gradpHdxn");
-                xs.second.splice(xs.second.end(),state.W_gradpHdxn);
+                xs.second.emplace_back(std::move(state.W_gradpHdxn));
                 xs.first.emplace_back("H_dxtuncorrected");
-                xs.second.splice(xs.second.end(),state.H_dxtuncorrected);
+                xs.second.emplace_back(std::move(state.H_dxtuncorrected));
             }
 
             // Copy out all the scalar information
             static void stateToScalars(
-                typename State::t& state,
-                Reals& reals,
-                Nats& nats,
-                Params& params
+                typename State::t & state,
+                Reals & reals,
+                Nats & nats,
+                Params & params
             ) { 
                 // Copy in all the real numbers
                 reals.first.emplace_back("zeta");
@@ -5124,9 +4915,9 @@ namespace Optizelle{
             
             // Copy in all equality multipliers 
             static void vectorsToState(
-                typename State::t& state,
-                X_Vectors& xs,
-                Y_Vectors& ys
+                typename State::t & state,
+                X_Vectors & xs,
+                Y_Vectors & ys
             ) {
                 typename std::list <X_Vector>::iterator y
                     =ys.second.begin();
@@ -5145,21 +4936,15 @@ namespace Optizelle{
                     // Determine which variable we're reading in and then splice
                     // it in the correct location
                     if(*name0=="y")
-                        state.y.splice(state.y.end(),ys.second,y0);
+                        state.y = std::move(*y0);
                     else if(*name0=="dy")
-                        state.dy.splice(state.dy.end(),ys.second,y0);
+                        state.dy = std::move(*y0);
                     else if(*name0=="g_x")
-                        state.g_x.splice(state.g_x.end(),ys.second,y0);
+                        state.g_x = std::move(*y0);
                     else if(*name0=="gpxdxn_p_gx")
-                        state.gpxdxn_p_gx.splice(
-                            state.gpxdxn_p_gx.end(),ys.second,y0);
+                        state.gpxdxn_p_gx = std::move(*y0);
                     else if(*name0=="gpxdxt")
-                        state.gpxdxt.splice(state.gpxdxt.end(),ys.second,y0);
-                    
-                    // Remove the string corresponding to the element just
-                    // spliced if splicing occured.
-                    if(ys.first.size() != ys.second.size())
-                        ys.first.erase(name0);
+                        state.gpxdxt = std::move(*y0);
                 }
 
                 typename std::list <X_Vector>::iterator x
@@ -5179,40 +4964,30 @@ namespace Optizelle{
                     // Determine which variable we're reading in and then splice
                     // it in the correct location
                     if(*name0=="dx_n")
-                        state.dx_n.splice(state.dx_n.end(),xs.second,x0);
+                        state.dx_n = std::move(*x0);
                     else if(*name0=="dx_ncp")
-                        state.dx_ncp.splice(state.dx_ncp.end(),xs.second,x0);
+                        state.dx_ncp = std::move(*x0);
                     else if(*name0=="dx_t")
-                        state.dx_t.splice(state.dx_t.end(),xs.second,x0);
+                        state.dx_t = std::move(*x0);
                     else if(*name0=="dx_t_uncorrected")
-                        state.dx_t_uncorrected.splice(
-                            state.dx_t_uncorrected.end(),xs.second,x0);
+                        state.dx_t_uncorrected = std::move(*x0);
                     else if(*name0=="dx_tcp_uncorrected")
-                        state.dx_tcp_uncorrected.splice(
-                            state.dx_tcp_uncorrected.end(),xs.second,x0);
+                        state.dx_tcp_uncorrected = std::move(*x0);
                     else if(*name0=="H_dxn")
-                        state.H_dxn.splice(
-                            state.H_dxn.end(),xs.second,x0);
+                        state.H_dxn = std::move(*x0);
                     else if(*name0=="W_gradpHdxn")
-                        state.W_gradpHdxn.splice(
-                            state.W_gradpHdxn.end(),xs.second,x0);
+                        state.W_gradpHdxn = std::move(*x0);
                     else if(*name0=="H_dxtuncorrected")
-                        state.H_dxtuncorrected.splice(
-                            state.H_dxtuncorrected.end(),xs.second,x0);
-
-                    // Remove the string corresponding to the element just
-                    // spliced if splicing occured.
-                    if(xs.first.size() != xs.second.size())
-                        xs.first.erase(name0);
+                        state.H_dxtuncorrected = std::move(*x0);
                 }
             }
             
             // Copy in all the scalar information
             static void scalarsToState(
-                typename State::t& state,
-                Reals& reals,
-                Nats& nats,
-                Params& params
+                typename State::t & state,
+                Reals & reals,
+                Nats & nats,
+                Params & params
             ) { 
                 // Copy in any reals 
                 typename std::list <Real>::iterator real=reals.second.begin();
@@ -5263,15 +5038,16 @@ namespace Optizelle{
 
             // Release the data into structures controlled by the user 
             static void release(
-                typename State::t& state,
-                X_Vectors& xs,
-                Y_Vectors& ys,
-                Reals& reals,
-                Nats& nats,
-                Params& params
+                typename State::t & state,
+                X_Vectors & xs,
+                Y_Vectors & ys,
+                Reals & reals,
+                Nats & nats,
+                Params & params
             ) {
                 // Copy out all of the variable information
-                Unconstrained <Real,XX>::Restart::stateToVectors(state,xs);
+                Unconstrained <Real,XX>
+                    ::Restart::stateToVectors(state,xs);
                 EqualityConstrained <Real,XX,YY>
                     ::Restart::stateToVectors(state,xs,ys);
             
@@ -5284,13 +5060,13 @@ namespace Optizelle{
 
             // Capture data from structures controlled by the user.  
             static void capture(
-                const Messaging& msg,
-                typename State::t& state,
-                X_Vectors& xs,
-                Y_Vectors& ys,
-                Reals& reals,
-                Nats& nats,
-                Params& params
+                Messaging const & msg,
+                typename State::t & state,
+                X_Vectors & xs,
+                Y_Vectors & ys,
+                Reals & reals,
+                Nats & nats,
+                Params & params
             ) {
 
                 // Check the labels on the user input
@@ -5300,7 +5076,8 @@ namespace Optizelle{
                 Utility::checkParams(msg,checkParamVal(),params);
 
                 // Copy in the variables 
-                Unconstrained <Real,XX>::Restart::vectorsToState(state,xs);
+                Unconstrained <Real,XX>
+                    ::Restart::vectorsToState(state,xs);
                 EqualityConstrained <Real,XX,YY>
                     ::Restart::vectorsToState(state,xs,ys);
                 
@@ -5318,23 +5095,17 @@ namespace Optizelle{
         // All the functions required by an optimization algorithm.  Note, this
         // routine owns the memory for these operations.  
         struct Functions {
-        private:
-            // This is a namespace inside of a class.  Do not allow
-            // construction.
-            Functions();
-
-        public:
+            // Disallow constructors
+            NO_CONSTRUCTORS(Functions);
+            
             // Actual storage of the functions required
             struct t: public virtual Unconstrained <Real,XX>::Functions::t {
-            private:
                 // Prevent the use of the copy constructor and the assignment
                 // operator.  Since this class holds a number of unique_ptrs
                 // to different functions, it is not safe to allow them to
                 // be copied.
-                t& operator = (const t&);
-                t(const t&);
+                NO_COPY_ASSIGNMENT(t);
 
-            public:
                 // Equality constraints 
                 std::unique_ptr <VectorValuedFunction <Real,XX,YY> > g;
 
@@ -5352,21 +5123,24 @@ namespace Optizelle{
             struct EqualityModifications
                 : public Optizelle::ScalarValuedFunctionModifications <Real,XX>
             {
-            private:
-                MODIFICATIONS_CLASS(EqualityModifications); 
+            public:
+                // Disallow constructors
+                NO_COPY_ASSIGNMENT(EqualityModifications); 
 
+            private:
                 // Underlying modification.  This takes control of the memory
                 std::unique_ptr <
-                    Optizelle::ScalarValuedFunctionModifications <Real,XX> > f_mod;
+                    Optizelle::ScalarValuedFunctionModifications <Real,XX> >
+                    f_mod;
 
                 // Equality constraint.
-                const Optizelle::VectorValuedFunction <Real,XX,YY>& g;
+                Optizelle::VectorValuedFunction <Real,XX,YY> const & g;
 
                 // Reference to equality Lagrange multiplier
-                const Y_Vector& y;
+                Y_Vector const & y;
 
                 // Reference to parameter for the augmented-Lagrangian
-                const Real& rho;
+                Real const & rho;
 
                 // Some workspace for the below functions
                 mutable X_Vector grad_tmp;
@@ -5383,9 +5157,9 @@ namespace Optizelle{
 
                 // Adds the Lagrangian pieces to the gradient
                 void grad_lag(
-                    const X_Vector& x,
-                    const X_Vector& grad,
-                    X_Vector& grad_lag
+                    X_Vector const & x,
+                    X_Vector const & grad,
+                    X_Vector & grad_lag
                 ) const {
                     // grad_lag <- grad f(x)
                     X::copy(grad,grad_lag);
@@ -5413,35 +5187,24 @@ namespace Optizelle{
 
             public:
                 EqualityModifications(
-                    const typename State::t& state,
-                    typename Functions::t& fns
+                    typename State::t const & state,
+                    typename Functions::t & fns
                 ) : f_mod(std::move(fns.f_mod)),
                     g(*(fns.g)),
-                    y(state.y.back()),
-                    rho(state.rho)
-                { 
-                    // Create some shortcuts
-                    const X_Vector& x=state.x.back();
-                    const Y_Vector& y=state.y.back();
-
-                    // Allocate a bit of memory for the workspace
-                    X::init(x,grad_tmp); 
-                    X::init(x,x_tmp1); 
-                    Y::init(y,y_tmp1); 
-
-                    // Allocate memory for the caching
-                    X::init(x,x_merit.second);
-                        x_merit.first=false;
-                    Y::init(y,g_x);
-                    X::init(x,x_grad.second);
-                        x_grad.first=false;
-                    Y::init(y,y_grad.second);
-                        y_grad.first=false;
-                    X::init(x,gpxsy);
-                }
+                    y(state.y),
+                    rho(state.rho),
+                    grad_tmp(X::init(state.x)),
+                    x_tmp1(X::init(state.x)),
+                    y_tmp1(Y::init(state.y)),
+                    x_merit(false,X::init(state.x)),
+                    g_x(Y::init(state.y)),
+                    x_grad(false,X::init(state.x)),
+                    y_grad(false,Y::init(state.y)),
+                    gpxsy(X::init(state.x))
+                { }
 
                 // Merit function additions to the objective
-                virtual Real merit(const X_Vector& x,const Real& f_x) const {
+                virtual Real merit(X_Vector const & x,Real const & f_x) const {
                     // Do the underlying modification of the objective
                     Real merit_x = f_mod->merit(x,f_x);
                     
@@ -5464,9 +5227,9 @@ namespace Optizelle{
 
                 // Stopping condition modification of the gradient
                 virtual void grad_stop(
-                    const X_Vector& x,
-                    const X_Vector& grad,
-                    X_Vector& grad_stop
+                    X_Vector const & x,
+                    X_Vector const & grad,
+                    X_Vector & grad_stop
                 ) const {
                     f_mod->grad_stop(x,grad,grad_tmp);
                     grad_lag(x,grad_tmp,grad_stop);
@@ -5474,9 +5237,9 @@ namespace Optizelle{
 
                 // Diagnostic modification of the gradient
                 virtual void grad_diag(
-                    const X_Vector& x,
-                    const X_Vector& grad,
-                    X_Vector& grad_diag
+                    X_Vector const & x,
+                    X_Vector const & grad,
+                    X_Vector & grad_diag
                 ) const {
                     f_mod->grad_diag(x,grad,grad_tmp);
                     grad_lag(x,grad_tmp,grad_diag);
@@ -5484,9 +5247,9 @@ namespace Optizelle{
 
                 // Modification of the gradient when finding a trial step
                 virtual void grad_step(
-                    const X_Vector& x,
-                    const X_Vector& grad,
-                    X_Vector& grad_step
+                    X_Vector const & x,
+                    X_Vector const & grad,
+                    X_Vector & grad_step
                 ) const {
                     f_mod->grad_step(x,grad,grad_tmp);
                     grad_lag(x,grad_tmp,grad_step);
@@ -5494,9 +5257,9 @@ namespace Optizelle{
 
                 // Modification of the gradient for a quasi-Newton method 
                 virtual void grad_quasi(
-                    const X_Vector& x,
-                    const X_Vector& grad,
-                    X_Vector& grad_quasi
+                    X_Vector const & x,
+                    X_Vector const & grad,
+                    X_Vector & grad_quasi
                 ) const {
                     f_mod->grad_quasi(x,grad,grad_tmp);
                     grad_lag(x,grad_tmp,grad_quasi);
@@ -5505,9 +5268,9 @@ namespace Optizelle{
                 // Modification of the gradient when solving for the equality
                 // multiplier
                 virtual void grad_mult(
-                    const X_Vector& x,
-                    const X_Vector& grad,
-                    X_Vector& grad_mult
+                    X_Vector const & x,
+                    X_Vector const & grad,
+                    X_Vector & grad_mult
                 ) const {
                     f_mod->grad_mult(x,grad,grad_tmp);
                     grad_lag(x,grad_tmp,grad_mult);
@@ -5516,10 +5279,10 @@ namespace Optizelle{
                 // Modification of the Hessian-vector product when finding a
                 // trial step
                 virtual void hessvec_step(
-                    const X_Vector& x,
-                    const X_Vector& dx,
-                    const X_Vector& H_dx,
-                    X_Vector& Hdx_step 
+                    X_Vector const & x,
+                    X_Vector const & dx,
+                    X_Vector const & H_dx,
+                    X_Vector & Hdx_step 
                 ) const {
                     // Modify the Hessian vector product 
                     f_mod->hessvec_step(x,dx,H_dx,Hdx_step);
@@ -5534,13 +5297,13 @@ namespace Optizelle{
 
             // The identity operator 
             struct Identity : public Operator <Real,YY,YY> {
-                void operator () (const Y_Vector& dy,Y_Vector& result) const{
+                void operator () (Y_Vector const & dy,Y_Vector & result) const{
                     Y::copy(dy,result);
                 }
             };
 
             // Check that all the functions are defined
-            static void check(const Messaging& msg,const t& fns) {
+            static void check(Messaging const & msg,t const & fns) {
 
                 // Check the unconstrained pieces
                 Unconstrained <Real,XX>::Functions::check(msg,fns);
@@ -5561,9 +5324,9 @@ namespace Optizelle{
             // Initialize any missing functions for just equality constrained 
             // optimization.
             static void init_(
-                const Messaging& msg,
-                const typename State::t& state,
-                t& fns
+                Messaging const & msg,
+                typename State::t const & state,
+                t & fns
             ) {
                 // Determine the left preconditioner for the augmented system
                 switch(state.PSchur_left_type){
@@ -5614,9 +5377,9 @@ namespace Optizelle{
 
             // Initialize any missing functions 
             static void init(
-                const Messaging& msg,
-                const typename State::t& state,
-                t& fns
+                Messaging const & msg,
+                typename State::t const & state,
+                t & fns
             ) {
                 Unconstrained <Real,XX>
                     ::Functions::init_(msg,state,fns);
@@ -5627,16 +5390,13 @@ namespace Optizelle{
         
         // Contains functions that assist in creating an output for diagonstics
         struct Printer {
-        private:
-            // This is a namespace inside of a class.  Do not allow
-            // construction.
-            Printer();
+            // Disallow constructors
+            NO_CONSTRUCTORS(Printer);
 
-        public:
             // Gets the header for the state information
             static void getStateHeader_(
-                const typename State::t& state,
-                std::list <std::string>& out
+                typename State::t const & state,
+                std::list <std::string> & out
             ) { 
                 // Norm of the constrained 
                 out.emplace_back(Utility::atos("||g(x)||"));
@@ -5653,8 +5413,8 @@ namespace Optizelle{
             }
             // Combines all of the state headers
             static void getStateHeader(
-                const typename State::t& state,
-                std::list <std::string>& out
+                typename State::t const & state,
+                std::list <std::string> & out
             ) {
                 Unconstrained <Real,XX>::Printer::getStateHeader_(state,out);
                 EqualityConstrained <Real,XX,YY>::Printer::getStateHeader_
@@ -5663,20 +5423,20 @@ namespace Optizelle{
 
             // Gets the state information for output
             static void getState_(
-                const typename Functions::t& fns,
-                const typename State::t& state,
-                const bool blank,
-                std::list <std::string>& out
+                typename Functions::t const & fns,
+                typename State::t const & state,
+                bool const & blank,
+                std::list <std::string> & out
             ) {
                 // Create some shortcuts
-                const Y_Vector& g_x = state.g_x.back();
-                const Natural& krylov_iter=state.krylov_iter;
-                const Real& krylov_rel_err=state.krylov_rel_err;
-                const KrylovStop::t& krylov_stop=state.krylov_stop;
-                const Natural& iter=state.iter;
-                const Natural& rejected_trustregion=state.rejected_trustregion;
-                const Real& pred = state.pred;
-                const Real& ared = state.ared;
+                Y_Vector const & g_x = state.g_x;
+                Natural const & krylov_iter=state.krylov_iter;
+                Real const & krylov_rel_err=state.krylov_rel_err;
+                KrylovStop::t const & krylov_stop=state.krylov_stop;
+                Natural const & iter=state.iter;
+                Natural const & rejected_trustregion=state.rejected_trustregion;
+                Real const & pred = state.pred;
+                Real const & ared = state.ared;
 
                 // Figure out if we're at the absolute beginning of the
                 // optimization.  We have to be a little saavy about this
@@ -5724,11 +5484,11 @@ namespace Optizelle{
 
             // Combines all of the state information
             static void getState(
-                const typename Functions::t& fns,
-                const typename State::t& state,
-                const bool blank,
-                const bool noiter,
-                std::list <std::string>& out
+                typename Functions::t const & fns,
+                typename State::t const & state,
+                bool const & blank,
+                bool const & noiter,
+                std::list <std::string> & out
             ) {
                 Unconstrained <Real,XX>::Printer
                     ::getState_(fns,state,blank,noiter,out);
@@ -5738,14 +5498,14 @@ namespace Optizelle{
             
             // Get the header for the Krylov iteration
             static void getKrylovHeader_(
-                const typename State::t& state,
-                std::list <std::string>& out
+                typename State::t const & state,
+                std::list <std::string> & out
             ) { }
 
             // Combines all of the Krylov headers
             static void getKrylovHeader(
-                const typename State::t& state,
-                std::list <std::string>& out
+                typename State::t const & state,
+                std::list <std::string> & out
             ) {
                 Unconstrained <Real,XX>::Printer::getKrylovHeader_(state,out);
                 EqualityConstrained <Real,XX,YY>::Printer
@@ -5754,16 +5514,16 @@ namespace Optizelle{
             
             // Get the information for the Krylov iteration
             static void getKrylov_(
-                const typename State::t& state,
-                const bool blank,
-                std::list <std::string>& out
+                typename State::t const & state,
+                bool const & blank,
+                std::list <std::string> & out
             ) { }
 
             // Combines all of the Krylov information
             static void getKrylov(
-                const typename State::t& state,
-                const bool blank,
-                std::list <std::string>& out
+                typename State::t const & state,
+                bool const & blank,
+                std::list <std::string> & out
             ) {
                 Unconstrained <Real,XX>::Printer::getKrylov_(state,blank,out);
                 EqualityConstrained <Real,XX,YY>::Printer
@@ -5774,12 +5534,9 @@ namespace Optizelle{
         
         // This contains the different algorithms used for optimization 
         struct Algorithms {
-        private:
-            // This is a namespace inside of a class.  Do not allow
-            // construction.
-            Algorithms();
+            // Disallow constructors
+            NO_CONSTRUCTORS(Algorithms);
 
-        public:
             // The operator for the augmented system,
             //
             // [ I      g'(x)* ]
@@ -5787,23 +5544,23 @@ namespace Optizelle{
             //
             struct AugmentedSystem: public Operator <Real,XXxYY,XXxYY> {
             private:
-                const typename State::t& state;
-                const typename Functions::t& fns;
-                const X_Vector& x_base;
+                typename State::t const & state;
+                typename Functions::t const & fns;
+                X_Vector const & x_base;
             public:
                 AugmentedSystem(
-                    const typename State::t& state_,
-                    const typename Functions::t& fns_,
-                    const X_Vector& x_base_
+                    typename State::t const & state_,
+                    typename Functions::t const & fns_,
+                    X_Vector const & x_base_
                 ) : state(state_), fns(fns_), x_base(x_base_) {}
                 
                 // Operator interface
                 void operator () (
-                    const XxY_Vector& dx_dy,
-                    XxY_Vector& result
+                    const XxY_Vector & dx_dy,
+                    XxY_Vector & result
                 ) const{
                     // Create some shortcuts
-                    const VectorValuedFunction <Real,XX,YY>& g=*(fns.g);
+                    VectorValuedFunction <Real,XX,YY> const & g=*(fns.g);
 
                     // g'(x_base)* dy
                     g.ps(x_base,dx_dy.second,result.first);
@@ -5824,18 +5581,18 @@ namespace Optizelle{
             struct BlockDiagonalPreconditioner:
                 public Operator <Real,XXxYY,XXxYY> {
             private:
-                const Operator <Real,XX,XX>& PH_x;
+                Operator <Real,XX,XX> const & PH_x;
                 const Operator <Real,YY,YY>& PH_y;
             public:
                 BlockDiagonalPreconditioner(
-                    const Operator <Real,XX,XX>& PH_x_,
+                    Operator <Real,XX,XX> const & PH_x_,
                     const Operator <Real,YY,YY>& PH_y_ 
                 ) : PH_x(PH_x_), PH_y(PH_y_) {}
                 
                 // Operator interface
                 void operator () (
-                    const XxY_Vector& dx_dy,
-                    XxY_Vector& result
+                    const XxY_Vector & dx_dy,
+                    XxY_Vector & result
                 ) const{
                     // PH_x dx
                     PH_x(dx_dy.first,result.first);
@@ -5848,23 +5605,23 @@ namespace Optizelle{
             // Sets the tolerances for the quasi-normal Newton solve
             struct QNManipulator : GMRESManipulator <Real,XXxYY> {
             private:
-                const typename State::t& state;
-                const typename Functions::t& fns;
+                typename State::t const & state;
+                typename Functions::t const & fns;
             public:
                 explicit QNManipulator(
-                    const typename State::t& state_,
-                    const typename Functions::t& fns_
+                    typename State::t const & state_,
+                    typename Functions::t const & fns_
                 ) : state(state_), fns(fns_) {}
                 void operator () (
-                    const Natural& iter,
-                    const typename XXxYY <Real>::Vector& xx,
-                    const typename XXxYY <Real>::Vector& bb,
-                    Real& eps
+                    Natural const & iter,
+                    typename XXxYY <Real>::Vector const & xx,
+                    typename XXxYY <Real>::Vector const & bb,
+                    Real & eps
                 ) const {
                     // Create some shortcuts
-                    const Real& xi_qn = state.xi_qn;
-                    const Real& norm_gxtyp = state.norm_gxtyp;
-                    const Real& eps_constr= state.eps_constr;
+                    Real const & xi_qn = state.xi_qn;
+                    Real const & norm_gxtyp = state.norm_gxtyp;
+                    Real const & eps_constr= state.eps_constr;
 
                     // Find || g'(x)dx_ncp + g(x) ||
                     Real norm_gpxdxncp_p_g = sqrt(Y::innr(bb.second,bb.second));
@@ -5890,28 +5647,28 @@ namespace Optizelle{
 
             // Finds the quasi-normal step
             static void quasinormalStep(
-                const typename Functions::t& fns,
-                typename State::t& state
+                typename Functions::t const & fns,
+                typename State::t & state
             ) {
                 // Create some shortcuts
-                const VectorValuedFunction <Real,XX,YY>& g=*(fns.g);
-                const X_Vector& x=state.x.front();
-                const Y_Vector& g_x=state.g_x.front();
-                const Natural& augsys_iter_max=state.augsys_iter_max;
-                const Natural& augsys_rst_freq=state.augsys_rst_freq;
-                const Real& delta = state.delta;
-                const Real& zeta = state.zeta;
-                X_Vector& dx_ncp=state.dx_ncp.front();
-                X_Vector& dx_n=state.dx_n.front();
+                VectorValuedFunction <Real,XX,YY> const & g=*(fns.g);
+                X_Vector const & x=state.x;
+                Y_Vector const & g_x=state.g_x;
+                Natural const & augsys_iter_max=state.augsys_iter_max;
+                Natural const & augsys_rst_freq=state.augsys_rst_freq;
+                Real const & delta = state.delta;
+                Real const & zeta = state.zeta;
+                X_Vector & dx_ncp=state.dx_ncp;
+                X_Vector & dx_n=state.dx_n;
 
                 // Find the Cauchy point.
 
                 // Find g'(x)*g(x)
-                X_Vector gps_g; X::init(x,gps_g);
+                X_Vector gps_g(X::init(x));
                 g.ps(x,g_x,gps_g);
 
                 // Find g'(x)g'(x)*g(x)
-                Y_Vector gp_gps_g; Y::init(g_x,gp_gps_g);
+                Y_Vector gp_gps_g(Y::init(g_x));
                 g.p(x,gps_g,gp_gps_g);
 
                 // Find || g'(x)*g(x) ||^2
@@ -5937,11 +5694,11 @@ namespace Optizelle{
                 // Find the Newton step
 
                 // Create the initial guess, x0=(0,0)
-                XxY_Vector x0; X::init(x,x0.first); Y::init(g_x,x0.second);
+                XxY_Vector x0(X::init(x),Y::init(g_x));
                 XxY::zero(x0);
 
                 // Create the rhs, b0=(-dx_ncp,-g'(x)dx_ncp-g(x)) 
-                XxY_Vector b0; XxY::init(x0,b0);
+                XxY_Vector b0(XxY::init(x0));
                 X::copy(dx_ncp,b0.first);
                 X::scal(Real(-1.),b0.first);
                 g.p(x,dx_ncp,b0.second);
@@ -5967,7 +5724,7 @@ namespace Optizelle{
                 );
 
                 // Find the Newton shift, dx_dnewton = dx_newton-dx_ncp
-                X_Vector& dx_dnewton = x0.first;
+                X_Vector & dx_dnewton = x0.first;
 
                 // Find the Newton step
                 X::copy(dx_ncp,dx_n);
@@ -6002,22 +5759,22 @@ namespace Optizelle{
             struct NullspaceProjForGradLagPlusHdxnManipulator
                 : GMRESManipulator <Real,XXxYY> {
             private:
-                const typename State::t& state;
-                const typename Functions::t& fns;
+                typename State::t const & state;
+                typename Functions::t const & fns;
             public:
                 explicit NullspaceProjForGradLagPlusHdxnManipulator(
-                    const typename State::t& state_,
-                    const typename Functions::t& fns_
+                    typename State::t const & state_,
+                    typename Functions::t const & fns_
                 ) : state(state_), fns(fns_) {}
                 void operator () (
-                    const Natural& iter,
-                    const typename XXxYY <Real>::Vector& xx,
-                    const typename XXxYY <Real>::Vector& bb,
-                    Real& eps
+                    Natural const & iter,
+                    typename XXxYY <Real>::Vector const & xx,
+                    typename XXxYY <Real>::Vector const & bb,
+                    Real & eps
                 ) const {
                     // Create some shortcuts
-                    const Real& xi_pg = state.xi_pg;
-                    const Real& delta = state.delta;
+                    Real const & xi_pg = state.xi_pg;
+                    Real const & delta = state.delta;
 
                     // Find || W (grad L(x,y) + H dx_n) || = || xx_1 || 
                     Real norm_WgpHdxn = sqrt(X::innr(xx.first,xx.first));
@@ -6056,48 +5813,42 @@ namespace Optizelle{
             // tangential subproblem as well as the predicted reduction.
             // Note, this also computes and caches H dx_n.
             static void projectedGradLagrangianPlusHdxn(
-                const typename Functions::t& fns,
-                typename State::t& state
+                typename Functions::t const & fns,
+                typename State::t & state
             ) {
                 // Create some shortcuts
-                const ScalarValuedFunctionModifications <Real,XX>& f_mod
+                ScalarValuedFunctionModifications <Real,XX> const & f_mod
                     = *(fns.f_mod);
-                const X_Vector& x=state.x.front();
-                const X_Vector& dx_n=state.dx_n.front();
-                const X_Vector& grad=state.grad.front();
-                const X_Vector& H_dxn=state.H_dxn.front();
-                const Y_Vector& y=state.y.front();
-                const Natural& augsys_iter_max=state.augsys_iter_max;
-                const Natural& augsys_rst_freq=state.augsys_rst_freq;
-                X_Vector& W_gradpHdxn=state.W_gradpHdxn.front();
+                X_Vector const & x=state.x;
+                X_Vector const & dx_n=state.dx_n;
+                X_Vector const & grad=state.grad;
+                X_Vector const & H_dxn=state.H_dxn;
+                Y_Vector const & y=state.y;
+                Natural const & augsys_iter_max=state.augsys_iter_max;
+                Natural const & augsys_rst_freq=state.augsys_rst_freq;
+                X_Vector & W_gradpHdxn=state.W_gradpHdxn;
 
                 // Find the gradient modifications for the step computation
-                X_Vector grad_step;
-                    X::init(grad,grad_step);
+                X_Vector grad_step(X::init(grad));
                     f_mod.grad_step(x,grad,grad_step);
                
                 // Add the Hessian modifications to H(x)dx_n
-                X_Vector Hdxn_step;
-                    X::init(x,Hdxn_step);
+                X_Vector Hdxn_step(X::init(x));
                     f_mod.hessvec_step(x,dx_n,H_dxn,Hdxn_step);
 
                 // grad_p_Hdxn <- H dxn_step
-                X_Vector grad_p_Hdxn;
-                    X::init(x,grad_p_Hdxn);
+                X_Vector grad_p_Hdxn(X::init(x));
                     X::copy(Hdxn_step,grad_p_Hdxn);
 
                 // grad_p_Hdxn <- grad f(x) + H dx_n
                 X::axpy(Real(1.),grad_step,grad_p_Hdxn);
 
                 // Create the initial guess, x0=(0,0)
-                XxY_Vector x0;
-                    X::init(x,x0.first);
-                    Y::init(y,x0.second);
+                XxY_Vector x0(X::init(x),Y::init(y));
                     XxY::zero(x0);
 
                 // Create the rhs, b0=(grad f(x) + H dx_n,0)
-                XxY_Vector b0;
-                    XxY::init(x0,b0);
+                XxY_Vector b0(XxY::init(x0));
                     X::copy(grad_p_Hdxn,b0.first);
                     Y::zero(b0.second);
             
@@ -6128,21 +5879,21 @@ namespace Optizelle{
             struct NullspaceProjForKrylovMethodManipulator
                 : GMRESManipulator <Real,XXxYY> {
             private:
-                const typename State::t& state;
-                const typename Functions::t& fns;
+                typename State::t const & state;
+                typename Functions::t const & fns;
             public:
                 explicit NullspaceProjForKrylovMethodManipulator (
-                    const typename State::t& state_,
-                    const typename Functions::t& fns_
+                    typename State::t const & state_,
+                    typename Functions::t const & fns_
                 ) : state(state_), fns(fns_) {}
                 void operator () (
-                    const Natural& iter,
-                    const typename XXxYY <Real>::Vector& xx,
-                    const typename XXxYY <Real>::Vector& bb,
-                    Real& eps
+                    Natural const & iter,
+                    typename XXxYY <Real>::Vector const & xx,
+                    typename XXxYY <Real>::Vector const & bb,
+                    Real & eps
                 ) const {
                     // Create some shortcuts
-                    const Real& xi_proj = state.xi_proj;
+                    Real const & xi_proj = state.xi_proj;
 
                     // Find || W dx_t_uncorrected || = || xx_1 || 
                     Real norm_Wdxt_uncorrected
@@ -6179,34 +5930,31 @@ namespace Optizelle{
             // projected Krylov method. 
             struct NullspaceProjForKrylovMethod: public Operator <Real,XX,XX> {
             private:
-                const typename State::t& state;
-                const typename Functions::t& fns;
+                typename State::t const & state;
+                typename Functions::t const & fns;
             public:
                 NullspaceProjForKrylovMethod(
-                    const typename State::t& state_,
-                    const typename Functions::t& fns_
+                    typename State::t const & state_,
+                    typename Functions::t const & fns_
                 ) : state(state_), fns(fns_) {}
                
                 // Project dx_t into the nullspace of g'(x)
                 void operator () (
-                    const X_Vector& dx_t_uncorrected,
-                    X_Vector& result
+                    X_Vector const & dx_t_uncorrected,
+                    X_Vector & result
                 ) const{
                     // Create some shortcuts
-                    const X_Vector& x=state.x.front();
-                    const Y_Vector& y=state.y.front();
-                    const unsigned int augsys_iter_max=state.augsys_iter_max;
-                    const unsigned int augsys_rst_freq=state.augsys_rst_freq;
+                    X_Vector const & x=state.x;
+                    Y_Vector const & y=state.y;
+                    unsigned int const & augsys_iter_max=state.augsys_iter_max;
+                    unsigned int const & augsys_rst_freq=state.augsys_rst_freq;
 
                     // Create the initial guess, x0=(0,0)
-                    XxY_Vector x0;
-                        X::init(x,x0.first);
-                        Y::init(y,x0.second);
+                    XxY_Vector x0(X::init(x),Y::init(y));
                         XxY::zero(x0);
 
                     // Create the rhs, b0=(dx_t_uncorrected,0)
-                    XxY_Vector b0;
-                        XxY::init(x0,b0);
+                    XxY_Vector b0(XxY::init(x0));
                         X::copy(dx_t_uncorrected,b0.first);
                         Y::zero(b0.second);
                 
@@ -6237,31 +5985,31 @@ namespace Optizelle{
             
             // Solves the tangential subproblem 
             static void tangentialSubProblem(
-                const typename Functions::t& fns,
-                typename State::t& state
+                typename Functions::t const & fns,
+                typename State::t & state
             ) {
                 // Create some shortcuts
-                const ScalarValuedFunctionModifications <Real,XX>& f_mod
+                ScalarValuedFunctionModifications <Real,XX> const & f_mod
                     = *(fns.f_mod);
-                const X_Vector& x=state.x.front();
-                const X_Vector& dx_n=state.dx_n.front();
-                const X_Vector& W_gradpHdxn=state.W_gradpHdxn.front();
-                const Real& delta = state.delta;
-                const Real& eps_krylov=state.eps_krylov;
-                const Natural& krylov_iter_max=state.krylov_iter_max;
-                const Natural& krylov_orthog_max=state.krylov_orthog_max;
-                const KrylovSolverTruncated::t& krylov_solver
+                X_Vector const & x=state.x;
+                X_Vector const & dx_n=state.dx_n;
+                X_Vector const & W_gradpHdxn=state.W_gradpHdxn;
+                Real const & delta = state.delta;
+                Real const & eps_krylov=state.eps_krylov;
+                Natural const & krylov_iter_max=state.krylov_iter_max;
+                Natural const & krylov_orthog_max=state.krylov_orthog_max;
+                KrylovSolverTruncated::t const & krylov_solver
                     = state.krylov_solver;
-                X_Vector& dx_t_uncorrected=state.dx_t_uncorrected.front();
-                X_Vector& dx_tcp_uncorrected=state.dx_tcp_uncorrected.front();
-                Real& krylov_rel_err=state.krylov_rel_err;
-                Natural& krylov_iter=state.krylov_iter;
-                Natural& krylov_iter_total=state.krylov_iter_total;
+                X_Vector & dx_t_uncorrected=state.dx_t_uncorrected;
+                X_Vector & dx_tcp_uncorrected=state.dx_tcp_uncorrected;
+                Real & krylov_rel_err=state.krylov_rel_err;
+                Natural & krylov_iter=state.krylov_iter;
+                Natural & krylov_iter_total=state.krylov_iter_total;
                 KrylovStop::t& krylov_stop=state.krylov_stop;
                 
                 // Create shortcuts to the functions that we need
-                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
-                const Operator <Real,XX,XX>& TRS=*(fns.TRS);
+                ScalarValuedFunction <Real,XX> const & f=*(fns.f);
+                Operator <Real,XX,XX> const & TRS=*(fns.TRS);
                     
                 // Setup the Hessian operator and allocate memory for the
                 // Cauchy point.
@@ -6270,8 +6018,7 @@ namespace Optizelle{
 
                 // Find the quantity - W (g + H dxn).  We use this as the
                 // RHS in the linear system solve.
-                X_Vector minus_W_gradpHdxn;
-                    X::init(x,minus_W_gradpHdxn);
+                X_Vector minus_W_gradpHdxn(X::init(x));
                     X::copy(W_gradpHdxn,minus_W_gradpHdxn);
                     X::scal(Real(-1.),minus_W_gradpHdxn);
 
@@ -6337,26 +6084,26 @@ namespace Optizelle{
             struct TangentialStepManipulator
                 : GMRESManipulator <Real,XXxYY> {
             private:
-                const typename State::t& state;
-                const typename Functions::t& fns;
+                typename State::t const & state;
+                typename Functions::t const & fns;
             public:
                 TangentialStepManipulator (
-                    const typename State::t& state_,
-                    const typename Functions::t& fns_
+                    typename State::t const & state_,
+                    typename Functions::t const & fns_
                 ) : state(state_), fns(fns_) {}
                 void operator () (
-                    const Natural& iter,
-                    const typename XXxYY <Real>::Vector& xx,
-                    const typename XXxYY <Real>::Vector& bb,
-                    Real& eps
+                    Natural const & iter,
+                    typename XXxYY <Real>::Vector const & xx,
+                    typename XXxYY <Real>::Vector const & bb,
+                    Real & eps
                 ) const {
                     // Create some shortcuts
-                    const X_Vector& dx_n=state.dx_n.front();
-                    const Real& xi_tang = state.xi_tang;
-                    const Real& delta = state.delta;
+                    X_Vector const & dx_n=state.dx_n;
+                    Real const & xi_tang = state.xi_tang;
+                    Real const & delta = state.delta;
 
                     // dxn_p_dxt <- dx_n + dx_t
-                    X_Vector dxn_p_dxt; X::init(dx_n,dxn_p_dxt);
+                    X_Vector dxn_p_dxt(X::init(dx_n));
                     X::copy(dx_n,dxn_p_dxt);
                     X::axpy(Real(1.),xx.first,dxn_p_dxt);
 
@@ -6378,26 +6125,23 @@ namespace Optizelle{
             
             // Finds the tangential step 
             static void tangentialStep(
-                const typename Functions::t& fns,
-                typename State::t& state
+                typename Functions::t const & fns,
+                typename State::t & state
             ) {
                 // Create some shortcuts
-                const X_Vector& x=state.x.front();
-                const Y_Vector& y=state.y.front();
-                const Natural& augsys_iter_max=state.augsys_iter_max;
-                const Natural& augsys_rst_freq=state.augsys_rst_freq;
-                const X_Vector& dx_t_uncorrected=state.dx_t_uncorrected.front();
-                X_Vector& dx_t=state.dx_t.front();
+                X_Vector const & x=state.x;
+                Y_Vector const & y=state.y;
+                Natural const & augsys_iter_max=state.augsys_iter_max;
+                Natural const & augsys_rst_freq=state.augsys_rst_freq;
+                X_Vector const & dx_t_uncorrected=state.dx_t_uncorrected;
+                X_Vector & dx_t=state.dx_t;
 
                 // Create the initial guess, x0=(0,0)
-                XxY_Vector x0;
-                    X::init(x,x0.first);
-                    Y::init(y,x0.second);
+                XxY_Vector x0(X::init(x),Y::init(y));
                     XxY::zero(x0);
 
                 // Create the rhs, b0=(dx_t_uncorrected,0);
-                XxY_Vector b0;
-                    XxY::init(x0,b0);
+                XxY_Vector b0(XxY::init(x0));
                     X::copy(dx_t_uncorrected,b0.first);
                     Y::zero(b0.second);
 
@@ -6428,22 +6172,22 @@ namespace Optizelle{
             struct LagrangeMultiplierStepManipulator
                 : GMRESManipulator <Real,XXxYY> {
             private:
-                const typename State::t& state;
-                const typename Functions::t& fns;
+                typename State::t const & state;
+                typename Functions::t const & fns;
             public:
                 LagrangeMultiplierStepManipulator (
-                    const typename State::t& state_,
-                    const typename Functions::t& fns_
+                    typename State::t const & state_,
+                    typename Functions::t const & fns_
                 ) : state(state_), fns(fns_) {}
                 void operator () (
-                    const Natural& iter,
-                    const typename XXxYY <Real>::Vector& xx,
-                    const typename XXxYY <Real>::Vector& bb,
-                    Real& eps
+                    Natural const & iter,
+                    typename XXxYY <Real>::Vector const & xx,
+                    typename XXxYY <Real>::Vector const & bb,
+                    Real & eps
                 ) const {
                     // Create some shortcuts
-                    const Real& xi_lmh = state.xi_lmh;
-                    const Real& xi_lmg = state.xi_lmg;
+                    Real const & xi_lmh = state.xi_lmh;
+                    Real const & xi_lmg = state.xi_lmg;
                 
                     // Find the norm of the gradient of the Lagrangian.
                     // Sometimes, this is -grad L(x+dx,y).  Sometimes, this
@@ -6459,33 +6203,29 @@ namespace Optizelle{
 
             // Finds the Lagrange multiplier at the current iterate 
             static void lagrangeMultiplier(
-                const typename Functions::t& fns,
-                typename State::t& state
+                typename Functions::t const & fns,
+                typename State::t & state
             ) {
                 // Create some shortcuts
-                const ScalarValuedFunctionModifications <Real,XX>& f_mod
+                ScalarValuedFunctionModifications <Real,XX> const & f_mod
                     = *(fns.f_mod);
-                const X_Vector& x=state.x.front();
-                const Natural& augsys_iter_max=state.augsys_iter_max;
-                const Natural& augsys_rst_freq=state.augsys_rst_freq;
-                const X_Vector& grad=state.grad.front();
-                Y_Vector& y=state.y.front();
+                X_Vector const & x=state.x;
+                Natural const & augsys_iter_max=state.augsys_iter_max;
+                Natural const & augsys_rst_freq=state.augsys_rst_freq;
+                X_Vector const & grad=state.grad;
+                Y_Vector & y=state.y;
 
                 // Find the gradient modifications for the Lagrange multiplier
                 // computation
-                X_Vector grad_mult;
-                    X::init(grad,grad_mult);
+                X_Vector grad_mult(X::init(grad));
                     f_mod.grad_mult(x,grad,grad_mult);
 
                 // Create the initial guess, x0=(0,0)
-                XxY_Vector x0;
-                    X::init(x,x0.first);
-                    Y::init(y,x0.second);
+                XxY_Vector x0(X::init(x),Y::init(y));
                     XxY::zero(x0);
 
                 // Create the rhs, b0=(-grad L(x,y),0);
-                XxY_Vector b0;
-                    XxY::init(x0,b0);
+                XxY_Vector b0(XxY::init(x0));
                     X::copy(grad_mult,b0.first);
                     X::scal(Real(-1.),b0.first);
                     Y::zero(b0.second);
@@ -6515,46 +6255,40 @@ namespace Optizelle{
             
             // Finds the Lagrange multiplier step 
             static void lagrangeMultiplierStep(
-                const typename Functions::t& fns,
-                typename State::t& state
+                typename Functions::t const & fns,
+                typename State::t & state
             ) {
                 // Create some shortcuts
-                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
-                const ScalarValuedFunctionModifications <Real,XX>& f_mod
+                ScalarValuedFunction <Real,XX> const & f=*(fns.f);
+                ScalarValuedFunctionModifications <Real,XX> const & f_mod
                     = *(fns.f_mod);
-                const X_Vector& grad=state.grad.front();
-                const X_Vector& dx=state.dx.front();
-                const Natural& augsys_iter_max=state.augsys_iter_max;
-                const Natural& augsys_rst_freq=state.augsys_rst_freq;
-                X_Vector& x=state.x.front();
-                Y_Vector& dy=state.dy.front();
+                X_Vector const & grad=state.grad;
+                X_Vector const & dx=state.dx;
+                Natural const & augsys_iter_max=state.augsys_iter_max;
+                Natural const & augsys_rst_freq=state.augsys_rst_freq;
+                X_Vector & x=state.x;
+                Y_Vector & dy=state.dy;
 
                 // x_p_dx <- x + dx
-                X_Vector x_p_dx;
-                    X::init(x,x_p_dx);
+                X_Vector x_p_dx(X::init(x));
                     X::copy(x,x_p_dx);
                     X::axpy(Real(1.),dx,x_p_dx);
 
                 // grad_xpdx <- L(x+dx,y) = grad f(x+dx) + g'(x+dx)*y
-                X_Vector grad_xpdx; 
-                    X::init(x,grad_xpdx);
+                X_Vector grad_xpdx(X::init(x));
                     f.grad(x_p_dx,grad_xpdx);
 
                 // Find the gradient modifications for the Lagrange multiplier
                 // computation
-                X_Vector grad_xpdx_mult;
-                    X::init(grad,grad_xpdx_mult);
+                X_Vector grad_xpdx_mult(X::init(grad));
                     f_mod.grad_mult(x_p_dx,grad_xpdx,grad_xpdx_mult);
 
                 // Create the initial guess, x0=(0,0)
-                XxY_Vector x0;
-                    X::init(x,x0.first);
-                    Y::init(dy,x0.second);
+                XxY_Vector x0(X::init(x),Y::init(dy));
                     XxY::zero(x0);
 
                 // Create the rhs, b0=(-grad L(x+dx,y),0);
-                XxY_Vector b0;
-                    XxY::init(x0,b0);
+                XxY_Vector b0(XxY::init(x0));
                     X::copy(grad_xpdx_mult,b0.first);
                     X::scal(Real(-1.),b0.first);
                     Y::zero(b0.second);
@@ -6574,8 +6308,7 @@ namespace Optizelle{
                 // at x+dx, but the preconditioner may and probably is linked
                 // to x.  Hence, we're going to temporarily move where our
                 // current iterate is for this solve and then move back.
-                X_Vector x_save;
-                    X::init(x,x_save);
+                X_Vector x_save(X::init(x));
                     X::copy(x,x_save);
                 X::copy(x_p_dx,x);
 
@@ -6601,39 +6334,34 @@ namespace Optizelle{
             
             // Does a check on how far off the Lagrange multiplier is 
             static Real lagrangeMultiplierCheck(
-                const typename Functions::t& fns,
-                typename State::t& state
+                typename Functions::t const & fns,
+                typename State::t & state
             ) {
                 // Create some shortcuts
-                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
-                const ScalarValuedFunctionModifications <Real,XX>& f_mod
+                ScalarValuedFunction <Real,XX> const & f=*(fns.f);
+                ScalarValuedFunctionModifications <Real,XX> const & f_mod
                     = *(fns.f_mod);
-                const X_Vector& grad=state.grad.front(); 
-                const Natural& augsys_iter_max=state.augsys_iter_max;
-                const Natural& augsys_rst_freq=state.augsys_rst_freq;
-                X_Vector& x=state.x.front();
-                Y_Vector& dy=state.dy.front();
+                X_Vector const & grad=state.grad; 
+                Natural const & augsys_iter_max=state.augsys_iter_max;
+                Natural const & augsys_rst_freq=state.augsys_rst_freq;
+                X_Vector & x=state.x;
+                Y_Vector & dy=state.dy;
 
                 // grad_x <- L(x,y) = grad f(x) + g'(x)*y
-                X_Vector grad_x; 
-                    X::init(x,grad_x);
+                X_Vector grad_x(X::init(x));
                     f.grad(x,grad_x);
 
                 // Find the gradient modifications for the Lagrange multiplier
                 // computation
-                X_Vector grad_x_mult;
-                    X::init(grad,grad_x_mult);
+                X_Vector grad_x_mult(X::init(grad));
                     f_mod.grad_mult(x,grad_x,grad_x_mult);
 
                 // Create the initial guess, x0=(0,0)
-                XxY_Vector x0;
-                    X::init(x,x0.first);
-                    Y::init(dy,x0.second);
+                XxY_Vector x0(X::init(x),Y::init(dy));
                     XxY::zero(x0);
 
                 // Create the rhs, b0=(-grad L(x,y),0);
-                XxY_Vector b0;
-                    XxY::init(x0,b0);
+                XxY_Vector b0(XxY::init(x0));
                     X::copy(grad_x_mult,b0.first);
                     X::scal(Real(-1.),b0.first);
                     Y::zero(b0.second);
@@ -6662,42 +6390,39 @@ namespace Optizelle{
 
             // Computes the predicted reduction 
             static void predictedReduction(
-                const typename Functions::t& fns,
-                typename State::t& state
+                typename Functions::t const & fns,
+                typename State::t & state
             ) {
                 // Create some shortcuts
-                const ScalarValuedFunctionModifications <Real,XX>& f_mod
+                ScalarValuedFunctionModifications <Real,XX> const & f_mod
                     = *(fns.f_mod);
-                const X_Vector& x=state.x.front();
-                const X_Vector& grad=state.grad.front();
-                const X_Vector& W_gradpHdxn=state.W_gradpHdxn.front();
-                const X_Vector& H_dxn=state.H_dxn.front();
-                const X_Vector& dx_n=state.dx_n.front();
-                const X_Vector& H_dxtuncorrected=state.H_dxtuncorrected.front();
-                const X_Vector& dx_t_uncorrected=state.dx_t_uncorrected.front();
-                const Y_Vector& gpxdxn_p_gx=state.gpxdxn_p_gx.front();
-                const Y_Vector& dy=state.dy.front();
-                const Y_Vector& g_x = state.g_x.front();
-                const Real& rho=state.rho;
-                const Real& norm_gpxdxnpgx=state.norm_gpxdxnpgx;
-                Real& pred=state.pred;
+                X_Vector const & x=state.x;
+                X_Vector const & grad=state.grad;
+                X_Vector const & W_gradpHdxn=state.W_gradpHdxn;
+                X_Vector const & H_dxn=state.H_dxn;
+                X_Vector const & dx_n=state.dx_n;
+                X_Vector const & H_dxtuncorrected=state.H_dxtuncorrected;
+                X_Vector const & dx_t_uncorrected=state.dx_t_uncorrected;
+                Y_Vector const & gpxdxn_p_gx=state.gpxdxn_p_gx;
+                Y_Vector const & dy=state.dy;
+                Y_Vector const & g_x = state.g_x;
+                Real const & rho=state.rho;
+                Real const & norm_gpxdxnpgx=state.norm_gpxdxnpgx;
+                Real & pred=state.pred;
                 
                 // Find || g(x) ||
                 Real norm_gx = sqrt(Y::innr(g_x,g_x));
                 
                 // Find the gradient modifications for step computation 
-                X_Vector grad_step;
-                    X::init(grad,grad_step);
+                X_Vector grad_step(X::init(grad));
                     f_mod.grad_step(x,grad,grad_step);
                 
                 // Add the Hessian modifications to H(x)dx_n
-                X_Vector Hdxn_step;
-                    X::init(x,Hdxn_step);
+                X_Vector Hdxn_step(X::init(x));
                     f_mod.hessvec_step(x,dx_n,H_dxn,Hdxn_step);
                 
                 // Add the Hessian modifications to H(x)dx_t_uncorrected
-                X_Vector H_dxtuncorrected_step;
-                    X::init(x,H_dxtuncorrected_step);
+                X_Vector H_dxtuncorrected_step(X::init(x));
                     f_mod.hessvec_step(x,dx_t_uncorrected,H_dxtuncorrected,
                         H_dxtuncorrected_step);
 
@@ -6734,19 +6459,19 @@ namespace Optizelle{
             
             // Computes the penalty parameter 
             static void penaltyParameter(
-                const typename Functions::t& fns,
-                typename State::t& state
+                typename Functions::t const & fns,
+                typename State::t & state
             ) {
                 // Create some shortcuts
-                const Y_Vector& g_x=state.g_x.back();
-                const Real& pred=state.pred;
-                const Real& norm_gpxdxnpgx=state.norm_gpxdxnpgx;
-                const Real& rho_old=state.rho_old;
-                const Real& rho_bar=state.rho_bar;
-                Real& rho=state.rho;
+                Y_Vector const & g_x=state.g_x;
+                Real const & pred=state.pred;
+                Real const & norm_gpxdxnpgx=state.norm_gpxdxnpgx;
+                Real const & rho_old=state.rho_old;
+                Real const & rho_bar=state.rho_bar;
+                Real & rho=state.rho;
                
                 // norm_gx <- || g(x) ||
-                const Real& norm_gx=sqrt(Y::innr(g_x,g_x));
+                Real const & norm_gx=sqrt(Y::innr(g_x,g_x));
 
                 // If the predicted reduction is small, update the penalty
                 // parameter.  Make sure we actually have a positive predicted
@@ -6763,15 +6488,15 @@ namespace Optizelle{
 
             // Computes the residual predicted reduction 
             static void residualPredictedReduction(
-                const typename Functions::t& fns,
-                typename State::t& state
+                typename Functions::t const & fns,
+                typename State::t & state
             ) {
                 // Create some shortcuts
-                const Y_Vector& dy=state.dy.front();
-                const Y_Vector& gpxdxn_p_gx=state.gpxdxn_p_gx.front();
-                const Y_Vector& gpxdxt=state.gpxdxt.front();
-                const Real& rho=state.rho;
-                Real& rpred=state.rpred;
+                Y_Vector const & dy=state.dy;
+                Y_Vector const & gpxdxn_p_gx=state.gpxdxn_p_gx;
+                Y_Vector const & gpxdxt=state.gpxdxt;
+                Real const & rho=state.rho;
+                Real & rpred=state.rpred;
 
                 // rpred <- - < dy, g'(x)dx_t>
                 rpred = -Y::innr(dy,gpxdxt);
@@ -6786,36 +6511,35 @@ namespace Optizelle{
             
             // Checks whether we accept or reject a step
             static bool checkStep(
-                const typename Functions::t& fns,
-                typename State::t& state
+                typename Functions::t const & fns,
+                typename State::t & state
             ){
                 // Create shortcuts to some elements in the state
-                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
-                const ScalarValuedFunctionModifications <Real,XX>& f_mod
+                ScalarValuedFunction <Real,XX> const & f=*(fns.f);
+                ScalarValuedFunctionModifications <Real,XX> const & f_mod
                     = *(fns.f_mod);
-                const X_Vector& x=state.x.front();
-                const X_Vector& dx=state.dx.front();
-                const Y_Vector& dy=state.dy.front();
-                const Real& eta1=state.eta1;
-                const Real& eta2=state.eta2;
-                const Real& f_x=state.f_x;
-                const KrylovStop::t& krylov_stop=state.krylov_stop;
-                Y_Vector& y=state.y.front();
-                Real& delta=state.delta;
-                Real& ared=state.ared;
-                Real& pred=state.pred;
-                Real& f_xpdx=state.f_xpdx;
+                X_Vector const & x=state.x;
+                X_Vector const & dx=state.dx;
+                Y_Vector const & dy=state.dy;
+                Real const & eta1=state.eta1;
+                Real const & eta2=state.eta2;
+                Real const & f_x=state.f_x;
+                KrylovStop::t const & krylov_stop=state.krylov_stop;
+                Y_Vector & y=state.y;
+                Real & delta=state.delta;
+                Real & ared=state.ared;
+                Real & pred=state.pred;
+                Real & f_xpdx=state.f_xpdx;
                 
                 // Allocate memory for temporaries that we need
-                X_Vector x_p_dx; X::init(x,x_p_dx);
+                X_Vector x_p_dx(X::init(x));
 
                 // Determine x+dx 
                 X::copy(dx,x_p_dx);
                 X::axpy(Real(1.),x,x_p_dx);
 
                 // Save the old Lagrange multiplier
-                Y_Vector y_old;
-                    Y::init(y,y_old);
+                Y_Vector y_old(Y::init(y));
                     Y::copy(y,y_old);
 
                 // Determine y + dy
@@ -6868,49 +6592,49 @@ namespace Optizelle{
 
             // Finds the trust-region step
             static void getStep(
-                const Messaging& msg,
-                const StateManipulator <EqualityConstrained <Real,XX,YY> >&
+                Messaging const & msg,
+                StateManipulator <EqualityConstrained <Real,XX,YY> > const &
                     smanip,
-                const typename Functions::t& fns,
-                typename State::t& state
+                typename Functions::t const & fns,
+                typename State::t & state
             ){
                 // Create some shortcuts
-                const ScalarValuedFunction <Real,XX>& f=*(fns.f);
-                const VectorValuedFunction <Real,XX,YY>& g=*(fns.g);
-                const X_Vector& x=state.x.front();
-                const X_Vector& dx_n=state.dx_n.front();
-                const X_Vector& dx_t=state.dx_t.front();
-                const X_Vector& dx_tcp_uncorrected
-                    =state.dx_tcp_uncorrected.front();
-                const Real& xi_4=state.xi_4;
-                const Real& eta0=state.eta0;
-                const Real& eps_dx=state.eps_dx;
-                const Real& norm_dxtyp=state.norm_dxtyp;
-                const Real& rho_old=state.rho_old;
-                const Natural& history_reset=state.history_reset;
-                X_Vector& dx=state.dx.front();
-                X_Vector& dx_t_uncorrected=state.dx_t_uncorrected.front();
-                X_Vector& H_dxn=state.H_dxn.front();
-                X_Vector& H_dxtuncorrected=state.H_dxtuncorrected.front();
-                Y_Vector& g_x=state.g_x.front();
-                Y_Vector& gpxdxn_p_gx=state.gpxdxn_p_gx.front();
-                Y_Vector& gpxdxt=state.gpxdxt.front();
+                ScalarValuedFunction <Real,XX> const & f=*(fns.f);
+                VectorValuedFunction <Real,XX,YY> const & g=*(fns.g);
+                X_Vector const & x=state.x;
+                X_Vector const & dx_n=state.dx_n;
+                X_Vector const & dx_t=state.dx_t;
+                X_Vector const & dx_tcp_uncorrected
+                    =state.dx_tcp_uncorrected;
+                Real const & xi_4=state.xi_4;
+                Real const & eta0=state.eta0;
+                Real const & eps_dx=state.eps_dx;
+                Real const & norm_dxtyp=state.norm_dxtyp;
+                Real const & rho_old=state.rho_old;
+                Natural const & history_reset=state.history_reset;
+                X_Vector & dx=state.dx;
+                X_Vector & dx_t_uncorrected=state.dx_t_uncorrected;
+                X_Vector & H_dxn=state.H_dxn;
+                X_Vector & H_dxtuncorrected=state.H_dxtuncorrected;
+                Y_Vector & g_x=state.g_x;
+                Y_Vector & gpxdxn_p_gx=state.gpxdxn_p_gx;
+                Y_Vector & gpxdxt=state.gpxdxt;
                 std::list <X_Vector>& oldY=state.oldY; 
                 std::list <X_Vector>& oldS=state.oldS; 
-                Real& norm_gpxdxnpgx=state.norm_gpxdxnpgx;
-                Real& xi_qn=state.xi_qn;
-                Real& xi_pg=state.xi_pg;
-                Real& xi_proj=state.xi_proj;
-                Real& xi_tang=state.xi_tang;
-                Real& xi_lmh=state.xi_lmh;
-                Real& pred=state.pred;
-                Real& rpred=state.rpred;
-                Real& rho=state.rho;
-                Real& alpha0=state.alpha0;
-                Natural& rejected_trustregion=state.rejected_trustregion;
+                Real & norm_gpxdxnpgx=state.norm_gpxdxnpgx;
+                Real & xi_qn=state.xi_qn;
+                Real & xi_pg=state.xi_pg;
+                Real & xi_proj=state.xi_proj;
+                Real & xi_tang=state.xi_tang;
+                Real & xi_lmh=state.xi_lmh;
+                Real & pred=state.pred;
+                Real & rpred=state.rpred;
+                Real & rho=state.rho;
+                Real & alpha0=state.alpha0;
+                Natural & rejected_trustregion=state.rejected_trustregion;
 
                 // Create a single temporary vector
-                X_Vector x_tmp1; X::init(x,x_tmp1);
+                X_Vector x_tmp1(X::init(x));
 
                 // Continue to look for a step until our actual vs. predicted
                 // reduction is good.
@@ -7086,14 +6810,14 @@ namespace Optizelle{
             // Adjust the stopping conditions unless
             // || g(x) || <  eps_constr || g(x_0) ||
             static void adjustStoppingConditions(
-                const typename Functions::t& fns,
-                typename State::t& state
+                typename Functions::t const & fns,
+                typename State::t & state
             ) {
                 // Create some shortcuts
-                const Y_Vector& g_x = state.g_x.back();
-                const Real& eps_constr=state.eps_constr;
-                const Real& norm_gxtyp=state.norm_gxtyp; 
-                StoppingCondition::t& opt_stop=state.opt_stop;
+                Y_Vector const & g_x = state.g_x;
+                Real const & eps_constr=state.eps_constr;
+                Real const & norm_gxtyp=state.norm_gxtyp; 
+                StoppingCondition::t & opt_stop=state.opt_stop;
                 
                 // Prevent convergence unless the infeasibility is small. 
                 Real norm_gx=sqrt(Y::innr(g_x,g_x));
@@ -7112,23 +6836,23 @@ namespace Optizelle{
             {
             private:
                 // A reference to the user-defined state manipulator
-                const StateManipulator<ProblemClass>& smanip;
+                StateManipulator<ProblemClass> const & smanip;
 
                 // A reference to the messaging object
-                const Messaging& msg;
+                Messaging const & msg;
 
             public:
                 CompositeStepManipulator(
-                    const StateManipulator <ProblemClass>& smanip_,
-                    const Messaging& msg_
+                    StateManipulator <ProblemClass> const & smanip_,
+                    Messaging const & msg_
                 ) : smanip(smanip_), msg(msg_) {}
 
 
                 // Application
                 void operator () (
-                    const typename ProblemClass::Functions::t& fns_,
+                    typename ProblemClass::Functions::t const & fns_,
                     typename ProblemClass::State::t& state_,
-                    OptimizationLocation::t loc
+                    OptimizationLocation::t const & loc
                 ) const {
                     // Call the user define manipulator
                     smanip(fns_,state_,loc);
@@ -7142,27 +6866,27 @@ namespace Optizelle{
                     // use the state for the unconstrained problem even though
                     // this state is really an equality constrained state when
                     // called using the routines below.
-                    const typename Functions::t& fns
-                        =dynamic_cast <const typename Functions::t&> (fns_);
-                    typename State::t& state 
-                        =dynamic_cast <typename State::t&> (state_);
+                    typename Functions::t const & fns
+                        =dynamic_cast <typename Functions::t const &> (fns_);
+                    typename State::t & state 
+                        =dynamic_cast <typename State::t &> (state_);
                 
                     // Create some shortcuts
-                    const ScalarValuedFunctionModifications <Real,XX>& f_mod
+                    ScalarValuedFunctionModifications <Real,XX> const & f_mod
                         = *(fns.f_mod);
-                    const VectorValuedFunction <Real,XX,YY>& g=*(fns.g);
-                    const X_Vector& x=state.x.front();
-                    const Y_Vector& dy=state.dy.front();
-                    const Real& rho = state.rho;
-                    const Natural& krylov_iter_max = state.krylov_iter_max;
+                    VectorValuedFunction <Real,XX,YY> const & g=*(fns.g);
+                    X_Vector const & x=state.x;
+                    Y_Vector const & dy=state.dy;
+                    Real const & rho = state.rho;
+                    Natural const & krylov_iter_max = state.krylov_iter_max;
                     AlgorithmClass::t& algorithm_class=state.algorithm_class;
-                    X_Vector& grad=state.grad.front();
-                    Y_Vector& y=state.y.front();
-                    Y_Vector& g_x=state.g_x.front();
-                    Real& norm_gxtyp = state.norm_gxtyp;
-                    Real& rho_old = state.rho_old;
-                    Real& norm_gradtyp = state.norm_gradtyp;
-                    Natural& krylov_orthog_max = state.krylov_orthog_max;
+                    X_Vector & grad=state.grad;
+                    Y_Vector & y=state.y;
+                    Y_Vector & g_x=state.g_x;
+                    Real & norm_gxtyp = state.norm_gxtyp;
+                    Real & rho_old = state.rho_old;
+                    Real & norm_gradtyp = state.norm_gradtyp;
+                    Natural & krylov_orthog_max = state.krylov_orthog_max;
 
                     switch(loc){
                     case OptimizationLocation::BeforeInitialFuncAndGrad:
@@ -7188,8 +6912,7 @@ namespace Optizelle{
                         // In addition, update the norm of gradient and
                         // typical gradient since we've modified the Lagrange
                         // multiplier
-                        X_Vector grad_stop;
-                            X::init(grad,grad_stop);
+                        X_Vector grad_stop(X::init(grad));
                             f_mod.grad_stop(x,grad,grad_stop);
                         norm_gradtyp=sqrt(X::innr(grad_stop,grad_stop));
 
@@ -7244,9 +6967,9 @@ namespace Optizelle{
             // Solves an optimization problem where the user doesn't know about
             // the state manipulator
             static void getMin(
-                const Messaging& msg,
-                typename Functions::t& fns,
-                typename State::t& state
+                Messaging const & msg,
+                typename Functions::t & fns,
+                typename State::t & state
             ){
                 // Create an empty state manipulator
                 StateManipulator <EqualityConstrained <Real,XX,YY> > smanip;
@@ -7258,11 +6981,11 @@ namespace Optizelle{
             // Initializes remaining functions then solves an optimization
             // problem
             static void getMin(
-                const Messaging& msg,
-                const StateManipulator <EqualityConstrained <Real,XX,YY> >&
+                Messaging const & msg,
+                StateManipulator <EqualityConstrained <Real,XX,YY> > const &
                     smanip,
-                typename Functions::t& fns,
-                typename State::t& state
+                typename Functions::t & fns,
+                typename State::t & state
             ){
                 
                 // Adds the output pieces to the state manipulator 
@@ -7302,10 +7025,9 @@ namespace Optizelle{
         template <typename> class ZZ
     > 
     struct InequalityConstrained {
-    private:
-        MODULE_CLASS(InequalityConstrained);
+        // Disallow constructors
+        NO_CONSTRUCTORS(InequalityConstrained);
 
-    public:
         // Create some shortcuts for some type names
         typedef XX <Real> X;
         typedef typename X::Vector X_Vector;
@@ -7326,29 +7048,23 @@ namespace Optizelle{
         // Routines that manipulate the internal state of the optimization 
         // algorithm.
         struct State {
-        private:
-            // This is a namespace inside of a class.  Do not allow
-            // construction.
-            State();
+            // Disallow constructors
+            NO_CONSTRUCTORS(State);
 
-        public:
             // Internal state of the optimization
             struct t: public virtual Unconstrained <Real,XX>::State::t {
-            private:
                 // Prevent the use of the copy constructor and the assignment
                 // operator.  Basically, the state can hold a large amount
                 // of memory and the safe way to move this memory around
                 // is through the use of the capture and release methodology
                 // inside of the restart section.
-                t& operator = (const t&);
-                t(const t&);
+                NO_DEFAULT_COPY_ASSIGNMENT(t);
 
-            public:
                 // Inequality multiplier (dual variable or Lagrange multiplier)
-                std::list <Z_Vector> z;
+                Z_Vector z;
                 
                 // Step in the inequality multiplier 
-                std::list <Z_Vector> dz;
+                Z_Vector dz;
 
                 // The inequality constraint evaluated at x.  In theory,
                 // we can always just evaluate this when we need it.  However,
@@ -7357,7 +7073,7 @@ namespace Optizelle{
                 // with SDP constraints, we require a factorization of this
                 // quantity.  By caching it, we have the ability to cache the
                 // factorization.
-                std::list <Z_Vector> h_x;
+                Z_Vector h_x;
 
                 // Interior point parameter
                 Real mu;
@@ -7386,76 +7102,29 @@ namespace Optizelle{
                 CentralityStrategy::t cstrat;
 
                 // Initialization constructors
-                t() {
-                    InequalityConstrained <Real,XX,ZZ>::State
-                        ::init_params(*this);
+                t(X_Vector const & x_,Z_Vector const & z_) :
+                    Unconstrained <Real,XX>::State::t(x_),
+                    z(Z::init(z_)),
+                    dz(Z::init(z_)),
+                    h_x(Z::init(z_)),
+                    mu(std::numeric_limits<Real>::quiet_NaN()),
+                    mu_est(std::numeric_limits<Real>::quiet_NaN()),
+                    mu_typ(std::numeric_limits<Real>::quiet_NaN()),
+                    eps_mu(1e-8),
+                    sigma(0.5),
+                    gamma(0.95),
+                    ipm(InteriorPointMethod::PrimalDual),
+                    cstrat(CentralityStrategy::Constant)
+                {
+                    Z::copy(z_,z);
                 }
-                t(const X_Vector& x,const Z_Vector& z) {
-                    InequalityConstrained <Real,XX,ZZ>::State
-                        ::init_params(*this);
-                    InequalityConstrained <Real,XX,ZZ>::State
-                        ::init_vectors(*this,x,z);
-                }
+                
+                // A trick to allow dynamic casting later
+                virtual ~t() {}
             };
                 
-            // This initializes all the parameters required for inequality
-            // constrained optimization.  
-            static void init_params_(t& state) {
-                state.mu = std::numeric_limits<Real>::quiet_NaN();
-                state.mu_est = std::numeric_limits<Real>::quiet_NaN();
-                state.mu_typ = std::numeric_limits<Real>::quiet_NaN();
-                state.eps_mu= Real(1e-8);
-                state.sigma = Real(0.5);
-                state.gamma = Real(0.95);
-                state.ipm = InteriorPointMethod::PrimalDual;
-                state.cstrat = CentralityStrategy::Constant; 
-            }
-            static void init_params(t& state) {
-                Unconstrained <Real,XX>::State::init_params_(state); 
-                InequalityConstrained <Real,XX,ZZ>::State::init_params_(state);
-            }
-
-            // This initializes all the variables required for inequality
-            // constrained optimization.  
-            static void init_vectors_(
-                t& state,
-                const X_Vector& x,
-                const Z_Vector& z
-            ) {
-                // Allocate memory for z
-                state.z.clear();
-                    state.z.emplace_back(Z_Vector());
-                    Z::init(z,state.z.back());
-                    Z::copy(z,state.z.back());
-
-                // Allocate memory for dz
-                state.dz.clear();
-                    state.dz.emplace_back(Z_Vector());
-                    Z::init(z,state.dz.back());
-
-                // Allocate memory for h(x)
-                state.h_x.clear();
-                    state.h_x.emplace_back(Z_Vector());
-                    Z::init(z,state.h_x.back());
-            }
-            static void init_vectors(
-                t& state,
-                const X_Vector& x,
-                const Z_Vector& z
-            ) {
-                Unconstrained <Real,XX>::State::init_vectors_(state,x); 
-                InequalityConstrained <Real,XX,ZZ>::State
-                    ::init_vectors_(state,x,z); 
-            }
-           
-            // Initializes everything
-            static void init(t& state, const X_Vector& x, const Z_Vector& z) {
-                init_params(state);
-                init_vectors(state,x,z);
-            }
-
             // Check that we have a valid set of parameters.  
-            static void check_(const Messaging& msg,const t& state) {
+            static void check_(Messaging const & msg,t const & state) {
                 // Use this to build an error message
                 std::stringstream ss;
                 
@@ -7493,24 +7162,21 @@ namespace Optizelle{
                 // If there's an error, print it
                 if(ss.str()!="") msg.error(ss.str());
             }
-            static void check(const Messaging& msg,const t& state) {
+            static void check(Messaging const & msg,t const & state) {
                 Unconstrained <Real,XX>::State::check_(msg,state);
                 InequalityConstrained <Real,XX,ZZ>::State::check_(msg,state);
             }
         };
         // Utilities for restarting the optimization
         struct Restart {
-        private:
-            // This is a namespace inside of a class.  Do not allow
-            // construction.
-            Restart();
-
-        public:
+            // Disallow constructors
+            NO_CONSTRUCTORS(Restart);
+            
             // Checks whether we have a valid real label.
             struct is_real :
-                public std::unary_function<const std::string&, bool>
+                public std::unary_function<std::string const &, bool>
             {
-                bool operator () (const std::string& name) const {
+                bool operator () (std::string const & name) const {
                     if( typename Unconstrained <Real,XX>::Restart
                             ::is_real()(name) ||
                         name == "mu" ||
@@ -7528,9 +7194,9 @@ namespace Optizelle{
             
             // Checks whether we have a valid natural number label.
             struct is_nat :
-                public std::unary_function<const std::string&, bool>
+                public std::unary_function<std::string const &, bool>
             {
-                bool operator () (const std::string& name) const {
+                bool operator () (std::string const & name) const {
                     if( typename Unconstrained <Real,XX>::Restart
                         ::is_nat()(name)
                     )
@@ -7542,9 +7208,9 @@ namespace Optizelle{
            
             // Checks whether we have a valid parameter label.
             struct is_param :
-                public std::unary_function<const std::string&, bool>
+                public std::unary_function<std::string const &, bool>
             {
-                bool operator () (const std::string& name) const {
+                bool operator () (std::string const & name) const {
                     if( typename Unconstrained <Real,XX>::Restart
                             ::is_param()(name) ||
                         name == "ipm" ||
@@ -7558,7 +7224,7 @@ namespace Optizelle{
             
             // Checks whether we have a valid variable label
             struct is_x : public std::unary_function<std::string, bool> {
-                bool operator () (const std::string& name) const {
+                bool operator () (std::string const & name) const {
                     if( typename Unconstrained <Real,XX>::Restart
                             ::is_x()(name) 
                     ) 
@@ -7570,7 +7236,7 @@ namespace Optizelle{
             
             // Checks whether we have a valid inequality multiplier label
             struct is_z : public std::unary_function<std::string, bool> {
-                bool operator () (const std::string& name) const {
+                bool operator () (std::string const & name) const {
                     if( name == "z" ||
                         name == "dz" ||
                         name == "h_x"
@@ -7583,12 +7249,12 @@ namespace Optizelle{
 
             // Checks whether we have valid labels
             static void checkLabels(
-                const Messaging& msg,
-                const Reals& reals,
-                const Nats& nats,
-                const Params& params,
-                const X_Vectors& xs,
-                const Z_Vectors& zs
+                Messaging const & msg,
+                Reals const & reals,
+                Nats const & nats,
+                Params const & params,
+                X_Vectors const & xs,
+                Z_Vectors const & zs
             ) {
                 Utility::checkLabels(msg,is_real(),reals.first," real name: ");
                 Utility::checkLabels(msg,is_nat(),nats.first," natural name: ");
@@ -7603,11 +7269,11 @@ namespace Optizelle{
             // is valid.  This function returns a string with the error
             // if there is one.  Otherwise, it returns an empty string.
             struct checkParamVal : public std::binary_function
-                <const std::string&,const std::string&,std::string>
+                <std::string const &,std::string const &,std::string>
             {
                 std::string operator() (
-                    const std::string& label,
-                    const std::string& val
+                    std::string const & label,
+                    std::string const & val
                 ) const {
 
                     // Create a base message
@@ -7638,24 +7304,24 @@ namespace Optizelle{
             
             // Copy out the inequality multipliers 
             static void stateToVectors(
-                typename State::t& state, 
-                X_Vectors& xs,
-                Z_Vectors& zs
+                typename State::t & state, 
+                X_Vectors & xs,
+                Z_Vectors & zs
             ) {
                 zs.first.emplace_back("z");
-                zs.second.splice(zs.second.end(),state.z);
+                zs.second.emplace_back(std::move(state.z));
                 zs.first.emplace_back("dz");
-                zs.second.splice(zs.second.end(),state.dz);
+                zs.second.emplace_back(std::move(state.dz));
                 zs.first.emplace_back("h_x");
-                zs.second.splice(zs.second.end(),state.h_x);
+                zs.second.emplace_back(std::move(state.h_x));
             }
             
             // Copy out the scalar information
             static void stateToScalars(
-                typename State::t& state,
-                Reals& reals,
-                Nats& nats,
-                Params& params
+                typename State::t & state,
+                Reals & reals,
+                Nats & nats,
+                Params & params
             ) {
                 // Copy in all the real numbers
                 reals.first.emplace_back("mu");
@@ -7682,9 +7348,9 @@ namespace Optizelle{
             
             // Copy in inequality multipliers 
             static void vectorsToState(
-                typename State::t& state,
-                X_Vectors& xs,
-                Z_Vectors& zs
+                typename State::t & state,
+                X_Vectors & xs,
+                Z_Vectors & zs
             ) {
                 typename std::list <Z_Vector>::iterator z
                     =zs.second.begin();
@@ -7703,25 +7369,20 @@ namespace Optizelle{
                     // Determine which variable we're reading in and then splice
                     // it in the correct location
                     if(*name0=="z")
-                        state.z.splice(state.z.end(),zs.second,z0);
-                    else if(*name0=="h_x")
-                        state.h_x.splice(state.h_x.end(),zs.second,z0);
+                        state.z = std::move(*z0);
                     else if(*name0=="dz")
-                        state.dz.splice(state.dz.end(),zs.second,z0);
-
-                    // Remove the string corresponding to the element just
-                    // spliced if slicing occured.
-                    if(zs.first.size() != zs.second.size())
-                        zs.first.erase(name0);
+                        state.dz = std::move(*z0);
+                    else if(*name0=="h_x")
+                        state.h_x = std::move(*z0);
                 }
             }
             
             // Copy in the scalar information
             static void scalarsToState(
-                typename State::t& state,
-                Reals& reals,
-                Nats& nats,
-                Params& params
+                typename State::t & state,
+                Reals & reals,
+                Nats & nats,
+                Params & params
             ) { 
                 // Copy in any reals 
                 typename std::list <Real>::iterator real=reals.second.begin();
@@ -7752,15 +7413,16 @@ namespace Optizelle{
 
             // Release the data into structures controlled by the user 
             static void release(
-                typename State::t& state,
-                X_Vectors& xs,
-                Z_Vectors& zs,
-                Reals& reals,
-                Nats& nats,
-                Params& params
+                typename State::t & state,
+                X_Vectors & xs,
+                Z_Vectors & zs,
+                Reals & reals,
+                Nats & nats,
+                Params & params
             ) {
                 // Copy out all of the variable information
-                Unconstrained <Real,XX>::Restart::stateToVectors(state,xs);
+                Unconstrained <Real,XX>
+                    ::Restart::stateToVectors(state,xs);
                 InequalityConstrained <Real,XX,ZZ>
                     ::Restart::stateToVectors(state,xs,zs);
             
@@ -7773,13 +7435,13 @@ namespace Optizelle{
             
             // Capture data from structures controlled by the user.  
             static void capture(
-                const Messaging& msg,
-                typename State::t& state,
-                X_Vectors& xs,
-                Z_Vectors& zs,
-                Reals& reals,
-                Nats& nats,
-                Params& params
+                Messaging const & msg,
+                typename State::t & state,
+                X_Vectors & xs,
+                Z_Vectors & zs,
+                Reals & reals,
+                Nats & nats,
+                Params & params
             ) {
                 // Check the labels on the user input
                 checkLabels(msg,reals,nats,params,xs,zs);
@@ -7788,7 +7450,8 @@ namespace Optizelle{
                 Utility::checkParams(msg,checkParamVal(),params);
 
                 // Copy in the variables 
-                Unconstrained <Real,XX>::Restart::vectorsToState(state,xs);
+                Unconstrained <Real,XX>
+                    ::Restart::vectorsToState(state,xs);
                 InequalityConstrained <Real,XX,ZZ>
                     ::Restart::vectorsToState(state,xs,zs);
                 
@@ -7806,23 +7469,17 @@ namespace Optizelle{
         // All the functions required by an optimization algorithm.  Note, this
         // routine owns the memory for these operations.  
         struct Functions {
-        private:
-            // This is a namespace inside of a class.  Do not allow
-            // construction.
-            Functions();
+            // Disallow constructors
+            NO_CONSTRUCTORS(Functions);
 
-        public:
             // Actual storage of the functions required
             struct t: public virtual Unconstrained <Real,XX>::Functions::t {
-            private:
                 // Prevent the use of the copy constructor and the assignment
                 // operator.  Since this class holds a number of unique_ptrs
                 // to different functions, it is not safe to allow them to
                 // be copied.
-                t& operator = (const t&);
-                t(const t&);
+                NO_COPY_ASSIGNMENT(t);
 
-            public:
                 // Inequality constraints 
                 std::unique_ptr <VectorValuedFunction <Real,XX,ZZ> > h;
                 
@@ -7833,24 +7490,27 @@ namespace Optizelle{
             struct InequalityModifications
                 : public Optizelle::ScalarValuedFunctionModifications <Real,XX>
             {
-            private:
-                MODIFICATIONS_CLASS(InequalityModifications); 
+            public:
+                // Disallow constructors
+                NO_COPY_ASSIGNMENT(InequalityModifications); 
 
+            private:
                 // Underlying modification.  This takes control of the memory
                 std::unique_ptr <
-                    Optizelle::ScalarValuedFunctionModifications <Real,XX> > f_mod;
+                    Optizelle::ScalarValuedFunctionModifications <Real,XX> >
+                    f_mod;
 
                 // Inequality constraint.
-                const Optizelle::VectorValuedFunction <Real,XX,ZZ>& h;
+                Optizelle::VectorValuedFunction <Real,XX,ZZ> const & h;
                 
                 // Inequality Lagrange multiplier
-                const Z_Vector& z;
+                Z_Vector const & z;
 
                 // Interior point parameter
-                const Real& mu;
+                Real const & mu;
 
                 // Inequality constraint evaluated at x
-                const Z_Vector& h_x;
+                Z_Vector const & h_x;
                 
                 // Some workspace for the below functions
                 mutable X_Vector grad_tmp;
@@ -7872,9 +7532,9 @@ namespace Optizelle{
 
                 // Adds the Lagrangian pieces to the gradient
                 void grad_lag(
-                    const X_Vector& x,
-                    const X_Vector& grad,
-                    X_Vector& grad_lag
+                    X_Vector const & x,
+                    X_Vector const & grad,
+                    X_Vector & grad_lag
                 ) const {
                     // grad_lag <- grad f(x)
                     X::copy(grad,grad_lag);
@@ -7902,9 +7562,9 @@ namespace Optizelle{
                 
                 // Adds the Schur complement pieces to the gradient
                 void grad_schur(
-                    const X_Vector& x,
-                    const X_Vector& grad,
-                    X_Vector& grad_schur
+                    X_Vector const & x,
+                    X_Vector const & grad,
+                    X_Vector & grad_schur
                 ) const {
                     // grad_schur <- grad f(x)
                     X::copy(grad,grad_schur);
@@ -7937,42 +7597,30 @@ namespace Optizelle{
                 }
             public:
                 InequalityModifications(
-                    const typename State::t& state,
-                    typename Functions::t& fns
+                    typename State::t const & state,
+                    typename Functions::t & fns
                 ) : f_mod(std::move(fns.f_mod)),
                     h(*(fns.h)),
-                    z(state.z.front()),
+                    z(state.z),
                     mu(state.mu),
-                    h_x(state.h_x.front())
-                { 
-                    // Create some shortcuts
-                    const X_Vector& x=state.x.back();
-
-                    // Allocate a bit of memory for the workspace 
-                    X::init(x,grad_tmp);
-                    X::init(x,hess_mod);
-                    X::init(x,x_tmp1);
-                    Z::init(z,z_tmp1);
-                    Z::init(z,z_tmp2);
-                    
-                    // Allocate memory for the caching
-                    X::init(x,x_merit.second);
-                        x_merit.first=false;
-                    Z::init(z,hx_merit);
-                    X::init(x,x_lag.second);
-                        x_lag.first=false;
-                    Z::init(z,z_lag.second);
-                        z_lag.first=false;
-                    X::init(x,x_schur.second);
-                        x_schur.first=false;
-                    Z::init(z,z_schur.second);
-                        z_schur.first=false;
-                    X::init(x,hpxsz);
-                    X::init(x,hpxs_invLhx_e);
-                }
+                    h_x(state.h_x),
+                    grad_tmp(X::init(state.x)),
+                    hess_mod(X::init(state.x)),
+                    x_tmp1(X::init(state.x)),
+                    z_tmp1(Z::init(state.z)),
+                    z_tmp2(Z::init(state.z)),
+                    x_merit(false,X::init(state.x)),
+                    hx_merit(Z::init(state.z)),
+                    x_lag(false,X::init(state.x)),
+                    z_lag(false,Z::init(state.z)),
+                    x_schur(false,X::init(state.x)),
+                    z_schur(false,Z::init(state.z)),
+                    hpxsz(X::init(state.x)),
+                    hpxs_invLhx_e(X::init(state.x))
+                {}
 
                 // Merit function additions to the objective
-                virtual Real merit(const X_Vector& x,const Real& f_x) const {
+                virtual Real merit(X_Vector const & x,Real const & f_x) const {
                     // Do the underlying modification of the objective
                     Real merit_x = f_mod->merit(x,f_x);
                     
@@ -7995,9 +7643,9 @@ namespace Optizelle{
 
                 // Stopping condition modification of the gradient
                 virtual void grad_stop(
-                    const X_Vector& x,
-                    const X_Vector& grad,
-                    X_Vector& grad_stop
+                    X_Vector const & x,
+                    X_Vector const & grad,
+                    X_Vector & grad_stop
                 ) const {
                     f_mod->grad_stop(x,grad,grad_tmp);
                     grad_lag(x,grad_tmp,grad_stop);
@@ -8005,9 +7653,9 @@ namespace Optizelle{
 
                 // Diagnostic modification of the gradient
                 virtual void grad_diag(
-                    const X_Vector& x,
-                    const X_Vector& grad,
-                    X_Vector& grad_diag
+                    X_Vector const & x,
+                    X_Vector const & grad,
+                    X_Vector & grad_diag
                 ) const {
                     f_mod->grad_diag(x,grad,grad_tmp);
                     grad_lag(x,grad_tmp,grad_diag);
@@ -8015,9 +7663,9 @@ namespace Optizelle{
 
                 // Modification of the gradient when finding a trial step
                 virtual void grad_step(
-                    const X_Vector& x,
-                    const X_Vector& grad,
-                    X_Vector& grad_step
+                    X_Vector const & x,
+                    X_Vector const & grad,
+                    X_Vector & grad_step
                 ) const {
                     f_mod->grad_step(x,grad,grad_tmp);
                     grad_schur(x,grad_tmp,grad_step);
@@ -8025,9 +7673,9 @@ namespace Optizelle{
 
                 // Modification of the gradient for a quasi-Newton method 
                 virtual void grad_quasi(
-                    const X_Vector& x,
-                    const X_Vector& grad,
-                    X_Vector& grad_quasi
+                    X_Vector const & x,
+                    X_Vector const & grad,
+                    X_Vector & grad_quasi
                 ) const {
                     f_mod->grad_quasi(x,grad,grad_quasi);
                 }
@@ -8035,9 +7683,9 @@ namespace Optizelle{
                 // Modification of the gradient when solving for the equality
                 // multiplier
                 virtual void grad_mult(
-                    const X_Vector& x,
-                    const X_Vector& grad,
-                    X_Vector& grad_mult
+                    X_Vector const & x,
+                    X_Vector const & grad,
+                    X_Vector & grad_mult
                 ) const {
                     f_mod->grad_mult(x,grad,grad_tmp);
                     grad_lag(x,grad_tmp,grad_mult);
@@ -8046,10 +7694,10 @@ namespace Optizelle{
                 // Modification of the Hessian-vector product when finding a
                 // trial step
                 virtual void hessvec_step(
-                    const X_Vector& x,
-                    const X_Vector& dx,
-                    const X_Vector& H_dx,
-                    X_Vector& Hdx_step 
+                    X_Vector const & x,
+                    X_Vector const & dx,
+                    X_Vector const & H_dx,
+                    X_Vector & Hdx_step 
                 ) const {
 
                     // Modify the Hessian-vector product
@@ -8074,7 +7722,7 @@ namespace Optizelle{
             };
 
             // Check that all the functions are defined
-            static void check(const Messaging& msg,const t& fns) {
+            static void check(Messaging const & msg,t const & fns) {
 
                 // Check the unconstrained pieces
                 Unconstrained <Real,XX>::Functions::check(msg,fns);
@@ -8087,8 +7735,8 @@ namespace Optizelle{
             // Initialize any missing functions for just inequality constrained 
             // optimization.
             static void init_(
-                const Messaging& msg,
-                typename State::t& state,
+                Messaging const & msg,
+                typename State::t & state,
                 t& fns
             ) {
                 // Check that all functions are defined 
@@ -8110,8 +7758,8 @@ namespace Optizelle{
 
             // Initialize any missing functions 
             static void init(
-                const Messaging& msg,
-                typename State::t& state,
+                Messaging const & msg,
+                typename State::t & state,
                 t& fns
             ) {
                 Unconstrained <Real,XX>
@@ -8123,16 +7771,13 @@ namespace Optizelle{
         
         // Contains functions that assist in creating an output for diagonstics
         struct Printer {
-        private:
-            // This is a namespace inside of a class.  Do not allow
-            // construction.
-            Printer();
+            // Disallow constructors
+            NO_CONSTRUCTORS(Printer);
 
-        public:
             // Gets the header for the state information
             static void getStateHeader_(
-                const typename State::t& state,
-                std::list <std::string>& out
+                typename State::t const & state,
+                std::list <std::string> & out
             ) {
                 // Print out the current interior point parameter and
                 // the estimate of the interior point parameter.
@@ -8142,8 +7787,8 @@ namespace Optizelle{
 
             // Combines all of the state headers
             static void getStateHeader(
-                const typename State::t& state,
-                std::list <std::string>& out
+                typename State::t const & state,
+                std::list <std::string> & out
             ) {
                 Unconstrained <Real,XX>::Printer::getStateHeader_(state,out);
                 InequalityConstrained <Real,XX,ZZ>::Printer::getStateHeader_
@@ -8152,15 +7797,15 @@ namespace Optizelle{
 
             // Gets the state information for output
             static void getState_(
-                const typename Functions::t& fns,
-                const typename State::t& state,
-                const bool blank,
-                std::list <std::string>& out
+                typename Functions::t const & fns,
+                typename State::t const & state,
+                bool const & blank,
+                std::list <std::string> & out
             ) {
 
                 // Create some shortcuts
-                const Real& mu=state.mu; 
-                const Real& mu_est=state.mu_est; 
+                Real const & mu=state.mu; 
+                Real const & mu_est=state.mu_est; 
 
                 // Get a iterator to the last element prior to inserting
                 // elements
@@ -8182,11 +7827,11 @@ namespace Optizelle{
 
             // Combines all of the state information
             static void getState(
-                const typename Functions::t& fns,
-                const typename State::t& state,
-                const bool blank,
-                const bool noiter,
-                std::list <std::string>& out
+                typename Functions::t const & fns,
+                typename State::t const & state,
+                bool const & blank,
+                bool const & noiter,
+                std::list <std::string> & out
             ) {
                 Unconstrained <Real,XX>::Printer
                     ::getState_(fns,state,blank,noiter,out);
@@ -8196,34 +7841,36 @@ namespace Optizelle{
             
             // Get the header for the Krylov iteration
             static void getKrylovHeader_(
-                const typename State::t& state,
-                std::list <std::string>& out
+                typename State::t const & state,
+                std::list <std::string> & out
             ) { }
 
             // Combines all of the Krylov headers
             static void getKrylovHeader(
-                const typename State::t& state,
-                std::list <std::string>& out
+                typename State::t const & state,
+                std::list <std::string> & out
             ) {
-                Unconstrained <Real,XX>::Printer::getKrylovHeader_(state,out);
+                Unconstrained <Real,XX>::Printer
+                    ::getKrylovHeader_(state,out);
                 InequalityConstrained <Real,XX,ZZ>::Printer
                     ::getKrylovHeader_(state,out);
             }
             
             // Get the information for the Krylov iteration
             static void getKrylov_(
-                const typename State::t& state,
-                const bool blank,
-                std::list <std::string>& out
+                typename State::t const & state,
+                bool const & blank,
+                std::list <std::string> & out
             ) { }
 
             // Combines all of the Krylov information
             static void getKrylov(
-                const typename State::t& state,
-                const bool blank,
-                std::list <std::string>& out
+                typename State::t const & state,
+                bool const & blank,
+                std::list <std::string> & out
             ) {
-                Unconstrained <Real,XX>::Printer::getKrylov_(state,blank,out);
+                Unconstrained <Real,XX>::Printer
+                    ::getKrylov_(state,blank,out);
                 InequalityConstrained <Real,XX,ZZ>::Printer
                     ::getKrylov_(state,blank,out);
             }
@@ -8231,24 +7878,21 @@ namespace Optizelle{
 
         // This contains the different algorithms used for optimization 
         struct Algorithms {
-        private:
-            // This is a namespace inside of a class.  Do not allow
-            // construction.
-            Algorithms();
+            // Disallow constructors
+            NO_CONSTRUCTORS(Algorithms);
 
-        public:
             // An operator to reshape the trust-region radius and, hopefully,
             // keep us away from the boundary.
             struct TrustRegionScaling : public Operator <Real,XX,XX> {
             private:
                 // The function h 
-                const VectorValuedFunction <Real,XX,ZZ>& h;
+                VectorValuedFunction <Real,XX,ZZ> const & h;
 
                 // The value h(x) 
-                const Z_Vector& h_x;
+                Z_Vector const & h_x;
 
                 // The current iterate
-                const X_Vector& x;
+                X_Vector const & x;
 
                 // Work vectors
                 mutable Z_Vector z_tmp1;
@@ -8256,14 +7900,16 @@ namespace Optizelle{
 
             public:
                 TrustRegionScaling(
-                    const typename Functions::t& fns,
-                    const typename State::t& state
-                ) : h(*(fns.h)), h_x(state.h_x.back()), x(state.x.back()) {
-                    Z::init(h_x,z_tmp1); 
-                    Z::init(h_x,z_tmp2);    
-                }
+                    typename Functions::t const & fns,
+                    typename State::t const & state
+                ) : h(*(fns.h)),
+                    h_x(state.h_x),
+                    x(state.x),
+                    z_tmp1(Z::init(state.z)),
+                    z_tmp2(Z::init(state.z))
+                {}
 
-                void operator () (const X_Vector& dx,X_Vector& result) const{
+                void operator () (X_Vector const & dx,X_Vector & result) const{
                     // z_tmp1 <- h'(x) dx
                     h.p(x,dx,z_tmp1); 
 
@@ -8278,25 +7924,23 @@ namespace Optizelle{
             // Finds the new inequality Lagrange multiplier
             // z = inv L(h(x)) (-h'(x)dx o z + mu e)
             static void findInequalityMultiplierLinked(
-                const typename Functions::t& fns,
-                typename State::t& state
+                typename Functions::t const & fns,
+                typename State::t & state
             ) {
                 // Create some shortcuts
-                const Z_Vector& h_x=state.h_x.front();
-                const X_Vector& x=state.x.front();
-                const X_Vector& dx=state.dx.front();
-                const Real& mu=state.mu;
-                const VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
-                Z_Vector& z=state.z.front();
+                Z_Vector const & h_x=state.h_x;
+                X_Vector const & x=state.x;
+                X_Vector const & dx=state.dx;
+                Real const & mu=state.mu;
+                VectorValuedFunction <Real,XX,ZZ> const & h=*(fns.h);
+                Z_Vector & z=state.z;
 
                 // z_tmp1 <- h'(x)dx
-                Z_Vector z_tmp1;
-                    Z::init(z,z_tmp1);
+                Z_Vector z_tmp1(Z::init(z));
                     h.p(x,dx,z_tmp1);
 
                 // z_tmp2 <- h'(x)dx o z
-                Z_Vector z_tmp2;
-                    Z::init(z,z_tmp2);
+                Z_Vector z_tmp2(Z::init(z));
                     Z::prod(z_tmp1,z,z_tmp2);
 
                 // z_tmp2 <- -h'(x)dx o z
@@ -8318,17 +7962,16 @@ namespace Optizelle{
             // Finds the new inequality Lagrange multiplier
             // z = mu inv L(h(x)) e 
             static void findInequalityMultiplierLogBarrier(
-                const typename Functions::t& fns,
-                typename State::t& state
+                typename Functions::t const & fns,
+                typename State::t & state
             ) {
                 // Create some shortcuts
-                const Z_Vector& h_x=state.h_x.front();
-                const Real& mu=state.mu;
-                Z_Vector& z=state.z.front();
+                Z_Vector const & h_x=state.h_x;
+                Real const & mu=state.mu;
+                Z_Vector & z=state.z;
 
                 // z_tmp1 <- e 
-                Z_Vector z_tmp1;
-                    Z::init(z,z_tmp1);
+                Z_Vector z_tmp1(Z::init(z));
                     Z::id(z_tmp1);
 
                 // z <- inv(L(h(x))) e 
@@ -8341,28 +7984,27 @@ namespace Optizelle{
                 Z::symm(z);
             }
 
-#if 1
             // Finds the new inequality Lagrange multiplier step
             // dz = -z + inv L(h(x)) (-h'(x)dx o z + mu e)
             static void findInequalityMultiplierStep(
-                const typename Functions::t& fns,
-                typename State::t& state
+                typename Functions::t const & fns,
+                typename State::t & state
             ) {
                 // Create some shortcuts
-                const Z_Vector& z=state.z.front();
-                const Z_Vector& h_x=state.h_x.front();
-                const X_Vector& x=state.x.front();
-                const X_Vector& dx=state.dx.front();
-                const Real& mu=state.mu;
-                const VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
-                Z_Vector& dz=state.dz.front();
+                Z_Vector const & z=state.z;
+                Z_Vector const & h_x=state.h_x;
+                X_Vector const & x=state.x;
+                X_Vector const & dx=state.dx;
+                Real const & mu=state.mu;
+                VectorValuedFunction <Real,XX,ZZ> const & h=*(fns.h);
+                Z_Vector & dz=state.dz;
 
                 // z_tmp1 <- h'(x)dx
-                Z_Vector z_tmp1; Z::init(z,z_tmp1);
+                Z_Vector z_tmp1(Z::init(z));
                 h.p(x,dx,z_tmp1);
 
                 // z_tmp2 <- h'(x)dx o z
-                Z_Vector z_tmp2; Z::init(z,z_tmp2);
+                Z_Vector z_tmp2(Z::init(z));
                 Z::prod(z_tmp1,z,z_tmp2);
 
                 // z_tmp2 <- -h'(x)dx o z
@@ -8383,79 +8025,21 @@ namespace Optizelle{
                 // Symmetrize the direction
                 Z::symm(dz);
             }
-#else
-            // Finds the new inequality Lagrange multiplier step
-            // dz = -z + inv L(h(x)) (-h'(x)dx o z + mu e)
-            static void findInequalityMultiplierStep(
-                const typename Functions::t& fns,
-                typename State::t& state
-            ) {
-                // Create some shortcuts
-                const Z_Vector& z=state.z.front();
-                const Z_Vector& h_x=state.h_x.front();
-                const X_Vector& x=state.x.front();
-                const X_Vector& dx=state.dx.front();
-                const Real& mu=state.mu;
-                const VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
-                Z_Vector& dz=state.dz.front();
-
-                // z_tmp1 <- h'(x)dx
-                Z_Vector z_tmp1; Z::init(z,z_tmp1);
-                h.p(x,dx,z_tmp1);
-                
-                // z_tmp1 <- -0.5 h'(x)dx
-                Z::scal(Real(-0.5),z_tmp1);
-
-                // z_tmp2 <- -0.5 h'(x)dx o z
-                Z_Vector z_tmp2; Z::init(z,z_tmp2);
-                Z::prod(z_tmp1,z,z_tmp2);
-
-                // dz <- e
-                Z::id(dz);
-
-                // z_tmp2 <- -0.5 h'(x)dx o z + mu e
-                Z::axpy(mu,dz,z_tmp2);
-
-                // dz <- inv L(h(x)) (-0.5 h'(x)dx o z + mu e)
-                Z::linv(h_x,z_tmp2,dz);
-               
-                // z_tmp3 <- e
-                Z_Vector z_tmp3; Z::init(z,z_tmp3);
-                Z::id(z_tmp3);
-
-                // z_tmp2 <- inv(L(h(x))) e
-                Z::linv(h_x,z_tmp3,z_tmp2);
-
-                // z_tmp3 <- -0.5 h'(x)dx o inv(L(h(x))) e
-                Z::prod(z_tmp1,z_tmp2,z_tmp3);
-
-                // z_tmp1 <- z o (-0.5 h'(x)dx o inv(L(h(x))) e)
-                Z::prod(z,z_tmp3,z_tmp1);
-                
-                // dz <- inv L(h(x)) (-0.5 h'(x)dx o z + mu e)
-                //     + z o (-0.5 h'(x)dx o inv(L(h(x))) e)
-                Z::axpy(Real(1.),z_tmp1,dz);
-
-                // dz <- -z + inv L(h(x)) (-h'(x)dx o z + mu e)
-                //          + z o (-0.5 h'(x)dx o inv(L(h(x))) e)
-                Z::axpy(Real(-1.),z,dz);
-            }
-#endif
 
             // Estimates the interior point parameter with the formula
             // mu = <z,h(x)>/m
             static void estimateInteriorPointParameter(
-                const typename Functions::t& fns,
-                typename State::t& state
+                typename Functions::t const & fns,
+                typename State::t & state
             ) {
                 // Create some shortcuts
-                const Z_Vector& z=state.z.front();
-                const Z_Vector& h_x=state.h_x.front();
-                Real& mu_est=state.mu_est;
+                Z_Vector const & z=state.z;
+                Z_Vector const & h_x=state.h_x;
+                Real & mu_est=state.mu_est;
 
                 // Determine the scaling factor for the interior-
                 // point parameter estimate
-                Z_Vector z_tmp; Z::init(z,z_tmp);
+                Z_Vector z_tmp(Z::init(z));
                 Z::id(z_tmp);
                 Real m = Z::innr(z_tmp,z_tmp);
 
@@ -8465,24 +8049,24 @@ namespace Optizelle{
 
             // Find interior point parameter
             static void findInteriorPointParameter(
-                const typename Functions::t& fns,
-                typename State::t& state
+                typename Functions::t const & fns,
+                typename State::t & state
             ) {
                 // Create some shortcuts
-                const ScalarValuedFunctionModifications <Real,XX>& f_mod
+                ScalarValuedFunctionModifications <Real,XX> const & f_mod
                     = *(fns.f_mod);
-                const X_Vector& x=state.x.back();
-                const X_Vector& grad=state.grad.back();
-                const Real& mu_est=state.mu_est;
-                const Real& mu_typ=state.mu_typ;
-                const Real& sigma=state.sigma;
-                const Real& eps_mu=state.eps_mu;
-                const CentralityStrategy::t& cstrat=state.cstrat;
-                const Real& norm_gradtyp=state.norm_gradtyp;
-                const Real& eps_grad=state.eps_grad;
-                const Natural& iter=state.iter;
-                const Real& f_x=state.f_x;
-                Real& mu=state.mu;
+                X_Vector const & x=state.x;
+                X_Vector const & grad=state.grad;
+                Real const & mu_est=state.mu_est;
+                Real const & mu_typ=state.mu_typ;
+                Real const & sigma=state.sigma;
+                Real const & eps_mu=state.eps_mu;
+                CentralityStrategy::t const & cstrat=state.cstrat;
+                Real const & norm_gradtyp=state.norm_gradtyp;
+                Real const & eps_grad=state.eps_grad;
+                Natural const & iter=state.iter;
+                Real const & f_x=state.f_x;
+                Real & mu=state.mu;
                
                 // If we satisfy the stopping criteria, stop trying to
                 // reduce the interior point parameter
@@ -8502,10 +8086,9 @@ namespace Optizelle{
 
                     // Find the norm of the gradient used in the stopping
                     // criteria
-                    X_Vector grad_stop;
-                        X::init(grad,grad_stop);
+                    X_Vector grad_stop(X::init(grad));
                         f_mod.grad_stop(x,grad,grad_stop);
-                    const Real norm_grad=sqrt(X::innr(grad_stop,grad_stop));
+                    Real const norm_grad=sqrt(X::innr(grad_stop,grad_stop));
 
                     // If we're on the first iteration, just do a simple
                     // reduction strategy
@@ -8549,16 +8132,16 @@ namespace Optizelle{
             // Adjust the stopping conditions unless the criteria below are
             // satisfied.
             static void adjustStoppingConditions(
-                const typename Functions::t& fns,
-                typename State::t& state
+                typename Functions::t const & fns,
+                typename State::t & state
             ) {
                 // Create some shortcuts
-                const Real& mu_est=state.mu_est;
-                const Real& mu_typ=state.mu_typ;
-                const Real& eps_mu=state.eps_mu;
-                const CentralityStrategy::t& cstrat=state.cstrat;
-                const Natural& iter=state.iter;
-                StoppingCondition::t& opt_stop=state.opt_stop;
+                Real const & mu_est=state.mu_est;
+                Real const & mu_typ=state.mu_typ;
+                Real const & eps_mu=state.eps_mu;
+                CentralityStrategy::t const & cstrat=state.cstrat;
+                Natural const & iter=state.iter;
+                StoppingCondition::t & opt_stop=state.opt_stop;
 
                 // If the estimated interior point paramter is negative, exit
                 if(mu_est < Real(0.)) {
@@ -8593,25 +8176,25 @@ namespace Optizelle{
             // step length so that the farthest the line-search will look
             // is within the safe region for positivity.
             static void positivityLineSearchPrimalDual(
-                const typename Functions::t& fns,
-                typename State::t& state
+                typename Functions::t const & fns,
+                typename State::t & state
             ) {
                 // Create some shortcuts 
-                const Real& gamma=state.gamma;
-                const AlgorithmClass::t& algorithm_class
+                Real const & gamma=state.gamma;
+                AlgorithmClass::t const & algorithm_class
                     =state.algorithm_class;
-                const Z_Vector& z=state.z.front();
-                const X_Vector& x=state.x.front();
-                const Z_Vector& h_x=state.h_x.front();
-                const VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
-                X_Vector& dx=state.dx.front();
-                Z_Vector& dz=state.dz.front();
+                Z_Vector const & z=state.z;
+                X_Vector const & x=state.x;
+                Z_Vector const & h_x=state.h_x;
+                VectorValuedFunction <Real,XX,ZZ> const & h=*(fns.h);
+                X_Vector & dx=state.dx;
+                Z_Vector & dz=state.dz;
 
                 // Create a fake step.  In the case of a trust-region
                 // method this is just the step.  In the case of
                 // a line-search method this is alpha0 dx.  This represents
                 // the farthest either method will attempt to step.
-                X_Vector dx_; X::init(x,dx_);
+                X_Vector dx_(X::init(x));
                 X::copy(dx,dx_);
                 if(algorithm_class==AlgorithmClass::LineSearch)
                     X::scal(state.alpha0,dx_);
@@ -8619,14 +8202,12 @@ namespace Optizelle{
                 // Determine how far we can go in the primal variable
                 
                 // x_tmp1=x+dx
-                X_Vector x_tmp1;
-                    X::init(x,x_tmp1);
+                X_Vector x_tmp1(X::init(x));
                     X::copy(x,x_tmp1);
                     X::axpy(Real(1.),dx_,x_tmp1);
 
                 // z_tmp1=h(x+dx)
-                Z_Vector z_tmp1;
-                    Z::init(z,z_tmp1);
+                Z_Vector z_tmp1(Z::init(z));
                     h(x_tmp1,z_tmp1);
 
                 // z_tmp1=h(x+dx)-h(x)
@@ -8671,24 +8252,24 @@ namespace Optizelle{
             // the function above since it assumes that primal and dual
             // variables are linked.
             static void positivityLineSearchPrimalDualLinked(
-                const typename Functions::t& fns,
-                typename State::t& state
+                typename Functions::t const & fns,
+                typename State::t & state
             ) {
                 // Create some shortcuts 
-                const Real& gamma=state.gamma;
-                const Real& mu=state.mu;
-                const AlgorithmClass::t& algorithm_class =state.algorithm_class;
-                const Z_Vector& z=state.z.front();
-                const X_Vector& x=state.x.front();
-                const Z_Vector& h_x=state.h_x.front();
-                const VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
-                X_Vector& dx=state.dx.front();
+                Real const & gamma=state.gamma;
+                Real const & mu=state.mu;
+                AlgorithmClass::t const & algorithm_class=state.algorithm_class;
+                Z_Vector const & z=state.z;
+                X_Vector const & x=state.x;
+                Z_Vector const & h_x=state.h_x;
+                VectorValuedFunction <Real,XX,ZZ> const & h=*(fns.h);
+                X_Vector & dx=state.dx;
 
                 // Create a fake step.  In the case of a trust-region
                 // method this is just the step.  In the case of
                 // a line-search method this is alpha0 dx.  This represents
                 // the farthest either method will attempt to step.
-                X_Vector dx_; X::init(x,dx_);
+                X_Vector dx_(X::init(x));
                 X::copy(dx,dx_);
                 if(algorithm_class==AlgorithmClass::LineSearch)
                     X::scal(state.alpha0,dx_);
@@ -8696,13 +8277,12 @@ namespace Optizelle{
                 // Determine how far we can go in the primal variable
                 
                 // x_tmp1=x+dx
-                X_Vector x_tmp1;
-                    X::init(x,x_tmp1);
+                X_Vector x_tmp1(X::init(x));
                     X::copy(x,x_tmp1);
                     X::axpy(Real(1.),dx_,x_tmp1);
 
                 // z_tmp1=h(x+dx)
-                Z_Vector z_tmp1; Z::init(z,z_tmp1);
+                Z_Vector z_tmp1(Z::init(z));
                 h(x_tmp1,z_tmp1);
 
                 // z_tmp2=h(x+dx)-h(x)
@@ -8718,8 +8298,7 @@ namespace Optizelle{
                 h.p(x,dx_,z_tmp1);
                 
                 // z_tmp2 = h'(x)dx o z
-                Z_Vector z_tmp2;
-                    Z::init(z,z_tmp2);
+                Z_Vector z_tmp2(Z::init(z));
                     Z::prod(z_tmp1,z,z_tmp2);
 
                 // z_tmp2 = -h'(x)dx o z
@@ -8780,24 +8359,24 @@ namespace Optizelle{
             // Conduct a line search that preserves positivity of the
             // primal variable. 
             static void positivityLineSearchLogBarrier(
-                const typename Functions::t& fns,
-                typename State::t& state
+                typename Functions::t const & fns,
+                typename State::t & state
             ) {
                 // Create some shortcuts 
-                const Real& gamma=state.gamma;
-                const AlgorithmClass::t& algorithm_class
+                Real const & gamma=state.gamma;
+                AlgorithmClass::t const & algorithm_class
                     =state.algorithm_class;
-                const X_Vector& x=state.x.front();
-                const Z_Vector& z=state.z.front();
-                const Z_Vector& h_x=state.h_x.front();
-                const VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
-                X_Vector& dx=state.dx.front();
+                X_Vector const & x=state.x;
+                Z_Vector const & z=state.z;
+                Z_Vector const & h_x=state.h_x;
+                VectorValuedFunction <Real,XX,ZZ> const & h=*(fns.h);
+                X_Vector & dx=state.dx;
 
                 // Create a fake step.  In the case of a trust-region
                 // method this is just the step.  In the case of
                 // a line-search method this is alpha0 dx.  This represents
                 // the farthest either method will attempt to step.
-                X_Vector dx_; X::init(x,dx_);
+                X_Vector dx_(X::init(x));
                 X::copy(dx,dx_);
                 if(algorithm_class==AlgorithmClass::LineSearch)
                     X::scal(state.alpha0,dx_);
@@ -8805,14 +8384,12 @@ namespace Optizelle{
                 // Determine how far we can go in the primal variable
                 
                 // x_tmp1=x+dx
-                X_Vector x_tmp1;
-                    X::init(x,x_tmp1);
+                X_Vector x_tmp1(X::init(x));
                     X::copy(x,x_tmp1);
                     X::axpy(Real(1.),dx_,x_tmp1);
 
                 // z_tmp1=h(x+dx)
-                Z_Vector z_tmp1;
-                    Z::init(z,z_tmp1);
+                Z_Vector z_tmp1(Z::init(z));
                     h(x_tmp1,z_tmp1);
 
                 // z_tmp1=h(x+dx)-h(x)
@@ -8845,19 +8422,19 @@ namespace Optizelle{
             {
             private:
                 // A reference to the user-defined state manipulator
-                const StateManipulator<ProblemClass>& smanip;
+                StateManipulator<ProblemClass> const & smanip;
 
             public:
                 InteriorPointManipulator(
-                    const StateManipulator <ProblemClass>& smanip_
+                    StateManipulator <ProblemClass> const & smanip_
                 ) : smanip(smanip_) {}
 
 
                 // Application
                 void operator () (
-                    const typename ProblemClass::Functions::t& fns_,
+                    typename ProblemClass::Functions::t const & fns_,
                     typename ProblemClass::State::t& state_,
-                    OptimizationLocation::t loc
+                    OptimizationLocation::t const & loc
                 ) const {
                     // Call the user define manipulator
                     smanip(fns_,state_,loc);
@@ -8872,20 +8449,20 @@ namespace Optizelle{
                     // appropriate problem even though this state is really
                     // an inequality constraint when called using the routines
                     // below.
-                    const typename Functions::t& fns
-                        =dynamic_cast <const typename Functions::t&> (fns_);
-                    typename State::t& state 
-                        =dynamic_cast <typename State::t&> (state_);
+                    typename Functions::t const & fns
+                        =dynamic_cast <typename Functions::t const &> (fns_);
+                    typename State::t & state 
+                        =dynamic_cast <typename State::t &> (state_);
 
                     // Create some shorcuts
-                    const VectorValuedFunction <Real,XX,ZZ>& h=*(fns.h);
-                    const X_Vector& x=state.x.front();
-                    const InteriorPointMethod::t& ipm=state.ipm;
-                    const Real& mu_est = state.mu_est;
-                    Z_Vector& z=state.z.front();
-                    Z_Vector& h_x=state.h_x.front();
-                    Z_Vector& dz=state.dz.front();
-                    Real& mu_typ = state.mu_typ;
+                    VectorValuedFunction <Real,XX,ZZ> const & h=*(fns.h);
+                    X_Vector const & x=state.x;
+                    InteriorPointMethod::t const & ipm=state.ipm;
+                    Real const & mu_est = state.mu_est;
+                    Z_Vector & z=state.z;
+                    Z_Vector & h_x=state.h_x;
+                    Z_Vector & dz=state.dz;
+                    Real & mu_typ = state.mu_typ;
 
                     switch(loc){
                     case OptimizationLocation::BeforeInitialFuncAndGrad:
@@ -8997,9 +8574,9 @@ namespace Optizelle{
             // Solves an optimization problem where the user doesn't know about
             // the state manipulator
             static void getMin(
-                const Messaging& msg,
-                typename Functions::t& fns,
-                typename State::t& state
+                Messaging const & msg,
+                typename Functions::t & fns,
+                typename State::t & state
             ){
                 // Create an empty state manipulator
                 StateManipulator <InequalityConstrained <Real,XX,ZZ> > smanip;
@@ -9011,11 +8588,11 @@ namespace Optizelle{
             // Initializes remaining functions then solves an optimization
             // problem
             static void getMin(
-                const Messaging& msg,
-                const StateManipulator <InequalityConstrained <Real,XX,ZZ> >&
+                Messaging const & msg,
+                StateManipulator <InequalityConstrained <Real,XX,ZZ> > const &
                     smanip,
-                typename Functions::t& fns,
-                typename State::t& state
+                typename Functions::t & fns,
+                typename State::t & state
             ){
                 // Adds the output pieces to the state manipulator 
                 DiagnosticManipulator <InequalityConstrained <Real,XX,ZZ> >
@@ -9056,10 +8633,9 @@ namespace Optizelle{
         template <typename> class ZZ
     > 
     struct Constrained {
-    private:
-        MODULE_CLASS(Constrained);
+        // Disallow constructors
+        NO_CONSTRUCTORS(Constrained);
 
-    public:
         // Create some shortcuts for some type names
         typedef XX <Real> X;
         typedef typename X::Vector X_Vector;
@@ -9084,76 +8660,32 @@ namespace Optizelle{
         // Routines that manipulate the internal state of the optimization 
         // algorithm.
         struct State {
-        private:
-            // This is a namespace inside of a class.  Do not allow
-            // construction.
-            State();
-
-        public:
+            // Disallow constructors
+            NO_CONSTRUCTORS(State);
+            
             // Internal state of the optimization
             struct t: 
                 public EqualityConstrained <Real,XX,YY>::State::t,
                 public InequalityConstrained <Real,XX,ZZ>::State::t
             {
-            private:
                 // Prevent the use of the copy constructor and the assignment
                 // operator.  Basically, the state can hold a large amount
                 // of memory and the safe way to move this memory around
                 // is through the use of the capture and release methodology
                 // inside of the restart section.
-                t& operator = (const t&);
-                t(const t&);
+                NO_DEFAULT_COPY_ASSIGNMENT(t);
 
-            public:
                 // Initialization constructors
-                t() {
-                    Constrained <Real,XX,YY,ZZ>::State::init_params(*this);
-                }
                 explicit t(
-                    const X_Vector& x,const Y_Vector& y,const Z_Vector& z
-                ) {
-                    Constrained <Real,XX,YY,ZZ>::State::init_params(*this);
-                    Constrained <Real,XX,YY,ZZ>::State
-                        ::init_vectors(*this,x,y,z);
-                }
+                    X_Vector const & x,Y_Vector const & y,Z_Vector const & z
+                ) : Unconstrained <Real,XX>::State::t(x), 
+                    EqualityConstrained <Real,XX,YY>::State::t(x,y),
+                    InequalityConstrained <Real,XX,ZZ>::State::t(x,z)
+                {}
             };
             
-            // This initializes all the parameters required for constrained
-            // optimization.  
-            static void init_params(t& state) {
-                Unconstrained <Real,XX>::State::init_params_(state); 
-                EqualityConstrained <Real,XX,YY>::State::init_params_(state);
-                InequalityConstrained <Real,XX,ZZ>::State::init_params_(state);
-            }
-
-            // This initializes all the variables required for inequality
-            // constrained optimization.  
-            static void init_vectors(
-                t& state,
-                const X_Vector& x,
-                const Y_Vector& y,
-                const Z_Vector& z
-            ) {
-                Unconstrained <Real,XX>::State::init_vectors_(state,x); 
-                EqualityConstrained <Real,XX,YY>::State
-                    ::init_vectors_(state,x,y);
-                InequalityConstrained <Real,XX,ZZ>::State
-                    ::init_vectors_(state,x,z); 
-            }
-           
-            // Initializes everything
-            static void init(
-                t& state,
-                const X_Vector& x,
-                const Y_Vector& y,
-                const Z_Vector& z
-            ) {
-                init_params(state);
-                init_vectors(state,x,y,z);
-            }
-
             // Check that we have a valid set of parameters.
-            static void check(const Messaging& msg,const t& state) {
+            static void check(Messaging const & msg,t const & state) {
                 Unconstrained <Real,XX>::State::check_(msg,state);
                 EqualityConstrained <Real,XX,YY>::State::check_(msg,state);
                 InequalityConstrained <Real,XX,ZZ>::State::check_(msg,state);
@@ -9162,17 +8694,14 @@ namespace Optizelle{
         
         // Utilities for restarting the optimization
         struct Restart {
-        private:
-            // This is a namespace inside of a class.  Do not allow
-            // construction.
-            Restart();
-
-        public:
+            // Disallow constructors
+            NO_CONSTRUCTORS(Restart);
+            
             // Checks whether we have a valid real label.
             struct is_real :
-                public std::unary_function<const std::string&, bool>
+                public std::unary_function<std::string const &, bool>
             {
-                bool operator () (const std::string& name) const {
+                bool operator () (std::string const & name) const {
                     if( typename EqualityConstrained <Real,XX,YY>::Restart
                             ::is_real()(name) ||
                         typename InequalityConstrained <Real,XX,ZZ>::Restart
@@ -9186,9 +8715,9 @@ namespace Optizelle{
             
             // Checks whether we have a valid natural number label.
             struct is_nat :
-                public std::unary_function<const std::string&, bool>
+                public std::unary_function<std::string const &, bool>
             {
-                bool operator () (const std::string& name) const {
+                bool operator () (std::string const & name) const {
                     if( typename EqualityConstrained <Real,XX,YY>::Restart
                             ::is_nat()(name) ||
                         typename InequalityConstrained <Real,XX,ZZ>::Restart
@@ -9202,9 +8731,9 @@ namespace Optizelle{
            
             // Checks whether we have a valid parameter label.
             struct is_param :
-                public std::unary_function<const std::string&, bool>
+                public std::unary_function<std::string const &, bool>
             {
-                bool operator () (const std::string& name) const {
+                bool operator () (std::string const & name) const {
                     if( typename EqualityConstrained <Real,XX,YY>::Restart
                             ::is_param()(name) ||
                         typename InequalityConstrained <Real,XX,ZZ>::Restart
@@ -9218,7 +8747,7 @@ namespace Optizelle{
             
             // Checks whether we have a valid variable label
             struct is_x : public std::unary_function<std::string, bool> {
-                bool operator () (const std::string& name) const {
+                bool operator () (std::string const & name) const {
                     if( typename EqualityConstrained <Real,XX,YY>::Restart
                             ::is_x()(name) ||
                         typename InequalityConstrained <Real,XX,ZZ>::Restart
@@ -9232,7 +8761,7 @@ namespace Optizelle{
             
             // Checks whether we have a valid equality multiplier label
             struct is_y : public std::unary_function<std::string, bool> {
-                bool operator () (const std::string& name) const {
+                bool operator () (std::string const & name) const {
                     if( typename EqualityConstrained <Real,XX,YY>::Restart
                             ::is_y()(name)
                     ) 
@@ -9244,7 +8773,7 @@ namespace Optizelle{
             
             // Checks whether we have a valid inequality multiplier label
             struct is_z : public std::unary_function<std::string, bool> {
-                bool operator () (const std::string& name) const {
+                bool operator () (std::string const & name) const {
                     if( typename InequalityConstrained <Real,XX,ZZ>::Restart
                             ::is_z()(name)
                     ) 
@@ -9256,13 +8785,13 @@ namespace Optizelle{
 
             // Checks whether we have valid labels
             static void checkLabels(
-                const Messaging& msg,
-                const Reals& reals,
-                const Nats& nats,
-                const Params& params,
-                const X_Vectors& xs,
-                const Y_Vectors& ys,
-                const Z_Vectors& zs
+                Messaging const & msg,
+                Reals const & reals,
+                Nats const & nats,
+                Params const & params,
+                X_Vectors const & xs,
+                Y_Vectors const & ys,
+                Z_Vectors const & zs
             ) {
                 Utility::checkLabels(msg,is_real(),reals.first," real name: ");
                 Utility::checkLabels(msg,is_nat(),nats.first," natural name: ");
@@ -9279,11 +8808,11 @@ namespace Optizelle{
             // is valid.  This function returns a string with the error
             // if there is one.  Otherwise, it returns an empty string.
             struct checkParamVal : public std::binary_function
-                <const std::string&,const std::string&,std::string>
+                <std::string const &,std::string const &,std::string>
             {
                 std::string operator() (
-                    const std::string& label,
-                    const std::string& val
+                    std::string const & label,
+                    std::string const & val
                 ) const {
 
                     // Create a base message
@@ -9314,16 +8843,17 @@ namespace Optizelle{
             
             // Release the data into structures controlled by the user 
             static void release(
-                typename State::t& state,
-                X_Vectors& xs,
-                Y_Vectors& ys,
-                Z_Vectors& zs,
-                Reals& reals,
-                Nats& nats,
-                Params& params
+                typename State::t & state,
+                X_Vectors & xs,
+                Y_Vectors & ys,
+                Z_Vectors & zs,
+                Reals & reals,
+                Nats & nats,
+                Params & params
             ) {
                 // Copy out all of the variable information
-                Unconstrained <Real,XX>::Restart::stateToVectors(state,xs);
+                Unconstrained <Real,XX>
+                    ::Restart::stateToVectors(state,xs);
                 EqualityConstrained <Real,XX,YY>
                     ::Restart::stateToVectors(state,xs,ys);
                 InequalityConstrained <Real,XX,ZZ>
@@ -9340,14 +8870,14 @@ namespace Optizelle{
 
             // Capture data from structures controlled by the user.  
             static void capture(
-                const Messaging& msg,
-                typename State::t& state,
-                X_Vectors& xs,
-                Y_Vectors& ys,
-                Z_Vectors& zs,
-                Reals& reals,
-                Nats& nats,
-                Params& params
+                Messaging const & msg,
+                typename State::t & state,
+                X_Vectors & xs,
+                Y_Vectors & ys,
+                Z_Vectors & zs,
+                Reals & reals,
+                Nats & nats,
+                Params & params
             ) {
 
                 // Check the labels on the user input
@@ -9357,7 +8887,8 @@ namespace Optizelle{
                 Utility::checkParams(msg,checkParamVal(),params);
 
                 // Copy in the variables 
-                Unconstrained <Real,XX>::Restart::vectorsToState(state,xs);
+                Unconstrained <Real,XX>
+                    ::Restart::vectorsToState(state,xs);
                 EqualityConstrained <Real,XX,YY>
                     ::Restart::vectorsToState(state,xs,ys);
                 InequalityConstrained <Real,XX,ZZ>
@@ -9379,51 +8910,35 @@ namespace Optizelle{
         // All the functions required by an optimization algorithm.  Note, this
         // routine owns the memory for these operations.  
         struct Functions {
-        private:
-            // This is a namespace inside of a class.  Do not allow
-            // construction.
-            Functions();
+            // Disallow constructors
+            NO_CONSTRUCTORS(Functions);
 
-        public:
             // Actual storage of the functions required
             struct t: 
                 public EqualityConstrained <Real,XX,YY>::Functions::t,
                 public InequalityConstrained <Real,XX,ZZ>::Functions::t
             {
-            private:
                 // Prevent the use of the copy constructor and the assignment
                 // operator.  Since this class holds a number of unique_ptrs
                 // to different functions, it is not safe to allow them to
                 // be copied.
-                t& operator = (const t&);
-                t(const t&);
+                NO_COPY_ASSIGNMENT(t);
 
-            public:
-                
                 // Initialize all of the pointers to null
                 t() : EqualityConstrained <Real,XX,YY>::Functions::t(), 
                     InequalityConstrained <Real,XX,ZZ>::Functions::t() {}
             };
 
             // Check that all the functions are defined
-            static void check(const Messaging& msg,const t& fns) {
+            static void check(Messaging const & msg,t const & fns) {
                 EqualityConstrained <Real,XX,YY>::Functions::check(msg,fns);
                 InequalityConstrained <Real,XX,ZZ>::Functions::check(msg,fns);
             }
 
-            // Initialize any missing functions for just constrained 
-            // optimization.
-            static void init_(
-                const Messaging& msg,
-                typename State::t& state,
-                t& fns
-            ) {
-            }
-
             // Initialize any missing functions 
             static void init(
-                const Messaging& msg,
-                typename State::t& state,
+                Messaging const & msg,
+                typename State::t & state,
                 t& fns
             ) {
                 Unconstrained <Real,XX>
@@ -9437,46 +8952,35 @@ namespace Optizelle{
         
         // Contains functions that assist in creating an output for diagonstics
         struct Printer {
-        private:
-            // This is a namespace inside of a class.  Do not allow
-            // construction.
-            Printer();
+            // Disallow constructors
+            NO_CONSTRUCTORS(Printer);
 
-        public:
             // Gets the header for the state information
             static void getStateHeader_(
-                const typename State::t& state,
-                std::list <std::string>& out
+                typename State::t const & state,
+                std::list <std::string> & out
             ) { 
             }
             // Combines all of the state headers
             static void getStateHeader(
-                const typename State::t& state,
-                std::list <std::string>& out
+                typename State::t const & state,
+                std::list <std::string> & out
             ) {
-                Unconstrained <Real,XX>::Printer::getStateHeader_(state,out);
-                EqualityConstrained <Real,XX,YY>::Printer::getStateHeader_
-                    (state,out);
-                InequalityConstrained <Real,XX,ZZ>::Printer::getStateHeader_
-                    (state,out);
-            }
-
-            // Gets the state information for output
-            static void getState_(
-                const typename Functions::t& fns,
-                const typename State::t& state,
-                const bool blank,
-                std::list <std::string>& out
-            ) {
+                Unconstrained <Real,XX>
+                    ::Printer::getStateHeader_(state,out);
+                EqualityConstrained <Real,XX,YY>
+                    ::Printer::getStateHeader_(state,out);
+                InequalityConstrained <Real,XX,ZZ>
+                    ::Printer::getStateHeader_(state,out);
             }
 
             // Combines all of the state information
             static void getState(
-                const typename Functions::t& fns,
-                const typename State::t& state,
-                const bool blank,
-                const bool noiter,
-                std::list <std::string>& out
+                typename Functions::t const & fns,
+                typename State::t const & state,
+                bool const & blank,
+                bool const & noiter,
+                std::list <std::string> & out
             ) {
                 Unconstrained <Real,XX>::Printer
                     ::getState_(fns,state,blank,noiter,out);
@@ -9485,39 +8989,28 @@ namespace Optizelle{
                 InequalityConstrained <Real,XX,ZZ>::Printer
                     ::getState_(fns,state,blank,out);
             }
-            
-            // Get the header for the Krylov iteration
-            static void getKrylovHeader_(
-                const typename State::t& state,
-                std::list <std::string>& out
-            ) { }
 
             // Combines all of the Krylov headers
             static void getKrylovHeader(
-                const typename State::t& state,
-                std::list <std::string>& out
+                typename State::t const & state,
+                std::list <std::string> & out
             ) {
-                Unconstrained <Real,XX>::Printer::getKrylovHeader_(state,out);
+                Unconstrained <Real,XX>::Printer
+                    ::getKrylovHeader_(state,out);
                 EqualityConstrained <Real,XX,YY>::Printer
                     ::getKrylovHeader_(state,out);
                 InequalityConstrained <Real,XX,ZZ>::Printer
                     ::getKrylovHeader_(state,out);
             }
-            
-            // Get the information for the Krylov iteration
-            static void getKrylov_(
-                const typename State::t& state,
-                const bool blank,
-                std::list <std::string>& out
-            ) { }
 
             // Combines all of the Krylov information
             static void getKrylov(
-                const typename State::t& state,
-                const bool blank,
-                std::list <std::string>& out
+                typename State::t const & state,
+                bool const & blank,
+                std::list <std::string> & out
             ) {
-                Unconstrained <Real,XX>::Printer::getKrylov_(state,blank,out);
+                Unconstrained <Real,XX>::Printer
+                    ::getKrylov_(state,blank,out);
                 EqualityConstrained <Real,XX,YY>::Printer
                     ::getKrylov_(state,blank,out);
                 InequalityConstrained <Real,XX,ZZ>::Printer
@@ -9527,18 +9020,15 @@ namespace Optizelle{
         
         // This contains the different algorithms used for optimization 
         struct Algorithms {
-        private:
-            // This is a namespace inside of a class.  Do not allow
-            // construction.
-            Algorithms();
+            // Disallow constructors
+            NO_CONSTRUCTORS(Algorithms);
 
-        public:
             // Solves an optimization problem where the user doesn't know about
             // the state manipulator
             static void getMin(
-                const Messaging& msg,
-                typename Functions::t& fns,
-                typename State::t& state
+                Messaging const & msg,
+                typename Functions::t & fns,
+                typename State::t & state
             ){
                 // Create an empty state manipulator
                 StateManipulator <Constrained <Real,XX,YY,ZZ> > smanip;
@@ -9550,10 +9040,10 @@ namespace Optizelle{
             // Initializes remaining functions then solves an optimization
             // problem
             static void getMin(
-                const Messaging& msg,
-                const StateManipulator <Constrained <Real,XX,YY,ZZ> >&smanip,
-                typename Functions::t& fns,
-                typename State::t& state
+                Messaging const & msg,
+                StateManipulator <Constrained <Real,XX,YY,ZZ> > const & smanip,
+                typename Functions::t & fns,
+                typename State::t & state
             ){
                 // Adds the output pieces to the state manipulator 
                 DiagnosticManipulator <Constrained <Real,XX,YY,ZZ> >
@@ -9587,7 +9077,6 @@ namespace Optizelle{
                     ::getMin_(msg,cmanip,fns,state);
             }
         };
-
     };
 }
 #endif

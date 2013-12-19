@@ -7,21 +7,24 @@
 #include <iostream>
 #include <iomanip>
 
+// Grab the Natural type from Optizelle
+using Optizelle::Natural;
+
 // Squares its input
 template <typename Real>
-Real sq(Real x){
+Real sq(Real const & x){
     return x*x; 
 }
 
 // Indexing for vectors
-int itok(int i) {
+Natural itok(Natural const & i) {
     return i-1;
 }
 
 // Indexing for packed storage
-int ijtokp(int i,int j) {
+Natural ijtokp(Natural i,Natural j) {
     if(i>j) {
-        int tmp=i;
+        Natural tmp=i;
         i=j;
         j=tmp;
     }
@@ -29,12 +32,14 @@ int ijtokp(int i,int j) {
 }
     
 // Indexing function for dense matrices 
-int ijtok(int i,int j,int m) {
+Natural ijtok(Natural const & i,Natural const & j,Natural const & m) {
     return (i-1)+(j-1)*m;
 }
 
 // Indexing function for dense tensors 
-int ijktol(int i,int j,int k,int m,int n) {
+Natural ijktol(Natural const & i,Natural const & j,Natural const & k,
+    Natural const & m,Natural const & n
+) {
     return (i-1)+(j-1)*m+(k-1)*m*n;
 }
 
@@ -157,8 +162,8 @@ struct MyObj : public Optizelle::ScalarValuedFunction <double,Optizelle::Rm> {
 
         // Compute the Hessian-vector product
         X::zero(H_dx);
-        for(int i=1;i<=5;i++) {
-            for(int j=1;j<=5;j++) {
+        for(Natural i=1;i<=5;i++) {
+            for(Natural j=1;j<=5;j++) {
                 H_dx[i-1] += H[ijtokp(i,j)]*dx[j-1];
             }
         }
@@ -219,8 +224,8 @@ struct MyEq
 
         // Compute the Jacobian-vector product
         X::zero(y);
-        for(int i=1;i<=3;i++) {
-            for(int j=1;j<=5;j++) {
+        for(Natural i=1;i<=3;i++) {
+            for(Natural j=1;j<=5;j++) {
                 y[itok(i)] += jac[ijtok(i,j,3)]*dx[itok(j)];
             }
         }
@@ -240,8 +245,8 @@ struct MyEq
 
         // Compute the Jacobian transpose-vector product
         X::zero(z);
-        for(int i=1;i<=3;i++) {
-            for(int j=1;j<=5;j++) {
+        for(Natural i=1;i<=3;i++) {
+            for(Natural j=1;j<=5;j++) {
                 z[itok(j)] += jac[ijtok(i,j,3)]*dy[itok(i)];
             }
         }
@@ -254,7 +259,7 @@ struct MyEq
         const Y::Vector& dy,
         X::Vector& z
     ) const {
-        // Generate a dense tensor that holds the second derivative adjoint 
+        // Generate a dense tensor that holds the second derivative adjoNatural 
         std::vector <Real> D(75,Real(0.));
         D[ijktol(1,1,1,3,5)] = Real(2.);
         D[ijktol(1,2,2,3,5)] = Real(2.);
@@ -272,9 +277,9 @@ struct MyEq
 
         // Compute the action of this operator on our directions
         X::zero(z);
-        for(int i=1;i<=3;i++) {
-            for(int j=1;j<=5;j++) {
-                for(int k=1;k<=5;k++) {
+        for(Natural i=1;i<=3;i++) {
+            for(Natural j=1;j<=5;j++) {
+                for(Natural k=1;k<=5;k++) {
                     z[itok(k)] += D[ijktol(i,j,k,3,5)]*dx[itok(j)]*dy[itok(i)];
                 }
             }
@@ -327,8 +332,8 @@ int main(int argc,char* argv[]){
     Optizelle::EqualityConstrained <double,Rm,Rm>::State::t state(x,y);
 
     // Read the parameters from file
-    Optizelle::json::EqualityConstrained <double,Optizelle::Rm,Optizelle::Rm>::read(
-        Optizelle::Messaging(),fname,state);
+    Optizelle::json::EqualityConstrained <double,Optizelle::Rm,Optizelle::Rm>
+        ::read(Optizelle::Messaging(),fname,state);
     
     // Create a bundle of functions
     Optizelle::EqualityConstrained <double,Rm,Rm>::Functions::t fns;
@@ -336,8 +341,10 @@ int main(int argc,char* argv[]){
     fns.g.reset(new MyEq);
    
     // Do some finite difference checks on these functions
-    Optizelle::Diagnostics::gradientCheck <> (Optizelle::Messaging(),*(fns.f),x,dx);
-    Optizelle::Diagnostics::hessianCheck <> (Optizelle::Messaging(),*(fns.f),x,dx);
+    Optizelle::Diagnostics::gradientCheck <>
+        (Optizelle::Messaging(),*(fns.f),x,dx);
+    Optizelle::Diagnostics::hessianCheck <>
+        (Optizelle::Messaging(),*(fns.f),x,dx);
     Optizelle::Diagnostics::hessianSymmetryCheck <>
         (Optizelle::Messaging(),*(fns.f),x,dx,dxx);
     Optizelle::Diagnostics::derivativeCheck <>
@@ -356,15 +363,14 @@ int main(int argc,char* argv[]){
         Optizelle::StoppingCondition::to_string(state.opt_stop) << std::endl;
 
     // Print out the final answer
-    const std::vector <double>& opt_x=*(state.x.begin());
     std::cout << "The optimal point is:" << std::endl;
-    for(int i=1;i<=5;i++) {
+    for(Natural i=1;i<=5;i++) {
         if(i==1)
             std::cout << "[ ";
         else
             std::cout << "  ";
         std::cout << std::scientific << std::setprecision(16) << std::setw(23)
-            << std::right << opt_x[itok(i)];
+            << std::right << state.x[itok(i)];
         if(i==5)
             std::cout << " ]";
         else
@@ -373,8 +379,8 @@ int main(int argc,char* argv[]){
     }
 
     // Write out the final answer to file
-    Optizelle::json::EqualityConstrained<double,Optizelle::Rm,Optizelle::Rm>::write_restart(
-        Optizelle::Messaging(),"solution.json",state);
+    Optizelle::json::EqualityConstrained<double,Optizelle::Rm,Optizelle::Rm>
+        ::write_restart(Optizelle::Messaging(),"solution.json",state);
 
     // Successful termination
     return EXIT_SUCCESS;

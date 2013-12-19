@@ -22,7 +22,7 @@
 
 // Squares its input
 template <typename Real>
-Real sq(Real x){
+Real sq(Real const & x){
     return x*x; 
 }
 
@@ -121,9 +121,11 @@ public:
 //              [ epsilon >= w     ]
 //
 template <typename Real>
-struct MyIneq : public Optizelle::VectorValuedFunction <Real,Optizelle::Rm,Optizelle::Rm> {
+struct MyIneq :
+    public Optizelle::VectorValuedFunction <Real,Optizelle::Rm,Optizelle::Rm>
+{
 private:
-    Real epsilon;
+    Real const & epsilon;
 public:
     typedef Optizelle::Rm <Real> X;
     typedef typename X::Vector X_Vector;
@@ -131,7 +133,7 @@ public:
     typedef typename Z::Vector Z_Vector;
 
     // Read in the amount of allowable infeasibility into the problem
-    MyIneq(const Real& epsilon_) : epsilon(epsilon_) {}
+    MyIneq(Real const & epsilon_) : epsilon(epsilon_) {}
 
     // z=h(x) 
     void operator () (
@@ -190,7 +192,7 @@ int main(int argc,char* argv[]){
     std::string fname(argv[1]);
 
     // Set the amount of infeasibility that we want to allow
-    const Real epsilon(1e-8);
+    Real const epsilon(1e-8);
 
     // Generate an initial guess for the primal
     std::vector <Real> x(4);
@@ -266,10 +268,9 @@ int main(int argc,char* argv[]){
         Optizelle::StoppingCondition::to_string(state.opt_stop) << std::endl;
 
     // Print out the final answer
-    const std::vector <Real>& opt_x=*(state.x.begin());
     std::cout << std::scientific << std::setprecision(16)
-        << "The optimal point is: (" << opt_x[0] << ','
-	<< opt_x[1] << ')' << std::endl;
+        << "The optimal point is: (" << state.x[0] << ','
+	<< state.x[1] << ')' << std::endl;
 
     // Write out the final answer to file
     Optizelle::json::Constrained <Real,Rm,Rm,Rm>::write_restart(

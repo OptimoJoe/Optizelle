@@ -38,19 +38,18 @@ int main() {
         ::capture(Optizelle::Messaging(),state,xs,reals,nats,params);
 
     // Check that we actually have memory in these slots
-    CHECK(state.x.size()==1);
-    CHECK(state.grad.size()==1);
-    CHECK(state.dx.size()==1);
-    CHECK(state.x_old.size()==1);
-    CHECK(state.grad_old.size()==1);
-    CHECK(state.dx_old.size()==1);
+    CHECK(state.x.size()>0);
+    CHECK(state.grad.size()>0);
+    CHECK(state.dx.size()>0);
+    CHECK(state.x_old.size()>0);
+    CHECK(state.grad_old.size()>0);
+    CHECK(state.dx_old.size()>0);
 
     // Check the relative error between the vector created above and the one
     // left in the state
-    std::vector <double> residual;
-    Rm <double>::init(x,residual);
+    std::vector <double> residual(Rm <double>::init(x));
     Rm <double>::copy(x,residual);
-    Rm <double>::axpy(-1,state.x.front(),residual);
+    Rm <double>::axpy(-1.,state.x,residual);
     double err=std::sqrt(Rm <double>::innr(residual,residual))
         /(1+sqrt(Rm <double>::innr(x,x)));
     CHECK(err < 1e-15);

@@ -55,31 +55,30 @@ int main() {
         ::capture(Optizelle::Messaging(),state,xs,ys,reals,nats,params);
 
     // Check that we actually have memory in these slots
-    CHECK(state.x.size()==1);
-    CHECK(state.grad.size()==1);
-    CHECK(state.dx.size()==1);
-    CHECK(state.x_old.size()==1);
-    CHECK(state.grad_old.size()==1);
-    CHECK(state.dx_old.size()==1);
-    CHECK(state.y.size()==1);
-    CHECK(state.g_x.size()==1);
-    CHECK(state.gpxdxn_p_gx.size()==1);
-    CHECK(state.gpxdxt.size()==1);
-    CHECK(state.dx_n.size()==1);
-    CHECK(state.dx_ncp.size()==1);
-    CHECK(state.dx_t.size()==1);
-    CHECK(state.dx_t_uncorrected.size()==1);
-    CHECK(state.dx_tcp_uncorrected.size()==1);
-    CHECK(state.H_dxn.size()==1);
-    CHECK(state.W_gradpHdxn.size()==1);
-    CHECK(state.H_dxtuncorrected.size()==1);
+    CHECK(state.x.size()>0);
+    CHECK(state.grad.size()>0);
+    CHECK(state.dx.size()>0);
+    CHECK(state.x_old.size()>0);
+    CHECK(state.grad_old.size()>0);
+    CHECK(state.dx_old.size()>0);
+    CHECK(state.y.size()>0);
+    CHECK(state.g_x.size()>0);
+    CHECK(state.gpxdxn_p_gx.size()>0);
+    CHECK(state.gpxdxt.size()>0);
+    CHECK(state.dx_n.size()>0);
+    CHECK(state.dx_ncp.size()>0);
+    CHECK(state.dx_t.size()>0);
+    CHECK(state.dx_t_uncorrected.size()>0);
+    CHECK(state.dx_tcp_uncorrected.size()>0);
+    CHECK(state.H_dxn.size()>0);
+    CHECK(state.W_gradpHdxn.size()>0);
+    CHECK(state.H_dxtuncorrected.size()>0);
 
     // Check the relative error between the vector created above and the one
     // left in the state
-    std::vector <double> residual;
-    Rm <double>::init(y,residual);
+    std::vector <double> residual(Rm <double>::init(y));
     Rm <double>::copy(y,residual);
-    Rm <double>::axpy(-1,state.y.front(),residual);
+    Rm <double>::axpy(-1.,state.y,residual);
     double err=std::sqrt(Rm <double>::innr(residual,residual))
         /(1+sqrt(Rm <double>::innr(y,y)));
     CHECK(err < 1e-15);

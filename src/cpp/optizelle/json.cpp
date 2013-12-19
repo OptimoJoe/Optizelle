@@ -35,8 +35,8 @@ namespace Optizelle {
     namespace json {
         // Parses a JSON file and returns the root
         Json::Value parse(
-            const Optizelle::Messaging& msg,
-            const std::string& fname
+            Optizelle::Messaging const & msg,
+            std::string const & fname
         ) {
             // Read in the input file
             Json::Value root;
@@ -54,9 +54,9 @@ namespace Optizelle {
        
         // Writes a JSON spec to file
         void write(
-            const Optizelle::Messaging& msg,
-            const std::string& fname,
-            const Json::Value& root
+            Optizelle::Messaging const & msg,
+            std::string const & fname,
+            Json::Value const & root
         ) {
             // Create a string with the above output
             Json::StyledWriter writer;
@@ -83,12 +83,12 @@ namespace Optizelle {
        
             // Naturals 
             void naturals(
-                const std::pair <
+                std::pair <
                     std::list <std::string>,
                     std::list <Natural>
-                >& nats,
-                const std::string& vs,
-                Json::Value& root
+                > const & nats,
+                std::string const & vs,
+                Json::Value & root
             ) {
                 // Loop over all the naturals and serialize things
                 typename std::list <Natural>::const_iterator nat 
@@ -107,8 +107,8 @@ namespace Optizelle {
                     std::list <std::string>,
                     std::list <std::string>
                 >& params,
-                const std::string& vs,
-                Json::Value& root
+                std::string const & vs,
+                Json::Value & root
             ) {
                 // Loop over all the parameters and serialize things
                 typename std::list <std::string>::const_iterator param 
@@ -127,8 +127,8 @@ namespace Optizelle {
 
             // Naturals 
             void naturals(
-                const Json::Value& root,
-                const std::string& vs,
+                Json::Value const & root,
+                std::string const & vs,
                 std::pair <
                     std::list <std::string>,
                     std::list <Natural>
@@ -148,8 +148,8 @@ namespace Optizelle {
             
             // Parameters 
             void parameters(
-                const Json::Value& root,
-                const std::string& vs,
+                Json::Value const & root,
+                std::string const & vs,
                 std::pair <
                     std::list <std::string>,
                     std::list <std::string>
