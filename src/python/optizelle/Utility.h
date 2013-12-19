@@ -248,7 +248,7 @@ namespace Optizelle {
             // Disallow constructors 
             PyObjectPtr() = delete;
             PyObjectPtr(PyObjectPtr const &) = delete;
-            void operator = (PyObjectPtr const &) = delete;
+            PyObjectPtr operator = (PyObjectPtr const &) = delete;
 
             // On construction, initialize the pointer and figure out if
             // we're capturing the pointer or attaching to it
