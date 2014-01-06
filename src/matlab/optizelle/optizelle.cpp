@@ -165,23 +165,73 @@ public:
         symm_.reset(mxDuplicateArray(symm__));
     }
 
-    // Memory allocation and size setting 
-    void init(const MatVector& x) {
-        // Compute a deep copy of the data in x
-        reset(mxDuplicateArray(x.get()));
+    // Create a move constructor so we can interact with stl objects
+    MatVector(MatVector && vec) noexcept {
+        // Grab the memory for the vector 
+        reset(vec.release());
 
-        // Now, copy out all of the algebra functions
-        copy_.reset(mxDuplicateArray(x.copy_.get()));
-        scal_.reset(mxDuplicateArray(x.scal_.get()));
-        zero_.reset(mxDuplicateArray(x.zero_.get()));
-        axpy_.reset(mxDuplicateArray(x.axpy_.get()));
-        innr_.reset(mxDuplicateArray(x.innr_.get()));
-        if(x.prod_.get()) prod_.reset(mxDuplicateArray(x.prod_.get()));
-        if(x.id_.get()) id_.reset(mxDuplicateArray(x.id_.get()));
-        if(x.linv_.get()) linv_.reset(mxDuplicateArray(x.linv_.get()));
-        if(x.barr_.get()) barr_.reset(mxDuplicateArray(x.barr_.get()));
-        if(x.srch_.get()) srch_.reset(mxDuplicateArray(x.srch_.get()));
-        if(x.symm_.get()) symm_.reset(mxDuplicateArray(x.symm_.get()));
+        // Now, grab all of the algebra functions
+        copy_.reset(vec.copy_.release());
+        scal_.reset(vec.scal_.release());
+        zero_.reset(vec.zero_.release());
+        axpy_.reset(vec.axpy_.release());
+        innr_.reset(vec.innr_.release());
+        prod_.reset(vec.prod_.release());
+        id_.reset(vec.id_.release());
+        linv_.reset(vec.linv_.release());
+        barr_.reset(vec.barr_.release());
+        srch_.reset(vec.srch_.release());
+        symm_.reset(vec.symm_.release());
+    }
+    
+    // Move assignment operator
+    MatVector const & operator = (MatVector && vec) noexcept {
+        // Grab the memory for the vector 
+        reset(vec.release());
+
+        // Now, grab all of the algebra functions
+        copy_.reset(vec.copy_.release());
+        scal_.reset(vec.scal_.release());
+        zero_.reset(vec.zero_.release());
+        axpy_.reset(vec.axpy_.release());
+        innr_.reset(vec.innr_.release());
+        prod_.reset(vec.prod_.release());
+        id_.reset(vec.id_.release());
+        linv_.reset(vec.linv_.release());
+        barr_.reset(vec.barr_.release());
+        srch_.reset(vec.srch_.release());
+        symm_.reset(vec.symm_.release());
+
+        return *this;
+    }
+
+    // Memory allocation and size setting 
+    MatVector init() {
+        // Create and return a vector based on the internal
+        if( prod_.get() && id_.get() && linv_.get() && barr_.get() &&
+            srch_.get() && symm_.get()
+        )
+            return std::move(MatVector(
+                get(),
+                copy_.get(),
+                scal_.get(),
+                zero_.get(),
+                axpy_.get(),
+                innr_.get(),
+                prod_.get(),
+                id_.get(),
+                linv_.get(),
+                barr_.get(),
+                srch_.get(),
+                symm_.get()));
+        else
+            return std::move(MatVector(
+                get(),
+                copy_.get(),
+                scal_.get(),
+                zero_.get(),
+                axpy_.get(),
+                innr_.get()));
     }
 
     // y <- x (Shallow.  No memory allocation.) 
@@ -355,8 +405,8 @@ struct MatlabVS {
     typedef MatVector Vector; 
         
     // Memory allocation and size setting 
-    static void init(const Vector& x, Vector& y) {
-        y.init(x);
+    static Vector init(const Vector & x) {
+        return std::move(const_cast <Vector &> (x).init());
     }       
                 
     // y <- x (Shallow.  No memory allocation.) 
@@ -943,11 +993,9 @@ void mexFunction(
         check_diagnostic_pts(pInput[0],pInput[2]);
 
         // Get the points for checking the objective
-        dx.reset(new MatVector());
-            dx->init(*x);
+        dx.reset(new MatVector(x->init()));
             dx->copy(mxGetField(pInput[2],0,"dx"));
-        dxx.reset(new MatVector());
-            dxx->init(*x);
+        dxx.reset(new MatVector(x->init()));
             dxx->copy(mxGetField(pInput[2],0,"dx"));
     }
     
@@ -964,8 +1012,7 @@ void mexFunction(
             mxGetField(Y,0,"axpy"),
             mxGetField(Y,0,"innr")));
         if(diagnostics) {
-            dy.reset(new MatVector());
-                dy->init(*y);
+            dy.reset(new MatVector(y->init()));
                 dy->copy(mxGetField(pInput[2],0,"dy"));
         }
     }
@@ -989,8 +1036,7 @@ void mexFunction(
             mxGetField(Z,0,"srch"),
             mxGetField(Z,0,"symm")));
         if(diagnostics) {
-            dz.reset(new MatVector());
-                dz->init(*z);
+            dz.reset(new MatVector(z->init()));
                 dz->copy(mxGetField(pInput[2],0,"dz"));
         }
     }
@@ -1060,7 +1106,7 @@ void mexFunction(
             // If we have a preconditioner, add it
             if(mxGetField(pInput[1],0,"PH")!=NULL)
                 fns.PH.reset(new MatlabOperator
-                    (mxGetField(pInput[1],0,"PH"),state.x.back(),"PH"));
+                    (mxGetField(pInput[1],0,"PH"),state.x,"PH"));
 
             // Read the parameters and optimize
             Optizelle::json::Unconstrained <double,MatlabVS>
@@ -1069,7 +1115,7 @@ void mexFunction(
                 ::getMin(MatlabMessaging(),fns,state);
 
             // Save the answer
-            mxSetField(pOutput[0],0,"x",state.x.back().release());
+            mxSetField(pOutput[0],0,"x",state.x.release());
             mxSetField(pOutput[0],0,"opt_stop",mxCreateString(
                 Optizelle::StoppingCondition::to_string(state.opt_stop).c_str()));
             break;
@@ -1081,7 +1127,7 @@ void mexFunction(
             // If we have a preconditioner, add it
             if(mxGetField(pInput[1],0,"PH")!=NULL)
                 fns.PH.reset(new MatlabOperator
-                    (mxGetField(pInput[1],0,"PH"),state.x.back(),"PH"));
+                    (mxGetField(pInput[1],0,"PH"),state.x,"PH"));
 
             // Read the parameters and optimize
             Optizelle::json::InequalityConstrained <double,MatlabVS,MatlabVS>
@@ -1090,8 +1136,8 @@ void mexFunction(
                 ::getMin(MatlabMessaging(),fns,state);
             
             // Save the answer
-            mxSetField(pOutput[0],0,"x",state.x.back().release());
-            mxSetField(pOutput[0],0,"z",state.z.back().release());
+            mxSetField(pOutput[0],0,"x",state.x.release());
+            mxSetField(pOutput[0],0,"z",state.z.release());
             mxSetField(pOutput[0],0,"opt_stop",mxCreateString(
                 Optizelle::StoppingCondition::to_string(state.opt_stop).c_str()));
             break;
@@ -1103,14 +1149,14 @@ void mexFunction(
             // If we have a preconditioner, add it
             if(mxGetField(pInput[1],0,"PH")!=NULL)
                 fns.PH.reset(new MatlabOperator
-                    (mxGetField(pInput[1],0,"PH"),state.x.back(),"PH"));
+                    (mxGetField(pInput[1],0,"PH"),state.x,"PH"));
             if(mxGetField(pInput[1],0,"PSchur_left")!=NULL)
                 fns.PSchur_left.reset(new MatlabOperator
-                    (mxGetField(pInput[1],0,"PSchur_left"),state.x.back(),
+                    (mxGetField(pInput[1],0,"PSchur_left"),state.x,
                     "PSchur_left"));
             if(mxGetField(pInput[1],0,"PSchur_right")!=NULL)
                 fns.PSchur_right.reset(new MatlabOperator
-                    (mxGetField(pInput[1],0,"PSchur_right"),state.x.back(),
+                    (mxGetField(pInput[1],0,"PSchur_right"),state.x,
                     "PSchur_right"));
 
             // Read the parameters and optimize
@@ -1120,8 +1166,8 @@ void mexFunction(
                 ::getMin(MatlabMessaging(),fns,state);
             
             // Save the answer
-            mxSetField(pOutput[0],0,"x",state.x.back().release());
-            mxSetField(pOutput[0],0,"y",state.y.back().release());
+            mxSetField(pOutput[0],0,"x",state.x.release());
+            mxSetField(pOutput[0],0,"y",state.y.release());
             mxSetField(pOutput[0],0,"opt_stop",mxCreateString(
                 Optizelle::StoppingCondition::to_string(state.opt_stop).c_str()));
             break;
@@ -1133,14 +1179,14 @@ void mexFunction(
             // If we have a preconditioner, add it
             if(mxGetField(pInput[1],0,"PH")!=NULL)
                 fns.PH.reset(new MatlabOperator
-                    (mxGetField(pInput[1],0,"PH"),state.x.back(),"PH"));
+                    (mxGetField(pInput[1],0,"PH"),state.x,"PH"));
             if(mxGetField(pInput[1],0,"PSchur_left")!=NULL)
                 fns.PSchur_left.reset(new MatlabOperator
-                    (mxGetField(pInput[1],0,"PSchur_left"),state.x.back(),
+                    (mxGetField(pInput[1],0,"PSchur_left"),state.x,
                     "PSchur_left"));
             if(mxGetField(pInput[1],0,"PSchur_right")!=NULL)
                 fns.PSchur_right.reset(new MatlabOperator
-                    (mxGetField(pInput[1],0,"PSchur_right"),state.x.back(),
+                    (mxGetField(pInput[1],0,"PSchur_right"),state.x,
                     "PSchur_right"));
 
             // Read the parameters and optimize
@@ -1150,9 +1196,9 @@ void mexFunction(
                 ::getMin(MatlabMessaging(),fns,state);
             
             // Save the answer
-            mxSetField(pOutput[0],0,"x",state.x.back().release());
-            mxSetField(pOutput[0],0,"y",state.y.back().release());
-            mxSetField(pOutput[0],0,"z",state.z.back().release());
+            mxSetField(pOutput[0],0,"x",state.x.release());
+            mxSetField(pOutput[0],0,"y",state.y.release());
+            mxSetField(pOutput[0],0,"z",state.z.release());
             mxSetField(pOutput[0],0,"opt_stop",mxCreateString(
                 Optizelle::StoppingCondition::to_string(state.opt_stop).c_str()));
         } }

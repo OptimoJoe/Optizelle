@@ -15,6 +15,20 @@ class t(Optizelle.Unconstrained.State.t):
         Optizelle.checkVectorSpace("X",X)
         Optizelle.checkVectorSpace("Y",Y)
         Optizelle.checkMessaging("msg",msg)
+        
+        # Allocate memory for our vectors
+        self.y=Y.init.__func__(y)
+        self.dy=Y.init.__func__(y)
+        self.gpxdxn_p_gx=Y.init.__func__(y)
+        self.gpxdxt=Y.init.__func__(y)
+        self.dx_n=X.init.__func__(x)
+        self.dx_ncp=X.init.__func__(x)
+        self.dx_t=X.init.__func__(x)
+        self.dx_t_uncorrected=X.init.__func__(x)
+        self.dx_tcp_uncorrected=X.init.__func__(x)
+        self.H_dxn=X.init.__func__(x)
+        self.W_gradpHdxn=X.init.__func__(x)
+        self.H_dxtuncorrected=X.init.__func__(x)
 
         # Create the state
         Optizelle.Utility.EqualityConstrainedStateCreate(self,X,Y,msg,x,y)

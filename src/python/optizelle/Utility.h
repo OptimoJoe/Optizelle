@@ -36,191 +36,177 @@ Author: Joseph Young (joe@optimojoe.com)
 #include <exception>
 #include <optizelle/optizelle.h>
 #include <optizelle/json.h>
-        
-// A macro to alter the behavior of PyTuple_SetItem so that we don't
-// have to hand increment the reference to the object since SetItem
-// takes control of its arguments.
-#define MyPyTuple_SetItem(p,pos,o) \
-        Py_INCREF(o); \
-        PyTuple_SetItem(p,pos,o);
+
+// Alright, integrating C++ with Python is fraught with issues, but one that
+// affects us specifically is const correctness.  There's not really a good
+// way to handle this since Python doesn't have a concept of constant elements.
+// In our code, we will consider something constant if we do not change its
+// underlying value.  Now, we may attach to it, which increments its reference
+// count, but we will consider this to be a constant operation.
 
 namespace Optizelle {
     namespace StoppingCondition { 
         // Converts t to a Python enumerated type
         struct toPython : public std::unary_function <t const &,PyObject *> {
-            PyObject* operator () (t const & opt_stop) const;
+            PyObject * operator () (t const & opt_stop) const;
         };
 
         // Converts a Python enumerated type to t 
-        struct fromPython : public std::unary_function
-            <PyObject const * const,t>
-        {
-            t operator () (PyObject const * const member) const;
+        struct fromPython : public std::unary_function <PyObject * const,t> {
+            t operator () (PyObject * const member) const;
         };
     }
 
     namespace KrylovStop {
         // Converts t to a Python enumerated type
         struct toPython : public std::unary_function <t const &,PyObject *> {
-            PyObject* operator () (t const & opt_stop) const;
+            PyObject * operator () (t const & opt_stop) const;
         };
 
         // Converts a Python enumerated type to t 
-        struct fromPython : public std::unary_function
-            <PyObject const * const,t>
-        {
-            t operator () (PyObject const * const member) const;
+        struct fromPython : public std::unary_function <PyObject * const,t> {
+            t operator () (PyObject * const member) const;
         };
     }
     
     namespace KrylovSolverTruncated {
         // Converts t to a Python enumerated type
         struct toPython : public std::unary_function <t const &,PyObject *> {
-            PyObject* operator () (t const & opt_stop) const;
+            PyObject * operator () (t const & opt_stop) const;
         };
 
         // Converts a Python enumerated type to t 
-        struct fromPython : public std::unary_function
-            <PyObject const * const,t>
-        {
-            t operator () (PyObject const * const member) const;
+        struct fromPython : public std::unary_function <PyObject * const,t> {
+            t operator () (PyObject * const member) const;
         };
     }
 
     namespace AlgorithmClass { 
         // Converts t to a Python enumerated type
         struct toPython : public std::unary_function <t const &,PyObject *> {
-            PyObject* operator () (t const & opt_stop) const;
+            PyObject * operator () (t const & opt_stop) const;
         };
 
         // Converts a Python enumerated type to t 
-        struct fromPython: public std::unary_function
-            <PyObject const * const,t>
-        {
-            t operator () (PyObject const * const member) const;
+        struct fromPython: public std::unary_function <PyObject * const,t> {
+            t operator () (PyObject * const member) const;
         };
     }
     
     namespace Operators{ 
         // Converts t to a Python enumerated type
         struct toPython : public std::unary_function <t const &,PyObject *> {
-            PyObject* operator () (t const & opt_stop) const;
+            PyObject * operator () (t const & opt_stop) const;
         };
 
         // Converts a Python enumerated type to t 
-        struct fromPython: public std::unary_function
-            <PyObject const * const,t>
-        {
-            t operator () (PyObject const * const member) const;
+        struct fromPython: public std::unary_function <PyObject * const,t> {
+            t operator () (PyObject * const member) const;
         };
     }
     
     namespace LineSearchDirection{ 
         // Converts t to a Python enumerated type
         struct toPython : public std::unary_function <t const &,PyObject *> {
-            PyObject* operator () (t const & opt_stop) const;
+            PyObject * operator () (t const & opt_stop) const;
         };
 
         // Converts a Python enumerated type to t 
-        struct fromPython: public std::unary_function
-            <PyObject const * const,t>
-        {
-            t operator () (PyObject const * const member) const;
+        struct fromPython: public std::unary_function <PyObject * const,t> {
+            t operator () (PyObject * const member) const;
         };
     }
     
     namespace LineSearchKind{ 
         // Converts t to a Python enumerated type
         struct toPython : public std::unary_function <t const &,PyObject *> {
-            PyObject* operator () (t const & opt_stop) const;
+            PyObject * operator () (t const & opt_stop) const;
         };
 
         // Converts a Python enumerated type to t 
-        struct fromPython: public std::unary_function
-            <PyObject const * const,t>
-        {
-            t operator () (PyObject const * const member) const;
+        struct fromPython: public std::unary_function <PyObject * const,t> {
+            t operator () (PyObject * const member) const;
         };
     }
     
     namespace OptimizationLocation{ 
         // Converts t to a Python enumerated type
         struct toPython : public std::unary_function <t const &,PyObject *> {
-            PyObject* operator () (t const & loc) const;
+            PyObject * operator () (t const & loc) const;
         };
 
         // Converts a Python enumerated type to t 
-        struct fromPython: public std::unary_function
-            <PyObject const * const,t>
-        {
-            t operator () (PyObject const * const member) const;
+        struct fromPython: public std::unary_function <PyObject * const,t> {
+            t operator () (PyObject * const member) const;
         };
     }
     
     namespace InteriorPointMethod{ 
         // Converts t to a Python enumerated type
         struct toPython : public std::unary_function <t const &,PyObject *> {
-            PyObject* operator () (t const & opt_stop) const;
+            PyObject * operator () (t const & opt_stop) const;
         };
 
         // Converts a Python enumerated type to t 
-        struct fromPython: public std::unary_function
-            <PyObject const * const,t>
-        {
-            t operator () (PyObject const * const member) const;
+        struct fromPython: public std::unary_function <PyObject * const,t> {
+            t operator () (PyObject * const member) const;
         };
     }
     
     namespace CentralityStrategy{ 
         // Converts t to a Python enumerated type
         struct toPython : public std::unary_function <t const &,PyObject *> {
-            PyObject* operator () (t const & opt_stop) const;
+            PyObject * operator () (t const & opt_stop) const;
         };
 
         // Converts a Python enumerated type to t 
-        struct fromPython: public std::unary_function
-            <PyObject const * const,t>
-        {
-            t operator () (PyObject const * const member) const;
+        struct fromPython: public std::unary_function <PyObject * const,t> {
+            t operator () (PyObject * const member) const;
         };
     }
 
     namespace Python {
+        
+        // A function to alter the behavior of PyTuple_SetItem so that we don't
+        // have to hand increment the reference to the object since SetItem
+        // takes control of its arguments.
+        void MyPyTuple_SetItem(PyObject * p,Natural const & pos,PyObject * o);
+
         // Like PyObject_GetAttrString, but returns obj.name1.name2 
-        PyObject* PyObject_GetAttrString2(
-            PyObject const * const obj,
+        PyObject * PyObject_GetAttrString2(
+            PyObject * const obj,
             std::string const & name1,
             std::string const & name2
         );
 
         // Calls a Python function with one argument 
-        PyObject* PyObject_CallObject1(
-            PyObject const * const fn,
-            PyObject const * const arg1
+        PyObject * PyObject_CallObject1(
+            PyObject * const fn,
+            PyObject * const arg1
         );
         
         // Calls a Python function with two arguments
-        PyObject* PyObject_CallObject2(
-            PyObject const * const fn,
-            PyObject const * const arg1,
-            PyObject const * const arg2
+        PyObject * PyObject_CallObject2(
+            PyObject * const fn,
+            PyObject * const arg1,
+            PyObject * const arg2
         );
         
         // Calls a Python function with three arguments
-        PyObject* PyObject_CallObject3(
-            PyObject const * const fn,
-            PyObject const * const arg1,
-            PyObject const * const arg2,
-            PyObject const * const arg3
+        PyObject * PyObject_CallObject3(
+            PyObject * const fn,
+            PyObject * const arg1,
+            PyObject * const arg2,
+            PyObject * const arg3
         );
         
         // Calls a Python function with four arguments
-        PyObject* PyObject_CallObject4(
-            PyObject const * const fn,
-            PyObject const * const arg1,
-            PyObject const * const arg2,
-            PyObject const * const arg3,
-            PyObject const * const arg4
+        PyObject * PyObject_CallObject4(
+            PyObject * const fn,
+            PyObject * const arg1,
+            PyObject * const arg2,
+            PyObject * const arg3,
+            PyObject * const arg4
         );
 
         // Used to catch Python exceptions
@@ -229,7 +215,7 @@ namespace Optizelle {
         };
         
         // Deep copy of a Python object and return the result
-        PyObject* deepcopy(PyObject const * const in);
+        PyObject * deepcopy(PyObject * const in);
 
         namespace PyObjectPtrMode {
             enum t : Natural {
@@ -242,39 +228,39 @@ namespace Optizelle {
         struct PyObjectPtr { 
         protected:
             // Internal storage of the pointer
-            PyObject* ptr;
+            PyObject * ptr;
             
         public:
             // Disallow constructors 
-            PyObjectPtr() = delete;
-            PyObjectPtr(PyObjectPtr const &) = delete;
-            PyObjectPtr operator = (PyObjectPtr const &) = delete;
+            NO_DEFAULT_COPY_ASSIGNMENT(PyObjectPtr);
 
             // On construction, initialize the pointer and figure out if
             // we're capturing the pointer or attaching to it
             explicit PyObjectPtr(
-                PyObject* ptr_,
+                PyObject * const ptr_,
                 PyObjectPtrMode::t const mode = PyObjectPtrMode::Capture
             );
 
             // Move constructor
             explicit PyObjectPtr(PyObjectPtr&& ptr_) noexcept;
 
+            // Move assignment operator
+            PyObjectPtr const & operator = (PyObjectPtr&& ptr_) noexcept;
+
             // For a reset, we decrement the pointer and then assign a new
             // value.
-            void reset(PyObject* ptr_); 
+            void reset(PyObject * const ptr_); 
 
             // For an attach, we decrement the pointer, assign a new value,
             // and then increment the reference count.
-            void attach(PyObject* ptr_);
+            void attach(PyObject * const ptr_);
 
             // On a get, we simply return the pointer.
-            PyObject const * const get() const;
-            PyObject* get();
+            PyObject * get();
             
             // On a release, we return the underlying pointer and then clear
             // the vector.  This will prevent a decrement later.
-            PyObject* release();
+            PyObject * release();
 
             // On destruction, decrement the Python reference counter and do
             // not delete the pointer.
@@ -284,18 +270,19 @@ namespace Optizelle {
         // A messaging utility that hooks directly into Python 
         struct Messaging : public Optizelle::Messaging, public PyObjectPtr {
             // Disallow constructors
-            Messaging() = delete;
-            Messaging(Messaging const &) = delete;
-            void operator = (Messaging const &) = delete;
+            NO_DEFAULT_COPY_ASSIGNMENT(Messaging);
 
             // On construction, we just grab the pointer to the messaging object
             explicit Messaging(
-                PyObject* ptr_,
+                PyObject * const ptr_,
                 PyObjectPtrMode::t const mode = PyObjectPtrMode::Capture
             );
 
             // Move constructor
-            explicit Messaging(Messaging&& ptr_) noexcept;
+            explicit Messaging(Messaging && msg) noexcept;
+
+            // Move assignment operator
+            Messaging const & operator = (Messaging && msg) noexcept;
 
             // Prints a message
             void print(std::string const & msg_) const;
@@ -320,70 +307,79 @@ namespace Optizelle {
 
         public:
             // Prevent constructors 
-            Vector(Vector const &) = delete;
-            Vector& operator = (Vector const &) = delete;
-
-            // Create an empty vector.  Don't use these objects until
-            // initialized.
-            explicit Vector();
+            NO_DEFAULT_COPY_ASSIGNMENT(Vector);
 
             // Create a vector with the appropriate messaging and vector space 
-            explicit Vector(PyObject* msg_,PyObject* vs_,PyObject* vec,
+            explicit Vector(
+                PyObject * const msg_,
+                PyObject * const vs_,
+                PyObject * const vec,
                 PyObjectPtrMode::t mode=PyObjectPtrMode::Capture);
 
             // Create a move constructor so we can interact with stl objects
-            explicit Vector(Vector&& vec);
+            Vector(Vector && vec) noexcept;
+            
+            // Move assignment operator
+            Vector const & operator = (Vector && vec) noexcept;
 
             // Memory allocation and size setting 
-            void init(const Vector& vec);
+            Vector init();
             
-            // y <- x (Shallow.  No memory allocation.) 
-            void copy(const Vector& x);
+            // y <- x (Shallow.  No memory allocation.)  Internal is y.
+            void copy(Vector & x);
 
-            // x <- alpha * x
-            void scal(const double& alpha);
+            // x <- alpha * x.  Internal is x.
+            void scal(double const & alpha);
 
-            // x <- 0 
+            // x <- 0.  Internal is x. 
             void zero();
 
-            // y <- alpha * x + y 
-            void axpy(const double& alpha, const Vector& x);
+            // y <- alpha * x + y.  Internal is y.
+            void axpy(double const & alpha, Vector & x);
 
             // innr <- <x,y> 
-            double innr(const Vector& x) const;
+            double innr(Vector & x);
 
-            // Jordan product, z <- x o y
-            void prod(const Vector& x, const Vector& y);
+            // Jordan product, z <- x o y.  Internal is z.
+            void prod(Vector & x, Vector & y);
 
-            // Identity element, x <- e such that x o e = x 
+            // Identity element, x <- e such that x o e = x.  Internal is x.
             void id();
 
-            // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y 
-            void linv(const Vector& x, const Vector& y); 
+            // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y .
+            // Internal is z.
+            void linv(Vector & x, Vector & y); 
 
-            // Barrier function, barr <- barr(x) where x o grad barr(x) = e 
-            double barr() const;
+            // Barrier function, barr <- barr(x) where x o grad barr(x) = e.
+            // Internal is x.
+            double barr();
 
             // Line search, srch <- argmax {alpha in Real >= 0 : alpha x + y >=
-            // 0} where y > 0.  
-            double srch(const Vector& x) const; 
+            // 0} where y > 0.  Internal is y.
+            double srch(Vector & x); 
 
             // Symmetrization, x <- symm(x) such that L(symm(x)) is a symmetric
-            // operator.
+            // operator.  Internal is x.
             void symm(); 
+            
+            // Converts (copies) a value into Python.  This assumes memory
+            // has been allocated both in the vector as well as Python.
+            void toPython(PyObject * const ptr);
+            
+            // Converts (copies) a value from Python.  This assumes memory
+            // has been allocated both in the vector as well as Python.
+            void fromPython(PyObject * const ptr);
         };
         
         // Python state
         template <typename ProblemClass>
         struct State : public PyObjectPtr {
             // Disallow constructors
-            State() = delete;
-            State(State const &) = delete;
-            void operator = (State const &) = delete;
+            NO_DEFAULT_COPY_ASSIGNMENT(State);
 
             // On construction, we just grab the pointer to the state object
             explicit State(
-                PyObject* ptr_,
+                PyObject * const ptr_,
                 PyObjectPtrMode::t const mode = PyObjectPtrMode::Capture
             ) : PyObjectPtr(ptr_,mode) {}
 
@@ -408,16 +404,14 @@ namespace Optizelle {
             
         public:
             // Disallow constructors
-            Functions() = delete;
-            Functions(Functions const &) = delete;
-            void operator = (Functions const &) = delete;
+            NO_DEFAULT_COPY_ASSIGNMENT(Functions);
 
             // On construction, we just grab the pointer to the bundle object
             explicit Functions(
-                PyObject* msg_,
-                PyObject* pystate_,
+                PyObject * const msg_,
+                PyObject * const pystate_,
                 typename ProblemClass::State::t const & state_,
-                PyObject* ptr_,
+                PyObject * const ptr_,
                 PyObjectPtrMode::t const mode = PyObjectPtrMode::Capture
             ) :
                 PyObjectPtr(ptr_,mode),
@@ -447,21 +441,19 @@ namespace Optizelle {
 
             // Similarly, we keep only the Python versin of the bundle of
             // functions lying around
-            PyObjectPtr pyfns;
+            mutable PyObjectPtr pyfns;
 
         public:
             // Disallow constructors
-            StateManipulator() = delete;
-            StateManipulator(StateManipulator const &) = delete;
-            void operator = (StateManipulator const &) = delete;
+            NO_DEFAULT_COPY_ASSIGNMENT(StateManipulator);
 
             // We need the Python state manipulator, a copy of a Python state
             // to pass information, and a copy of the Python functions.
             StateManipulator(
-                PyObject* msg_,
-                PyObject* pystate_,
-                PyObject* pyfns_,
-                PyObject* smanip_,
+                PyObject * const msg_,
+                PyObject * const pystate_,
+                PyObject * const pyfns_,
+                PyObject * const smanip_,
                 PyObjectPtrMode::t const mode = PyObjectPtrMode::Capture
             ) :
                 PyObjectPtr(smanip_,mode),
@@ -472,24 +464,24 @@ namespace Optizelle {
 
             // Application
             void operator () (
-                const typename ProblemClass::Functions::t& fns,
-                typename ProblemClass::State::t& state,
-                OptimizationLocation::t loc
+                const typename ProblemClass::Functions::t & fns,
+                typename ProblemClass::State::t & state,
+                OptimizationLocation::t const & loc_
             ) const {
                 // Convert the C++ state to a Python state
                 pystate.toPython(state);
 
                 // Convert the lcoation to Python
-                PyObjectPtr loc_(OptimizationLocation::toPython()(loc));
+                PyObjectPtr loc(OptimizationLocation::toPython()(loc_));
             
                 // Call the Python state manipulator 
                 // give it pystate and pyfns.  Note, pyfns is given raw.
-                PyObjectPtr eval_(PyObject_GetAttrString(ptr,"eval"));
+                PyObjectPtr eval(PyObject_GetAttrString(ptr,"eval"));
                 PyObjectPtr ret(PyObject_CallObject3(
-                    eval_.get(),
+                    eval.get(),
                     pyfns.get(),
                     pystate.get(),
-                    loc_.get()));
+                    loc.get()));
 
                 // Check errors
                 if(ret.get()==nullptr)
@@ -505,72 +497,70 @@ namespace Optizelle {
         template <typename Real=double> 
         struct PythonVS { 
             // Prevent constructors 
-            PythonVS() = delete;
-            PythonVS(PythonVS const &) = delete;
-            void operator = (PythonVS const &) = delete;
+            NO_CONSTRUCTORS(PythonVS);
 
             // Setup the vector 
             typedef Optizelle::Python::Vector Vector; 
 
             // Memory allocation and size setting 
-            static void init(Vector const & x, Vector& y) { 
-                y.init(x);
+            static Vector init(Vector const & x) { 
+                return std::move(const_cast <Vector &> (x).init());
             } 
 
             // y <- x (Shallow.  No memory allocation.) 
-            static void copy(Vector const & x, Vector& y) { 
-                y.copy(x);
+            static void copy(Vector const & x, Vector & y) { 
+                y.copy(const_cast <Vector &> (x));
             } 
 
             // x <- alpha * x 
-            static void scal(Real const & alpha, Vector& x) { 
+            static void scal(Real const & alpha, Vector & x) { 
                 x.scal(alpha);
             } 
 
             // x <- 0 
-            static void zero(Vector& x) { 
+            static void zero(Vector & x) { 
                 x.zero();
             } 
 
             // y <- alpha * x + y 
-            static void axpy(Real const & alpha, Vector const & x, Vector& y) { 
-                y.axpy(alpha,x);
+            static void axpy(Real const & alpha, Vector const & x, Vector & y) { 
+                y.axpy(alpha,const_cast <Vector &> (x));
             } 
 
             // innr <- <x,y> 
             static Real innr(Vector const & x,Vector const & y) { 
-                return y.innr(x);
+                return const_cast <Vector &> (y).innr(const_cast <Vector &>(x));
             } 
 
             // Jordan product, z <- x o y 
-            static void prod(Vector const & x, Vector const & y, Vector& z) { 
-                z.prod(x,y);
+            static void prod(Vector const & x, Vector const & y, Vector & z) { 
+                z.prod(const_cast <Vector &> (x),const_cast <Vector &> (y));
             } 
 
             // Identity element, x <- e such that x o e = x 
-            static void id(Vector& x) { 
+            static void id(Vector & x) { 
                 x.id();
             } 
 
             // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y 
-            static void linv(Vector const & x, Vector const & y, Vector& z) { 
-                z.linv(x,y);
+            static void linv(Vector const & x, Vector const & y, Vector & z) { 
+                z.linv(const_cast <Vector &> (x),const_cast <Vector &> (y));
             } 
 
             // Barrier function, barr <- barr(x) where x o grad barr(x) = e 
             static Real barr(Vector const & x) { 
-                return x.barr();
+                return const_cast <Vector &> (x).barr();
             } 
 
             // Line search, srch <- argmax {alpha in Real >= 0 : alpha x + y >=
             // 0} where y > 0. 
             static Real srch(Vector const & x,Vector const & y) {  
-                return y.srch(x);
+                return const_cast <Vector &> (y).srch(const_cast <Vector &>(x));
             } 
 
             // Symmetrization, x <- symm(x) such that L(symm(x)) is a symmetric
             // operator.
-            static void symm(Vector& x) {
+            static void symm(Vector & x) {
                 x.symm();
             }
         }; 
@@ -614,24 +604,22 @@ namespace Optizelle {
 
         public:
             // Prevent constructors 
-            ScalarValuedFunction() = delete;
-            ScalarValuedFunction(ScalarValuedFunction const &) = delete;
-            void operator = (ScalarValuedFunction const &) = delete;
+            NO_DEFAULT_COPY_ASSIGNMENT(ScalarValuedFunction);
 
             // Create a function 
             explicit ScalarValuedFunction(
-                PyObject* msg_,
-                PyObject* f,
+                PyObject * const msg_,
+                PyObject * const f,
                 PyObjectPtrMode::t mode=PyObjectPtrMode::Capture);
 
             // <- f(x) 
-            double operator () (const Vector& x) const; 
+            double operator () (Vector const & x) const; 
 
             // g = grad f(x) 
-            void grad(const Vector& x,Vector& g) const; 
+            void grad(Vector const & x,Vector & g) const; 
 
             // H_dx = hess f(x) dx 
-            void hessvec(const Vector& x,const Vector& dx,Vector& H_dx) const;
+            void hessvec(Vector const & x,Vector const & dx,Vector & H_dx)const;
         };
 
         // A simple vector valued function interface, f : X -> Y
@@ -652,33 +640,30 @@ namespace Optizelle {
 
         public:
             // Prevent constructors 
-            VectorValuedFunction() = delete;
-            VectorValuedFunction(VectorValuedFunction const &) = delete;
-            void operator = (VectorValuedFunction const &) = delete;
+            NO_DEFAULT_COPY_ASSIGNMENT(VectorValuedFunction);
 
             // Create a function 
             explicit VectorValuedFunction(
                 std::string const & name_,
-                PyObject* msg_,
-                PyObject* f,
+                PyObject * const msg_,
+                PyObject * const f,
                 PyObjectPtrMode::t mode=PyObjectPtrMode::Capture);
 
             // y=f(x)
-            void operator () (const X_Vector& x,Y_Vector& y) const ;
+            void operator () (X_Vector const & x,Y_Vector & y) const;
 
             // y=f'(x)dx 
-            void p(const X_Vector& x,const X_Vector& dx,Y_Vector& y) const;
+            void p(X_Vector const & x,X_Vector const & dx,Y_Vector & y) const;
 
             // z=f'(x)*dy
-            void ps(const X_Vector& x,const Y_Vector& dy,X_Vector& z)
-                const; 
+            void ps(X_Vector const & x,const Y_Vector & dy,X_Vector & z) const; 
              
             // z=(f''(x)dx)*dy
             void pps(
-                const X_Vector& x,
-                const X_Vector& dx,
-                const Y_Vector& dy,
-                X_Vector& z
+                X_Vector const & x,
+                X_Vector const & dx,
+                const Y_Vector & dy,
+                X_Vector & z
             ) const; 
         };
         
@@ -713,17 +698,15 @@ namespace Optizelle {
             std::string const name;
 
         public:
-            // Prevent constructors 
-            Operator() = delete;
-            Operator(Operator const &) = delete;
-            void operator = (Operator const &) = delete;
+            // Prevent constructors
+            NO_DEFAULT_COPY_ASSIGNMENT(Operator);
 
             // Create an operator 
             explicit Operator(
                 std::string const & name_,
-                PyObject* msg_,
-                PyObject* op,
-                PyObject* pystate_,
+                PyObject * const msg_,
+                PyObject * const op,
+                PyObject * const pystate_,
                 typename ProblemClass::State::t const & state_,
                 PyObjectPtrMode::t mode=PyObjectPtrMode::Capture
             ) :
@@ -732,17 +715,20 @@ namespace Optizelle {
                 pystate(pystate_,PyObjectPtrMode::Attach),
                 state(state_),
                 name(name_)
-            { }
+            {}
 
             // y = A(x)
-            void operator () (const X_Vector& x,Y_Vector &y) const {
+            void operator () (X_Vector const & x,Y_Vector & y) const {
                 // Convert the state to a Python state
                 pystate.toPython(state);
 
                 // Apply the operator to the state, x, and y
-                PyObjectPtr eval_(PyObject_GetAttrString(ptr,"eval"));
+                PyObjectPtr eval(PyObject_GetAttrString(ptr,"eval"));
                 PyObjectPtr ret(PyObject_CallObject3(
-                    eval_.get(),pystate.get(),x.get(),y.get()));
+                    eval.get(),
+                    pystate.get(),
+                    const_cast <X_Vector &> (x).get(),
+                    y.get()));
 
                 // Check errors
                 if(ret.get()==nullptr) {
@@ -755,10 +741,10 @@ namespace Optizelle {
         };
         
         // Calls the Optizelle exception with a string
-        void PyErr_SetString_Optizelle(std::string const& msg);
+        void PyErr_SetString_Optizelle(std::string const & msg);
 
-        // Converts an Optizelle enumerated type to a PyObject* 
-        PyObject* enumToPyObject(
+        // Converts an Optizelle enumerated type to a PyObject * 
+        PyObject * enumToPyObject(
             std::string const & type,
             std::string const & member 
         );
@@ -773,13 +759,13 @@ namespace Optizelle {
         void setFloat(
             std::string const & name,
             double const & value,
-            PyObject* obj 
+            PyObject * const obj 
         );
         
         // Sets a floating point in a C++ class 
         void setFloat(
             std::string const & name,
-            PyObject const * const obj,
+            PyObject * const obj,
             double & value
         );
         
@@ -787,13 +773,13 @@ namespace Optizelle {
         void setNatural(
             std::string const & name,
             Natural const & value,
-            PyObject* obj 
+            PyObject * const obj 
         );
         
         // Sets an integer in a C++ class 
         void setNatural(
             std::string const & name,
-            PyObject const * const obj,
+            PyObject * const obj,
             Natural & value
         );
        
@@ -801,9 +787,9 @@ namespace Optizelle {
         template <typename enum_t>
         void setEnum(
             std::string const & name,
-            std::function<PyObject*(enum_t const &)> const & toPython,
+            std::function<PyObject *(enum_t const &)> const & toPython,
             enum_t const & value,
-            PyObject *obj
+            PyObject * const obj
         ) {
             PyObjectPtr item(toPython(value));
             PyObject_SetAttrString(obj,name.c_str(),item.get());
@@ -813,12 +799,12 @@ namespace Optizelle {
         template <typename enum_t>
         void setEnum(
             std::string const & name,
-            std::function<enum_t(PyObject const * const)> const & fromPython,
-            PyObject const * const obj,
+            std::function<enum_t(PyObject * const)> const & fromPython,
+            PyObject * const obj,
             enum_t & value
         ) {
             PyObjectPtr item(PyObject_GetAttrString(
-                const_cast <PyObject*> (obj),name.c_str()));
+                const_cast <PyObject *> (obj),name.c_str()));
             value = fromPython(item.get());
         }
         
@@ -826,13 +812,13 @@ namespace Optizelle {
         void setVector(
             std::string const & name,
             Vector const & value,
-            PyObject* obj 
+            PyObject * const obj 
         );
         
         // Sets a vector in a C++ class 
         void setVector(
             std::string const & name,
-            PyObject const * const obj,
+            PyObject * const obj,
             Vector & value
         );
         
@@ -840,13 +826,14 @@ namespace Optizelle {
         void setVectors(
             std::string const & name,
             std::list <Vector> const & values,
-            PyObject* obj 
+            PyObject * const obj 
         );
         
         // Sets a list of vectors in a C++ class 
         void setVectors(
             std::string const & name,
-            PyObject const * const obj,
+            PyObject * const obj,
+            Vector const & vec,
             std::list <Vector> & values
         );
         
@@ -897,33 +884,33 @@ namespace Optizelle {
                 // Convert a C++ state to a Python state 
                 void toPython_(
                     typename PyUnconstrained::State::t const & state,
-                    PyObject* pystate
+                    PyObject * const pystate
                 );
                 void toPython(
                     typename PyUnconstrained::State::t const & state,
-                    PyObject* pystate
+                    PyObject * const pystate
                 );
                 
                 // Convert a Python state to C++ 
                 void fromPython_(
-                    PyObject const * const pystate,
+                    PyObject * const pystate,
                     typename PyUnconstrained::State::t & state
                 );
                 void fromPython(
-                    PyObject const * const pystate,
+                    PyObject * const pystate,
                     typename PyUnconstrained::State::t & state
                 );
                 
                 // Creates a state and inserts the elements into pystate 
-                PyObject* create(
-                    PyObject* self,
-                    PyObject* args
+                PyObject * create(
+                    PyObject * self,
+                    PyObject * args
                 );
                 
                 // Read json parameters from file
-                PyObject* readJson(
-                    PyObject* self,
-                    PyObject* args
+                PyObject * readJson(
+                    PyObject * self,
+                    PyObject * args
                 );
             }
 
@@ -953,9 +940,9 @@ namespace Optizelle {
             // This contains the different algorithms used for optimization
             namespace Algorithms {
                 // Solves an optimization problem
-                PyObject* getMin(
-                    PyObject* self,
-                    PyObject* args
+                PyObject * getMin(
+                    PyObject * self,
+                    PyObject * args
                 );
             }
         }
@@ -972,33 +959,33 @@ namespace Optizelle {
                 // Convert a C++ state to a Python state 
                 void toPython_(
                     typename PyEqualityConstrained::State::t const & state,
-                    PyObject* pystate
+                    PyObject * const pystate
                 );
                 void toPython(
                     typename PyEqualityConstrained::State::t const & state,
-                    PyObject* pystate
+                    PyObject * const pystate
                 );
                 
                 // Convert a Python state to C++ 
                 void fromPython_(
-                    PyObject const * const pystate,
+                    PyObject * const pystate,
                     typename PyEqualityConstrained::State::t & state
                 );
                 void fromPython(
-                    PyObject const * const pystate,
+                    PyObject * const pystate,
                     typename PyEqualityConstrained::State::t & state
                 );
                 
                 // Creates a state and inserts the elements into pystate 
-                PyObject* create(
-                    PyObject* self,
-                    PyObject* args
+                PyObject * create(
+                    PyObject * self,
+                    PyObject * args
                 );
                 
                 // Read json parameters from file
-                PyObject* readJson(
-                    PyObject* self,
-                    PyObject* args
+                PyObject * readJson(
+                    PyObject * self,
+                    PyObject * args
                 );
             }
 
@@ -1031,9 +1018,9 @@ namespace Optizelle {
             // This contains the different algorithms used for optimization
             namespace Algorithms {
                 // Solves an optimization problem
-                PyObject* getMin(
-                    PyObject* self,
-                    PyObject* args
+                PyObject * getMin(
+                    PyObject * self,
+                    PyObject * args
                 );
             }
         }
@@ -1050,33 +1037,33 @@ namespace Optizelle {
                 // Convert a C++ state to a Python state 
                 void toPython_(
                     typename PyInequalityConstrained::State::t const & state,
-                    PyObject* pystate
+                    PyObject * const pystate
                 );
                 void toPython(
                     typename PyInequalityConstrained::State::t const & state,
-                    PyObject* pystate
+                    PyObject * const pystate
                 );
                 
                 // Convert a Python state to C++ 
                 void fromPython_(
-                    PyObject const * const pystate,
+                    PyObject * const pystate,
                     typename PyInequalityConstrained::State::t & state
                 );
                 void fromPython(
-                    PyObject const * const pystate,
+                    PyObject * const pystate,
                     typename PyInequalityConstrained::State::t & state
                 );
                 
                 // Creates a state and inserts the elements into pystate 
-                PyObject* create(
-                    PyObject* self,
-                    PyObject* args
+                PyObject * create(
+                    PyObject * self,
+                    PyObject * args
                 );
                 
                 // Read json parameters from file
-                PyObject* readJson(
-                    PyObject* self,
-                    PyObject* args
+                PyObject * readJson(
+                    PyObject * self,
+                    PyObject * args
                 );
             }
 
@@ -1105,9 +1092,9 @@ namespace Optizelle {
             // This contains the different algorithms used for optimization
             namespace Algorithms {
                 // Solves an optimization problem
-                PyObject* getMin(
-                    PyObject* self,
-                    PyObject* args
+                PyObject * getMin(
+                    PyObject * self,
+                    PyObject * args
                 );
             }
         }
@@ -1125,25 +1112,25 @@ namespace Optizelle {
                 // Convert a C++ state to a Python state 
                 void toPython(
                     typename PyConstrained::State::t const & state,
-                    PyObject* pystate
+                    PyObject * const pystate
                 );
                 
                 // Convert a Python state to C++ 
                 void fromPython(
-                    PyObject const * const pystate,
+                    PyObject * const pystate,
                     typename PyConstrained::State::t & state
                 );
                 
                 // Creates a state and inserts the elements into pystate 
-                PyObject* create(
-                    PyObject* self,
-                    PyObject* args
+                PyObject * create(
+                    PyObject * self,
+                    PyObject * args
                 );
                 
                 // Read json parameters from file
-                PyObject* readJson(
-                    PyObject* self,
-                    PyObject* args
+                PyObject * readJson(
+                    PyObject * self,
+                    PyObject * args
                 );
             }
 
@@ -1162,9 +1149,9 @@ namespace Optizelle {
             // This contains the different algorithms used for optimization
             namespace Algorithms {
                 // Solves an optimization problem
-                PyObject* getMin(
-                    PyObject* self,
-                    PyObject* args
+                PyObject * getMin(
+                    PyObject * self,
+                    PyObject * args
                 );
             }
         }

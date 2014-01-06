@@ -15,7 +15,13 @@ class t(Optizelle.Unconstrained.State.t):
         Optizelle.checkVectorSpace("X",X)
         Optizelle.checkEuclidean("Z",Z)
         Optizelle.checkMessaging("msg",msg)
+        
+        # Allocate memory for our vectors
+        self.z=Z.init.__func__(z)
+        self.dz=Z.init.__func__(z)
+        self.h_x=Z.init.__func__(z)
 
+        # Create the state
         Optizelle.Utility.InequalityConstrainedStateCreate(self,X,Z,msg,x,z)
 
     # Create all of the properties

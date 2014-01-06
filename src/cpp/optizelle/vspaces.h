@@ -351,7 +351,7 @@ namespace Optizelle {
             {}
 
             // Move assignment operator
-            Vector & operator = (Vector&& x) noexcept {
+            Vector const & operator = (Vector&& x) noexcept {
                 data=std::move(x.data);
                 offsets=std::move(x.offsets);
                 types=std::move(x.types);
@@ -360,6 +360,7 @@ namespace Optizelle {
                 inverse_offsets=std::move(inverse_offsets);
                 inverse_base=std::move(inverse_base);
                 inverse_base_offsets=std::move(inverse_base_offsets);
+                return *this;
             }
 
             // Simple indexing.
