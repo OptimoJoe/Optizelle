@@ -1123,7 +1123,7 @@ namespace Optizelle {
                 Json::Value const & root,
                 std::string const & vs,
                 std::string const & name,
-                typename Rm <Real>::Vector & x
+                typename SQL <Real>::Vector & x
             ) {
                 x.data.resize(root[vs][name]["data"].size());
                 for(Natural i=0;i<x.size();i++)
