@@ -120,7 +120,7 @@ int main(int argc,char* argv[]){
         sizes[0]=2;
     std::vector <Optizelle::Cone::t> types(1);
         types[0]=Optizelle::Cone::Quadratic;
-    Z_Vector z(Optizelle::Messaging(),types,sizes);
+    Z_Vector z(types,sizes);
 
     // Create an optimization state
     Optizelle::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>

@@ -526,7 +526,7 @@ typename Optizelle::SQL <Real>::Vector initSQL(
     }
 
     // Create a new element 
-    typename SQL::Vector xx(Optizelle::Messaging(),types,sizes);
+    typename SQL::Vector xx(types,sizes);
 
     // Initialize the memory for the user input
     return(std::move(SQL::init(xx)));

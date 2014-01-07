@@ -62,11 +62,10 @@ namespace Optizelle {
                 std::string const & name,
                 Json::Value & root
             ) { }
-            static void deserialize(
+            static typename XX <Real>::Vector deserialize(
                 Json::Value const & root,
                 std::string const & vs,
-                std::string const & name,
-                typename XX <Real>::Vector & x
+                std::string const & name
             ) { }
         };
 
@@ -146,6 +145,7 @@ namespace Optizelle {
             // Vectors
             template <typename Real,template <typename> class XX>
             static void vectors(
+                typename XX <Real>::Vector const & x,
                 Json::Value const & root,
                 std::string const & vs,
                 std::pair <
@@ -163,10 +163,10 @@ namespace Optizelle {
                     itr++
                 ){
                     // Grab the vector
-                    xs.first.emplace_back(itr.key().asString());
-                    xs.second.emplace_back(X_Vector());
-                    Serialization <Real,XX>::deserialize(
-                        root,vs,xs.first.back(),xs.second.back());
+                    std::string name(itr.key().asString());
+                    xs.first.emplace_back(name);
+                    xs.second.emplace_back(std::move(
+                        Serialization <Real,XX>::deserialize(root,vs,name)));
                 }
             }
             

@@ -119,7 +119,7 @@ int main(int argc,char* argv[]){
         sizes[0]=2;
     std::vector <Optizelle::Cone::t> types(1);
         types[0]=Optizelle::Cone::Semidefinite;
-    Z_Vector z(Optizelle::Messaging(),types,sizes);
+    Z_Vector z(types,sizes);
     Z::id(z);
 
     // Create an optimization state

@@ -175,15 +175,15 @@ namespace Optizelle {
                 for(Natural i=0;i<x.size();i++)
                     root[vs][name][Json::ArrayIndex(i)]=x[i];
             }
-            static void deserialize (
+            static typename Rm <Real>::Vector deserialize (
                 Json::Value const & root,
                 std::string const & vs,
-                std::string const & name,
-                typename Rm <Real>::Vector & x
+                std::string const & name
             ) {
-                x.resize(root[vs][name].size());
+                std::vector <Real> x(root[vs][name].size());
                 for(Natural i=0;i<x.size();i++)
                     x[i]=Real(root[vs][name][Json::ArrayIndex(i)].asDouble());
+                return std::move(x);
             }
         };
     }
@@ -246,9 +246,6 @@ namespace Optizelle {
         NO_CONSTRUCTORS(SQL);
 
         struct Vector {
-            // Messaging object
-            Messaging const & msg;
-
             // Overall variable data.
             std::vector <Real> data;
 
@@ -274,11 +271,15 @@ namespace Optizelle {
             // Offsets for the bases stored for the matrix inverses 
             std::vector <Natural> inverse_base_offsets;
 
+            // Eliminate constructors 
+            NO_DEFAULT_COPY_ASSIGNMENT(Vector);
+
             // We require a vector of cone types and their sizes.
-            Vector (Messaging const & msg_,
+            Vector (
                 std::vector <Cone::t> const & types_,
-                std::vector <Natural> const & sizes_
-            ) : msg(msg_), data(), offsets(), types(types_), sizes(sizes_),
+                std::vector <Natural> const & sizes_,
+                Messaging const msg = Optizelle::Messaging()
+            ) : data(), offsets(), types(types_), sizes(sizes_),
                 inverse(), inverse_offsets(), inverse_base(),
                 inverse_base_offsets()
             {
@@ -339,7 +340,6 @@ namespace Optizelle {
             
             // Move constructor 
             Vector(Vector&& x) noexcept : 
-                msg(x.msg),
                 data(std::move(x.data)),
                 offsets(std::move(x.offsets)),
                 types(std::move(x.types)),
@@ -504,7 +504,7 @@ namespace Optizelle {
         
         // Memory allocation and size setting
         static Vector init(Vector const & x) {
-            return std::move(Vector(x.msg,x.types,x.sizes));
+            return std::move(Vector(x.types,x.sizes));
         }
         
         // y <- x (Shallow.  No memory allocation.)
@@ -1119,55 +1119,60 @@ namespace Optizelle {
                     root[vs][name]["inverse_base_offsets"][Json::ArrayIndex(i)]
                         =Json::Value::UInt64(x.inverse_base_offsets[i]);
             }
-            static void deserialize (
+            static typename SQL <Real>::Vector deserialize (
                 Json::Value const & root,
                 std::string const & vs,
-                std::string const & name,
-                typename SQL <Real>::Vector & x
+                std::string const & name
             ) {
-                x.data.resize(root[vs][name]["data"].size());
-                for(Natural i=0;i<x.size();i++)
+                // Grab the types of the cones 
+                std::vector <Cone::t> types;
+                types.resize(root[vs][name]["types"].size());
+                for(Natural i=0;i<types.size();i++)
+                    types[i]=Cone::from_string(root[vs][name]["types"]
+                        [Json::ArrayIndex(i)].asString());
+
+                // Grab the sizes of the cones
+                std::vector <Natural> sizes;
+                sizes.resize(root[vs][name]["sizes"].size());
+                for(Natural i=0;i<sizes.size();i++)
+                    sizes[i]=root[vs][name]["sizes"][Json::ArrayIndex(i)]
+                        .asUInt64();
+
+                // Allocate a new SQL vector.  Note, we're forced to use
+                // a default messaging object here rather than one provided
+                // by the user.  In theory, if the json file is good, there
+                // are no errors, so it won't be called.
+                typename SQL <Real>::Vector x(types,sizes);
+
+                // Read in the data
+                for(Natural i=0;i<x.data.size();i++)
                     x.data[i]=Real(root[vs][name]["data"][Json::ArrayIndex(i)]
                         .asDouble());
 
-                x.offsets.resize(root[vs][name]["offsets"].size());
-                for(Natural i=0;i<x.size();i++)
+                for(Natural i=0;i<x.offsets.size();i++)
                     x.offsets[i]=root[vs][name]["offsets"][Json::ArrayIndex(i)]
                         .asUInt64();
 
-                x.types.resize(root[vs][name]["types"].size());
-                for(Natural i=0;i<x.size();i++)
-                    x.types[i]=Cone::from_string(root[vs][name]["types"]
-                        [Json::ArrayIndex(i)].asString());
-
-                x.sizes.resize(root[vs][name]["sizes"].size());
-                for(Natural i=0;i<x.size();i++)
-                    x.sizes[i]=root[vs][name]["sizes"][Json::ArrayIndex(i)]
-                        .asUInt64();
-                
-                x.inverse.resize(root[vs][name]["inverse"].size());
-                for(Natural i=0;i<x.size();i++)
+                for(Natural i=0;i<x.inverse.size();i++)
                     x.inverse[i]=Real(root[vs][name]["inverse"]
                         [Json::ArrayIndex(i)].asDouble());
                 
-                x.inverse_offsets.resize(root[vs][name]["inverse_offsets"]
-                    .size());
-                for(Natural i=0;i<x.size();i++)
+                for(Natural i=0;i<x.inverse_offsets.size();i++)
                     x.inverse_offsets[i]
                         =root[vs][name]["inverse_offsets"][Json::ArrayIndex(i)]
                             .asUInt64();
                 
-                x.inverse_base.resize(root[vs][name]["inverse_base"].size());
-                for(Natural i=0;i<x.size();i++)
+                for(Natural i=0;i<x.inverse_base.size();i++)
                     x.inverse_base[i]=Real(root[vs][name]["inverse_base"]
                             [Json::ArrayIndex(i)].asDouble());
                 
-                x.inverse_base_offsets.resize(root[vs][name]
-                    ["inverse_base_offsets"].size());
-                for(Natural i=0;i<x.size();i++)
+                for(Natural i=0;i<x.inverse_base_offsets.size();i++)
                     x.inverse_base_offsets[i]=root[vs][name]
                         ["inverse_base_offsets"][Json::ArrayIndex(i)]
                         .asUInt64();
+
+                // Return the newly constructed vector
+                return std::move(x);
             }
         };
     }

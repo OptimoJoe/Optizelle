@@ -72,14 +72,14 @@ int main(int argc,char* argv[]) {
                     return EXIT_FAILURE;
                 }
             } else if(category.key().asString()=="X_Vectors") {
-                Rm::Vector x;
+                Rm::Vector x(
                     Optizelle::json::Serialization <double,Optizelle::Rm>
                         ::deserialize(baseline,category.memberName(),
-                            variable.memberName(),x);
-                Rm::Vector y;
+                            variable.memberName()));
+                Rm::Vector y(
                     Optizelle::json::Serialization <double,Optizelle::Rm>
                         ::deserialize(test,category.memberName(),
-                            variable.memberName(),y);
+                            variable.memberName()));
                 Rm::Vector diff(Rm::init(x));
                     Rm::copy(x,diff);
                     Rm::axpy(-1.,y,diff);
