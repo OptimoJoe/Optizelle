@@ -52,20 +52,15 @@ namespace Optizelle {
             Json::Value const & root
         ); 
 
-        // A helper class to help with serialization of vectors into jsoncpp 
+        // A helper class to help with serialization of vectors into json
         // objects.
         template <typename Real,template <typename> class XX>
         struct Serialization {
-            static void serialize(
-                const typename XX <Real>::Vector& x,
-                std::string const & vs,
-                std::string const & name,
-                Json::Value & root
+            static std::string serialize(
+                typename XX <Real>::Vector const & x
             ) { }
             static typename XX <Real>::Vector deserialize(
-                Json::Value const & root,
-                std::string const & vs,
-                std::string const & name
+                std::string const & x_json
             ) { }
         };
 
@@ -85,6 +80,9 @@ namespace Optizelle {
                 typedef XX <Real> X;
                 typedef typename X::Vector X_Vector;
 
+                // Create a reader object to parse a json tree
+                Json::Reader reader;
+
                 // Loop over all the vectors and serialize things
                 typename std::list <X_Vector>::const_iterator x
                     =xs.second.begin();
@@ -92,10 +90,18 @@ namespace Optizelle {
                         name=xs.first.begin();
                     name!=xs.first.end();
                     name++, x++
-                )
-                    Serialization <Real,XX>::serialize(*x,vs,*name,root);
+                ) {
+                    // Grab the json string of the vector
+                    std::string x_json_(Serialization <Real,XX>::serialize(*x));
+                   
+                    // Parse the string
+                    Json::Value x_json;
+                    reader.parse(x_json_,x_json,true);
+
+                    // Insert the information into the correct place
+                    root[vs][*name]=x_json;
+                }
             }
-            
 
             // Reals 
             template <typename Real>
@@ -156,6 +162,10 @@ namespace Optizelle {
                 // Create some type shortcuts
                 typedef XX <Real> X;
                 typedef typename X::Vector X_Vector;
+                
+                // Create a writer so that we can tranlate json objects into
+                // strings
+                Json::StyledWriter writer;
 
                 // Loop over all the names in the root
                 for(Json::ValueIterator itr=root[vs].begin();
@@ -166,7 +176,8 @@ namespace Optizelle {
                     std::string name(itr.key().asString());
                     xs.first.emplace_back(name);
                     xs.second.emplace_back(std::move(
-                        Serialization <Real,XX>::deserialize(root,vs,name)));
+                        Serialization <Real,XX>::deserialize(
+                            writer.write(root[vs][name]))));
                 }
             }
             

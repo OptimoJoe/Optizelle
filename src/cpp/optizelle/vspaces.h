@@ -166,23 +166,32 @@ namespace Optizelle {
         // Serialization utility for the Rm vector space
         template <typename Real>
         struct Serialization <Real,Rm> {
-            static void serialize (
-                typename Rm <Real>::Vector const & x,
-                std::string const & vs,
-                std::string const & name,
-                Json::Value & root
+            static std::string serialize (
+                typename Rm <Real>::Vector const & x
             ) {
+                // Create a jsoncpp object to copy into
+                Json::Value x_json;  
+
+                // Copy the information
                 for(Natural i=0;i<x.size();i++)
-                    root[vs][name][Json::ArrayIndex(i)]=x[i];
+                    x_json[Json::ArrayIndex(i)]=x[i];
+
+                // Return a string of the result
+                Json::StyledWriter writer;
+                return writer.write(x_json);
             }
             static typename Rm <Real>::Vector deserialize (
-                Json::Value const & root,
-                std::string const & vs,
-                std::string const & name
+                std::string const & x_json_
             ) {
-                std::vector <Real> x(root[vs][name].size());
+                // Create a json tree from the input string
+                Json::Value x_json;
+                Json::Reader reader;
+                reader.parse(x_json_,x_json,true);
+
+                // Create a vector from the json tree 
+                std::vector <Real> x(x_json.size());
                 for(Natural i=0;i<x.size();i++)
-                    x[i]=Real(root[vs][name][Json::ArrayIndex(i)].asDouble());
+                    x[i]=Real(x_json[Json::ArrayIndex(i)].asDouble());
                 return std::move(x);
             }
         };
@@ -1083,93 +1092,96 @@ namespace Optizelle {
         // Serialization utility for the SQL vector space
         template <typename Real>
         struct Serialization <Real,SQL> {
-            static void serialize (
-                typename SQL <Real>::Vector const & x,
-                std::string const & vs,
-                std::string const & name,
-                Json::Value & root
+            static std::string serialize (
+                typename SQL <Real>::Vector const & x
             ) {
+                // Create a jsoncpp object to copy into
+                Json::Value x_json;  
+
+                // Copy the information
                 for(Natural i=0;i<x.data.size();i++)
-                    root[vs][name]["data"][Json::ArrayIndex(i)]=x.data[i];
+                    x_json["data"][Json::ArrayIndex(i)]=x.data[i];
 
                 for(Natural i=0;i<x.offsets.size();i++)
-                    root[vs][name]["offsets"][Json::ArrayIndex(i)]
+                    x_json["offsets"][Json::ArrayIndex(i)]
                         =Json::Value::UInt64(x.offsets[i]);
 
                 for(Natural i=0;i<x.types.size();i++)
-                    root[vs][name]["types"][Json::ArrayIndex(i)]
+                    x_json["types"][Json::ArrayIndex(i)]
                         =Cone::to_string(x.types[i]);
 
                 for(Natural i=0;i<x.sizes.size();i++)
-                    root[vs][name]["sizes"][Json::ArrayIndex(i)]
+                    x_json["sizes"][Json::ArrayIndex(i)]
                         =Json::Value::UInt64(x.sizes[i]);
 
                 for(Natural i=0;i<x.inverse.size();i++)
-                    root[vs][name]["inverse"][Json::ArrayIndex(i)]=x.inverse[i];
+                    x_json["inverse"][Json::ArrayIndex(i)]=x.inverse[i];
 
                 for(Natural i=0;i<x.inverse_offsets.size();i++)
-                    root[vs][name]["inverse_offsets"][Json::ArrayIndex(i)]
+                    x_json["inverse_offsets"][Json::ArrayIndex(i)]
                         =Json::Value::UInt64(x.inverse_offsets[i]);
 
                 for(Natural i=0;i<x.inverse_base.size();i++)
-                    root[vs][name]["inverse_base"][Json::ArrayIndex(i)]
+                    x_json["inverse_base"][Json::ArrayIndex(i)]
                         =x.inverse_base[i];
 
                 for(Natural i=0;i<x.inverse_base_offsets.size();i++)
-                    root[vs][name]["inverse_base_offsets"][Json::ArrayIndex(i)]
+                    x_json["inverse_base_offsets"][Json::ArrayIndex(i)]
                         =Json::Value::UInt64(x.inverse_base_offsets[i]);
+                
+                // Return a string of the result
+                Json::StyledWriter writer;
+                return writer.write(x_json);
             }
             static typename SQL <Real>::Vector deserialize (
-                Json::Value const & root,
-                std::string const & vs,
-                std::string const & name
+                std::string const & x_json_
             ) {
+                // Create a json tree from the input string
+                Json::Value x_json;
+                Json::Reader reader;
+                reader.parse(x_json_,x_json,true);
+
                 // Grab the types of the cones 
                 std::vector <Cone::t> types;
-                types.resize(root[vs][name]["types"].size());
+                types.resize(x_json["types"].size());
                 for(Natural i=0;i<types.size();i++)
-                    types[i]=Cone::from_string(root[vs][name]["types"]
+                    types[i]=Cone::from_string(x_json["types"]
                         [Json::ArrayIndex(i)].asString());
 
                 // Grab the sizes of the cones
                 std::vector <Natural> sizes;
-                sizes.resize(root[vs][name]["sizes"].size());
+                sizes.resize(x_json["sizes"].size());
                 for(Natural i=0;i<sizes.size();i++)
-                    sizes[i]=root[vs][name]["sizes"][Json::ArrayIndex(i)]
+                    sizes[i]=x_json["sizes"][Json::ArrayIndex(i)]
                         .asUInt64();
 
-                // Allocate a new SQL vector.  Note, we're forced to use
-                // a default messaging object here rather than one provided
-                // by the user.  In theory, if the json file is good, there
-                // are no errors, so it won't be called.
+                // Allocate a new SQL vector
                 typename SQL <Real>::Vector x(types,sizes);
 
                 // Read in the data
                 for(Natural i=0;i<x.data.size();i++)
-                    x.data[i]=Real(root[vs][name]["data"][Json::ArrayIndex(i)]
+                    x.data[i]=Real(x_json["data"][Json::ArrayIndex(i)]
                         .asDouble());
 
                 for(Natural i=0;i<x.offsets.size();i++)
-                    x.offsets[i]=root[vs][name]["offsets"][Json::ArrayIndex(i)]
+                    x.offsets[i]=x_json["offsets"][Json::ArrayIndex(i)]
                         .asUInt64();
 
                 for(Natural i=0;i<x.inverse.size();i++)
-                    x.inverse[i]=Real(root[vs][name]["inverse"]
+                    x.inverse[i]=Real(x_json["inverse"]
                         [Json::ArrayIndex(i)].asDouble());
                 
                 for(Natural i=0;i<x.inverse_offsets.size();i++)
-                    x.inverse_offsets[i]
-                        =root[vs][name]["inverse_offsets"][Json::ArrayIndex(i)]
-                            .asUInt64();
+                    x.inverse_offsets[i]=x_json["inverse_offsets"]
+                        [Json::ArrayIndex(i)].asUInt64();
                 
                 for(Natural i=0;i<x.inverse_base.size();i++)
-                    x.inverse_base[i]=Real(root[vs][name]["inverse_base"]
-                            [Json::ArrayIndex(i)].asDouble());
+                    x.inverse_base[i]=Real(x_json["inverse_base"]
+                        [Json::ArrayIndex(i)].asDouble());
                 
                 for(Natural i=0;i<x.inverse_base_offsets.size();i++)
-                    x.inverse_base_offsets[i]=root[vs][name]
-                        ["inverse_base_offsets"][Json::ArrayIndex(i)]
-                        .asUInt64();
+                    x.inverse_base_offsets[i]=x_json["inverse_base_offsets"]
+                        [Json::ArrayIndex(i)].asUInt64();
 
                 // Return the newly constructed vector
                 return std::move(x);
