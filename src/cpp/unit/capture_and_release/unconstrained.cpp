@@ -16,10 +16,10 @@ int main() {
     Optizelle::Unconstrained <double,Rm>::State::t state(x);
 
     // Do a release 
-    Optizelle::Unconstrained <double,Rm>::X_Vectors xs;
-    Optizelle::Unconstrained <double,Rm>::Reals reals;
-    Optizelle::Unconstrained <double,Rm>::Nats nats;
-    Optizelle::Unconstrained <double,Rm>::Params params;
+    Optizelle::Unconstrained <double,Rm>::Restart::X_Vectors xs;
+    Optizelle::Unconstrained <double,Rm>::Restart::Reals reals;
+    Optizelle::Unconstrained <double,Rm>::Restart::Nats nats;
+    Optizelle::Unconstrained <double,Rm>::Restart::Params params;
     Optizelle::Unconstrained <double,Rm>::Restart
         ::release(state,xs,reals,nats,params);
 

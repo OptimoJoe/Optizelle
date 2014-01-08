@@ -870,6 +870,55 @@ namespace Optizelle {
                 pystate,
                 state));
         }
+        
+        // Converts a list of strings to a Python list 
+        void convertStrings(
+            std::list <std::string> const & values,
+            PyObject * const pyvalues 
+        );
+        
+        // Converts a Python list to a list of strings 
+        void convertStrings(
+            PyObject * const pyvalues,
+            std::list <std::string> & values
+        );
+        
+        // Converts a list of vectors to a Python list 
+        void convertVectors(
+            std::list <Vector> const & values,
+            PyObject * const pyvalues 
+        );
+        
+        // Converts a Python list to a list of vectors
+        void convertVectors(
+            Vector const & vec,
+            PyObject * const pyvalues,
+            std::list <Vector> & values
+        );
+        
+        // Converts a list of reals to a Python list 
+        void convertReals(
+            std::list <double> const & values,
+            PyObject * const pyvalues 
+        );
+        
+        // Converts a Python list to a list of reals
+        void convertReals(
+            PyObject * const pyvalues,
+            std::list <double> & values
+        );
+        
+        // Converts a list of naturals to a Python list 
+        void convertNats(
+            std::list <Natural> const & values,
+            PyObject * const pyvalues 
+        );
+        
+        // Converts a Python list to a list of naturals
+        void convertNats(
+            PyObject * const pyvalues,
+            std::list <Natural> & values
+        );
 
         // Routines that manipulate and support problems of the form
         // 
@@ -937,10 +986,26 @@ namespace Optizelle {
                     typename PyUnconstrained::Functions::t & fns 
                 );
             }
+
             // This contains the different algorithms used for optimization
             namespace Algorithms {
                 // Solves an optimization problem
                 PyObject * getMin(
+                    PyObject * self,
+                    PyObject * args
+                );
+            }
+        
+            // Utilities for restarting the optimization
+            namespace Restart {
+                // Release the data into structures controlled by the user 
+                PyObject * release(
+                    PyObject * self,
+                    PyObject * args
+                );
+
+                // Capture data from structures controlled by the user.  
+                PyObject * capture(
                     PyObject * self,
                     PyObject * args
                 );

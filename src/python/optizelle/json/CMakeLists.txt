@@ -7,4 +7,5 @@ install(
         EqualityConstrained.py
         InequalityConstrained.py
         Constrained.py
+        Serialization.py
     DESTINATION share/optizelle/python/Optizelle/json)

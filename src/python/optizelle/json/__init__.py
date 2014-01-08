@@ -2,6 +2,8 @@ __all__ = [
     "Unconstrained",
     "EqualityConstrained",
     "InequalityConstrained",
-    "Constrained"
+    "Constrained",
+
+    "Serialization"
 ]
 __doc__ = "Interaction between Optizelle with JSON formatted files"

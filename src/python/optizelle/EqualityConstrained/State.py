@@ -5,6 +5,22 @@ __all__ = [
 import Optizelle
 import Optizelle.Unconstrained.State
 
+def allocateVectors(self,X,Y,x,y):
+    """Allocates memory for the state vectors"""
+    self.y=Y.init.__func__(y)
+    self.dy=Y.init.__func__(y)
+    self.g_x=Y.init.__func__(y)
+    self.gpxdxn_p_gx=Y.init.__func__(y)
+    self.gpxdxt=Y.init.__func__(y)
+    self.dx_n=X.init.__func__(x)
+    self.dx_ncp=X.init.__func__(x)
+    self.dx_t=X.init.__func__(x)
+    self.dx_t_uncorrected=X.init.__func__(x)
+    self.dx_tcp_uncorrected=X.init.__func__(x)
+    self.H_dxn=X.init.__func__(x)
+    self.W_gradpHdxn=X.init.__func__(x)
+    self.H_dxtuncorrected=X.init.__func__(x)
+
 class t(Optizelle.Unconstrained.State.t):
     """Internal state of the optimization"""
 
@@ -17,18 +33,8 @@ class t(Optizelle.Unconstrained.State.t):
         Optizelle.checkMessaging("msg",msg)
         
         # Allocate memory for our vectors
-        self.y=Y.init.__func__(y)
-        self.dy=Y.init.__func__(y)
-        self.gpxdxn_p_gx=Y.init.__func__(y)
-        self.gpxdxt=Y.init.__func__(y)
-        self.dx_n=X.init.__func__(x)
-        self.dx_ncp=X.init.__func__(x)
-        self.dx_t=X.init.__func__(x)
-        self.dx_t_uncorrected=X.init.__func__(x)
-        self.dx_tcp_uncorrected=X.init.__func__(x)
-        self.H_dxn=X.init.__func__(x)
-        self.W_gradpHdxn=X.init.__func__(x)
-        self.H_dxtuncorrected=X.init.__func__(x)
+        Optizelle.Unconstrained.State.allocateVectors(self,X,x)
+        allocateVectors(self,X,Y,x,y)
 
         # Create the state
         Optizelle.Utility.EqualityConstrainedStateCreate(self,X,Y,msg,x,y)

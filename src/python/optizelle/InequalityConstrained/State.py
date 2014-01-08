@@ -5,6 +5,12 @@ __all__ = [
 import Optizelle
 import Optizelle.Unconstrained.State
 
+def allocateVectors(self,X,Z,x,z):
+    """Allocates memory for the state vectors"""
+    self.z=Z.init.__func__(z)
+    self.dz=Z.init.__func__(z)
+    self.h_x=Z.init.__func__(z)
+
 class t(Optizelle.Unconstrained.State.t):
     """Internal state of the optimization"""
 
@@ -17,9 +23,8 @@ class t(Optizelle.Unconstrained.State.t):
         Optizelle.checkMessaging("msg",msg)
         
         # Allocate memory for our vectors
-        self.z=Z.init.__func__(z)
-        self.dz=Z.init.__func__(z)
-        self.h_x=Z.init.__func__(z)
+        Optizelle.Unconstrained.State.allocateVectors(self,X,x)
+        allocateVectors(self,X,Z,x,z)
 
         # Create the state
         Optizelle.Utility.InequalityConstrainedStateCreate(self,X,Z,msg,x,z)

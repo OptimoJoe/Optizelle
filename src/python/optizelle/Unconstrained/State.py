@@ -6,6 +6,16 @@ import Optizelle
 import Optizelle.Utility
 import copy
 
+def allocateVectors(self,X,x):
+    """Allocates memory for the state vectors"""
+    self.x=X.init.__func__(x)
+    self.grad=X.init.__func__(x)
+    self.dx=X.init.__func__(x)
+    self.x_old=X.init.__func__(x)
+    self.grad_old=X.init.__func__(x)
+    self.dx_old=X.init.__func__(x)
+        
+
 class t(object):
     """Internal state of the optimization"""
 
@@ -17,12 +27,7 @@ class t(object):
         Optizelle.checkMessaging("msg",msg)
 
         # Allocate memory for our vectors
-        self.x=X.init.__func__(x)
-        self.grad=X.init.__func__(x)
-        self.dx=X.init.__func__(x)
-        self.x_old=X.init.__func__(x)
-        self.grad_old=X.init.__func__(x)
-        self.dx_old=X.init.__func__(x)
+        allocateVectors(self,X,x)
 
         # Create the state
         Optizelle.Utility.UnconstrainedStateCreate(self,X,msg,x)

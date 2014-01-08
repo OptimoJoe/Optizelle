@@ -18,6 +18,11 @@ class t(
         Optizelle.checkVectorSpace("Y",Y)
         Optizelle.checkEuclidean("Z",Z)
         Optizelle.checkMessaging("msg",msg)
+        
+        # Allocate memory for our vectors
+        Optizelle.Unconstrained.State.allocateVectors(self,X,x)
+        Optizelle.EqualityConstrained.State.allocateVectors(self,X,Y,x,y)
+        Optizelle.InequalityConstrained.State.allocateVectors(self,X,Z,x,z)
 
         # Create the state
         Optizelle.Utility.ConstrainedStateCreate(self,X,Y,Z,msg,x,y,z)

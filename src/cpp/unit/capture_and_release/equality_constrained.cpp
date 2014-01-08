@@ -20,11 +20,11 @@ int main() {
     Optizelle::EqualityConstrained <double,Rm,Rm>::State::t state(x,y);
 
     // Do a release 
-    Optizelle::EqualityConstrained <double,Rm,Rm>::X_Vectors xs;
-    Optizelle::EqualityConstrained <double,Rm,Rm>::Y_Vectors ys;
-    Optizelle::EqualityConstrained <double,Rm,Rm>::Reals reals;
-    Optizelle::EqualityConstrained <double,Rm,Rm>::Nats nats;
-    Optizelle::EqualityConstrained <double,Rm,Rm>::Params params;
+    Optizelle::EqualityConstrained <double,Rm,Rm>::Restart::X_Vectors xs;
+    Optizelle::EqualityConstrained <double,Rm,Rm>::Restart::Y_Vectors ys;
+    Optizelle::EqualityConstrained <double,Rm,Rm>::Restart::Reals reals;
+    Optizelle::EqualityConstrained <double,Rm,Rm>::Restart::Nats nats;
+    Optizelle::EqualityConstrained <double,Rm,Rm>::Restart::Params params;
     Optizelle::EqualityConstrained <double,Rm,Rm>::Restart
         ::release(state,xs,ys,reals,nats,params);
 

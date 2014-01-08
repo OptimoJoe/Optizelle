@@ -20,11 +20,11 @@ int main() {
     Optizelle::InequalityConstrained <double,Rm,Rm>::State::t state(x,z);
 
     // Do a release 
-    Optizelle::InequalityConstrained <double,Rm,Rm>::X_Vectors xs;
-    Optizelle::InequalityConstrained <double,Rm,Rm>::Z_Vectors zs;
-    Optizelle::InequalityConstrained <double,Rm,Rm>::Reals reals;
-    Optizelle::InequalityConstrained <double,Rm,Rm>::Nats nats;
-    Optizelle::InequalityConstrained <double,Rm,Rm>::Params params;
+    Optizelle::InequalityConstrained <double,Rm,Rm>::Restart::X_Vectors xs;
+    Optizelle::InequalityConstrained <double,Rm,Rm>::Restart::Z_Vectors zs;
+    Optizelle::InequalityConstrained <double,Rm,Rm>::Restart::Reals reals;
+    Optizelle::InequalityConstrained <double,Rm,Rm>::Restart::Nats nats;
+    Optizelle::InequalityConstrained <double,Rm,Rm>::Restart::Params params;
     Optizelle::InequalityConstrained <double,Rm,Rm>::Restart
         ::release(state,xs,zs,reals,nats,params);
 

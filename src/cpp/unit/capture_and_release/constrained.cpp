@@ -24,12 +24,12 @@ int main() {
     Optizelle::Constrained <double,Rm,Rm,Rm>::State::t state(x,y,z);
 
     // Do a release 
-    Optizelle::Constrained <double,Rm,Rm,Rm>::X_Vectors xs;
-    Optizelle::Constrained <double,Rm,Rm,Rm>::Y_Vectors ys;
-    Optizelle::Constrained <double,Rm,Rm,Rm>::Z_Vectors zs;
-    Optizelle::Constrained <double,Rm,Rm,Rm>::Reals reals;
-    Optizelle::Constrained <double,Rm,Rm,Rm>::Nats nats;
-    Optizelle::Constrained <double,Rm,Rm,Rm>::Params params;
+    Optizelle::Constrained <double,Rm,Rm,Rm>::Restart::X_Vectors xs;
+    Optizelle::Constrained <double,Rm,Rm,Rm>::Restart::Y_Vectors ys;
+    Optizelle::Constrained <double,Rm,Rm,Rm>::Restart::Z_Vectors zs;
+    Optizelle::Constrained <double,Rm,Rm,Rm>::Restart::Reals reals;
+    Optizelle::Constrained <double,Rm,Rm,Rm>::Restart::Nats nats;
+    Optizelle::Constrained <double,Rm,Rm,Rm>::Restart::Params params;
     Optizelle::Constrained <double,Rm,Rm,Rm>::Restart
         ::release(state,xs,ys,zs,reals,nats,params);
 

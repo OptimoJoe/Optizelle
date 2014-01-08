@@ -499,3 +499,10 @@ class Rm(object):
     def symm(x):
         """Symmetrization, x <- symm(x) such that L(symm(x)) is a symmetric operator"""
         pass
+
+class RestartPackage(tuple):
+    """Holds restart information"""
+    def __new__ (cls):
+        return super(RestartPackage,cls).__new__(cls,tuple([[],[]]))
+    def __init__(self):
+        super(RestartPackage,self).__init__(tuple([[],[]]))

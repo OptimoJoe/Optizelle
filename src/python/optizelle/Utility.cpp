@@ -1407,13 +1407,13 @@ namespace Optizelle {
             values.clear();
             for(Natural i=0;i<PyList_Size(items.get());i++) {
                 // Grab the current item from Python
-                PyObjectPtr item(PyList_GetItem(items.get(),i));
+                PyObject * item(PyList_GetItem(items.get(),i));
 
                 // Create a new vector in values 
                 values.emplace_back(std::move(const_cast<Vector&>(vec).init()));
 
                 // Copy the Python item into the new value
-                values.back().fromPython(item.get());
+                values.back().fromPython(item);
             }
         }
         
@@ -1437,6 +1437,154 @@ namespace Optizelle {
         ) {
             value.reset(new VectorValuedFunction(name,msg,
                 PyObject_GetAttrString(obj,name.c_str())));
+        }
+        
+        // Converts a list of strings to a Python list 
+        void convertStrings(
+            std::list <std::string> const & values,
+            PyObject * const pyvalues 
+        ) {
+        
+            // Loop over all of the items inside values and then insert 
+            // them into pyvalues 
+            for(std::list <std::string>::const_iterator value=values.cbegin();
+                value!=values.cend();
+                value++
+            ) {
+                // Insert the string into the Python list 
+                PyList_Append(pyvalues,PyString_FromString(value->c_str()));
+            }
+        }
+        
+        // Converts a list of strings to a Python list 
+        void convertStrings(
+            PyObject * const pyvalues,
+            std::list <std::string> & values
+        ) {
+            // Loop over all the elements in items and insert them one
+            // at a time into values
+            values.clear();
+            for(Natural i=0;i<PyList_Size(pyvalues);i++) {
+                // Grab the current item from Python
+                PyObject * pyvalue(PyList_GetItem(pyvalues,i));
+
+                // Copy the Python pyvalue into the new value
+                values.emplace_back(std::move(
+                    std::string(PyString_AsString(pyvalue))));
+            }
+        }
+
+        // Converts a list of vectors to a Python list 
+        void convertVectors(
+            std::list <Vector> const & values,
+            PyObject * const pyvalues 
+        ) {
+        
+            // Loop over all of the items inside values and then insert 
+            // them into pyvalues 
+            for(std::list <Vector>::const_iterator value=values.cbegin();
+                value!=values.cend();
+                value++
+            ) {
+                // Allocate memory for a new vector
+                Vector pyvalue(const_cast <Vector &> (*value).init());
+
+                // Copy the information from the current iterator into this
+                // new vector
+                pyvalue.copy(const_cast <Vector &> (*value));
+
+                // Release the pointer into the Python list
+                PyList_Append(pyvalues,pyvalue.release());
+            }
+        }
+        
+        // Converts a Python list to a list of vectors
+        void convertVectors(
+            Vector const & vec,
+            PyObject * const pyvalues,
+            std::list <Vector> & values
+        ) {
+            // Loop over all the elements in items and insert them one
+            // at a time into values
+            values.clear();
+            for(Natural i=0;i<PyList_Size(pyvalues);i++) {
+                // Grab the current item from Python
+                PyObject * pyvalue(PyList_GetItem(pyvalues,i));
+
+                // Create a new vector in values 
+                values.emplace_back(std::move(const_cast<Vector&>(vec).init()));
+
+                // Copy the Python item into the new value
+                values.back().fromPython(pyvalue);
+            }
+        }
+        
+        // Converts a list of reals to a Python list 
+        void convertReals(
+            std::list <double> const & values,
+            PyObject * const pyvalues 
+        ) {
+        
+            // Loop over all of the items inside values and then insert 
+            // them into pyvalues 
+            for(std::list <double>::const_iterator value=values.cbegin();
+                value!=values.cend();
+                value++
+            ) {
+                // Insert the double into the Python list 
+                PyList_Append(pyvalues,PyFloat_FromDouble(*value));
+            }
+        }
+        
+        // Converts a Python list to a list of reals
+        void convertReals(
+            PyObject * const pyvalues,
+            std::list <double> & values
+        ) {
+            // Loop over all the elements in items and insert them one
+            // at a time into values
+            values.clear();
+            for(Natural i=0;i<PyList_Size(pyvalues);i++) {
+                // Grab the current item from Python
+                PyObject * pyvalue(PyList_GetItem(pyvalues,i));
+
+                // Copy the Python pyvalue into the new value
+                values.emplace_back(std::move(PyFloat_AsDouble(pyvalue)));
+            }
+        }
+        
+        // Converts a list of naturals to a Python list 
+        void convertNats(
+            std::list <Natural> const & values,
+            PyObject * const pyvalues 
+        ) {
+        
+            // Loop over all of the items inside values and then insert 
+            // them into pyvalues 
+            for(std::list <Natural>::const_iterator value=values.cbegin();
+                value!=values.cend();
+                value++
+            ) {
+                // Insert the natural into the Python list 
+                PyList_Append(pyvalues,PyInt_FromSize_t(*value));
+            }
+        }
+        
+        // Converts a Python list to a list of reals
+        void convertNats(
+            PyObject * const pyvalues,
+            std::list <Natural> & values
+        ) {
+            // Loop over all the elements in items and insert them one
+            // at a time into values
+            values.clear();
+            for(Natural i=0;i<PyList_Size(pyvalues);i++) {
+                // Grab the current item from Python
+                PyObject * pyvalue(PyList_GetItem(pyvalues,i));
+
+                // Copy the Python pyvalue into the new value
+                values.emplace_back(std::move(PyInt_AsSsize_t(pyvalue)));
+            }
         }
        
         // Routines that manipulate and support problems of the form
@@ -1804,6 +1952,144 @@ namespace Optizelle {
                         PyUnconstrained::Algorithms::getMin(
                             msg,smanip,fns,state);
                         
+                        // Convert the C++ state to a Python state
+                        pystate.toPython(state);
+
+                        // Return nothing 
+                        return Py_None; 
+
+                    // In theory, we should have set the appropriate error
+                    } catch (Exception& exc){
+                        return nullptr;
+                    }
+                }
+            }
+            
+            // Utilities for restarting the optimization
+            namespace Restart {
+                // Release the data into structures controlled by the user 
+                PyObject * release(
+                    PyObject * self,
+                    PyObject * args
+                ) {
+                    // Calling convention should be
+                    // (X,msg,state,xs,reals,nats,params)
+                    PyObject *X,*msg,*pystate_,*pyxs,*pyreals,*pynats,*pyparams;
+                    if(!PyArg_ParseTuple(args,"OOOOOOO",
+                        &X,&msg,&pystate_,&pyxs,&pyreals,&pynats,&pyparams)
+                    )
+                        return nullptr; 
+
+                    // Make sure we bail if we detect a Python exception
+                    try {
+                        // Create a Python state 
+                        Python::State <PyUnconstrained> pystate(pystate_,
+                            PyObjectPtrMode::Attach);
+                        
+                        // Grab the base vectors from the Python state
+                        Vector x(msg,X,
+                            PyObject_GetAttrString(pystate.get(),"x"));
+
+                        // Create a C++ state
+                        typename PyUnconstrained::State::t state(x);
+                        
+                        // Convert the Python state to a C++ state
+                        pystate.fromPython(state);
+
+                        // Do a release 
+                        PyUnconstrained::Restart::X_Vectors xs;
+                        PyUnconstrained::Restart::Reals reals;
+                        PyUnconstrained::Restart::Nats nats;
+                        PyUnconstrained::Restart::Params params;
+                        PyUnconstrained::Restart
+                            ::release(state,xs,reals,nats,params);
+
+                        // Convert the vectors
+                        convertStrings(xs.first,PyTuple_GetItem(pyxs,0));
+                        convertVectors(xs.second,PyTuple_GetItem(pyxs,1));
+
+                        // Convert the reals 
+                        convertStrings(reals.first,PyTuple_GetItem(pyreals,0));
+                        convertReals(reals.second,PyTuple_GetItem(pyreals,1));
+
+                        // Convert the nats 
+                        convertStrings(nats.first,PyTuple_GetItem(pynats,0));
+                        convertNats(nats.second,PyTuple_GetItem(pynats,1));
+
+                        // Convert the params 
+                        convertStrings(
+                            params.first,PyTuple_GetItem(pyparams,0));
+                        convertStrings(
+                            params.second,PyTuple_GetItem(pyparams,1));
+
+                        // Return nothing 
+                        return Py_None; 
+
+                    // In theory, we should have set the appropriate error
+                    } catch (Exception& exc){
+                        return nullptr;
+                    }
+                }
+
+                // Capture data from structures controlled by the user.  
+                PyObject * capture(
+                    PyObject * self,
+                    PyObject * args
+                ) {
+                    // Calling convention should be
+                    // (X,msg,state,xs,reals,nats,params)
+                    PyObject *X,*msg_,*pystate_,*pyxs,*pyreals,*pynats,
+                        *pyparams;
+                    if(!PyArg_ParseTuple(args,"OOOOOOO",
+                        &X,&msg_,&pystate_,&pyxs,&pyreals,&pynats,&pyparams)
+                    )
+                        return nullptr; 
+
+                    // Make sure we bail if we detect a Python exception
+                    try {
+                        // Create a messaging object
+                        Optizelle::Python::Messaging msg(msg_,
+                            PyObjectPtrMode::Attach);
+
+                        // Create a Python state 
+                        Python::State <PyUnconstrained> pystate(pystate_,
+                            PyObjectPtrMode::Attach);
+                        
+                        // Grab the base vectors from the Python state
+                        Vector x(msg_,X,
+                            PyObject_GetAttrString(pystate.get(),"x"));
+
+                        // Create a C++ state
+                        typename PyUnconstrained::State::t state(x);
+                       
+                        // Allocate memory for the released vectors
+                        PyUnconstrained::Restart::X_Vectors xs;
+                        PyUnconstrained::Restart::Reals reals;
+                        PyUnconstrained::Restart::Nats nats;
+                        PyUnconstrained::Restart::Params params;
+                        
+                        // Convert the vectors
+                        convertStrings(PyTuple_GetItem(pyxs,0),xs.first);
+                        convertVectors(x,PyTuple_GetItem(pyxs,1),xs.second);
+
+                        // Convert the reals 
+                        convertStrings(PyTuple_GetItem(pyreals,0),reals.first);
+                        convertReals(PyTuple_GetItem(pyreals,1),reals.second);
+
+                        // Convert the nats 
+                        convertStrings(PyTuple_GetItem(pynats,0),nats.first);
+                        convertNats(PyTuple_GetItem(pynats,1),nats.second);
+
+                        // Convert the params 
+                        convertStrings(
+                            PyTuple_GetItem(pyparams,0),params.first);
+                        convertStrings(
+                            PyTuple_GetItem(pyparams,1),params.second);
+
+                        // Do a capture 
+                        PyUnconstrained::Restart
+                            ::capture(msg,state,xs,reals,nats,params);
+
                         // Convert the C++ state to a Python state
                         pystate.toPython(state);
 
@@ -2626,6 +2912,18 @@ PyMethodDef methods[] = {
         (PyCFunction)Optizelle::Python::Unconstrained::Algorithms::getMin,
         METH_VARARGS,
         const_cast <char*> ("Solves an unconstrained optimization problem")},
+
+    { const_cast <char*> ("UnconstrainedRestartRelease"),
+        (PyCFunction)Optizelle::Python::Unconstrained::Restart::release,
+        METH_VARARGS,
+        const_cast <char*> (
+            "Release the state in an unconstrained optimization problem")},
+
+    { const_cast <char*> ("UnconstrainedRestartCapture"),
+        (PyCFunction)Optizelle::Python::Unconstrained::Restart::capture,
+        METH_VARARGS,
+        const_cast <char*> (
+            "Capture the state in an unconstrained optimization problem")},
         
     { const_cast <char*> ("EqualityConstrainedStateCreate"),
         (PyCFunction)Optizelle::Python::EqualityConstrained::State::create,

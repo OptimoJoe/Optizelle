@@ -227,11 +227,14 @@ namespace Optizelle {
         template <typename Real,template <typename> class XX> 
         struct Unconstrained {
             // Create some type shortcuts
-            typedef typename Optizelle::Unconstrained <Real,XX>::X_Vectors
-                X_Vectors; 
-            typedef typename Optizelle::Unconstrained <Real,XX>::Reals Reals;
-            typedef typename Optizelle::Unconstrained <Real,XX>::Nats Nats;
-            typedef typename Optizelle::Unconstrained <Real,XX>::Params Params; 
+            typedef typename Optizelle::Unconstrained <Real,XX>::Restart
+                ::X_Vectors X_Vectors; 
+            typedef typename Optizelle::Unconstrained <Real,XX>::Restart
+                ::Reals Reals;
+            typedef typename Optizelle::Unconstrained <Real,XX>::Restart
+                ::Nats Nats;
+            typedef typename Optizelle::Unconstrained <Real,XX>::Restart
+                ::Params Params; 
 
             // Read parameters from file
             static void read_(
@@ -465,18 +468,16 @@ namespace Optizelle {
         > 
         struct EqualityConstrained {
             // Create some type shortcuts
-            typedef
-                typename Optizelle::EqualityConstrained<Real,XX,YY>::X_Vectors
-                X_Vectors; 
-            typedef
-                typename Optizelle::EqualityConstrained<Real,XX,YY>::Y_Vectors
-                Y_Vectors; 
-            typedef typename Optizelle::EqualityConstrained <Real,XX,YY>::Reals
-                Reals;
-            typedef typename Optizelle::EqualityConstrained <Real,XX,YY>::Nats
-                Nats;
-            typedef typename Optizelle::EqualityConstrained <Real,XX,YY>::Params
-                Params; 
+            typedef typename Optizelle::EqualityConstrained<Real,XX,YY>::Restart
+                ::X_Vectors X_Vectors; 
+            typedef typename Optizelle::EqualityConstrained<Real,XX,YY>::Restart
+                ::Y_Vectors Y_Vectors; 
+            typedef typename Optizelle::EqualityConstrained<Real,XX,YY>::Restart
+                ::Reals Reals;
+            typedef typename Optizelle::EqualityConstrained<Real,XX,YY>::Restart
+                ::Nats Nats;
+            typedef typename Optizelle::EqualityConstrained<Real,XX,YY>::Restart
+                ::Params Params; 
 
             // Read parameters from file
             static void read_(
@@ -670,20 +671,21 @@ namespace Optizelle {
         > 
         struct InequalityConstrained {
             // Create some type shortcuts
-            typedef 
-                typename Optizelle::InequalityConstrained<Real,XX,ZZ>::X_Vectors
-                X_Vectors; 
             typedef
-                typename Optizelle::InequalityConstrained<Real,XX,ZZ>::Z_Vectors
-                Z_Vectors; 
-            typedef 
-                typename Optizelle::InequalityConstrained <Real,XX,ZZ>::Reals
-                Reals;
-            typedef typename Optizelle::InequalityConstrained <Real,XX,ZZ>::Nats
-                Nats;
-            typedef 
-                typename Optizelle::InequalityConstrained <Real,XX,ZZ>::Params
-                Params; 
+                typename Optizelle::InequalityConstrained<Real,XX,ZZ>::Restart
+                    ::X_Vectors X_Vectors; 
+            typedef
+                typename Optizelle::InequalityConstrained<Real,XX,ZZ>::Restart
+                    ::Z_Vectors Z_Vectors; 
+            typedef
+                typename Optizelle::InequalityConstrained<Real,XX,ZZ>::Restart
+                    ::Reals Reals;
+            typedef
+                typename Optizelle::InequalityConstrained<Real,XX,ZZ>::Restart
+                    ::Nats Nats;
+            typedef
+                typename Optizelle::InequalityConstrained<Real,XX,ZZ>::Restart
+                    ::Params Params; 
 
             // Read parameters from file
             static void read_(
@@ -833,18 +835,18 @@ namespace Optizelle {
         > 
         struct Constrained {
             // Create some type shortcuts
-            typedef typename Optizelle::Constrained<Real,XX,YY,ZZ>::X_Vectors
-                X_Vectors; 
-            typedef typename Optizelle::Constrained<Real,XX,YY,ZZ>::Y_Vectors
-                Y_Vectors; 
-            typedef typename Optizelle::Constrained<Real,XX,YY,ZZ>::Z_Vectors
-                Z_Vectors; 
-            typedef typename Optizelle::Constrained <Real,XX,YY,ZZ>::Reals
-                Reals;
-            typedef typename Optizelle::Constrained <Real,XX,YY,ZZ>::Nats
-                Nats;
-            typedef typename Optizelle::Constrained <Real,XX,YY,ZZ>::Params
-                Params; 
+            typedef typename Optizelle::Constrained<Real,XX,YY,ZZ>::Restart
+                ::X_Vectors X_Vectors; 
+            typedef typename Optizelle::Constrained<Real,XX,YY,ZZ>::Restart
+                ::Y_Vectors Y_Vectors; 
+            typedef typename Optizelle::Constrained<Real,XX,YY,ZZ>::Restart
+                ::Z_Vectors Z_Vectors; 
+            typedef typename Optizelle::Constrained<Real,XX,YY,ZZ>::Restart
+                ::Reals Reals;
+            typedef typename Optizelle::Constrained<Real,XX,YY,ZZ>::Restart
+                ::Nats Nats;
+            typedef typename Optizelle::Constrained<Real,XX,YY,ZZ>::Restart
+                ::Params Params; 
 
             // Read parameters from file
             static void read(

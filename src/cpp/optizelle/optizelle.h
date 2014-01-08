@@ -1308,15 +1308,6 @@ namespace Optizelle{
         // Create some type shortcuts
         typedef XX <Real> X;
         typedef typename X::Vector X_Vector;
-
-        typedef std::pair < std::list <std::string>,
-                            std::list <Real> > Reals;
-        typedef std::pair < std::list <std::string>,
-                            std::list <Natural> > Nats;
-        typedef std::pair < std::list <std::string>,
-                            std::list <std::string> > Params; 
-        typedef std::pair < std::list <std::string>,
-                            std::list <X_Vector> > X_Vectors;
         
         // Disallow constructors
         NO_CONSTRUCTORS(Unconstrained);
@@ -1703,6 +1694,16 @@ namespace Optizelle{
         struct Restart {
             // Disallow constructors
             NO_CONSTRUCTORS(Restart);
+
+            // Holds restart information
+            typedef std::pair < std::list <std::string>,
+                                std::list <Real> > Reals;
+            typedef std::pair < std::list <std::string>,
+                                std::list <Natural> > Nats;
+            typedef std::pair < std::list <std::string>,
+                                std::list <std::string> > Params; 
+            typedef std::pair < std::list <std::string>,
+                                std::list <X_Vector> > X_Vectors;
 
             // Checks whether we have a valid real label.
             struct is_real :
@@ -4309,17 +4310,6 @@ namespace Optizelle{
         typedef typename X::Vector X_Vector;
         typedef YY <Real> Y;
         typedef typename Y::Vector Y_Vector;
-        
-        typedef std::pair < std::list <std::string>,
-                            std::list <Real> > Reals;
-        typedef std::pair < std::list <std::string>,
-                            std::list <Natural> > Nats;
-        typedef std::pair < std::list <std::string>,
-                            std::list <std::string> > Params; 
-        typedef std::pair < std::list <std::string>,
-                            std::list <X_Vector> > X_Vectors;
-        typedef std::pair < std::list <std::string>,
-                            std::list <Y_Vector> > Y_Vectors;
 
         // This defines a product space between X and Y
         template <typename Real_>
@@ -4665,6 +4655,18 @@ namespace Optizelle{
         struct Restart {
             // Disallow constructors
             NO_CONSTRUCTORS(Restart);
+       
+            // Holds restart information
+            typedef std::pair < std::list <std::string>,
+                                std::list <Real> > Reals;
+            typedef std::pair < std::list <std::string>,
+                                std::list <Natural> > Nats;
+            typedef std::pair < std::list <std::string>,
+                                std::list <std::string> > Params; 
+            typedef std::pair < std::list <std::string>,
+                                std::list <X_Vector> > X_Vectors;
+            typedef std::pair < std::list <std::string>,
+                                std::list <Y_Vector> > Y_Vectors;
 
             // Checks whether we have a valid real label.
             struct is_real :
@@ -7033,17 +7035,6 @@ namespace Optizelle{
         typedef typename X::Vector X_Vector;
         typedef ZZ <Real> Z;
         typedef typename Z::Vector Z_Vector;
-        
-        typedef std::pair < std::list <std::string>,
-                            std::list <Real> > Reals;
-        typedef std::pair < std::list <std::string>,
-                            std::list <Natural> > Nats;
-        typedef std::pair < std::list <std::string>,
-                            std::list <std::string> > Params; 
-        typedef std::pair < std::list <std::string>,
-                            std::list <X_Vector> > X_Vectors;
-        typedef std::pair < std::list <std::string>,
-                            std::list <Z_Vector> > Z_Vectors;
 
         // Routines that manipulate the internal state of the optimization 
         // algorithm.
@@ -7171,6 +7162,18 @@ namespace Optizelle{
         struct Restart {
             // Disallow constructors
             NO_CONSTRUCTORS(Restart);
+       
+            // Holds restart information
+            typedef std::pair < std::list <std::string>,
+                                std::list <Real> > Reals;
+            typedef std::pair < std::list <std::string>,
+                                std::list <Natural> > Nats;
+            typedef std::pair < std::list <std::string>,
+                                std::list <std::string> > Params; 
+            typedef std::pair < std::list <std::string>,
+                                std::list <X_Vector> > X_Vectors;
+            typedef std::pair < std::list <std::string>,
+                                std::list <Z_Vector> > Z_Vectors;
             
             // Checks whether we have a valid real label.
             struct is_real :
@@ -8643,19 +8646,6 @@ namespace Optizelle{
         typedef typename Y::Vector Y_Vector;
         typedef ZZ <Real> Z;
         typedef typename Z::Vector Z_Vector;
-        
-        typedef std::pair < std::list <std::string>,
-                            std::list <Real> > Reals;
-        typedef std::pair < std::list <std::string>,
-                            std::list <Natural> > Nats;
-        typedef std::pair < std::list <std::string>,
-                            std::list <std::string> > Params; 
-        typedef std::pair < std::list <std::string>,
-                            std::list <X_Vector> > X_Vectors;
-        typedef std::pair < std::list <std::string>,
-                            std::list <Y_Vector> > Y_Vectors;
-        typedef std::pair < std::list <std::string>,
-                            std::list <Z_Vector> > Z_Vectors;
 
         // Routines that manipulate the internal state of the optimization 
         // algorithm.
@@ -8696,6 +8686,20 @@ namespace Optizelle{
         struct Restart {
             // Disallow constructors
             NO_CONSTRUCTORS(Restart);
+       
+            // Holds restart information
+            typedef std::pair < std::list <std::string>,
+                                std::list <Real> > Reals;
+            typedef std::pair < std::list <std::string>,
+                                std::list <Natural> > Nats;
+            typedef std::pair < std::list <std::string>,
+                                std::list <std::string> > Params; 
+            typedef std::pair < std::list <std::string>,
+                                std::list <X_Vector> > X_Vectors;
+            typedef std::pair < std::list <std::string>,
+                                std::list <Y_Vector> > Y_Vectors;
+            typedef std::pair < std::list <std::string>,
+                                std::list <Z_Vector> > Z_Vectors;
             
             // Checks whether we have a valid real label.
             struct is_real :
