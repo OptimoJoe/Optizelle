@@ -83,42 +83,36 @@ namespace Optizelle {
        
             // Naturals 
             void naturals(
-                std::pair <
-                    std::list <std::string>,
-                    std::list <Natural>
-                > const & nats,
+                typename RestartPackage <Natural>::t const & nats,
                 std::string const & vs,
                 Json::Value & root
             ) {
+                // Create some type shortcuts
+                typedef typename RestartPackage <Natural>::t Naturals; 
+
                 // Loop over all the naturals and serialize things
-                typename std::list <Natural>::const_iterator nat 
-                    =nats.second.begin();
-                for(typename std::list <std::string>::const_iterator
-                        name=nats.first.begin();
-                    name!=nats.first.end();
-                    name++, nat++
+                for(typename Naturals::const_iterator item = nats.cbegin();
+                    item!=nats.cend();
+                    item++
                 )
-                    root[vs][*name]=Json::Value::UInt64(*nat);
+                    root[vs][item->first]=Json::Value::UInt64(item->second);
             }
 
             // Parameters 
             void parameters(
-                const std::pair <
-                    std::list <std::string>,
-                    std::list <std::string>
-                >& params,
+                typename RestartPackage <std::string>::t const & params,
                 std::string const & vs,
                 Json::Value & root
             ) {
-                // Loop over all the parameters and serialize things
-                typename std::list <std::string>::const_iterator param 
-                    =params.second.begin();
-                for(typename std::list <std::string>::const_iterator
-                        name=params.first.begin();
-                    name!=params.first.end();
-                    name++, param++
+                // Create some type shortcuts
+                typedef typename RestartPackage <std::string>::t Params; 
+
+                // Loop over all the params and serialize things
+                for(typename Params::const_iterator item = params.cbegin();
+                    item!=params.cend();
+                    item++
                 )
-                    root[vs][*name]=*param;
+                    root[vs][item->first]=item->second;
             }
         }
         
@@ -129,10 +123,7 @@ namespace Optizelle {
             void naturals(
                 Json::Value const & root,
                 std::string const & vs,
-                std::pair <
-                    std::list <std::string>,
-                    std::list <Natural>
-                >& nats
+                typename RestartPackage <Natural>::t & nats
             ) {
                 // Loop over all the names in the root
                 for(Json::ValueIterator itr=root[vs].begin();
@@ -140,9 +131,9 @@ namespace Optizelle {
                     itr++
                 ){
                     // Grab the natural 
-                    nats.first.emplace_back(itr.key().asString());
-                    nats.second.emplace_back(
-                        root[vs][nats.first.back()].asUInt64());
+                    std::string name(itr.key().asString());
+                    nats.emplace_back(name,
+                        std::move(root[vs][name].asUInt64()));
                 }
             }
             
@@ -150,20 +141,17 @@ namespace Optizelle {
             void parameters(
                 Json::Value const & root,
                 std::string const & vs,
-                std::pair <
-                    std::list <std::string>,
-                    std::list <std::string>
-                >& params
+                typename RestartPackage <std::string>::t & params 
             ) {
                 // Loop over all the names in the root
                 for(Json::ValueIterator itr=root[vs].begin();
                     itr!=root[vs].end();
                     itr++
                 ){
-                    // Grab the parameter 
-                    params.first.emplace_back(itr.key().asString());
-                    params.second.emplace_back(
-                        root[vs][params.first.back()].asString());
+                    // Grab the natural 
+                    std::string name(itr.key().asString());
+                    params.emplace_back(name,
+                        std::move(root[vs][name].asString()));
                 }
             }
         }

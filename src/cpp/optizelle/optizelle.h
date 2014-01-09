@@ -1226,37 +1226,39 @@ namespace Optizelle{
         }
     };
 
+    // Defines the type for the restart packages
+    template <typename T>
+    struct RestartPackage {
+        typedef std::pair <std::string,T> tuple;
+        typedef std::list <tuple> t;
+    };
+
     // A series of utiilty functions used by the routines below.
     namespace Utility {
-        // Checks whether all the labels in the list labels are actually
-        // labels stored in the is_label function.  If not, this function
+        // Checks whether all the items are actually valids inputs.  If not, it 
         // throws an error.
-        void checkLabels(
+        template <typename T> 
+        void checkItems(
             Messaging const & msg,
-            std::function<bool(std::string const &)> const & is_label,
-            std::list <std::string> const & labels, 
+            std::function <
+                bool(typename RestartPackage <T>::tuple const &) > is_item,
+            typename RestartPackage<T>::t const & items,
             std::string const & kind
-        );
+        ) {
+            // Create a base message
+            const std::string base
+                ="During serialization, found an invalid ";
 
-        // Combines two strings in a funny sort of way.  Basically, given
-        // a and b, if a is empty, this function returns b.  However, if
-        // a is nonempty, it returns a.
-        struct combineStrings : public std::binary_function
-            <std::string const &,std::string const &,std::basic_string <char> >
-        {
-            std::basic_string <char> operator() (
-                std::string const & a,std::string const & b) const;
-        };
-      
-        // This checks the parameters and prints and error in there's a problem.
-        void checkParams(
-            Messaging const & msg,
-            std::function
-                <std::string(std::string const &,std::string const &)> const &
-                checkParamVal,
-            std::pair <std::list <std::string>,std::list <std::string> > const &
-                params 
-        );
+            // Check the labels
+            typename RestartPackage<T>::t::const_iterator item
+                = find_if(items.begin(), items.end(),std::not1(is_item));
+
+            if(item!=items.end()) {
+                std::stringstream ss;
+                ss << base << kind << item->first;
+                msg.error(ss.str());
+            }
+        }
 
         // Converts a variety of basic datatypes to strings
         std::ostream& formatReal(std::ostream& out);
@@ -1695,38 +1697,36 @@ namespace Optizelle{
             // Disallow constructors
             NO_CONSTRUCTORS(Restart);
 
-            // Holds restart information
-            typedef std::pair < std::list <std::string>,
-                                std::list <Real> > Reals;
-            typedef std::pair < std::list <std::string>,
-                                std::list <Natural> > Nats;
-            typedef std::pair < std::list <std::string>,
-                                std::list <std::string> > Params; 
-            typedef std::pair < std::list <std::string>,
-                                std::list <X_Vector> > X_Vectors;
+            // Create some type shortcuts 
+            typedef typename RestartPackage <Real>::t Reals;
+            typedef typename RestartPackage <Natural>::t Naturals;
+            typedef typename RestartPackage <std::string>::t Params;
+            typedef typename RestartPackage <X_Vector>::t X_Vectors;
 
-            // Checks whether we have a valid real label.
-            struct is_real :
-                public std::unary_function<std::string const &, bool>
+            // Checks whether we have a valid real 
+            struct is_real : public std::function <
+                bool(typename RestartPackage <Real>::tuple const &) > 
             {
-                bool operator () (std::string const & name) const {
-                    if( name == "eps_grad" || 
-                        name == "eps_dx" || 
-                        name == "krylov_rel_err" || 
-                        name == "eps_krylov" || 
-                        name == "norm_gradtyp" || 
-                        name == "norm_dxtyp" || 
-                        name == "f_x" || 
-                        name == "f_xpdx" ||
-                        name == "delta" || 
-                        name == "eta1" || 
-                        name == "eta2" || 
-                        name == "ared" || 
-                        name == "pred" || 
-                        name == "alpha0" || 
-                        name == "alpha" || 
-                        name == "c1" || 
-                        name == "eps_ls"
+                bool operator () (
+                    typename RestartPackage <Real>::tuple const & item
+                ){
+                    if( item.first == "eps_grad" || 
+                        item.first == "eps_dx" || 
+                        item.first == "krylov_rel_err" || 
+                        item.first == "eps_krylov" || 
+                        item.first == "norm_gradtyp" || 
+                        item.first == "norm_dxtyp" || 
+                        item.first == "f_x" || 
+                        item.first == "f_xpdx" ||
+                        item.first == "delta" || 
+                        item.first == "eta1" || 
+                        item.first == "eta2" || 
+                        item.first == "ared" || 
+                        item.first == "pred" || 
+                        item.first == "alpha0" || 
+                        item.first == "alpha" || 
+                        item.first == "c1" || 
+                        item.first == "eps_ls"
                     ) 
                         return true;
                     else
@@ -1734,24 +1734,26 @@ namespace Optizelle{
                 }
             };
 
-            // Checks whether we have a valid natural number label.
-            struct is_nat :
-                public std::unary_function<std::string const &, bool>
+            // Checks whether we have a valid natural number
+            struct is_nat : public std::function <
+                bool(typename RestartPackage <Natural>::tuple const &) > 
             {
-                bool operator () (std::string const & name) const {
-                    if( name == "stored_history" ||
-                        name == "history_reset" || 
-                        name == "iter" || 
-                        name == "iter_max" || 
-                        name == "krylov_iter" || 
-                        name == "krylov_iter_max" ||
-                        name == "krylov_iter_total" || 
-                        name == "krylov_orthog_max" ||
-                        name == "msg_level" ||
-                        name == "rejected_trustregion" || 
-                        name == "linesearch_iter" || 
-                        name == "linesearch_iter_max" ||
-                        name == "linesearch_iter_total" 
+                bool operator () (
+                    typename RestartPackage <Natural>::tuple const & item
+                ){
+                    if( item.first == "stored_history" ||
+                        item.first == "history_reset" || 
+                        item.first == "iter" || 
+                        item.first == "iter_max" || 
+                        item.first == "krylov_iter" || 
+                        item.first == "krylov_iter_max" ||
+                        item.first == "krylov_iter_total" || 
+                        item.first == "krylov_orthog_max" ||
+                        item.first == "msg_level" ||
+                        item.first == "rejected_trustregion" || 
+                        item.first == "linesearch_iter" || 
+                        item.first == "linesearch_iter_max" ||
+                        item.first == "linesearch_iter_total" 
                     ) 
                         return true;
                     else
@@ -1759,19 +1761,29 @@ namespace Optizelle{
                 }
             };
            
-            // Checks whether we have a valid parameter label.
-            struct is_param:
-                public std::unary_function<std::string const &, bool>
+            // Checks whether we have a valid parameter 
+            struct is_param : public std::function <
+                bool(typename RestartPackage <std::string>::tuple const &) > 
             {
-                bool operator () (std::string const & name) const {
-                    if( name == "krylov_solver" ||
-                        name == "algorithm_class" || 
-                        name == "opt_stop" || 
-                        name == "krylov_stop" ||
-                        name == "H_type" || 
-                        name == "PH_type" ||
-                        name == "dir" || 
-                        name == "kind" 
+                bool operator () (
+                    typename RestartPackage <std::string>::tuple const & item
+                ){
+                    if( (item.first=="krylov_solver" &&
+                            KrylovSolverTruncated::is_valid()(item.second)) ||
+                        (item.first=="algorithm_class" &&
+                            AlgorithmClass::is_valid()(item.second)) ||
+                        (item.first=="opt_stop" &&
+                            StoppingCondition::is_valid()(item.second)) ||
+                        (item.first=="krylov_stop" &&
+                            KrylovStop::is_valid()(item.second)) ||
+                        (item.first=="H_type" &&
+                            Operators::is_valid()(item.second)) ||
+                        (item.first=="PH_type" &&
+                            Operators::is_valid()(item.second)) ||
+                        (item.first=="dir" &&
+                            LineSearchDirection::is_valid()(item.second)) ||
+                        (item.first=="kind" &&
+                            LineSearchKind::is_valid()(item.second))
                     ) 
                         return true;
                     else
@@ -1779,37 +1791,44 @@ namespace Optizelle{
                 }
             };
             
-            // Checks whether we have a valid variable label
-            struct is_x : public std::unary_function<std::string, bool> {
-                bool operator () (std::string const & name) const {
-                    if( name == "x" || 
-                        name == "grad" || 
-                        name == "dx" || 
-                        name == "x_old" || 
-                        name == "grad_old" || 
-                        name == "dx_old" || 
-                        name.substr(0,5)=="oldY_" || 
-                        name.substr(0,5)=="oldS_" 
+            // Checks whether we have a valid variable
+            struct is_x : public std::function <
+                bool(typename RestartPackage <X_Vector>::tuple const &) > 
+            {
+                bool operator () (
+                    typename RestartPackage <X_Vector>::tuple const & item
+                ){
+                    if( item.first == "x" || 
+                        item.first == "grad" || 
+                        item.first == "dx" || 
+                        item.first == "x_old" || 
+                        item.first == "grad_old" || 
+                        item.first == "dx_old" || 
+                        item.first.substr(0,5)=="oldY_" || 
+                        item.first.substr(0,5)=="oldS_" 
                     ) 
                         return true;
                     else
                         return false;
                 }
             };
-
+            
             // Checks whether we have valid labels
-            static void checkLabels(
+            static void checkItems(
                 Messaging const & msg,
                 Reals const & reals,
-                Nats const & nats,
+                Naturals const & nats,
                 Params const & params,
                 X_Vectors const & xs
             ) {
-                Utility::checkLabels(msg,is_real(),reals.first," real name: ");
-                Utility::checkLabels(msg,is_nat(),nats.first," natural name: ");
-                Utility::checkLabels
-                    (msg,is_param(),params.first," paramater name: ");
-                Utility::checkLabels(msg,is_x(),xs.first," variable name: ");
+                Utility::checkItems <Real> (
+                    msg,is_real(),reals," real name: ");
+                Utility::checkItems <Natural> (
+                    msg,is_nat(),nats," natural name: ");
+                Utility::checkItems <std::string> (
+                    msg,is_param(),params," paramater: ");
+                Utility::checkItems <X_Vector> (
+                    msg,is_x(),xs," variable name: ");
             }
 
             // Checks whether or not the value used to represent a parameter
@@ -1878,42 +1897,36 @@ namespace Optizelle{
                 typename State::t & state, 
                 X_Vectors & xs
             ) {
-                // Move the memory of all variables into the list 
-                xs.first.emplace_back("x");
-                xs.second.emplace_back(std::move(state.x));
-                xs.first.emplace_back("grad");
-                xs.second.emplace_back(std::move(state.grad));
-                xs.first.emplace_back("dx");
-                xs.second.emplace_back(std::move(state.dx));
-                xs.first.emplace_back("x_old");
-                xs.second.emplace_back(std::move(state.x_old));
-                xs.first.emplace_back("grad_old");
-                xs.second.emplace_back(std::move(state.grad_old));
-                xs.first.emplace_back("dx_old");
-                xs.second.emplace_back(std::move(state.dx_old));
-
-                // Write out the quasi-Newton information with sequential names
+                xs.emplace_back("x",std::move(state.x));
+                xs.emplace_back("grad",std::move(state.grad));
+                xs.emplace_back("dx",std::move(state.dx));
+                xs.emplace_back("x_old",std::move(state.x_old));
+                xs.emplace_back("grad_old",std::move(state.grad_old));
+                xs.emplace_back("dx_old",std::move(state.dx_old));
+                
+                // Write out the quasi-Newton information with sequential names.
+                // Note, we're padding the numbers with zeros.  Likely, this
+                // scheme will break after 1 million vectors (6 digits).  Try
+                // not to use that many.
                 {Natural i=1;
                 for(typename std::list<X_Vector>::iterator y=state.oldY.begin();
                     y!=state.oldY.end();
-                    y=state.oldY.begin()
+                    y++
                 ){
                     std::stringstream ss;
-                    ss << "oldY_" << i;
-                    xs.first.emplace_back(ss.str());
-                    xs.second.splice(xs.second.end(),state.oldY,y);
+                    ss << std::setfill('0') << std::setw(6) << i++;
+                    xs.emplace_back("oldY_"+ss.str(),std::move(*y));
                 }}
 
                 // Write out the quasi-Newton information with sequential names
                 {Natural i=1;
                 for(typename std::list<X_Vector>::iterator s=state.oldS.begin();
                     s!=state.oldS.end();
-                    s=state.oldS.begin()
+                    s++
                 ){
                     std::stringstream ss;
-                    ss << "oldS_" << i;
-                    xs.first.emplace_back(ss.str());
-                    xs.second.splice(xs.second.end(),state.oldS,s);
+                    ss << std::setfill('0') << std::setw(6) << i++;
+                    xs.emplace_back("oldS_"+ss.str(),std::move(*s));
                 }}
             }
             
@@ -1922,98 +1935,70 @@ namespace Optizelle{
             static void stateToScalars(
                 typename State::t & state, 
                 Reals & reals,
-                Nats & nats,
+                Naturals & nats,
                 Params & params
             ) {
-                
-                // Copy in all the real numbers 
-                reals.first.emplace_back("eps_grad");
-                reals.second.emplace_back(state.eps_grad);
-                reals.first.emplace_back("eps_dx");
-                reals.second.emplace_back(state.eps_dx);
-                reals.first.emplace_back("krylov_rel_err");
-                reals.second.emplace_back(state.krylov_rel_err);
-                reals.first.emplace_back("eps_krylov");
-                reals.second.emplace_back(state.eps_krylov);
-                reals.first.emplace_back("norm_gradtyp");
-                reals.second.emplace_back(state.norm_gradtyp);
-                reals.first.emplace_back("norm_dxtyp");
-                reals.second.emplace_back(state.norm_dxtyp);
-                reals.first.emplace_back("f_x");
-                reals.second.emplace_back(state.f_x);
-                reals.first.emplace_back("f_xpdx");
-                reals.second.emplace_back(state.f_xpdx);
-                reals.first.emplace_back("delta");
-                reals.second.emplace_back(state.delta);
-                reals.first.emplace_back("eta1");
-                reals.second.emplace_back(state.eta1);
-                reals.first.emplace_back("eta2");
-                reals.second.emplace_back(state.eta2);
-                reals.first.emplace_back("ared");
-                reals.second.emplace_back(state.ared);
-                reals.first.emplace_back("pred");
-                reals.second.emplace_back(state.pred);
-                reals.first.emplace_back("alpha0");
-                reals.second.emplace_back(state.alpha0);
-                reals.first.emplace_back("alpha");
-                reals.second.emplace_back(state.alpha);
-                reals.first.emplace_back("c1");
-                reals.second.emplace_back(state.c1);
-                reals.first.emplace_back("eps_ls");
-                reals.second.emplace_back(state.eps_ls);
+                // Copy in all the real numbers
+                reals.emplace_back("eps_grad",std::move(state.eps_grad));
+                reals.emplace_back("eps_dx",std::move(state.eps_dx));
+                reals.emplace_back("krylov_rel_err",
+                    std::move(state.krylov_rel_err));
+                reals.emplace_back("eps_krylov",std::move(state.eps_krylov));
+                reals.emplace_back("norm_gradtyp",
+                    std::move(state.norm_gradtyp));
+                reals.emplace_back("norm_dxtyp",std::move(state.norm_dxtyp));
+                reals.emplace_back("f_x",std::move(state.f_x));
+                reals.emplace_back("f_xpdx",std::move(state.f_xpdx));
+                reals.emplace_back("delta",std::move(state.delta));
+                reals.emplace_back("eta1",std::move(state.eta1));
+                reals.emplace_back("eta2",std::move(state.eta2));
+                reals.emplace_back("ared",std::move(state.ared));
+                reals.emplace_back("pred",std::move(state.pred));
+                reals.emplace_back("alpha0",std::move(state.alpha0));
+                reals.emplace_back("alpha",std::move(state.alpha));
+                reals.emplace_back("c1",std::move(state.c1));
+                reals.emplace_back("eps_ls",std::move(state.eps_ls));
 
                 // Copy in all the natural numbers
-                nats.first.emplace_back("stored_history");
-                nats.second.emplace_back(state.stored_history);
-                nats.first.emplace_back("history_reset");
-                nats.second.emplace_back(state.history_reset);
-                nats.first.emplace_back("iter");
-                nats.second.emplace_back(state.iter);
-                nats.first.emplace_back("iter_max");
-                nats.second.emplace_back(state.iter_max);
-                nats.first.emplace_back("krylov_iter");
-                nats.second.emplace_back(state.krylov_iter);
-                nats.first.emplace_back("krylov_iter_max");
-                nats.second.emplace_back(state.krylov_iter_max);
-                nats.first.emplace_back("krylov_iter_total");
-                nats.second.emplace_back(state.krylov_iter_total);
-                nats.first.emplace_back("krylov_orthog_max");
-                nats.second.emplace_back(state.krylov_orthog_max);
-                nats.first.emplace_back("msg_level");
-                nats.second.emplace_back(state.msg_level);
-                nats.first.emplace_back("rejected_trustregion");
-                nats.second.emplace_back(state.rejected_trustregion);
-                nats.first.emplace_back("linesearch_iter");
-                nats.second.emplace_back(state.linesearch_iter);
-                nats.first.emplace_back("linesearch_iter_max");
-                nats.second.emplace_back(state.linesearch_iter_max);
-                nats.first.emplace_back("linesearch_iter_total");
-                nats.second.emplace_back(state.linesearch_iter_total);
+                nats.emplace_back("stored_history",
+                    std::move(state.stored_history));
+                nats.emplace_back("history_reset",
+                    std::move(state.history_reset));
+                nats.emplace_back("iter",std::move(state.iter));
+                nats.emplace_back("iter_max",std::move(state.iter_max));
+                nats.emplace_back("krylov_iter",std::move(state.krylov_iter));
+                nats.emplace_back("krylov_iter_max",
+                    std::move(state.krylov_iter_max));
+                nats.emplace_back("krylov_iter_total",
+                    std::move(state.krylov_iter_total));
+                nats.emplace_back("krylov_orthog_max",
+                    std::move(state.krylov_orthog_max));
+                nats.emplace_back("msg_level",std::move(state.msg_level));
+                nats.emplace_back("rejected_trustregion",
+                    std::move(state.rejected_trustregion));
+                nats.emplace_back("linesearch_iter",
+                    std::move(state.linesearch_iter));
+                nats.emplace_back("linesearch_iter_max",
+                    std::move(state.linesearch_iter_max));
+                nats.emplace_back("linesearch_iter_total",
+                    std::move(state.linesearch_iter_total));
 
                 // Copy in all the parameters
-                params.first.emplace_back("krylov_solver");
-                params.second.emplace_back(
+                params.emplace_back("krylov_solver",
                     KrylovSolverTruncated::to_string(state.krylov_solver));
-                params.first.emplace_back("algorithm_class");
-                params.second.emplace_back(
+                params.emplace_back("algorithm_class",
                     AlgorithmClass::to_string(state.algorithm_class));
-                params.first.emplace_back("opt_stop");
-                params.second.emplace_back(
+                params.emplace_back("opt_stop",
                     StoppingCondition::to_string(state.opt_stop));
-                params.first.emplace_back("krylov_stop");
-                params.second.emplace_back(
+                params.emplace_back("krylov_stop",
                     KrylovStop::to_string(state.krylov_stop));
-                params.first.emplace_back("H_type");
-                params.second.emplace_back(
+                params.emplace_back("H_type",
                     Operators::to_string(state.H_type));
-                params.first.emplace_back("PH_type");
-                params.second.emplace_back(
+                params.emplace_back("PH_type",
                     Operators::to_string(state.PH_type));
-                params.first.emplace_back("dir");
-                params.second.emplace_back(
+                params.emplace_back("dir",
                     LineSearchDirection::to_string(state.dir));
-                params.first.emplace_back("kind");
-                params.second.emplace_back(
+                params.emplace_back("kind",
                     LineSearchKind::to_string(state.kind));
             }
 
@@ -2023,37 +2008,30 @@ namespace Optizelle{
                 typename State::t & state,
                 X_Vectors & xs
             ) {
-                typename std::list <X_Vector>::iterator x=xs.second.begin();
-                for(typename std::list <std::string>::iterator name
-                        =xs.first.begin();
-                    name!=xs.first.end();
-                ) {
-                    // Make a copy of the current iterators.  We use these
-                    // to remove elements
-                    typename std::list <std::string>::iterator name0 = name;
-                    typename std::list <X_Vector>::iterator x0 = x;
+                // Clear out oldY and oldS
+                state.oldY.clear();
+                state.oldS.clear();
 
-                    // Increment our primary iterators 
-                    name++; x++;
-
-                    // Determine which variable we're reading in and then splice
-                    // it in the correct location
-                    if(*name0=="x") 
-                        state.x = std::move(*x0);
-                    else if(*name0=="grad")
-                        state.grad = std::move(*x0);
-                    else if(*name0=="dx")
-                        state.dx = std::move(*x0);
-                    else if(*name0=="x_old")
-                        state.x_old = std::move(*x0);
-                    else if(*name0=="grad_old")
-                        state.grad_old = std::move(*x0);
-                    else if(*name0=="dx_old")
-                        state.dx_old = std::move(*x0);
-                    else if(name0->substr(0,5)=="oldY_")
-                        state.oldY.emplace_back(std::move(*x0));
-                    else if(name0->substr(0,5)=="oldS_")
-                        state.oldS.emplace_back(std::move(*x0));
+                for(typename X_Vectors::iterator item = xs.begin();
+                    item!=xs.end();
+                    item++
+                ){
+                    if(item->first=="x") 
+                        state.x = std::move(item->second);
+                    else if(item->first=="grad")
+                        state.grad = std::move(item->second);
+                    else if(item->first=="dx")
+                        state.dx = std::move(item->second);
+                    else if(item->first=="x_old")
+                        state.x_old = std::move(item->second);
+                    else if(item->first=="grad_old")
+                        state.grad_old = std::move(item->second);
+                    else if(item->first=="dx_old")
+                        state.dx_old = std::move(item->second);
+                    else if(item->first.substr(0,5)=="oldY_")
+                        state.oldY.emplace_back(std::move(item->second));
+                    else if(item->first.substr(0,5)=="oldS_")
+                        state.oldS.emplace_back(std::move(item->second));
                 }
             }
 
@@ -2062,87 +2040,108 @@ namespace Optizelle{
             static void scalarsToState(
                 typename State::t & state,
                 Reals & reals,
-                Nats & nats,
+                Naturals & nats,
                 Params & params
             ) {
                 // Copy in any reals 
-                typename std::list <Real>::iterator real=reals.second.begin();
-                for(std::list <std::string>::iterator name=reals.first.begin();
-                    name!=reals.first.end();
-                    name++,real++
+                for(typename Reals::iterator item = reals.begin();
+                    item!=reals.end();
+                    item++
                 ){
-                    if(*name=="eps_grad") state.eps_grad=*real;
-                    else if(*name=="eps_dx") state.eps_dx=*real;
-                    else if(*name=="krylov_rel_err") state.krylov_rel_err=*real;
-                    else if(*name=="eps_krylov") state.eps_krylov=*real;
-                    else if(*name=="norm_gradtyp") state.norm_gradtyp=*real;
-                    else if(*name=="norm_dxtyp") state.norm_dxtyp=*real;
-                    else if(*name=="f_x") state.f_x=*real;
-                    else if(*name=="f_xpdx") state.f_xpdx=*real;
-                    else if(*name=="delta") state.delta=*real;
-                    else if(*name=="eta1") state.eta1=*real;
-                    else if(*name=="eta2") state.eta2=*real;
-                    else if(*name=="ared") state.ared=*real;
-                    else if(*name=="pred") state.pred=*real;
-                    else if(*name=="alpha0") state.alpha0=*real;
-                    else if(*name=="alpha") state.alpha=*real;
-                    else if(*name=="c1") state.c1=*real;
-                    else if(*name=="eps_ls") state.eps_ls=*real;
+                    if(item->first=="eps_grad")
+                        state.eps_grad=std::move(item->second);
+                    else if(item->first=="eps_dx")
+                        state.eps_dx=std::move(item->second);
+                    else if(item->first=="krylov_rel_err")
+                        state.krylov_rel_err=std::move(item->second);
+                    else if(item->first=="eps_krylov")
+                        state.eps_krylov=std::move(item->second);
+                    else if(item->first=="norm_gradtyp")
+                        state.norm_gradtyp=std::move(item->second);
+                    else if(item->first=="norm_dxtyp")
+                        state.norm_dxtyp=std::move(item->second);
+                    else if(item->first=="f_x")
+                        state.f_x=std::move(item->second);
+                    else if(item->first=="f_xpdx")
+                        state.f_xpdx=std::move(item->second);
+                    else if(item->first=="delta")
+                        state.delta=std::move(item->second);
+                    else if(item->first=="eta1")
+                        state.eta1=std::move(item->second);
+                    else if(item->first=="eta2")
+                        state.eta2=std::move(item->second);
+                    else if(item->first=="ared")
+                        state.ared=std::move(item->second);
+                    else if(item->first=="pred")
+                        state.pred=std::move(item->second);
+                    else if(item->first=="alpha0")
+                        state.alpha0=std::move(item->second);
+                    else if(item->first=="alpha")
+                        state.alpha=std::move(item->second);
+                    else if(item->first=="c1")
+                        state.c1=std::move(item->second);
+                    else if(item->first=="eps_ls")
+                        state.eps_ls=std::move(item->second);
                 }
             
                 // Next, copy in any naturals
-                typename std::list <Natural>::iterator nat=nats.second.begin();
-                for(std::list <std::string>::iterator name=nats.first.begin();
-                    name!=nats.first.end();
-                    name++,nat++
+                for(typename Naturals::iterator item = nats.begin();
+                    item!=nats.end();
+                    item++
                 ){
-                    if(*name=="stored_history") state.stored_history=*nat;
-                    else if(*name=="history_reset") state.history_reset=*nat;
-                    else if(*name=="iter") state.iter=*nat;
-                    else if(*name=="iter_max") state.iter_max=*nat;
-                    else if(*name=="krylov_iter") state.krylov_iter=*nat;
-                    else if(*name=="krylov_iter_max")
-                        state.krylov_iter_max=*nat;
-                    else if(*name=="krylov_iter_total")
-                        state.krylov_iter_total=*nat;
-                    else if(*name=="krylov_orthog_max")
-                        state.krylov_orthog_max=*nat;
-                    else if(*name=="msg_level")
-                        state.msg_level=*nat;
-                    else if(*name=="rejected_trustregion")
-                        state.rejected_trustregion=*nat;
-                    else if(*name=="linesearch_iter")
-                        state.linesearch_iter=*nat;
-                    else if(*name=="linesearch_iter_max")
-                        state.linesearch_iter_max=*nat;
-                    else if(*name=="linesearch_iter_total")
-                        state.linesearch_iter_total=*nat;
+                    if(item->first=="stored_history")
+                        state.stored_history=std::move(item->second);
+                    else if(item->first=="history_reset")
+                        state.history_reset=std::move(item->second);
+                    else if(item->first=="iter")
+                        state.iter=std::move(item->second);
+                    else if(item->first=="iter_max")
+                        state.iter_max=std::move(item->second);
+                    else if(item->first=="krylov_iter")
+                        state.krylov_iter=std::move(item->second);
+                    else if(item->first=="krylov_iter_max")
+                        state.krylov_iter_max=std::move(item->second);
+                    else if(item->first=="krylov_iter_total")
+                        state.krylov_iter_total=std::move(item->second);
+                    else if(item->first=="krylov_orthog_max")
+                        state.krylov_orthog_max=std::move(item->second);
+                    else if(item->first=="msg_level")
+                        state.msg_level=std::move(item->second);
+                    else if(item->first=="rejected_trustregion")
+                        state.rejected_trustregion=std::move(item->second);
+                    else if(item->first=="linesearch_iter")
+                        state.linesearch_iter=std::move(item->second);
+                    else if(item->first=="linesearch_iter_max")
+                        state.linesearch_iter_max=std::move(item->second);
+                    else if(item->first=="linesearch_iter_total")
+                        state.linesearch_iter_total=std::move(item->second);
                 }
                     
                 // Next, copy in any parameters 
-                std::list <std::string>::iterator param=params.second.begin();
-                for(std::list <std::string>::iterator name=params.first.begin();
-                    name!=params.first.end();
-                    name++,param++
+                for(typename Params::iterator item = params.begin();
+                    item!=params.end();
+                    item++
                 ){
-                    if(*name=="krylov_solver")
+                    if(item->first=="krylov_solver")
                         state.krylov_solver
-                            =KrylovSolverTruncated::from_string(*param);
-                    else if(*name=="algorithm_class")
+                            = KrylovSolverTruncated::from_string(item->second);
+                    else if(item->first=="algorithm_class")
                         state.algorithm_class
-                            =AlgorithmClass::from_string(*param);
-                    else if(*name=="opt_stop")
-                        state.opt_stop=StoppingCondition::from_string(*param);
-                    else if(*name=="krylov_stop")
-                        state.krylov_stop=KrylovStop::from_string(*param);
-                    else if(*name=="H_type")
-                        state.H_type=Operators::from_string(*param);
-                    else if(*name=="PH_type")
-                        state.PH_type=Operators::from_string(*param);
-                    else if(*name=="dir")
-                        state.dir=LineSearchDirection::from_string(*param);
-                    else if(*name=="kind")
-                        state.kind=LineSearchKind::from_string(*param);
+                            = AlgorithmClass::from_string(item->second);
+                    else if(item->first=="opt_stop")
+                        state.opt_stop
+                            = StoppingCondition::from_string(item->second);
+                    else if(item->first=="krylov_stop")
+                        state.krylov_stop=KrylovStop::from_string(item->second);
+                    else if(item->first=="H_type")
+                        state.H_type=Operators::from_string(item->second);
+                    else if(item->first=="PH_type")
+                        state.PH_type=Operators::from_string(item->second);
+                    else if(item->first=="dir")
+                        state.dir
+                            = LineSearchDirection::from_string(item->second);
+                    else if(item->first=="kind")
+                        state.kind=LineSearchKind::from_string(item->second);
                 }
             }
             
@@ -2151,7 +2150,7 @@ namespace Optizelle{
                 typename State::t & state,
                 X_Vectors & xs,
                 Reals & reals,
-                Nats & nats,
+                Naturals & nats,
                 Params & params
             ) {
                 // Copy out all of the variable information
@@ -2173,15 +2172,12 @@ namespace Optizelle{
                 typename State::t & state,
                 X_Vectors & xs,
                 Reals & reals,
-                Nats & nats,
+                Naturals & nats,
                 Params & params
             ) {
 
-                // Check the labels on the user input
-                checkLabels(msg,reals,nats,params,xs);
-
-                // Check the strings used to represent parameters
-                Utility::checkParams(msg,checkParamVal(),params);
+                // Check the user input 
+                checkItems(msg,reals,nats,params,xs);
 
                 // Copy in the variables 
                 Unconstrained <Real,XX>::Restart::vectorsToState(state,xs);
@@ -4656,57 +4652,56 @@ namespace Optizelle{
             // Disallow constructors
             NO_CONSTRUCTORS(Restart);
        
-            // Holds restart information
-            typedef std::pair < std::list <std::string>,
-                                std::list <Real> > Reals;
-            typedef std::pair < std::list <std::string>,
-                                std::list <Natural> > Nats;
-            typedef std::pair < std::list <std::string>,
-                                std::list <std::string> > Params; 
-            typedef std::pair < std::list <std::string>,
-                                std::list <X_Vector> > X_Vectors;
-            typedef std::pair < std::list <std::string>,
-                                std::list <Y_Vector> > Y_Vectors;
+            // Create some type shortcuts 
+            typedef typename RestartPackage <Real>::t Reals;
+            typedef typename RestartPackage <Natural>::t Naturals;
+            typedef typename RestartPackage <std::string>::t Params;
+            typedef typename RestartPackage <X_Vector>::t X_Vectors;
+            typedef typename RestartPackage <Y_Vector>::t Y_Vectors;
 
-            // Checks whether we have a valid real label.
-            struct is_real :
-                public std::unary_function<std::string const &, bool>
+            // Checks whether we have a valid real 
+            struct is_real : public std::function <
+                bool(typename RestartPackage <Real>::tuple const &) > 
             {
-                bool operator () (std::string const & name) const {
+                bool operator () (
+                    typename RestartPackage <Real>::tuple const & item
+                ){
                     if( typename Unconstrained <Real,XX>::Restart
-                            ::is_real()(name) ||
-                        name == "zeta" ||
-                        name == "eta0" ||
-                        name == "rho" ||
-                        name == "rho_old" ||
-                        name == "rho_bar" ||
-                        name == "eps_constr" ||
-                        name == "xi_qn" || 
-                        name == "xi_pg" ||
-                        name == "xi_proj" ||
-                        name == "xi_tang" ||
-                        name == "xi_lmh" ||
-                        name == "xi_lmg" ||
-                        name == "xi_4" ||
-                        name == "rpred" ||
-                        name == "norm_gxtyp" ||
-                        name == "norm_gpxdxnpgx" 
+                            ::is_real()(item) ||
+                        item.first == "zeta" ||
+                        item.first == "eta0" ||
+                        item.first == "rho" ||
+                        item.first == "rho_old" ||
+                        item.first == "rho_bar" ||
+                        item.first == "eps_constr" ||
+                        item.first == "xi_qn" || 
+                        item.first == "xi_pg" ||
+                        item.first == "xi_proj" ||
+                        item.first == "xi_tang" ||
+                        item.first == "xi_lmh" ||
+                        item.first == "xi_lmg" ||
+                        item.first == "xi_4" ||
+                        item.first == "rpred" ||
+                        item.first == "norm_gxtyp" ||
+                        item.first == "norm_gpxdxnpgx" 
                     )
                         return true;
                     else
                         return false;
-                    }
+                }
             };
             
-            // Checks whether we have a valid natural number label.
-            struct is_nat :
-                public std::unary_function<std::string const &, bool>
+            // Checks whether we have a valid natural number
+            struct is_nat : public std::function <
+                bool(typename RestartPackage <Natural>::tuple const &) > 
             {
-                bool operator () (std::string const & name) const {
+                bool operator () (
+                    typename RestartPackage <Natural>::tuple const & item
+                ){
                     if( typename Unconstrained <Real,XX>::Restart
-                        ::is_nat()(name) ||
-                        name == "augsys_iter_max" ||
-                        name == "augsys_rst_freq"
+                            ::is_nat()(item) ||
+                        item.first == "augsys_iter_max" ||
+                        item.first == "augsys_rst_freq"
                     )
                         return true;
                     else
@@ -4714,15 +4709,19 @@ namespace Optizelle{
                 }
             };
            
-            // Checks whether we have a valid parameter label.
-            struct is_param :
-                public std::unary_function<std::string const &, bool>
+            // Checks whether we have a valid parameter 
+            struct is_param : public std::function <
+                bool(typename RestartPackage <std::string>::tuple const &) > 
             {
-                bool operator () (std::string const & name) const {
+                bool operator () (
+                    typename RestartPackage <std::string>::tuple const & item
+                ){
                     if( typename Unconstrained <Real,XX>::Restart
-                            ::is_param()(name) ||
-                        name == "PSchur_right_type" ||
-                        name == "PSchur_left_type" 
+                            ::is_param()(item) ||
+                        (item.first=="PSchur_right_type" &&
+                            Operators::is_valid()(item.second)) ||
+                        (item.first=="PSchur_left_type" &&
+                            Operators::is_valid()(item.second))
                     ) 
                         return true;
                     else
@@ -4730,19 +4729,23 @@ namespace Optizelle{
                 }
             };
             
-            // Checks whether we have a valid variable label
-            struct is_x : public std::unary_function<std::string, bool> {
-                bool operator () (std::string const & name) const {
+            // Checks whether we have a valid variable
+            struct is_x : public std::function <
+                bool(typename RestartPackage <X_Vector>::tuple const &) > 
+            {
+                bool operator () (
+                    typename RestartPackage <X_Vector>::tuple const & item
+                ){
                     if( typename Unconstrained <Real,XX>::Restart
-                            ::is_x()(name) ||
-                        name == "dx_n" ||
-                        name == "dx_ncp" ||
-                        name == "dx_t" ||
-                        name == "dx_t_uncorrected" ||
-                        name == "dx_tcp_uncorrected" ||
-                        name == "H_dxn" ||
-                        name == "W_gradpHdxn" ||
-                        name == "H_dxtuncorrected" 
+                            ::is_x()(item) ||
+                        item.first == "dx_n" ||
+                        item.first == "dx_ncp" ||
+                        item.first == "dx_t" ||
+                        item.first == "dx_t_uncorrected" ||
+                        item.first == "dx_tcp_uncorrected" ||
+                        item.first == "H_dxn" ||
+                        item.first == "W_gradpHdxn" ||
+                        item.first == "H_dxtuncorrected" 
                     ) 
                         return true;
                     else
@@ -4750,14 +4753,18 @@ namespace Optizelle{
                 }
             };
             
-            // Checks whether we have a valid equality multiplier label
-            struct is_y : public std::unary_function<std::string, bool> {
-                bool operator () (std::string const & name) const {
-                    if( name == "y" ||
-                        name == "dy" ||
-                        name == "g_x" ||
-                        name == "gpxdxn_p_gx" ||
-                        name == "gpxdxt"
+            // Checks whether we have a valid equality multiplier 
+            struct is_y : public std::function <
+                bool(typename RestartPackage <Y_Vector>::tuple const &) > 
+            {
+                bool operator () (
+                    typename RestartPackage <Y_Vector>::tuple const & item
+                ){
+                    if( item.first == "y" ||
+                        item.first == "dy" ||
+                        item.first == "g_x" ||
+                        item.first == "gpxdxn_p_gx" ||
+                        item.first == "gpxdxt"
                     ) 
                         return true;
                     else
@@ -4766,64 +4773,25 @@ namespace Optizelle{
             };
 
             // Checks whether we have valid labels
-            static void checkLabels(
+            static void checkItems(
                 Messaging const & msg,
                 Reals const & reals,
-                Nats const & nats,
+                Naturals const & nats,
                 Params const & params,
                 X_Vectors const & xs,
                 Y_Vectors const & ys
             ) {
-                Utility::checkLabels(msg,is_real(),reals.first," real name: ");
-                Utility::checkLabels(msg,is_nat(),nats.first," natural name: ");
-                Utility::checkLabels(
-                    msg,is_param(),params.first," paramater name: ");
-                Utility::checkLabels(msg,is_x(),xs.first," variable name: ");
-                Utility::checkLabels(
-                    msg,is_y(),ys.first," equality multiplier name: ");
+                Utility::checkItems <Real> (
+                    msg,is_real(),reals," real name: ");
+                Utility::checkItems <Natural> (
+                    msg,is_nat(),nats," natural name: ");
+                Utility::checkItems <std::string> (
+                    msg,is_param(),params," paramater: ");
+                Utility::checkItems <X_Vector> (
+                    msg,is_x(),xs," variable name: ");
+                Utility::checkItems <Y_Vector> (
+                    msg,is_y(),ys," equality multiplier name: ");
             }
-            
-            // Checks whether or not the value used to represent a parameter
-            // is valid.  This function returns a string with the error
-            // if there is one.  Otherwise, it returns an empty string.
-            struct checkParamVal : public std::binary_function
-                <std::string const &,std::string const &,std::string>
-            {
-                std::string operator() (
-                    std::string const & label,
-                    std::string const & val
-                ) const {
-
-                    // Create a base message
-                    const std::string base
-                        ="During serialization, found an invalid ";
-
-                    // Used to build the message 
-                    std::stringstream ss;
-
-                    // Check the unconstrained parameters
-                    if(typename Unconstrained <Real,XX>::Restart
-                        ::is_param()(label)
-                    ) {
-                        ss << typename Unconstrained <Real,XX>::Restart
-                            ::checkParamVal()(label,val);
-
-                    // Check the type of the left preconditioner to the
-                    // augmented system
-                    } else if(label=="PSchur_left_type"){
-                        if(!Operators::is_valid()(val))
-                            ss << base << "preconditioner type: " << val;
-                    
-                    // Check the type of the right preconditioner to the
-                    // augmented system
-                    } else if(label=="PSchur_right_type"){
-                        if(!Operators::is_valid()(val))
-                            ss << base << "preconditioner type: " << val;
-                    }
-
-                    return ss.str();
-                }
-            };
             
             // Copy out all equality multipliers 
             static void stateToVectors(
@@ -4831,87 +4799,61 @@ namespace Optizelle{
                 X_Vectors & xs,
                 Y_Vectors & ys
             ) {
-                ys.first.emplace_back("y");
-                ys.second.emplace_back(std::move(state.y));
-                ys.first.emplace_back("dy");
-                ys.second.emplace_back(std::move(state.dy));
-                ys.first.emplace_back("g_x");
-                ys.second.emplace_back(std::move(state.g_x));
-                ys.first.emplace_back("gpxdxn_p_gx");
-                ys.second.emplace_back(std::move(state.gpxdxn_p_gx));
-                ys.first.emplace_back("gpxdxt");
-                ys.second.emplace_back(std::move(state.gpxdxt));
-                xs.first.emplace_back("dx_n");
-                xs.second.emplace_back(std::move(state.dx_n));
-                xs.first.emplace_back("dx_ncp");
-                xs.second.emplace_back(std::move(state.dx_ncp));
-                xs.first.emplace_back("dx_t");
-                xs.second.emplace_back(std::move(state.dx_t));
-                xs.first.emplace_back("dx_t_uncorrected");
-                xs.second.emplace_back(std::move(state.dx_t_uncorrected));
-                xs.first.emplace_back("dx_tcp_uncorrected");
-                xs.second.emplace_back(std::move(state.dx_tcp_uncorrected));
-                xs.first.emplace_back("H_dxn");
-                xs.second.emplace_back(std::move(state.H_dxn));
-                xs.first.emplace_back("W_gradpHdxn");
-                xs.second.emplace_back(std::move(state.W_gradpHdxn));
-                xs.first.emplace_back("H_dxtuncorrected");
-                xs.second.emplace_back(std::move(state.H_dxtuncorrected));
+                ys.emplace_back("y",std::move(state.y));
+                ys.emplace_back("dy",std::move(state.dy));
+                ys.emplace_back("g_x",std::move(state.g_x));
+                ys.emplace_back("gpxdxn_p_gx",std::move(state.gpxdxn_p_gx));
+                ys.emplace_back("gpxdxt",std::move(state.gpxdxt));
+                
+                xs.emplace_back("dx_n",std::move(state.dx_n));
+                xs.emplace_back("dx_ncp",std::move(state.dx_ncp));
+                xs.emplace_back("dx_t",std::move(state.dx_t));
+                xs.emplace_back("dx_t_uncorrected",
+                    std::move(state.dx_t_uncorrected));
+                xs.emplace_back("dx_tcp_uncorrected",
+                    std::move(state.dx_tcp_uncorrected));
+                xs.emplace_back("H_dxn",std::move(state.H_dxn));
+                xs.emplace_back("W_gradpHdxn",std::move(state.W_gradpHdxn));
+                xs.emplace_back("H_dxtuncorrected",
+                    std::move(state.H_dxtuncorrected));
             }
 
             // Copy out all the scalar information
             static void stateToScalars(
                 typename State::t & state,
                 Reals & reals,
-                Nats & nats,
+                Naturals & nats,
                 Params & params
             ) { 
                 // Copy in all the real numbers
-                reals.first.emplace_back("zeta");
-                reals.second.emplace_back(state.zeta);
-                reals.first.emplace_back("eta0");
-                reals.second.emplace_back(state.eta0);
-                reals.first.emplace_back("rho");
-                reals.second.emplace_back(state.rho);
-                reals.first.emplace_back("rho_old");
-                reals.second.emplace_back(state.rho_old);
-                reals.first.emplace_back("rho_bar");
-                reals.second.emplace_back(state.rho_bar);
-                reals.first.emplace_back("eps_constr");
-                reals.second.emplace_back(state.eps_constr);
-                reals.first.emplace_back("xi_qn");
-                reals.second.emplace_back(state.xi_qn);
-                reals.first.emplace_back("xi_pg");
-                reals.second.emplace_back(state.xi_pg);
-                reals.first.emplace_back("xi_proj");
-                reals.second.emplace_back(state.xi_proj);
-                reals.first.emplace_back("xi_tang");
-                reals.second.emplace_back(state.xi_tang);
-                reals.first.emplace_back("xi_lmh");
-                reals.second.emplace_back(state.xi_lmh);
-                reals.first.emplace_back("xi_lmg");
-                reals.second.emplace_back(state.xi_lmg);
-                reals.first.emplace_back("xi_4");
-                reals.second.emplace_back(state.xi_4);
-                reals.first.emplace_back("rpred");
-                reals.second.emplace_back(state.rpred);
-                reals.first.emplace_back("norm_gxtyp");
-                reals.second.emplace_back(state.norm_gxtyp);
-                reals.first.emplace_back("norm_gpxdxnpgx");
-                reals.second.emplace_back(state.norm_gpxdxnpgx);
+                reals.emplace_back("zeta",std::move(state.zeta));
+                reals.emplace_back("eta0",std::move(state.eta0));
+                reals.emplace_back("rho",std::move(state.rho));
+                reals.emplace_back("rho_old",std::move(state.rho_old));
+                reals.emplace_back("rho_bar",std::move(state.rho_bar));
+                reals.emplace_back("eps_constr",std::move(state.eps_constr));
+                reals.emplace_back("xi_qn",std::move(state.xi_qn));
+                reals.emplace_back("xi_pg",std::move(state.xi_pg));
+                reals.emplace_back("xi_proj",std::move(state.xi_proj));
+                reals.emplace_back("xi_tang",std::move(state.xi_tang));
+                reals.emplace_back("xi_lmh",std::move(state.xi_lmh));
+                reals.emplace_back("xi_lmg",std::move(state.xi_lmg));
+                reals.emplace_back("xi_4",std::move(state.xi_4));
+                reals.emplace_back("rpred",std::move(state.rpred));
+                reals.emplace_back("norm_gxtyp",std::move(state.norm_gxtyp));
+                reals.emplace_back("norm_gpxdxnpgx",
+                    std::move(state.norm_gpxdxnpgx));
 
                 // Copy in all the natural numbers
-                nats.first.emplace_back("augsys_iter_max");
-                nats.second.emplace_back(state.augsys_iter_max);
-                nats.first.emplace_back("augsys_rst_freq");
-                nats.second.emplace_back(state.augsys_rst_freq);
+                nats.emplace_back("augsys_iter_max",
+                    std::move(state.augsys_iter_max));
+                nats.emplace_back("augsys_rst_freq",
+                    std::move(state.augsys_rst_freq));
 
                 // Copy in all the parameters
-                params.first.emplace_back("PSchur_left_type");
-                params.second.emplace_back(
+                params.emplace_back("PSchur_left_type",
                     Operators::to_string(state.PSchur_left_type));
-                params.first.emplace_back("PSchur_right_type");
-                params.second.emplace_back(
+                params.emplace_back("PSchur_right_type",
                     Operators::to_string(state.PSchur_right_type));
             }
             
@@ -4921,66 +4863,42 @@ namespace Optizelle{
                 X_Vectors & xs,
                 Y_Vectors & ys
             ) {
-                typename std::list <X_Vector>::iterator y
-                    =ys.second.begin();
-                for(typename std::list <std::string>::iterator name 
-                        =ys.first.begin();
-                    name!=ys.first.end();
-                ) {
-                    // Make a copy of the current iterators.  We use these
-                    // to remove elements
-                    typename std::list <std::string>::iterator name0 = name;
-                    typename std::list <Y_Vector>::iterator y0 = y;
-
-                    // Increment our primary iterators 
-                    name++; y++;
-
-                    // Determine which variable we're reading in and then splice
-                    // it in the correct location
-                    if(*name0=="y")
-                        state.y = std::move(*y0);
-                    else if(*name0=="dy")
-                        state.dy = std::move(*y0);
-                    else if(*name0=="g_x")
-                        state.g_x = std::move(*y0);
-                    else if(*name0=="gpxdxn_p_gx")
-                        state.gpxdxn_p_gx = std::move(*y0);
-                    else if(*name0=="gpxdxt")
-                        state.gpxdxt = std::move(*y0);
+                for(typename Y_Vectors::iterator item = ys.begin();
+                    item!=ys.end();
+                    item++
+                ){
+                    if(item->first=="y")
+                        state.y = std::move(item->second);
+                    else if(item->first=="dy")
+                        state.dy = std::move(item->second);
+                    else if(item->first=="g_x")
+                        state.g_x = std::move(item->second);
+                    else if(item->first=="gpxdxn_p_gx")
+                        state.gpxdxn_p_gx = std::move(item->second);
+                    else if(item->first=="gpxdxt")
+                        state.gpxdxt = std::move(item->second);
                 }
 
-                typename std::list <X_Vector>::iterator x
-                    =xs.second.begin();
-                for(typename std::list <std::string>::iterator name 
-                        =xs.first.begin();
-                    name!=xs.first.end();
-                ) {
-                    // Make a copy of the current iterators.  We use these
-                    // to remove elements
-                    typename std::list <std::string>::iterator name0 = name;
-                    typename std::list <X_Vector>::iterator x0 = x;
-
-                    // Increment our primary iterators 
-                    name++; x++;
-
-                    // Determine which variable we're reading in and then splice
-                    // it in the correct location
-                    if(*name0=="dx_n")
-                        state.dx_n = std::move(*x0);
-                    else if(*name0=="dx_ncp")
-                        state.dx_ncp = std::move(*x0);
-                    else if(*name0=="dx_t")
-                        state.dx_t = std::move(*x0);
-                    else if(*name0=="dx_t_uncorrected")
-                        state.dx_t_uncorrected = std::move(*x0);
-                    else if(*name0=="dx_tcp_uncorrected")
-                        state.dx_tcp_uncorrected = std::move(*x0);
-                    else if(*name0=="H_dxn")
-                        state.H_dxn = std::move(*x0);
-                    else if(*name0=="W_gradpHdxn")
-                        state.W_gradpHdxn = std::move(*x0);
-                    else if(*name0=="H_dxtuncorrected")
-                        state.H_dxtuncorrected = std::move(*x0);
+                for(typename X_Vectors::iterator item = xs.begin();
+                    item!=xs.end();
+                    item++
+                ){
+                    if(item->first=="dx_n")
+                        state.dx_n = std::move(item->second);
+                    else if(item->first=="dx_ncp")
+                        state.dx_ncp = std::move(item->second);
+                    else if(item->first=="dx_t")
+                        state.dx_t = std::move(item->second);
+                    else if(item->first=="dx_t_uncorrected")
+                        state.dx_t_uncorrected = std::move(item->second);
+                    else if(item->first=="dx_tcp_uncorrected")
+                        state.dx_tcp_uncorrected = std::move(item->second);
+                    else if(item->first=="H_dxn")
+                        state.H_dxn = std::move(item->second);
+                    else if(item->first=="W_gradpHdxn")
+                        state.W_gradpHdxn = std::move(item->second);
+                    else if(item->first=="H_dxtuncorrected")
+                        state.H_dxtuncorrected = std::move(item->second);
                 }
             }
             
@@ -4988,53 +4906,70 @@ namespace Optizelle{
             static void scalarsToState(
                 typename State::t & state,
                 Reals & reals,
-                Nats & nats,
+                Naturals & nats,
                 Params & params
             ) { 
                 // Copy in any reals 
-                typename std::list <Real>::iterator real=reals.second.begin();
-                for(std::list <std::string>::iterator name=reals.first.begin();
-                    name!=reals.first.end();
-                    name++,real++
+                for(typename Reals::iterator item = reals.begin();
+                    item!=reals.end();
+                    item++
                 ){
-                    if(*name=="zeta") state.zeta=*real;
-                    else if(*name=="eta0") state.eta0=*real;
-                    else if(*name=="rho") state.rho=*real;
-                    else if(*name=="rho_old") state.rho_old=*real;
-                    else if(*name=="rho_bar") state.rho_bar=*real;
-                    else if(*name=="eps_constr") state.eps_constr=*real;
-                    else if(*name=="xi_qn") state.xi_qn=*real;
-                    else if(*name=="xi_pg") state.xi_pg=*real;
-                    else if(*name=="xi_proj") state.xi_proj=*real;
-                    else if(*name=="xi_tang") state.xi_tang=*real;
-                    else if(*name=="xi_lmh") state.xi_lmh=*real;
-                    else if(*name=="xi_lmg") state.xi_lmg=*real;
-                    else if(*name=="xi_4") state.xi_4=*real;
-                    else if(*name=="rpred") state.rpred=*real;
-                    else if(*name=="norm_gxtyp") state.norm_gxtyp=*real;
-                    else if(*name=="norm_gpxdxnpgx") state.norm_gpxdxnpgx=*real;
+                    if(item->first=="zeta")
+                        state.zeta=std::move(item->second);
+                    else if(item->first=="eta0")
+                        state.eta0=std::move(item->second);
+                    else if(item->first=="rho")
+                        state.rho=std::move(item->second);
+                    else if(item->first=="rho_old")
+                        state.rho_old=std::move(item->second);
+                    else if(item->first=="rho_bar")
+                        state.rho_bar=std::move(item->second);
+                    else if(item->first=="eps_constr")
+                        state.eps_constr=std::move(item->second);
+                    else if(item->first=="xi_qn")
+                        state.xi_qn=std::move(item->second);
+                    else if(item->first=="xi_pg")
+                        state.xi_pg=std::move(item->second);
+                    else if(item->first=="xi_proj")
+                        state.xi_proj=std::move(item->second);
+                    else if(item->first=="xi_tang")
+                        state.xi_tang=std::move(item->second);
+                    else if(item->first=="xi_lmh")
+                        state.xi_lmh=std::move(item->second);
+                    else if(item->first=="xi_lmg")
+                        state.xi_lmg=std::move(item->second);
+                    else if(item->first=="xi_4")
+                        state.xi_4=std::move(item->second);
+                    else if(item->first=="rpred")
+                        state.rpred=std::move(item->second);
+                    else if(item->first=="norm_gxtyp")
+                        state.norm_gxtyp=std::move(item->second);
+                    else if(item->first=="norm_gpxdxnpgx")
+                        state.norm_gpxdxnpgx=std::move(item->second);
                 }
                 
                 // Next, copy in any naturals
-                std::list <Natural>::iterator nat=nats.second.begin();
-                for(std::list <std::string>::iterator name=nats.first.begin();
-                    name!=nats.first.end();
-                    name++,nat++
+                for(typename Naturals::iterator item = nats.begin();
+                    item!=nats.end();
+                    item++
                 ){
-                    if(*name=="augsys_iter_max") state.augsys_iter_max=*nat;
-                    else if(*name=="augsys_rst_freq")state.augsys_rst_freq=*nat;
+                    if(item->first=="augsys_iter_max")
+                        state.augsys_iter_max=std::move(item->second);
+                    else if(item->first=="augsys_rst_freq")
+                        state.augsys_rst_freq=std::move(item->second);
                 }
                 
                 // Next, copy in any parameters 
-                std::list <std::string>::iterator param=params.second.begin();
-                for(std::list <std::string>::iterator name=params.first.begin();
-                    name!=params.first.end();
-                    name++,param++
+                for(typename Params::iterator item = params.begin();
+                    item!=params.end();
+                    item++
                 ){
-                    if(*name=="PSchur_left_type")
-                        state.PSchur_left_type=Operators::from_string(*param);
-                    else if(*name=="PSchur_right_type")
-                        state.PSchur_right_type=Operators::from_string(*param);
+                    if(item->first=="PSchur_left_type")
+                        state.PSchur_left_type
+                            = Operators::from_string(item->second);
+                    else if(item->first=="PSchur_right_type")
+                        state.PSchur_right_type
+                            =Operators::from_string(item->second);
                 }
             }
 
@@ -5044,7 +4979,7 @@ namespace Optizelle{
                 X_Vectors & xs,
                 Y_Vectors & ys,
                 Reals & reals,
-                Nats & nats,
+                Naturals & nats,
                 Params & params
             ) {
                 // Copy out all of the variable information
@@ -5067,15 +5002,12 @@ namespace Optizelle{
                 X_Vectors & xs,
                 Y_Vectors & ys,
                 Reals & reals,
-                Nats & nats,
+                Naturals & nats,
                 Params & params
             ) {
 
-                // Check the labels on the user input
-                checkLabels(msg,reals,nats,params,xs,ys);
-
-                // Check the strings used to represent parameters
-                Utility::checkParams(msg,checkParamVal(),params);
+                // Check the user input 
+                checkItems(msg,reals,nats,params,xs,ys);
 
                 // Copy in the variables 
                 Unconstrained <Real,XX>
@@ -7163,31 +7095,28 @@ namespace Optizelle{
             // Disallow constructors
             NO_CONSTRUCTORS(Restart);
        
-            // Holds restart information
-            typedef std::pair < std::list <std::string>,
-                                std::list <Real> > Reals;
-            typedef std::pair < std::list <std::string>,
-                                std::list <Natural> > Nats;
-            typedef std::pair < std::list <std::string>,
-                                std::list <std::string> > Params; 
-            typedef std::pair < std::list <std::string>,
-                                std::list <X_Vector> > X_Vectors;
-            typedef std::pair < std::list <std::string>,
-                                std::list <Z_Vector> > Z_Vectors;
+            // Create some type shortcuts 
+            typedef typename RestartPackage <Real>::t Reals;
+            typedef typename RestartPackage <Natural>::t Naturals;
+            typedef typename RestartPackage <std::string>::t Params;
+            typedef typename RestartPackage <X_Vector>::t X_Vectors;
+            typedef typename RestartPackage <Z_Vector>::t Z_Vectors;
             
-            // Checks whether we have a valid real label.
-            struct is_real :
-                public std::unary_function<std::string const &, bool>
+            // Checks whether we have a valid real 
+            struct is_real : public std::function <
+                bool(typename RestartPackage <Real>::tuple const &) > 
             {
-                bool operator () (std::string const & name) const {
+                bool operator () (
+                    typename RestartPackage <Real>::tuple const & item
+                ){
                     if( typename Unconstrained <Real,XX>::Restart
-                            ::is_real()(name) ||
-                        name == "mu" ||
-                        name == "mu_est" ||
-                        name == "mu_typ" ||
-                        name == "eps_mu" ||
-                        name == "sigma" ||
-                        name == "gamma" 
+                            ::is_real()(item) ||
+                        item.first == "mu" ||
+                        item.first == "mu_est" ||
+                        item.first == "mu_typ" ||
+                        item.first == "eps_mu" ||
+                        item.first == "sigma" ||
+                        item.first == "gamma" 
                     )
                         return true;
                     else
@@ -7195,13 +7124,15 @@ namespace Optizelle{
                     }
             };
             
-            // Checks whether we have a valid natural number label.
-            struct is_nat :
-                public std::unary_function<std::string const &, bool>
+            // Checks whether we have a valid natural number
+            struct is_nat : public std::function <
+                bool(typename RestartPackage <Natural>::tuple const &) > 
             {
-                bool operator () (std::string const & name) const {
+                bool operator () (
+                    typename RestartPackage <Natural>::tuple const & item
+                ){
                     if( typename Unconstrained <Real,XX>::Restart
-                        ::is_nat()(name)
+                            ::is_nat()(item)
                     )
                         return true;
                     else
@@ -7209,15 +7140,19 @@ namespace Optizelle{
                 }
             };
            
-            // Checks whether we have a valid parameter label.
-            struct is_param :
-                public std::unary_function<std::string const &, bool>
+            // Checks whether we have a valid parameter 
+            struct is_param : public std::function <
+                bool(typename RestartPackage <std::string>::tuple const &) > 
             {
-                bool operator () (std::string const & name) const {
+                bool operator () (
+                    typename RestartPackage <std::string>::tuple const & item
+                ){
                     if( typename Unconstrained <Real,XX>::Restart
-                            ::is_param()(name) ||
-                        name == "ipm" ||
-                        name == "cstrat"
+                            ::is_param()(item) ||
+                        (item.first=="ipm" &&
+                            InteriorPointMethod::is_valid()(item.second)) ||
+                        (item.first=="cstrat" &&
+                            CentralityStrategy::is_valid()(item.second)) 
                     ) 
                         return true;
                     else
@@ -7225,24 +7160,32 @@ namespace Optizelle{
                 }
             };
             
-            // Checks whether we have a valid variable label
-            struct is_x : public std::unary_function<std::string, bool> {
-                bool operator () (std::string const & name) const {
+            // Checks whether we have a valid variable
+            struct is_x : public std::function <
+                bool(typename RestartPackage <X_Vector>::tuple const &) > 
+            {
+                bool operator () (
+                    typename RestartPackage <X_Vector>::tuple const & item
+                ){
                     if( typename Unconstrained <Real,XX>::Restart
-                            ::is_x()(name) 
-                    ) 
+                            ::is_x()(item)
+                    )
                         return true;
                     else
                         return false;
                 }
             };
             
-            // Checks whether we have a valid inequality multiplier label
-            struct is_z : public std::unary_function<std::string, bool> {
-                bool operator () (std::string const & name) const {
-                    if( name == "z" ||
-                        name == "dz" ||
-                        name == "h_x"
+            // Checks whether we have a valid inequality multiplier 
+            struct is_z : public std::function <
+                bool(typename RestartPackage <Z_Vector>::tuple const &) > 
+            {
+                bool operator () (
+                    typename RestartPackage <Z_Vector>::tuple const & item
+                ){
+                    if( item.first == "z" ||
+                        item.first == "dz" ||
+                        item.first == "h_x"
                     )
                         return true;
                     else
@@ -7251,59 +7194,25 @@ namespace Optizelle{
             };
 
             // Checks whether we have valid labels
-            static void checkLabels(
+            static void checkItems(
                 Messaging const & msg,
                 Reals const & reals,
-                Nats const & nats,
+                Naturals const & nats,
                 Params const & params,
                 X_Vectors const & xs,
                 Z_Vectors const & zs
             ) {
-                Utility::checkLabels(msg,is_real(),reals.first," real name: ");
-                Utility::checkLabels(msg,is_nat(),nats.first," natural name: ");
-                Utility::checkLabels(
-                    msg,is_param(),params.first," paramater name: ");
-                Utility::checkLabels(msg,is_x(),xs.first," variable name: ");
-                Utility::checkLabels(
-                    msg,is_z(),zs.first," inequality multiplier name: ");
+                Utility::checkItems <Real> (
+                    msg,is_real(),reals," real name: ");
+                Utility::checkItems <Natural> (
+                    msg,is_nat(),nats," natural name: ");
+                Utility::checkItems <std::string> (
+                    msg,is_param(),params," paramater: ");
+                Utility::checkItems <X_Vector> (
+                    msg,is_x(),xs," variable name: ");
+                Utility::checkItems <Z_Vector> (
+                    msg,is_z(),zs," inequality multiplier name: ");
             }
-            
-            // Checks whether or not the value used to represent a parameter
-            // is valid.  This function returns a string with the error
-            // if there is one.  Otherwise, it returns an empty string.
-            struct checkParamVal : public std::binary_function
-                <std::string const &,std::string const &,std::string>
-            {
-                std::string operator() (
-                    std::string const & label,
-                    std::string const & val
-                ) const {
-
-                    // Create a base message
-                    const std::string base
-                        ="During serialization, found an invalid ";
-
-                    // Used to build the message 
-                    std::stringstream ss;
-
-                    // Check the unconstrained parameters
-                    if(typename Unconstrained <Real,XX>
-                        ::Restart::is_param()(label)
-                    ) {
-                        ss << typename Unconstrained <Real,XX>::Restart
-                            ::checkParamVal()(label,val);
-
-                    // Check the interior point method type
-                    } else if(label=="ipm") {
-                        if(!InteriorPointMethod::is_valid()(val))
-                            ss << base << "interior point method type: " << val;
-                    } else if(label=="cstrat") {
-                        if(!CentralityStrategy::is_valid()(val))
-                            ss << base << "centrality strategy: " << val;
-                    }
-                    return ss.str();
-                }
-            };
             
             // Copy out the inequality multipliers 
             static void stateToVectors(
@@ -7311,41 +7220,29 @@ namespace Optizelle{
                 X_Vectors & xs,
                 Z_Vectors & zs
             ) {
-                zs.first.emplace_back("z");
-                zs.second.emplace_back(std::move(state.z));
-                zs.first.emplace_back("dz");
-                zs.second.emplace_back(std::move(state.dz));
-                zs.first.emplace_back("h_x");
-                zs.second.emplace_back(std::move(state.h_x));
+                zs.emplace_back("z",std::move(state.z));
+                zs.emplace_back("dz",std::move(state.dz));
+                zs.emplace_back("h_x",std::move(state.h_x));
             }
             
             // Copy out the scalar information
             static void stateToScalars(
                 typename State::t & state,
                 Reals & reals,
-                Nats & nats,
+                Naturals & nats,
                 Params & params
             ) {
                 // Copy in all the real numbers
-                reals.first.emplace_back("mu");
-                reals.second.emplace_back(state.mu);
-                reals.first.emplace_back("mu_est");
-                reals.second.emplace_back(state.mu_est);
-                reals.first.emplace_back("mu_typ");
-                reals.second.emplace_back(state.mu_typ);
-                reals.first.emplace_back("eps_mu");
-                reals.second.emplace_back(state.eps_mu);
-                reals.first.emplace_back("sigma");
-                reals.second.emplace_back(state.sigma);
-                reals.first.emplace_back("gamma");
-                reals.second.emplace_back(state.gamma);
+                reals.emplace_back("mu",std::move(state.mu));
+                reals.emplace_back("mu_est",std::move(state.mu_est));
+                reals.emplace_back("eps_mu",std::move(state.eps_mu));
+                reals.emplace_back("sigma",std::move(state.sigma));
+                reals.emplace_back("gamma",std::move(state.gamma));
 
                 // Copy in all of the parameters
-                params.first.emplace_back("ipm");
-                params.second.emplace_back(
+                params.emplace_back("ipm",
                     InteriorPointMethod::to_string(state.ipm));
-                params.first.emplace_back("cstrat");
-                params.second.emplace_back(
+                params.emplace_back("cstrat",
                     CentralityStrategy::to_string(state.cstrat));
             }
             
@@ -7355,28 +7252,16 @@ namespace Optizelle{
                 X_Vectors & xs,
                 Z_Vectors & zs
             ) {
-                typename std::list <Z_Vector>::iterator z
-                    =zs.second.begin();
-                for(typename std::list <std::string>::iterator name
-                        =zs.first.begin();
-                    name!=zs.first.end();
-                ) {
-                    // Make a copy of the current iterators.  We use these
-                    // to remove elements
-                    typename std::list <std::string>::iterator name0 = name;
-                    typename std::list <Z_Vector>::iterator z0 = z;
-
-                    // Increment our primary iterators 
-                    name++; z++;
-
-                    // Determine which variable we're reading in and then splice
-                    // it in the correct location
-                    if(*name0=="z")
-                        state.z = std::move(*z0);
-                    else if(*name0=="dz")
-                        state.dz = std::move(*z0);
-                    else if(*name0=="h_x")
-                        state.h_x = std::move(*z0);
+                for(typename Z_Vectors::iterator item = zs.begin();
+                    item!=zs.end();
+                    item++
+                ){
+                    if(item->first=="z")
+                        state.z = std::move(item->second);
+                    else if(item->first=="dz")
+                        state.dz = std::move(item->second);
+                    else if(item->first=="h_x")
+                        state.h_x = std::move(item->second);
                 }
             }
             
@@ -7384,33 +7269,39 @@ namespace Optizelle{
             static void scalarsToState(
                 typename State::t & state,
                 Reals & reals,
-                Nats & nats,
+                Naturals & nats,
                 Params & params
             ) { 
                 // Copy in any reals 
-                typename std::list <Real>::iterator real=reals.second.begin();
-                for(std::list <std::string>::iterator name=reals.first.begin();
-                    name!=reals.first.end();
-                    name++,real++
+                for(typename Reals::iterator item = reals.begin();
+                    item!=reals.end();
+                    item++
                 ){
-                    if(*name=="mu") state.mu=*real;
-                    else if(*name=="mu_est") state.mu_est=*real;
-                    else if(*name=="mu_typ") state.mu_typ=*real;
-                    else if(*name=="eps_mu") state.eps_mu=*real;
-                    else if(*name=="sigma") state.sigma=*real;
-                    else if(*name=="gamma") state.gamma=*real;
+                    if(item->first=="mu")
+                        state.mu=std::move(item->second);
+                    else if(item->first=="mu_est")
+                        state.mu_est=std::move(item->second);
+                    else if(item->first=="mu_typ")
+                        state.mu_typ=std::move(item->second);
+                    else if(item->first=="eps_mu")
+                        state.eps_mu=std::move(item->second);
+                    else if(item->first=="sigma")
+                        state.sigma=std::move(item->second);
+                    else if(item->first=="gamma")
+                        state.gamma=std::move(item->second);
                 } 
                     
                 // Next, copy in any parameters 
-                std::list <std::string>::iterator param=params.second.begin();
-                for(std::list <std::string>::iterator name=params.first.begin();
-                    name!=params.first.end();
-                    name++,param++
+                for(typename Params::iterator item = params.begin();
+                    item!=params.end();
+                    item++
                 ){
-                    if(*name=="ipm")
-                        state.ipm=InteriorPointMethod::from_string(*param);
-                    else if(*name=="cstrat")
-                        state.cstrat=CentralityStrategy::from_string(*param);
+                    if(item->first=="ipm")
+                        state.ipm
+                            = InteriorPointMethod::from_string(item->second);
+                    else if(item->first=="cstrat")
+                        state.cstrat
+                            = CentralityStrategy::from_string(item->second);
                 }
             }
 
@@ -7420,7 +7311,7 @@ namespace Optizelle{
                 X_Vectors & xs,
                 Z_Vectors & zs,
                 Reals & reals,
-                Nats & nats,
+                Naturals & nats,
                 Params & params
             ) {
                 // Copy out all of the variable information
@@ -7443,14 +7334,11 @@ namespace Optizelle{
                 X_Vectors & xs,
                 Z_Vectors & zs,
                 Reals & reals,
-                Nats & nats,
+                Naturals & nats,
                 Params & params
             ) {
-                // Check the labels on the user input
-                checkLabels(msg,reals,nats,params,xs,zs);
-
-                // Check the strings used to represent parameters
-                Utility::checkParams(msg,checkParamVal(),params);
+                // Check the user input 
+                checkItems(msg,reals,nats,params,xs,zs);
 
                 // Copy in the variables 
                 Unconstrained <Real,XX>
@@ -8687,45 +8575,43 @@ namespace Optizelle{
             // Disallow constructors
             NO_CONSTRUCTORS(Restart);
        
-            // Holds restart information
-            typedef std::pair < std::list <std::string>,
-                                std::list <Real> > Reals;
-            typedef std::pair < std::list <std::string>,
-                                std::list <Natural> > Nats;
-            typedef std::pair < std::list <std::string>,
-                                std::list <std::string> > Params; 
-            typedef std::pair < std::list <std::string>,
-                                std::list <X_Vector> > X_Vectors;
-            typedef std::pair < std::list <std::string>,
-                                std::list <Y_Vector> > Y_Vectors;
-            typedef std::pair < std::list <std::string>,
-                                std::list <Z_Vector> > Z_Vectors;
+            // Create some type shortcuts 
+            typedef typename RestartPackage <Real>::t Reals;
+            typedef typename RestartPackage <Natural>::t Naturals;
+            typedef typename RestartPackage <std::string>::t Params;
+            typedef typename RestartPackage <X_Vector>::t X_Vectors;
+            typedef typename RestartPackage <Y_Vector>::t Y_Vectors;
+            typedef typename RestartPackage <Z_Vector>::t Z_Vectors;
             
-            // Checks whether we have a valid real label.
-            struct is_real :
-                public std::unary_function<std::string const &, bool>
+            // Checks whether we have a valid real 
+            struct is_real : public std::function <
+                bool(typename RestartPackage <Real>::tuple const &) > 
             {
-                bool operator () (std::string const & name) const {
+                bool operator () (
+                    typename RestartPackage <Real>::tuple const & item
+                ){
                     if( typename EqualityConstrained <Real,XX,YY>::Restart
-                            ::is_real()(name) ||
+                            ::is_real()(item) ||
                         typename InequalityConstrained <Real,XX,ZZ>::Restart
-                            ::is_real()(name)
+                            ::is_real()(item)
                     )
                         return true;
                     else
                         return false;
-                    }
+                }
             };
             
-            // Checks whether we have a valid natural number label.
-            struct is_nat :
-                public std::unary_function<std::string const &, bool>
+            // Checks whether we have a valid natural number
+            struct is_nat : public std::function <
+                bool(typename RestartPackage <Natural>::tuple const &) > 
             {
-                bool operator () (std::string const & name) const {
+                bool operator () (
+                    typename RestartPackage <Natural>::tuple const & item
+                ){
                     if( typename EqualityConstrained <Real,XX,YY>::Restart
-                            ::is_nat()(name) ||
+                            ::is_nat()(item) ||
                         typename InequalityConstrained <Real,XX,ZZ>::Restart
-                            ::is_nat()(name)
+                            ::is_nat()(item)
                     )
                         return true;
                     else
@@ -8733,15 +8619,17 @@ namespace Optizelle{
                 }
             };
            
-            // Checks whether we have a valid parameter label.
-            struct is_param :
-                public std::unary_function<std::string const &, bool>
+            // Checks whether we have a valid parameter 
+            struct is_param : public std::function <
+                bool(typename RestartPackage <std::string>::tuple const &) > 
             {
-                bool operator () (std::string const & name) const {
+                bool operator () (
+                    typename RestartPackage <std::string>::tuple const & item
+                ){
                     if( typename EqualityConstrained <Real,XX,YY>::Restart
-                            ::is_param()(name) ||
+                            ::is_param()(item) ||
                         typename InequalityConstrained <Real,XX,ZZ>::Restart
-                            ::is_param()(name)
+                            ::is_param()(item)
                     ) 
                         return true;
                     else
@@ -8749,13 +8637,17 @@ namespace Optizelle{
                 }
             };
             
-            // Checks whether we have a valid variable label
-            struct is_x : public std::unary_function<std::string, bool> {
-                bool operator () (std::string const & name) const {
+            // Checks whether we have a valid variable
+            struct is_x : public std::function <
+                bool(typename RestartPackage <X_Vector>::tuple const &) > 
+            {
+                bool operator () (
+                    typename RestartPackage <X_Vector>::tuple const & item
+                ){
                     if( typename EqualityConstrained <Real,XX,YY>::Restart
-                            ::is_x()(name) ||
+                            ::is_x()(item) ||
                         typename InequalityConstrained <Real,XX,ZZ>::Restart
-                            ::is_x()(name)
+                            ::is_x()(item)
                     ) 
                         return true;
                     else
@@ -8764,10 +8656,14 @@ namespace Optizelle{
             };
             
             // Checks whether we have a valid equality multiplier label
-            struct is_y : public std::unary_function<std::string, bool> {
-                bool operator () (std::string const & name) const {
+            struct is_y : public std::function <
+                bool(typename RestartPackage <Y_Vector>::tuple const &) > 
+            {
+                bool operator () (
+                    typename RestartPackage <Y_Vector>::tuple const & item
+                ){
                     if( typename EqualityConstrained <Real,XX,YY>::Restart
-                            ::is_y()(name)
+                            ::is_y()(item)
                     ) 
                         return true;
                     else
@@ -8775,11 +8671,15 @@ namespace Optizelle{
                 }
             };
             
-            // Checks whether we have a valid inequality multiplier label
-            struct is_z : public std::unary_function<std::string, bool> {
-                bool operator () (std::string const & name) const {
+            // Checks whether we have a valid inequality multiplier 
+            struct is_z : public std::function <
+                bool(typename RestartPackage <Z_Vector>::tuple const &) > 
+            {
+                bool operator () (
+                    typename RestartPackage <Z_Vector>::tuple const & item
+                ){
                     if( typename InequalityConstrained <Real,XX,ZZ>::Restart
-                            ::is_z()(name)
+                            ::is_z()(item)
                     ) 
                         return true;
                     else
@@ -8788,62 +8688,28 @@ namespace Optizelle{
             };
 
             // Checks whether we have valid labels
-            static void checkLabels(
+            static void checkItems(
                 Messaging const & msg,
                 Reals const & reals,
-                Nats const & nats,
+                Naturals const & nats,
                 Params const & params,
                 X_Vectors const & xs,
                 Y_Vectors const & ys,
                 Z_Vectors const & zs
             ) {
-                Utility::checkLabels(msg,is_real(),reals.first," real name: ");
-                Utility::checkLabels(msg,is_nat(),nats.first," natural name: ");
-                Utility::checkLabels(
-                    msg,is_param(),params.first," paramater name: ");
-                Utility::checkLabels(msg,is_x(),xs.first," variable name: ");
-                Utility::checkLabels(
-                    msg,is_y(),ys.first," equality multiplier name: ");
-                Utility::checkLabels(
-                    msg,is_z(),zs.first," inequality multiplier name: ");
+                Utility::checkItems <Real> (
+                    msg,is_real(),reals," real name: ");
+                Utility::checkItems <Natural> (
+                    msg,is_nat(),nats," natural name: ");
+                Utility::checkItems <std::string> (
+                    msg,is_param(),params," paramater: ");
+                Utility::checkItems <X_Vector> (
+                    msg,is_x(),xs," variable name: ");
+                Utility::checkItems <Y_Vector> (
+                    msg,is_y(),ys," equality multiplier name: ");
+                Utility::checkItems <Z_Vector> (
+                    msg,is_z(),zs," inequality multiplier name: ");
             }
-            
-            // Checks whether or not the value used to represent a parameter
-            // is valid.  This function returns a string with the error
-            // if there is one.  Otherwise, it returns an empty string.
-            struct checkParamVal : public std::binary_function
-                <std::string const &,std::string const &,std::string>
-            {
-                std::string operator() (
-                    std::string const & label,
-                    std::string const & val
-                ) const {
-
-                    // Create a base message
-                    const std::string base
-                        ="During serialization, found an invalid ";
-
-                    // Used to build the message 
-                    std::stringstream ss;
-
-                    // Check the equality parameters
-                    if(typename EqualityConstrained <Real,XX,YY>
-                        ::Restart::is_param()(label)
-                    ) {
-                        ss << typename EqualityConstrained <Real,XX,YY>
-                            ::Restart::checkParamVal()(label,val);
-
-                    // Check the inequality parameters
-                    } else if (typename InequalityConstrained <Real,XX,ZZ>
-                        ::Restart::is_param()(label)
-                    ) {
-                        ss << typename InequalityConstrained <Real,XX,ZZ>
-                            ::Restart::checkParamVal()(label,val);
-                    }
-
-                    return ss.str();
-                }
-            };
             
             // Release the data into structures controlled by the user 
             static void release(
@@ -8852,7 +8718,7 @@ namespace Optizelle{
                 Y_Vectors & ys,
                 Z_Vectors & zs,
                 Reals & reals,
-                Nats & nats,
+                Naturals & nats,
                 Params & params
             ) {
                 // Copy out all of the variable information
@@ -8880,15 +8746,11 @@ namespace Optizelle{
                 Y_Vectors & ys,
                 Z_Vectors & zs,
                 Reals & reals,
-                Nats & nats,
+                Naturals & nats,
                 Params & params
             ) {
-
-                // Check the labels on the user input
-                checkLabels(msg,reals,nats,params,xs,ys,zs);
-
-                // Check the strings used to represent parameters
-                Utility::checkParams(msg,checkParamVal(),params);
+                // Check the user input 
+                checkItems(msg,reals,nats,params,xs,ys,zs);
 
                 // Copy in the variables 
                 Unconstrained <Real,XX>

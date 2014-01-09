@@ -23,7 +23,7 @@ int main() {
     Optizelle::EqualityConstrained <double,Rm,Rm>::Restart::X_Vectors xs;
     Optizelle::EqualityConstrained <double,Rm,Rm>::Restart::Y_Vectors ys;
     Optizelle::EqualityConstrained <double,Rm,Rm>::Restart::Reals reals;
-    Optizelle::EqualityConstrained <double,Rm,Rm>::Restart::Nats nats;
+    Optizelle::EqualityConstrained <double,Rm,Rm>::Restart::Naturals nats;
     Optizelle::EqualityConstrained <double,Rm,Rm>::Restart::Params params;
     Optizelle::EqualityConstrained <double,Rm,Rm>::Restart
         ::release(state,xs,ys,reals,nats,params);

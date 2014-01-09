@@ -18,7 +18,7 @@ int main() {
     // Do a release 
     Optizelle::Unconstrained <double,Rm>::Restart::X_Vectors xs;
     Optizelle::Unconstrained <double,Rm>::Restart::Reals reals;
-    Optizelle::Unconstrained <double,Rm>::Restart::Nats nats;
+    Optizelle::Unconstrained <double,Rm>::Restart::Naturals nats;
     Optizelle::Unconstrained <double,Rm>::Restart::Params params;
     Optizelle::Unconstrained <double,Rm>::Restart
         ::release(state,xs,reals,nats,params);

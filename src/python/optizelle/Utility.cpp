@@ -1301,289 +1301,317 @@ namespace Optizelle {
             // Convert and return the member
             return PyInt_AsSsize_t(obj.get());
         }
+        
+        // Converts elements from C++ to Python 
+        namespace toPython {
                     
-        // Sets a floating point in a Python class 
-        void setFloat(
-            std::string const & name,
-            double const & value,
-            PyObject * const obj 
-        ) {
-            PyObjectPtr item(PyFloat_FromDouble(value));
-            PyObject_SetAttrString(obj,name.c_str(),item.get());
-        }
-        
-        // Sets a floating point in a C++ class 
-        void setFloat(
-            std::string const & name,
-            PyObject * const obj,
-            double & value
-        ) {
-            PyObjectPtr item(PyObject_GetAttrString(obj,name.c_str()));
-            value=PyFloat_AsDouble(item.get());
-        }
-        
-        // Sets an integer in a Python class 
-        void setNatural(
-            std::string const & name,
-            Natural const & value,
-            PyObject * const obj 
-        ) {
-            PyObjectPtr item(PyInt_FromSsize_t(value));
-            PyObject_SetAttrString(obj,name.c_str(),item.get());
-        }
-        
-        // Sets an integer in a C++ class 
-        void setNatural(
-            std::string const & name,
-            PyObject * const obj,
-            Natural & value
-        ) {
-            PyObjectPtr item(PyObject_GetAttrString(obj,name.c_str()));
-            value=PyInt_AsSsize_t(item.get());
-        }
-        
-        // Sets a vector in a Python class 
-        void setVector(
-            std::string const & name,
-            Vector const & value,
-            PyObject * const obj 
-        ) {
-            PyObjectPtr item(PyObject_GetAttrString(obj,name.c_str()));
-            const_cast <Vector &> (value).toPython(item.get());
-        }
-        
-        // Sets a vector in a C++ class 
-        void setVector(
-            std::string const & name,
-            PyObject * const obj,
-            Vector & value
-        ) {
-            PyObjectPtr item(PyObject_GetAttrString(obj,name.c_str()));
-            value.fromPython(item.get());
-        }
-        
-        // Sets a list of vectors in a Python class 
-        void setVectors(
-            std::string const & name,
-            std::list <Vector> const & values,
-            PyObject * const obj 
-        ) {
-            // Create a new Python list that we insert elements into
-            PyObjectPtr items(PyList_New(0));
-
-            // Loop over all of the items inside values and then insert 
-            // them into items 
-            for(std::list <Vector>::const_iterator value=values.cbegin();
-                value!=values.cend();
-                value++
+            // Sets a real in a Python state 
+            void Real(
+                std::string const & name,
+                double const & value,
+                PyObject * const obj 
             ) {
-                // Allocate memory for a new vector
-                Vector item(const_cast <Vector &> (*value).init());
+                PyObjectPtr item(PyFloat_FromDouble(value));
+                PyObject_SetAttrString(obj,name.c_str(),item.get());
+            }
+        
+            // Sets a natural in a Python state 
+            void Natural(
+                std::string const & name,
+                Optizelle::Natural const & value,
+                PyObject * const obj 
+            ) {
+                PyObjectPtr item(PyInt_FromSsize_t(value));
+                PyObject_SetAttrString(obj,name.c_str(),item.get());
+            }
+        
+            // Sets a vector in a Python state 
+            void Vector(
+                std::string const & name,
+                Python::Vector const & value,
+                PyObject * const obj 
+            ) {
+                PyObjectPtr item(PyObject_GetAttrString(obj,name.c_str()));
+                const_cast <Python::Vector &> (value).toPython(item.get());
+            }
+        
+            // Sets a list of vectors in a Python state 
+            void VectorList(
+                std::string const & name,
+                std::list <Python::Vector> const & values,
+                PyObject * const obj 
+            ) {
+                // Create a new Python list that we insert elements into
+                PyObjectPtr items(PyList_New(0));
 
-                // Copy the information from the current iterator into this
-                // new vector
-                item.copy(const_cast <Vector &> (*value));
+                // Loop over all of the items inside values and then insert 
+                // them into items 
+                for(std::list <Python::Vector>::const_iterator value
+                        = values.cbegin();
+                    value!=values.cend();
+                    value++
+                ) {
+                    // Allocate memory for a new vector
+                    Python::Vector item(
+                        const_cast <Python::Vector &> (*value).init());
 
-                // Release the pointer into the Python list
-                PyList_Append(items.get(),item.release());
+                    // Copy the information from the current iterator into this
+                    // new vector
+                    item.copy(const_cast <Python::Vector &> (*value));
+
+                    // Release the pointer into the Python list
+                    PyList_Append(items.get(),item.release());
+                }
+                
+                // Insert the items into obj
+                PyObject_SetAttrString(obj,name.c_str(),items.get());
+            }
+        
+            // Sets a scalar-valued function in a Python function bundle 
+            void ScalarValuedFunction(
+                std::string const & name,
+                PyObject * const msg,
+                PyObject * const obj,
+                std::unique_ptr <PyScalarValuedFunction> & value
+            ) {
+                value.reset(new Python::ScalarValuedFunction(msg,
+                    PyObject_GetAttrString(obj,name.c_str())));
             }
             
-            // Insert the items into obj
-            PyObject_SetAttrString(obj,name.c_str(),items.get());
-        }
-        
-        // Sets a list of vectors in a C++ class 
-        void setVectors(
-            std::string const & name,
-            PyObject * const obj,
-            Vector const & vec,
-            std::list <Vector> & values
-        ) {
-            // Grab the list of items
-            PyObjectPtr items(PyObject_GetAttrString(obj,name.c_str()));
-
-            // Loop over all the elements in items and insert them one
-            // at a time into values
-            values.clear();
-            for(Natural i=0;i<PyList_Size(items.get());i++) {
-                // Grab the current item from Python
-                PyObject * item(PyList_GetItem(items.get(),i));
-
-                // Create a new vector in values 
-                values.emplace_back(std::move(const_cast<Vector&>(vec).init()));
-
-                // Copy the Python item into the new value
-                values.back().fromPython(item);
-            }
-        }
-        
-        // Sets a scalar-valued function in a Python class 
-        void setScalarValuedFunction(
-            std::string const & name,
-            PyObject * const msg,
-            PyObject * const obj,
-            std::unique_ptr <PyScalarValuedFunction> & value
-        ) {
-            value.reset(new ScalarValuedFunction(msg,
-                PyObject_GetAttrString(obj,name.c_str())));
-        }
-        
-        // Sets a vector-valued function in a Python class 
-        void setVectorValuedFunction(
-            std::string const & name,
-            PyObject * const msg,
-            PyObject * const obj,
-            std::unique_ptr <PyVectorValuedFunction> & value
-        ) {
-            value.reset(new VectorValuedFunction(name,msg,
-                PyObject_GetAttrString(obj,name.c_str())));
-        }
-        
-        // Converts a list of strings to a Python list 
-        void convertStrings(
-            std::list <std::string> const & values,
-            PyObject * const pyvalues 
-        ) {
-        
-            // Loop over all of the items inside values and then insert 
-            // them into pyvalues 
-            for(std::list <std::string>::const_iterator value=values.cbegin();
-                value!=values.cend();
-                value++
+            // Sets a vector-valued function in a Python function bundle 
+            void VectorValuedFunction(
+                std::string const & name,
+                PyObject * const msg,
+                PyObject * const obj,
+                std::unique_ptr <PyVectorValuedFunction> & value
             ) {
-                // Insert the string into the Python list 
-                PyList_Append(pyvalues,PyString_FromString(value->c_str()));
+                value.reset(new Python::VectorValuedFunction(name,msg,
+                    PyObject_GetAttrString(obj,name.c_str())));
             }
-        }
-        
-        // Converts a list of strings to a Python list 
-        void convertStrings(
-            PyObject * const pyvalues,
-            std::list <std::string> & values
-        ) {
-            // Loop over all the elements in items and insert them one
-            // at a time into values
-            values.clear();
-            for(Natural i=0;i<PyList_Size(pyvalues);i++) {
-                // Grab the current item from Python
-                PyObject * pyvalue(PyList_GetItem(pyvalues,i));
 
-                // Copy the Python pyvalue into the new value
-                values.emplace_back(std::move(
-                    std::string(PyString_AsString(pyvalue))));
-            }
-        }
-
-        // Converts a list of vectors to a Python list 
-        void convertVectors(
-            std::list <Vector> const & values,
-            PyObject * const pyvalues 
-        ) {
-        
-            // Loop over all of the items inside values and then insert 
-            // them into pyvalues 
-            for(std::list <Vector>::const_iterator value=values.cbegin();
-                value!=values.cend();
-                value++
+            // Sets restart vectors in Python 
+            void Vectors(
+                Python::Vectors const & values,
+                PyObject * const pyvalues 
             ) {
-                // Allocate memory for a new vector
-                Vector pyvalue(const_cast <Vector &> (*value).init());
+            
+                // Loop over all of the items inside values and then insert 
+                // them into pyvalues 
+                for(typename Python::Vectors::const_iterator value
+                        = values.cbegin();
+                    value!=values.cend();
+                    value++
+                ) {
+                    // Allocate memory for a new vector
+                    Python::Vector pyvalue(
+                        const_cast <Python::Vector &>(value->second).init());
 
-                // Copy the information from the current iterator into this
-                // new vector
-                pyvalue.copy(const_cast <Vector &> (*value));
+                    // Copy the information from the current iterator into this
+                    // new vector
+                    pyvalue.copy(const_cast <Python::Vector &> (value->second));
 
-                // Release the pointer into the Python list
-                PyList_Append(pyvalues,pyvalue.release());
+                    // Release the pointer into the Python list
+                    PyList_Append(pyvalues,PyTuple_Pack(2,
+                        PyString_FromString(value->first.c_str()),
+                        pyvalue.release()));
+                }
             }
-        }
         
-        // Converts a Python list to a list of vectors
-        void convertVectors(
-            Vector const & vec,
-            PyObject * const pyvalues,
-            std::list <Vector> & values
-        ) {
-            // Loop over all the elements in items and insert them one
-            // at a time into values
-            values.clear();
-            for(Natural i=0;i<PyList_Size(pyvalues);i++) {
-                // Grab the current item from Python
-                PyObject * pyvalue(PyList_GetItem(pyvalues,i));
-
-                // Create a new vector in values 
-                values.emplace_back(std::move(const_cast<Vector&>(vec).init()));
-
-                // Copy the Python item into the new value
-                values.back().fromPython(pyvalue);
-            }
-        }
-        
-        // Converts a list of reals to a Python list 
-        void convertReals(
-            std::list <double> const & values,
-            PyObject * const pyvalues 
-        ) {
-        
-            // Loop over all of the items inside values and then insert 
-            // them into pyvalues 
-            for(std::list <double>::const_iterator value=values.cbegin();
-                value!=values.cend();
-                value++
+            // Sets restart reals in Python 
+            void Reals(
+                Python::Reals const & values,
+                PyObject * const pyvalues 
             ) {
-                // Insert the double into the Python list 
-                PyList_Append(pyvalues,PyFloat_FromDouble(*value));
+                // Loop over all of the items inside values and then insert 
+                // them into pyvalues 
+                for(typename Python::Reals::const_iterator value
+                        = values.cbegin();
+                    value!=values.cend();
+                    value++
+                ) {
+                    // Insert the double into the Python list 
+                    PyList_Append(pyvalues,PyTuple_Pack(2,
+                        PyString_FromString(value->first.c_str()),
+                        PyFloat_FromDouble(value->second)));
+                }
             }
-        }
         
-        // Converts a Python list to a list of reals
-        void convertReals(
-            PyObject * const pyvalues,
-            std::list <double> & values
-        ) {
-            // Loop over all the elements in items and insert them one
-            // at a time into values
-            values.clear();
-            for(Natural i=0;i<PyList_Size(pyvalues);i++) {
-                // Grab the current item from Python
-                PyObject * pyvalue(PyList_GetItem(pyvalues,i));
-
-                // Copy the Python pyvalue into the new value
-                values.emplace_back(std::move(PyFloat_AsDouble(pyvalue)));
-            }
-        }
-        
-        // Converts a list of naturals to a Python list 
-        void convertNats(
-            std::list <Natural> const & values,
-            PyObject * const pyvalues 
-        ) {
-        
-            // Loop over all of the items inside values and then insert 
-            // them into pyvalues 
-            for(std::list <Natural>::const_iterator value=values.cbegin();
-                value!=values.cend();
-                value++
+            // Converts a list of naturals to a Python list 
+            void Naturals(
+                Python::Naturals const & values,
+                PyObject * const pyvalues 
             ) {
-                // Insert the natural into the Python list 
-                PyList_Append(pyvalues,PyInt_FromSize_t(*value));
+                // Loop over all of the items inside values and then insert 
+                // them into pyvalues 
+                for(typename Python::Naturals::const_iterator value
+                        = values.cbegin();
+                    value!=values.cend();
+                    value++
+                ) {
+                    // Insert the double into the Python list 
+                    PyList_Append(pyvalues,PyTuple_Pack(2,
+                        PyString_FromString(value->first.c_str()),
+                        PyInt_FromSize_t(value->second)));
+                }
+            }
+        
+            // Sets restart parameters in Python 
+            void Params(
+                Python::Params const & values,
+                PyObject * const pyvalues 
+            ) {
+                // Loop over all of the items inside values and then insert 
+                // them into pyvalues 
+                for(typename Python::Params::const_iterator value
+                        = values.cbegin();
+                    value!=values.cend();
+                    value++
+                ) {
+                    // Insert the double into the Python list 
+                    PyList_Append(pyvalues,PyTuple_Pack(2,
+                        PyString_FromString(value->first.c_str()),
+                        PyString_FromString(value->second.c_str())));
+                }
             }
         }
         
-        // Converts a Python list to a list of reals
-        void convertNats(
-            PyObject * const pyvalues,
-            std::list <Natural> & values
-        ) {
-            // Loop over all the elements in items and insert them one
-            // at a time into values
-            values.clear();
-            for(Natural i=0;i<PyList_Size(pyvalues);i++) {
-                // Grab the current item from Python
-                PyObject * pyvalue(PyList_GetItem(pyvalues,i));
+        // Converts elements from Python to C++ 
+        namespace fromPython {
+        
+            // Sets a real in a C++ state 
+            void Real(
+                std::string const & name,
+                PyObject * const obj,
+                double & value
+            ) {
+                PyObjectPtr item(PyObject_GetAttrString(obj,name.c_str()));
+                value=PyFloat_AsDouble(item.get());
+            }
+            
+            // Sets a natural in a C++ state 
+            void Natural(
+                std::string const & name,
+                PyObject * const obj,
+                Optizelle::Natural & value
+            ) {
+                PyObjectPtr item(PyObject_GetAttrString(obj,name.c_str()));
+                value=PyInt_AsSsize_t(item.get());
+            }
+            
+            // Sets a list of vectors in a C++ state 
+            void VectorList(
+                std::string const & name,
+                PyObject * const obj,
+                Python::Vector const & vec,
+                std::list <Python::Vector> & values
+            ) {
+                // Grab the list of items
+                PyObjectPtr items(PyObject_GetAttrString(obj,name.c_str()));
 
-                // Copy the Python pyvalue into the new value
-                values.emplace_back(std::move(PyInt_AsSsize_t(pyvalue)));
+                // Loop over all the elements in items and insert them one
+                // at a time into values
+                values.clear();
+                for(Optizelle::Natural i=0;i<PyList_Size(items.get());i++) {
+                    // Grab the current item from Python
+                    PyObject * item(PyList_GetItem(items.get(),i));
+
+                    // Create a new vector in values 
+                    values.emplace_back(std::move(
+                        const_cast<Python::Vector &>(vec).init()));
+
+                    // Copy the Python item into the new value
+                    values.back().fromPython(item);
+                }
+            }
+            
+            // Sets a vector in a C++ state 
+            void Vector(
+                std::string const & name,
+                PyObject * const obj,
+                Python::Vector & value
+            ) {
+                PyObjectPtr item(PyObject_GetAttrString(obj,name.c_str()));
+                value.fromPython(item.get());
+            }
+        
+            // Sets restart vectors in C++ 
+            void Vectors(
+                Python::Vector const & vec,
+                PyObject * const pyvalues,
+                Python::Vectors & values
+            ) {
+                // Loop over all the elements in pyvalues and insert them one
+                // at a time into values
+                values.clear();
+                for(Optizelle::Natural i=0;i<PyList_Size(pyvalues);i++) {
+                    // Grab the current item from Python
+                    PyObject * pyvalue(PyList_GetItem(pyvalues,i));
+
+                    // Create the elements in values 
+                    values.emplace_back(
+                        PyString_AsString(PyTuple_GetItem(pyvalue,0)),
+                        std::move(const_cast<Python::Vector &>(vec).init()));
+
+                    // Copy the Python value into the C++ value
+                    values.back().second.fromPython(PyTuple_GetItem(pyvalue,1));
+                }
+            }
+            
+            // Sets restart reals in C++ 
+            void Reals(
+                PyObject * const pyvalues,
+                Python::Reals & values
+            ) {
+                // Loop over all the elements in pyvalues and insert them one
+                // at a time into values
+                values.clear();
+                for(Optizelle::Natural i=0;i<PyList_Size(pyvalues);i++) {
+                    // Grab the current item from Python
+                    PyObject * pyvalue(PyList_GetItem(pyvalues,i));
+                    
+                    // Create the elements in values 
+                    values.emplace_back(
+                        PyString_AsString(PyTuple_GetItem(pyvalue,0)),
+                        PyFloat_AsDouble(PyTuple_GetItem(pyvalue,1)));
+                }
+            }
+            
+            // Sets restart naturals in C++ 
+            void Naturals(
+                PyObject * const pyvalues,
+                Python::Naturals & values
+            ) {
+                // Loop over all the elements in pyvalues and insert them one
+                // at a time into values
+                values.clear();
+                for(Optizelle::Natural i=0;i<PyList_Size(pyvalues);i++) {
+                    // Grab the current item from Python
+                    PyObject * pyvalue(PyList_GetItem(pyvalues,i));
+                    
+                    // Create the elements in values 
+                    values.emplace_back(
+                        PyString_AsString(PyTuple_GetItem(pyvalue,0)),
+                        PyInt_AsSsize_t(PyTuple_GetItem(pyvalue,1)));
+                }
+            }
+            
+            // Sets restart parameters in C++ 
+            void Params(
+                PyObject * const pyvalues,
+                Python::Params & values
+            ) {
+                // Loop over all the elements in pyvalues and insert them one
+                // at a time into values
+                values.clear();
+                for(Optizelle::Natural i=0;i<PyList_Size(pyvalues);i++) {
+                    // Grab the current item from Python
+                    PyObject * pyvalue(PyList_GetItem(pyvalues,i));
+                    
+                    // Create the elements in values 
+                    values.emplace_back(
+                        PyString_AsString(PyTuple_GetItem(pyvalue,0)),
+                        PyString_AsString(PyTuple_GetItem(pyvalue,1)));
+                }
             }
         }
        
@@ -1603,85 +1631,90 @@ namespace Optizelle {
                     PyObject * const pystate
                 ){
                     // Set each of the required items in the Python state
-                    setFloat("eps_grad",state.eps_grad,pystate);
-                    setFloat("eps_dx",state.eps_dx,pystate);
-                    setNatural("stored_history",state.stored_history,pystate);
-                    setNatural("history_reset",state.history_reset,pystate);
-                    setNatural("iter",state.iter,pystate);
-                    setNatural("iter_max",state.iter_max,pystate);
-                    setEnum <StoppingCondition::t> (
+                    toPython::Real("eps_grad",state.eps_grad,pystate);
+                    toPython::Real("eps_dx",state.eps_dx,pystate);
+                    toPython::Natural("stored_history",
+                        state.stored_history,pystate);
+                    toPython::Natural("history_reset",
+                        state.history_reset,pystate);
+                    toPython::Natural("iter",state.iter,pystate);
+                    toPython::Natural("iter_max",state.iter_max,pystate);
+                    toPython::Param <StoppingCondition::t> (
                         "opt_stop",
                         StoppingCondition::toPython(),
                         state.opt_stop,
                         pystate);
-                    setNatural("krylov_iter",state.krylov_iter,pystate);
-                    setNatural("krylov_iter_max",state.krylov_iter_max,pystate);
-                    setNatural("krylov_iter_total",
+                    toPython::Natural("krylov_iter",state.krylov_iter,pystate);
+                    toPython::Natural("krylov_iter_max",
+                        state.krylov_iter_max,pystate);
+                    toPython::Natural("krylov_iter_total",
                         state.krylov_iter_total,pystate);
-                    setNatural("krylov_orthog_max",
+                    toPython::Natural("krylov_orthog_max",
                         state.krylov_orthog_max,pystate);
-                    setEnum <KrylovStop::t> (
+                    toPython::Param <KrylovStop::t> (
                         "krylov_stop",
                         KrylovStop::toPython(),
                         state.krylov_stop,
                         pystate);
-                    setFloat("krylov_rel_err",state.krylov_rel_err,pystate);
-                    setFloat("eps_krylov",state.eps_krylov,pystate);
-                    setEnum <KrylovSolverTruncated::t> (
+                    toPython::Real("krylov_rel_err",
+                        state.krylov_rel_err,pystate);
+                    toPython::Real("eps_krylov",state.eps_krylov,pystate);
+                    toPython::Param <KrylovSolverTruncated::t> (
                         "krylov_solver",
                         KrylovSolverTruncated::toPython(),
                         state.krylov_solver,
                         pystate);
-                    setEnum <AlgorithmClass::t> (
+                    toPython::Param <AlgorithmClass::t> (
                         "algorithm_class",
                         AlgorithmClass::toPython(),
                         state.algorithm_class,
                         pystate);
-                    setEnum <Operators::t> (
+                    toPython::Param <Operators::t> (
                         "PH_type",
                         Operators::toPython(),
                         state.PH_type,
                         pystate);
-                    setEnum <Operators::t> (
+                    toPython::Param <Operators::t> (
                         "H_type",
                         Operators::toPython(),
                         state.H_type,
                         pystate);
-                    setFloat("norm_gradtyp",state.norm_gradtyp,pystate);
-                    setFloat("norm_dxtyp",state.norm_dxtyp,pystate);
-                    setVector("x",state.x,pystate);
-                    setVector("grad",state.grad,pystate);
-                    setVector("dx",state.dx,pystate);
-                    setVector("x_old",state.x_old,pystate);
-                    setVector("grad_old",state.grad_old,pystate);
-                    setVector("dx_old",state.dx_old,pystate);
-                    setVectors("oldY",state.oldY,pystate);
-                    setVectors("oldS",state.oldS,pystate);
-                    setFloat("f_x",state.f_x,pystate);
-                    setFloat("f_xpdx",state.f_xpdx,pystate);
-                    setNatural("msg_level",state.msg_level,pystate);
-                    setFloat("delta",state.delta,pystate);
-                    setFloat("eta1",state.eta1,pystate);
-                    setFloat("eta2",state.eta2,pystate);
-                    setFloat("ared",state.ared,pystate);
-                    setFloat("pred",state.pred,pystate);
-                    setNatural("rejected_trustregion",
+                    toPython::Real("norm_gradtyp",state.norm_gradtyp,pystate);
+                    toPython::Real("norm_dxtyp",state.norm_dxtyp,pystate);
+                    toPython::Vector("x",state.x,pystate);
+                    toPython::Vector("grad",state.grad,pystate);
+                    toPython::Vector("dx",state.dx,pystate);
+                    toPython::Vector("x_old",state.x_old,pystate);
+                    toPython::Vector("grad_old",state.grad_old,pystate);
+                    toPython::Vector("dx_old",state.dx_old,pystate);
+                    toPython::VectorList("oldY",state.oldY,pystate);
+                    toPython::VectorList("oldS",state.oldS,pystate);
+                    toPython::Real("f_x",state.f_x,pystate);
+                    toPython::Real("f_xpdx",state.f_xpdx,pystate);
+                    toPython::Natural("msg_level",state.msg_level,pystate);
+                    toPython::Real("delta",state.delta,pystate);
+                    toPython::Real("eta1",state.eta1,pystate);
+                    toPython::Real("eta2",state.eta2,pystate);
+                    toPython::Real("ared",state.ared,pystate);
+                    toPython::Real("pred",state.pred,pystate);
+                    toPython::Natural("rejected_trustregion",
                         state.rejected_trustregion,pystate);
-                    setFloat("alpha0",state.alpha0,pystate);
-                    setFloat("alpha",state.alpha,pystate);
-                    setFloat("c1",state.c1,pystate);
-                    setNatural("linesearch_iter",state.linesearch_iter,pystate);
-                    setNatural("linesearch_iter_max",
+                    toPython::Real("alpha0",state.alpha0,pystate);
+                    toPython::Real("alpha",state.alpha,pystate);
+                    toPython::Real("c1",state.c1,pystate);
+                    toPython::Natural("linesearch_iter",
+                        state.linesearch_iter,pystate);
+                    toPython::Natural("linesearch_iter_max",
                         state.linesearch_iter_max,pystate);
-                    setNatural("linesearch_iter_total",
+                    toPython::Natural("linesearch_iter_total",
                         state.linesearch_iter_total,pystate);
-                    setFloat("eps_ls",state.eps_ls,pystate);
-                    setEnum <LineSearchDirection::t> (
+                    toPython::Real("eps_ls",state.eps_ls,pystate);
+                    toPython::Param <LineSearchDirection::t> (
                         "dir",
                         LineSearchDirection::toPython(),
                         state.dir,
                         pystate);
-                    setEnum <LineSearchKind::t> (
+                    toPython::Param <LineSearchKind::t> (
                         "kind",
                         LineSearchKind::toPython(),
                         state.kind,
@@ -1700,85 +1733,92 @@ namespace Optizelle {
                     typename PyUnconstrained::State::t & state
                 ){
                     // Set each of the required items in the Python state
-                    setFloat("eps_grad",pystate,state.eps_grad);
-                    setFloat("eps_dx",pystate,state.eps_dx);
-                    setNatural("stored_history",pystate,state.stored_history);
-                    setNatural("history_reset",pystate,state.history_reset);
-                    setNatural("iter",pystate,state.iter);
-                    setNatural("iter_max",pystate,state.iter_max);
-                    setEnum <StoppingCondition::t> (
+                    fromPython::Real("eps_grad",pystate,state.eps_grad);
+                    fromPython::Real("eps_dx",pystate,state.eps_dx);
+                    fromPython::Natural("stored_history",
+                        pystate,state.stored_history);
+                    fromPython::Natural("history_reset",
+                        pystate,state.history_reset);
+                    fromPython::Natural("iter",pystate,state.iter);
+                    fromPython::Natural("iter_max",pystate,state.iter_max);
+                    fromPython::Param <StoppingCondition::t> (
                         "opt_stop",
                         StoppingCondition::fromPython(),
                         pystate,
                         state.opt_stop);
-                    setNatural("krylov_iter",pystate,state.krylov_iter);
-                    setNatural("krylov_iter_max",pystate,state.krylov_iter_max);
-                    setNatural("krylov_iter_total",
+                    fromPython::Natural("krylov_iter",
+                        pystate,state.krylov_iter);
+                    fromPython::Natural("krylov_iter_max",
+                        pystate,state.krylov_iter_max);
+                    fromPython::Natural("krylov_iter_total",
                         pystate,state.krylov_iter_total);
-                    setNatural("krylov_orthog_max",
+                    fromPython::Natural("krylov_orthog_max",
                         pystate,state.krylov_orthog_max);
-                    setEnum <KrylovStop::t> (
+                    fromPython::Param <KrylovStop::t> (
                         "krylov_stop",
                         KrylovStop::fromPython(),
                         pystate,
                         state.krylov_stop);
-                    setFloat("krylov_rel_err",pystate,state.krylov_rel_err);
-                    setFloat("eps_krylov",pystate,state.eps_krylov);
-                    setEnum <KrylovSolverTruncated::t> (
+                    fromPython::Real("krylov_rel_err",
+                        pystate,state.krylov_rel_err);
+                    fromPython::Real("eps_krylov",pystate,state.eps_krylov);
+                    fromPython::Param <KrylovSolverTruncated::t> (
                         "krylov_solver",
                         KrylovSolverTruncated::fromPython(),
                         pystate,
                         state.krylov_solver);
-                    setEnum <AlgorithmClass::t> (
+                    fromPython::Param <AlgorithmClass::t> (
                         "algorithm_class",
                         AlgorithmClass::fromPython(),
                         pystate,
                         state.algorithm_class);
-                    setEnum <Operators::t> (
+                    fromPython::Param <Operators::t> (
                         "PH_type",
                         Operators::fromPython(),
                         pystate,
                         state.PH_type);
-                    setEnum <Operators::t> (
+                    fromPython::Param <Operators::t> (
                         "H_type",
                         Operators::fromPython(),
                         pystate,
                         state.H_type);
-                    setFloat("norm_gradtyp",pystate,state.norm_gradtyp);
-                    setFloat("norm_dxtyp",pystate,state.norm_dxtyp);
-                    setVector("x",pystate,state.x);
-                    setVector("grad",pystate,state.grad);
-                    setVector("dx",pystate,state.dx);
-                    setVector("x_old",pystate,state.x_old);
-                    setVector("grad_old",pystate,state.grad_old);
-                    setVector("dx_old",pystate,state.dx_old);
-                    setVectors("oldY",pystate,state.x,state.oldY);
-                    setVectors("oldS",pystate,state.x,state.oldS);
-                    setFloat("f_x",pystate,state.f_x);
-                    setFloat("f_xpdx",pystate,state.f_xpdx);
-                    setNatural("msg_level",pystate,state.msg_level);
-                    setFloat("delta",pystate,state.delta);
-                    setFloat("eta1",pystate,state.eta1);
-                    setFloat("eta2",pystate,state.eta2);
-                    setFloat("ared",pystate,state.ared);
-                    setFloat("pred",pystate,state.pred);
-                    setNatural("rejected_trustregion",
+                    fromPython::Real("norm_gradtyp",
+                        pystate,state.norm_gradtyp);
+                    fromPython::Real("norm_dxtyp",pystate,state.norm_dxtyp);
+                    fromPython::Vector("x",pystate,state.x);
+                    fromPython::Vector("grad",pystate,state.grad);
+                    fromPython::Vector("dx",pystate,state.dx);
+                    fromPython::Vector("x_old",pystate,state.x_old);
+                    fromPython::Vector("grad_old",pystate,state.grad_old);
+                    fromPython::Vector("dx_old",pystate,state.dx_old);
+                    fromPython::VectorList("oldY",pystate,state.x,state.oldY);
+                    fromPython::VectorList("oldS",pystate,state.x,state.oldS);
+                    fromPython::Real("f_x",pystate,state.f_x);
+                    fromPython::Real("f_xpdx",pystate,state.f_xpdx);
+                    fromPython::Natural("msg_level",pystate,state.msg_level);
+                    fromPython::Real("delta",pystate,state.delta);
+                    fromPython::Real("eta1",pystate,state.eta1);
+                    fromPython::Real("eta2",pystate,state.eta2);
+                    fromPython::Real("ared",pystate,state.ared);
+                    fromPython::Real("pred",pystate,state.pred);
+                    fromPython::Natural("rejected_trustregion",
                         pystate,state.rejected_trustregion);
-                    setFloat("alpha0",pystate,state.alpha0);
-                    setFloat("alpha",pystate,state.alpha);
-                    setFloat("c1",pystate,state.c1);
-                    setNatural("linesearch_iter",pystate,state.linesearch_iter);
-                    setNatural("linesearch_iter_max",
+                    fromPython::Real("alpha0",pystate,state.alpha0);
+                    fromPython::Real("alpha",pystate,state.alpha);
+                    fromPython::Real("c1",pystate,state.c1);
+                    fromPython::Natural("linesearch_iter",
+                        pystate,state.linesearch_iter);
+                    fromPython::Natural("linesearch_iter_max",
                         pystate,state.linesearch_iter_max);
-                    setNatural("linesearch_iter_total",pystate,
+                    fromPython::Natural("linesearch_iter_total",pystate,
                         state.linesearch_iter_total);
-                    setFloat("eps_ls",pystate,state.eps_ls);
-                    setEnum <LineSearchDirection::t> (
+                    fromPython::Real("eps_ls",pystate,state.eps_ls);
+                    fromPython::Param <LineSearchDirection::t> (
                         "dir",
                         LineSearchDirection::fromPython(),
                         pystate,
                         state.dir);
-                    setEnum <LineSearchKind::t> (
+                    fromPython::Param <LineSearchKind::t> (
                         "kind",
                         LineSearchKind::fromPython(),
                         pystate,
@@ -1999,28 +2039,16 @@ namespace Optizelle {
                         // Do a release 
                         PyUnconstrained::Restart::X_Vectors xs;
                         PyUnconstrained::Restart::Reals reals;
-                        PyUnconstrained::Restart::Nats nats;
+                        PyUnconstrained::Restart::Naturals nats;
                         PyUnconstrained::Restart::Params params;
                         PyUnconstrained::Restart
                             ::release(state,xs,reals,nats,params);
 
-                        // Convert the vectors
-                        convertStrings(xs.first,PyTuple_GetItem(pyxs,0));
-                        convertVectors(xs.second,PyTuple_GetItem(pyxs,1));
-
-                        // Convert the reals 
-                        convertStrings(reals.first,PyTuple_GetItem(pyreals,0));
-                        convertReals(reals.second,PyTuple_GetItem(pyreals,1));
-
-                        // Convert the nats 
-                        convertStrings(nats.first,PyTuple_GetItem(pynats,0));
-                        convertNats(nats.second,PyTuple_GetItem(pynats,1));
-
-                        // Convert the params 
-                        convertStrings(
-                            params.first,PyTuple_GetItem(pyparams,0));
-                        convertStrings(
-                            params.second,PyTuple_GetItem(pyparams,1));
+                        // Convert the restart information to Python 
+                        toPython::Vectors(xs,pyxs);
+                        toPython::Reals(reals,pyreals);
+                        toPython::Naturals(nats,pynats);
+                        toPython::Params(params,pyparams);
 
                         // Return nothing 
                         return Py_None; 
@@ -2065,26 +2093,14 @@ namespace Optizelle {
                         // Allocate memory for the released vectors
                         PyUnconstrained::Restart::X_Vectors xs;
                         PyUnconstrained::Restart::Reals reals;
-                        PyUnconstrained::Restart::Nats nats;
+                        PyUnconstrained::Restart::Naturals nats;
                         PyUnconstrained::Restart::Params params;
                         
-                        // Convert the vectors
-                        convertStrings(PyTuple_GetItem(pyxs,0),xs.first);
-                        convertVectors(x,PyTuple_GetItem(pyxs,1),xs.second);
-
-                        // Convert the reals 
-                        convertStrings(PyTuple_GetItem(pyreals,0),reals.first);
-                        convertReals(PyTuple_GetItem(pyreals,1),reals.second);
-
-                        // Convert the nats 
-                        convertStrings(PyTuple_GetItem(pynats,0),nats.first);
-                        convertNats(PyTuple_GetItem(pynats,1),nats.second);
-
-                        // Convert the params 
-                        convertStrings(
-                            PyTuple_GetItem(pyparams,0),params.first);
-                        convertStrings(
-                            PyTuple_GetItem(pyparams,1),params.second);
+                        // Convert the restart information from Python 
+                        fromPython::Vectors(x,pyxs,xs);
+                        fromPython::Reals(pyreals,reals);
+                        fromPython::Naturals(pynats,nats);
+                        fromPython::Params(pyparams,params);
 
                         // Do a capture 
                         PyUnconstrained::Restart
@@ -2118,49 +2134,52 @@ namespace Optizelle {
                     typename PyEqualityConstrained::State::t const & state,
                     PyObject * const pystate
                 ){
-                    setVector("y",state.y,pystate);
-                    setVector("dy",state.dy,pystate);
-                    setFloat("zeta",state.zeta,pystate);
-                    setFloat("eta0",state.eta0,pystate);
-                    setFloat("rho",state.rho,pystate);
-                    setFloat("rho_old",state.rho_old,pystate);
-                    setFloat("rho_bar",state.rho_bar,pystate);
-                    setFloat("eps_constr",state.eps_constr,pystate);
-                    setFloat("xi_qn",state.xi_qn,pystate);
-                    setFloat("xi_pg",state.xi_pg,pystate);
-                    setFloat("xi_proj",state.xi_proj,pystate);
-                    setFloat("xi_tang",state.xi_tang,pystate);
-                    setFloat("xi_lmh",state.xi_lmh,pystate);
-                    setFloat("xi_lmg",state.xi_lmg,pystate);
-                    setFloat("xi_4",state.xi_4,pystate);
-                    setFloat("rpred",state.rpred,pystate);
-                    setEnum <Operators::t> (
+                    toPython::Vector("y",state.y,pystate);
+                    toPython::Vector("dy",state.dy,pystate);
+                    toPython::Real("zeta",state.zeta,pystate);
+                    toPython::Real("eta0",state.eta0,pystate);
+                    toPython::Real("rho",state.rho,pystate);
+                    toPython::Real("rho_old",state.rho_old,pystate);
+                    toPython::Real("rho_bar",state.rho_bar,pystate);
+                    toPython::Real("eps_constr",state.eps_constr,pystate);
+                    toPython::Real("xi_qn",state.xi_qn,pystate);
+                    toPython::Real("xi_pg",state.xi_pg,pystate);
+                    toPython::Real("xi_proj",state.xi_proj,pystate);
+                    toPython::Real("xi_tang",state.xi_tang,pystate);
+                    toPython::Real("xi_lmh",state.xi_lmh,pystate);
+                    toPython::Real("xi_lmg",state.xi_lmg,pystate);
+                    toPython::Real("xi_4",state.xi_4,pystate);
+                    toPython::Real("rpred",state.rpred,pystate);
+                    toPython::Param <Operators::t> (
                         "PSchur_left_type",
                         Operators::toPython(),
                         state.PSchur_left_type,
                         pystate);
-                    setEnum <Operators::t> (
+                    toPython::Param <Operators::t> (
                         "PSchur_right_type",
                         Operators::toPython(),
                         state.PSchur_right_type,
                         pystate);
-                    setNatural("augsys_iter_max",state.augsys_iter_max,pystate);
-                    setNatural("augsys_rst_freq",state.augsys_rst_freq,pystate);
-                    setVector("g_x",state.g_x,pystate);
-                    setFloat("norm_gxtyp",state.norm_gxtyp,pystate);
-                    setVector("gpxdxn_p_gx",state.gpxdxn_p_gx,pystate);
-                    setVector("gpxdxt",state.gpxdxt,pystate);
-                    setFloat("norm_gpxdxnpgx",state.norm_gpxdxnpgx,pystate);
-                    setVector("dx_n",state.dx_n,pystate);
-                    setVector("dx_ncp",state.dx_ncp,pystate);
-                    setVector("dx_t",state.dx_t,pystate);
-                    setVector("dx_t_uncorrected",
+                    toPython::Natural("augsys_iter_max",
+                        state.augsys_iter_max,pystate);
+                    toPython::Natural("augsys_rst_freq",
+                        state.augsys_rst_freq,pystate);
+                    toPython::Vector("g_x",state.g_x,pystate);
+                    toPython::Real("norm_gxtyp",state.norm_gxtyp,pystate);
+                    toPython::Vector("gpxdxn_p_gx",state.gpxdxn_p_gx,pystate);
+                    toPython::Vector("gpxdxt",state.gpxdxt,pystate);
+                    toPython::Real("norm_gpxdxnpgx",
+                        state.norm_gpxdxnpgx,pystate);
+                    toPython::Vector("dx_n",state.dx_n,pystate);
+                    toPython::Vector("dx_ncp",state.dx_ncp,pystate);
+                    toPython::Vector("dx_t",state.dx_t,pystate);
+                    toPython::Vector("dx_t_uncorrected",
                         state.dx_t_uncorrected,pystate);
-                    setVector("dx_tcp_uncorrected",
+                    toPython::Vector("dx_tcp_uncorrected",
                         state.dx_tcp_uncorrected,pystate);
-                    setVector("H_dxn",state.H_dxn,pystate);
-                    setVector("W_gradpHdxn",state.W_gradpHdxn,pystate);
-                    setVector("H_dxtuncorrected",
+                    toPython::Vector("H_dxn",state.H_dxn,pystate);
+                    toPython::Vector("W_gradpHdxn",state.W_gradpHdxn,pystate);
+                    toPython::Vector("H_dxtuncorrected",
                         state.H_dxtuncorrected,pystate);
                 }
                 void toPython(
@@ -2176,49 +2195,52 @@ namespace Optizelle {
                     PyObject * const pystate,
                     typename PyEqualityConstrained::State::t & state
                 ){
-                    setVector("y",pystate,state.y);
-                    setVector("dy",pystate,state.dy);
-                    setFloat("zeta",pystate,state.zeta);
-                    setFloat("eta0",pystate,state.eta0);
-                    setFloat("rho",pystate,state.rho);
-                    setFloat("rho_old",pystate,state.rho_old);
-                    setFloat("rho_bar",pystate,state.rho_bar);
-                    setFloat("eps_constr",pystate,state.eps_constr);
-                    setFloat("xi_qn",pystate,state.xi_qn);
-                    setFloat("xi_pg",pystate,state.xi_pg);
-                    setFloat("xi_proj",pystate,state.xi_proj);
-                    setFloat("xi_tang",pystate,state.xi_tang);
-                    setFloat("xi_lmh",pystate,state.xi_lmh);
-                    setFloat("xi_lmg",pystate,state.xi_lmg);
-                    setFloat("xi_4",pystate,state.xi_4);
-                    setFloat("rpred",pystate,state.rpred);
-                    setEnum <Operators::t> (
+                    fromPython::Vector("y",pystate,state.y);
+                    fromPython::Vector("dy",pystate,state.dy);
+                    fromPython::Real("zeta",pystate,state.zeta);
+                    fromPython::Real("eta0",pystate,state.eta0);
+                    fromPython::Real("rho",pystate,state.rho);
+                    fromPython::Real("rho_old",pystate,state.rho_old);
+                    fromPython::Real("rho_bar",pystate,state.rho_bar);
+                    fromPython::Real("eps_constr",pystate,state.eps_constr);
+                    fromPython::Real("xi_qn",pystate,state.xi_qn);
+                    fromPython::Real("xi_pg",pystate,state.xi_pg);
+                    fromPython::Real("xi_proj",pystate,state.xi_proj);
+                    fromPython::Real("xi_tang",pystate,state.xi_tang);
+                    fromPython::Real("xi_lmh",pystate,state.xi_lmh);
+                    fromPython::Real("xi_lmg",pystate,state.xi_lmg);
+                    fromPython::Real("xi_4",pystate,state.xi_4);
+                    fromPython::Real("rpred",pystate,state.rpred);
+                    fromPython::Param <Operators::t> (
                         "PSchur_left_type",
                         Operators::fromPython(),
                         pystate,
                         state.PSchur_left_type);
-                    setEnum <Operators::t> (
+                    fromPython::Param <Operators::t> (
                         "PSchur_right_type",
                         Operators::fromPython(),
                         pystate,
                         state.PSchur_right_type);
-                    setNatural("augsys_iter_max",pystate,state.augsys_iter_max);
-                    setNatural("augsys_rst_freq",pystate,state.augsys_rst_freq);
-                    setVector("g_x",pystate,state.g_x);
-                    setFloat("norm_gxtyp",pystate,state.norm_gxtyp);
-                    setVector("gpxdxn_p_gx",pystate,state.gpxdxn_p_gx);
-                    setVector("gpxdxt",pystate,state.gpxdxt);
-                    setFloat("norm_gpxdxnpgx",pystate,state.norm_gpxdxnpgx);
-                    setVector("dx_n",pystate,state.dx_n);
-                    setVector("dx_ncp",pystate,state.dx_ncp);
-                    setVector("dx_t",pystate,state.dx_t);
-                    setVector("dx_t_uncorrected",
+                    fromPython::Natural("augsys_iter_max",
+                        pystate,state.augsys_iter_max);
+                    fromPython::Natural("augsys_rst_freq",
+                        pystate,state.augsys_rst_freq);
+                    fromPython::Vector("g_x",pystate,state.g_x);
+                    fromPython::Real("norm_gxtyp",pystate,state.norm_gxtyp);
+                    fromPython::Vector("gpxdxn_p_gx",pystate,state.gpxdxn_p_gx);
+                    fromPython::Vector("gpxdxt",pystate,state.gpxdxt);
+                    fromPython::Real("norm_gpxdxnpgx",
+                        pystate,state.norm_gpxdxnpgx);
+                    fromPython::Vector("dx_n",pystate,state.dx_n);
+                    fromPython::Vector("dx_ncp",pystate,state.dx_ncp);
+                    fromPython::Vector("dx_t",pystate,state.dx_t);
+                    fromPython::Vector("dx_t_uncorrected",
                         pystate,state.dx_t_uncorrected);
-                    setVector("dx_tcp_uncorrected",
+                    fromPython::Vector("dx_tcp_uncorrected",
                         pystate,state.dx_tcp_uncorrected);
-                    setVector("H_dxn",pystate,state.H_dxn);
-                    setVector("W_gradpHdxn",pystate,state.W_gradpHdxn);
-                    setVector("H_dxtuncorrected",
+                    fromPython::Vector("H_dxn",pystate,state.H_dxn);
+                    fromPython::Vector("W_gradpHdxn",pystate,state.W_gradpHdxn);
+                    fromPython::Vector("H_dxtuncorrected",
                         pystate,state.H_dxtuncorrected);
                 }
                 void fromPython(
@@ -2412,6 +2434,131 @@ namespace Optizelle {
                     }
                 }
             }
+            
+            // Utilities for restarting the optimization
+            namespace Restart {
+                // Release the data into structures controlled by the user 
+                PyObject * release(
+                    PyObject * self,
+                    PyObject * args
+                ) {
+                    // Calling convention should be
+                    // (X,Y,msg,state,xs,ys,reals,nats,params)
+                    PyObject *X,*Y,*msg,*pystate_,*pyxs,*pyys,*pyreals,
+                        *pynats,*pyparams;
+                    if(!PyArg_ParseTuple(args,"OOOOOOOOO",
+                        &X,&Y,&msg,&pystate_,&pyxs,&pyys,&pyreals,
+                        &pynats,&pyparams)
+                    )
+                        return nullptr; 
+
+                    // Make sure we bail if we detect a Python exception
+                    try {
+                        // Create a Python state 
+                        Python::State <PyEqualityConstrained> pystate(pystate_,
+                            PyObjectPtrMode::Attach);
+                        
+                        // Grab the base vectors from the Python state
+                        Vector x(msg,X,
+                            PyObject_GetAttrString(pystate.get(),"x"));
+                        Vector y(msg,Y,
+                            PyObject_GetAttrString(pystate.get(),"y"));
+
+                        // Create a C++ state
+                        typename PyEqualityConstrained::State::t state(x,y);
+                        
+                        // Convert the Python state to a C++ state
+                        pystate.fromPython(state);
+
+                        // Do a release 
+                        PyEqualityConstrained::Restart::X_Vectors xs;
+                        PyEqualityConstrained::Restart::Y_Vectors ys;
+                        PyEqualityConstrained::Restart::Reals reals;
+                        PyEqualityConstrained::Restart::Naturals nats;
+                        PyEqualityConstrained::Restart::Params params;
+                        PyEqualityConstrained::Restart
+                            ::release(state,xs,ys,reals,nats,params);
+
+                        // Convert the restart information to Python 
+                        toPython::Vectors(xs,pyxs);
+                        toPython::Vectors(ys,pyys);
+                        toPython::Reals(reals,pyreals);
+                        toPython::Naturals(nats,pynats);
+                        toPython::Params(params,pyparams);
+
+                        // Return nothing 
+                        return Py_None; 
+
+                    // In theory, we should have set the appropriate error
+                    } catch (Exception& exc){
+                        return nullptr;
+                    }
+                }
+
+                // Capture data from structures controlled by the user.  
+                PyObject * capture(
+                    PyObject * self,
+                    PyObject * args
+                ) {
+                    // Calling convention should be
+                    // (X,Y,msg,state,xs,ys,reals,nats,params)
+                    PyObject *X,*Y,*msg_,*pystate_,*pyxs,*pyys,
+                        *pyreals,*pynats,*pyparams;
+                    if(!PyArg_ParseTuple(args,"OOOOOOOOO",
+                        &X,&Y,&msg_,&pystate_,&pyxs,&pyys,
+                        &pyreals,&pynats,&pyparams)
+                    )
+                        return nullptr; 
+
+                    // Make sure we bail if we detect a Python exception
+                    try {
+                        // Create a messaging object
+                        Optizelle::Python::Messaging msg(msg_,
+                            PyObjectPtrMode::Attach);
+
+                        // Create a Python state 
+                        Python::State <PyEqualityConstrained> pystate(pystate_,
+                            PyObjectPtrMode::Attach);
+                        
+                        // Grab the base vectors from the Python state
+                        Vector x(msg_,X,
+                            PyObject_GetAttrString(pystate.get(),"x"));
+                        Vector y(msg_,Y,
+                            PyObject_GetAttrString(pystate.get(),"y"));
+
+                        // Create a C++ state
+                        typename PyEqualityConstrained::State::t state(x,y);
+                       
+                        // Allocate memory for the released vectors
+                        PyEqualityConstrained::Restart::X_Vectors xs;
+                        PyEqualityConstrained::Restart::Y_Vectors ys;
+                        PyEqualityConstrained::Restart::Reals reals;
+                        PyEqualityConstrained::Restart::Naturals nats;
+                        PyEqualityConstrained::Restart::Params params;
+                        
+                        // Convert the restart information from Python 
+                        fromPython::Vectors(x,pyxs,xs);
+                        fromPython::Vectors(y,pyys,ys);
+                        fromPython::Reals(pyreals,reals);
+                        fromPython::Naturals(pynats,nats);
+                        fromPython::Params(pyparams,params);
+
+                        // Do a capture 
+                        PyEqualityConstrained::Restart
+                            ::capture(msg,state,xs,ys,reals,nats,params);
+
+                        // Convert the C++ state to a Python state
+                        pystate.toPython(state);
+
+                        // Return nothing 
+                        return Py_None; 
+
+                    // In theory, we should have set the appropriate error
+                    } catch (Exception& exc){
+                        return nullptr;
+                    }
+                }
+            }
         }
         
         // Routines that manipulate and support problems of the form
@@ -2428,21 +2575,21 @@ namespace Optizelle {
                     typename PyInequalityConstrained::State::t const & state,
                     PyObject * const pystate
                 ){
-                    setVector("z",state.z,pystate);
-                    setVector("dz",state.dz,pystate);
-                    setVector("h_x",state.h_x,pystate);
-                    setFloat("mu",state.mu,pystate);
-                    setFloat("mu_est",state.mu_est,pystate);
-                    setFloat("mu_typ",state.mu_typ,pystate);
-                    setFloat("eps_mu",state.eps_mu,pystate);
-                    setFloat("sigma",state.sigma,pystate);
-                    setFloat("gamma",state.gamma,pystate);
-                    setEnum <InteriorPointMethod::t> (
+                    toPython::Vector("z",state.z,pystate);
+                    toPython::Vector("dz",state.dz,pystate);
+                    toPython::Vector("h_x",state.h_x,pystate);
+                    toPython::Real("mu",state.mu,pystate);
+                    toPython::Real("mu_est",state.mu_est,pystate);
+                    toPython::Real("mu_typ",state.mu_typ,pystate);
+                    toPython::Real("eps_mu",state.eps_mu,pystate);
+                    toPython::Real("sigma",state.sigma,pystate);
+                    toPython::Real("gamma",state.gamma,pystate);
+                    toPython::Param <InteriorPointMethod::t> (
                         "ipm",
                         InteriorPointMethod::toPython(),
                         state.ipm,
                         pystate);
-                    setEnum <CentralityStrategy::t> (
+                    toPython::Param <CentralityStrategy::t> (
                         "cstrat",
                         CentralityStrategy::toPython(),
                         state.cstrat,
@@ -2461,21 +2608,21 @@ namespace Optizelle {
                     PyObject * const pystate,
                     typename PyInequalityConstrained::State::t & state
                 ){
-                    setVector("z",pystate,state.z);
-                    setVector("dz",pystate,state.dz);
-                    setVector("h_x",pystate,state.h_x);
-                    setFloat("mu",pystate,state.mu);
-                    setFloat("mu_est",pystate,state.mu_est);
-                    setFloat("mu_typ",pystate,state.mu_typ);
-                    setFloat("eps_mu",pystate,state.eps_mu);
-                    setFloat("sigma",pystate,state.sigma);
-                    setFloat("gamma",pystate,state.gamma);
-                    setEnum <InteriorPointMethod::t> (
+                    fromPython::Vector("z",pystate,state.z);
+                    fromPython::Vector("dz",pystate,state.dz);
+                    fromPython::Vector("h_x",pystate,state.h_x);
+                    fromPython::Real("mu",pystate,state.mu);
+                    fromPython::Real("mu_est",pystate,state.mu_est);
+                    fromPython::Real("mu_typ",pystate,state.mu_typ);
+                    fromPython::Real("eps_mu",pystate,state.eps_mu);
+                    fromPython::Real("sigma",pystate,state.sigma);
+                    fromPython::Real("gamma",pystate,state.gamma);
+                    fromPython::Param <InteriorPointMethod::t> (
                         "ipm",
                         InteriorPointMethod::fromPython(),
                         pystate,
                         state.ipm);
-                    setEnum <CentralityStrategy::t> (
+                    fromPython::Param <CentralityStrategy::t> (
                         "cstrat",
                         CentralityStrategy::fromPython(),
                         pystate,
@@ -2659,6 +2806,131 @@ namespace Optizelle {
                         PyInequalityConstrained::Algorithms::getMin(
                             msg,smanip,fns,state);
                         
+                        // Convert the C++ state to a Python state
+                        pystate.toPython(state);
+
+                        // Return nothing 
+                        return Py_None; 
+
+                    // In theory, we should have set the appropriate error
+                    } catch (Exception& exc){
+                        return nullptr;
+                    }
+                }
+            }
+            
+            // Utilities for restarting the optimization
+            namespace Restart {
+                // Release the data into structures controlled by the user 
+                PyObject * release(
+                    PyObject * self,
+                    PyObject * args
+                ) {
+                    // Calling convention should be
+                    // (X,Z,msg,state,xs,zs,reals,nats,params)
+                    PyObject *X,*Z,*msg,*pystate_,*pyxs,*pyzs,*pyreals,
+                        *pynats,*pyparams;
+                    if(!PyArg_ParseTuple(args,"OOOOOOOOO",
+                        &X,&Z,&msg,&pystate_,&pyxs,&pyzs,&pyreals,
+                        &pynats,&pyparams)
+                    )
+                        return nullptr; 
+
+                    // Make sure we bail if we detect a Python exception
+                    try {
+                        // Create a Python state 
+                        Python::State <PyInequalityConstrained>pystate(pystate_,
+                            PyObjectPtrMode::Attach);
+                        
+                        // Grab the base vectors from the Python state
+                        Vector x(msg,X,
+                            PyObject_GetAttrString(pystate.get(),"x"));
+                        Vector z(msg,Z,
+                            PyObject_GetAttrString(pystate.get(),"z"));
+
+                        // Create a C++ state
+                        typename PyInequalityConstrained::State::t state(x,z);
+                        
+                        // Convert the Python state to a C++ state
+                        pystate.fromPython(state);
+
+                        // Do a release 
+                        PyInequalityConstrained::Restart::X_Vectors xs;
+                        PyInequalityConstrained::Restart::Z_Vectors zs;
+                        PyInequalityConstrained::Restart::Reals reals;
+                        PyInequalityConstrained::Restart::Naturals nats;
+                        PyInequalityConstrained::Restart::Params params;
+                        PyInequalityConstrained::Restart
+                            ::release(state,xs,zs,reals,nats,params);
+
+                        // Convert the restart information to Python 
+                        toPython::Vectors(xs,pyxs);
+                        toPython::Vectors(zs,pyzs);
+                        toPython::Reals(reals,pyreals);
+                        toPython::Naturals(nats,pynats);
+                        toPython::Params(params,pyparams);
+
+                        // Return nothing 
+                        return Py_None; 
+
+                    // In theory, we should have set the appropriate error
+                    } catch (Exception& exc){
+                        return nullptr;
+                    }
+                }
+
+                // Capture data from structures controlled by the user.  
+                PyObject * capture(
+                    PyObject * self,
+                    PyObject * args
+                ) {
+                    // Calling convention should be
+                    // (X,Y,msg,state,xs,ys,reals,nats,params)
+                    PyObject *X,*Z,*msg_,*pystate_,*pyxs,*pyzs,
+                        *pyreals,*pynats,*pyparams;
+                    if(!PyArg_ParseTuple(args,"OOOOOOOOO",
+                        &X,&Z,&msg_,&pystate_,&pyxs,&pyzs,
+                        &pyreals,&pynats,&pyparams)
+                    )
+                        return nullptr; 
+
+                    // Make sure we bail if we detect a Python exception
+                    try {
+                        // Create a messaging object
+                        Optizelle::Python::Messaging msg(msg_,
+                            PyObjectPtrMode::Attach);
+
+                        // Create a Python state 
+                        Python::State <PyInequalityConstrained>pystate(pystate_,
+                            PyObjectPtrMode::Attach);
+                        
+                        // Grab the base vectors from the Python state
+                        Vector x(msg_,X,
+                            PyObject_GetAttrString(pystate.get(),"x"));
+                        Vector z(msg_,Z,
+                            PyObject_GetAttrString(pystate.get(),"z"));
+
+                        // Create a C++ state
+                        typename PyInequalityConstrained::State::t state(x,z);
+                       
+                        // Allocate memory for the released vectors
+                        PyInequalityConstrained::Restart::X_Vectors xs;
+                        PyInequalityConstrained::Restart::Z_Vectors zs;
+                        PyInequalityConstrained::Restart::Reals reals;
+                        PyInequalityConstrained::Restart::Naturals nats;
+                        PyInequalityConstrained::Restart::Params params;
+                        
+                        // Convert the restart information from Python 
+                        fromPython::Vectors(x,pyxs,xs);
+                        fromPython::Vectors(z,pyzs,zs);
+                        fromPython::Reals(pyreals,reals);
+                        fromPython::Naturals(pynats,nats);
+                        fromPython::Params(pyparams,params);
+
+                        // Do a capture 
+                        PyInequalityConstrained::Restart
+                            ::capture(msg,state,xs,zs,reals,nats,params);
+
                         // Convert the C++ state to a Python state
                         pystate.toPython(state);
 
@@ -2892,6 +3164,139 @@ namespace Optizelle {
                     }
                 }
             }
+
+            // Utilities for restarting the optimization
+            namespace Restart {
+                // Release the data into structures controlled by the user 
+                PyObject * release(
+                    PyObject * self,
+                    PyObject * args
+                ) {
+                    // Calling convention should be
+                    // (X,Y,Z,msg,state,xs,ys,zs,reals,nats,params)
+                    PyObject *X,*Y,*Z,*msg,*pystate_,*pyxs,*pyys,*pyzs,
+                        *pyreals,*pynats,*pyparams;
+                    if(!PyArg_ParseTuple(args,"OOOOOOOOOOO",
+                        &X,&Y,&Z,&msg,&pystate_,&pyxs,&pyys,&pyzs,
+                        &pyreals,&pynats,&pyparams)
+                    )
+                        return nullptr; 
+
+                    // Make sure we bail if we detect a Python exception
+                    try {
+                        // Create a Python state 
+                        Python::State <PyConstrained> pystate(pystate_,
+                            PyObjectPtrMode::Attach);
+                        
+                        // Grab the base vectors from the Python state
+                        Vector x(msg,X,
+                            PyObject_GetAttrString(pystate.get(),"x"));
+                        Vector y(msg,Y,
+                            PyObject_GetAttrString(pystate.get(),"y"));
+                        Vector z(msg,Z,
+                            PyObject_GetAttrString(pystate.get(),"z"));
+
+                        // Create a C++ state
+                        typename PyConstrained::State::t state(x,y,z);
+                        
+                        // Convert the Python state to a C++ state
+                        pystate.fromPython(state);
+
+                        // Do a release 
+                        PyConstrained::Restart::X_Vectors xs;
+                        PyConstrained::Restart::Y_Vectors ys;
+                        PyConstrained::Restart::Z_Vectors zs;
+                        PyConstrained::Restart::Reals reals;
+                        PyConstrained::Restart::Naturals nats;
+                        PyConstrained::Restart::Params params;
+                        PyConstrained::Restart
+                            ::release(state,xs,ys,zs,reals,nats,params);
+
+                        // Convert the restart information to Python 
+                        toPython::Vectors(xs,pyxs);
+                        toPython::Vectors(ys,pyys);
+                        toPython::Vectors(zs,pyzs);
+                        toPython::Reals(reals,pyreals);
+                        toPython::Naturals(nats,pynats);
+                        toPython::Params(params,pyparams);
+
+                        // Return nothing 
+                        return Py_None; 
+
+                    // In theory, we should have set the appropriate error
+                    } catch (Exception& exc){
+                        return nullptr;
+                    }
+                }
+
+                // Capture data from structures controlled by the user.  
+                PyObject * capture(
+                    PyObject * self,
+                    PyObject * args
+                ) {
+                    // Calling convention should be
+                    // (X,Y,msg,state,xs,ys,reals,nats,params)
+                    PyObject *X,*Y,*Z,*msg_,*pystate_,*pyxs,*pyys,*pyzs,
+                        *pyreals,*pynats,*pyparams;
+                    if(!PyArg_ParseTuple(args,"OOOOOOOOOOO",
+                        &X,&Y,&Z,&msg_,&pystate_,&pyxs,&pyys,&pyzs,
+                        &pyreals,&pynats,&pyparams)
+                    )
+                        return nullptr; 
+
+                    // Make sure we bail if we detect a Python exception
+                    try {
+                        // Create a messaging object
+                        Optizelle::Python::Messaging msg(msg_,
+                            PyObjectPtrMode::Attach);
+
+                        // Create a Python state 
+                        Python::State <PyConstrained>pystate(pystate_,
+                            PyObjectPtrMode::Attach);
+                        
+                        // Grab the base vectors from the Python state
+                        Vector x(msg_,X,
+                            PyObject_GetAttrString(pystate.get(),"x"));
+                        Vector y(msg_,Y,
+                            PyObject_GetAttrString(pystate.get(),"y"));
+                        Vector z(msg_,Z,
+                            PyObject_GetAttrString(pystate.get(),"z"));
+
+                        // Create a C++ state
+                        typename PyConstrained::State::t state(x,y,z);
+                       
+                        // Allocate memory for the released vectors
+                        PyConstrained::Restart::X_Vectors xs;
+                        PyConstrained::Restart::Y_Vectors ys;
+                        PyConstrained::Restart::Z_Vectors zs;
+                        PyConstrained::Restart::Reals reals;
+                        PyConstrained::Restart::Naturals nats;
+                        PyConstrained::Restart::Params params;
+                        
+                        // Convert the restart information from Python 
+                        fromPython::Vectors(x,pyxs,xs);
+                        fromPython::Vectors(y,pyys,ys);
+                        fromPython::Vectors(z,pyzs,zs);
+                        fromPython::Reals(pyreals,reals);
+                        fromPython::Naturals(pynats,nats);
+                        fromPython::Params(pyparams,params);
+
+                        // Do a capture 
+                        PyConstrained::Restart
+                            ::capture(msg,state,xs,ys,zs,reals,nats,params);
+
+                        // Convert the C++ state to a Python state
+                        pystate.toPython(state);
+
+                        // Return nothing 
+                        return Py_None; 
+
+                    // In theory, we should have set the appropriate error
+                    } catch (Exception& exc){
+                        return nullptr;
+                    }
+                }
+            }
         }
     }
 }
@@ -2941,6 +3346,20 @@ PyMethodDef methods[] = {
         METH_VARARGS,
         const_cast <char*> (
             "Solves an equality constrained optimization problem")},
+    
+    { const_cast <char*> ("EqualityConstrainedRestartRelease"),
+        (PyCFunction)Optizelle::Python::EqualityConstrained::Restart::release,
+        METH_VARARGS,
+        const_cast <char*> (
+            "Release the state in an equality constrained optimization "
+            "problem")},
+
+    { const_cast <char*> ("EqualityConstrainedRestartCapture"),
+        (PyCFunction)Optizelle::Python::EqualityConstrained::Restart::capture,
+        METH_VARARGS,
+        const_cast <char*> (
+            "Capture the state in an equality constrained optimization "
+            "problem")},
 
     { const_cast <char*> ("InequalityConstrainedStateCreate"),
         (PyCFunction)Optizelle::Python::InequalityConstrained::State::create,
@@ -2959,6 +3378,20 @@ PyMethodDef methods[] = {
         METH_VARARGS,
         const_cast <char*> (
             "Solves an inequality constrained optimization problem")},
+    
+    { const_cast <char*> ("InequalityConstrainedRestartRelease"),
+        (PyCFunction)Optizelle::Python::InequalityConstrained::Restart::release,
+        METH_VARARGS,
+        const_cast <char*> (
+            "Release the state in an inequality constrained optimization "
+            "problem")},
+
+    { const_cast <char*> ("InequalityConstrainedRestartCapture"),
+        (PyCFunction)Optizelle::Python::InequalityConstrained::Restart::capture,
+        METH_VARARGS,
+        const_cast <char*> (
+            "Capture the state in an inequality constrained optimization "
+            "problem")},
 
     { const_cast <char*> ("ConstrainedStateCreate"),
         (PyCFunction)Optizelle::Python::Constrained::State::create,
@@ -2975,6 +3408,18 @@ PyMethodDef methods[] = {
         (PyCFunction)Optizelle::Python::Constrained::Algorithms::getMin,
         METH_VARARGS,
         const_cast <char*> ("Solves a constrained optimization problem")},
+    
+    { const_cast <char*> ("ConstrainedRestartRelease"),
+        (PyCFunction)Optizelle::Python::Constrained::Restart::release,
+        METH_VARARGS,
+        const_cast <char*> (
+            "Release the state in a constrained optimization problem")},
+
+    { const_cast <char*> ("ConstrainedRestartCapture"),
+        (PyCFunction)Optizelle::Python::Constrained::Restart::capture,
+        METH_VARARGS,
+        const_cast <char*> (
+            "Capture the state in a constrained optimization problem")},
 
     {nullptr}  // Sentinel
 };

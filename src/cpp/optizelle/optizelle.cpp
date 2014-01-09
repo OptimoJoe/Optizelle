@@ -611,60 +611,6 @@ namespace Optizelle{
             return false;
     }
 
-    // Checks whether all the labels in the list labels are actually
-    // labels stored in the is_label function.  If not, this function
-    // throws an error.
-    void Utility::checkLabels(
-        Messaging const & msg,
-        std::function<bool(std::string const &)> const & is_label,
-        std::list <std::string> const & labels, 
-        std::string const & kind
-    ) {
-        // Create a base message
-        const std::string base
-            ="During serialization, found an invalid ";
-
-        // Check the labels
-        std::list <std::string>::const_iterator name = find_if(
-            labels.begin(), labels.end(),
-            std::not1(is_label));
-
-        if(name!=labels.end()) {
-            std::stringstream ss;
-            ss << base << kind << *name;
-            msg.error(ss.str());
-        }
-    }
-
-    // Combines two strings in a funny sort of way.  Basically, given
-    // a and b, if a is empty, this function returns b.  However, if
-    // a is nonempty, it returns a.
-    std::basic_string <char> Utility::combineStrings::operator()(
-        std::string const & a,std::string const & b
-    ) const {
-        if(a=="") return b; else return a;
-    }
-      
-    // This checks the parameters and prints and error in there's a problem.
-    void Utility::checkParams(
-        Messaging const & msg,
-        std::function
-            <std::string(std::string const &,std::string const &)> const &
-            checkParamVal,
-        std::pair <std::list <std::string>,std::list <std::string> > const &
-            params 
-    ) {
-        std::string err=std::inner_product (
-            params.first.cbegin(),
-            params.first.cend(),
-            params.second.cbegin(),
-            std::basic_string <char> (""),
-            checkParamVal,
-            combineStrings()
-        );
-        if(err!="") msg.error(err);
-    }
-  
     // Converts a variety of basic datatypes to strings
     std::ostream& Utility::formatReal(std::ostream & out) {
         return out<<std::setprecision(2) << std::scientific << std::setw(10)

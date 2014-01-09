@@ -28,7 +28,7 @@ int main() {
     Optizelle::Constrained <double,Rm,Rm,Rm>::Restart::Y_Vectors ys;
     Optizelle::Constrained <double,Rm,Rm,Rm>::Restart::Z_Vectors zs;
     Optizelle::Constrained <double,Rm,Rm,Rm>::Restart::Reals reals;
-    Optizelle::Constrained <double,Rm,Rm,Rm>::Restart::Nats nats;
+    Optizelle::Constrained <double,Rm,Rm,Rm>::Restart::Naturals nats;
     Optizelle::Constrained <double,Rm,Rm,Rm>::Restart::Params params;
     Optizelle::Constrained <double,Rm,Rm,Rm>::Restart
         ::release(state,xs,ys,zs,reals,nats,params);

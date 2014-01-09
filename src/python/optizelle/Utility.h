@@ -590,6 +590,11 @@ namespace Optizelle {
         typedef Optizelle::json::Constrained <double,PythonVS,PythonVS,PythonVS>
             PyJsonConstrained;
 
+        typedef typename Optizelle::RestartPackage <double>::t Reals;
+        typedef typename Optizelle::RestartPackage <Natural>::t Naturals;
+        typedef typename Optizelle::RestartPackage <std::string>::t Params;
+        typedef typename Optizelle::RestartPackage <Vector>::t Vectors;
+
         // A simple scalar valued function interface, f : X -> R
         struct ScalarValuedFunction :
             public Optizelle::ScalarValuedFunction <double,PythonVS>,
@@ -753,172 +758,178 @@ namespace Optizelle {
         Natural enumToNatural(
             std::string const & type,
             std::string const & member 
-        ); 
+        );
 
-        // Sets a floating point in a Python class 
-        void setFloat(
-            std::string const & name,
-            double const & value,
-            PyObject * const obj 
-        );
+        // Converts elements from C++ to Python 
+        namespace toPython {
+            // Sets a real in a Python state 
+            void Real(
+                std::string const & name,
+                double const & value,
+                PyObject * const obj 
+            );
+
+            // Sets a natural in a Python state 
+            void Natural(
+                std::string const & name,
+                Optizelle::Natural const & value,
+                PyObject * const obj 
+            );
+           
+            // Sets a parameter in a Python state 
+            template <typename enum_t>
+            void Param(
+                std::string const & name,
+                std::function<PyObject *(enum_t const &)> const & toPython,
+                enum_t const & value,
+                PyObject * const obj
+            ) {
+                PyObjectPtr item(toPython(value));
+                PyObject_SetAttrString(obj,name.c_str(),item.get());
+            }
+            
+            // Sets a vector in a Python state 
+            void Vector(
+                std::string const & name,
+                Python::Vector const & value,
+                PyObject * const obj 
+            );
+            
+            // Sets a list of vectors in a Python state 
+            void VectorList(
+                std::string const & name,
+                std::list <Python::Vector> const & values,
+                PyObject * const obj 
+            );
+            
+            // Sets a scalar-valued function in a Python function bundle 
+            void ScalarValuedFunction(
+                std::string const & name,
+                PyObject * const msg,
+                PyObject * const obj,
+                std::unique_ptr <PyScalarValuedFunction> & value
+            );
+            
+            // Sets a vector-valued function in a Python function bundle 
+            void VectorValuedFunction(
+                std::string const & name,
+                PyObject * const msg,
+                PyObject * const obj,
+                std::unique_ptr <PyVectorValuedFunction> & value
+            );
+            
+            // Sets an operator in a Python function bundle 
+            template <typename ProblemClass>
+            void Operator(
+                std::string const & name,
+                PyObject * const msg,
+                PyObject * const obj,
+                PyObject * const pystate,
+                typename ProblemClass::State::t const & state,
+                std::unique_ptr <PyOperator> & value
+            ) {
+                value.reset(new Python::Operator <ProblemClass> (
+                    name,
+                    msg,
+                    PyObject_GetAttrString(obj,name.c_str()),
+                    pystate,
+                    state));
+            }
         
-        // Sets a floating point in a C++ class 
-        void setFloat(
-            std::string const & name,
-            PyObject * const obj,
-            double & value
-        );
-        
-        // Sets an integer in a Python class 
-        void setNatural(
-            std::string const & name,
-            Natural const & value,
-            PyObject * const obj 
-        );
-        
-        // Sets an integer in a C++ class 
-        void setNatural(
-            std::string const & name,
-            PyObject * const obj,
-            Natural & value
-        );
-       
-        // Sets an enumerated value in a Python class
-        template <typename enum_t>
-        void setEnum(
-            std::string const & name,
-            std::function<PyObject *(enum_t const &)> const & toPython,
-            enum_t const & value,
-            PyObject * const obj
-        ) {
-            PyObjectPtr item(toPython(value));
-            PyObject_SetAttrString(obj,name.c_str(),item.get());
+            // Sets restart vectors in Python 
+            void Vectors(
+                Python::Vectors const & values,
+                PyObject * const pyvalues 
+            );
+
+            // Sets restart reals in Python 
+            void Reals(
+                Python::Reals const & values,
+                PyObject * const pyvalues 
+            );
+            
+            // Sets restart naturals in Python 
+            void Naturals(
+                Python::Naturals const & values,
+                PyObject * const pyvalues 
+            );
+            
+            // Sets restart parameters in Python 
+            void Params(
+                Python::Params const & values,
+                PyObject * const pyvalues 
+            );
         }
-       
-        // Sets an enumerated value in a C++ class
-        template <typename enum_t>
-        void setEnum(
-            std::string const & name,
-            std::function<enum_t(PyObject * const)> const & fromPython,
-            PyObject * const obj,
-            enum_t & value
-        ) {
-            PyObjectPtr item(PyObject_GetAttrString(
-                const_cast <PyObject *> (obj),name.c_str()));
-            value = fromPython(item.get());
+
+        // Converts elements from Python to C++ 
+        namespace fromPython {
+            // Sets a real in a C++ state 
+            void Real(
+                std::string const & name,
+                PyObject * const obj,
+                double & value
+            );
+            
+            // Sets a natural in a C++ state 
+            void Natural(
+                std::string const & name,
+                PyObject * const obj,
+                Optizelle::Natural & value
+            );
+           
+            // Sets a param C++ state 
+            template <typename enum_t>
+            void Param(
+                std::string const & name,
+                std::function<enum_t(PyObject * const)> const & fromPython,
+                PyObject * const obj,
+                enum_t & value
+            ) {
+                PyObjectPtr item(PyObject_GetAttrString(
+                    const_cast <PyObject *> (obj),name.c_str()));
+                value = fromPython(item.get());
+            }
+            
+            // Sets a vector in a C++ state 
+            void Vector(
+                std::string const & name,
+                PyObject * const obj,
+                Python::Vector & value
+            );
+            
+            // Sets a list of vectors in a C++ state 
+            void VectorList(
+                std::string const & name,
+                PyObject * const obj,
+                Python::Vector const & vec,
+                std::list <Python::Vector> & values
+            );
+        
+            // Sets restart vectors in C++ 
+            void Vectors(
+                Python::Vector const & vec,
+                PyObject * const pyvalues,
+                Python::Vectors & values
+            );
+            
+            // Sets restart reals in C++ 
+            void Reals(
+                PyObject * const pyvalues,
+                Python::Reals & values
+            );
+            
+            // Sets restart naturals in C++ 
+            void Naturals(
+                PyObject * const pyvalues,
+                Python::Naturals & values
+            );
+            
+            // Sets restart parameters in C++ 
+            void Params(
+                PyObject * const pyvalues,
+                Python::Params & values
+            );
         }
-        
-        // Sets a vector in a Python class 
-        void setVector(
-            std::string const & name,
-            Vector const & value,
-            PyObject * const obj 
-        );
-        
-        // Sets a vector in a C++ class 
-        void setVector(
-            std::string const & name,
-            PyObject * const obj,
-            Vector & value
-        );
-        
-        // Sets a list of vectors in a Python class 
-        void setVectors(
-            std::string const & name,
-            std::list <Vector> const & values,
-            PyObject * const obj 
-        );
-        
-        // Sets a list of vectors in a C++ class 
-        void setVectors(
-            std::string const & name,
-            PyObject * const obj,
-            Vector const & vec,
-            std::list <Vector> & values
-        );
-        
-        // Sets a scalar-valued function in a Python class 
-        void setScalarValuedFunction(
-            std::string const & name,
-            PyObject * const msg,
-            PyObject * const obj,
-            std::unique_ptr <PyScalarValuedFunction> & value
-        );
-        
-        // Sets a vector-valued function in a Python class 
-        void setVectorValuedFunction(
-            std::string const & name,
-            PyObject * const msg,
-            PyObject * const obj,
-            std::unique_ptr <PyVectorValuedFunction> & value
-        );
-        
-        // Sets a linear operator in a Python class 
-        template <typename ProblemClass>
-        void setOperator(
-            std::string const & name,
-            PyObject * const msg,
-            PyObject * const obj,
-            PyObject * const pystate,
-            typename ProblemClass::State::t const & state,
-            std::unique_ptr <PyOperator> & value
-        ) {
-            value.reset(new Operator <ProblemClass> (
-                name,
-                msg,
-                PyObject_GetAttrString(obj,name.c_str()),
-                pystate,
-                state));
-        }
-        
-        // Converts a list of strings to a Python list 
-        void convertStrings(
-            std::list <std::string> const & values,
-            PyObject * const pyvalues 
-        );
-        
-        // Converts a Python list to a list of strings 
-        void convertStrings(
-            PyObject * const pyvalues,
-            std::list <std::string> & values
-        );
-        
-        // Converts a list of vectors to a Python list 
-        void convertVectors(
-            std::list <Vector> const & values,
-            PyObject * const pyvalues 
-        );
-        
-        // Converts a Python list to a list of vectors
-        void convertVectors(
-            Vector const & vec,
-            PyObject * const pyvalues,
-            std::list <Vector> & values
-        );
-        
-        // Converts a list of reals to a Python list 
-        void convertReals(
-            std::list <double> const & values,
-            PyObject * const pyvalues 
-        );
-        
-        // Converts a Python list to a list of reals
-        void convertReals(
-            PyObject * const pyvalues,
-            std::list <double> & values
-        );
-        
-        // Converts a list of naturals to a Python list 
-        void convertNats(
-            std::list <Natural> const & values,
-            PyObject * const pyvalues 
-        );
-        
-        // Converts a Python list to a list of naturals
-        void convertNats(
-            PyObject * const pyvalues,
-            std::list <Natural> & values
-        );
 
         // Routines that manipulate and support problems of the form
         // 
@@ -974,8 +985,8 @@ namespace Optizelle {
                     typename ProblemClass::State::t const & state,
                     typename PyUnconstrained::Functions::t & fns 
                 ) {
-                    setScalarValuedFunction("f",msg,pyfns,fns.f);
-                    setOperator <ProblemClass> (
+                    toPython::ScalarValuedFunction("f",msg,pyfns,fns.f);
+                    toPython::Operator <ProblemClass> (
                         "PH",msg,pyfns,pystate,state,fns.PH);
                 }
                 void fromPython(
@@ -1065,10 +1076,10 @@ namespace Optizelle {
                     typename ProblemClass::State::t const & state,
                     typename PyEqualityConstrained::Functions::t & fns 
                 ) {
-                    setVectorValuedFunction("g",msg,pyfns,fns.g);
-                    setOperator <ProblemClass> ("PSchur_left",
+                    toPython::VectorValuedFunction("g",msg,pyfns,fns.g);
+                    toPython::Operator <ProblemClass> ("PSchur_left",
                         msg,pyfns,pystate,state,fns.PSchur_left);
-                    setOperator <ProblemClass> ("PSchur_right",
+                    toPython::Operator <ProblemClass> ("PSchur_right",
                         msg,pyfns,pystate,state,fns.PSchur_right);
                 }
                 void fromPython(
@@ -1084,6 +1095,21 @@ namespace Optizelle {
             namespace Algorithms {
                 // Solves an optimization problem
                 PyObject * getMin(
+                    PyObject * self,
+                    PyObject * args
+                );
+            }
+        
+            // Utilities for restarting the optimization
+            namespace Restart {
+                // Release the data into structures controlled by the user 
+                PyObject * release(
+                    PyObject * self,
+                    PyObject * args
+                );
+
+                // Capture data from structures controlled by the user.  
+                PyObject * capture(
                     PyObject * self,
                     PyObject * args
                 );
@@ -1143,7 +1169,7 @@ namespace Optizelle {
                     typename ProblemClass::State::t const & state,
                     typename PyInequalityConstrained::Functions::t & fns 
                 ) {
-                    setVectorValuedFunction("h",msg,pyfns,fns.h);
+                    toPython::VectorValuedFunction("h",msg,pyfns,fns.h);
                 }
                 void fromPython(
                     PyObject * const msg,
@@ -1158,6 +1184,21 @@ namespace Optizelle {
             namespace Algorithms {
                 // Solves an optimization problem
                 PyObject * getMin(
+                    PyObject * self,
+                    PyObject * args
+                );
+            }
+        
+            // Utilities for restarting the optimization
+            namespace Restart {
+                // Release the data into structures controlled by the user 
+                PyObject * release(
+                    PyObject * self,
+                    PyObject * args
+                );
+
+                // Capture data from structures controlled by the user.  
+                PyObject * capture(
                     PyObject * self,
                     PyObject * args
                 );
@@ -1215,6 +1256,21 @@ namespace Optizelle {
             namespace Algorithms {
                 // Solves an optimization problem
                 PyObject * getMin(
+                    PyObject * self,
+                    PyObject * args
+                );
+            }
+        
+            // Utilities for restarting the optimization
+            namespace Restart {
+                // Release the data into structures controlled by the user 
+                PyObject * release(
+                    PyObject * self,
+                    PyObject * args
+                );
+
+                // Capture data from structures controlled by the user.  
+                PyObject * capture(
                     PyObject * self,
                     PyObject * args
                 );

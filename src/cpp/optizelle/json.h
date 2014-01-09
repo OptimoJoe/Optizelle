@@ -69,77 +69,64 @@ namespace Optizelle {
             // Vectors 
             template <typename Real,template <typename> class XX>
             void vectors(
-                std::pair <
-                    std::list <std::string>,
-                    std::list <typename XX <Real>::Vector>
-                > const & xs,
+                typename RestartPackage<typename XX<Real>::Vector>::t const& xs,
                 std::string const & vs,
                 Json::Value & root
             ) {
                 // Create some type shortcuts
                 typedef XX <Real> X;
                 typedef typename X::Vector X_Vector;
+                typedef typename RestartPackage <X_Vector>::t X_Vectors;
 
                 // Create a reader object to parse a json tree
                 Json::Reader reader;
 
                 // Loop over all the vectors and serialize things
-                typename std::list <X_Vector>::const_iterator x
-                    =xs.second.begin();
-                for(typename std::list <std::string>::const_iterator
-                        name=xs.first.begin();
-                    name!=xs.first.end();
-                    name++, x++
-                ) {
+                for(typename X_Vectors::const_iterator item = xs.cbegin();
+                    item!=xs.cend();
+                    item++
+                ){
                     // Grab the json string of the vector
-                    std::string x_json_(Serialization <Real,XX>::serialize(*x));
+                    std::string x_json_(Serialization <Real,XX>::serialize(
+                        item->second));
                    
                     // Parse the string
                     Json::Value x_json;
                     reader.parse(x_json_,x_json,true);
 
                     // Insert the information into the correct place
-                    root[vs][*name]=x_json;
+                    root[vs][item->first]=x_json;
                 }
             }
 
             // Reals 
             template <typename Real>
             void reals(
-                std::pair <
-                    std::list <std::string>,
-                    std::list <Real>
-                > const & reals,
+                typename RestartPackage <Real>::t const & reals,
                 std::string const & vs,
                 Json::Value & root
             ) {
+                // Create some type shortcuts
+                typedef typename RestartPackage <Real>::t Reals; 
+
                 // Loop over all the reals and serialize things
-                typename std::list <Real>::const_iterator real 
-                    =reals.second.begin();
-                for(typename std::list <std::string>::const_iterator
-                        name=reals.first.begin();
-                    name!=reals.first.end();
-                    name++, real++
+                for(typename Reals::const_iterator item = reals.cbegin();
+                    item!=reals.cend();
+                    item++
                 )
-                    root[vs][*name]=*real;
+                    root[vs][item->first]=item->second;
             }
 
             // Naturals 
             void naturals(
-                std::pair <
-                    std::list <std::string>,
-                    std::list <Natural>
-                > const & nats,
+                typename RestartPackage <Natural>::t const & nats,
                 std::string const & vs,
                 Json::Value & root
             );
 
             // Parameters 
             void parameters(
-                std::pair <
-                    std::list <std::string>,
-                    std::list <std::string>
-                > const & params,
+                typename RestartPackage <std::string>::t const & params,
                 std::string const & vs,
                 Json::Value & root
             );
@@ -154,14 +141,12 @@ namespace Optizelle {
                 typename XX <Real>::Vector const & x,
                 Json::Value const & root,
                 std::string const & vs,
-                std::pair <
-                    std::list <std::string>,
-                    std::list <typename XX <Real>::Vector>
-                > & xs
+                typename RestartPackage<typename XX<Real>::Vector>::t & xs
             ) {
                 // Create some type shortcuts
                 typedef XX <Real> X;
                 typedef typename X::Vector X_Vector;
+                typedef typename RestartPackage <X_Vector>::t X_Vectors;
                 
                 // Create a writer so that we can tranlate json objects into
                 // strings
@@ -174,8 +159,7 @@ namespace Optizelle {
                 ){
                     // Grab the vector
                     std::string name(itr.key().asString());
-                    xs.first.emplace_back(name);
-                    xs.second.emplace_back(std::move(
+                    xs.emplace_back(name,std::move(
                         Serialization <Real,XX>::deserialize(
                             writer.write(root[vs][name]))));
                 }
@@ -186,10 +170,7 @@ namespace Optizelle {
             void reals(
                 Json::Value const & root,
                 std::string const & vs,
-                std::pair <
-                    std::list <std::string>,
-                    std::list <Real>
-                > & reals
+                typename RestartPackage <Real>::t & reals
             ) {
                 // Loop over all the names in the root
                 for(Json::ValueIterator itr=root[vs].begin();
@@ -197,9 +178,9 @@ namespace Optizelle {
                     itr++
                 ){
                     // Grab the real 
-                    reals.first.emplace_back(itr.key().asString());
-                    reals.second.emplace_back(
-                        Real(root[vs][reals.first.back()].asDouble()));
+                    std::string name(itr.key().asString());
+                    reals.emplace_back(name,
+                        std::move(Real(root[vs][name].asDouble())));
                 }
             }
             
@@ -207,20 +188,14 @@ namespace Optizelle {
             void naturals(
                 Json::Value const & root,
                 std::string const & vs,
-                std::pair <
-                    std::list <std::string>,
-                    std::list <Natural>
-                > & nats
+                typename RestartPackage <Natural>::t & nats
             );
             
             // Parameters 
             void parameters(
                 Json::Value const & root,
                 std::string const & vs,
-                std::pair <
-                    std::list <std::string>,
-                    std::list <std::string>
-                > & params
+                typename RestartPackage <std::string>::t & params 
             );
         }
 
@@ -232,7 +207,7 @@ namespace Optizelle {
             typedef typename Optizelle::Unconstrained <Real,XX>::Restart
                 ::Reals Reals;
             typedef typename Optizelle::Unconstrained <Real,XX>::Restart
-                ::Nats Nats;
+                ::Naturals Naturals;
             typedef typename Optizelle::Unconstrained <Real,XX>::Restart
                 ::Params Params; 
 
@@ -416,7 +391,7 @@ namespace Optizelle {
                 // Do a release 
                 X_Vectors xs;
                 Reals reals;
-                Nats nats;
+                Naturals nats;
                 Params params;
                 Optizelle::Unconstrained <Real,XX>::Restart::release(
                     state,xs,reals,nats,params);
@@ -448,7 +423,7 @@ namespace Optizelle {
                 // Extract everything from the parsed json file 
                 X_Vectors xs;
                 Reals reals;
-                Nats nats;
+                Naturals nats;
                 Params params;
                 Deserialize::vectors <Real,XX>(root,"X_Vectors",xs);
                 Deserialize::reals <Real> (root,"Reals",reals);
@@ -475,7 +450,7 @@ namespace Optizelle {
             typedef typename Optizelle::EqualityConstrained<Real,XX,YY>::Restart
                 ::Reals Reals;
             typedef typename Optizelle::EqualityConstrained<Real,XX,YY>::Restart
-                ::Nats Nats;
+                ::Naturals Naturals;
             typedef typename Optizelle::EqualityConstrained<Real,XX,YY>::Restart
                 ::Params Params; 
 
@@ -616,7 +591,7 @@ namespace Optizelle {
                 X_Vectors xs;
                 Y_Vectors ys;
                 Reals reals;
-                Nats nats;
+                Naturals nats;
                 Params params;
                 Optizelle::EqualityConstrained <Real,XX,YY>::Restart::release(
                     state,xs,ys,reals,nats,params);
@@ -651,7 +626,7 @@ namespace Optizelle {
                 X_Vectors xs;
                 Y_Vectors ys;
                 Reals reals;
-                Nats nats;
+                Naturals nats;
                 Params params;
                 Deserialize::vectors <Real,XX>(root,"X_Vectors",xs);
                 Deserialize::vectors <Real,YY>(root,"Y_Vectors",ys);
@@ -682,7 +657,7 @@ namespace Optizelle {
                     ::Reals Reals;
             typedef
                 typename Optizelle::InequalityConstrained<Real,XX,ZZ>::Restart
-                    ::Nats Nats;
+                    ::Naturals Naturals;
             typedef
                 typename Optizelle::InequalityConstrained<Real,XX,ZZ>::Restart
                     ::Params Params; 
@@ -779,7 +754,7 @@ namespace Optizelle {
                 X_Vectors xs;
                 Z_Vectors zs;
                 Reals reals;
-                Nats nats;
+                Naturals nats;
                 Params params;
                 Optizelle::InequalityConstrained <Real,XX,ZZ>::Restart::release(
                     state,xs,zs,reals,nats,params);
@@ -814,7 +789,7 @@ namespace Optizelle {
                 X_Vectors xs;
                 Z_Vectors zs;
                 Reals reals;
-                Nats nats;
+                Naturals nats;
                 Params params;
                 Deserialize::vectors <Real,XX>(root,"X_Vectors",xs);
                 Deserialize::vectors <Real,ZZ>(root,"Z_Vectors",zs);
@@ -844,7 +819,7 @@ namespace Optizelle {
             typedef typename Optizelle::Constrained<Real,XX,YY,ZZ>::Restart
                 ::Reals Reals;
             typedef typename Optizelle::Constrained<Real,XX,YY,ZZ>::Restart
-                ::Nats Nats;
+                ::Naturals Naturals;
             typedef typename Optizelle::Constrained<Real,XX,YY,ZZ>::Restart
                 ::Params Params; 
 
@@ -888,7 +863,7 @@ namespace Optizelle {
                 Y_Vectors ys;
                 Z_Vectors zs;
                 Reals reals;
-                Nats nats;
+                Naturals nats;
                 Params params;
                 Optizelle::Constrained <Real,XX,YY,ZZ>::Restart::release(
                     state,xs,ys,zs,reals,nats,params);
@@ -924,7 +899,7 @@ namespace Optizelle {
                 Y_Vectors ys;
                 Z_Vectors zs;
                 Reals reals;
-                Nats nats;
+                Naturals nats;
                 Params params;
                 Deserialize::vectors <Real,XX>(root,"X_Vectors",xs);
                 Deserialize::vectors <Real,YY>(root,"Y_Vectors",ys);
