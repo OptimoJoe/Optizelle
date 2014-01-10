@@ -60,6 +60,7 @@ namespace Optizelle {
                 typename XX <Real>::Vector const & x
             ) { }
             static typename XX <Real>::Vector deserialize(
+                typename XX <Real>::Vector const & x,
                 std::string const & x_json
             ) { }
         };
@@ -138,9 +139,9 @@ namespace Optizelle {
             // Vectors
             template <typename Real,template <typename> class XX>
             static void vectors(
-                typename XX <Real>::Vector const & x,
                 Json::Value const & root,
                 std::string const & vs,
+                typename XX <Real>::Vector const & x,
                 typename RestartPackage<typename XX<Real>::Vector>::t & xs
             ) {
                 // Create some type shortcuts
@@ -161,7 +162,7 @@ namespace Optizelle {
                     std::string name(itr.key().asString());
                     xs.emplace_back(name,std::move(
                         Serialization <Real,XX>::deserialize(
-                            writer.write(root[vs][name]))));
+                            x,writer.write(root[vs][name]))));
                 }
             }
             
@@ -202,6 +203,9 @@ namespace Optizelle {
         template <typename Real,template <typename> class XX> 
         struct Unconstrained {
             // Create some type shortcuts
+            typedef typename Optizelle::Unconstrained <Real,XX>
+                ::X_Vector X_Vector;
+
             typedef typename Optizelle::Unconstrained <Real,XX>::Restart
                 ::X_Vectors X_Vectors; 
             typedef typename Optizelle::Unconstrained <Real,XX>::Restart
@@ -415,6 +419,7 @@ namespace Optizelle {
             static void read_restart(
                 Optizelle::Messaging const & msg,
                 std::string const & fname,
+                X_Vector const & x,
                 typename Optizelle::Unconstrained <Real,XX>::State::t & state
             ) {
                 // Read in the input file
@@ -425,14 +430,14 @@ namespace Optizelle {
                 Reals reals;
                 Naturals nats;
                 Params params;
-                Deserialize::vectors <Real,XX>(root,"X_Vectors",xs);
+                Deserialize::vectors <Real,XX>(root,"X_Vectors",x,xs);
                 Deserialize::reals <Real> (root,"Reals",reals);
                 Deserialize::naturals(root,"Naturals",nats);
                 Deserialize::parameters(root,"Parameters",params);
                
                 // Move this information into the state
                 Optizelle::Unconstrained <Real,XX>::Restart::capture(
-                    state,xs,reals,nats,params);
+                    msg,state,xs,reals,nats,params);
             }
         };
 
@@ -443,6 +448,11 @@ namespace Optizelle {
         > 
         struct EqualityConstrained {
             // Create some type shortcuts
+            typedef typename Optizelle::EqualityConstrained<Real,XX,YY>
+                ::X_Vector X_Vector;
+            typedef typename Optizelle::EqualityConstrained<Real,XX,YY>
+                ::Y_Vector Y_Vector;
+
             typedef typename Optizelle::EqualityConstrained<Real,XX,YY>::Restart
                 ::X_Vectors X_Vectors; 
             typedef typename Optizelle::EqualityConstrained<Real,XX,YY>::Restart
@@ -616,6 +626,8 @@ namespace Optizelle {
             static void read_restart(
                 Optizelle::Messaging const & msg,
                 std::string const & fname,
+                X_Vector const & x,
+                Y_Vector const & y,
                 typename Optizelle::EqualityConstrained <Real,XX,YY>::State::t &
                     state
             ) {
@@ -628,15 +640,15 @@ namespace Optizelle {
                 Reals reals;
                 Naturals nats;
                 Params params;
-                Deserialize::vectors <Real,XX>(root,"X_Vectors",xs);
-                Deserialize::vectors <Real,YY>(root,"Y_Vectors",ys);
+                Deserialize::vectors <Real,XX>(root,"X_Vectors",x,xs);
+                Deserialize::vectors <Real,YY>(root,"Y_Vectors",y,ys);
                 Deserialize::reals <Real> (root,"Reals",reals);
                 Deserialize::naturals(root,"Naturals",nats);
                 Deserialize::parameters(root,"Parameters",params);
                
                 // Move this information into the state
                 Optizelle::EqualityConstrained <Real,XX,YY>::Restart::capture(
-                    state,xs,ys,reals,nats,params);
+                    msg,state,xs,ys,reals,nats,params);
             }
         };
 
@@ -646,21 +658,21 @@ namespace Optizelle {
         > 
         struct InequalityConstrained {
             // Create some type shortcuts
-            typedef
-                typename Optizelle::InequalityConstrained<Real,XX,ZZ>::Restart
-                    ::X_Vectors X_Vectors; 
-            typedef
-                typename Optizelle::InequalityConstrained<Real,XX,ZZ>::Restart
-                    ::Z_Vectors Z_Vectors; 
-            typedef
-                typename Optizelle::InequalityConstrained<Real,XX,ZZ>::Restart
-                    ::Reals Reals;
-            typedef
-                typename Optizelle::InequalityConstrained<Real,XX,ZZ>::Restart
-                    ::Naturals Naturals;
-            typedef
-                typename Optizelle::InequalityConstrained<Real,XX,ZZ>::Restart
-                    ::Params Params; 
+            typedef typename Optizelle::InequalityConstrained<Real,XX,ZZ>
+                ::X_Vector X_Vector;
+            typedef typename Optizelle::InequalityConstrained<Real,XX,ZZ>
+                ::Z_Vector Z_Vector;
+
+            typedef typename Optizelle::InequalityConstrained<Real,XX,ZZ>
+                ::Restart::X_Vectors X_Vectors; 
+            typedef typename Optizelle::InequalityConstrained<Real,XX,ZZ>
+                ::Restart::Z_Vectors Z_Vectors; 
+            typedef typename Optizelle::InequalityConstrained<Real,XX,ZZ>
+                ::Restart::Reals Reals;
+            typedef typename Optizelle::InequalityConstrained<Real,XX,ZZ>
+                ::Restart::Naturals Naturals;
+            typedef typename Optizelle::InequalityConstrained<Real,XX,ZZ>
+                ::Restart::Params Params; 
 
             // Read parameters from file
             static void read_(
@@ -779,6 +791,8 @@ namespace Optizelle {
             static void read_restart(
                 Optizelle::Messaging const & msg,
                 std::string const & fname,
+                X_Vector const & x,
+                Z_Vector const & z,
                 typename Optizelle::InequalityConstrained<Real,XX,ZZ>::State::t&
                     state
             ) {
@@ -791,15 +805,15 @@ namespace Optizelle {
                 Reals reals;
                 Naturals nats;
                 Params params;
-                Deserialize::vectors <Real,XX>(root,"X_Vectors",xs);
-                Deserialize::vectors <Real,ZZ>(root,"Z_Vectors",zs);
+                Deserialize::vectors <Real,XX>(root,"X_Vectors",x,xs);
+                Deserialize::vectors <Real,ZZ>(root,"Z_Vectors",z,zs);
                 Deserialize::reals <Real> (root,"Reals",reals);
                 Deserialize::naturals(root,"Naturals",nats);
                 Deserialize::parameters(root,"Parameters",params);
                
                 // Move this information into the state
                 Optizelle::InequalityConstrained <Real,XX,ZZ>::Restart::capture(
-                    state,xs,zs,reals,nats,params);
+                    msg,state,xs,zs,reals,nats,params);
             }
         };
 
@@ -810,6 +824,13 @@ namespace Optizelle {
         > 
         struct Constrained {
             // Create some type shortcuts
+            typedef typename Optizelle::Constrained<Real,XX,YY,ZZ>
+                ::X_Vector X_Vector;
+            typedef typename Optizelle::Constrained<Real,XX,YY,ZZ>
+                ::Y_Vector Y_Vector;
+            typedef typename Optizelle::Constrained<Real,XX,YY,ZZ>
+                ::Z_Vector Z_Vector;
+
             typedef typename Optizelle::Constrained<Real,XX,YY,ZZ>::Restart
                 ::X_Vectors X_Vectors; 
             typedef typename Optizelle::Constrained<Real,XX,YY,ZZ>::Restart
@@ -889,6 +910,9 @@ namespace Optizelle {
             static void read_restart(
                 Optizelle::Messaging const & msg,
                 std::string const & fname,
+                X_Vector const & x,
+                Y_Vector const & y,
+                Z_Vector const & z,
                 typename Optizelle::Constrained <Real,XX,YY,ZZ>::State::t& state
             ) {
                 // Read in the input file
@@ -901,16 +925,16 @@ namespace Optizelle {
                 Reals reals;
                 Naturals nats;
                 Params params;
-                Deserialize::vectors <Real,XX>(root,"X_Vectors",xs);
-                Deserialize::vectors <Real,YY>(root,"Y_Vectors",ys);
-                Deserialize::vectors <Real,ZZ>(root,"Z_Vectors",zs);
+                Deserialize::vectors <Real,XX>(root,"X_Vectors",x,xs);
+                Deserialize::vectors <Real,YY>(root,"Y_Vectors",y,ys);
+                Deserialize::vectors <Real,ZZ>(root,"Z_Vectors",z,zs);
                 Deserialize::reals <Real> (root,"Reals",reals);
                 Deserialize::naturals(root,"Naturals",nats);
                 Deserialize::parameters(root,"Parameters",params);
                
                 // Move this information into the state
                 Optizelle::Constrained <Real,XX,YY,ZZ>::Restart::capture(
-                    state,xs,ys,zs,reals,nats,params);
+                    msg,state,xs,ys,zs,reals,nats,params);
             }
         };
     }

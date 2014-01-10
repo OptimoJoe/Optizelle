@@ -76,14 +76,16 @@ int main(int argc,char* argv[]) {
 
                 Rm::Vector x(
                     Optizelle::json::Serialization <double,Optizelle::Rm>
-                        ::deserialize(writer.write(
-                            baseline[category.memberName()]
-                                [variable.memberName()])));
+                        ::deserialize(
+                            std::vector <double>(),
+                            writer.write(baseline[category.memberName()]
+                                                 [variable.memberName()])));
                 Rm::Vector y(
                     Optizelle::json::Serialization <double,Optizelle::Rm>
-                        ::deserialize(writer.write(
-                            test[category.memberName()]
-                                [variable.memberName()])));
+                        ::deserialize(
+                            std::vector <double>(),
+                            writer.write(test[category.memberName()]
+                                             [variable.memberName()])));
 
                 Rm::Vector diff(Rm::init(x));
                     Rm::copy(x,diff);

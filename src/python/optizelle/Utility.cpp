@@ -536,6 +536,64 @@ namespace Optizelle {
         }
     }
 
+    namespace json {
+        // Serialization utility for the Rm vector space
+        template <>
+        struct Serialization <double,Python::PythonVS> {
+            static std::string serialize (Python::Vector const & x) {
+                // Grab the serialization module 
+                Python::PyObjectPtr module(PyImport_ImportModule(
+                    "Optizelle.json.Serialization")); 
+
+                // Now, get the serialize routine
+                Python::PyObjectPtr serialize(PyObject_GetAttrString(
+                    module.get(),"serialize"));
+
+                // Call the serialize routine on the vector
+                Python::PyObjectPtr x_json(
+                    Python::PyObject_CallObject1(
+                        serialize.get(),
+                        const_cast <Python::Vector &> (x).get()));
+
+                // Convert the serialized vector to a string and return it 
+                return std::string(PyString_AsString(x_json.get()));
+            }
+
+            static Python::Vector deserialize (
+                Python::Vector const & x_,
+                std::string const & x_json_
+            ) {
+                // Grab the serialization module 
+                Python::PyObjectPtr module(PyImport_ImportModule(
+                    "Optizelle.json.Serialization")); 
+
+                // Now, get the deserialize routine
+                Python::PyObjectPtr deserialize(PyObject_GetAttrString(
+                    module.get(),"deserialize"));
+
+                // Convert the inputed string into Python
+                Python::PyObjectPtr x_json(
+                    PyString_FromString(x_json_.c_str()));
+
+                // Allocate memory for a new Python vector
+                Python::Vector x(const_cast <Python::Vector &> (x_).init());
+                
+                // Call the deserialize routine on the reference vector json
+                // vector
+                Python::PyObjectPtr x_raw(Python::PyObject_CallObject2(
+                    deserialize.get(),
+                    x.get(),
+                    x_json.get()));
+
+                // Move the raw information into the Python vector
+                x.reset(x_raw.release());
+
+                // Move out the new vector
+                return std::move(x);
+            }
+        };
+    }
+
     namespace Python {
         // A function to alter the behavior of PyTuple_SetItem so that we don't
         // have to hand increment the reference to the object since SetItem
@@ -2117,6 +2175,99 @@ namespace Optizelle {
                         return nullptr;
                     }
                 }
+                
+                // Writes a json restart file
+                PyObject * write_restart(
+                    PyObject * self,
+                    PyObject * args
+                ) {
+                    // Calling convention should be (X,msg,fname,state)
+                    PyObject *X,*msg_,*fname_,*pystate_;
+                    if(!PyArg_ParseTuple(args,"OOOO",
+                        &X,&msg_,&fname_,&pystate_)
+                    )
+                        return nullptr; 
+
+                    // Make sure we bail if we detect a Python exception
+                    try {
+                        // Create a messaging object
+                        Optizelle::Python::Messaging msg(msg_,
+                            PyObjectPtrMode::Attach);
+                        
+                        // Grab the file name
+                        std::string fname(PyString_AsString(fname_));
+
+                        // Create a Python state 
+                        Python::State <PyUnconstrained> pystate(pystate_,
+                            PyObjectPtrMode::Attach);
+                        
+                        // Grab the base vectors from the Python state
+                        Vector x(msg_,X,
+                            PyObject_GetAttrString(pystate.get(),"x"));
+                        
+                        // Create a C++ state
+                        typename PyUnconstrained::State::t state(x);
+                        
+                        // Convert Python state to C++ 
+                        pystate.fromPython(state);
+
+                        // Write the restart file
+                        PyJsonUnconstrained::write_restart(msg,fname,state);
+                        
+                        // Return nothing 
+                        return Py_None; 
+
+                    // In theory, we should have set the appropriate error
+                    } catch (Exception& exc){
+                        return nullptr;
+                    }
+                }
+                
+                // Reads a json restart file
+                PyObject * read_restart(
+                    PyObject * self,
+                    PyObject * args
+                ) {
+                    // Calling convention should be (X,msg,fname,x,state)
+                    PyObject *X,*msg_,*fname_,*x_,*pystate_;
+                    if(!PyArg_ParseTuple(args,"OOOOO",
+                        &X,&msg_,&fname_,&x_,&pystate_)
+                    )
+                        return nullptr; 
+
+                    // Make sure we bail if we detect a Python exception
+                    try {
+                        // Create a messaging object
+                        Optizelle::Python::Messaging msg(msg_,
+                            PyObjectPtrMode::Attach);
+                        
+                        // Grab the file name
+                        std::string fname(PyString_AsString(fname_));
+
+                        // Create a Python state 
+                        Python::State <PyUnconstrained> pystate(pystate_,
+                            PyObjectPtrMode::Attach);
+                        
+                        // Grab the reference vector 
+                        Vector x(msg_,X,x_,PyObjectPtrMode::Attach);
+                        
+                        // Create a C++ state
+                        typename PyUnconstrained::State::t state(x);
+
+                        // Read the restart file into the C++ state 
+                        PyJsonUnconstrained::read_restart(msg,fname,x,state);
+                        
+                        // Convert the C++ state to a Python state
+                        pystate.toPython(state);
+
+                        // Return nothing 
+                        return Py_None; 
+
+                    // In theory, we should have set the appropriate error
+                    } catch (Exception& exc){
+                        return nullptr;
+                    }
+                }
             }
         }
 
@@ -2558,6 +2709,104 @@ namespace Optizelle {
                         return nullptr;
                     }
                 }
+                
+                // Writes a json restart file
+                PyObject * write_restart(
+                    PyObject * self,
+                    PyObject * args
+                ) {
+                    // Calling convention should be (X,Y,msg,fname,state)
+                    PyObject *X,*Y,*msg_,*fname_,*pystate_;
+                    if(!PyArg_ParseTuple(args,"OOOOO",
+                        &X,&Y,&msg_,&fname_,&pystate_)
+                    )
+                        return nullptr; 
+
+                    // Make sure we bail if we detect a Python exception
+                    try {
+                        // Create a messaging object
+                        Optizelle::Python::Messaging msg(msg_,
+                            PyObjectPtrMode::Attach);
+                        
+                        // Grab the file name
+                        std::string fname(PyString_AsString(fname_));
+
+                        // Create a Python state 
+                        Python::State <PyEqualityConstrained> pystate(pystate_,
+                            PyObjectPtrMode::Attach);
+                        
+                        // Grab the base vectors from the Python state
+                        Vector x(msg_,X,
+                            PyObject_GetAttrString(pystate.get(),"x"));
+                        Vector y(msg_,Y,
+                            PyObject_GetAttrString(pystate.get(),"y"));
+                        
+                        // Create a C++ state
+                        typename PyEqualityConstrained::State::t state(x,y);
+                        
+                        // Convert Python state to C++ 
+                        pystate.fromPython(state);
+
+                        // Write the restart file
+                        PyJsonEqualityConstrained::write_restart(
+                            msg,fname,state);
+                        
+                        // Return nothing 
+                        return Py_None; 
+
+                    // In theory, we should have set the appropriate error
+                    } catch (Exception& exc){
+                        return nullptr;
+                    }
+                }
+                
+                // Reads a json restart file
+                PyObject * read_restart(
+                    PyObject * self,
+                    PyObject * args
+                ) {
+                    // Calling convention should be (X,Y,msg,fname,x,y,state)
+                    PyObject *X,*Y,*msg_,*fname_,*x_,*y_,*pystate_;
+                    if(!PyArg_ParseTuple(args,"OOOOOOO",
+                        &X,&Y,&msg_,&fname_,&x_,&y_,&pystate_)
+                    )
+                        return nullptr; 
+
+                    // Make sure we bail if we detect a Python exception
+                    try {
+                        // Create a messaging object
+                        Optizelle::Python::Messaging msg(msg_,
+                            PyObjectPtrMode::Attach);
+                        
+                        // Grab the file name
+                        std::string fname(PyString_AsString(fname_));
+
+                        // Create a Python state 
+                        Python::State <PyEqualityConstrained> pystate(pystate_,
+                            PyObjectPtrMode::Attach);
+                        
+                        // Grab the reference vector 
+                        Vector x(msg_,X,x_,PyObjectPtrMode::Attach);
+                        Vector y(msg_,Y,y_,PyObjectPtrMode::Attach);
+                        
+                        // Create a C++ state
+                        typename PyEqualityConstrained::State::t state(x,y);
+
+                        // Read the restart file into the C++ state 
+                        PyJsonEqualityConstrained::read_restart(
+                            msg,fname,x,y,state);
+                        
+                        // Convert the C++ state to a Python state
+                        pystate.toPython(state);
+
+                        // Return nothing 
+                        return Py_None; 
+
+                    // In theory, we should have set the appropriate error
+                    } catch (Exception& exc){
+                        return nullptr;
+                    }
+                }
             }
         }
         
@@ -2942,6 +3191,104 @@ namespace Optizelle {
                         return nullptr;
                     }
                 }
+                
+                // Writes a json restart file
+                PyObject * write_restart(
+                    PyObject * self,
+                    PyObject * args
+                ) {
+                    // Calling convention should be (X,Z,msg,fname,state)
+                    PyObject *X,*Z,*msg_,*fname_,*pystate_;
+                    if(!PyArg_ParseTuple(args,"OOOOO",
+                        &X,&Z,&msg_,&fname_,&pystate_)
+                    )
+                        return nullptr; 
+
+                    // Make sure we bail if we detect a Python exception
+                    try {
+                        // Create a messaging object
+                        Optizelle::Python::Messaging msg(msg_,
+                            PyObjectPtrMode::Attach);
+                        
+                        // Grab the file name
+                        std::string fname(PyString_AsString(fname_));
+
+                        // Create a Python state 
+                        Python::State <PyInequalityConstrained>pystate(pystate_,
+                            PyObjectPtrMode::Attach);
+                        
+                        // Grab the base vectors from the Python state
+                        Vector x(msg_,X,
+                            PyObject_GetAttrString(pystate.get(),"x"));
+                        Vector z(msg_,Z,
+                            PyObject_GetAttrString(pystate.get(),"z"));
+                        
+                        // Create a C++ state
+                        typename PyInequalityConstrained::State::t state(x,z);
+                        
+                        // Convert Python state to C++ 
+                        pystate.fromPython(state);
+
+                        // Write the restart file
+                        PyJsonInequalityConstrained::write_restart(
+                            msg,fname,state);
+                        
+                        // Return nothing 
+                        return Py_None; 
+
+                    // In theory, we should have set the appropriate error
+                    } catch (Exception& exc){
+                        return nullptr;
+                    }
+                }
+                
+                // Reads a json restart file
+                PyObject * read_restart(
+                    PyObject * self,
+                    PyObject * args
+                ) {
+                    // Calling convention should be (X,Z,msg,fname,x,z,state)
+                    PyObject *X,*Z,*msg_,*fname_,*x_,*z_,*pystate_;
+                    if(!PyArg_ParseTuple(args,"OOOOOOO",
+                        &X,&Z,&msg_,&fname_,&x_,&z_,&pystate_)
+                    )
+                        return nullptr; 
+
+                    // Make sure we bail if we detect a Python exception
+                    try {
+                        // Create a messaging object
+                        Optizelle::Python::Messaging msg(msg_,
+                            PyObjectPtrMode::Attach);
+                        
+                        // Grab the file name
+                        std::string fname(PyString_AsString(fname_));
+
+                        // Create a Python state 
+                        Python::State <PyInequalityConstrained>pystate(pystate_,
+                            PyObjectPtrMode::Attach);
+                        
+                        // Grab the reference vector 
+                        Vector x(msg_,X,x_,PyObjectPtrMode::Attach);
+                        Vector z(msg_,Z,z_,PyObjectPtrMode::Attach);
+                        
+                        // Create a C++ state
+                        typename PyInequalityConstrained::State::t state(x,z);
+
+                        // Read the restart file into the C++ state 
+                        PyJsonInequalityConstrained::read_restart(
+                            msg,fname,x,z,state);
+                        
+                        // Convert the C++ state to a Python state
+                        pystate.toPython(state);
+
+                        // Return nothing 
+                        return Py_None; 
+
+                    // In theory, we should have set the appropriate error
+                    } catch (Exception& exc){
+                        return nullptr;
+                    }
+                }
             }
         }
         
@@ -3296,6 +3643,106 @@ namespace Optizelle {
                         return nullptr;
                     }
                 }
+                
+                // Writes a json restart file
+                PyObject * write_restart(
+                    PyObject * self,
+                    PyObject * args
+                ) {
+                    // Calling convention should be (X,Y,Z,msg,fname,state)
+                    PyObject *X,*Y,*Z,*msg_,*fname_,*pystate_;
+                    if(!PyArg_ParseTuple(args,"OOOOOO",
+                        &X,&Y,&Z,&msg_,&fname_,&pystate_)
+                    )
+                        return nullptr; 
+
+                    // Make sure we bail if we detect a Python exception
+                    try {
+                        // Create a messaging object
+                        Optizelle::Python::Messaging msg(msg_,
+                            PyObjectPtrMode::Attach);
+                        
+                        // Grab the file name
+                        std::string fname(PyString_AsString(fname_));
+
+                        // Create a Python state 
+                        Python::State <PyConstrained>pystate(pystate_,
+                            PyObjectPtrMode::Attach);
+                        
+                        // Grab the base vectors from the Python state
+                        Vector x(msg_,X,
+                            PyObject_GetAttrString(pystate.get(),"x"));
+                        Vector y(msg_,Y,
+                            PyObject_GetAttrString(pystate.get(),"y"));
+                        Vector z(msg_,Z,
+                            PyObject_GetAttrString(pystate.get(),"z"));
+                        
+                        // Create a C++ state
+                        typename PyConstrained::State::t state(x,y,z);
+                        
+                        // Convert Python state to C++ 
+                        pystate.fromPython(state);
+
+                        // Write the restart file
+                        PyJsonConstrained::write_restart(msg,fname,state);
+                        
+                        // Return nothing 
+                        return Py_None; 
+
+                    // In theory, we should have set the appropriate error
+                    } catch (Exception& exc){
+                        return nullptr;
+                    }
+                }
+                
+                // Reads a json restart file
+                PyObject * read_restart(
+                    PyObject * self,
+                    PyObject * args
+                ) {
+                    // Calling convention should be(X,Y,Z,msg,fname,x,y,z,state)
+                    PyObject *X,*Y,*Z,*msg_,*fname_,*x_,*y_,*z_,*pystate_;
+                    if(!PyArg_ParseTuple(args,"OOOOOOOOO",
+                        &X,&Z,&msg_,&fname_,&x_,&z_,&pystate_)
+                    )
+                        return nullptr; 
+
+                    // Make sure we bail if we detect a Python exception
+                    try {
+                        // Create a messaging object
+                        Optizelle::Python::Messaging msg(msg_,
+                            PyObjectPtrMode::Attach);
+                        
+                        // Grab the file name
+                        std::string fname(PyString_AsString(fname_));
+
+                        // Create a Python state 
+                        Python::State <PyConstrained>pystate(pystate_,
+                            PyObjectPtrMode::Attach);
+                        
+                        // Grab the reference vector 
+                        Vector x(msg_,X,x_,PyObjectPtrMode::Attach);
+                        Vector y(msg_,Y,y_,PyObjectPtrMode::Attach);
+                        Vector z(msg_,Z,z_,PyObjectPtrMode::Attach);
+                        
+                        // Create a C++ state
+                        typename PyConstrained::State::t state(x,y,z);
+
+                        // Read the restart file into the C++ state 
+                        PyJsonConstrained::read_restart(
+                            msg,fname,x,y,z,state);
+                        
+                        // Convert the C++ state to a Python state
+                        pystate.toPython(state);
+
+                        // Return nothing 
+                        return Py_None; 
+
+                    // In theory, we should have set the appropriate error
+                    } catch (Exception& exc){
+                        return nullptr;
+                    }
+                }
             }
         }
     }
@@ -3329,6 +3776,16 @@ PyMethodDef methods[] = {
         METH_VARARGS,
         const_cast <char*> (
             "Capture the state in an unconstrained optimization problem")},
+
+    { const_cast <char*> ("UnconstrainedRestartWriteRestart"),
+        (PyCFunction)Optizelle::Python::Unconstrained::Restart::write_restart,
+        METH_VARARGS,
+        const_cast <char*> ("Writes a json restart file")},
+
+    { const_cast <char*> ("UnconstrainedRestartReadRestart"),
+        (PyCFunction)Optizelle::Python::Unconstrained::Restart::read_restart,
+        METH_VARARGS,
+        const_cast <char*> ("Reads a json restart file")},
         
     { const_cast <char*> ("EqualityConstrainedStateCreate"),
         (PyCFunction)Optizelle::Python::EqualityConstrained::State::create,
@@ -3360,6 +3817,18 @@ PyMethodDef methods[] = {
         const_cast <char*> (
             "Capture the state in an equality constrained optimization "
             "problem")},
+    
+    { const_cast <char*> ("EqualityConstrainedRestartWriteRestart"),
+        (PyCFunction)Optizelle::Python::EqualityConstrained::Restart
+            ::write_restart,
+        METH_VARARGS,
+        const_cast <char*> ("Writes a json restart file")},
+
+    { const_cast <char*> ("EqualityConstrainedRestartReadRestart"),
+        (PyCFunction)Optizelle::Python::EqualityConstrained::Restart
+            ::read_restart,
+        METH_VARARGS,
+        const_cast <char*> ("Reads a json restart file")},
 
     { const_cast <char*> ("InequalityConstrainedStateCreate"),
         (PyCFunction)Optizelle::Python::InequalityConstrained::State::create,
@@ -3392,6 +3861,18 @@ PyMethodDef methods[] = {
         const_cast <char*> (
             "Capture the state in an inequality constrained optimization "
             "problem")},
+    
+    { const_cast <char*> ("InequalityConstrainedRestartWriteRestart"),
+        (PyCFunction)Optizelle::Python::InequalityConstrained::Restart
+            ::write_restart,
+        METH_VARARGS,
+        const_cast <char*> ("Writes a json restart file")},
+
+    { const_cast <char*> ("InequalityConstrainedRestartReadRestart"),
+        (PyCFunction)Optizelle::Python::InequalityConstrained::Restart
+            ::read_restart,
+        METH_VARARGS,
+        const_cast <char*> ("Reads a json restart file")},
 
     { const_cast <char*> ("ConstrainedStateCreate"),
         (PyCFunction)Optizelle::Python::Constrained::State::create,
@@ -3420,6 +3901,16 @@ PyMethodDef methods[] = {
         METH_VARARGS,
         const_cast <char*> (
             "Capture the state in a constrained optimization problem")},
+    
+    { const_cast <char*> ("ConstrainedRestartWriteRestart"),
+        (PyCFunction)Optizelle::Python::Constrained::Restart::write_restart,
+        METH_VARARGS,
+        const_cast <char*> ("Writes a json restart file")},
+
+    { const_cast <char*> ("ConstrainedRestartReadRestart"),
+        (PyCFunction)Optizelle::Python::Constrained::Restart::read_restart,
+        METH_VARARGS,
+        const_cast <char*> ("Reads a json restart file")},
 
     {nullptr}  // Sentinel
 };

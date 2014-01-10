@@ -243,6 +243,11 @@ def checkStateManipulator(name,value):
         raise TypeError("The %s argument must be a StateManipulator object."
             % (name))
 
+def checkType(name,value):
+    """Check that we have a type"""
+    if type(value)!=type(type):
+        raise TypeError("The %s argument must be a type." % (name))
+
 def createFloatProperty(name,desc):
     """Create a floating-point property"""
     def getter(self):

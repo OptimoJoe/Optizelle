@@ -1020,6 +1020,18 @@ namespace Optizelle {
                     PyObject * self,
                     PyObject * args
                 );
+
+                // Writes a json restart file
+                PyObject* write_restart(
+                    PyObject * self,
+                    PyObject * args
+                );
+
+                // Reads a json restart file
+                PyObject* read_restart(
+                    PyObject * self,
+                    PyObject * args
+                );
             }
         }
 
@@ -1113,6 +1125,18 @@ namespace Optizelle {
                     PyObject * self,
                     PyObject * args
                 );
+
+                // Writes a json restart file
+                PyObject* write_restart(
+                    PyObject * self,
+                    PyObject * args
+                );
+
+                // Reads a json restart file
+                PyObject* read_restart(
+                    PyObject * self,
+                    PyObject * args
+                );
             }
         }
         
@@ -1202,6 +1226,18 @@ namespace Optizelle {
                     PyObject * self,
                     PyObject * args
                 );
+
+                // Writes a json restart file
+                PyObject* write_restart(
+                    PyObject * self,
+                    PyObject * args
+                );
+
+                // Reads a json restart file
+                PyObject* read_restart(
+                    PyObject * self,
+                    PyObject * args
+                );
             }
         }
         
@@ -1271,6 +1307,18 @@ namespace Optizelle {
 
                 // Capture data from structures controlled by the user.  
                 PyObject * capture(
+                    PyObject * self,
+                    PyObject * args
+                );
+
+                // Writes a json restart file
+                PyObject* write_restart(
+                    PyObject * self,
+                    PyObject * args
+                );
+
+                // Reads a json restart file
+                PyObject* read_restart(
                     PyObject * self,
                     PyObject * args
                 );

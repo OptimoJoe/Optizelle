@@ -10,57 +10,64 @@ import numpy
 class Extendable(object):
     """Allows a function to be extended"""
     def __init__(self, fn):
-        self.fns = []
+        self.fns = {}
         self.fn = fn
-    def register(self,fn):
-        self.fns.append(fn)
-    def __call__(self,x):
-        for f in self.fns:
-            try:
-                return f(x)
-            except:
-                pass
-        return self.fn(x)
+
+    def register(self,fn,arg_type):
+        """Extends the current function with fn.  This function will only be 
+        called if the first argument matches arg_type."""
+
+        # Check our arguments
+        Optizelle.checkFunction("fn",fn)
+        Optizelle.checkType("arg_type",arg_type)
+
+        # Register the function
+        self.fns[arg_type]=fn
+
+    def __call__(self,*args):
+        try:
+            return self.fns[type(args[0])](*args)
+        except:
+            return self.fn(*args) 
 
 @ Extendable
 def serialize(x):
     """Converts a vector to a JSON formatted string"""
+    
     raise Optizelle.Exception(
         "The serialize function for the vector %s not defined." % str(x))
     
 @ Extendable
-def deserialize(x):
+def deserialize(x,x_json):
     """Converts a JSON formatted string to a vector"""
+
     raise Optizelle.Exception(
         "The deserialize function for the vector %s not defined." % str(x))
 
 def serialize_Rm(x):
     """Serializes a numpy array for the vector space Optizelle.Rm""" 
 
-    # Check if we have a numpy array 
-    if type(x)!=numpy.ndarray:
-        raise TypeError("Attempted to serialize a non-numpy.array vector.")
-
     # Create the json representation
-    x_json="{ [ "
+    x_json="[ "
     for i in xrange(x.size):
         x_json  += str(x[i]) + ", "
     x_json=x_json[0:-2]
-    x_json +=" ] }"
+    x_json +=" ]"
+
     return x_json
 
-def deserialize_Rm(x_json):
+def deserialize_Rm(x,x_json):
     """Deserializes a numpy array for the vector space Optizelle.Rm""" 
 
     # Eliminate all whitespace
     x_json="".join(x_json.split())
 
     # Check if we're a vector
-    if x_json[0:2]!="{[" or x_json[-2:]!="]}":
+    if x_json[0:1]!="[" or x_json[-1:]!="]":
         raise TypeError("Attempted to deserialize a non-numpy.array vector.")
 
     # Eliminate the initial and final delimiters
-    x_json=x_json[2:-2]
+    x_json=x_json[1:-1]
 
     # Create a list of the numbers involved 
     x_json=x_json.split(",")
@@ -72,5 +79,5 @@ def deserialize_Rm(x_json):
     return numpy.array(x_json)
 
 # Register the serialization routines for numpy arrays 
-serialize.register(serialize_Rm)
-deserialize.register(deserialize_Rm)
+serialize.register(serialize_Rm,numpy.ndarray)
+deserialize.register(deserialize_Rm,numpy.ndarray)

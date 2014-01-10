@@ -181,6 +181,7 @@ namespace Optizelle {
                 return writer.write(x_json);
             }
             static typename Rm <Real>::Vector deserialize (
+                typename Rm <Real>::Vector const & x_,
                 std::string const & x_json_
             ) {
                 // Create a json tree from the input string
@@ -1134,6 +1135,7 @@ namespace Optizelle {
                 return writer.write(x_json);
             }
             static typename SQL <Real>::Vector deserialize (
+                typename SQL <Real>::Vector const & x_,
                 std::string const & x_json_
             ) {
                 // Create a json tree from the input string
