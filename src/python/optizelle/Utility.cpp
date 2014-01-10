@@ -3703,7 +3703,7 @@ namespace Optizelle {
                     // Calling convention should be(X,Y,Z,msg,fname,x,y,z,state)
                     PyObject *X,*Y,*Z,*msg_,*fname_,*x_,*y_,*z_,*pystate_;
                     if(!PyArg_ParseTuple(args,"OOOOOOOOO",
-                        &X,&Z,&msg_,&fname_,&x_,&z_,&pystate_)
+                        &X,&Y,&Z,&msg_,&fname_,&x_,&y_,&z_,&pystate_)
                     )
                         return nullptr; 
 

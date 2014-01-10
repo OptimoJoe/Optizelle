@@ -53,7 +53,7 @@ namespace Optizelle {
         }
        
         // Writes a JSON spec to file
-        void write(
+        void write_to_file(
             Optizelle::Messaging const & msg,
             std::string const & fname,
             Json::Value const & root
@@ -77,6 +77,63 @@ namespace Optizelle {
             // Close the file
             fout.close();
         }
+        
+        // Safely reads from a json tree 
+        namespace read {
+            // Read a natural 
+            Natural natural(
+                Optizelle::Messaging const & msg,
+                Json::Value const & json,
+                std::string const & name
+            ) {
+                // Set the error message
+                std::string const err_msg = "Invalid JSON parameter: "
+                    + name + " contains an invalid natural.";
+
+                // As long as we have an unsigned integer, grab it
+                if(json.isUInt())
+                    return Natural(Json::Value::UInt64(json.asUInt64()));
+                
+                // If we have an integer, grab it if it's positive
+                else if(json.isInt()) {
+                    Integer val(json.asInt64());
+                    if(val>=0)
+                        return Natural(val);
+                    else
+                        msg.error(err_msg);
+
+                // Anything else is an error
+                } else
+                    msg.error(err_msg);
+            }
+            
+            // Read a string 
+            std::string string(
+                Optizelle::Messaging const & msg,
+                Json::Value const & json,
+                std::string const & name
+            ) {
+                // Set the error message
+                std::string const err_msg = "Invalid JSON parameter: "
+                    + name + " is not a valid parameter.";
+
+                // As long as we have an unsigned integer, grab it
+                if(json.isString())
+                    return json.asString();
+
+                // Anything else is an error
+                else
+                    msg.error(err_msg);
+            }
+        }
+
+        // Writes into a json tree 
+        namespace write {
+            // Write a natural 
+            Json::Value natural(Natural const & val) {
+                return Json::Value::UInt64(val);
+            }
+        }
 
         // Routines to serialize lists of elements for restarting
         namespace Serialize{
@@ -95,7 +152,7 @@ namespace Optizelle {
                     item!=nats.cend();
                     item++
                 )
-                    root[vs][item->first]=Json::Value::UInt64(item->second);
+                    root[vs][item->first]=write::natural(item->second);
             }
 
             // Parameters 
@@ -121,6 +178,7 @@ namespace Optizelle {
 
             // Naturals 
             void naturals(
+                Optizelle::Messaging const & msg,
                 Json::Value const & root,
                 std::string const & vs,
                 typename RestartPackage <Natural>::t & nats
@@ -132,13 +190,14 @@ namespace Optizelle {
                 ){
                     // Grab the natural 
                     std::string name(itr.key().asString());
-                    nats.emplace_back(name,
-                        std::move(root[vs][name].asUInt64()));
+                    nats.emplace_back(name,std::move(
+                        read::natural(msg,root[vs][name],name))); 
                 }
             }
             
             // Parameters 
             void parameters(
+                Optizelle::Messaging const & msg,
                 Json::Value const & root,
                 std::string const & vs,
                 typename RestartPackage <std::string>::t & params 
@@ -148,10 +207,10 @@ namespace Optizelle {
                     itr!=root[vs].end();
                     itr++
                 ){
-                    // Grab the natural 
+                    // Grab the parameter 
                     std::string name(itr.key().asString());
-                    params.emplace_back(name,
-                        std::move(root[vs][name].asString()));
+                    params.emplace_back(name,std::move(
+                        read::string(msg,root[vs][name],name)));
                 }
             }
         }
