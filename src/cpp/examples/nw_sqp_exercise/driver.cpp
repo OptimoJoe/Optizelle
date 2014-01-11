@@ -305,28 +305,9 @@ int main(int argc,char* argv[]){
     x[itok(3)]=1.9;
     x[itok(4)]=-0.8;
     x[itok(5)]=-0.8;
-    std::vector <double> dx(5);
-    dx[itok(1)]=-0.8;
-    dx[itok(2)]=-1.8;
-    dx[itok(3)]=1.7;
-    dx[itok(4)]=1.9;
-    dx[itok(5)]=-0.8;
-    std::vector <double> dxx(5);
-    dxx[itok(1)]=-1.8;
-    dxx[itok(2)]=1.7;
-    dxx[itok(3)]=-0.8;
-    dxx[itok(4)]=1.9;
-    dxx[itok(5)]=-0.8;
 
     // Generate an initial guess for the dual
     std::vector <double> y(3);
-    y[itok(1)]=1.; 
-    y[itok(2)]=1.; 
-    y[itok(3)]=1.; 
-    std::vector <double> dy(3);
-    dy[itok(1)]=1.1; 
-    dy[itok(2)]=1.2; 
-    dy[itok(3)]=1.3; 
 
     // Create an optimization state
     Optizelle::EqualityConstrained <double,Rm,Rm>::State::t state(x,y);
@@ -340,20 +321,6 @@ int main(int argc,char* argv[]){
     fns.f.reset(new MyObj);
     fns.g.reset(new MyEq);
    
-    // Do some finite difference checks on these functions
-    Optizelle::Diagnostics::gradientCheck <>
-        (Optizelle::Messaging(),*(fns.f),x,dx);
-    Optizelle::Diagnostics::hessianCheck <>
-        (Optizelle::Messaging(),*(fns.f),x,dx);
-    Optizelle::Diagnostics::hessianSymmetryCheck <>
-        (Optizelle::Messaging(),*(fns.f),x,dx,dxx);
-    Optizelle::Diagnostics::derivativeCheck <>
-        (Optizelle::Messaging(),*(fns.g),x,dx,dy);
-    Optizelle::Diagnostics::derivativeAdjointCheck <>
-        (Optizelle::Messaging(),*(fns.g),x,dx,dy);
-    Optizelle::Diagnostics::secondDerivativeCheck <>
-        (Optizelle::Messaging(),*(fns.g),x,dx,dy);
-
     // Solve the optimization problem
     Optizelle::EqualityConstrained <double,Rm,Rm>::Algorithms
         ::getMin(Optizelle::Messaging(),fns,state);

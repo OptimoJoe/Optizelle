@@ -58,12 +58,13 @@ int main() {
     Rosen f;
 
     // Do the finite difference tests
-    double err=Optizelle::Diagnostics::gradientCheck <> (Optizelle::Messaging(),f,x,dx);
+    double err=Optizelle::Diagnostics::gradientCheck(
+        Optizelle::Messaging(),f,x,dx,"f");
     CHECK(err < 1e-11);
-    err=Optizelle::Diagnostics::hessianCheck <> (Optizelle::Messaging(),f,x,dx);
+    err=Optizelle::Diagnostics::hessianCheck(Optizelle::Messaging(),f,x,dx,"f");
     CHECK(err < 1e-14);
-    err=Optizelle::Diagnostics::hessianSymmetryCheck <>
-        (Optizelle::Messaging(),f,x,dx,dxx);
+    err=Optizelle::Diagnostics::hessianSymmetryCheck(
+        Optizelle::Messaging(),f,x,dx,dxx,"f");
     CHECK(err < 1e-12);
 
     // If we've made it this far, we're successful

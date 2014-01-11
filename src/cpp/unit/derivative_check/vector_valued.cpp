@@ -110,14 +110,14 @@ int main() {
     Utility g;
 
     // Do the finite difference tests
-    double err=Optizelle::Diagnostics::derivativeCheck <>
-        (Optizelle::Messaging(),g,x,dx,dy);
+    double err=Optizelle::Diagnostics::derivativeCheck(
+        Optizelle::Messaging(),g,x,dx,dy,"g");
     CHECK(err < 1e-12);
-    err=Optizelle::Diagnostics::derivativeAdjointCheck <>
-        (Optizelle::Messaging(),g,x,dx,dy);
+    err=Optizelle::Diagnostics::derivativeAdjointCheck(
+        Optizelle::Messaging(),g,x,dx,dy,"g");
     CHECK(err < 1e-12);
-    err=Optizelle::Diagnostics::secondDerivativeCheck <>
-        (Optizelle::Messaging(),g,x,dx,dy);
+    err=Optizelle::Diagnostics::secondDerivativeCheck(
+        Optizelle::Messaging(),g,x,dx,dy,"g");
     CHECK(err < 1e-12);
 
     // If we've made it this far, we're successful

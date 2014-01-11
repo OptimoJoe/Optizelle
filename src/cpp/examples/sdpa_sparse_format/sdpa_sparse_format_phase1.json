@@ -14,7 +14,6 @@
       "PH_type" : "UserDefined"
    },
    "sdp_settings" : {
-      "epsilon" : 1,
-      "fd_tests" : false 
+      "epsilon" : 1
    }
 }

@@ -79,14 +79,6 @@ int main(int argc,char* argv[]){
     std::vector <double> x(3);
     x[0]=-1.2; x[1]=1.1; x[2]=2.;
 
-    // Create a direction for the finite difference tests
-    std::vector <double> dx(3);
-    dx[0]=-.5; dx[1]=.5; dx[2]=.5;
-    
-    // Create another direction for the finite difference tests
-    std::vector <double> dxx(3);
-    dxx[0]=.75; dxx[1]=.25;; dxx[2]=1.25;
-
     // Create an unconstrained state based on this vector
     Optizelle::Unconstrained <double,Optizelle::Rm>::State::t state(x);
 
@@ -98,20 +90,10 @@ int main(int argc,char* argv[]){
     Optizelle::Unconstrained <double,Optizelle::Rm>::Functions::t fns;
     fns.f.reset(new Quad);
     fns.PH.reset(new QuadHInv(state.x)); 
-    
-    // Do some finite difference tests on the quadratic function
-    Optizelle::Diagnostics::gradientCheck <> (
-        Optizelle::Messaging(),*(fns.f),x,dx);
-    Optizelle::Diagnostics::hessianCheck <> (
-        Optizelle::Messaging(),*(fns.f),x,dx);
-    Optizelle::Diagnostics::hessianSymmetryCheck <> (
-        Optizelle::Messaging(),*(fns.f),x,dx,dxx);
-    
+
     // Solve the optimization problem
     Optizelle::Unconstrained <double,Optizelle::Rm>::Algorithms
         ::getMin(Optizelle::Messaging(),fns,state);
-
-    // Setup the optimization problem
 
     // Print out the reason for convergence
     std::cout << "The algorithm converged due to: " <<

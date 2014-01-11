@@ -188,6 +188,14 @@ class t(object):
         "kind",
         Optizelle.LineSearchKind,
         "Type of line-search")
+    f_diag = Optizelle.createEnumProperty(
+        "f_diag",
+        Optizelle.FunctionDiagnostics,
+        "Function diagnostics on f")
+    dscheme = Optizelle.createEnumProperty(
+        "dscheme",
+        Optizelle.DiagnosticScheme,
+        "Diagnostic scheme")
 
 def checkT(name,value):
     """Check that we have a state"""

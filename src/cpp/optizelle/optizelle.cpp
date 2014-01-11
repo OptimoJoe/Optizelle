@@ -335,6 +335,8 @@ namespace Optizelle{
             return "AfterInitialFuncAndGrad";
         case OptimizationLocation::BeforeOptimizationLoop:
             return "BeforeOptimizationLoop";
+        case OptimizationLocation::BeginningOfOptimizationLoop:
+            return "BeginningOfOptimizationLoop";
         case OptimizationLocation::BeforeSaveOld:
             return "BeforeSaveOld";
         case OptimizationLocation::BeforeStep:
@@ -382,6 +384,8 @@ namespace Optizelle{
             return OptimizationLocation::AfterInitialFuncAndGrad;
         else if(loc=="BeforeOptimizationLoop")
             return OptimizationLocation::BeforeOptimizationLoop;
+        else if(loc=="BeginningOfOptimizationLoop")
+            return OptimizationLocation::BeginningOfOptimizationLoop;
         else if(loc=="BeforeSaveOld")
             return OptimizationLocation::BeforeSaveOld; 
         else if(loc=="BeforeStep")
@@ -424,6 +428,7 @@ namespace Optizelle{
             name=="BeforeInitialFuncAndGrad" ||
             name=="AfterInitialFuncAndGrad" ||
             name=="BeforeOptimizationLoop" ||
+            name=="BeginningOfOptimizationLoop" ||
             name=="BeforeSaveOld" || 
             name=="BeforeStep" || 
             name=="BeforeGetStep" || 
@@ -609,6 +614,86 @@ namespace Optizelle{
             return true;
         else
             return false;
+    }
+    
+    // Different diagnostic tests on the optimization functions 
+    namespace FunctionDiagnostics{
+        // Converts the diagnostic checks to a string
+        std::string to_string(t const & diag) {
+            switch(diag){
+            case NoDiagnostics: 
+                return "NoDiagnostics";
+            case FirstOrder: 
+                return "FirstOrder";
+            case SecondOrder: 
+                return "SecondOrder";
+            default:
+                throw;
+            }
+        }
+        
+        // Converts a string to the diagnostic checks 
+        t from_string(std::string const & diag) {
+            if(diag=="NoDiagnostics")
+                return NoDiagnostics; 
+            else if(diag=="FirstOrder")
+                return FirstOrder;
+            else if(diag=="SecondOrder")
+                return SecondOrder;
+            else
+                throw;
+        }
+
+        // Checks whether or not a string is valid
+        bool is_valid(std::string const & name) {
+            if( name=="NoDiagnostics" ||
+                name=="FirstOrder" ||
+                name=="SecondOrder" 
+            )
+                return true;
+            else
+                return false;
+        }
+    }
+    
+    // Different diagnostic tests on the optimization functions 
+    namespace DiagnosticScheme {
+        // Converts the diagnostic scheme to a string
+        std::string to_string(t const & dscheme) {
+            switch(dscheme){
+            case Never: 
+                return "Never";
+            case DiagnosticsOnly: 
+                return "DiagnosticsOnly";
+            case EveryIteration: 
+                return "EveryIteration";
+            default:
+                throw;
+            }
+        }
+        
+        // Converts a string to the diagnostic scheme 
+        t from_string(std::string const & dscheme) {
+            if(dscheme=="Never")
+                return Never; 
+            else if(dscheme=="DiagnosticsOnly")
+                return DiagnosticsOnly;
+            else if(dscheme=="EveryIteration")
+                return EveryIteration;
+            else
+                throw;
+        }
+
+        // Checks whether or not a string is valid
+        bool is_valid(std::string const & name) {
+            if( name=="Never" ||
+                name=="DiagnosticsOnly" ||
+                name=="EveryIteration" 
+            )
+                return true;
+            else
+                return false;
+        }
     }
 
     // Converts a variety of basic datatypes to strings

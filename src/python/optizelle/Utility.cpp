@@ -352,6 +352,9 @@ namespace Optizelle {
             case BeforeOptimizationLoop:
                 return Python::enumToPyObject(
                     "OptimizationLocation","BeforeOptimizationLoop");
+            case BeginningOfOptimizationLoop:
+                return Python::enumToPyObject(
+                    "OptimizationLocation","BeginningOfOptimizationLoop");
             case BeforeSaveOld:
                 return Python::enumToPyObject(
                     "OptimizationLocation","BeforeSaveOld");
@@ -418,6 +421,9 @@ namespace Optizelle {
             else if(m==Python::enumToNatural(
                 "OptimizationLocation","BeforeOptimizationLoop"))
                 return BeforeOptimizationLoop;
+            else if(m==Python::enumToNatural(
+                "OptimizationLocation","BeginningOfOptimizationLoop"))
+                return BeginningOfOptimizationLoop;
             else if(m==Python::enumToNatural(
                 "OptimizationLocation","BeforeSaveOld"))
                 return BeforeSaveOld;
@@ -533,6 +539,79 @@ namespace Optizelle {
                 "PredictorCorrector")
             )
                 return PredictorCorrector;
+        }
+    }
+
+    namespace FunctionDiagnostics { 
+        // Converts t to a Python enumerated type
+        PyObject * toPython(t const & diag) {
+            // Do the conversion
+            switch(diag){
+            case NoDiagnostics:
+                return Python::enumToPyObject("FunctionDiagnostics",
+                    "NoDiagnostics");
+            case FirstOrder:
+                return Python::enumToPyObject("FunctionDiagnostics",
+                    "FirstOrder");
+            case SecondOrder:
+                return Python::enumToPyObject("FunctionDiagnostics",
+                    "SecondOrder");
+            default:
+                throw;
+            }
+        }
+
+        // Converts a Python enumerated type to t 
+        t fromPython(PyObject * const member) {
+            // Convert the member to a Natural 
+            Natural m=PyInt_AsSsize_t(member);
+
+            if(m==Python::enumToNatural("FunctionDiagnostics","NoDiagnostics"))
+                return NoDiagnostics;
+            else if(m==Python::enumToNatural("FunctionDiagnostics",
+                "FirstOrder")
+            )
+                return FirstOrder;
+            else if(m==Python::enumToNatural("FunctionDiagnostics",
+                "SecondOrder")
+            )
+                return SecondOrder;
+        }
+    }
+
+    namespace DiagnosticScheme { 
+        // Converts t to a Python enumerated type
+        PyObject * toPython(t const & dscheme) {
+            // Do the conversion
+            switch(dscheme){
+            case Never:
+                return Python::enumToPyObject("DiagnosticScheme","Never");
+            case DiagnosticsOnly:
+                return Python::enumToPyObject("DiagnosticScheme",
+                    "DiagnosticsOnly");
+            case EveryIteration:
+                return Python::enumToPyObject("DiagnosticScheme",
+                    "EveryIteration");
+            default:
+                throw;
+            }
+        }
+
+        // Converts a Python enumerated type to t 
+        t fromPython(PyObject * const member) {
+            // Convert the member to a Natural 
+            Natural m=PyInt_AsSsize_t(member);
+
+            if(m==Python::enumToNatural("DiagnosticScheme","Never"))
+                return Never;
+            else if(m==Python::enumToNatural("DiagnosticScheme",
+                "DiagnosticsOnly")
+            )
+                return DiagnosticsOnly;
+            else if(m==Python::enumToNatural("DiagnosticScheme",
+                "EveryIteration")
+            )
+                return EveryIteration;
         }
     }
 
@@ -1777,6 +1856,16 @@ namespace Optizelle {
                         LineSearchKind::toPython(),
                         state.kind,
                         pystate);
+                    toPython::Param <FunctionDiagnostics::t> (
+                        "f_diag",
+                        FunctionDiagnostics::toPython,
+                        state.f_diag,
+                        pystate);
+                    toPython::Param <DiagnosticScheme::t> (
+                        "dscheme",
+                        DiagnosticScheme::toPython,
+                        state.dscheme,
+                        pystate);
                 }
                 void toPython(
                     typename PyUnconstrained::State::t const & state,
@@ -1881,6 +1970,16 @@ namespace Optizelle {
                         LineSearchKind::fromPython(),
                         pystate,
                         state.kind);
+                    fromPython::Param <FunctionDiagnostics::t> (
+                        "f_diag",
+                        FunctionDiagnostics::fromPython,
+                        pystate,
+                        state.f_diag);
+                    fromPython::Param <DiagnosticScheme::t> (
+                        "dscheme",
+                        DiagnosticScheme::fromPython,
+                        pystate,
+                        state.dscheme);
                 }
                 void fromPython(
                     PyObject * const pystate,
@@ -2332,6 +2431,11 @@ namespace Optizelle {
                     toPython::Vector("W_gradpHdxn",state.W_gradpHdxn,pystate);
                     toPython::Vector("H_dxtuncorrected",
                         state.H_dxtuncorrected,pystate);
+                    toPython::Param <FunctionDiagnostics::t> (
+                        "g_diag",
+                        FunctionDiagnostics::toPython,
+                        state.g_diag,
+                        pystate);
                 }
                 void toPython(
                     typename PyEqualityConstrained::State::t const & state,
@@ -2393,6 +2497,11 @@ namespace Optizelle {
                     fromPython::Vector("W_gradpHdxn",pystate,state.W_gradpHdxn);
                     fromPython::Vector("H_dxtuncorrected",
                         pystate,state.H_dxtuncorrected);
+                    fromPython::Param <FunctionDiagnostics::t> (
+                        "g_diag",
+                        FunctionDiagnostics::fromPython,
+                        pystate,
+                        state.g_diag);
                 }
                 void fromPython(
                     PyObject * const pystate,
@@ -2843,6 +2952,11 @@ namespace Optizelle {
                         CentralityStrategy::toPython(),
                         state.cstrat,
                         pystate);
+                    toPython::Param <FunctionDiagnostics::t> (
+                        "h_diag",
+                        FunctionDiagnostics::toPython,
+                        state.h_diag,
+                        pystate);
                 }
                 void toPython(
                     typename PyInequalityConstrained::State::t const & state,
@@ -2876,6 +2990,11 @@ namespace Optizelle {
                         CentralityStrategy::fromPython(),
                         pystate,
                         state.cstrat);
+                    fromPython::Param <FunctionDiagnostics::t> (
+                        "h_diag",
+                        FunctionDiagnostics::fromPython,
+                        pystate,
+                        state.h_diag);
                 }
                 void fromPython(
                     PyObject * const pystate,

@@ -1046,11 +1046,11 @@ void mexFunction(
         // Do a finite difference check and symmetric check on the objective
         MatlabMessaging().print("Diagnostics on the objective.");
         Optizelle::Diagnostics::gradientCheck<double,MatlabVS>
-            (MatlabMessaging(),*(fns.f),*x,*dx);
+            (MatlabMessaging(),*(fns.f),*x,*dx,"f");
         Optizelle::Diagnostics::hessianCheck <double,MatlabVS>
-            (MatlabMessaging(),*(fns.f),*x,*dx);
+            (MatlabMessaging(),*(fns.f),*x,*dx,"f");
         Optizelle::Diagnostics::hessianSymmetryCheck <double,MatlabVS>
-            (MatlabMessaging(),*(fns.f),*x,*dx,*dxx);
+            (MatlabMessaging(),*(fns.f),*x,*dx,*dxx,"f");
 
         // Run diagnostics on the equality constraints if necessary 
         if(problem_class == Optizelle::ProblemClass::EqualityConstrained ||
@@ -1061,11 +1061,13 @@ void mexFunction(
         
             // Do some finite difference tests on the constraint
             Optizelle::Diagnostics::derivativeCheck <double,MatlabVS,MatlabVS>
-                (MatlabMessaging(),*(fns.g),*x,*dx,*dy);
-            Optizelle::Diagnostics::derivativeAdjointCheck<double,MatlabVS,MatlabVS>
-                (MatlabMessaging(),*(fns.g),*x,*dx,*dy);
-            Optizelle::Diagnostics::secondDerivativeCheck <double,MatlabVS,MatlabVS>
-                (MatlabMessaging(),*(fns.g),*x,*dx,*dy);
+                (MatlabMessaging(),*(fns.g),*x,*dx,*dy,"g");
+            Optizelle::Diagnostics
+                ::derivativeAdjointCheck<double,MatlabVS,MatlabVS>
+                (MatlabMessaging(),*(fns.g),*x,*dx,*dy,"g");
+            Optizelle::Diagnostics
+                ::secondDerivativeCheck<double,MatlabVS,MatlabVS>
+                (MatlabMessaging(),*(fns.g),*x,*dx,*dy,"g");
         }
 
         // Run diagnostics on the equality constraints if necessary 
@@ -1077,11 +1079,13 @@ void mexFunction(
 
             // Do some finite difference tests on the constraint
             Optizelle::Diagnostics::derivativeCheck <double,MatlabVS,MatlabVS>
-                (MatlabMessaging(),*(fns.h),*x,*dx,*dz);
-            Optizelle::Diagnostics::derivativeAdjointCheck<double,MatlabVS,MatlabVS>
-                (MatlabMessaging(),*(fns.h),*x,*dx,*dz);
-            Optizelle::Diagnostics::secondDerivativeCheck <double,MatlabVS,MatlabVS>
-                (MatlabMessaging(),*(fns.h),*x,*dx,*dz);
+                (MatlabMessaging(),*(fns.h),*x,*dx,*dz,"h");
+            Optizelle::Diagnostics::derivativeAdjointCheck
+                <double,MatlabVS,MatlabVS>
+                (MatlabMessaging(),*(fns.h),*x,*dx,*dz,"h");
+            Optizelle::Diagnostics::secondDerivativeCheck
+                <double,MatlabVS,MatlabVS>
+                (MatlabMessaging(),*(fns.h),*x,*dx,*dz,"h");
         }
 
     // Otherwise, let us solve an optimization problem

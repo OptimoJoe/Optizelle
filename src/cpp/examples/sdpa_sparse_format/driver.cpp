@@ -930,12 +930,10 @@ template <typename Real>
 void parseSDPSettings(
     Optizelle::Messaging const & msg,
     std::string const & fname,
-    Real & epsilon,
-    bool & fd_tests
+    Real & epsilon
 ) {
     Json::Value root=Optizelle::json::parse(msg,fname);
     epsilon=Real(root["sdp_settings"].get("epsilon",1.).asDouble());
-    fd_tests=root["sdp_settings"].get("fd_tests",false).asBool();
 }
 
 // Sets up and runs the problem
@@ -957,18 +955,13 @@ int main(int argc,char* argv[]) {
     std::string phase1_params(argv[2]);
     std::string phase2_params(argv[3]);
 
-    // Grab the settings for the phase-1 problem and whether or not we
-    // need to do finite difference tests.
+    // Grab the settings for the phase-1 problem 
     double epsilon;
-    bool phase1_fd_tests;
-    bool phase2_fd_tests;
 
-    // Note, we're going to ignore the values of epsilon and beta from this
+    // Note, we're going to ignore the values of epsilon from the phase-2
     // parsing.  Mostly, it's just easier not to have two different routines.
-    parseSDPSettings(
-        Optizelle::Messaging(),phase2_params,epsilon,phase2_fd_tests);
-    parseSDPSettings(
-        Optizelle::Messaging(),phase1_params,epsilon,phase1_fd_tests);
+    parseSDPSettings(Optizelle::Messaging(),phase2_params,epsilon);
+    parseSDPSettings(Optizelle::Messaging(),phase1_params,epsilon);
 
     // Parse the file sparse SDPA file
     SparseSDP <Real> prob;
@@ -1005,31 +998,6 @@ int main(int argc,char* argv[]) {
     phase1_fns.h.reset(new Phase1Ineq <Real> (prob,epsilon));
     phase1_fns.PH.reset(new SDPPreconditioner <Real,Optizelle::Rm> (
         new ProjectRm <Real> (),phase1_fns.f_mod,phase1_state.x));
-
-    if(phase1_fd_tests) {
-        // Run some finite difference tests on this problem 
-        std::cout << std::endl 
-            << "Running the finite difference tests on the phase-1 problem."
-            << std::endl << std::endl;
-
-        std::cout << "Finite difference test on the objective." << std::endl;
-        Optizelle::Diagnostics::gradientCheck <> (
-            Optizelle::Messaging(),*phase1_fns.f,x,dx);
-        Optizelle::Diagnostics::hessianCheck <> (
-            Optizelle::Messaging(),*phase1_fns.f,x,dx);
-        Optizelle::Diagnostics::hessianSymmetryCheck <> (
-            Optizelle::Messaging(),*phase1_fns.f,x,dx,dxx);
-        
-        std::cout << std::endl
-            << "Finite difference test on the inequality constraint."
-            << std::endl;
-        Optizelle::Diagnostics::derivativeCheck <> (
-            Optizelle::Messaging(),*phase1_fns.h,x,dx,z_phase1);
-        Optizelle::Diagnostics::derivativeAdjointCheck <> (
-            Optizelle::Messaging(),*phase1_fns.h,x,dx,z_phase1);
-        Optizelle::Diagnostics::secondDerivativeCheck <> (
-            Optizelle::Messaging(),*phase1_fns.h,x,dx,z_phase1);
-    }
 
     // Solve the phase-1 problem if we're infeasible.
     if(!feasible) {
@@ -1081,31 +1049,6 @@ int main(int argc,char* argv[]) {
     fns.h.reset(new SDPIneq <Real> (prob));
     fns.PH.reset(new SDPPreconditioner <Real,Optizelle::Rm> (
         new ProjectRm <Real> (),fns.f_mod,state.x));
-    
-    // Run some finite difference tests on this problem 
-    if(phase2_fd_tests) {
-        std::cout << std::endl 
-            << "Running the finite difference tests on the phase-2 problem."
-            << std::endl << std::endl;;
-
-        std::cout << "Finite difference test on the objective." << std::endl;
-        Optizelle::Diagnostics::gradientCheck <> (
-            Optizelle::Messaging(),*fns.f,x,dx);
-        Optizelle::Diagnostics::hessianCheck <> (
-            Optizelle::Messaging(),*fns.f,x,dx);
-        Optizelle::Diagnostics::hessianSymmetryCheck <> (
-            Optizelle::Messaging(),*fns.f,x,dx,dxx);
-        
-        std::cout << std::endl
-            << "Finite difference test on the inequality constraint."
-            << std::endl;
-        Optizelle::Diagnostics::derivativeCheck <> (
-            Optizelle::Messaging(),*fns.h,x,dx,z);
-        Optizelle::Diagnostics::derivativeAdjointCheck <> (
-            Optizelle::Messaging(),*fns.h,x,dx,z);
-        Optizelle::Diagnostics::secondDerivativeCheck <> (
-            Optizelle::Messaging(),*fns.h,x,dx,z);
-    }
     
     // Keep our user informed
     std::cout << std::endl << "Solving the SDP probem: " << fname << std::endl;

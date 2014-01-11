@@ -158,6 +158,10 @@ class t(Optizelle.Unconstrained.State.t):
         "H_dxtuncorrected",
         ("Hessian applied to the uncorrected tangential step.  This is needed "
         "in the predicted reduction."))
+    g_diag = Optizelle.createEnumProperty(
+        "g_diag",
+        Optizelle.FunctionDiagnostics,
+        "Function diagnostics on g")
 
 def checkT(name,value):
     """Check that we have a state"""

@@ -66,6 +66,10 @@ class t(Optizelle.Unconstrained.State.t):
         "cstrat",
         Optizelle.CentralityStrategy,
         "Centrality strategy")
+    h_diag = Optizelle.createEnumProperty(
+        "h_diag",
+        Optizelle.FunctionDiagnostics,
+        "Function diagnostics on h")
 
 def checkT(name,value):
     """Check that we have a state"""

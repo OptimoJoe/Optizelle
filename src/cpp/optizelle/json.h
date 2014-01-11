@@ -458,6 +458,20 @@ namespace Optizelle {
                     LineSearchKind::is_valid(),
                     LineSearchKind::from_string,
                     "kind");
+                state.f_diag=read::param <FunctionDiagnostics::t> (
+                    msg,
+                    root["Optizelle"].get("f_diag",
+                        FunctionDiagnostics::to_string(state.f_diag)),
+                    FunctionDiagnostics::is_valid,
+                    FunctionDiagnostics::from_string,
+                    "f_diag");
+                state.dscheme=read::param <DiagnosticScheme::t> (
+                    msg,
+                    root["Optizelle"].get("dscheme",
+                        DiagnosticScheme::to_string(state.dscheme)),
+                    DiagnosticScheme::is_valid,
+                    DiagnosticScheme::from_string,
+                    "dscheme");
             }
             static void read(
                 Optizelle::Messaging const & msg,
@@ -508,6 +522,10 @@ namespace Optizelle {
                     LineSearchDirection::to_string,state.dir);
                 root["Optizelle"]["kind"]=write_param(
                     LineSearchKind::to_string,state.kind);
+                root["Optizelle"]["f_diag"]=write_param(
+                    FunctionDiagnostics::to_string,state.f_diag);
+                root["Optizelle"]["dscheme"]=write_param(
+                    DiagnosticScheme::to_string,state.dscheme);
 
                 // Create a string with the above output
                 Json::StyledWriter writer;
@@ -689,6 +707,13 @@ namespace Optizelle {
                     Operators::is_valid(),
                     Operators::from_string,
                     "PSchur_right_type");
+                state.g_diag=read::param <FunctionDiagnostics::t> (
+                    msg,
+                    root["Optizelle"].get("g_diag",
+                        FunctionDiagnostics::to_string(state.g_diag)),
+                    FunctionDiagnostics::is_valid,
+                    FunctionDiagnostics::from_string,
+                    "g_diag");
             }
             static void read(
                 Optizelle::Messaging const & msg,
@@ -732,6 +757,8 @@ namespace Optizelle {
                     Operators::to_string,state.PSchur_left_type);
                 root["Optizelle"]["PSchur_right_type"]=write_param(
                     Operators::to_string,state.PSchur_right_type);
+                root["Optizelle"]["g_diag"]=write_param(
+                    FunctionDiagnostics::to_string,state.g_diag);
 
                 return writer.write(root);
             }
@@ -868,6 +895,13 @@ namespace Optizelle {
                     CentralityStrategy::is_valid(),
                     CentralityStrategy::from_string,
                     "cstrat");
+                state.h_diag=read::param <FunctionDiagnostics::t> (
+                    msg,
+                    root["Optizelle"].get("h_diag",
+                        FunctionDiagnostics::to_string(state.h_diag)),
+                    FunctionDiagnostics::is_valid,
+                    FunctionDiagnostics::from_string,
+                    "h_diag");
             }
             static void read(
                 Optizelle::Messaging const & msg,
@@ -898,6 +932,8 @@ namespace Optizelle {
                     InteriorPointMethod::to_string,state.ipm);
                 root["Optizelle"]["cstrat"]=write_param(
                     CentralityStrategy::to_string,state.cstrat);
+                root["Optizelle"]["h_diag"]=write_param(
+                    FunctionDiagnostics::to_string,state.h_diag);
 
                 return writer.write(root);
             }

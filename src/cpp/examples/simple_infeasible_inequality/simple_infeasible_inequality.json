@@ -2,11 +2,10 @@
    "Optizelle" : {
       "msg_level" : 1,
       "H_type" : "UserDefined",
-      "iter_max" : 100,
-      "eps_krylov" : 1e-2,
+      "iter_max" : 50,
+      "delta" : 100,
+      "eps_krylov" : 1e-10,
       "eps_dx" : 1e-16,
-      "eps_grad" : 1e-8,
-      "eps_mu" : 1e-8,
       "sigma" : 0.01,
       "gamma" : 0.95
    }

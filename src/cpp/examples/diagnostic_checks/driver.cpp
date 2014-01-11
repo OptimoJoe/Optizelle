@@ -191,9 +191,10 @@ int main() {
 
     // Do two finite difference checks and then check the symmetry of the
     // Hessian
-    Optizelle::Diagnostics::gradientCheck <> (Optizelle::Messaging(),f,x,dx);
-    Optizelle::Diagnostics::hessianCheck <> (Optizelle::Messaging(),f,x,dx);
-    Optizelle::Diagnostics::hessianSymmetryCheck <> (Optizelle::Messaging(),f,x,dx,dxx);
+    Optizelle::Diagnostics::gradientCheck(Optizelle::Messaging(),f,x,dx,"f");
+    Optizelle::Diagnostics::hessianCheck(Optizelle::Messaging(),f,x,dx,"f");
+    Optizelle::Diagnostics::hessianSymmetryCheck(
+        Optizelle::Messaging(),f,x,dx,dxx,"f");
 
     // Create some vectors in R^3 for testing the vector-valued function. 
     std::vector <double> dy(3);
@@ -204,7 +205,10 @@ int main() {
 
     // Do the finite difference tests and check whether or not the
     // derivative is adjoint to the derivative adjoint.
-    Optizelle::Diagnostics::derivativeCheck <> (Optizelle::Messaging(),g,x,dx,dy);
-    Optizelle::Diagnostics::derivativeAdjointCheck <>(Optizelle::Messaging(),g,x,dx,dy);
-    Optizelle::Diagnostics::secondDerivativeCheck <>(Optizelle::Messaging(),g,x,dx,dy);
+    Optizelle::Diagnostics::derivativeCheck(
+        Optizelle::Messaging(),g,x,dx,dy,"g");
+    Optizelle::Diagnostics::derivativeAdjointCheck(
+        Optizelle::Messaging(),g,x,dx,dy,"g");
+    Optizelle::Diagnostics::secondDerivativeCheck(
+        Optizelle::Messaging(),g,x,dx,dy,"g");
 }

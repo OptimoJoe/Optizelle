@@ -358,6 +358,9 @@ namespace Optizelle{
             
             // Occurs just before the main optimization loop 
             BeforeOptimizationLoop,
+                       
+            // Occurs at the beginning of the optimization loop
+            BeginningOfOptimizationLoop,
 
             // Occurs just before we take the optimization step x+dx
             BeforeSaveOld,
@@ -508,6 +511,42 @@ namespace Optizelle{
         struct is_valid : public std::unary_function<std::string, bool> {
             bool operator () (std::string const & name) const;
         };
+    }
+    
+    // Different function diagnostics on the optimization functions 
+    namespace FunctionDiagnostics {
+        enum t : Natural{
+            NoDiagnostics,      // No diagnostic checks
+            FirstOrder,         // First-order function checks
+            SecondOrder         // Second-order function checks
+        };
+        
+        // Converts the diagnostic checks to a string
+        std::string to_string(t const & diag);
+        
+        // Converts a string to the diagnostic checks 
+        t from_string(std::string const & diag);
+
+        // Checks whether or not a string is valid
+        bool is_valid(std::string const & name);
+    }
+    
+    // When and how often we compute our intrusive diagnostics 
+    namespace DiagnosticScheme {
+        enum t : Natural{
+            Never,              // Never compute our diagnostic checks 
+            DiagnosticsOnly,    // No optimization.  Only diagnostics.
+            EveryIteration      // Every iteration at the start of the iteration
+        };
+        
+        // Converts the diagnostic scheme to a string
+        std::string to_string(t const & dscheme);
+        
+        // Converts a string to the diagnostic scheme 
+        t from_string(std::string const & dscheme);
+
+        // Checks whether or not a string is valid
+        bool is_valid(std::string const & dscheme);
     }
 
     // A collection of miscellaneous diagnostics that help determine errors.
@@ -751,7 +790,8 @@ namespace Optizelle{
             Messaging const & msg,
             ScalarValuedFunction<Real,XX> const & f,
             typename XX <Real>::Vector const & x,
-            typename XX <Real>::Vector const & dx
+            typename XX <Real>::Vector const & dx,
+            std::string const & name
         ) {
             // Create some type shortcuts
             typedef XX <Real> X;
@@ -765,7 +805,7 @@ namespace Optizelle{
             Real dd_grad=X::innr(f_grad,dx);
 
             // Compute an ensemble of finite difference tests in a linear manner
-            msg.print("Finite difference test on the gradient.");
+            msg.print("Finite difference test on the gradient of " + name +".");
             Real min_rel_err(std::numeric_limits<Real>::quiet_NaN());
             for(Integer i=-2;i<=5;i++){
                 Real epsilon=pow(Real(.1),int(i));
@@ -800,7 +840,8 @@ namespace Optizelle{
             Messaging const & msg,
             ScalarValuedFunction<Real,XX> const & f,
             typename XX <Real>::Vector const & x,
-            typename XX <Real>::Vector const & dx
+            typename XX <Real>::Vector const & dx,
+            std::string const & name
         ) {
             // Create some type shortcuts
             typedef XX <Real> X;
@@ -816,7 +857,7 @@ namespace Optizelle{
             f.hessvec(x,dx,hess_f_dx);
 
             // Compute an ensemble of finite difference tests in a linear manner
-            msg.print("Finite difference test on the Hessian.");
+            msg.print("Finite difference test on the Hessian of " + name + ".");
             Real min_rel_err(std::numeric_limits<Real>::quiet_NaN());
             for(Integer i=-2;i<=5;i++){
 
@@ -858,7 +899,8 @@ namespace Optizelle{
             ScalarValuedFunction<Real,XX> const & f,
             typename XX <Real>::Vector const & x,
             typename XX <Real>::Vector const & dx,
-            typename XX <Real>::Vector const & dxx
+            typename XX <Real>::Vector const & dxx,
+            std::string const & name
         ) {
             // Create some type shortcuts
             typedef XX <Real> X;
@@ -883,10 +925,9 @@ namespace Optizelle{
             Real diff=fabs(innr_Hxdx_dxx-innr_dx_Hxdxx);
 
             // Send a message with the result
-            msg.print("Symmetry test on the Hessian of a scalar valued "
-                "function.");
+            msg.print("Symmetry test on the Hessian of " + name + ".");
             std::stringstream ss;
-            ss<< "The absolute err. between <H(x)dx,dxx> and <dx,H(x)dxx>: "
+            ss<< "The absolute error between <H(x)dx,dxx> and <dx,H(x)dxx>: "
                 << std::scientific << std::setprecision(16) << diff;
             msg.print(ss.str());
             
@@ -906,7 +947,8 @@ namespace Optizelle{
             VectorValuedFunction<Real,XX,YY> const & f,
             typename XX <Real>::Vector const & x,
             typename XX <Real>::Vector const & dx,
-            typename YY <Real>::Vector const & y
+            typename YY <Real>::Vector const & y,
+            std::string const & name
         ) {
             // Create some type shortcuts
             typedef XX <Real> X;
@@ -923,8 +965,7 @@ namespace Optizelle{
             f.p(x,dx,fp_x_dx);
 
             // Compute an ensemble of finite difference tests in a linear manner
-            msg.print("Finite difference test on the derivative of a "
-                "vector-valued function.");
+            msg.print("Finite difference test on the derivative of " +name+".");
             Real min_rel_err(std::numeric_limits<Real>::quiet_NaN());
             for(Integer i=-2;i<=5;i++){
 
@@ -968,7 +1009,8 @@ namespace Optizelle{
             VectorValuedFunction<Real,XX,YY> const & f,
             typename XX <Real>::Vector const & x,
             typename XX <Real>::Vector const & dx,
-            typename YY <Real>::Vector const & dy
+            typename YY <Real>::Vector const & dy,
+            std::string const & name
         ) {
             // Create some type shortcuts
             typedef XX <Real> X;
@@ -995,10 +1037,10 @@ namespace Optizelle{
             Real diff=fabs(innr_fpxdx_dy-innr_dx_fpsxdy);
 
             // Send a message with the result
-            msg.print("Adjoint test on the first derivative of a vector "
-                "valued function.");
+            msg.print("Adjoint test on the first derivative of " + name + ".");
             std::stringstream ss;
-            ss<<"The absolute err. between <f'(x)dx,dy> and <dx,f'(x)*dy>: "
+            ss<<"The absolute err. between <" + name + "'(x)dx,dy> and <dx,"
+                + name + "'(x)*dy>: "
                 << std::scientific << std::setprecision(16) << diff;
             msg.print(ss.str());
             
@@ -1019,7 +1061,8 @@ namespace Optizelle{
             VectorValuedFunction<Real,XX,YY> const & f,
             typename XX <Real>::Vector const & x,
             typename XX <Real>::Vector const & dx,
-            typename YY <Real>::Vector const & dy
+            typename YY <Real>::Vector const & dy,
+            std::string const & name
         ) {
             // Create some type shortcuts
             typedef XX <Real> X;
@@ -1036,8 +1079,8 @@ namespace Optizelle{
             f.pps(x,dx,dy,fpps_x_dx_dy);
 
             // Compute an ensemble of finite difference tests in a linear manner
-            msg.print("Finite difference test on the 2nd-derivative adj. "
-                "of a vector-valued function.");
+            msg.print("Finite difference test on the 2nd-derivative adjoint "
+                "of " + name + ".");
             Real min_rel_err(std::numeric_limits<Real>::quiet_NaN());
             for(Integer i=-2;i<=5;i++){
 
@@ -1092,7 +1135,7 @@ namespace Optizelle{
    
     // A state manipulator that's been customized in order to print diagonistic
     // information
-    template <typename ProblemClass>
+    template <typename Real,typename ProblemClass>
     struct DiagnosticManipulator : public StateManipulator <ProblemClass> {
     private:
         // A reference to an existing state manipulator 
@@ -1122,18 +1165,46 @@ namespace Optizelle{
             smanip(fns,state,loc);
 
             // Create some shortcuts
-            Natural const & msg_level=state.msg_level;
+            DiagnosticScheme::t const & dscheme=state.dscheme;
+            Real & f_x=state.f_x;
+            StoppingCondition::t & opt_stop=state.opt_stop;
+            Natural & msg_level=state.msg_level;
 
             switch(loc){
+            // Run function diagnostics 
+            case OptimizationLocation::BeginningOfOptimization:
+                if(dscheme==DiagnosticScheme::DiagnosticsOnly) {
+                    // Run our diagnostic checks
+                    ProblemClass::Diagnostics::checkFunctions(msg,fns,state);
+
+                    // Make sure we don't calculate an initial objective
+                    // function
+                    f_x = std::numeric_limits <Real>::max();
+
+                    // Make sure we don't optimize
+                    opt_stop = StoppingCondition::UserDefined; 
+
+                    // Make sure we don't output header information
+                    msg_level = 0;
+                }
+                break;
+
+            // Run more function diagnostics
+            case OptimizationLocation::BeginningOfOptimizationLoop:
+                if(dscheme==DiagnosticScheme::EveryIteration) {
+                    // Run our diagnostic checks
+                    ProblemClass::Diagnostics::checkFunctions(msg,fns,state);
+                }
+                break;
 
             // Output the headers for the diagonstic information
             case OptimizationLocation::BeforeOptimizationLoop:
                 if(msg_level >= 1) {
                     // Get the headers 
                     std::list <std::string> out;
-                    ProblemClass::Printer::getStateHeader(state,out);
+                    ProblemClass::Diagnostics::getStateHeader(state,out);
                     if(msg_level >= 2)
-                        ProblemClass::Printer::getKrylovHeader(state,out);
+                        ProblemClass::Diagnostics::getKrylovHeader(state,out);
 
                     // Output the result
                     msg.print(std::accumulate (
@@ -1155,14 +1226,14 @@ namespace Optizelle{
                         || loc==OptimizationLocation
                             ::AfterRejectedLineSearch
                     )
-                        ProblemClass::Printer
+                        ProblemClass::Diagnostics
                             ::getState(fns,state,false,true,out);
                     else 
-                        ProblemClass::Printer
+                        ProblemClass::Diagnostics
                             ::getState(fns,state,false,false,out);
 
                     // Print out blank Krylov information 
-                    ProblemClass::Printer::getKrylov(state,true,out);
+                    ProblemClass::Diagnostics::getKrylov(state,true,out);
 
                     // Output the result
                     msg.print(std::accumulate (
@@ -1177,10 +1248,11 @@ namespace Optizelle{
                     std::list <std::string> out;
 
                     // Print out blank state information
-                    ProblemClass::Printer::getState(fns,state,true,false,out);
+                    ProblemClass::Diagnostics::getState(
+                        fns,state,true,false,out);
 
                     // Print out the Krylov information 
-                    ProblemClass::Printer::getKrylov(state,false,out);
+                    ProblemClass::Diagnostics::getKrylov(state,false,out);
 
                     // Output the result
                     msg.print(std::accumulate (
@@ -1478,6 +1550,12 @@ namespace Optizelle{
                 // Type of line-search 
                 LineSearchKind::t kind;
 
+                // Function diagnostics on f
+                FunctionDiagnostics::t f_diag;
+
+                // Diagnostic scheme 
+                DiagnosticScheme::t dscheme;
+
                 // Initialization constructors
                 explicit t(X_Vector const & x_) :
                     eps_grad(1e-8),
@@ -1525,7 +1603,9 @@ namespace Optizelle{
                     linesearch_iter_total(0),
                     eps_ls(1e-2),
                     dir(LineSearchDirection::SteepestDescent),
-                    kind(LineSearchKind::GoldenSection)
+                    kind(LineSearchKind::GoldenSection),
+                    f_diag(FunctionDiagnostics::NoDiagnostics),
+                    dscheme(DiagnosticScheme::Never)
                 {
                     X::copy(x_,x);
                 }
@@ -1783,7 +1863,11 @@ namespace Optizelle{
                         (item.first=="dir" &&
                             LineSearchDirection::is_valid()(item.second)) ||
                         (item.first=="kind" &&
-                            LineSearchKind::is_valid()(item.second))
+                            LineSearchKind::is_valid()(item.second)) ||
+                        (item.first=="f_diag" &&
+                            FunctionDiagnostics::is_valid(item.second)) ||
+                        (item.first=="dscheme" &&
+                            DiagnosticScheme::is_valid(item.second))
                     ) 
                         return true;
                     else
@@ -1887,6 +1971,16 @@ namespace Optizelle{
                     } else if(label=="kind"){
                         if(!LineSearchKind::is_valid()(val)) 
                             ss << base << "line-search kind: " << val;
+
+                    // Check the function diagnostics on f 
+                    } else if(label=="f_diag"){
+                        if(!FunctionDiagnostics::is_valid(val)) 
+                            ss << base << "function diagnostics on f: " << val;
+                    
+                    // Check the diagnostic scheme 
+                    } else if(label=="dscheme"){
+                        if(!DiagnosticScheme::is_valid(val)) 
+                            ss << base << "diagnostic scheme: " << val;
                     }
                     return ss.str();
                 }
@@ -2000,6 +2094,10 @@ namespace Optizelle{
                     LineSearchDirection::to_string(state.dir));
                 params.emplace_back("kind",
                     LineSearchKind::to_string(state.kind));
+                params.emplace_back("f_diag",
+                    FunctionDiagnostics::to_string(state.f_diag));
+                params.emplace_back("dscheme",
+                    DiagnosticScheme::to_string(state.dscheme));
             }
 
             // Copy in all variables.  This assumes that the quasi-Newton
@@ -2142,6 +2240,12 @@ namespace Optizelle{
                             = LineSearchDirection::from_string(item->second);
                     else if(item->first=="kind")
                         state.kind=LineSearchKind::from_string(item->second);
+                    else if(item->first=="f_diag")
+                        state.f_diag
+                            = FunctionDiagnostics::from_string(item->second);
+                    else if(item->first=="dscheme")
+                        state.dscheme
+                            = DiagnosticScheme::from_string(item->second);
                 }
             }
             
@@ -2841,9 +2945,9 @@ namespace Optizelle{
         };
 
         // Contains functions that assist in creating an output for diagonstics
-        struct Printer {
+        struct Diagnostics {
             // Disallow constructors
-            NO_CONSTRUCTORS(Printer);
+            NO_CONSTRUCTORS(Diagnostics);
 
             // Gets the header for the state information
             static void getStateHeader_(
@@ -2889,7 +2993,8 @@ namespace Optizelle{
                 typename State::t const & state,
                 std::list <std::string> & out
             ) {
-                Unconstrained <Real,XX>::Printer::getStateHeader_(state,out);
+                Unconstrained <Real,XX>::Diagnostics::getStateHeader_(
+                    state,out);
             }
 
             // Gets the state information for output
@@ -3010,7 +3115,7 @@ namespace Optizelle{
                 bool const & noiter,
                 std::list <std::string> & out
             ) {
-                Unconstrained <Real,XX>::Printer
+                Unconstrained <Real,XX>::Diagnostics
                     ::getState_(fns,state,blank,noiter,out);
             }
 
@@ -3038,7 +3143,8 @@ namespace Optizelle{
                 typename State::t const & state,
                 std::list <std::string> & out
             ) {
-                Unconstrained <Real,XX>::Printer::getKrylovHeader_(state,out);
+                Unconstrained <Real,XX>::Diagnostics::getKrylovHeader_(
+                    state,out);
             }
             
             // Get the information for the Krylov iteration
@@ -3078,7 +3184,47 @@ namespace Optizelle{
                 bool const & blank,
                 std::list <std::string> & out
             ) {
-                Unconstrained <Real,XX>::Printer::getKrylov_(state,blank,out);
+                Unconstrained <Real,XX>::Diagnostics::getKrylov_(
+                    state,blank,out);
+            }
+            
+            // Runs the specified function diagnostics 
+            static void checkFunctions_(
+                Messaging const & msg,
+                typename Functions::t const & fns,
+                typename State::t const & state
+            ) {
+                // Create some shortcuts
+                ScalarValuedFunction <Real,XX> const & f=*(fns.f);
+                X_Vector const & x=state.x;
+                X_Vector const & dx=state.dx;
+                X_Vector const & dx_old=state.dx_old;
+                FunctionDiagnostics::t const & f_diag=state.f_diag;
+
+                // Run the diagnostics
+                switch(f_diag) {
+                    case FunctionDiagnostics::FirstOrder:
+                        Optizelle::Diagnostics::gradientCheck(msg,f,x,dx,"f");
+                        break;
+                    case FunctionDiagnostics::SecondOrder:
+                        Optizelle::Diagnostics::gradientCheck(msg,f,x,dx,"f");
+                        Optizelle::Diagnostics::hessianCheck(msg,f,x,dx,"f");
+                        Optizelle::Diagnostics::hessianSymmetryCheck(
+                            msg,f,x,dx,dx_old,"f");
+                        break;
+                    case FunctionDiagnostics::NoDiagnostics:
+                        break;
+                }
+            }
+            
+            // Runs the specified function diagnostics 
+            static void checkFunctions(
+                Messaging const & msg,
+                typename Functions::t const & fns,
+                typename State::t const & state
+            ) {
+                Unconstrained <Real,XX>::Diagnostics::checkFunctions_(
+                    msg,fns,state);
             }
         };
 
@@ -4195,7 +4341,12 @@ namespace Optizelle{
                 smanip(fns,state,OptimizationLocation::BeforeOptimizationLoop);
 
                 // Primary optimization loop
-                do{
+                while(opt_stop==StoppingCondition::NotConverged) {
+
+                    // Manipulate the state if required
+                    smanip(fns,state,
+                        OptimizationLocation::BeginningOfOptimizationLoop);
+
                     // Get a new optimization iterate.  
                     getStep(msg,smanip,fns,state);
 
@@ -4243,7 +4394,7 @@ namespace Optizelle{
                     // Manipulate the state if required
                     smanip(fns,state,
                         OptimizationLocation::EndOfOptimizationIteration);
-                } while(opt_stop==StoppingCondition::NotConverged);
+                } 
                         
                 // Manipulate the state one final time if required
                 smanip(fns,state,OptimizationLocation::EndOfOptimization);
@@ -4278,7 +4429,7 @@ namespace Optizelle{
                 State::check(msg,state);
 
                 // Add the output to the state manipulator
-                DiagnosticManipulator <Unconstrained<Real,XX> >
+                DiagnosticManipulator <Real,Unconstrained<Real,XX> >
                     iomanip(smanip,msg);
 
                 // Minimize the problem
@@ -4482,6 +4633,9 @@ namespace Optizelle{
                 // Hessian applied to the uncorrected tangential step.  This
                 // is needed in the predicted reduction.
                 X_Vector H_dxtuncorrected;
+
+                // Function diagnostics on g
+                FunctionDiagnostics::t g_diag;
                 
                 // Initialization constructors
                 explicit t(X_Vector const & x_,Y_Vector const & y_) : 
@@ -4518,7 +4672,8 @@ namespace Optizelle{
                     dx_tcp_uncorrected(X::init(x_)),
                     H_dxn(X::init(x_)),
                     W_gradpHdxn(X::init(x_)),
-                    H_dxtuncorrected(X::init(x_))
+                    H_dxtuncorrected(X::init(x_)),
+                    g_diag(FunctionDiagnostics::NoDiagnostics)
                 {
                     Y::copy(y_,y);
                 }
@@ -4718,10 +4873,12 @@ namespace Optizelle{
                 ){
                     if( typename Unconstrained <Real,XX>::Restart
                             ::is_param()(item) ||
+                        (item.first=="PSchur_left_type" &&
+                            Operators::is_valid()(item.second)) ||
                         (item.first=="PSchur_right_type" &&
                             Operators::is_valid()(item.second)) ||
-                        (item.first=="PSchur_left_type" &&
-                            Operators::is_valid()(item.second))
+                        (item.first=="g_diag" &&
+                            FunctionDiagnostics::is_valid(item.second))
                     ) 
                         return true;
                     else
@@ -4855,6 +5012,8 @@ namespace Optizelle{
                     Operators::to_string(state.PSchur_left_type));
                 params.emplace_back("PSchur_right_type",
                     Operators::to_string(state.PSchur_right_type));
+                params.emplace_back("g_diag",
+                    FunctionDiagnostics::to_string(state.g_diag));
             }
             
             // Copy in all equality multipliers 
@@ -4970,6 +5129,8 @@ namespace Optizelle{
                     else if(item->first=="PSchur_right_type")
                         state.PSchur_right_type
                             =Operators::from_string(item->second);
+                    else if(item->first=="g_diag")
+                        state.g_diag=FunctionDiagnostics::from_string(item->second);
                 }
             }
 
@@ -5323,9 +5484,9 @@ namespace Optizelle{
         };
         
         // Contains functions that assist in creating an output for diagonstics
-        struct Printer {
+        struct Diagnostics {
             // Disallow constructors
-            NO_CONSTRUCTORS(Printer);
+            NO_CONSTRUCTORS(Diagnostics);
 
             // Gets the header for the state information
             static void getStateHeader_(
@@ -5350,9 +5511,10 @@ namespace Optizelle{
                 typename State::t const & state,
                 std::list <std::string> & out
             ) {
-                Unconstrained <Real,XX>::Printer::getStateHeader_(state,out);
-                EqualityConstrained <Real,XX,YY>::Printer::getStateHeader_
-                    (state,out);
+                Unconstrained <Real,XX>::Diagnostics::getStateHeader_(
+                    state,out);
+                EqualityConstrained <Real,XX,YY>::Diagnostics::getStateHeader_(
+                    state,out);
             }
 
             // Gets the state information for output
@@ -5424,9 +5586,9 @@ namespace Optizelle{
                 bool const & noiter,
                 std::list <std::string> & out
             ) {
-                Unconstrained <Real,XX>::Printer
+                Unconstrained <Real,XX>::Diagnostics
                     ::getState_(fns,state,blank,noiter,out);
-                EqualityConstrained <Real,XX,YY>::Printer
+                EqualityConstrained <Real,XX,YY>::Diagnostics
                     ::getState_(fns,state,blank,out);
             }
             
@@ -5441,9 +5603,10 @@ namespace Optizelle{
                 typename State::t const & state,
                 std::list <std::string> & out
             ) {
-                Unconstrained <Real,XX>::Printer::getKrylovHeader_(state,out);
-                EqualityConstrained <Real,XX,YY>::Printer
-                    ::getKrylovHeader_(state,out);
+                Unconstrained <Real,XX>::Diagnostics::getKrylovHeader_(
+                    state,out);
+                EqualityConstrained <Real,XX,YY>::Diagnostics::getKrylovHeader_(
+                    state,out);
             }
             
             // Get the information for the Krylov iteration
@@ -5459,9 +5622,56 @@ namespace Optizelle{
                 bool const & blank,
                 std::list <std::string> & out
             ) {
-                Unconstrained <Real,XX>::Printer::getKrylov_(state,blank,out);
-                EqualityConstrained <Real,XX,YY>::Printer
-                    ::getKrylov_(state,blank,out);
+                Unconstrained <Real,XX>::Diagnostics::getKrylov_(
+                    state,blank,out);
+                EqualityConstrained <Real,XX,YY>::Diagnostics::getKrylov_(
+                    state,blank,out);
+            }
+           
+            // Runs the specified function diagnostics 
+            static void checkFunctions_(
+                Messaging const & msg,
+                typename Functions::t const & fns,
+                typename State::t const & state
+            ) {
+                // Create some shortcuts
+                VectorValuedFunction <Real,XX,YY> const & g=*(fns.g);
+                X_Vector const & x=state.x;
+                X_Vector const & dx=state.dx;
+                Y_Vector const & dy=state.dy;
+                FunctionDiagnostics::t const & g_diag = state.g_diag;
+
+                // Run the diagnostics
+                switch(g_diag) {
+                    case FunctionDiagnostics::FirstOrder:
+                        Optizelle::Diagnostics::derivativeCheck(
+                            msg,g,x,dx,dy,"g");
+                        Optizelle::Diagnostics::derivativeAdjointCheck(
+                            msg,g,x,dx,dy,"g");
+                        break;
+                    case FunctionDiagnostics::SecondOrder:
+                        Optizelle::Diagnostics::derivativeCheck(
+                            msg,g,x,dx,dy,"g");
+                        Optizelle::Diagnostics::derivativeAdjointCheck(
+                            msg,g,x,dx,dy,"g");
+                        Optizelle::Diagnostics::secondDerivativeCheck(
+                            msg,g,x,dx,dy,"g");
+                        break;
+                    case FunctionDiagnostics::NoDiagnostics:
+                        break;
+                }
+            }
+            
+            // Runs the specified function diagnostics 
+            static void checkFunctions(
+                Messaging const & msg,
+                typename Functions::t const & fns,
+                typename State::t const & state
+            ) {
+                Unconstrained <Real,XX>::Diagnostics::checkFunctions_(
+                    msg,fns,state);
+                EqualityConstrained <Real,XX,YY>::Diagnostics::checkFunctions_(
+                    msg,fns,state);
             }
         };
 
@@ -6923,7 +7133,7 @@ namespace Optizelle{
             ){
                 
                 // Adds the output pieces to the state manipulator 
-                DiagnosticManipulator <EqualityConstrained <Real,XX,YY> >
+                DiagnosticManipulator <Real,EqualityConstrained <Real,XX,YY> >
                     dmanip(smanip,msg);
 
                 // Add the composite step pieces to the state manipulator
@@ -7024,6 +7234,9 @@ namespace Optizelle{
                 // Centrality strategy
                 CentralityStrategy::t cstrat;
 
+                // Function diagnostics on h
+                FunctionDiagnostics::t h_diag;
+
                 // Initialization constructors
                 t(X_Vector const & x_,Z_Vector const & z_) :
                     Unconstrained <Real,XX>::State::t(x_),
@@ -7037,7 +7250,8 @@ namespace Optizelle{
                     sigma(0.5),
                     gamma(0.95),
                     ipm(InteriorPointMethod::PrimalDual),
-                    cstrat(CentralityStrategy::Constant)
+                    cstrat(CentralityStrategy::Constant),
+                    h_diag(FunctionDiagnostics::NoDiagnostics)
                 {
                     Z::copy(z_,z);
                 }
@@ -7152,7 +7366,9 @@ namespace Optizelle{
                         (item.first=="ipm" &&
                             InteriorPointMethod::is_valid()(item.second)) ||
                         (item.first=="cstrat" &&
-                            CentralityStrategy::is_valid()(item.second)) 
+                            CentralityStrategy::is_valid()(item.second)) ||
+                        (item.first=="h_diag" &&
+                            FunctionDiagnostics::is_valid(item.second)) 
                     ) 
                         return true;
                     else
@@ -7244,6 +7460,8 @@ namespace Optizelle{
                     InteriorPointMethod::to_string(state.ipm));
                 params.emplace_back("cstrat",
                     CentralityStrategy::to_string(state.cstrat));
+                params.emplace_back("h_diag",
+                    FunctionDiagnostics::to_string(state.h_diag));
             }
             
             // Copy in inequality multipliers 
@@ -7302,6 +7520,8 @@ namespace Optizelle{
                     else if(item->first=="cstrat")
                         state.cstrat
                             = CentralityStrategy::from_string(item->second);
+                    else if(item->first=="h_diag")
+                        state.h_diag=FunctionDiagnostics::from_string(item->second);
                 }
             }
 
@@ -7661,9 +7881,9 @@ namespace Optizelle{
         };
         
         // Contains functions that assist in creating an output for diagonstics
-        struct Printer {
+        struct Diagnostics {
             // Disallow constructors
-            NO_CONSTRUCTORS(Printer);
+            NO_CONSTRUCTORS(Diagnostics);
 
             // Gets the header for the state information
             static void getStateHeader_(
@@ -7681,9 +7901,10 @@ namespace Optizelle{
                 typename State::t const & state,
                 std::list <std::string> & out
             ) {
-                Unconstrained <Real,XX>::Printer::getStateHeader_(state,out);
-                InequalityConstrained <Real,XX,ZZ>::Printer::getStateHeader_
-                    (state,out);
+                Unconstrained <Real,XX>::Diagnostics::getStateHeader_(
+                    state,out);
+                InequalityConstrained<Real,XX,ZZ>::Diagnostics::getStateHeader_(
+                    state,out);
             }
 
             // Gets the state information for output
@@ -7724,9 +7945,9 @@ namespace Optizelle{
                 bool const & noiter,
                 std::list <std::string> & out
             ) {
-                Unconstrained <Real,XX>::Printer
+                Unconstrained <Real,XX>::Diagnostics
                     ::getState_(fns,state,blank,noiter,out);
-                InequalityConstrained <Real,XX,ZZ>::Printer
+                InequalityConstrained <Real,XX,ZZ>::Diagnostics
                     ::getState_(fns,state,blank,out);
             }
             
@@ -7741,10 +7962,10 @@ namespace Optizelle{
                 typename State::t const & state,
                 std::list <std::string> & out
             ) {
-                Unconstrained <Real,XX>::Printer
-                    ::getKrylovHeader_(state,out);
-                InequalityConstrained <Real,XX,ZZ>::Printer
-                    ::getKrylovHeader_(state,out);
+                Unconstrained <Real,XX>::Diagnostics::getKrylovHeader_(
+                    state,out);
+                InequalityConstrained<Real,XX,ZZ>::Diagnostics::getKrylovHeader_
+                    (state,out);
             }
             
             // Get the information for the Krylov iteration
@@ -7760,10 +7981,56 @@ namespace Optizelle{
                 bool const & blank,
                 std::list <std::string> & out
             ) {
-                Unconstrained <Real,XX>::Printer
+                Unconstrained <Real,XX>::Diagnostics
                     ::getKrylov_(state,blank,out);
-                InequalityConstrained <Real,XX,ZZ>::Printer
+                InequalityConstrained <Real,XX,ZZ>::Diagnostics
                     ::getKrylov_(state,blank,out);
+            }
+           
+            // Runs the specified function diagnostics 
+            static void checkFunctions_(
+                Messaging const & msg,
+                typename Functions::t const & fns,
+                typename State::t const & state
+            ) {
+                // Create some shortcuts
+                VectorValuedFunction <Real,XX,ZZ> const & h=*(fns.h);
+                X_Vector const & x=state.x;
+                X_Vector const & dx=state.dx;
+                Z_Vector const & dz=state.dz;
+                FunctionDiagnostics::t const & h_diag = state.h_diag;
+
+                // Run the diagnostics
+                switch(h_diag) {
+                    case FunctionDiagnostics::FirstOrder:
+                        Optizelle::Diagnostics::derivativeCheck(
+                            msg,h,x,dx,dz,"h");
+                        Optizelle::Diagnostics::derivativeAdjointCheck(
+                            msg,h,x,dx,dz,"h");
+                        break;
+                    case FunctionDiagnostics::SecondOrder:
+                        Optizelle::Diagnostics::derivativeCheck(
+                            msg,h,x,dx,dz,"h");
+                        Optizelle::Diagnostics::derivativeAdjointCheck(
+                            msg,h,x,dx,dz,"h");
+                        Optizelle::Diagnostics::secondDerivativeCheck(
+                            msg,h,x,dx,dz,"h");
+                        break;
+                    case FunctionDiagnostics::NoDiagnostics:
+                        break;
+                }
+            }
+            
+            // Runs the specified function diagnostics 
+            static void checkFunctions(
+                Messaging const & msg,
+                typename Functions::t const & fns,
+                typename State::t const & state
+            ) {
+                Unconstrained <Real,XX>::Diagnostics::checkFunctions_(
+                    msg,fns,state);
+                InequalityConstrained<Real,XX,ZZ>::Diagnostics::checkFunctions_(
+                    msg,fns,state);
             }
         };
 
@@ -8486,7 +8753,7 @@ namespace Optizelle{
                 typename State::t & state
             ){
                 // Adds the output pieces to the state manipulator 
-                DiagnosticManipulator <InequalityConstrained <Real,XX,ZZ> >
+                DiagnosticManipulator <Real,InequalityConstrained <Real,XX,ZZ> >
                     dmanip(smanip,msg);
 
                 // Add the interior point pieces to the state manipulator
@@ -8817,9 +9084,9 @@ namespace Optizelle{
         };
         
         // Contains functions that assist in creating an output for diagonstics
-        struct Printer {
+        struct Diagnostics {
             // Disallow constructors
-            NO_CONSTRUCTORS(Printer);
+            NO_CONSTRUCTORS(Diagnostics);
 
             // Gets the header for the state information
             static void getStateHeader_(
@@ -8832,12 +9099,12 @@ namespace Optizelle{
                 typename State::t const & state,
                 std::list <std::string> & out
             ) {
-                Unconstrained <Real,XX>
-                    ::Printer::getStateHeader_(state,out);
-                EqualityConstrained <Real,XX,YY>
-                    ::Printer::getStateHeader_(state,out);
-                InequalityConstrained <Real,XX,ZZ>
-                    ::Printer::getStateHeader_(state,out);
+                Unconstrained <Real,XX>::Diagnostics::getStateHeader_(
+                    state,out);
+                EqualityConstrained <Real,XX,YY>::Diagnostics::getStateHeader_(
+                    state,out);
+                InequalityConstrained<Real,XX,ZZ>::Diagnostics::getStateHeader_(
+                    state,out);
             }
 
             // Combines all of the state information
@@ -8848,11 +9115,11 @@ namespace Optizelle{
                 bool const & noiter,
                 std::list <std::string> & out
             ) {
-                Unconstrained <Real,XX>::Printer
+                Unconstrained <Real,XX>::Diagnostics
                     ::getState_(fns,state,blank,noiter,out);
-                EqualityConstrained <Real,XX,YY>::Printer
+                EqualityConstrained <Real,XX,YY>::Diagnostics
                     ::getState_(fns,state,blank,out);
-                InequalityConstrained <Real,XX,ZZ>::Printer
+                InequalityConstrained <Real,XX,ZZ>::Diagnostics
                     ::getState_(fns,state,blank,out);
             }
 
@@ -8861,12 +9128,12 @@ namespace Optizelle{
                 typename State::t const & state,
                 std::list <std::string> & out
             ) {
-                Unconstrained <Real,XX>::Printer
-                    ::getKrylovHeader_(state,out);
-                EqualityConstrained <Real,XX,YY>::Printer
-                    ::getKrylovHeader_(state,out);
-                InequalityConstrained <Real,XX,ZZ>::Printer
-                    ::getKrylovHeader_(state,out);
+                Unconstrained <Real,XX>::Diagnostics::getKrylovHeader_(
+                    state,out);
+                EqualityConstrained <Real,XX,YY>::Diagnostics::getKrylovHeader_(
+                    state,out);
+                InequalityConstrained<Real,XX,ZZ>::Diagnostics::getKrylovHeader_
+                    (state,out);
             }
 
             // Combines all of the Krylov information
@@ -8875,12 +9142,26 @@ namespace Optizelle{
                 bool const & blank,
                 std::list <std::string> & out
             ) {
-                Unconstrained <Real,XX>::Printer
-                    ::getKrylov_(state,blank,out);
-                EqualityConstrained <Real,XX,YY>::Printer
-                    ::getKrylov_(state,blank,out);
-                InequalityConstrained <Real,XX,ZZ>::Printer
-                    ::getKrylov_(state,blank,out);
+                Unconstrained <Real,XX>::Diagnostics::getKrylov_(
+                    state,blank,out);
+                EqualityConstrained <Real,XX,YY>::Diagnostics::getKrylov_(
+                    state,blank,out);
+                InequalityConstrained <Real,XX,ZZ>::Diagnostics::getKrylov_(
+                    state,blank,out);
+            }
+            
+            // Runs the specified function diagnostics 
+            static void checkFunctions(
+                Messaging const & msg,
+                typename Functions::t const & fns,
+                typename State::t const & state
+            ) {
+                Unconstrained <Real,XX>::Diagnostics::checkFunctions_(
+                    msg,fns,state);
+                EqualityConstrained <Real,XX,YY>::Diagnostics::checkFunctions_(
+                    msg,fns,state);
+                InequalityConstrained<Real,XX,ZZ>::Diagnostics::checkFunctions_(
+                    msg,fns,state);
             }
         };
         
@@ -8912,7 +9193,7 @@ namespace Optizelle{
                 typename State::t & state
             ){
                 // Adds the output pieces to the state manipulator 
-                DiagnosticManipulator <Constrained <Real,XX,YY,ZZ> >
+                DiagnosticManipulator <Real,Constrained <Real,XX,YY,ZZ> >
                     dmanip(smanip,msg);
 
                 // Add the interior point pieces to the state manipulator

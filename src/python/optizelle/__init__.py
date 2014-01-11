@@ -24,6 +24,8 @@ __all__ = [
     "KrylovSolverTruncated",
     "InteriorPointMethod",
     "CentralityStrategy",
+    "FunctionDiagnostics",
+    "DiagnosticScheme",
 
     "ScalarValuedFunction",
     "VectorValuedFunction",
@@ -104,6 +106,7 @@ class OptimizationLocation(object):
     BeforeInitialFuncAndGrad, \
     AfterInitialFuncAndGrad, \
     BeforeOptimizationLoop, \
+    BeginningOfOptimizationLoop, \
     BeforeSaveOld, \
     BeforeStep, \
     BeforeGetStep, \
@@ -119,7 +122,7 @@ class OptimizationLocation(object):
     BeforeActualVersusPredicted, \
     EndOfKrylovIteration, \
     EndOfOptimization \
-    = range(19)
+    = range(20)
 
 class ProblemClass(object):
     """Different problem classes"""
@@ -147,6 +150,20 @@ class CentralityStrategy(object):
     Constant, \
     StairStep, \
     PredictorCorrector \
+    = range(3)
+
+class FunctionDiagnostics(object):
+    """Different function diagnostics on the optimization functions""" 
+    NoDiagnostics, \
+    FirstOrder, \
+    SecondOrder \
+    = range(3)
+
+class DiagnosticScheme(object):
+    """When and how often we compute our intrusive diagnostics"""
+    Never, \
+    DiagnosticsOnly, \
+    EveryIteration \
     = range(3)
 
 def checkFloat(name,value):

@@ -198,25 +198,11 @@ int main(int argc,char* argv[]){
     std::vector <Real> x(4);
     x[0]=Real(0.); x[1]=Real(0.); x[2]=Real(5.); x[3]=-Real(5.);
 
-    // Generate some perturbations for the primal
-    std::mt19937 gen(1);
-    std::uniform_real_distribution<> dis(0, 1);
-    std::vector <Real> dx(4);
-    dx[0]=Real(dis(gen)); dx[1]=Real(dis(gen));
-    dx[2]=Real(dis(gen)); dx[3]=Real(dis(gen));
-    
-    std::vector <Real> dxx(4);
-    dxx[0]=Real(dis(gen)); dxx[1]=Real(dis(gen));
-    dxx[2]=Real(dis(gen)); dxx[3]=Real(dis(gen));
-
     // Generate a vector for the equality multiplier 
     std::vector <Real> y(1);
-    y[0]=Real(dis(gen));
 
     // Generate a vector for the inequality multiplier
     std::vector <Real> z(3);
-    z[0]=Real(dis(gen)); z[1]=Real(dis(gen));
-    z[2]=Real(dis(gen)); 
 
     // Create an optimization state
     Optizelle::Constrained <Real,Rm,Rm,Rm>::State::t state(x,y,z);
@@ -230,33 +216,6 @@ int main(int argc,char* argv[]){
     fns.f.reset(new MyObj <Real>);
     fns.g.reset(new MyEq <Real>);
     fns.h.reset(new MyIneq <Real>(epsilon));
-
-    // Do some finite difference tests 
-    std::cout << "Finite difference test on the objective." << std::endl;
-    Optizelle::Diagnostics::gradientCheck <> (
-        Optizelle::Messaging(),*fns.f,x,dx);
-    Optizelle::Diagnostics::hessianCheck <> (
-        Optizelle::Messaging(),*fns.f,x,dx);
-    Optizelle::Diagnostics::hessianSymmetryCheck <> (
-        Optizelle::Messaging(),*fns.f,x,dx,dxx);
-    
-    std::cout << std::endl
-        << "Finite difference test on the equality constraint." << std::endl;
-    Optizelle::Diagnostics::derivativeCheck <> (
-        Optizelle::Messaging(),*fns.g,x,dx,y);
-    Optizelle::Diagnostics::derivativeAdjointCheck <> (
-        Optizelle::Messaging(),*fns.g,x,dx,y);
-    Optizelle::Diagnostics::secondDerivativeCheck <> (
-        Optizelle::Messaging(),*fns.g,x,dx,y);
-
-    std::cout << std::endl
-        << "Finite difference test on the inequality constraint." << std::endl;
-    Optizelle::Diagnostics::derivativeCheck <> (
-        Optizelle::Messaging(),*fns.h,x,dx,z);
-    Optizelle::Diagnostics::derivativeAdjointCheck <> (
-        Optizelle::Messaging(),*fns.h,x,dx,z);
-    Optizelle::Diagnostics::secondDerivativeCheck <> (
-        Optizelle::Messaging(),*fns.h,x,dx,z);
 
     // Solve the optimization problem
     std::cout << std::endl << "Solving the optimization problem." << std::endl;

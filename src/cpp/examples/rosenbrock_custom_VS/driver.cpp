@@ -142,14 +142,6 @@ int main(){
     Optizelle::Unconstrained <double,MyHS>::Functions::t fns;
     fns.f.reset(new Rosen);
     
-    // Do some finite difference tests on the Rosenbrock function
-    Optizelle::Diagnostics::gradientCheck <> (
-        Optizelle::Messaging(),*(fns.f),x,dx);
-    Optizelle::Diagnostics::hessianCheck <> (
-        Optizelle::Messaging(),*(fns.f),x,dx);
-    Optizelle::Diagnostics::hessianSymmetryCheck <> (
-        Optizelle::Messaging(),*(fns.f),x,dx,dxx);
-    
     // Solve the optimization problem
     Optizelle::Unconstrained <double,MyHS>::Algorithms
         ::getMin(Optizelle::Messaging(),fns,state);
