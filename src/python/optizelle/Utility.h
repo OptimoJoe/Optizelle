@@ -353,8 +353,11 @@ namespace Optizelle {
             // y <- alpha * x + y.  Internal is y.
             void axpy(double const & alpha, Vector & x);
 
-            // innr <- <x,y> 
+            // innr <- <x,y>.  Internal is y.
             double innr(Vector & x);
+
+            // x <- random.  Internal is x.
+            void rand();
 
             // Jordan product, z <- x o y.  Internal is z.
             void prod(Vector & x, Vector & y);
@@ -547,6 +550,11 @@ namespace Optizelle {
             static Real innr(Vector const & x,Vector const & y) { 
                 return const_cast <Vector &> (y).innr(const_cast <Vector &>(x));
             } 
+        
+            // x <- random
+            static void rand(Vector & x){
+                x.rand();
+            }
 
             // Jordan product, z <- x o y 
             static void prod(Vector const & x, Vector const & y, Vector & z) { 

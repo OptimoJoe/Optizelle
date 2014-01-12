@@ -95,6 +95,7 @@ private:
     mxArrayPtr zero_;
     mxArrayPtr axpy_;
     mxArrayPtr innr_;
+    mxArrayPtr rand_;
     mxArrayPtr prod_;
     mxArrayPtr id_;
     mxArrayPtr linv_;
@@ -106,8 +107,8 @@ public:
     // On basic initialization, just make sure that the internal storage is
     // NULL.
     MatVector() : mxArrayPtr(), copy_(NULL), scal_(NULL), zero_(NULL),
-        axpy_(NULL), innr_(NULL), prod_(NULL), id_(NULL), linv_(NULL),
-        barr_(NULL), srch_(NULL), symm_(NULL) {}
+        axpy_(NULL), innr_(NULL), rand_(NULL), prod_(NULL), id_(NULL),
+        linv_(NULL), barr_(NULL), srch_(NULL), symm_(NULL) {}
 
     // On a simple vector, initialize both the internal storage as well as
     // the basic linear algebra.
@@ -117,7 +118,8 @@ public:
         mxArray* scal__,
         mxArray* zero__,
         mxArray* axpy__,
-        mxArray* innr__
+        mxArray* innr__,
+        mxArray* rand__ 
     ) : prod_(NULL), id_(NULL), linv_(NULL), barr_(NULL), srch_(NULL),
         symm_(NULL)
     {
@@ -130,6 +132,7 @@ public:
         zero_.reset(mxDuplicateArray(zero__));
         axpy_.reset(mxDuplicateArray(axpy__));
         innr_.reset(mxDuplicateArray(innr__));
+        rand_.reset(mxDuplicateArray(rand__));
     }
 
     // On a general vector, initialize both the internal storage as well as
@@ -141,6 +144,7 @@ public:
         mxArray* zero__,
         mxArray* axpy__,
         mxArray* innr__,
+        mxArray* rand__,
         mxArray* prod__,
         mxArray* id__,
         mxArray* linv__,
@@ -157,6 +161,7 @@ public:
         zero_.reset(mxDuplicateArray(zero__));
         axpy_.reset(mxDuplicateArray(axpy__));
         innr_.reset(mxDuplicateArray(innr__));
+        rand_.reset(mxDuplicateArray(rand__));
         prod_.reset(mxDuplicateArray(prod__));
         id_.reset(mxDuplicateArray(id__));
         linv_.reset(mxDuplicateArray(linv__));
@@ -176,6 +181,7 @@ public:
         zero_.reset(vec.zero_.release());
         axpy_.reset(vec.axpy_.release());
         innr_.reset(vec.innr_.release());
+        rand_.reset(vec.rand_.release());
         prod_.reset(vec.prod_.release());
         id_.reset(vec.id_.release());
         linv_.reset(vec.linv_.release());
@@ -195,6 +201,7 @@ public:
         zero_.reset(vec.zero_.release());
         axpy_.reset(vec.axpy_.release());
         innr_.reset(vec.innr_.release());
+        rand_.reset(vec.rand_.release());
         prod_.reset(vec.prod_.release());
         id_.reset(vec.id_.release());
         linv_.reset(vec.linv_.release());
@@ -218,6 +225,7 @@ public:
                 zero_.get(),
                 axpy_.get(),
                 innr_.get(),
+                rand_.get(),
                 prod_.get(),
                 id_.get(),
                 linv_.get(),
@@ -231,7 +239,8 @@ public:
                 scal_.get(),
                 zero_.get(),
                 axpy_.get(),
-                innr_.get()));
+                innr_.get(),
+                rand_.get()));
     }
 
     // y <- x (Shallow.  No memory allocation.) 
@@ -274,7 +283,6 @@ public:
         int err=mexCallMATLAB(1,output,2,input,"feval");
         handleException(err,"Error in the vector space zero function");
         reset(output[0]);
-
     }
 
     // y <- alpha * x + y 
@@ -309,6 +317,18 @@ public:
 
         // Return the result 
         return alpha;
+    }
+
+    // x <- random 
+    void rand() {
+        // Create the inputs and outputs 
+        mxArray* input[2]={rand_.get(),get()};
+        mxArray* output[1];
+
+        // Find the rand vector and store the result.
+        int err=mexCallMATLAB(1,output,2,input,"feval");
+        handleException(err,"Error in the vector space rand function");
+        reset(output[0]);
     }
 
     // Jordan product, z <- x o y 
@@ -433,6 +453,11 @@ struct MatlabVS {
     static Real innr(const Vector& x,const Vector& y) {
         return y.innr(x);
     } 
+        
+    // x <- random 
+    static void rand(Vector& x) { 
+        x.rand();
+    }
     
     // Jordan product, z <- x o y 
     static void prod(const Vector& x, const Vector& y, Vector& z) {
@@ -700,8 +725,8 @@ void check_fns(
 
 // Check that we have all the operations necessary for a vector space
 void check_vector_space(const mxArray* X,std::string name) {
-    std::string ops[5] = { "copy", "scal", "zero", "axpy", "innr" };
-    check_fns(X,ops,5,"vector space",name);
+    std::string ops[6] = { "copy", "scal", "zero", "axpy", "innr", "rand" };
+    check_fns(X,ops,6,"vector space",name);
 }
 
 // Check that we have all the operations necessary for a Euclidean-Jordan
@@ -984,7 +1009,8 @@ void mexFunction(
         mxGetField(X,0,"scal"),
         mxGetField(X,0,"zero"),
         mxGetField(X,0,"axpy"),
-        mxGetField(X,0,"innr")));
+        mxGetField(X,0,"innr"),
+        mxGetField(X,0,"rand")));
     
     // If we need to do a finite difference, initialize dx and dxx
     if(diagnostics) {
@@ -1010,7 +1036,8 @@ void mexFunction(
             mxGetField(Y,0,"scal"),
             mxGetField(Y,0,"zero"),
             mxGetField(Y,0,"axpy"),
-            mxGetField(Y,0,"innr")));
+            mxGetField(Y,0,"innr"),
+            mxGetField(Y,0,"rand")));
         if(diagnostics) {
             dy.reset(new MatVector(y->init()));
                 dy->copy(mxGetField(pInput[2],0,"dy"));
@@ -1029,6 +1056,7 @@ void mexFunction(
             mxGetField(Z,0,"zero"),
             mxGetField(Z,0,"axpy"),
             mxGetField(Z,0,"innr"),
+            mxGetField(Z,0,"rand"),
             mxGetField(Z,0,"prod"),
             mxGetField(Z,0,"id"),
             mxGetField(Z,0,"linv"),

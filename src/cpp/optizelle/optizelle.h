@@ -1135,7 +1135,7 @@ namespace Optizelle{
    
     // A state manipulator that's been customized in order to print diagonistic
     // information
-    template <typename Real,typename ProblemClass>
+    template <typename ProblemClass>
     struct DiagnosticManipulator : public StateManipulator <ProblemClass> {
     private:
         // A reference to an existing state manipulator 
@@ -1165,33 +1165,16 @@ namespace Optizelle{
             smanip(fns,state,loc);
 
             // Create some shortcuts
+            Natural const & msg_level=state.msg_level;
             DiagnosticScheme::t const & dscheme=state.dscheme;
-            Real & f_x=state.f_x;
-            StoppingCondition::t & opt_stop=state.opt_stop;
-            Natural & msg_level=state.msg_level;
 
             switch(loc){
             // Run function diagnostics 
             case OptimizationLocation::BeginningOfOptimization:
-                if(dscheme==DiagnosticScheme::DiagnosticsOnly) {
-                    // Run our diagnostic checks
-                    ProblemClass::Diagnostics::checkFunctions(msg,fns,state);
-
-                    // Make sure we don't calculate an initial objective
-                    // function
-                    f_x = std::numeric_limits <Real>::max();
-
-                    // Make sure we don't optimize
-                    opt_stop = StoppingCondition::UserDefined; 
-
-                    // Make sure we don't output header information
-                    msg_level = 0;
-                }
-                break;
-
-            // Run more function diagnostics
             case OptimizationLocation::BeginningOfOptimizationLoop:
-                if(dscheme==DiagnosticScheme::EveryIteration) {
+                if( dscheme==DiagnosticScheme::DiagnosticsOnly ||
+                    dscheme==DiagnosticScheme::EveryIteration
+                ) {
                     // Run our diagnostic checks
                     ProblemClass::Diagnostics::checkFunctions(msg,fns,state);
                 }
@@ -1199,7 +1182,7 @@ namespace Optizelle{
 
             // Output the headers for the diagonstic information
             case OptimizationLocation::BeforeOptimizationLoop:
-                if(msg_level >= 1) {
+                if(msg_level >= 1 &&dscheme!=DiagnosticScheme::DiagnosticsOnly){
                     // Get the headers 
                     std::list <std::string> out;
                     ProblemClass::Diagnostics::getStateHeader(state,out);
@@ -1215,7 +1198,7 @@ namespace Optizelle{
             case OptimizationLocation::EndOfOptimizationIteration: 
             case OptimizationLocation::AfterRejectedTrustRegion:
             case OptimizationLocation::AfterRejectedLineSearch:
-                if(msg_level >= 1) {
+                if(msg_level >= 1 &&dscheme!=DiagnosticScheme::DiagnosticsOnly){
                     // Get the diagonstic information
                     std::list <std::string> out;
 
@@ -3197,9 +3180,13 @@ namespace Optizelle{
                 // Create some shortcuts
                 ScalarValuedFunction <Real,XX> const & f=*(fns.f);
                 X_Vector const & x=state.x;
-                X_Vector const & dx=state.dx;
-                X_Vector const & dx_old=state.dx_old;
                 FunctionDiagnostics::t const & f_diag=state.f_diag;
+               
+                // Create some random directions for these tests
+                X_Vector dx(X::init(x));
+                    X::rand(dx); 
+                X_Vector dxx(X::init(x));
+                    X::rand(dxx);
 
                 // Run the diagnostics
                 switch(f_diag) {
@@ -3210,7 +3197,7 @@ namespace Optizelle{
                         Optizelle::Diagnostics::gradientCheck(msg,f,x,dx,"f");
                         Optizelle::Diagnostics::hessianCheck(msg,f,x,dx,"f");
                         Optizelle::Diagnostics::hessianSymmetryCheck(
-                            msg,f,x,dx,dx_old,"f");
+                            msg,f,x,dx,dxx,"f");
                         break;
                     case FunctionDiagnostics::NoDiagnostics:
                         break;
@@ -4289,6 +4276,7 @@ namespace Optizelle{
                 ScalarValuedFunction <Real,XX> const & f=*(fns.f);
                 ScalarValuedFunctionModifications <Real,XX> const &
                     f_mod=*(fns.f_mod);
+                DiagnosticScheme::t const & dscheme=state.dscheme;
                 X_Vector & x=state.x;
                 X_Vector & grad=state.grad;
                 X_Vector & dx=state.dx;
@@ -4306,8 +4294,8 @@ namespace Optizelle{
                 smanip(fns,state,OptimizationLocation::BeginningOfOptimization);
 
                 // Evaluate the objective function and gradient if we've not
-                // done so already
-                if(f_x != f_x) {
+                // done so already and we're not just doing some diagnosics.
+                if(f_x != f_x && dscheme!=DiagnosticScheme::DiagnosticsOnly) {
 
                     // Manipulate the state if required
                     smanip(fns,state,OptimizationLocation
@@ -4341,7 +4329,9 @@ namespace Optizelle{
                 smanip(fns,state,OptimizationLocation::BeforeOptimizationLoop);
 
                 // Primary optimization loop
-                while(opt_stop==StoppingCondition::NotConverged) {
+                while(opt_stop==StoppingCondition::NotConverged &&
+                      dscheme!=DiagnosticScheme::DiagnosticsOnly
+                ) {
 
                     // Manipulate the state if required
                     smanip(fns,state,
@@ -4429,11 +4419,11 @@ namespace Optizelle{
                 State::check(msg,state);
 
                 // Add the output to the state manipulator
-                DiagnosticManipulator <Real,Unconstrained<Real,XX> >
-                    iomanip(smanip,msg);
+                DiagnosticManipulator <Unconstrained<Real,XX> >
+                    dmanip(smanip,msg);
 
                 // Minimize the problem
-                getMin_(msg,iomanip,fns,state);
+                getMin_(msg,dmanip,fns,state);
             }
         };
     };
@@ -5637,9 +5627,14 @@ namespace Optizelle{
                 // Create some shortcuts
                 VectorValuedFunction <Real,XX,YY> const & g=*(fns.g);
                 X_Vector const & x=state.x;
-                X_Vector const & dx=state.dx;
-                Y_Vector const & dy=state.dy;
+                Y_Vector const & y=state.y;
                 FunctionDiagnostics::t const & g_diag = state.g_diag;
+                
+                // Create some random directions for these tests
+                X_Vector dx(X::init(x));
+                    X::rand(dx); 
+                Y_Vector dy(Y::init(y));
+                    Y::rand(dy);
 
                 // Run the diagnostics
                 switch(g_diag) {
@@ -7133,7 +7128,7 @@ namespace Optizelle{
             ){
                 
                 // Adds the output pieces to the state manipulator 
-                DiagnosticManipulator <Real,EqualityConstrained <Real,XX,YY> >
+                DiagnosticManipulator <EqualityConstrained <Real,XX,YY> >
                     dmanip(smanip,msg);
 
                 // Add the composite step pieces to the state manipulator
@@ -7996,9 +7991,14 @@ namespace Optizelle{
                 // Create some shortcuts
                 VectorValuedFunction <Real,XX,ZZ> const & h=*(fns.h);
                 X_Vector const & x=state.x;
-                X_Vector const & dx=state.dx;
-                Z_Vector const & dz=state.dz;
+                Z_Vector const & z=state.z;
                 FunctionDiagnostics::t const & h_diag = state.h_diag;
+                
+                // Create some random directions for these tests
+                X_Vector dx(X::init(x));
+                    X::rand(dx); 
+                Z_Vector dz(Z::init(z));
+                    Z::rand(dz);
 
                 // Run the diagnostics
                 switch(h_diag) {
@@ -8753,7 +8753,7 @@ namespace Optizelle{
                 typename State::t & state
             ){
                 // Adds the output pieces to the state manipulator 
-                DiagnosticManipulator <Real,InequalityConstrained <Real,XX,ZZ> >
+                DiagnosticManipulator <InequalityConstrained <Real,XX,ZZ> >
                     dmanip(smanip,msg);
 
                 // Add the interior point pieces to the state manipulator
@@ -9193,7 +9193,7 @@ namespace Optizelle{
                 typename State::t & state
             ){
                 // Adds the output pieces to the state manipulator 
-                DiagnosticManipulator <Real,Constrained <Real,XX,YY,ZZ> >
+                DiagnosticManipulator <Constrained <Real,XX,YY,ZZ> >
                     dmanip(smanip,msg);
 
                 // Add the interior point pieces to the state manipulator

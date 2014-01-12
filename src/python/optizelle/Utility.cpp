@@ -994,7 +994,7 @@ namespace Optizelle {
                     "Evaluation of the vector space function axpy failed.");
         } 
 
-        // innr <- <x,y> 
+        // innr <- <x,y>.  Internal is y.
         double Vector::innr(Vector & x) { 
             // Call the innr function on x and the internal.  Store in z. 
             PyObjectPtr innr(PyObject_GetAttrString2(
@@ -1011,6 +1011,21 @@ namespace Optizelle {
 
             // Return the result 
             return PyFloat_AsDouble(z.get()); 
+        } 
+
+        // x <- random.  Internal is x. 
+        void Vector::rand() { 
+            // Call the rand function on this vector.
+            PyObjectPtr rand(PyObject_GetAttrString2(
+                vs.get(),"rand","__func__"));
+            PyObjectPtr ret(PyObject_CallObject1(
+                rand.get(),
+                get()));
+
+            // Check errors
+            if(ret.get()==nullptr)
+                msg.error(
+                    "Evaluation of the vector space function rand failed.");
         } 
 
         // Jordan product, z <- x o y.  Internal is z.

@@ -32,6 +32,7 @@ Author: Joseph Young (joe@optimojoe.com)
 #ifndef VSPACES_H
 #define VSPACES_H
 #include <cmath>
+#include <random>
 #include "optizelle/linalg.h"
 #include "optizelle/optizelle.h"
 #include "optizelle/json.h"
@@ -81,6 +82,18 @@ namespace Optizelle {
             #endif
             for(Natural i=0;i<x.size();i++) 
                 x[i]=Real(0.);
+        }
+
+        // x <- random
+        static void rand(Vector & x){
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::uniform_real_distribution<Real> dis(Real(0.),Real(1.));
+            
+            // This is not parallel since it doesn't appear that our generator
+            // works properly when parallel.
+            for(Natural i=0;i<x.size();i++) 
+                x[i]=Real(dis(gen));
         }
 
         // Jordan product, z <- x o y.
@@ -547,6 +560,18 @@ namespace Optizelle {
             #endif
             for(Natural i=0;i<x.data.size();i++) 
                 x.data[i]=Real(0.);
+        }
+
+        // x <- random
+        static void rand(Vector & x){
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::uniform_real_distribution<Real> dis(Real(0.),Real(1.));
+
+            // This is not parallel since it doesn't appear that our generator
+            // works properly when parallel.
+            for(Natural i=0;i<x.data.size();i++) 
+                x.data[i]=Real(dis(gen));
         }
 
         // Jordan product, z <- x o y

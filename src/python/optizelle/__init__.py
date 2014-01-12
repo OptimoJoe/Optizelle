@@ -5,6 +5,7 @@ import inspect
 import numpy
 import math 
 import copy
+import random
 
 __all__ = [
     "Unconstrained",
@@ -491,6 +492,10 @@ class Rm(object):
     def innr(x,y):
         """<- <x,y>"""
         return numpy.inner(x,y) 
+
+    def rand(x):
+        """x <- random"""
+        numpy.copyto(x,map(lambda x:random.uniform(0.,1.),x))
 
     def prod(x,y,z):
         """Jordan product, z <- x o y"""

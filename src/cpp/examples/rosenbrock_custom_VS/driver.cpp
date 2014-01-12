@@ -56,6 +56,14 @@ struct MyHS {
             z+=x[i]*y[i];
         return z;
     }
+
+    // x <- random
+    static void rand(Vector & x){
+        std::mt19937 gen(1);
+        std::uniform_real_distribution<Real> dis(Real(0.),Real(1.));
+        for(Natural i=0;i<x.size();i++) 
+            x[i]=Real(dis(gen));
+    }
 };
 
 // Squares its input
