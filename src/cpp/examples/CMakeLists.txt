@@ -9,7 +9,6 @@ if(ENABLE_CPP_EXAMPLES OR ENABLE_CPP_UNIT)
     add_subdirectory(simple_equality)
     add_subdirectory(nw_sqp_exercise)
     add_subdirectory(simple_constrained)
-    add_subdirectory(preconditioned_nonlinear_cg)
     add_subdirectory(sdpa_sparse_format)
 endif()
 
