@@ -17,6 +17,4 @@ if(ENABLE_CPP_EXAMPLES)
 endif()
 
 # Run some unit tests
-if(ENABLE_CPP_UNIT)
-    add_optizelle_test("*.json" simple_constrained)
-endif()
+add_optizelle_test("*.json" simple_constrained)

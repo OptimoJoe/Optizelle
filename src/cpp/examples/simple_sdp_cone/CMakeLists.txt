@@ -20,6 +20,4 @@ if(ENABLE_CPP_EXAMPLES)
 endif()
 
 # Run some unit tests
-if(ENABLE_CPP_UNIT)
-    add_optizelle_test("*.json" simple_sdp_cone)
-endif()
+add_optizelle_test("*.json" simple_sdp_cone)

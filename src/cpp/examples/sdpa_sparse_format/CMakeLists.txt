@@ -18,6 +18,4 @@ if(ENABLE_CPP_EXAMPLES)
 endif()
 
 # Run some unit tests
-if(ENABLE_CPP_UNIT)
-    add_sdpa_test("*.dat-s" "*.json" sdpa_sparse_format)
-endif()
+add_sdpa_test("*.dat-s" "*.json" sdpa_sparse_format)

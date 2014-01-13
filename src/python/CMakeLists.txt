@@ -9,6 +9,7 @@ if(ENABLE_PYTHON)
     # Make sure we can find the Python libraries and then add the
     # directory with the sources.
     find_package(PythonLibs)
+    find_package(PythonInterp)
     add_subdirectory(optizelle)
     
     # Check if we want to add examples for Python
