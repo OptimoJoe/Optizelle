@@ -6,5 +6,11 @@
       "PH_type" : "UserDefined",
       "iter_max" : 500,
       "eps_dx" : 1e-16
+   },
+   "Naturals" : {
+      "iter" : 136 
+   },
+   "X_Vectors" : {
+      "x" : [ 1.0, 1.0 ] 
    }
 }

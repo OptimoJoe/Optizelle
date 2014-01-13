@@ -14,6 +14,10 @@
       "delta" : 1e50,
       "PH_type" : "UserDefined"
    },
-   "sdp_settings" : {
+   "Naturals" : {
+      "iter" : 28
+   },
+   "X_Vectors" : {
+      "x" : [ 0.3333333333333333, 0.3333333333333333 ]
    }
 }

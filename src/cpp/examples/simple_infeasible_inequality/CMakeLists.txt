@@ -7,12 +7,16 @@ target_link_libraries(simple_infeasible_inequality
     ${BLAS_LIBRARIES})
 
 if(ENABLE_CPP_EXAMPLES)
-    install(FILES simple_infeasible_inequality.cpp
-                  simple_infeasible_inequality.json
+    install(FILES
+        simple_infeasible_inequality.cpp
+        sr1.json 
+        tr_newton.json 
         DESTINATION share/optizelle/cpp/examples/simple_infeasible_inequality)
     install(TARGETS simple_infeasible_inequality
         DESTINATION share/optizelle/cpp/examples/simple_infeasible_inequality)
 endif()
 
 # Run some unit tests
-add_optizelle_test("unit/*.json" simple_infeasible_inequality)
+if(ENABLE_CPP_UNIT)
+    add_optizelle_test("*.json" simple_infeasible_inequality)
+endif()

@@ -9,13 +9,15 @@ target_link_libraries(sdpa_sparse_format
 if(ENABLE_CPP_EXAMPLES)
     install(FILES
         sdpa_sparse_format.cpp
-        sdpa_sparse_format.json
-        sdpa_sparse_format_phase1.json
         lp.dat-s
+        lp_phase1.json
+        lp_phase2.json
         DESTINATION share/optizelle/cpp/examples/sdpa_sparse_format)
     install(TARGETS sdpa_sparse_format
         DESTINATION share/optizelle/cpp/examples/sdpa_sparse_format)
 endif()
 
 # Run some unit tests
-add_sdpa_test("unit/*.dat-s" "unit/*.json" sdpa_sparse_format)
+if(ENABLE_CPP_UNIT)
+    add_sdpa_test("*.dat-s" "*.json" sdpa_sparse_format)
+endif()
