@@ -1,5 +1,5 @@
 project(rosenbrock)
-add_executable(rosenbrock "driver.cpp")
+add_executable(rosenbrock "rosenbrock.cpp")
 target_link_libraries(rosenbrock
     optizelle_static
     ${JSONCPP_LIBRARIES}
@@ -7,7 +7,7 @@ target_link_libraries(rosenbrock
     ${BLAS_LIBRARIES})
 
 if(ENABLE_CPP_EXAMPLES)
-    install(FILES driver.cpp rosenbrock.json
+    install(FILES rosenbrock.cpp rosenbrock.json
         DESTINATION share/optizelle/cpp/examples/rosenbrock)
     install(TARGETS rosenbrock 
         DESTINATION share/optizelle/cpp/examples/rosenbrock)

@@ -1,5 +1,5 @@
 project(preconditioned_nonlinear_cg)
-add_executable(preconditioned_nonlinear_cg "driver.cpp")
+add_executable(preconditioned_nonlinear_cg "preconditioned_nonlinear_cg.cpp")
 target_link_libraries(preconditioned_nonlinear_cg
     optizelle_static
     ${JSONCPP_LIBRARIES}
@@ -7,7 +7,8 @@ target_link_libraries(preconditioned_nonlinear_cg
     ${BLAS_LIBRARIES})
 
 if(ENABLE_CPP_EXAMPLES)
-    install(FILES driver.cpp preconditioned_nonlinear_cg.json
+    install(FILES preconditioned_nonlinear_cg.cpp
+                  preconditioned_nonlinear_cg.json
         DESTINATION share/optizelle/cpp/examples/preconditioned_nonlinear_cg)
     install(TARGETS preconditioned_nonlinear_cg
         DESTINATION share/optizelle/cpp/examples/preconditioned_nonlinear_cg)

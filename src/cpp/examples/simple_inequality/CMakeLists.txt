@@ -1,5 +1,5 @@
 project(simple_inequality)
-add_executable(simple_inequality "driver.cpp")
+add_executable(simple_inequality "simple_inequality.cpp")
 target_link_libraries(simple_inequality
     optizelle_static
     ${JSONCPP_LIBRARIES}
@@ -7,7 +7,7 @@ target_link_libraries(simple_inequality
     ${BLAS_LIBRARIES})
 
 if(ENABLE_CPP_EXAMPLES)
-    install(FILES driver.cpp simple_inequality.json
+    install(FILES simple_inequality.cpp simple_inequality.json
         DESTINATION share/optizelle/cpp/examples/simple_inequality)
     install(TARGETS simple_inequality
         DESTINATION share/optizelle/cpp/examples/simple_inequality)

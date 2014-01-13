@@ -1,5 +1,5 @@
 project(simple_equality)
-add_executable(simple_equality "driver.cpp")
+add_executable(simple_equality "simple_equality.cpp")
 target_link_libraries(simple_equality
     optizelle_static
     ${JSONCPP_LIBRARIES}
@@ -7,7 +7,7 @@ target_link_libraries(simple_equality
     ${BLAS_LIBRARIES})
 
 if(ENABLE_CPP_EXAMPLES)
-    install(FILES driver.cpp simple_equality.json
+    install(FILES simple_equality.cpp simple_equality.json
         DESTINATION share/optizelle/cpp/examples/simple_equality)
     install(TARGETS simple_equality
         DESTINATION share/optizelle/cpp/examples/simple_equality)

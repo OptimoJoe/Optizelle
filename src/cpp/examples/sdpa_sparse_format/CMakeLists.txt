@@ -1,5 +1,5 @@
 project(sdpa_sparse_format)
-add_executable(sdpa_sparse_format "driver.cpp")
+add_executable(sdpa_sparse_format "sdpa_sparse_format.cpp")
 target_link_libraries(sdpa_sparse_format
     optizelle_static
     ${JSONCPP_LIBRARIES}
@@ -8,7 +8,7 @@ target_link_libraries(sdpa_sparse_format
 
 if(ENABLE_CPP_EXAMPLES)
     install(FILES
-        driver.cpp
+        sdpa_sparse_format.cpp
         sdpa_sparse_format.json
         sdpa_sparse_format_phase1.json
         lp.dat-s

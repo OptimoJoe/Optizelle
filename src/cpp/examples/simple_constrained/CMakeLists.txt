@@ -1,5 +1,5 @@
 project(simple_constrained)
-add_executable(simple_constrained "driver.cpp")
+add_executable(simple_constrained "simple_constrained.cpp")
 target_link_libraries(simple_constrained
     optizelle_static
     ${JSONCPP_LIBRARIES}
@@ -7,7 +7,7 @@ target_link_libraries(simple_constrained
     ${BLAS_LIBRARIES})
 
 if(ENABLE_CPP_EXAMPLES)
-    install(FILES driver.cpp simple_constrained.json
+    install(FILES simple_constrained.cpp simple_constrained.json
         DESTINATION share/optizelle/cpp/examples/simple_constrained)
     install(TARGETS simple_constrained
         DESTINATION share/optizelle/cpp/examples/simple_constrained)
