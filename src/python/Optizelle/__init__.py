@@ -44,7 +44,14 @@ class Exception(Exception):
     """General purpose exception for all of Optizelle's errors"""
     pass
 
-class KrylovStop(object):
+class EnumeratedType:
+    """A generic enumerated type"""
+    def to_string(self,i):
+        """Converts the enumerated type into a string"""
+        return filter(lambda (name,value):value==i,
+            self.__class__.__dict__.items())[0][0]
+        
+class KrylovStop(EnumeratedType):
     """Reasons we stop the Krylov method"""
     NegativeCurvature, \
     RelativeErrorSmall, \
@@ -54,14 +61,14 @@ class KrylovStop(object):
     InvalidTrustRegionCenter \
      = range(6)
 
-class AlgorithmClass(object):
+class AlgorithmClass(EnumeratedType):
     """Which algorithm class do we use"""
     TrustRegion, \
     LineSearch, \
     UserDefined \
      = range(3)
 
-class StoppingCondition(object):
+class StoppingCondition(EnumeratedType):
     """Reasons why we stop the algorithm"""
     NotConverged, \
     RelativeGradientSmall, \
@@ -71,7 +78,7 @@ class StoppingCondition(object):
     UserDefined \
     = range(6)
 
-class Operators(object):
+class Operators(EnumeratedType):
     """Various operators for both Hessian approximations and preconditioners"""
     Identity, \
     ScaledIdentity, \
@@ -82,7 +89,7 @@ class Operators(object):
     UserDefined \
     = range(7)
     
-class LineSearchDirection(object):
+class LineSearchDirection(EnumeratedType):
     """Different kinds of search directions"""
     SteepestDescent, \
     FletcherReeves, \
@@ -92,7 +99,7 @@ class LineSearchDirection(object):
     NewtonCG \
     = range(6)
    
-class LineSearchKind(object):
+class LineSearchKind(EnumeratedType):
     """Different sorts of line searches"""
     Brents, \
     GoldenSection, \
@@ -101,7 +108,7 @@ class LineSearchKind(object):
     TwoPointB \
     = range(5)
     
-class OptimizationLocation(object):
+class OptimizationLocation(EnumeratedType):
     """Different points in the optimization algorithm"""
     BeginningOfOptimization, \
     BeforeInitialFuncAndGrad, \
@@ -125,7 +132,7 @@ class OptimizationLocation(object):
     EndOfOptimization \
     = range(20)
 
-class ProblemClass(object):
+class ProblemClass(EnumeratedType):
     """Different problem classes"""
     Unconstrained, \
     EqualityConstrained, \
@@ -133,34 +140,34 @@ class ProblemClass(object):
     Constrained \
     = range(4)
     
-class KrylovSolverTruncated(object):
+class KrylovSolverTruncated(EnumeratedType):
     """Different truncated Krylov solvers"""
     ConjugateDirection, \
     MINRES \
     = range(2)
 
-class InteriorPointMethod(object):
+class InteriorPointMethod(EnumeratedType):
     """Different kinds of interior point methods"""
     PrimalDual, \
     PrimalDualLinked, \
     LogBarrier \
     = range(3)
     
-class CentralityStrategy(object):
+class CentralityStrategy(EnumeratedType):
     """Different schemes for adjusting the interior point centrality"""
     Constant, \
     StairStep, \
     PredictorCorrector \
     = range(3)
 
-class FunctionDiagnostics(object):
+class FunctionDiagnostics(EnumeratedType):
     """Different function diagnostics on the optimization functions""" 
     NoDiagnostics, \
     FirstOrder, \
     SecondOrder \
     = range(3)
 
-class DiagnosticScheme(object):
+class DiagnosticScheme(EnumeratedType):
     """When and how often we compute our intrusive diagnostics"""
     Never, \
     DiagnosticsOnly, \

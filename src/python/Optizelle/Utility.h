@@ -762,8 +762,8 @@ namespace Optizelle {
                 // Check errors
                 if(ret.get()==nullptr) {
                     std::stringstream ss;
-                    ss << "Evaluation of the eval function of the operator "
-                        << name << "failed.";
+                    ss << "Evaluation of the eval function in the operator "
+                        << name << " failed.";
                     msg.error(ss.str());
                 }
             }

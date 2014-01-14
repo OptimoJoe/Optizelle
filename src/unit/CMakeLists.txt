@@ -4,6 +4,10 @@ include_directories(utility)
 # Check if we want to build the unit tests
 mark_as_advanced(CLEAR ENABLE_CPP_UNIT)
 set(ENABLE_CPP_UNIT OFF CACHE BOOL "Enable unit tests for C++?")
+if(ENABLE_PYTHON)
+    mark_as_advanced(CLEAR ENABLE_PYTHON_UNIT)
+    set(ENABLE_PYTHON_UNIT OFF CACHE BOOL "Enable unit tests for Python?")
+endif()
 
 # Basic unit tests and utility functions
 add_subdirectory(capture_and_release)

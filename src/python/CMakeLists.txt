@@ -10,7 +10,7 @@ if(ENABLE_PYTHON)
     # directory with the sources.
     find_package(PythonLibs)
     find_package(PythonInterp)
-    add_subdirectory(optizelle)
+    add_subdirectory(Optizelle)
     
     # Check if we want to add examples for Python
     set(ENABLE_PYTHON_EXAMPLES OFF CACHE BOOL "Enable examples for Python?")

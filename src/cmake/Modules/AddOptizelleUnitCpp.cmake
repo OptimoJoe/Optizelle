@@ -16,7 +16,7 @@ macro(add_optizelle_unit_cpp name)
             ${LAPACK_LIBRARIES}
             ${BLAS_LIBRARIES})
             
-        add_test("Execution_of_${name}" ${name})
+        add_test("Execution_of_cpp_${name}" ${name})
     endif()
 
 endmacro()

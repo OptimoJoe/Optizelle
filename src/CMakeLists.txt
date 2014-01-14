@@ -4,8 +4,10 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
     
 # Add some useful macros for examples and unit testing 
 include(AddOptizelleTestCpp)
+include(AddOptizelleTestPython)
 include(AddOptizelleSDPACpp)
 include(AddOptizelleExampleCpp)
+include(AddOptizelleExamplePython)
 include(AddOptizelleExampleSupporting)
 include(AddOptizelleUnitCpp)
 
@@ -49,6 +51,7 @@ else()
     set(ENABLE_PYTHON OFF CACHE BOOL "Enable the Python build?" FORCE)
     set(ENABLE_PYTHON_EXAMPLES OFF CACHE BOOL "Enable examples for Python?"
         FORCE)
+    set(ENABLE_PYTHON_UNIT OFF CACHE BOOL "Enable unit tests for Python?" FORCE)
     set(ENABLE_MATLAB OFF CACHE BOOL "Enable the MATLAB build?" FORCE)
     set(ENABLE_MATLAB_EXAMPLES OFF CACHE BOOL "Enable examples for MATLAB?"
         FORCE)

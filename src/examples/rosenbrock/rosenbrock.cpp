@@ -1,11 +1,5 @@
-// This example minimizes the Rosenbrock function using the sample
-// vector spaces and parsing routines provided by Optizelle.  In order
-// to modify the parameters, look at the file rosenbrock.param.  Only the
-// Optizelle section is run, so copy in different parameter selections
-// into that header in order to experiment.
-// For reference, the optimal solution to the Rosenbrock function
-// is (1,1).
-
+// In this example, we setup and minimize the Rosenbrock function.
+//
 #include <vector>
 #include <iostream>
 #include <string>
@@ -55,7 +49,9 @@ struct Rosen
 };
 
 // Define a perfect preconditioner for the Hessian
-struct RosenHInv : public Optizelle::Operator <double,Optizelle::Rm,Optizelle::Rm> {
+struct RosenHInv :
+    public Optizelle::Operator <double,Optizelle::Rm,Optizelle::Rm>
+{
 public:
     typedef Optizelle::Rm <double> X;
     typedef X::Vector X_Vector;

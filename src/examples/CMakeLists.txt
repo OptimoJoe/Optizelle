@@ -1,6 +1,10 @@
-# Check if we want to build the C++ examples.  
+# Check if we want to build any examples 
 mark_as_advanced(CLEAR ENABLE_CPP_EXAMPLES)
 set(ENABLE_CPP_EXAMPLES OFF CACHE BOOL "Enable examples for C++?")
+if(ENABLE_PYTHON)
+    mark_as_advanced(CLEAR ENABLE_PYTHON_EXAMPLES)
+    set(ENABLE_PYTHON_EXAMPLES OFF CACHE BOOL "Enable examples for Python?")
+endif()
 
 # Add all examples or unit tests
 add_subdirectory(diagnostic_checks)

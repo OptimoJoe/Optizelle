@@ -1,8 +1,8 @@
 # Sets up and runs Optizelle unit tests 
-macro(add_optizelle_test_cpp files executable)
+macro(add_optizelle_test_python files executable)
 
     # Make sure that tests are enabled
-    if(ENABLE_CPP_UNIT)
+    if(ENABLE_PYTHON_UNIT)
 
         # Grab all of the different .json test files
         file(GLOB_RECURSE units ${CMAKE_CURRENT_SOURCE_DIR} ${files})
@@ -22,10 +22,14 @@ macro(add_optizelle_test_cpp files executable)
             list(GET units ${index} unit)
 
             # Run the optimization
-            add_test("Execution_of_cpp_${unit}" ${executable} ${unit})
+            add_test( "Execution_of_python_${unit}" ${PYTHON_EXECUTABLE}
+                    "${CMAKE_CURRENT_SOURCE_DIR}/${executable}.py" ${unit})
+            set_tests_properties("Execution_of_python_${unit}"
+                PROPERTIES ENVIRONMENT
+                    "PYTHONPATH=${CMAKE_BINARY_DIR}/src/python")
 
             # Diff the result of the optimization against the known solution
-            add_test("Solution_to_cpp_${unit}"
+            add_test("Solution_to_python_${unit}"
                 "${CMAKE_BINARY_DIR}/src/cpp/unit/utility/diff_restart"
                 ${unit} solution.json)
         endforeach()
