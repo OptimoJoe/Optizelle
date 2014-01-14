@@ -1,22 +1,19 @@
 # Enable C++
 enable_language(CXX)
 
-# Set common includes
-include_directories(${OPTIZELLE_INCLUDE_DIRS})
-include_directories(${JSONCPP_INCLUDE_DIRS})
-
-# Build the Optizelle library 
-add_subdirectory(optizelle)
-
-# Check if we want to build the unit tests
-mark_as_advanced(CLEAR ENABLE_CPP_UNIT)
-set(ENABLE_CPP_UNIT OFF CACHE BOOL "Enable unit tests for C++?")
-if(ENABLE_CPP_UNIT)
-    # Basic unit tests and utility functions
-    add_subdirectory(unit)
+# Figure out if we should look for OpenMP
+mark_as_advanced(CLEAR ENABLE_OPENMP)
+set(ENABLE_OPENMP OFF CACHE BOOL "Enable OpenMP?")
+if(ENABLE_OPENMP)
+    # If we enable OpenMP, go ahead and make it required and find the
+    # library.
+    find_package(OpenMP REQUIRED)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}" PARENT_SCOPE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}" PARENT_SCOPE)
 endif()
 
-# Check if we want to build the C++ examples.  
-mark_as_advanced(CLEAR ENABLE_CPP_EXAMPLES)
-set(ENABLE_CPP_EXAMPLES OFF CACHE BOOL "Enable examples for C++?")
-add_subdirectory(examples)
+# Set the Optizelle include directories
+set(OPTIZELLE_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
+
+# Compile the Optizelle core 
+add_subdirectory(optizelle)

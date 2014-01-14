@@ -1,0 +1,17 @@
+# Check if we want to build the C++ examples.  
+mark_as_advanced(CLEAR ENABLE_CPP_EXAMPLES)
+set(ENABLE_CPP_EXAMPLES OFF CACHE BOOL "Enable examples for C++?")
+
+# Add all examples or unit tests
+add_subdirectory(diagnostic_checks)
+add_subdirectory(nw_sqp_exercise)
+add_subdirectory(quadratic)
+add_subdirectory(rosenbrock)
+add_subdirectory(rosenbrock_custom_VS)
+add_subdirectory(simple_inequality)
+add_subdirectory(simple_infeasible_inequality)
+add_subdirectory(simple_quadratic_cone)
+add_subdirectory(simple_sdp_cone)
+add_subdirectory(simple_equality)
+add_subdirectory(simple_constrained)
+add_subdirectory(sdpa_sparse_format)

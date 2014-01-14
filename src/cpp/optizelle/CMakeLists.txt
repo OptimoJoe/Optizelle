@@ -6,6 +6,10 @@ include(FortranCInterface)
 FortranCInterface_HEADER(FortranCInterface.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
+# Grab the rest of the include files
+include_directories(${OPTIZELLE_INCLUDE_DIRS})
+include_directories(${JSONCPP_INCLUDE_DIRS})
+
 # Turn on position independent code.  This simplifies building both static
 # and shared libraries.
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)

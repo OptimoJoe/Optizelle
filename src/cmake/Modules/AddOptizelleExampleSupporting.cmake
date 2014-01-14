@@ -9,7 +9,7 @@ macro(add_optizelle_example_supporting name)
 
         # Install the example files to the correct location
         install(FILES ${files}
-            DESTINATION share/optizelle/cpp/examples/${name})
+            DESTINATION share/optizelle/examples/${name})
     endif()
 
 endmacro()

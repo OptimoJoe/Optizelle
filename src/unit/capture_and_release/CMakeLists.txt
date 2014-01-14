@@ -1,0 +1,6 @@
+project(capture_and_release)
+
+add_optizelle_unit_cpp(unconstrained)
+add_optizelle_unit_cpp(equality_constrained)
+add_optizelle_unit_cpp(inequality_constrained)
+add_optizelle_unit_cpp(constrained)
