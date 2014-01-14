@@ -1,20 +1,12 @@
 project(nw_sqp_exercise)
-add_executable(nw_sqp_exercise "nw_sqp_exercise.cpp")
-target_link_libraries(nw_sqp_exercise
-    optizelle_static
-    ${JSONCPP_LIBRARIES}
-    ${LAPACK_LIBRARIES}
-    ${BLAS_LIBRARIES})
 
-if(ENABLE_CPP_EXAMPLES)
-    install(FILES
-        nw_sqp_exercise.cpp
-        sr1.json
-        tr_newton.json
-        DESTINATION share/optizelle/cpp/examples/nw_sqp_exercise)
-    install(TARGETS nw_sqp_exercise
-        DESTINATION share/optizelle/cpp/examples/nw_sqp_exercise)
-endif()
+# Compile and install the example
+add_optizelle_example_cpp(${PROJECT_NAME})
 
-# Run some unit tests
-add_optizelle_test("*.json" nw_sqp_exercise)
+# Installs the supporting files 
+add_optizelle_example_supporting(${PROJECT_NAME}
+    sr1.json
+    tr_newton.json)
+
+# Add some unit tests
+add_optizelle_test_cpp("*.json" ${PROJECT_NAME})

@@ -1,20 +1,12 @@
 project(simple_constrained)
-add_executable(simple_constrained "simple_constrained.cpp")
-target_link_libraries(simple_constrained
-    optizelle_static
-    ${JSONCPP_LIBRARIES}
-    ${LAPACK_LIBRARIES}
-    ${BLAS_LIBRARIES})
 
-if(ENABLE_CPP_EXAMPLES)
-    install(FILES
-        simple_constrained.cpp
-        tr_newton.json
-        sr1.json
-        DESTINATION share/optizelle/cpp/examples/simple_constrained)
-    install(TARGETS simple_constrained
-        DESTINATION share/optizelle/cpp/examples/simple_constrained)
-endif()
+# Compile and install the example
+add_optizelle_example_cpp(${PROJECT_NAME})
 
-# Run some unit tests
-add_optizelle_test("*.json" simple_constrained)
+# Installs the supporting files 
+add_optizelle_example_supporting(${PROJECT_NAME}
+    tr_newton.json
+    sr1.json)
+
+# Add some unit tests
+add_optizelle_test_cpp("*.json" ${PROJECT_NAME})

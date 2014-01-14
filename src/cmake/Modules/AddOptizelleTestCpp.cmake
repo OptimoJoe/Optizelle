@@ -1,5 +1,5 @@
-# Sets up and runs tests on standardard Optizelle unit tests 
-macro(add_optizelle_test files executable)
+# Sets up and runs Optizelle unit tests 
+macro(add_optizelle_test_cpp files executable)
 
     # Make sure that tests are enabled
     if(ENABLE_CPP_UNIT)
@@ -31,4 +31,4 @@ macro(add_optizelle_test files executable)
         endforeach()
     endif()
 
-endmacro(add_optizelle_test)
+endmacro()

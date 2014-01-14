@@ -1,5 +1,5 @@
 # Sets up and runs tests on sparse SDPA formatted files.
-macro(add_sdpa_test dats params executable)
+macro(add_optizelle_sdpa_cpp dats params executable)
 
     # Make sure that tests are enabled
     if(ENABLE_CPP_UNIT)
@@ -37,4 +37,4 @@ macro(add_sdpa_test dats params executable)
                 ${phase2} solution.json)
         endforeach()
     endif()
-endmacro(add_sdpa_test)
+endmacro()

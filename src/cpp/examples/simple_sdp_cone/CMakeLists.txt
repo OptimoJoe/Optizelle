@@ -1,23 +1,15 @@
 project(simple_sdp_cone)
-add_executable(simple_sdp_cone "simple_sdp_cone.cpp")
-target_link_libraries(simple_sdp_cone
-    optizelle_static
-    ${JSONCPP_LIBRARIES}
-    ${LAPACK_LIBRARIES}
-    ${BLAS_LIBRARIES})
 
-if(ENABLE_CPP_EXAMPLES)
-    install(FILES
-        simple_sdp_cone.cpp
-        newton_cg.json
-        newton_cg_backtracking.json
-        sr1.json
-        tr_newton.json
-        tr_newton_predictor_corrector.json
-        DESTINATION share/optizelle/cpp/examples/simple_sdp_cone)
-    install(TARGETS simple_sdp_cone
-        DESTINATION share/optizelle/cpp/examples/simple_sdp_cone)
-endif()
+# Compile and install the example
+add_optizelle_example_cpp(${PROJECT_NAME})
 
-# Run some unit tests
-add_optizelle_test("*.json" simple_sdp_cone)
+# Installs the supporting files 
+add_optizelle_example_supporting(${PROJECT_NAME}
+    newton_cg.json
+    newton_cg_backtracking.json
+    sr1.json
+    tr_newton.json
+    tr_newton_predictor_corrector.json)
+
+# Add some unit tests
+add_optizelle_test_cpp("*.json" ${PROJECT_NAME})
