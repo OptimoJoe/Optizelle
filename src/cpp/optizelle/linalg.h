@@ -43,6 +43,28 @@ Author: Joseph Young (joe@optimojoe.com)
 #include <cstdlib>
 #include <random>
 
+// Putting this into a class prevents its construction.  Essentially, we use
+// this trick in order to create modules like in ML.  It also allows us to
+// created templated namespaces.
+#define NO_CONSTRUCTORS(Name) \
+    Name() = delete; \
+    Name(Name const &) = delete; \
+    Name & operator = (Name const &) = delete; \
+    ~Name() = delete;
+
+// Disallows copying or assigning.  This is useful for things like the
+// StateManipulator or FunctionModification classes.
+#define NO_COPY_ASSIGNMENT(Name) \
+    Name(Name const &) = delete; \
+    Name & operator = (Name const &) = delete;
+
+// Disallows copying, assigning, or default construction.  This is useful for
+// for things like the State::t types.
+#define NO_DEFAULT_COPY_ASSIGNMENT(Name) \
+    Name() = delete; \
+    Name(Name const &) = delete; \
+    Name& operator = (Name const &) = delete;
+
 namespace Optizelle {
     typedef size_t Natural;
     typedef ptrdiff_t Integer;
@@ -594,7 +616,7 @@ namespace Optizelle {
         typedef typename Y <Real>::Vector Y_Vector;
 
         // y = A(x)
-        virtual void operator () (X_Vector const & x,Y_Vector &y) const = 0;
+        virtual void eval(X_Vector const & x,Y_Vector &y) const = 0;
 
         // Allow a derived class to deallocate memory 
         virtual ~Operator() {}
@@ -1228,7 +1250,7 @@ namespace Optizelle {
 
         // Verify that ||C(x-x_cntr)|| <= delta.  This insures that our initial
         // iterate lies inside the trust-region.  If it does not, we exit.
-        C(x_m_xcntr,x_tmp1);
+        C.eval(x_m_xcntr,x_tmp1);
         Real norm_C_x_m_xcntr = sqrt(X::innr(x_tmp1,x_tmp1));
         if(norm_C_x_m_xcntr > delta) {
             X::zero(x_cp);
@@ -1239,7 +1261,7 @@ namespace Optizelle {
 
         // Find the Br application.  We use this to find the B-norm of the
         // residual.  Then, we save the original B-norm of the residual.
-        B(r,Br);
+        B.eval(r,Br);
         norm_Br0 = sqrt(X::innr(Br,Br));
         norm_Br = norm_Br0; 
 
@@ -1259,7 +1281,7 @@ namespace Optizelle {
             }
 
             // Find the ABp application
-            A(Bp,ABp);
+            A.eval(Bp,ABp);
 
             // Orthogonalize this direction to the previous directions
             Aorthogonalize <Real,XX> (Bps,ABps,Bp,ABp); 
@@ -1380,7 +1402,7 @@ namespace Optizelle {
                 X::axpy(alpha,Bp,x_tmp1);
 
                 // x_tmp2 <- C( (x-x_cntr) + alpha Bp)
-                C(x_tmp1,x_tmp2);
+                C.eval(x_tmp1,x_tmp2);
 
                 // norm_C_x_m_xcntr_p_a_Bp <- || C( (x-x_cntr) + alpha Bp) ||
                 norm_C_x_m_xcntr_p_a_Bp = sqrt(X::innr(x_tmp2,x_tmp2));
@@ -1431,10 +1453,10 @@ namespace Optizelle {
                     //     + (<C(x-x_cntr),C(x-x_cntr)>-delta^2).
 
                     // x_tmp1 <- C(Bp)
-                    C(Bp,x_tmp1);
+                    C.eval(Bp,x_tmp1);
 
                     // x_tmp2 <- C(x-x_cntr)
-                    C(x_m_xcntr,x_tmp2);
+                    C.eval(x_m_xcntr,x_tmp2);
 
                     // Solve the quadratic equation for the positive root 
                     Real aa = X::innr(x_tmp1,x_tmp1);
@@ -1451,7 +1473,7 @@ namespace Optizelle {
                     X::axpy(sigma,Bp,x);
                     X::axpy(sigma,Bp,x_m_xcntr);
                     X::axpy(sigma,ABp,r);
-                    B(r,Br);
+                    B.eval(r,Br);
                     norm_Br=sqrt(X::innr(Br,Br));
 
                 // In the case that we're ignoring the trust-region, we
@@ -1460,7 +1482,7 @@ namespace Optizelle {
                     X::axpy(Real(1.),Bp,x);
                     X::axpy(Real(1.),Bp,x_m_xcntr);
                     X::axpy(Real(1.),ABp,r);
-                    B(r,Br);
+                    B.eval(r,Br);
                     norm_Br=sqrt(X::innr(Br,Br));
                 }
 
@@ -1489,7 +1511,7 @@ namespace Optizelle {
 
             // Find the new residual and projected residual
             X::axpy(alpha,ABp,r);
-            B(r,Br);
+            B.eval(r,Br);
             norm_Br = sqrt(X::innr(Br,Br));
 
             // Find the projected steepest descent direction
@@ -1744,7 +1766,7 @@ namespace Optizelle {
         }
 
         // Right recondition the above linear combination
-        Mr_inv(V_y,dx);
+        Mr_inv.eval(V_y,dx);
     }
 
     // Resets the GMRES method.  This does a number of things
@@ -1777,7 +1799,7 @@ namespace Optizelle {
 
         // Apply the left preconditioner to the true residual.  This
         // completes #1
-        Ml_inv(rtrue,r);
+        Ml_inv.eval(rtrue,r);
 
         // Store the norm of the preconditioned residual.  This completes #2.
         norm_r = sqrt(X::innr(r,r));
@@ -1800,6 +1822,7 @@ namespace Optizelle {
         // Clear out the Givens rotations.  This completes #6.
         Qts.clear();
     }
+
     // A function that has free reign to manipulate and change the stopping
     // tolerance for GMRES.  This should be used cautiously.
     template <
@@ -1807,16 +1830,43 @@ namespace Optizelle {
         template <typename> class XX
     >
     struct GMRESManipulator {
+        // Disallow constructors
+        NO_COPY_ASSIGNMENT(GMRESManipulator);
+       
+        // Give an empty default constructor
+        GMRESManipulator() {}
+
         // Application
-        virtual void operator () (
+        virtual void eval(
             Natural const & iter,
             typename XX <Real>::Vector const & x,
             typename XX <Real>::Vector const & b,
             Real & eps
-        ) const {}
+        ) const = 0; 
 
         // Allow the derived class to deallocate memory
         virtual ~GMRESManipulator() {}
+    };
+    
+    // An empty manipulator that does nothing 
+    template <
+        typename Real,
+        template <typename> class XX
+    >
+    struct EmptyGMRESManipulator : public GMRESManipulator <Real,XX> {
+        // Disallow constructors
+        NO_COPY_ASSIGNMENT(EmptyGMRESManipulator);
+       
+        // Give an empty default constructor
+        EmptyGMRESManipulator() {}
+
+        // Application
+        virtual void eval(
+            Natural const & iter,
+            typename XX <Real>::Vector const & x,
+            typename XX <Real>::Vector const & b,
+            Real & eps
+        ) const { } 
     };
 
     // Computes the GMRES algorithm in order to solve A(x)=b.
@@ -1909,7 +1959,7 @@ namespace Optizelle {
         Natural i(0);
 
         // Find the true residual and its norm
-        A(x,rtrue);
+        A.eval(x,rtrue);
         X::scal(Real(-1.),rtrue);
         X::axpy(Real(1.),b,rtrue);
         norm_rtrue = sqrt(X::innr(rtrue,rtrue));
@@ -1919,7 +1969,7 @@ namespace Optizelle {
             Qt_e1,Qts);
             
         // If for some bizarre reason, we're already optimal, don't do any work 
-        gmanip(0,x,b,eps);
+        gmanip.eval(0,x,b,eps);
         if(norm_rtrue <= eps) iter_max=0;	
 
         // Iterate until the maximum iteration
@@ -1936,9 +1986,9 @@ namespace Optizelle {
             if(i == 0) i = rst_freq;
 
             // Find the next Krylov vector
-            Mr_inv(v,w);
-            A(w,A_Mrinv_v);
-            Ml_inv(A_Mrinv_v,w);
+            Mr_inv.eval(v,w);
+            A.eval(w,A_Mrinv_v);
+            Ml_inv.eval(A_Mrinv_v,w);
 
             // Orthogonalize this Krylov vector with respect to the rest
             orthogonalize <Real,XX> (vs,w,&(R[(i-1)*i/2]));
@@ -1987,13 +2037,13 @@ namespace Optizelle {
             // Find the current iterate, its residual, the residual's norm
             X::copy(x,x_p_dx);
             X::axpy(Real(1.),dx,x_p_dx);
-            A(x_p_dx,rtrue);
+            A.eval(x_p_dx,rtrue);
             X::scal(Real(-1.),rtrue);
             X::axpy(Real(1.),b,rtrue);
             norm_rtrue = sqrt(X::innr(rtrue,rtrue));
 
             // Adjust the stopping tolerance
-            gmanip(i,x_p_dx,b,eps);
+            gmanip.eval(i,x_p_dx,b,eps);
 
             // Determine if we should exit since the norm of the true residual
             // is small
@@ -2143,7 +2193,7 @@ namespace Optizelle {
         std::vector <Real> Qt_e1(2);
 
         // Find the preconditioned residual
-        B(b,x_tmp1);
+        B.eval(b,x_tmp1);
         Bnorm_r0 = sqrt(X::innr(x_tmp1,b));
         Bnorm_r = Bnorm_r0;
 
@@ -2156,7 +2206,7 @@ namespace Optizelle {
         X::copy(x_tmp1,vs.back());
         
         Bvs.emplace_back(std::move(X::init(x_tmp1)));
-        B(x_tmp1,Bvs.back());
+        B.eval(x_tmp1,Bvs.back());
 
         // Find the initial right hand side for the vector Q' norm(w1) e1.  
         Qt_e1[0] = Bnorm_r;
@@ -2169,7 +2219,7 @@ namespace Optizelle {
 
         // Verify that ||C(x-x_cntr)|| <= delta.  This insures that our initial
         // iterate lies inside the trust-region.  If it does not, we exit.
-        C(x_m_xcntr,x_tmp1);
+        C.eval(x_m_xcntr,x_tmp1);
         Real norm_C_x_m_xcntr = sqrt(X::innr(x_tmp1,x_tmp1));
         if(norm_C_x_m_xcntr > delta) {
             X::zero(x_cp);
@@ -2184,9 +2234,9 @@ namespace Optizelle {
             // Find the next Krylov vector,
             // x_tmp1 <- ABv_last,
             // x_tmp2 <- B(ABv_last)
-            A(Bvs.back(),ABv_last);
+            A.eval(Bvs.back(),ABv_last);
             X::copy(ABv_last,x_tmp1);
-            B(ABv_last,x_tmp2);
+            B.eval(ABv_last,x_tmp2);
             
             // Orthogonalize this Krylov vector with respect to the rest
             Borthogonalize <Real,XX> (vs,Bvs,x_tmp1,x_tmp2,R); 
@@ -2285,7 +2335,7 @@ namespace Optizelle {
                 // Find || C( (x-x_cntr) + dx) ||
                 X::copy(x_m_xcntr,x_tmp1);
                 X::axpy(Real(1.),dx,x_tmp1);
-                C(x_tmp1,x_tmp2);
+                C.eval(x_tmp1,x_tmp2);
                 norm_C_x_m_xcntr = sqrt(X::innr(x_tmp2,x_tmp2));
                 
             // Sometimes the second Krylov vector lies in the nullspace
@@ -2297,7 +2347,7 @@ namespace Optizelle {
             // Then, we set dx=alpha B v1.
             } else if(iter==1){
                 // x_tmp1 <- B A B v1
-                B(ABv_last,x_tmp1);
+                B.eval(ABv_last,x_tmp1);
 
                 // Solve for alpha
                 Real Bnorm_ABv1_2 = X::innr(x_tmp1,ABv_last);
@@ -2325,7 +2375,7 @@ namespace Optizelle {
                 // Find || C( (x-x_cntr) + dx) ||
                 X::copy(x_m_xcntr,x_tmp1);
                 X::axpy(Real(1.),dx,x_tmp1);
-                C(x_tmp1,x_tmp2);
+                C.eval(x_tmp1,x_tmp2);
                 norm_C_x_m_xcntr = sqrt(X::innr(x_tmp2,x_tmp2));
             
                 // Determine if we should exit since the norm of the
@@ -2377,10 +2427,10 @@ namespace Optizelle {
                     //     + (< C(x-x_cntr),C(x-x_cntr) > - delta^2).
 
                     // x_tmp1 <- C(dx)
-                    C(dx,x_tmp1);
+                    C.eval(dx,x_tmp1);
 
                     // x_tmp2 <- C(x-x_cntr);
-                    C(x_m_xcntr,x_tmp2);
+                    C.eval(x_m_xcntr,x_tmp2);
 
                     // Solve the quadratic equation for the positive root 
                     Real aa = X::innr(x_tmp1,x_tmp1);

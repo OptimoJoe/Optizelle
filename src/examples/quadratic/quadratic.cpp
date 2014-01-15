@@ -22,7 +22,7 @@ struct Quad : public Optizelle::ScalarValuedFunction <double,Optizelle::Rm> {
     typedef Optizelle::Rm <double> X;
 
     // Evaluation of the quadratic function
-    double operator () (const X::Vector& x) const {
+    double eval(const X::Vector& x) const {
         return sq(x[0]-1.)+sq(2*x[1]-2.)+sq(3*x[2]-3.);
     }
 
@@ -57,7 +57,7 @@ private:
     X_Vector& x;
 public:
     QuadHInv(X::Vector& x_) : x(x_) {}
-    void operator () (const X_Vector& dx,X_Vector &result) const {
+    void eval(const X_Vector& dx,X_Vector &result) const {
         result[0]=dx[0]/2.;
         result[1]=dx[1]/8.;
         result[2]=dx[2];

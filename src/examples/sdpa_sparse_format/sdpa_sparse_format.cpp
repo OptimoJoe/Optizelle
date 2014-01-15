@@ -336,7 +336,7 @@ public:
     SDPObj(SparseSDP <Real> const & prob_) : prob(prob_) {}
 
     // Evaluation 
-    double operator () (X_Vector const & x) const {
+    double eval(X_Vector const & x) const {
         return Rm::innr(prob.b,x);
     }
 
@@ -433,7 +433,7 @@ public:
     SDPIneq(SparseSDP <Real> const & prob_) : prob(prob_) {}
 
     // z=h(x) 
-    void operator () (
+    void eval(
         X_Vector const & x,
         Z_Vector & z
     ) const {
@@ -545,7 +545,7 @@ struct Phase1Obj : public Optizelle::ScalarValuedFunction <Real,Optizelle::Rm> {
     Phase1Obj() {} 
 
     // Evaluation 
-    double operator () (X_Vector const & x) const {
+    double eval(X_Vector const & x) const {
         // Just return y2
         return x.back();
     }
@@ -617,12 +617,12 @@ public:
     }
 
     // z=hh(x,y) 
-    void operator () (
+    void eval(
         X_Vector const & x,
         Z_Vector & z
     ) const {
         // z <- h(x)
-        h(x,z);
+        h.eval(x,z);
 
         // Get the size of x
         Natural m = x.size()-2;
@@ -780,7 +780,7 @@ public:
     }
 
     // Basic application
-    void operator () (X_Vector const & dx,X_Vector & PH_dx) const {
+    void eval(X_Vector const & dx,X_Vector & PH_dx) const {
         // Determine the size of the projected vector
         Natural m = (*proj)(ei)->size();
 
@@ -877,7 +877,7 @@ bool initPhase1X(
 
     // h_xx <- h(xx)
     typename SQL::Vector h_xx(SQL::init(e));
-        h(xx,h_xx);
+        h.eval(xx,h_xx);
 
     // Figure out the extent of our infeasibility.  Use the formula above
     // to transform delta into this value.

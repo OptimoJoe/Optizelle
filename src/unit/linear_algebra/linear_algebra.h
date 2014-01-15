@@ -7,7 +7,9 @@
 typedef Optizelle::Natural Natural;
 
 template <typename Real>
-struct BasicOperator : public Optizelle::Operator <Real,Optizelle::Rm,Optizelle::Rm> {
+struct BasicOperator :
+    public Optizelle::Operator <Real,Optizelle::Rm,Optizelle::Rm>
+{
 private:
     // Create some type shortcuts
     typedef std::vector <Real> X_Vector;
@@ -25,7 +27,7 @@ public:
     }
     
     // Apply the random matrix to the vector 
-    void operator () (const X_Vector& x,Y_Vector &y) const  {
+    void eval(const X_Vector& x,Y_Vector &y) const  {
         for(Natural i=0;i<m;i++){
             y[i]=0;
             for(Natural j=0;j<m;j++)
@@ -36,7 +38,9 @@ public:
 
 // Create the identity operator
 template <typename Real>
-struct IdentityOperator : public Optizelle::Operator <Real,Optizelle::Rm,Optizelle::Rm> {
+struct IdentityOperator :
+    public Optizelle::Operator <Real,Optizelle::Rm,Optizelle::Rm>
+{
 private:
     // Create some type shortcuts
     typedef std::vector <Real> X_Vector;
@@ -47,7 +51,7 @@ public:
     IdentityOperator() {};
 
     // Just copy the input to the output 
-    void operator () (const X_Vector& x,Y_Vector &y) const  {
+    void eval(const X_Vector& x,Y_Vector &y) const  {
         Optizelle::Rm <Real>::copy(x,y);
     }
 };

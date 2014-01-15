@@ -15,7 +15,7 @@ struct MyObj : public Optizelle::ScalarValuedFunction <double,Optizelle::Rm> {
     typedef Optizelle::Rm <Real> X;
 
     // Evaluation 
-    double operator () (const X::Vector& x) const {
+    double eval(const X::Vector& x) const {
         return -x[0]+x[1]; 
     }
 
@@ -52,7 +52,7 @@ struct MyIneq
     typedef double Real;
 
     // y=h(x) 
-    void operator () (
+    void eval(
         const X::Vector& x,
         Y::Vector& y
     ) const {

@@ -24,7 +24,7 @@ struct MyObj
     typedef Optizelle::Rm <double> X;
 
     // Evaluation 
-    double operator () (const X::Vector& x) const {
+    double eval(const X::Vector& x) const {
         return sq(x[0]+1.)+sq(x[1]+1.);
     }
 
@@ -59,7 +59,7 @@ struct MyEq
     typedef Optizelle::Rm <double> Y;
 
     // y=g(x) 
-    void operator () (
+    void eval(
         const X::Vector& x,
         Y::Vector& y
     ) const {
@@ -107,7 +107,7 @@ struct MyIneq
     typedef Optizelle::Rm <double> Y;
 
     // y=h(x) 
-    void operator () (
+    void eval(
         const X::Vector& x,
         Y::Vector& y
     ) const {

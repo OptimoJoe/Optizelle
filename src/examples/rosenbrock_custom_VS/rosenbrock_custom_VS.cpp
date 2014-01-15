@@ -80,7 +80,7 @@ struct Rosenbrock : public Optizelle::ScalarValuedFunction <double,MyVS> {
     typedef MyVS <double> X;
 
     // Evaluation of the Rosenbrock function
-    double operator () (const X::Vector & x) const {
+    double eval(const X::Vector & x) const {
         return sq(1.-x[0])+100.*sq(x[1]-sq(x[0]));
     }
 

@@ -482,7 +482,7 @@ namespace Optizelle {
             {}
 
             // Application
-            void operator () (
+            void eval(
                 const typename ProblemClass::Functions::t & fns,
                 typename ProblemClass::State::t & state,
                 OptimizationLocation::t const & loc_
@@ -642,7 +642,7 @@ namespace Optizelle {
                 PyObjectPtrMode::t mode=PyObjectPtrMode::Capture);
 
             // <- f(x) 
-            double operator () (Vector const & x) const; 
+            double eval(Vector const & x) const; 
 
             // g = grad f(x) 
             void grad(Vector const & x,Vector & g) const; 
@@ -679,7 +679,7 @@ namespace Optizelle {
                 PyObjectPtrMode::t mode=PyObjectPtrMode::Capture);
 
             // y=f(x)
-            void operator () (X_Vector const & x,Y_Vector & y) const;
+            void eval(X_Vector const & x,Y_Vector & y) const;
 
             // y=f'(x)dx 
             void p(X_Vector const & x,X_Vector const & dx,Y_Vector & y) const;
@@ -747,7 +747,7 @@ namespace Optizelle {
             {}
 
             // y = A(x)
-            void operator () (X_Vector const & x,Y_Vector & y) const {
+            void eval(X_Vector const & x,Y_Vector & y) const {
                 // Convert the state to a Python state
                 pystate.toPython(state);
 

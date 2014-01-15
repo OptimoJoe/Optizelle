@@ -52,7 +52,7 @@ int main() {
     X::zero (x);
 
     // Create an empty GMRES manipulator
-    Optizelle::GMRESManipulator <double,Optizelle::Rm> gmanip;
+    Optizelle::EmptyGMRESManipulator <double,Optizelle::Rm> gmanip;
 
     // Solve this linear system
     std::pair <double,Natural> err_iter = Optizelle::gmres <double,Optizelle::Rm>

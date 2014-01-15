@@ -1,4 +1,0 @@
-project(derivative_check)
-
-add_optizelle_unit_cpp(scalar_valued)
-add_optizelle_unit_cpp(vector_valued)

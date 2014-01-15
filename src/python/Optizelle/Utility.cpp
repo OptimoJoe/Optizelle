@@ -1261,9 +1261,7 @@ namespace Optizelle {
         { }
 
         // <- f(x) 
-        double ScalarValuedFunction::operator () (
-            Vector const & x
-        ) const { 
+        double ScalarValuedFunction::eval(Vector const & x) const { 
             // Call the objective function on x.  Store in z.
             PyObjectPtr eval(PyObject_GetAttrString(ptr,"eval"));
             PyObjectPtr z(PyObject_CallObject1(
@@ -1328,7 +1326,7 @@ namespace Optizelle {
         {}
 
         // y=f(x)
-        void VectorValuedFunction::operator () (
+        void VectorValuedFunction::eval(
             Vector const & x,
             VectorValuedFunction::Y_Vector& y
         ) const {

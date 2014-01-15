@@ -45,28 +45,6 @@ Author: Joseph Young (joe@optimojoe.com)
 #include<numeric>
 #include<optizelle/linalg.h>
 
-// Putting this into a class prevents its construction.  Essentially, we use
-// this trick in order to create modules like in ML.  It also allows us to
-// created templated namespaces.
-#define NO_CONSTRUCTORS(Name) \
-    Name() = delete; \
-    Name(Name const &) = delete; \
-    Name & operator = (Name const &) = delete; \
-    ~Name() = delete;
-
-// Disallows copying or assigning.  This is useful for things like the
-// StateManipulator or FunctionModification classes.
-#define NO_COPY_ASSIGNMENT(Name) \
-    Name(Name const &) = delete; \
-    Name & operator = (Name const &) = delete;
-
-// Disallows copying, assigning, or default construction.  This is useful for
-// for things like the State::t types.
-#define NO_DEFAULT_COPY_ASSIGNMENT(Name) \
-    Name() = delete; \
-    Name(Name const &) = delete; \
-    Name& operator = (Name const &) = delete;
-
 namespace Optizelle{
 
     // A scalar valued function interface, f : X -> R
@@ -80,7 +58,7 @@ namespace Optizelle{
         typedef typename X::Vector Vector;
 
         // <- f(x) 
-        virtual Real operator () (Vector const & x) const = 0;
+        virtual Real eval(Vector const & x) const = 0;
 
         // grad = grad f(x) 
         virtual void grad(Vector const & x,Vector & grad) const = 0;
@@ -187,7 +165,7 @@ namespace Optizelle{
         typedef typename Y::Vector Y_Vector; 
 
         // y=f(x)
-        virtual void operator () (X_Vector const & x,Y_Vector & y) const = 0;
+        virtual void eval(X_Vector const & x,Y_Vector & y) const = 0;
 
          // y=f'(x)dx 
          virtual void p(
@@ -581,22 +559,22 @@ namespace Optizelle{
             // f(x+eps dx)
             X::copy(x,x_op_dx);
             X::axpy(epsilon,dx,x_op_dx);
-            Real obj_xpes=f(x_op_dx);
+            Real obj_xpes=f.eval(x_op_dx);
 
             // f(x-eps dx)
             X::copy(x,x_op_dx);
             X::axpy(-epsilon,dx,x_op_dx);
-            Real obj_xmes=f(x_op_dx);
+            Real obj_xmes=f.eval(x_op_dx);
 
             // f(x+2 eps dx)
             X::copy(x,x_op_dx);
             X::axpy(Real(2.*epsilon),dx,x_op_dx);
-            Real obj_xp2es=f(x_op_dx);
+            Real obj_xp2es=f.eval(x_op_dx);
 
             // f(x-2 eps dx)
             X::copy(x,x_op_dx);
             X::axpy(Real(-2.*epsilon),dx,x_op_dx);
-            Real obj_xm2es=f(x_op_dx);
+            Real obj_xm2es=f.eval(x_op_dx);
 
             // Calculate the directional derivative and return it
             Real dd=(obj_xm2es-Real(8.)*obj_xmes+Real(8.)*obj_xpes-obj_xp2es)
@@ -693,25 +671,25 @@ namespace Optizelle{
             // f(x+eps dx)
             X::copy(x,x_op_dx);
             X::axpy(epsilon,dx,x_op_dx);
-            f(x_op_dx,f_x_op_dx);
+            f.eval(x_op_dx,f_x_op_dx);
             Y::axpy(Real(8.),f_x_op_dx,dd);
 
             // f(x-eps dx)
             X::copy(x,x_op_dx);
             X::axpy(-epsilon,dx,x_op_dx);
-            f(x_op_dx,f_x_op_dx);
+            f.eval(x_op_dx,f_x_op_dx);
             Y::axpy(Real(-8.),f_x_op_dx,dd);
 
             // f(x+2 eps dx)
             X::copy(x,x_op_dx);
             X::axpy(Real(2.)*epsilon,dx,x_op_dx);
-            f(x_op_dx,f_x_op_dx);
+            f.eval(x_op_dx,f_x_op_dx);
             Y::axpy(Real(-1.),f_x_op_dx,dd);
 
             // f(x-2 eps dx)
             X::copy(x,x_op_dx);
             X::axpy(Real(-2.)*epsilon,dx,x_op_dx);
-            f(x_op_dx,f_x_op_dx);
+            f.eval(x_op_dx,f_x_op_dx);
             Y::axpy(Real(1.),f_x_op_dx,dd);
 
             // Finish the finite difference calculation 
@@ -1122,18 +1100,35 @@ namespace Optizelle{
         // Disallow constructors
         NO_COPY_ASSIGNMENT(StateManipulator);
 
-        // Default constructor
-        StateManipulator() {}
-        
+        // Give an empty default constructor
+        StateManipulator() {} 
+
         // Application
-        virtual void operator () (
+        virtual void eval(
             typename ProblemClass::Functions::t const & fns,
             typename ProblemClass::State::t & state,
             OptimizationLocation::t const & loc
-        ) const {};
+        ) const = 0; 
 
         // Allow the derived class to deallocate memory
         virtual ~StateManipulator() {}
+    };
+
+    // A state manipulator that does nothing
+    template <typename ProblemClass>
+    struct EmptyManipulator : public StateManipulator <ProblemClass> {
+        // Disallow constructors
+        NO_COPY_ASSIGNMENT(EmptyManipulator);
+
+        // Give an empty default constructor
+        EmptyManipulator() {}
+
+        // Application
+        void eval(
+            typename ProblemClass::Functions::t const & fns,
+            typename ProblemClass::State:: t& state,
+            OptimizationLocation::t const & loc
+        ) const {}
     };
    
     // A state manipulator that's been customized in order to print diagonistic
@@ -1158,14 +1153,14 @@ namespace Optizelle{
         ) : smanip(smanip_), msg(msg_) {}
 
         // Application
-        void operator () (
+        void eval(
             typename ProblemClass::Functions::t const & fns,
             typename ProblemClass::State:: t& state,
             OptimizationLocation::t const & loc
         ) const {
 
             // Call the internal manipulator 
-            smanip(fns,state,loc);
+            smanip.eval(fns,state,loc);
 
             // Create some shortcuts
             Natural const & msg_level=state.msg_level;
@@ -1271,7 +1266,7 @@ namespace Optizelle{
         ) : smanip(smanip_) {}
 
         // Application
-        void operator () (
+        void eval(
             const typename External::Functions::t& fns_,
             typename External::State::t& state_,
             OptimizationLocation::t const & loc
@@ -1280,7 +1275,7 @@ namespace Optizelle{
                 =dynamic_cast <typename Internal::Functions::t const &> (fns_);
             typename Internal::State::t& state 
                 =dynamic_cast <typename Internal::State::t &> (state_);
-            smanip(fns,state,loc);
+            smanip.eval(fns,state,loc);
         }
     };
 
@@ -2318,7 +2313,7 @@ namespace Optizelle{
 
             // The identity operator 
             struct Identity : public Operator <Real,XX,XX> {
-                void operator () (X_Vector const & dx,X_Vector & result) const{
+                void eval(X_Vector const & dx,X_Vector & result) const{
                     X::copy(dx,result);
                 }
             };
@@ -2350,7 +2345,7 @@ namespace Optizelle{
                     delta(state.delta)
                 {};
 
-                void operator () (X_Vector const & dx,X_Vector & result) const{
+                void eval(X_Vector const & dx,X_Vector & result) const{
                     // Determine the norm of the gradient
                     X_Vector grad_step(X::init(grad));
                         f_mod.grad_step(x,grad,grad_step);
@@ -2393,7 +2388,7 @@ namespace Optizelle{
                 current have.  It also works much better with matrices or
                 multivectors of data and we don't require the user to provide
                 these abstractions. */
-                void operator () (X_Vector const & dx, X_Vector & result) const{
+                void eval(X_Vector const & dx, X_Vector & result) const{
 
                     // Check that the number of stored gradient and trial step
                     // differences is the same.
@@ -2547,7 +2542,7 @@ namespace Optizelle{
                 ) : msg(msg_), oldY(state.oldY), oldS(state.oldS) {};
                 
                 // Operator interface
-                void operator () (X_Vector const & dx,X_Vector & result) const {
+                void eval(X_Vector const & dx,X_Vector & result) const {
 
                     // Check that the number of stored gradient and trial step
                     // differences is the same.
@@ -2696,7 +2691,7 @@ namespace Optizelle{
                 ) : msg(msg_), oldY(state.oldY), oldS(state.oldS) {};
                 
                 // Operator interface
-                void operator () (X_Vector const & dx,X_Vector & result) const{
+                void eval(X_Vector const & dx,X_Vector & result) const{
 
                     // Check that the number of stored gradient and trial step
                     // differences is the same.
@@ -2781,8 +2776,8 @@ namespace Optizelle{
                     Messaging const & msg,
                     typename State::t const & state
                 ) : sr1(msg,state) {};
-                void operator () (X_Vector const & dx,X_Vector & result) const{
-                    sr1(dx,result);
+                void eval(X_Vector const & dx,X_Vector & result) const{
+                    sr1.eval(dx,result);
                 }
             };
 
@@ -2832,8 +2827,8 @@ namespace Optizelle{
                 }
 
                  // <- f(x) 
-                 Real operator () (X_Vector const & x) const {
-                    return (*f)(x);
+                 Real eval(X_Vector const & x) const {
+                    return f->eval(x);
                  }
 
                  // grad = grad f(x) 
@@ -2853,7 +2848,7 @@ namespace Optizelle{
                      X_Vector & H_dx 
                  ) const {
                      if(H.get()!=nullptr) 
-                        (*H)(dx,H_dx);
+                        H->eval(dx,H_dx);
                      else
                         f->hessvec(x,dx,H_dx);
                  }
@@ -3291,7 +3286,7 @@ namespace Optizelle{
                 {}
 
                 // Basic application
-                void operator () (X_Vector const & dx,X_Vector & Hdx_step)
+                void eval(X_Vector const & dx,X_Vector & Hdx_step)
                     const
                 {
                     f.hessvec(x,dx,H_dx);
@@ -3346,7 +3341,7 @@ namespace Optizelle{
                     + Real(.5)*X::innr(Hdx_step,dx);
 
                 // Determine the merit function evaluated at x+dx
-                f_xpdx=f(x_p_dx);
+                f_xpdx=f.eval(x_p_dx);
                 Real merit_xpdx=f_mod.merit(x_p_dx,f_xpdx);
 
                 // Determine the norm of the step
@@ -3437,7 +3432,7 @@ namespace Optizelle{
                     true; 
                 ) {
                     // Manipulate the state if required
-                    smanip(fns,state,OptimizationLocation::BeforeGetStep);
+                    smanip.eval(fns,state,OptimizationLocation::BeforeGetStep);
 
                     // Use truncated the truncated Krylov solver to find a 
                     // new trial step
@@ -3501,7 +3496,7 @@ namespace Optizelle{
                     krylov_iter_total += krylov_iter;
 
                     // Manipulate the state if required
-                    smanip(fns,state,
+                    smanip.eval(fns,state,
                         OptimizationLocation::BeforeActualVersusPredicted);
 
                     // Check whether the step is good
@@ -3519,7 +3514,7 @@ namespace Optizelle{
                     }
 
                     // Manipulate the state if required
-                    smanip(fns,state,
+                    smanip.eval(fns,state,
                         OptimizationLocation::AfterRejectedTrustRegion);
 
                     // Alternatively, check if the step becomes so small
@@ -3555,7 +3550,7 @@ namespace Optizelle{
 
                 // We take the steepest descent direction and apply the
                 // preconditioner.
-                PH(grad_step,dx);
+                PH.eval(grad_step,dx);
                 X::scal(Real(-1.),dx);
             }
     
@@ -3609,7 +3604,7 @@ namespace Optizelle{
                     }
 
                     // Find -PH grad+beta*dx_old.  
-                    PH(grad_step,dx);
+                    PH.eval(grad_step,dx);
                     X::scal(Real(-1.),dx);
                     X::axpy(beta,dx_old,dx);
 
@@ -3643,9 +3638,9 @@ namespace Optizelle{
 
                 // Apply the preconditioner to the gradients 
                 X_Vector PH_grad_step(X::init(grad_step));
-                    PH(grad_step,PH_grad_step);
+                    PH.eval(grad_step,PH_grad_step);
                 X_Vector PH_grad_old_step(X::init(grad_old_step));
-                    PH(grad_old_step,PH_grad_old_step);
+                    PH.eval(grad_old_step,PH_grad_old_step);
 
                 // Return the momentum parameter
                 return X::innr(grad_step,PH_grad_step)
@@ -3678,9 +3673,9 @@ namespace Optizelle{
                 
                 // Apply the preconditioner to the gradients 
                 X_Vector PH_grad_step(X::init(grad_step));
-                    PH(grad_step,PH_grad_step);
+                    PH.eval(grad_step,PH_grad_step);
                 X_Vector PH_grad_old_step(X::init(grad_old_step));
-                    PH(grad_old_step,PH_grad_old_step);
+                    PH.eval(grad_old_step,PH_grad_old_step);
                     
                 // Return the momentum parameter
                 return X::innr(PH_grad_step,grad_m_gradold)
@@ -3715,7 +3710,7 @@ namespace Optizelle{
                 
                 // Apply the preconditioner to the gradient
                 X_Vector PH_grad_step(X::init(grad_step));
-                    PH(grad_step,PH_grad_step);
+                    PH.eval(grad_step,PH_grad_step);
                     
                 // Return the momentum parameter.
                 Real beta=X::innr(PH_grad_step,grad_m_gradold)
@@ -3745,7 +3740,7 @@ namespace Optizelle{
                 typename Functions::InvBFGS Hinv(msg,state); 
 
                 // Apply the inverse BFGS operator to the gradient
-                Hinv(grad_step,dx);
+                Hinv.eval(grad_step,dx);
 
                 // Negate the result
                 X::scal(Real(-1.),dx);
@@ -3789,13 +3784,13 @@ namespace Optizelle{
                 // mu 
                 X::copy(x,x_p_dx);
                 X::axpy(mu,dx,x_p_dx);
-                Real f_mu=f(x_p_dx);
+                Real f_mu=f.eval(x_p_dx);
                 Real merit_mu=f_mod.merit(x_p_dx,f_mu);
 
                 // lambda
                 X::copy(x,x_p_dx);
                 X::axpy(lambda,dx,x_p_dx);
-                Real f_lambda=f(x_p_dx);
+                Real f_lambda=f.eval(x_p_dx);
                 Real merit_lambda=f_mod.merit(x_p_dx,f_lambda);
 
                 // Search for a fixed number of iterations.  Note, since we
@@ -3818,7 +3813,7 @@ namespace Optizelle{
 
                         X::copy(x,x_p_dx);
                         X::axpy(mu,dx,x_p_dx);
-                        f_mu=f(x_p_dx);
+                        f_mu=f.eval(x_p_dx);
                         merit_mu=f_mod.merit(x_p_dx,f_mu);
 
                     // Otherwise, the objective is greater on the right, so
@@ -3831,7 +3826,7 @@ namespace Optizelle{
                 
                         X::copy(x,x_p_dx);
                         X::axpy(lambda,dx,x_p_dx);
-                        f_lambda=f(x_p_dx);
+                        f_lambda=f.eval(x_p_dx);
                         merit_lambda=f_mod.merit(x_p_dx,f_lambda);
                     }
                 }
@@ -3884,7 +3879,7 @@ namespace Optizelle{
                     X::axpy(alpha,dx,x_p_adx);
     
                 // Determine the objective function evaluated at x+dx
-                f_xpdx=f(x_p_adx);
+                f_xpdx=f.eval(x_p_adx);
 
                 // Set the number of line-search iterations
                 iter=1;
@@ -3940,7 +3935,7 @@ namespace Optizelle{
                 X_Vector x_p_adx(X::init(x));
                     X::copy(x,x_p_adx);
                     X::axpy(alpha,dx,x_p_adx);
-                f_xpdx=f(x_p_adx);
+                f_xpdx=f.eval(x_p_adx);
 
                 // Since we do one function evaluation, increase the linesearch
                 // iteration by one
@@ -3984,7 +3979,7 @@ namespace Optizelle{
                 KrylovStop::t& krylov_stop=state.krylov_stop;
                 
                 // Manipulate the state if required
-                smanip(fns,state,OptimizationLocation::BeforeGetStep);
+                smanip.eval(fns,state,OptimizationLocation::BeforeGetStep);
 
                 // Create the trust-region center 
                 X_Vector x_cntr(X::init(x));
@@ -4075,7 +4070,7 @@ namespace Optizelle{
                 }}
 
                 // Manipulate the state if required
-                smanip(fns,state,OptimizationLocation::BeforeLineSearch);
+                smanip.eval(fns,state,OptimizationLocation::BeforeLineSearch);
 
                 // Do the sufficient decrease line-search
                 if(LineSearchKind::is_sufficient_decrease(kind) || iter==1) {
@@ -4146,7 +4141,7 @@ namespace Optizelle{
                             }
 
                             // Manipulate the state if required
-                            smanip(fns,state,
+                            smanip.eval(fns,state,
                                 OptimizationLocation::AfterRejectedLineSearch);
                         }
 
@@ -4206,7 +4201,7 @@ namespace Optizelle{
                     getStepLS(msg,smanip,fns,state);
                     break;
                 case AlgorithmClass::UserDefined:
-                    smanip(fns,state,OptimizationLocation::GetStep);
+                    smanip.eval(fns,state,OptimizationLocation::GetStep);
                     break;
                 }
             }
@@ -4294,21 +4289,22 @@ namespace Optizelle{
                 StoppingCondition::t & opt_stop=state.opt_stop;
                 
                 // Manipulate the state if required
-                smanip(fns,state,OptimizationLocation::BeginningOfOptimization);
+                smanip.eval(fns,state,
+                    OptimizationLocation::BeginningOfOptimization);
 
                 // Evaluate the objective function and gradient if we've not
                 // done so already and we're not just doing some diagnosics.
                 if(f_x != f_x && dscheme!=DiagnosticScheme::DiagnosticsOnly) {
 
                     // Manipulate the state if required
-                    smanip(fns,state,OptimizationLocation
+                    smanip.eval(fns,state,OptimizationLocation
                         ::BeforeInitialFuncAndGrad);
 
                     // Sometimes, we can calculate the gradient and objective
                     // simultaneously.  Hence, it's best to calculate the
                     // gradient first and then possibly cache the objective
                     f.grad(x,grad);
-                    f_x=f(x);
+                    f_x=f.eval(x);
                     X_Vector grad_stop(X::init(grad));
                         f_mod.grad_stop(x,grad,grad_stop);
                     norm_gradtyp=sqrt(X::innr(grad_stop,grad_stop));
@@ -4324,12 +4320,13 @@ namespace Optizelle{
                     norm_dxtyp=norm_gradtyp;
                 
                     // Manipulate the state if required
-                    smanip(fns,state,
+                    smanip.eval(fns,state,
                         OptimizationLocation::AfterInitialFuncAndGrad);
                 }
 
                 // Manipulate the state if required
-                smanip(fns,state,OptimizationLocation::BeforeOptimizationLoop);
+                smanip.eval(fns,state,
+                    OptimizationLocation::BeforeOptimizationLoop);
 
                 // Primary optimization loop
                 while(opt_stop==StoppingCondition::NotConverged &&
@@ -4337,14 +4334,14 @@ namespace Optizelle{
                 ) {
 
                     // Manipulate the state if required
-                    smanip(fns,state,
+                    smanip.eval(fns,state,
                         OptimizationLocation::BeginningOfOptimizationLoop);
 
                     // Get a new optimization iterate.  
                     getStep(msg,smanip,fns,state);
 
                     // Manipulate the state if required
-                    smanip(fns,state,OptimizationLocation::BeforeSaveOld);
+                    smanip.eval(fns,state,OptimizationLocation::BeforeSaveOld);
 
                     // Save the old variable, gradient, and trial step.  This
                     // is useful for both CG and quasi-Newton methods.
@@ -4353,13 +4350,13 @@ namespace Optizelle{
                     X::copy(dx,dx_old);
 
                     // Manipulate the state if required
-                    smanip(fns,state,OptimizationLocation::BeforeStep);
+                    smanip.eval(fns,state,OptimizationLocation::BeforeStep);
 
                     // Move to the new iterate
                     X::axpy(Real(1.),dx,x);
 
                     // Manipulate the state if required
-                    smanip(fns,state,
+                    smanip.eval(fns,state,
                         OptimizationLocation::AfterStepBeforeGradient);
 
                     // Find the new objective value and gradient
@@ -4367,16 +4364,16 @@ namespace Optizelle{
                     f.grad(x,grad);
                     
                     // Manipulate the state if required
-                    smanip(fns,state,OptimizationLocation::AfterGradient);
+                    smanip.eval(fns,state,OptimizationLocation::AfterGradient);
                     
                     // Manipulate the state if required
-                    smanip(fns,state,OptimizationLocation::BeforeQuasi);
+                    smanip.eval(fns,state,OptimizationLocation::BeforeQuasi);
 
                     // Update the quasi-Newton information
                     updateQuasi(fns,state);
                     
                     // Manipulate the state if required
-                    smanip(fns,state,OptimizationLocation::AfterQuasi);
+                    smanip.eval(fns,state,OptimizationLocation::AfterQuasi);
 
                     // Increase the iteration
                     iter++;
@@ -4385,12 +4382,12 @@ namespace Optizelle{
                     opt_stop=checkStop(fns,state);
 
                     // Manipulate the state if required
-                    smanip(fns,state,
+                    smanip.eval(fns,state,
                         OptimizationLocation::EndOfOptimizationIteration);
                 } 
                         
                 // Manipulate the state one final time if required
-                smanip(fns,state,OptimizationLocation::EndOfOptimization);
+                smanip.eval(fns,state,OptimizationLocation::EndOfOptimization);
             }
             
             // Solves an optimization problem where the user doesn't know about
@@ -4401,7 +4398,7 @@ namespace Optizelle{
                 typename State::t & state
             ){
                 // Create an empty state manipulator
-                StateManipulator <Unconstrained <Real,XX> > smanip;
+                EmptyManipulator <Unconstrained <Real,XX> > smanip;
 
                 // Minimize the problem
                 getMin(msg,smanip,fns,state);
@@ -5302,7 +5299,7 @@ namespace Optizelle{
                             >= std::numeric_limits <Real>::epsilon()*1e1
                     ) {
                         // g_x <- g(x)
-                        g(x,g_x);
+                        g.eval(x,g_x);
                     
                         // Cache the values
                         x_merit.first=true;
@@ -5385,7 +5382,7 @@ namespace Optizelle{
 
             // The identity operator 
             struct Identity : public Operator <Real,YY,YY> {
-                void operator () (Y_Vector const & dy,Y_Vector & result) const{
+                void eval(Y_Vector const & dy,Y_Vector & result) const{
                     Y::copy(dy,result);
                 }
             };
@@ -5697,7 +5694,7 @@ namespace Optizelle{
                 ) : state(state_), fns(fns_), x_base(x_base_) {}
                 
                 // Operator interface
-                void operator () (
+                void eval(
                     const XxY_Vector & dx_dy,
                     XxY_Vector & result
                 ) const{
@@ -5732,29 +5729,35 @@ namespace Optizelle{
                 ) : PH_x(PH_x_), PH_y(PH_y_) {}
                 
                 // Operator interface
-                void operator () (
+                void eval(
                     const XxY_Vector & dx_dy,
                     XxY_Vector & result
                 ) const{
                     // PH_x dx
-                    PH_x(dx_dy.first,result.first);
+                    PH_x.eval(dx_dy.first,result.first);
                     
                     // PH_y dy
-                    PH_y(dx_dy.second,result.second);
+                    PH_y.eval(dx_dy.second,result.second);
                 }
             };
 
             // Sets the tolerances for the quasi-normal Newton solve
-            struct QNManipulator : GMRESManipulator <Real,XXxYY> {
+            struct QNManipulator : public GMRESManipulator <Real,XXxYY> {
             private:
                 typename State::t const & state;
                 typename Functions::t const & fns;
             public:
+                // Disallow constructors
+                NO_DEFAULT_COPY_ASSIGNMENT(QNManipulator);
+
+                // Grab the states and fns on construction
                 explicit QNManipulator(
                     typename State::t const & state_,
                     typename Functions::t const & fns_
                 ) : state(state_), fns(fns_) {}
-                void operator () (
+
+                // Evalulate the manipulator
+                void eval(
                     Natural const & iter,
                     typename XXxYY <Real>::Vector const & xx,
                     typename XXxYY <Real>::Vector const & bb,
@@ -5912,16 +5915,23 @@ namespace Optizelle{
             //
             // into the null space of g'(x).
             struct NullspaceProjForGradLagPlusHdxnManipulator
-                : GMRESManipulator <Real,XXxYY> {
+                : public GMRESManipulator <Real,XXxYY> {
             private:
                 typename State::t const & state;
                 typename Functions::t const & fns;
             public:
-                explicit NullspaceProjForGradLagPlusHdxnManipulator(
+                // Disallow constructors
+                NO_DEFAULT_COPY_ASSIGNMENT(
+                    NullspaceProjForGradLagPlusHdxnManipulator);
+
+                // Grab the states and fns on construction
+                NullspaceProjForGradLagPlusHdxnManipulator(
                     typename State::t const & state_,
                     typename Functions::t const & fns_
                 ) : state(state_), fns(fns_) {}
-                void operator () (
+
+                // Evalulate the manipulator
+                void eval(
                     Natural const & iter,
                     typename XXxYY <Real>::Vector const & xx,
                     typename XXxYY <Real>::Vector const & bb,
@@ -6032,16 +6042,23 @@ namespace Optizelle{
             // Sets the tolerances for the nullspace projector that projects
             // the current direction in the projected Krylov method. 
             struct NullspaceProjForKrylovMethodManipulator
-                : GMRESManipulator <Real,XXxYY> {
+                : public GMRESManipulator <Real,XXxYY> {
             private:
                 typename State::t const & state;
                 typename Functions::t const & fns;
             public:
+                // Disallow constructors
+                NO_DEFAULT_COPY_ASSIGNMENT(
+                    NullspaceProjForKrylovMethodManipulator);
+
+                // Grab the states and fns on construction
                 explicit NullspaceProjForKrylovMethodManipulator (
                     typename State::t const & state_,
                     typename Functions::t const & fns_
                 ) : state(state_), fns(fns_) {}
-                void operator () (
+
+                // Evalulate the manipulator
+                void eval(
                     Natural const & iter,
                     typename XXxYY <Real>::Vector const & xx,
                     typename XXxYY <Real>::Vector const & bb,
@@ -6094,7 +6111,7 @@ namespace Optizelle{
                 ) : state(state_), fns(fns_) {}
                
                 // Project dx_t into the nullspace of g'(x)
-                void operator () (
+                void eval(
                     X_Vector const & dx_t_uncorrected,
                     X_Vector & result
                 ) const{
@@ -6237,16 +6254,22 @@ namespace Optizelle{
             // Sets the tolerances for the computation of the tangential
             // step.
             struct TangentialStepManipulator
-                : GMRESManipulator <Real,XXxYY> {
+                : public GMRESManipulator <Real,XXxYY> {
             private:
                 typename State::t const & state;
                 typename Functions::t const & fns;
-            public:
+            public: 
+                // Disallow constructors
+                NO_DEFAULT_COPY_ASSIGNMENT(TangentialStepManipulator);
+
+                // Grab the states and fns on construction
                 TangentialStepManipulator (
                     typename State::t const & state_,
                     typename Functions::t const & fns_
                 ) : state(state_), fns(fns_) {}
-                void operator () (
+
+                // Evalulate the manipulator
+                void eval(
                     Natural const & iter,
                     typename XXxYY <Real>::Vector const & xx,
                     typename XXxYY <Real>::Vector const & bb,
@@ -6325,16 +6348,22 @@ namespace Optizelle{
             // Sets the tolerances for the computation of the Lagrange 
             // multiplier.
             struct LagrangeMultiplierStepManipulator
-                : GMRESManipulator <Real,XXxYY> {
+                : public GMRESManipulator <Real,XXxYY> {
             private:
                 typename State::t const & state;
                 typename Functions::t const & fns;
             public:
-                LagrangeMultiplierStepManipulator (
+                // Disallow constructors
+                NO_DEFAULT_COPY_ASSIGNMENT(LagrangeMultiplierStepManipulator);
+
+                // Grab the states and fns on construction
+                LagrangeMultiplierStepManipulator(
                     typename State::t const & state_,
                     typename Functions::t const & fns_
-                ) : state(state_), fns(fns_) {}
-                void operator () (
+                ) : GMRESManipulator <Real,XXxYY>(), state(state_), fns(fns_) {}
+
+                // Evalulate the manipulator
+                void eval(
                     Natural const & iter,
                     typename XXxYY <Real>::Vector const & xx,
                     typename XXxYY <Real>::Vector const & bb,
@@ -6702,7 +6731,7 @@ namespace Optizelle{
 
                 // Determine the merit function at x and x+dx
                 Real merit_x = f_mod.merit(x,f_x);
-                f_xpdx = f(x_p_dx);
+                f_xpdx = f.eval(x_p_dx);
                 Real merit_xpdx = f_mod.merit(x_p_dx,f_xpdx);
 
                 // Restore the old Lagrange multiplier
@@ -6796,7 +6825,7 @@ namespace Optizelle{
                 rejected_trustregion=0;
                 while(true) {
                     // Manipulate the state if required
-                    smanip(fns,state,OptimizationLocation::BeforeGetStep);
+                    smanip.eval(fns,state,OptimizationLocation::BeforeGetStep);
 
                     // Continue to look for a step until the inaccuracy
                     // in the normal and tangential steps are acceptable.
@@ -6920,7 +6949,7 @@ namespace Optizelle{
                     alpha0 = Real(1.);
 
                     // Manipulate the state if required
-                    smanip(fns,state,
+                    smanip.eval(fns,state,
                         OptimizationLocation::BeforeActualVersusPredicted);
 
                     // If need be, shorten the step
@@ -6946,7 +6975,7 @@ namespace Optizelle{
                     }
 
                     // Manipulate the state if required
-                    smanip(fns,state,
+                    smanip.eval(fns,state,
                         OptimizationLocation::AfterRejectedTrustRegion);
 
                     // Alternatively, check if the step becomes so small
@@ -7002,15 +7031,14 @@ namespace Optizelle{
                     Messaging const & msg_
                 ) : smanip(smanip_), msg(msg_) {}
 
-
                 // Application
-                void operator () (
+                void eval(
                     typename ProblemClass::Functions::t const & fns_,
                     typename ProblemClass::State::t& state_,
                     OptimizationLocation::t const & loc
                 ) const {
                     // Call the user define manipulator
-                    smanip(fns_,state_,loc);
+                    smanip.eval(fns_,state_,loc);
 
                     // Dynamically cast the incoming state and fns to the
                     // to work with the equality constrained spaces.  In theory,
@@ -7057,7 +7085,7 @@ namespace Optizelle{
                     case OptimizationLocation::AfterInitialFuncAndGrad: {
                         // Make sure we properly cache g(x) and its norm
                         // on initialization.  
-                        g(x,g_x);
+                        g.eval(x,g_x);
                         norm_gxtyp = sqrt(Y::innr(g_x,g_x));
 
                         // Find the initial Lagrange multiplier and then update
@@ -7104,7 +7132,7 @@ namespace Optizelle{
 
                     } case OptimizationLocation::AfterStepBeforeGradient:
                         // Make sure we update our cached value of g(x) 
-                        g(x,g_x);
+                        g.eval(x,g_x);
                         break;
 
                     case OptimizationLocation::EndOfOptimizationIteration:
@@ -7127,7 +7155,7 @@ namespace Optizelle{
                 typename State::t & state
             ){
                 // Create an empty state manipulator
-                StateManipulator <EqualityConstrained <Real,XX,YY> > smanip;
+                EmptyManipulator <EqualityConstrained <Real,XX,YY> > smanip;
 
                 // Minimize the problem
                 getMin(msg,smanip,fns,state);
@@ -7752,7 +7780,7 @@ namespace Optizelle{
                             >= std::numeric_limits <Real>::epsilon()*1e1
                     ) {
                         // hx_merit <- h(x)
-                        h(x,hx_merit);
+                        h.eval(x,hx_merit);
                         
                         // Cache the values
                         x_merit.first=true;
@@ -8083,7 +8111,7 @@ namespace Optizelle{
                     z_tmp2(Z::init(state.z))
                 {}
 
-                void operator () (X_Vector const & dx,X_Vector & result) const{
+                void eval(X_Vector const & dx,X_Vector & result) const{
                     // z_tmp1 <- h'(x) dx
                     h.p(x,dx,z_tmp1); 
 
@@ -8382,7 +8410,7 @@ namespace Optizelle{
 
                 // z_tmp1=h(x+dx)
                 Z_Vector z_tmp1(Z::init(z));
-                    h(x_tmp1,z_tmp1);
+                    h.eval(x_tmp1,z_tmp1);
 
                 // z_tmp1=h(x+dx)-h(x)
                 Z::axpy(Real(-1.),h_x,z_tmp1);
@@ -8457,7 +8485,7 @@ namespace Optizelle{
 
                 // z_tmp1=h(x+dx)
                 Z_Vector z_tmp1(Z::init(z));
-                h(x_tmp1,z_tmp1);
+                h.eval(x_tmp1,z_tmp1);
 
                 // z_tmp2=h(x+dx)-h(x)
                 Z::axpy(Real(-1.),h_x,z_tmp1);
@@ -8564,7 +8592,7 @@ namespace Optizelle{
 
                 // z_tmp1=h(x+dx)
                 Z_Vector z_tmp1(Z::init(z));
-                    h(x_tmp1,z_tmp1);
+                    h.eval(x_tmp1,z_tmp1);
 
                 // z_tmp1=h(x+dx)-h(x)
                 Z::axpy(Real(-1.),h_x,z_tmp1);
@@ -8605,13 +8633,13 @@ namespace Optizelle{
 
 
                 // Application
-                void operator () (
+                void eval(
                     typename ProblemClass::Functions::t const & fns_,
                     typename ProblemClass::State::t& state_,
                     OptimizationLocation::t const & loc
                 ) const {
                     // Call the user define manipulator
-                    smanip(fns_,state_,loc);
+                    smanip.eval(fns_,state_,loc);
 
                     // Dynamically cast the incoming state and fns to the
                     // to work with the interior-point spaces.  In theory,
@@ -8642,7 +8670,7 @@ namespace Optizelle{
                     case OptimizationLocation::BeforeInitialFuncAndGrad:
 
                         // Initialize the value h(x)
-                        h(x,h_x);
+                        h.eval(x,h_x);
                 
                         // Set z to be m / <h(x),e> e.  In this way,
                         // mu_est = <h(x),z> / m = 1.
@@ -8716,7 +8744,7 @@ namespace Optizelle{
 
                     case OptimizationLocation::AfterStepBeforeGradient:
                         // Updated our cached copy of h(x)
-                        h(x,h_x);
+                        h.eval(x,h_x);
 
                         // Update the interior point estimate
                         estimateInteriorPointParameter(fns,state);
@@ -8753,7 +8781,7 @@ namespace Optizelle{
                 typename State::t & state
             ){
                 // Create an empty state manipulator
-                StateManipulator <InequalityConstrained <Real,XX,ZZ> > smanip;
+                EmptyManipulator <InequalityConstrained <Real,XX,ZZ> > smanip;
 
                 // Minimize the problem
                 getMin(msg,smanip,fns,state);
@@ -9194,7 +9222,7 @@ namespace Optizelle{
                 typename State::t & state
             ){
                 // Create an empty state manipulator
-                StateManipulator <Constrained <Real,XX,YY,ZZ> > smanip;
+                EmptyManipulator <Constrained <Real,XX,YY,ZZ> > smanip;
 
                 // Minimize the problem
                 getMin(msg,smanip,fns,state);

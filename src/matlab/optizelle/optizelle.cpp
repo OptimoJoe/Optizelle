@@ -516,7 +516,7 @@ public:
     }
 
     // <- f(x) 
-    double operator () (const MatVector& x) const {
+    double eval(const MatVector& x) const {
         // Create the inputs and outputs 
         mxArray* input[2]={eval_.get(),x.get()}; 
         mxArray* output[1];
@@ -587,7 +587,7 @@ public:
     }
 
     // y=f(x)
-    void operator () (const X_Vector& x,Y_Vector& y) const { 
+    void eval(const X_Vector& x,Y_Vector& y) const { 
         mxArray* input[2]={eval_.get(),x.get()}; 
         mxArray* output[1];
         mexCallMATLAB(1,output,2,input,"feval");
@@ -670,7 +670,7 @@ public:
     }
 
     // y=f(x)
-    virtual void operator () (const X_Vector& dx,Y_Vector& y) const { 
+    virtual void eval(const X_Vector& dx,Y_Vector& y) const { 
         mxArray* input[3]={eval_.get(),x.get(),dx.get()}; 
         mxArray* output[1];
         int err=mexCallMATLAB(1,output,3,input,"feval");

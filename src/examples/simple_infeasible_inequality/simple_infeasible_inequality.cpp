@@ -35,7 +35,7 @@ struct MyObj : public Optizelle::ScalarValuedFunction <Real,Optizelle::Rm> {
     typedef typename X::Vector X_Vector;
 
     // Evaluation 
-    double operator () (const X_Vector& x) const {
+    double eval(const X_Vector& x) const {
         return x[0]+x[1];
     }
 
@@ -77,7 +77,7 @@ public:
     typedef typename Y::Vector Y_Vector;
 
     // y=g(x) 
-    void operator () (
+    void eval(
         const X_Vector& x,
         Y_Vector& y
     ) const {
@@ -139,7 +139,7 @@ public:
     MyIneq(Real const & epsilon_) : epsilon(epsilon_) {}
 
     // z=h(x) 
-    void operator () (
+    void eval(
         const X_Vector& x,
         Z_Vector& z
     ) const {

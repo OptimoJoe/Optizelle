@@ -13,6 +13,7 @@ if(ENABLE_OPENMP)
 endif()
 
 # Set the Optizelle include directories
+set(OPTIZELLE_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
 set(OPTIZELLE_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
 
 # Compile the Optizelle core 

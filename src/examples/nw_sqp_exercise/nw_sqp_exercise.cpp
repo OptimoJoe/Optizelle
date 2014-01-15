@@ -51,7 +51,7 @@ struct MyObj : public Optizelle::ScalarValuedFunction <double,Optizelle::Rm> {
     typedef double Real;
 
     // Evaluation 
-    double operator () (const X::Vector& x) const {
+    double eval(const X::Vector& x) const {
         return exp(x[itok(1)]*x[itok(2)]*x[itok(3)]*x[itok(4)]*x[itok(5)])
             - sq(pow(x[itok(1)],3)+pow(x[itok(2)],3)+Real(1.))/Real(2.);
     }
@@ -183,7 +183,7 @@ struct MyEq
     typedef double Real;
 
     // y=g(x) 
-    void operator () (
+    void eval(
         const X::Vector& x,
         Y::Vector& y
     ) const {

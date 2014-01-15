@@ -24,7 +24,7 @@ struct Rosen
     typedef Optizelle::Rm <double> X;
 
     // Evaluation of the Rosenbrock function
-    double operator () (const X::Vector& x) const {
+    double eval(const X::Vector& x) const {
         return sq(1.-x[0])+100.*sq(x[1]-sq(x[0]));
     }
 
@@ -59,7 +59,7 @@ private:
     X_Vector& x;
 public:
     RosenHInv(X::Vector& x_) : x(x_) {}
-    void operator () (const X_Vector& dx,X_Vector &result) const {
+    void eval(const X_Vector& dx,X_Vector &result) const {
         double one_over_det=1./(400000.*x[0]*x[0]-80000.*x[1]+400.);
         result[0]=one_over_det*(200.*dx[0]+400.*x[0]*dx[1]);
         result[1]=one_over_det*
