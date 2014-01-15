@@ -10,5 +10,5 @@ add_optizelle_example_supporting(${PROJECT_NAME}
     sr1.json)
 
 # Add some unit tests
-add_optizelle_test_cpp("*.json" ${PROJECT_NAME})
-add_optizelle_test_python("*.json" ${PROJECT_NAME})
+add_optizelle_json_test_cpp("*.json" ${PROJECT_NAME})
+add_optizelle_json_test_python("*.json" ${PROJECT_NAME})

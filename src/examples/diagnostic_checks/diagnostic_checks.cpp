@@ -1,58 +1,11 @@
-// This example demonstrates how to create a generic vector space,
-// define a scalar valued function (for the objective) and a vector valued
-// function (for the constraints), and then run a series of diagnostic
-// checks on them.
+// This example demonstrates how to run a series of diagnostic tests
+// on functions and then immediately exit.
+
 #include "optizelle/optizelle.h"
+#include "optizelle/vspaces.h"
 
 // Grab Optizelle's Natural type
 using Optizelle::Natural;
-
-// Defines the vector space used for optimization.
-template <typename Real>
-struct MyHS { 
-    typedef std::vector <Real> Vector;
-    
-    // Memory allocation and size setting
-    static Vector init(Vector const & x) {
-        return std::move(Vector(x.size()));
-    }
-
-    // y <- x (Shallow.  No memory allocation.)
-    static void copy(Vector const & x, Vector & y) {
-        for(Natural i=0;i<x.size();i++){
-            y[i]=x[i];
-        }
-    }
-
-    // x <- alpha * x
-    static void scal(const Real& alpha, Vector & x) {
-        for(Natural i=0;i<x.size();i++){
-            x[i]=alpha*x[i];
-        }
-    }
-
-    // x <- 0 
-    static void zero(Vector & x) {
-        for(Natural i=0;i<x.size();i++){
-            x[i]=0.;
-        }
-    }
-
-    // y <- alpha * x + y
-    static void axpy(const Real& alpha, Vector const & x, Vector & y) {
-        for(Natural i=0;i<x.size();i++){
-            y[i]=alpha*x[i]+y[i];
-        }
-    }
-
-    // innr <- <x,y>
-    static Real innr(Vector const & x,Vector const & y) {
-        Real z=0;
-        for(Natural i=0;i<x.size();i++)
-            z+=x[i]*y[i];
-        return z;
-    }
-};
 
 // Squares its input
 template <typename Real>
@@ -82,8 +35,10 @@ Real quint(Real x){
 // 
 // f(x,y)=(1-x)^2+100(y-x^2)^2
 //
-struct Rosen : public Optizelle::ScalarValuedFunction <double,MyHS> {
-    typedef MyHS <double> X;
+struct Rosenbrock :
+    public Optizelle::ScalarValuedFunction <double,Optizelle::Rm>
+{
+    typedef Optizelle::Rm <double> X;
 
     // Evaluation of the Rosenbrock function
     double operator () (const X::Vector & x) const {
@@ -117,10 +72,10 @@ struct Rosen : public Optizelle::ScalarValuedFunction <double,MyHS> {
 //       [ log(x1) + 3 x2 ^5 ]
 //
 struct Utility  : public Optizelle::VectorValuedFunction
-    <double,MyHS,MyHS>
+    <double,Optizelle::Rm,Optizelle::Rm>
 {
-    typedef MyHS <double> X;
-    typedef MyHS <double> Y;
+    typedef Optizelle::Rm <double> X;
+    typedef Optizelle::Rm <double> Y;
 
     // y=g(x) 
     void operator () (
@@ -178,37 +133,29 @@ struct Utility  : public Optizelle::VectorValuedFunction
 
 int main() {
 
-    // Create some arbitrary vectors in R^2
+    // Create a type shortcut
+    using Optizelle::Rm;
+
+    // Allocate memory for an initial guess and equality multiplier 
     std::vector <double> x(2);
     x[0] = 1.2; x[1] = 2.3;
-    std::vector <double> dx(2);
-    dx[0] = 3.4; dx[1] = 4.3;
-    std::vector <double> dxx(2);
-    dxx[0] = 3.2; dxx[1] = 1.1;
+    std::vector <double> y(3);
+    
+    // Create an optimization state
+    Optizelle::EqualityConstrained <double,Rm,Rm>::State::t state(x,y);
 
-    // Construct the Rosenbrock function
-    Rosen f;
+    // Modify the state so that we just run our diagnostics and exit
+    state.dscheme = Optizelle::DiagnosticScheme::DiagnosticsOnly;
+    state.f_diag = Optizelle::FunctionDiagnostics::SecondOrder;
+    state.g_diag = Optizelle::FunctionDiagnostics::SecondOrder;
+    
+    // Create a bundle of functions
+    Optizelle::EqualityConstrained <double,Rm,Rm>::Functions::t fns;
+    fns.f.reset(new Rosenbrock);
+    fns.g.reset(new Utility);
 
-    // Do two finite difference checks and then check the symmetry of the
-    // Hessian
-    Optizelle::Diagnostics::gradientCheck(Optizelle::Messaging(),f,x,dx,"f");
-    Optizelle::Diagnostics::hessianCheck(Optizelle::Messaging(),f,x,dx,"f");
-    Optizelle::Diagnostics::hessianSymmetryCheck(
-        Optizelle::Messaging(),f,x,dx,dxx,"f");
-
-    // Create some vectors in R^3 for testing the vector-valued function. 
-    std::vector <double> dy(3);
-    dy[0]=.3; dy[1]=-.12; dy[2]=1.2;
-
-    // Construct the utility function
-    Utility g;
-
-    // Do the finite difference tests and check whether or not the
-    // derivative is adjoint to the derivative adjoint.
-    Optizelle::Diagnostics::derivativeCheck(
-        Optizelle::Messaging(),g,x,dx,dy,"g");
-    Optizelle::Diagnostics::derivativeAdjointCheck(
-        Optizelle::Messaging(),g,x,dx,dy,"g");
-    Optizelle::Diagnostics::secondDerivativeCheck(
-        Optizelle::Messaging(),g,x,dx,dy,"g");
+    // Even though this looks like we're solving an optimization problem,
+    // we're actually just going to run our diagnostics and then exit.
+    Optizelle::EqualityConstrained <double,Rm,Rm>::Algorithms
+        ::getMin(Optizelle::Messaging(),fns,state);
 }

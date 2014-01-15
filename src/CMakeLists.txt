@@ -3,6 +3,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
     "${CMAKE_SOURCE_DIR}/src/cmake/Modules/")
     
 # Add some useful macros for examples and unit testing 
+include(AddOptizelleJsonTestCpp)
+include(AddOptizelleJsonTestPython)
 include(AddOptizelleTestCpp)
 include(AddOptizelleTestPython)
 include(AddOptizelleSDPACpp)

@@ -965,7 +965,10 @@ namespace Optizelle{
             f.p(x,dx,fp_x_dx);
 
             // Compute an ensemble of finite difference tests in a linear manner
-            msg.print("Finite difference test on the derivative of " +name+".");
+            std::stringstream notice;
+            notice << "Finite difference test on the derivative of " 
+                << name << ".";
+            msg.print(notice.str());
             Real min_rel_err(std::numeric_limits<Real>::quiet_NaN());
             for(Integer i=-2;i<=5;i++){
 

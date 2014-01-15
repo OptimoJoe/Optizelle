@@ -12,4 +12,4 @@ add_optizelle_example_supporting(${PROJECT_NAME}
     tr_newton_predictor_corrector.json)
 
 # Add some unit tests
-add_optizelle_test_cpp("*.json" ${PROJECT_NAME})
+add_optizelle_json_test_cpp("*.json" ${PROJECT_NAME})
