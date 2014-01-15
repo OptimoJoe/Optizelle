@@ -11,15 +11,4 @@ if(ENABLE_PYTHON)
     find_package(PythonLibs)
     find_package(PythonInterp)
     add_subdirectory(Optizelle)
-    
-    # Check if we want to add examples for Python
-    set(ENABLE_PYTHON_EXAMPLES OFF CACHE BOOL "Enable examples for Python?")
-    mark_as_advanced(CLEAR ENABLE_PYTHON_EXAMPLES)
-    if(ENABLE_PYTHON_EXAMPLES)
-        add_subdirectory(examples)
-    endif()
-else()
-    set(ENABLE_PYTHON_EXAMPLES OFF CACHE BOOL "Enable examples for Python?"
-        FORCE)
-    mark_as_advanced(FORCE ENABLE_PYTHON_EXAMPLES)
 endif()

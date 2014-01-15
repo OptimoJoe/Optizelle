@@ -482,7 +482,7 @@ class Rm(object):
 
     def copy(x,y):
         """y <- x (Shallow.  No memory allocation.)"""
-        return numpy.copyto(y,x) 
+        numpy.copyto(y,x) 
 
     def scal(alpha,x):
         """x <- alpha * x"""

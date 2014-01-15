@@ -18,7 +18,6 @@
 #include "optizelle/json.h"
 #include <iostream>
 #include <iomanip>
-#include <random>
 
 // Squares its input
 template <typename Real>
@@ -62,9 +61,13 @@ struct MyObj : public Optizelle::ScalarValuedFunction <Real,Optizelle::Rm> {
 };
 
 // Define a single equality where
+//
 // g(x,y,z,w) = z - w = 0
+//
 template <typename Real>
-struct MyEq : public Optizelle::VectorValuedFunction <Real,Optizelle::Rm,Optizelle::Rm> {
+struct MyEq :
+    public Optizelle::VectorValuedFunction <Real,Optizelle::Rm,Optizelle::Rm>
+{
 private:
     Real epsilon;
 public:

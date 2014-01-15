@@ -13,7 +13,7 @@ using Optizelle::Natural;
 
 // Defines the vector space used for optimization.
 template <typename Real>
-struct MyHS { 
+struct MyVS { 
     typedef std::vector <Real> Vector;
     
     // Memory allocation and size setting
@@ -76,8 +76,8 @@ Real sq(Real x){
 // 
 // f(x,y)=(1-x)^2+100(y-x^2)^2
 //
-struct Rosen : public Optizelle::ScalarValuedFunction <double,MyHS> {
-    typedef MyHS <double> X;
+struct Rosenbrock : public Optizelle::ScalarValuedFunction <double,MyVS> {
+    typedef MyVS <double> X;
 
     // Evaluation of the Rosenbrock function
     double operator () (const X::Vector & x) const {
@@ -110,18 +110,11 @@ int main(){
     std::vector <double> x(2);
     x[0]=-1.2; x[1]=1.;
 
-    // Create a direction for the finite difference tests
-    std::vector <double> dx(2);
-    dx[0]=-.5; dx[1]=.5;
-    
-    // Create another direction for the finite difference tests
-    std::vector <double> dxx(2);
-    dxx[0]=.75; dxx[1]=.25;
-
     // Create an unconstrained state based on this vector
-    Optizelle::Unconstrained <double,MyHS>::State::t state(x);
+    Optizelle::Unconstrained <double,MyVS>::State::t state(x);
 
     // Setup some algorithmic parameters
+    
     #if 1
     // Trust-Region Newton's method
     state.H_type = Optizelle::Operators::UserDefined;
@@ -129,16 +122,16 @@ int main(){
     state.eps_krylov = 1e-10;
     #endif
 
-    // BFGS
     #if 0
+    // BFGS
     state.algorithm_class = Optizelle::AlgorithmClass::LineSearch;
     state.dir = Optizelle::LineSearchDirection::BFGS;
     state.stored_history = 10;
     state.iter_max = 100;
     #endif
     
-    // Newton-CG 
     #if 0
+    // Newton-CG 
     state.algorithm_class = Optizelle::AlgorithmClass::LineSearch;
     state.dir = Optizelle::LineSearchDirection::NewtonCG;
     state.H_type = Optizelle::Operators::UserDefined;
@@ -147,11 +140,11 @@ int main(){
     #endif
 
     // Create the bundle of functions 
-    Optizelle::Unconstrained <double,MyHS>::Functions::t fns;
-    fns.f.reset(new Rosen);
+    Optizelle::Unconstrained <double,MyVS>::Functions::t fns;
+    fns.f.reset(new Rosenbrock);
     
     // Solve the optimization problem
-    Optizelle::Unconstrained <double,MyHS>::Algorithms
+    Optizelle::Unconstrained <double,MyVS>::Algorithms
         ::getMin(Optizelle::Messaging(),fns,state);
 
     // Print out the reason for convergence

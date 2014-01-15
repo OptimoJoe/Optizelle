@@ -1342,7 +1342,7 @@ namespace Optizelle {
             // Check errors
             if(ret.get()==nullptr) {
                 std::stringstream ss;
-                ss << "Evaluation of the constraint " << name << "failed.";
+                ss << "Evaluation of the constraint " << name << " failed.";
                 msg.error(ss.str());
             }
         }
@@ -1365,7 +1365,7 @@ namespace Optizelle {
             if(ret.get()==nullptr) {
                 std::stringstream ss;
                 ss << "Evaluation of the derivative of the constraint "
-                    << name << "failed.";
+                    << name << " failed.";
                 msg.error(ss.str());
             }
         }
@@ -1388,7 +1388,7 @@ namespace Optizelle {
             if(ret.get()==nullptr) {
                 std::stringstream ss;
                 ss << "Evaluation of the derivative-adjoint of the constraint "
-                    << name << "failed.";
+                    << name << " failed.";
                 msg.error(ss.str());
             }
         }
@@ -1413,7 +1413,7 @@ namespace Optizelle {
             if(ret.get()==nullptr) {
                 std::stringstream ss;
                 ss << "Evaluation of the second derivative-adjoint of the "
-                    "constraint " << name << "failed.";
+                    "constraint " << name << " failed.";
                 msg.error(ss.str());
             }
         }

@@ -5797,8 +5797,21 @@ namespace Optizelle{
                 Natural const & augsys_rst_freq=state.augsys_rst_freq;
                 Real const & delta = state.delta;
                 Real const & zeta = state.zeta;
+                Real const & norm_gxtyp = state.norm_gxtyp;
+                Real const & eps_constr = state.eps_constr;
                 X_Vector & dx_ncp=state.dx_ncp;
                 X_Vector & dx_n=state.dx_n;
+
+                // If we're already feasible, don't even bother with the
+                // quasi-Newton step.  In fact, if g(x)=0, the equation for
+                // the Cauchy point divides by zero, which causes all sorts
+                // of headaches later on.
+                Real norm_gx = sqrt(X::innr(g_x,g_x));
+                if(norm_gx < eps_constr*norm_gxtyp) {
+                    X::zero(dx_ncp);
+                    X::zero(dx_n);
+                    return;
+                }
 
                 // Find the Cauchy point.
 

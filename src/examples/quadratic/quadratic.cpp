@@ -1,8 +1,5 @@
-// This example minimizes a simple quadratic function.  In order
-// to modify the parameters, look at the file quadratic.param.  Only the
-// Optizelle section is run, so copy in different parameter selections
-// into that header in order to experiment.
-// For reference, the optimal solution to this function is is (1,1,1).
+// This example minimizes a simple quadratic function.  For reference, the 
+// optimal solution to this function is (1,1,1).
 
 #include <vector>
 #include <iostream>
