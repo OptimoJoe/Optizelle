@@ -220,9 +220,7 @@ namespace Optizelle{
         t from_string(std::string const & algorithm_class);
 
         // Checks whether or not a string is valid
-        struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (std::string const & name) const;
-        };
+        bool is_valid(std::string const & name);
     }
 
     // Reasons why we stop the algorithm
@@ -243,9 +241,7 @@ namespace Optizelle{
         t from_string(std::string const & opt_stop);
 
         // Checks whether or not a string is valid
-        struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (std::string const & name) const; 
-        };
+        bool is_valid(std::string const & name);
     }
 
     // Various operators for both Hessian approximations and preconditioners
@@ -268,9 +264,7 @@ namespace Optizelle{
         t from_string(std::string const & op);
 
         // Checks whether or not a string is valid
-        struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (std::string const & name) const;
-        };
+        bool is_valid(std::string const & name);
     }
 
     // Different kinds of search directions 
@@ -291,9 +285,7 @@ namespace Optizelle{
         t from_string(std::string const & dir);
 
         // Checks whether or not a string is valid
-        struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (std::string const & name) const;
-        };
+        bool is_valid(std::string const & name);
     }
 
     // Different sorts of line searches
@@ -313,9 +305,7 @@ namespace Optizelle{
         t from_string(std::string const & kind);
 
         // Checks whether or not a string is valid
-        struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (std::string const & name) const; 
-        };
+        bool is_valid(std::string const & name);
 
         // Determine whether or not the line-search checks the sufficient
         // decrease condition.
@@ -400,9 +390,7 @@ namespace Optizelle{
         t from_string(std::string const & loc);
 
         // Checks whether or not a string is valid
-        struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (std::string const & name) const;
-        };
+        bool is_valid(std::string const & name);
     }
     
     // Different problem classes
@@ -421,9 +409,7 @@ namespace Optizelle{
         t from_string(std::string const & problem_class);
 
         // Checks whether or not a string is valid
-        struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (std::string const & name) const;
-        };
+        bool is_valid(std::string const & name);
     }
     
     // Different truncated Krylov solvers 
@@ -440,9 +426,7 @@ namespace Optizelle{
         t from_string(std::string const & truncated_krylov);
 
         // Checks whether or not a string is valid
-        struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (std::string const & name) const;
-        };
+        bool is_valid(std::string const & name);
     };
     
     
@@ -462,9 +446,7 @@ namespace Optizelle{
         t from_string(std::string const & ipm);
 
         // Checks whether or not a string is valid
-        struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (std::string const & name) const;
-        };
+        bool is_valid(std::string const & name);
     }
     
     // Different schemes for adjusting the interior point centrality 
@@ -486,9 +468,7 @@ namespace Optizelle{
         t from_string(std::string const & cstrat);
 
         // Checks whether or not a string is valid
-        struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (std::string const & name) const;
-        };
+        bool is_valid(std::string const & name);
     }
     
     // Different function diagnostics on the optimization functions 
@@ -1765,118 +1745,102 @@ namespace Optizelle{
             typedef typename RestartPackage <X_Vector>::t X_Vectors;
 
             // Checks whether we have a valid real 
-            struct is_real : public std::function <
-                bool(typename RestartPackage <Real>::tuple const &) > 
-            {
-                bool operator () (
-                    typename RestartPackage <Real>::tuple const & item
-                ){
-                    if( item.first == "eps_grad" || 
-                        item.first == "eps_dx" || 
-                        item.first == "krylov_rel_err" || 
-                        item.first == "eps_krylov" || 
-                        item.first == "norm_gradtyp" || 
-                        item.first == "norm_dxtyp" || 
-                        item.first == "f_x" || 
-                        item.first == "f_xpdx" ||
-                        item.first == "delta" || 
-                        item.first == "eta1" || 
-                        item.first == "eta2" || 
-                        item.first == "ared" || 
-                        item.first == "pred" || 
-                        item.first == "alpha0" || 
-                        item.first == "alpha" || 
-                        item.first == "c1" || 
-                        item.first == "eps_ls"
-                    ) 
-                        return true;
-                    else
-                        return false;
-                }
-            };
+            static bool is_real(
+                typename RestartPackage <Real>::tuple const & item
+            ) {
+                if( item.first == "eps_grad" || 
+                    item.first == "eps_dx" || 
+                    item.first == "krylov_rel_err" || 
+                    item.first == "eps_krylov" || 
+                    item.first == "norm_gradtyp" || 
+                    item.first == "norm_dxtyp" || 
+                    item.first == "f_x" || 
+                    item.first == "f_xpdx" ||
+                    item.first == "delta" || 
+                    item.first == "eta1" || 
+                    item.first == "eta2" || 
+                    item.first == "ared" || 
+                    item.first == "pred" || 
+                    item.first == "alpha0" || 
+                    item.first == "alpha" || 
+                    item.first == "c1" || 
+                    item.first == "eps_ls"
+                ) 
+                    return true;
+                else
+                    return false;
+            }
 
             // Checks whether we have a valid natural number
-            struct is_nat : public std::function <
-                bool(typename RestartPackage <Natural>::tuple const &) > 
-            {
-                bool operator () (
-                    typename RestartPackage <Natural>::tuple const & item
-                ){
-                    if( item.first == "stored_history" ||
-                        item.first == "history_reset" || 
-                        item.first == "iter" || 
-                        item.first == "iter_max" || 
-                        item.first == "krylov_iter" || 
-                        item.first == "krylov_iter_max" ||
-                        item.first == "krylov_iter_total" || 
-                        item.first == "krylov_orthog_max" ||
-                        item.first == "msg_level" ||
-                        item.first == "rejected_trustregion" || 
-                        item.first == "linesearch_iter" || 
-                        item.first == "linesearch_iter_max" ||
-                        item.first == "linesearch_iter_total" 
-                    ) 
-                        return true;
-                    else
-                        return false;
-                }
-            };
+            static bool is_nat(
+                typename RestartPackage <Natural>::tuple const & item
+            ) {
+                if( item.first == "stored_history" ||
+                    item.first == "history_reset" || 
+                    item.first == "iter" || 
+                    item.first == "iter_max" || 
+                    item.first == "krylov_iter" || 
+                    item.first == "krylov_iter_max" ||
+                    item.first == "krylov_iter_total" || 
+                    item.first == "krylov_orthog_max" ||
+                    item.first == "msg_level" ||
+                    item.first == "rejected_trustregion" || 
+                    item.first == "linesearch_iter" || 
+                    item.first == "linesearch_iter_max" ||
+                    item.first == "linesearch_iter_total" 
+                ) 
+                    return true;
+                else
+                    return false;
+            }
            
             // Checks whether we have a valid parameter 
-            struct is_param : public std::function <
-                bool(typename RestartPackage <std::string>::tuple const &) > 
-            {
-                bool operator () (
-                    typename RestartPackage <std::string>::tuple const & item
-                ){
-                    if( (item.first=="krylov_solver" &&
-                            KrylovSolverTruncated::is_valid()(item.second)) ||
-                        (item.first=="algorithm_class" &&
-                            AlgorithmClass::is_valid()(item.second)) ||
-                        (item.first=="opt_stop" &&
-                            StoppingCondition::is_valid()(item.second)) ||
-                        (item.first=="krylov_stop" &&
-                            KrylovStop::is_valid()(item.second)) ||
-                        (item.first=="H_type" &&
-                            Operators::is_valid()(item.second)) ||
-                        (item.first=="PH_type" &&
-                            Operators::is_valid()(item.second)) ||
-                        (item.first=="dir" &&
-                            LineSearchDirection::is_valid()(item.second)) ||
-                        (item.first=="kind" &&
-                            LineSearchKind::is_valid()(item.second)) ||
-                        (item.first=="f_diag" &&
-                            FunctionDiagnostics::is_valid(item.second)) ||
-                        (item.first=="dscheme" &&
-                            DiagnosticScheme::is_valid(item.second))
-                    ) 
-                        return true;
-                    else
-                        return false;
-                }
-            };
+            static bool is_param (
+                typename RestartPackage <std::string>::tuple const & item
+            ){
+                if( (item.first=="krylov_solver" &&
+                        KrylovSolverTruncated::is_valid(item.second)) ||
+                    (item.first=="algorithm_class" &&
+                        AlgorithmClass::is_valid(item.second)) ||
+                    (item.first=="opt_stop" &&
+                        StoppingCondition::is_valid(item.second)) ||
+                    (item.first=="krylov_stop" &&
+                        KrylovStop::is_valid(item.second)) ||
+                    (item.first=="H_type" &&
+                        Operators::is_valid(item.second)) ||
+                    (item.first=="PH_type" &&
+                        Operators::is_valid(item.second)) ||
+                    (item.first=="dir" &&
+                        LineSearchDirection::is_valid(item.second)) ||
+                    (item.first=="kind" &&
+                        LineSearchKind::is_valid(item.second)) ||
+                    (item.first=="f_diag" &&
+                        FunctionDiagnostics::is_valid(item.second)) ||
+                    (item.first=="dscheme" &&
+                        DiagnosticScheme::is_valid(item.second))
+                ) 
+                    return true;
+                else
+                    return false;
+            }
             
             // Checks whether we have a valid variable
-            struct is_x : public std::function <
-                bool(typename RestartPackage <X_Vector>::tuple const &) > 
-            {
-                bool operator () (
-                    typename RestartPackage <X_Vector>::tuple const & item
-                ){
-                    if( item.first == "x" || 
-                        item.first == "grad" || 
-                        item.first == "dx" || 
-                        item.first == "x_old" || 
-                        item.first == "grad_old" || 
-                        item.first == "dx_old" || 
-                        item.first.substr(0,5)=="oldY_" || 
-                        item.first.substr(0,5)=="oldS_" 
-                    ) 
-                        return true;
-                    else
-                        return false;
-                }
-            };
+            static bool is_x(
+                typename RestartPackage <X_Vector>::tuple const & item
+            ) {
+                if( item.first == "x" || 
+                    item.first == "grad" || 
+                    item.first == "dx" || 
+                    item.first == "x_old" || 
+                    item.first == "grad_old" || 
+                    item.first == "dx_old" || 
+                    item.first.substr(0,5)=="oldY_" || 
+                    item.first.substr(0,5)=="oldS_" 
+                ) 
+                    return true;
+                else
+                    return false;
+            }
             
             // Checks whether we have valid labels
             static void checkItems(
@@ -1887,85 +1851,15 @@ namespace Optizelle{
                 X_Vectors const & xs
             ) {
                 Utility::checkItems <Real> (
-                    msg,is_real(),reals," real name: ");
+                    msg,is_real,reals," real name: ");
                 Utility::checkItems <Natural> (
-                    msg,is_nat(),nats," natural name: ");
+                    msg,is_nat,nats," natural name: ");
                 Utility::checkItems <std::string> (
-                    msg,is_param(),params," paramater: ");
+                    msg,is_param,params," paramater: ");
                 Utility::checkItems <X_Vector> (
-                    msg,is_x(),xs," variable name: ");
+                    msg,is_x,xs," variable name: ");
             }
 
-            // Checks whether or not the value used to represent a parameter
-            // is valid.  This function returns a string with the error
-            // if there is one.  Otherwise, it returns an empty string.
-            struct checkParamVal : public std::binary_function
-                <std::string const &,std::string const &,std::string>
-            {
-                std::string operator() (
-                    std::string const & label,
-                    std::string const & val
-                ) const {
-                    // Create a base message
-                    const std::string base
-                        ="During serialization, found an invalid ";
-
-                    // Used to build the message 
-                    std::stringstream ss;
-
-                    // Check the truncated Krylov solver 
-                    if(label=="krylov_solver") {
-                        if(!KrylovSolverTruncated::is_valid()(val))
-                            ss << base << "truncated Krylov solver: " << val;
-
-                    // Check the algorithm class
-                    } else if(label=="algorithm_class") {
-                        if(!AlgorithmClass::is_valid()(val))
-                            ss << base << "algorithm class: " << val;
-
-                    // Check the optimization stopping conditions
-                    } else if(label=="opt_stop"){
-                        if(!StoppingCondition::is_valid()(val))
-                            ss << base << "stopping condition: " << val;
-
-                    // Check the Krylov stopping conditions
-                    } else if(label=="krylov_stop"){
-                        if(!KrylovStop::is_valid()(val)) 
-                            ss <<base <<"Krylov stopping condition: " << val;
-
-                    // Check the Hessian type
-                    } else if(label=="H_type"){
-                        if(!Operators::is_valid()(val))
-                            ss << base<<"Hessian type: " << val;
-
-                    // Check the type of the preconditioner
-                    } else if(label=="PH_type"){
-                        if(!Operators::is_valid()(val))
-                            ss << base <<"Hessian preconditioner type: " << val;
-
-                    // Check the line-search direction
-                    } else if(label=="dir"){
-                        if(!LineSearchDirection::is_valid()(val)) 
-                            ss << base << "line-search direction: " << val;
-
-                    // Check the kind of line-search
-                    } else if(label=="kind"){
-                        if(!LineSearchKind::is_valid()(val)) 
-                            ss << base << "line-search kind: " << val;
-
-                    // Check the function diagnostics on f 
-                    } else if(label=="f_diag"){
-                        if(!FunctionDiagnostics::is_valid(val)) 
-                            ss << base << "function diagnostics on f: " << val;
-                    
-                    // Check the diagnostic scheme 
-                    } else if(label=="dscheme"){
-                        if(!DiagnosticScheme::is_valid(val)) 
-                            ss << base << "diagnostic scheme: " << val;
-                    }
-                    return ss.str();
-                }
-            };
             
             // Copy out all variables.
             static void stateToVectors(
@@ -4805,119 +4699,95 @@ namespace Optizelle{
             typedef typename RestartPackage <Y_Vector>::t Y_Vectors;
 
             // Checks whether we have a valid real 
-            struct is_real : public std::function <
-                bool(typename RestartPackage <Real>::tuple const &) > 
-            {
-                bool operator () (
-                    typename RestartPackage <Real>::tuple const & item
-                ){
-                    if( typename Unconstrained <Real,XX>::Restart
-                            ::is_real()(item) ||
-                        item.first == "zeta" ||
-                        item.first == "eta0" ||
-                        item.first == "rho" ||
-                        item.first == "rho_old" ||
-                        item.first == "rho_bar" ||
-                        item.first == "eps_constr" ||
-                        item.first == "xi_qn" || 
-                        item.first == "xi_pg" ||
-                        item.first == "xi_proj" ||
-                        item.first == "xi_tang" ||
-                        item.first == "xi_lmh" ||
-                        item.first == "xi_lmg" ||
-                        item.first == "xi_4" ||
-                        item.first == "rpred" ||
-                        item.first == "norm_gxtyp" ||
-                        item.first == "norm_gpxdxnpgx" 
-                    )
-                        return true;
-                    else
-                        return false;
-                }
-            };
+            static bool is_real(
+                typename RestartPackage <Real>::tuple const & item
+            ){
+                if( Unconstrained <Real,XX>::Restart::is_real(item) ||
+                    item.first == "zeta" ||
+                    item.first == "eta0" ||
+                    item.first == "rho" ||
+                    item.first == "rho_old" ||
+                    item.first == "rho_bar" ||
+                    item.first == "eps_constr" ||
+                    item.first == "xi_qn" || 
+                    item.first == "xi_pg" ||
+                    item.first == "xi_proj" ||
+                    item.first == "xi_tang" ||
+                    item.first == "xi_lmh" ||
+                    item.first == "xi_lmg" ||
+                    item.first == "xi_4" ||
+                    item.first == "rpred" ||
+                    item.first == "norm_gxtyp" ||
+                    item.first == "norm_gpxdxnpgx" 
+                )
+                    return true;
+                else
+                    return false;
+            }
             
             // Checks whether we have a valid natural number
-            struct is_nat : public std::function <
-                bool(typename RestartPackage <Natural>::tuple const &) > 
-            {
-                bool operator () (
-                    typename RestartPackage <Natural>::tuple const & item
-                ){
-                    if( typename Unconstrained <Real,XX>::Restart
-                            ::is_nat()(item) ||
-                        item.first == "augsys_iter_max" ||
-                        item.first == "augsys_rst_freq"
-                    )
-                        return true;
-                    else
-                        return false;
-                }
-            };
+            static bool is_nat(
+                typename RestartPackage <Natural>::tuple const & item
+            ) {
+                if( Unconstrained <Real,XX>::Restart::is_nat(item) ||
+                    item.first == "augsys_iter_max" ||
+                    item.first == "augsys_rst_freq"
+                )
+                    return true;
+                else
+                    return false;
+            }
            
             // Checks whether we have a valid parameter 
-            struct is_param : public std::function <
-                bool(typename RestartPackage <std::string>::tuple const &) > 
-            {
-                bool operator () (
-                    typename RestartPackage <std::string>::tuple const & item
-                ){
-                    if( typename Unconstrained <Real,XX>::Restart
-                            ::is_param()(item) ||
-                        (item.first=="PSchur_left_type" &&
-                            Operators::is_valid()(item.second)) ||
-                        (item.first=="PSchur_right_type" &&
-                            Operators::is_valid()(item.second)) ||
-                        (item.first=="g_diag" &&
-                            FunctionDiagnostics::is_valid(item.second))
-                    ) 
-                        return true;
-                    else
-                        return false;
-                }
-            };
+            static bool is_param(
+                typename RestartPackage <std::string>::tuple const & item
+            ){
+                if( Unconstrained <Real,XX>::Restart::is_param(item) ||
+                    (item.first=="PSchur_left_type" &&
+                        Operators::is_valid(item.second)) ||
+                    (item.first=="PSchur_right_type" &&
+                        Operators::is_valid(item.second)) ||
+                    (item.first=="g_diag" &&
+                        FunctionDiagnostics::is_valid(item.second))
+                ) 
+                    return true;
+                else
+                    return false;
+            }
             
             // Checks whether we have a valid variable
-            struct is_x : public std::function <
-                bool(typename RestartPackage <X_Vector>::tuple const &) > 
-            {
-                bool operator () (
-                    typename RestartPackage <X_Vector>::tuple const & item
-                ){
-                    if( typename Unconstrained <Real,XX>::Restart
-                            ::is_x()(item) ||
-                        item.first == "dx_n" ||
-                        item.first == "dx_ncp" ||
-                        item.first == "dx_t" ||
-                        item.first == "dx_t_uncorrected" ||
-                        item.first == "dx_tcp_uncorrected" ||
-                        item.first == "H_dxn" ||
-                        item.first == "W_gradpHdxn" ||
-                        item.first == "H_dxtuncorrected" 
-                    ) 
-                        return true;
-                    else
-                        return false;
-                }
-            };
+            static bool is_x (
+                typename RestartPackage <X_Vector>::tuple const & item
+            ) {
+                if( Unconstrained <Real,XX>::Restart::is_x(item) ||
+                    item.first == "dx_n" ||
+                    item.first == "dx_ncp" ||
+                    item.first == "dx_t" ||
+                    item.first == "dx_t_uncorrected" ||
+                    item.first == "dx_tcp_uncorrected" ||
+                    item.first == "H_dxn" ||
+                    item.first == "W_gradpHdxn" ||
+                    item.first == "H_dxtuncorrected" 
+                ) 
+                    return true;
+                else
+                    return false;
+            }
             
             // Checks whether we have a valid equality multiplier 
-            struct is_y : public std::function <
-                bool(typename RestartPackage <Y_Vector>::tuple const &) > 
-            {
-                bool operator () (
-                    typename RestartPackage <Y_Vector>::tuple const & item
-                ){
-                    if( item.first == "y" ||
-                        item.first == "dy" ||
-                        item.first == "g_x" ||
-                        item.first == "gpxdxn_p_gx" ||
-                        item.first == "gpxdxt"
-                    ) 
-                        return true;
-                    else
-                        return false;
-                }
-            };
+            static bool is_y(
+                typename RestartPackage <Y_Vector>::tuple const & item
+            ) {
+                if( item.first == "y" ||
+                    item.first == "dy" ||
+                    item.first == "g_x" ||
+                    item.first == "gpxdxn_p_gx" ||
+                    item.first == "gpxdxt"
+                ) 
+                    return true;
+                else
+                    return false;
+            }
 
             // Checks whether we have valid labels
             static void checkItems(
@@ -4929,15 +4799,15 @@ namespace Optizelle{
                 Y_Vectors const & ys
             ) {
                 Utility::checkItems <Real> (
-                    msg,is_real(),reals," real name: ");
+                    msg,is_real,reals," real name: ");
                 Utility::checkItems <Natural> (
-                    msg,is_nat(),nats," natural name: ");
+                    msg,is_nat,nats," natural name: ");
                 Utility::checkItems <std::string> (
-                    msg,is_param(),params," paramater: ");
+                    msg,is_param,params," paramater: ");
                 Utility::checkItems <X_Vector> (
-                    msg,is_x(),xs," variable name: ");
+                    msg,is_x,xs," variable name: ");
                 Utility::checkItems <Y_Vector> (
-                    msg,is_y(),ys," equality multiplier name: ");
+                    msg,is_y,ys," equality multiplier name: ");
             }
             
             // Copy out all equality multipliers 
@@ -7356,97 +7226,71 @@ namespace Optizelle{
             typedef typename RestartPackage <Z_Vector>::t Z_Vectors;
             
             // Checks whether we have a valid real 
-            struct is_real : public std::function <
-                bool(typename RestartPackage <Real>::tuple const &) > 
-            {
-                bool operator () (
-                    typename RestartPackage <Real>::tuple const & item
-                ){
-                    if( typename Unconstrained <Real,XX>::Restart
-                            ::is_real()(item) ||
-                        item.first == "mu" ||
-                        item.first == "mu_est" ||
-                        item.first == "mu_typ" ||
-                        item.first == "eps_mu" ||
-                        item.first == "sigma" ||
-                        item.first == "gamma" 
-                    )
-                        return true;
-                    else
-                        return false;
-                    }
-            };
+            static bool is_real(
+                typename RestartPackage <Real>::tuple const & item
+            ) {
+                if( Unconstrained <Real,XX>::Restart::is_real(item) ||
+                    item.first == "mu" ||
+                    item.first == "mu_est" ||
+                    item.first == "mu_typ" ||
+                    item.first == "eps_mu" ||
+                    item.first == "sigma" ||
+                    item.first == "gamma" 
+                )
+                    return true;
+                else
+                    return false;
+            }
             
             // Checks whether we have a valid natural number
-            struct is_nat : public std::function <
-                bool(typename RestartPackage <Natural>::tuple const &) > 
-            {
-                bool operator () (
-                    typename RestartPackage <Natural>::tuple const & item
-                ){
-                    if( typename Unconstrained <Real,XX>::Restart
-                            ::is_nat()(item)
-                    )
-                        return true;
-                    else
-                        return false;
-                }
-            };
+            static bool is_nat(
+                typename RestartPackage <Natural>::tuple const & item
+            ) {
+                if( Unconstrained <Real,XX>::Restart::is_nat(item))
+                    return true;
+                else
+                    return false;
+            }
            
             // Checks whether we have a valid parameter 
-            struct is_param : public std::function <
-                bool(typename RestartPackage <std::string>::tuple const &) > 
-            {
-                bool operator () (
-                    typename RestartPackage <std::string>::tuple const & item
-                ){
-                    if( typename Unconstrained <Real,XX>::Restart
-                            ::is_param()(item) ||
-                        (item.first=="ipm" &&
-                            InteriorPointMethod::is_valid()(item.second)) ||
-                        (item.first=="cstrat" &&
-                            CentralityStrategy::is_valid()(item.second)) ||
-                        (item.first=="h_diag" &&
-                            FunctionDiagnostics::is_valid(item.second)) 
-                    ) 
-                        return true;
-                    else
-                        return false;
-                }
-            };
+            static bool is_param(
+                typename RestartPackage <std::string>::tuple const & item
+            ){
+                if( Unconstrained <Real,XX>::Restart::is_param(item) ||
+                    (item.first=="ipm" &&
+                        InteriorPointMethod::is_valid(item.second)) ||
+                    (item.first=="cstrat" &&
+                        CentralityStrategy::is_valid(item.second)) ||
+                    (item.first=="h_diag" &&
+                        FunctionDiagnostics::is_valid(item.second)) 
+                ) 
+                    return true;
+                else
+                    return false;
+            }
             
             // Checks whether we have a valid variable
-            struct is_x : public std::function <
-                bool(typename RestartPackage <X_Vector>::tuple const &) > 
-            {
-                bool operator () (
-                    typename RestartPackage <X_Vector>::tuple const & item
-                ){
-                    if( typename Unconstrained <Real,XX>::Restart
-                            ::is_x()(item)
-                    )
-                        return true;
-                    else
-                        return false;
-                }
-            };
+            static bool is_x(
+                typename RestartPackage <X_Vector>::tuple const & item
+            ) {
+                if( Unconstrained <Real,XX>::Restart::is_x(item))
+                    return true;
+                else
+                    return false;
+            }
             
             // Checks whether we have a valid inequality multiplier 
-            struct is_z : public std::function <
-                bool(typename RestartPackage <Z_Vector>::tuple const &) > 
-            {
-                bool operator () (
-                    typename RestartPackage <Z_Vector>::tuple const & item
-                ){
-                    if( item.first == "z" ||
-                        item.first == "dz" ||
-                        item.first == "h_x"
-                    )
-                        return true;
-                    else
-                        return false;
-                }
-            };
+            static bool is_z(
+                typename RestartPackage <Z_Vector>::tuple const & item
+            ) {
+                if( item.first == "z" ||
+                    item.first == "dz" ||
+                    item.first == "h_x"
+                )
+                    return true;
+                else
+                    return false;
+            }
 
             // Checks whether we have valid labels
             static void checkItems(
@@ -7458,15 +7302,15 @@ namespace Optizelle{
                 Z_Vectors const & zs
             ) {
                 Utility::checkItems <Real> (
-                    msg,is_real(),reals," real name: ");
+                    msg,is_real,reals," real name: ");
                 Utility::checkItems <Natural> (
-                    msg,is_nat(),nats," natural name: ");
+                    msg,is_nat,nats," natural name: ");
                 Utility::checkItems <std::string> (
-                    msg,is_param(),params," paramater: ");
+                    msg,is_param,params," paramater: ");
                 Utility::checkItems <X_Vector> (
-                    msg,is_x(),xs," variable name: ");
+                    msg,is_x,xs," variable name: ");
                 Utility::checkItems <Z_Vector> (
-                    msg,is_z(),zs," inequality multiplier name: ");
+                    msg,is_z,zs," inequality multiplier name: ");
             }
             
             // Copy out the inequality multipliers 
@@ -8895,108 +8739,72 @@ namespace Optizelle{
             typedef typename RestartPackage <Z_Vector>::t Z_Vectors;
             
             // Checks whether we have a valid real 
-            struct is_real : public std::function <
-                bool(typename RestartPackage <Real>::tuple const &) > 
-            {
-                bool operator () (
-                    typename RestartPackage <Real>::tuple const & item
-                ){
-                    if( typename EqualityConstrained <Real,XX,YY>::Restart
-                            ::is_real()(item) ||
-                        typename InequalityConstrained <Real,XX,ZZ>::Restart
-                            ::is_real()(item)
-                    )
-                        return true;
-                    else
-                        return false;
-                }
-            };
+            static bool is_real(
+                typename RestartPackage <Real>::tuple const & item
+            ) {
+                if( EqualityConstrained <Real,XX,YY>::Restart::is_real(item) ||
+                    InequalityConstrained <Real,XX,ZZ>::Restart::is_real(item)
+                )
+                    return true;
+                else
+                    return false;
+            }
             
             // Checks whether we have a valid natural number
-            struct is_nat : public std::function <
-                bool(typename RestartPackage <Natural>::tuple const &) > 
-            {
-                bool operator () (
-                    typename RestartPackage <Natural>::tuple const & item
-                ){
-                    if( typename EqualityConstrained <Real,XX,YY>::Restart
-                            ::is_nat()(item) ||
-                        typename InequalityConstrained <Real,XX,ZZ>::Restart
-                            ::is_nat()(item)
-                    )
-                        return true;
-                    else
-                        return false;
-                }
-            };
+            static bool is_nat(
+                typename RestartPackage <Natural>::tuple const & item
+            ) {
+                if( EqualityConstrained <Real,XX,YY>::Restart::is_nat(item) ||
+                    InequalityConstrained <Real,XX,ZZ>::Restart::is_nat(item)
+                )
+                    return true;
+                else
+                    return false;
+            }
            
             // Checks whether we have a valid parameter 
-            struct is_param : public std::function <
-                bool(typename RestartPackage <std::string>::tuple const &) > 
-            {
-                bool operator () (
-                    typename RestartPackage <std::string>::tuple const & item
-                ){
-                    if( typename EqualityConstrained <Real,XX,YY>::Restart
-                            ::is_param()(item) ||
-                        typename InequalityConstrained <Real,XX,ZZ>::Restart
-                            ::is_param()(item)
-                    ) 
-                        return true;
-                    else
-                        return false;
-                }
-            };
+            static bool is_param(
+                typename RestartPackage <std::string>::tuple const & item
+            ){
+                if( EqualityConstrained <Real,XX,YY>::Restart::is_param(item) ||
+                    InequalityConstrained <Real,XX,ZZ>::Restart::is_param(item)
+                ) 
+                    return true;
+                else
+                    return false;
+            }
             
             // Checks whether we have a valid variable
-            struct is_x : public std::function <
-                bool(typename RestartPackage <X_Vector>::tuple const &) > 
-            {
-                bool operator () (
-                    typename RestartPackage <X_Vector>::tuple const & item
-                ){
-                    if( typename EqualityConstrained <Real,XX,YY>::Restart
-                            ::is_x()(item) ||
-                        typename InequalityConstrained <Real,XX,ZZ>::Restart
-                            ::is_x()(item)
-                    ) 
-                        return true;
-                    else
-                        return false;
-                }
-            };
+            static bool is_x(
+                typename RestartPackage <X_Vector>::tuple const & item
+            ) {
+                if( EqualityConstrained <Real,XX,YY>::Restart::is_x(item) ||
+                    InequalityConstrained <Real,XX,ZZ>::Restart::is_x(item)
+                ) 
+                    return true;
+                else
+                    return false;
+            }
             
             // Checks whether we have a valid equality multiplier label
-            struct is_y : public std::function <
-                bool(typename RestartPackage <Y_Vector>::tuple const &) > 
-            {
-                bool operator () (
-                    typename RestartPackage <Y_Vector>::tuple const & item
-                ){
-                    if( typename EqualityConstrained <Real,XX,YY>::Restart
-                            ::is_y()(item)
-                    ) 
-                        return true;
-                    else
-                        return false;
-                }
-            };
+            static bool is_y(
+                typename RestartPackage <Y_Vector>::tuple const & item
+            ) {
+                if( EqualityConstrained <Real,XX,YY>::Restart::is_y(item)) 
+                    return true;
+                else
+                    return false;
+            }
             
             // Checks whether we have a valid inequality multiplier 
-            struct is_z : public std::function <
-                bool(typename RestartPackage <Z_Vector>::tuple const &) > 
-            {
-                bool operator () (
-                    typename RestartPackage <Z_Vector>::tuple const & item
-                ){
-                    if( typename InequalityConstrained <Real,XX,ZZ>::Restart
-                            ::is_z()(item)
-                    ) 
-                        return true;
-                    else
-                        return false;
-                }
-            };
+            static bool is_z(
+                typename RestartPackage <Z_Vector>::tuple const & item
+            ) {
+                if( InequalityConstrained <Real,XX,ZZ>::Restart::is_z(item)) 
+                    return true;
+                else
+                    return false;
+            }
 
             // Checks whether we have valid labels
             static void checkItems(
@@ -9009,17 +8817,17 @@ namespace Optizelle{
                 Z_Vectors const & zs
             ) {
                 Utility::checkItems <Real> (
-                    msg,is_real(),reals," real name: ");
+                    msg,is_real,reals," real name: ");
                 Utility::checkItems <Natural> (
-                    msg,is_nat(),nats," natural name: ");
+                    msg,is_nat,nats," natural name: ");
                 Utility::checkItems <std::string> (
-                    msg,is_param(),params," paramater: ");
+                    msg,is_param,params," paramater: ");
                 Utility::checkItems <X_Vector> (
-                    msg,is_x(),xs," variable name: ");
+                    msg,is_x,xs," variable name: ");
                 Utility::checkItems <Y_Vector> (
-                    msg,is_y(),ys," equality multiplier name: ");
+                    msg,is_y,ys," equality multiplier name: ");
                 Utility::checkItems <Z_Vector> (
-                    msg,is_z(),zs," inequality multiplier name: ");
+                    msg,is_z,zs," inequality multiplier name: ");
             }
             
             // Release the data into structures controlled by the user 

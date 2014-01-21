@@ -47,577 +47,577 @@ namespace Optizelle{
     // Allow a derived class to deallocate memory
     Messaging::~Messaging() {}
 
-    // Converts the algorithm class to a string
-    std::string AlgorithmClass::to_string(
-        AlgorithmClass::t const & algorithm_class
-    ){
-        switch(algorithm_class){
-        case TrustRegion:
-            return "TrustRegion";
-        case LineSearch:
-            return "LineSearch";
-        case UserDefined:
-            return "UserDefined";
-        default:
-            throw;
+    // Which algorithm class do we use
+    namespace AlgorithmClass{
+        // Converts the algorithm class to a string
+        std::string to_string(t const & algorithm_class){
+            switch(algorithm_class){
+            case TrustRegion:
+                return "TrustRegion";
+            case LineSearch:
+                return "LineSearch";
+            case UserDefined:
+                return "UserDefined";
+            default:
+                throw;
+            }
         }
-    }
-    
-    // Converts a string to an algorithm class 
-    AlgorithmClass::t AlgorithmClass::from_string(
-        std::string const & algorithm_class
-    ){
-        if(algorithm_class=="TrustRegion")
-            return TrustRegion;
-        else if(algorithm_class=="LineSearch")
-            return LineSearch;
-        else if(algorithm_class=="UserDefined")
-            return UserDefined;
-        else
-            throw;
-    }
-
-    // Checks whether or not a string is valid
-    bool AlgorithmClass::is_valid::operator () (std::string const & name)const {
-        if( name=="TrustRegion" ||
-            name=="LineSearch" ||
-            name=="UserDefined"
-        )
-            return true;
-        else
-            return false;
-    }
-
-    // Converts the stopping condition to a string 
-    std::string StoppingCondition::to_string(
-        StoppingCondition::t const & opt_stop
-    ){
-        switch(opt_stop){
-        case NotConverged:
-            return "NotConverged";
-        case RelativeGradientSmall:
-            return "RelativeGradientSmall";
-        case RelativeStepSmall:
-            return "RelativeStepSmall";
-        case MaxItersExceeded:
-            return "MaxItersExceeded";
-        case InteriorPointInstability:
-            return "InteriorPointInstability";
-        case UserDefined:
-            return "UserDefined";
-        default:
-            throw;
-        }
-    }
-
-    // Converts a string to a stopping condition
-    StoppingCondition::t StoppingCondition::from_string(
-        std::string const & opt_stop
-    ){
-        if(opt_stop=="NotConverged")
-            return StoppingCondition::NotConverged;
-        else if(opt_stop=="RelativeGradientSmall")
-            return StoppingCondition::RelativeGradientSmall;
-        else if(opt_stop=="RelativeStepSmall")
-            return StoppingCondition::RelativeStepSmall;
-        else if(opt_stop=="MaxItersExceeded")
-            return StoppingCondition::MaxItersExceeded;
-        else if(opt_stop=="InteriorPointInstability")
-            return StoppingCondition::InteriorPointInstability; 
-        else if(opt_stop=="UserDefined")
-            return StoppingCondition::UserDefined;
-        else
-            throw;
-    }
-
-    // Checks whether or not a string is valid
-    bool StoppingCondition::is_valid::operator () (
-        std::string const & name
-    ) const {
-        if( name=="NotConverged" ||
-            name=="RelativeGradientSmall" ||
-            name=="RelativeStepSmall" ||
-            name=="MaxItersExceeded" ||
-            name=="InteriorPointInstability" ||
-            name=="UserDefined"
-        )
-            return true;
-        else
-            return false;
-    }
-
-    // Converts the operator type to a string 
-    std::string Operators::to_string(Operators::t const & op){
-        switch(op){
-        case Operators::Identity:
-            return "Identity";
-        case Operators::ScaledIdentity:
-            return "ScaledIdentity";
-        case Operators::BFGS:
-            return "BFGS";
-        case Operators::InvBFGS:
-            return "InvBFGS";
-        case Operators::SR1:
-            return "SR1";
-        case Operators::InvSR1:
-            return "InvSR1";
-        case Operators::UserDefined:
-            return "UserDefined";
-        default:
-            throw;
-        }
-    }
-    
-    // Converts a string to a operator 
-    Operators::t Operators::from_string(std::string const & op){
-        if(op=="Identity")
-            return Operators::Identity; 
-        else if(op=="ScaledIdentity")
-            return Operators::ScaledIdentity; 
-        else if(op=="BFGS")
-            return Operators::BFGS; 
-        else if(op=="InvBFGS")
-            return Operators::InvBFGS; 
-        else if(op=="SR1")
-            return Operators::SR1; 
-        else if(op=="InvSR1")
-            return Operators::InvSR1; 
-        else if(op=="UserDefined")
-            return Operators::UserDefined; 
-        else
-            throw;
-    }
-
-    // Checks whether or not a string is valid
-    bool Operators::is_valid::operator () (std::string const & name) const {
-        if( name=="Identity" ||
-            name=="ScaledIdentity" ||
-            name=="BFGS" ||
-            name=="InvBFGS" ||
-            name=="SR1" ||
-            name=="InvSR1" ||
-            name=="UserDefined" 
-        )
-            return true;
-        else
-            return false;
-    }
-
-    // Converts the line-search direction to a string 
-    std::string LineSearchDirection::to_string(t const & dir){
-        switch(dir){
-        case LineSearchDirection::SteepestDescent:
-            return "SteepestDescent";
-        case LineSearchDirection::FletcherReeves:
-            return "FletcherReeves";
-        case LineSearchDirection::PolakRibiere:
-            return "PolakRibiere";
-        case LineSearchDirection::HestenesStiefel:
-            return "HestenesStiefel";
-        case LineSearchDirection::BFGS:
-            return "BFGS";
-        case LineSearchDirection::NewtonCG:
-            return "NewtonCG";
-        default:
-            throw;
-        }
-    }
-    
-    // Converts a string to a line-search direction 
-    LineSearchDirection::t LineSearchDirection::from_string(
-        std::string const & dir
-    ){
-        if(dir=="SteepestDescent")
-            return LineSearchDirection::SteepestDescent; 
-        else if(dir=="FletcherReeves")
-            return LineSearchDirection::FletcherReeves; 
-        else if(dir=="PolakRibiere")
-            return LineSearchDirection::PolakRibiere; 
-        else if(dir=="HestenesStiefel")
-            return LineSearchDirection::HestenesStiefel; 
-        else if(dir=="BFGS")
-            return LineSearchDirection::BFGS; 
-        else if(dir=="NewtonCG")
-            return LineSearchDirection::NewtonCG; 
-        else
-            throw;
-    }
-
-    // Checks whether or not a string is valid
-    bool LineSearchDirection::is_valid::operator () (
-        std::string const & name
-    ) const {
-        if( name=="SteepestDescent" ||
-            name=="FletcherReeves" ||
-            name=="PolakRibiere" ||
-            name=="HestenesStiefel" ||
-            name=="BFGS" ||
-            name=="NewtonCG"
-        )
-            return true;
-        else
-            return false;
-    }
-
-    // Converts the line-search kind to a string 
-    std::string LineSearchKind::to_string(t const & kind){
-        switch(kind){
-        case LineSearchKind::Brents:
-            return "Brents";
-        case LineSearchKind::GoldenSection:
-            return "GoldenSection";
-        case LineSearchKind::BackTracking:
-            return "BackTracking";
-        case LineSearchKind::TwoPointA:
-            return "TwoPointA";
-        case LineSearchKind::TwoPointB:
-            return "TwoPointB";
-        default:
-            throw;
-        }
-    }
-    
-    // Converts a string to a line-search kind 
-    LineSearchKind::t LineSearchKind::from_string(std::string const & kind){
-        if(kind=="Brents")
-            return LineSearchKind::Brents; 
-        else if(kind=="GoldenSection")
-            return LineSearchKind::GoldenSection; 
-        else if(kind=="BackTracking")
-            return LineSearchKind::BackTracking; 
-        else if(kind=="TwoPointA")
-            return LineSearchKind::TwoPointA; 
-        else if(kind=="TwoPointB")
-            return LineSearchKind::TwoPointB; 
-        else
-            throw;
-    }
-
-    // Checks whether or not a string is valid
-    bool LineSearchKind::is_valid::operator () (std::string const & name)const {
-        if( name=="Brents" ||
-            name=="GoldenSection" ||
-            name=="BackTracking" ||
-            name=="TwoPointA" ||
-            name=="TwoPointB" 
-        )
-            return true;
-        else
-            return false;
-    }
-
-    // Determine whether or not the line-search checks the sufficient
-    // decrease condition.
-    bool LineSearchKind::is_sufficient_decrease(LineSearchKind::t const & kind){
-        switch(kind){
-        case LineSearchKind::GoldenSection:
-        case LineSearchKind::BackTracking:
-        case LineSearchKind::Brents:
-            return true;
-        case LineSearchKind::TwoPointA:
-        case LineSearchKind::TwoPointB:
-            return false;
-        default:
-            throw;
-        }
-    }
-    
-    // Converts the optimization location to a string 
-    std::string OptimizationLocation::to_string(
-        OptimizationLocation::t const & loc
-    ){
-        switch(loc){
-        case OptimizationLocation::BeginningOfOptimization:
-            return "BeginningOfOptimization";
-        case OptimizationLocation::BeforeInitialFuncAndGrad:
-            return "BeforeInitialFuncAndGrad";
-        case OptimizationLocation::AfterInitialFuncAndGrad:
-            return "AfterInitialFuncAndGrad";
-        case OptimizationLocation::BeforeOptimizationLoop:
-            return "BeforeOptimizationLoop";
-        case OptimizationLocation::BeginningOfOptimizationLoop:
-            return "BeginningOfOptimizationLoop";
-        case OptimizationLocation::BeforeSaveOld:
-            return "BeforeSaveOld";
-        case OptimizationLocation::BeforeStep:
-            return "BeforeStep";
-        case OptimizationLocation::BeforeGetStep:
-            return "BeforeGetStep";
-        case OptimizationLocation::GetStep:
-            return "GetStep";
-        case OptimizationLocation::AfterStepBeforeGradient:
-            return "AfterStepBeforeGradient";
-        case OptimizationLocation::AfterGradient:
-            return "AfterGradient";
-        case OptimizationLocation::BeforeQuasi:
-            return "BeforeQuasi";
-        case OptimizationLocation::AfterQuasi:
-            return "AfterQuasi";
-        case OptimizationLocation::EndOfOptimizationIteration:
-            return "EndOfOptimizationIteration";
-        case OptimizationLocation::BeforeLineSearch:
-            return "BeforeLineSearch";
-        case OptimizationLocation::AfterRejectedTrustRegion:
-            return "AfterRejectedTrustRegion";
-        case OptimizationLocation::AfterRejectedLineSearch:
-            return "AfterRejectedLineSearch";
-        case OptimizationLocation::BeforeActualVersusPredicted:
-            return "BeforeActualVersusPredicted";
-        case OptimizationLocation::EndOfKrylovIteration:
-            return "EndOfKrylovIteration";
-        case OptimizationLocation::EndOfOptimization:
-            return "EndOfOptimization";
-        default:
-            throw;
-        }
-    }
-    
-    // Converts a string to a line-search kind 
-    OptimizationLocation::t OptimizationLocation::from_string(
-        std::string const & loc
-    ){
-        if(loc=="BeginningOfOptimization")
-            return OptimizationLocation::BeginningOfOptimization;
-        else if(loc=="BeforeInitialFuncAndGrad")
-            return OptimizationLocation::BeforeInitialFuncAndGrad;
-        else if(loc=="AfterInitialFuncAndGrad")
-            return OptimizationLocation::AfterInitialFuncAndGrad;
-        else if(loc=="BeforeOptimizationLoop")
-            return OptimizationLocation::BeforeOptimizationLoop;
-        else if(loc=="BeginningOfOptimizationLoop")
-            return OptimizationLocation::BeginningOfOptimizationLoop;
-        else if(loc=="BeforeSaveOld")
-            return OptimizationLocation::BeforeSaveOld; 
-        else if(loc=="BeforeStep")
-            return OptimizationLocation::BeforeStep; 
-        else if(loc=="BeforeGetStep")
-            return OptimizationLocation::BeforeGetStep; 
-        else if(loc=="GetStep")
-            return OptimizationLocation::GetStep; 
-        else if(loc=="AfterStepBeforeGradient")
-            return OptimizationLocation::AfterStepBeforeGradient; 
-        else if(loc=="AfterGradient")
-            return OptimizationLocation::AfterGradient;
-        else if(loc=="BeforeQuasi")
-            return OptimizationLocation::BeforeQuasi;
-        else if(loc=="AfterQuasi")
-            return OptimizationLocation::AfterQuasi;
-        else if(loc=="EndOfOptimizationIteration")
-            return OptimizationLocation::EndOfOptimizationIteration; 
-        else if(loc=="BeforeLineSearch")
-            return OptimizationLocation::BeforeLineSearch;
-        else if(loc=="AfterRejectedTrustRegion")
-            return OptimizationLocation::AfterRejectedTrustRegion;
-        else if(loc=="AfterRejectedLineSearch")
-            return OptimizationLocation::AfterRejectedLineSearch;
-        else if(loc=="BeforeActualVersusPredicted")
-            return OptimizationLocation::BeforeActualVersusPredicted;
-        else if(loc=="EndOfKrylovIteration")
-            return OptimizationLocation::EndOfKrylovIteration;
-        else if(loc=="EndOfOptimization")
-            return OptimizationLocation::EndOfOptimization;
-        else
-            throw;
-    }
-
-    // Checks whether or not a string is valid
-    bool OptimizationLocation::is_valid::operator () (
-        std::string const & name
-    ) const {
-        if( name=="BeginningOfOptimization" ||
-            name=="BeforeInitialFuncAndGrad" ||
-            name=="AfterInitialFuncAndGrad" ||
-            name=="BeforeOptimizationLoop" ||
-            name=="BeginningOfOptimizationLoop" ||
-            name=="BeforeSaveOld" || 
-            name=="BeforeStep" || 
-            name=="BeforeGetStep" || 
-            name=="GetStep" || 
-            name=="AfterStepBeforeGradient" ||
-            name=="AfterGradient" ||
-            name=="BeforeQuasi" ||
-            name=="AfterQuasi" ||
-            name=="EndOfOptimizationIteration" ||
-            name=="BeforeLineSearch" ||
-            name=="AfterRejectedTrustRegion" ||
-            name=="AfterRejectedLineSearch" ||
-            name=="BeforeActualVersusPredicted" ||
-            name=="EndOfKrylovIteration" ||
-            name=="EndOfOptimization"
-        )
-            return true;
-        else
-            return false;
-    }
-    
-    // Converts the problem class to a string
-    std::string ProblemClass::to_string(ProblemClass::t const & problem_class){
-        switch(problem_class){
-        case ProblemClass::Unconstrained:
-            return "Unconstrained";
-        case ProblemClass::EqualityConstrained:
-            return "EqualityConstrained";
-        case ProblemClass::InequalityConstrained:
-            return "InequalityConstrained";
-        case ProblemClass::Constrained:
-            return "Constrained";
-        default:
+        
+        // Converts a string to an algorithm class 
+        t from_string(std::string const & algorithm_class){
+            if(algorithm_class=="TrustRegion")
+                return TrustRegion;
+            else if(algorithm_class=="LineSearch")
+                return LineSearch;
+            else if(algorithm_class=="UserDefined")
+                return UserDefined;
+            else
                 throw;
         }
+
+        // Checks whether or not a string is valid
+        bool is_valid(std::string const & name) {
+            if( name=="TrustRegion" ||
+                name=="LineSearch" ||
+                name=="UserDefined"
+            )
+                return true;
+            else
+                return false;
+        }
     }
 
-    // Converts a string to a problem class 
-    ProblemClass::t ProblemClass::from_string(std::string const &problem_class){
-        if(problem_class=="Unconstrained")
-            return ProblemClass::Unconstrained;
-        else if(problem_class=="EqualityConstrained")
-            return ProblemClass::EqualityConstrained;
-        else if(problem_class=="InequalityConstrained")
-            return ProblemClass::InequalityConstrained;
-        else if(problem_class=="Constrained")
-            return ProblemClass::Constrained;
-        else
-            throw;
-    }
+    // Reasons why we stop the algorithm
+    namespace StoppingCondition{
+        // Converts the stopping condition to a string 
+        std::string to_string(t const & opt_stop) {
+            switch(opt_stop){
+            case NotConverged:
+                return "NotConverged";
+            case RelativeGradientSmall:
+                return "RelativeGradientSmall";
+            case RelativeStepSmall:
+                return "RelativeStepSmall";
+            case MaxItersExceeded:
+                return "MaxItersExceeded";
+            case InteriorPointInstability:
+                return "InteriorPointInstability";
+            case UserDefined:
+                return "UserDefined";
+            default:
+                throw;
+            }
+        }
 
-    // Checks whether or not a string is valid
-    bool ProblemClass::is_valid::operator () (std::string const & name) const {
-        if( name=="Unconstrained" ||
-            name=="EqualityConstrained" ||
-            name=="InequalityConstrained" ||
-            name=="Constrained" 
-        )
-            return true;
-        else
-            return false;
-    }
-    
-    // Converts the Krylov solver to a string
-    std::string KrylovSolverTruncated::to_string(
-        const KrylovSolverTruncated::t& truncated_krylov
-    ){
-        switch(truncated_krylov){
-        case KrylovSolverTruncated::ConjugateDirection:
-            return "ConjugateDirection";
-        case KrylovSolverTruncated::MINRES:
-            return "MINRES";
-        default:
+        // Converts a string to a stopping condition
+        t from_string(std::string const & opt_stop) {
+            if(opt_stop=="NotConverged")
+                return NotConverged;
+            else if(opt_stop=="RelativeGradientSmall")
+                return RelativeGradientSmall;
+            else if(opt_stop=="RelativeStepSmall")
+                return RelativeStepSmall;
+            else if(opt_stop=="MaxItersExceeded")
+                return MaxItersExceeded;
+            else if(opt_stop=="InteriorPointInstability")
+                return InteriorPointInstability; 
+            else if(opt_stop=="UserDefined")
+                return UserDefined;
+            else
                 throw;
         }
+
+        // Checks whether or not a string is valid
+        bool is_valid(std::string const & name) {
+            if( name=="NotConverged" ||
+                name=="RelativeGradientSmall" ||
+                name=="RelativeStepSmall" ||
+                name=="MaxItersExceeded" ||
+                name=="InteriorPointInstability" ||
+                name=="UserDefined"
+            )
+                return true;
+            else
+                return false;
+        }
     }
 
-    // Converts a string to a problem class 
-    KrylovSolverTruncated::t KrylovSolverTruncated::from_string(
-        std::string const & truncated_krylov
-    ){
-        if(truncated_krylov=="ConjugateDirection")
-            return KrylovSolverTruncated::ConjugateDirection;
-        else if(truncated_krylov=="MINRES")
-            return KrylovSolverTruncated::MINRES;
-        else
-            throw;
+    // Various operators for both Hessian approximations and preconditioners
+    namespace Operators{
+        // Converts the operator type to a string 
+        std::string to_string(t const & op) {
+            switch(op){
+            case Identity:
+                return "Identity";
+            case ScaledIdentity:
+                return "ScaledIdentity";
+            case BFGS:
+                return "BFGS";
+            case InvBFGS:
+                return "InvBFGS";
+            case SR1:
+                return "SR1";
+            case InvSR1:
+                return "InvSR1";
+            case UserDefined:
+                return "UserDefined";
+            default:
+                throw;
+            }
+        }
+        
+        // Converts a string to a operator 
+        t from_string(std::string const & op) {
+            if(op=="Identity")
+                return Identity; 
+            else if(op=="ScaledIdentity")
+                return ScaledIdentity; 
+            else if(op=="BFGS")
+                return BFGS; 
+            else if(op=="InvBFGS")
+                return InvBFGS; 
+            else if(op=="SR1")
+                return SR1; 
+            else if(op=="InvSR1")
+                return InvSR1; 
+            else if(op=="UserDefined")
+                return UserDefined; 
+            else
+                throw;
+        }
+
+        // Checks whether or not a string is valid
+        bool is_valid(std::string const & name) {
+            if( name=="Identity" ||
+                name=="ScaledIdentity" ||
+                name=="BFGS" ||
+                name=="InvBFGS" ||
+                name=="SR1" ||
+                name=="InvSR1" ||
+                name=="UserDefined" 
+            )
+                return true;
+            else
+                return false;
+        }
     }
 
-    // Checks whether or not a string is valid
-    bool KrylovSolverTruncated::is_valid::operator () (
-        std::string const & name
-    ) const {
-        if( name=="ConjugateDirection" ||
-            name=="MINRES" 
-        )
-            return true;
-        else
-            return false;
+    // Different kinds of search directions 
+    namespace LineSearchDirection{
+
+        // Converts the line-search direction to a string 
+        std::string to_string(t const & dir){
+            switch(dir){
+            case SteepestDescent:
+                return "SteepestDescent";
+            case FletcherReeves:
+                return "FletcherReeves";
+            case PolakRibiere:
+                return "PolakRibiere";
+            case HestenesStiefel:
+                return "HestenesStiefel";
+            case BFGS:
+                return "BFGS";
+            case NewtonCG:
+                return "NewtonCG";
+            default:
+                throw;
+            }
+        }
+        
+        // Converts a string to a line-search direction 
+        t from_string(std::string const & dir) {
+            if(dir=="SteepestDescent")
+                return SteepestDescent; 
+            else if(dir=="FletcherReeves")
+                return FletcherReeves; 
+            else if(dir=="PolakRibiere")
+                return PolakRibiere; 
+            else if(dir=="HestenesStiefel")
+                return HestenesStiefel; 
+            else if(dir=="BFGS")
+                return BFGS; 
+            else if(dir=="NewtonCG")
+                return NewtonCG; 
+            else
+                throw;
+        }
+
+        // Checks whether or not a string is valid
+        bool is_valid(std::string const & name) {
+            if( name=="SteepestDescent" ||
+                name=="FletcherReeves" ||
+                name=="PolakRibiere" ||
+                name=="HestenesStiefel" ||
+                name=="BFGS" ||
+                name=="NewtonCG"
+            )
+                return true;
+            else
+                return false;
+        }
+    } 
+
+    // Different sorts of line searches
+    namespace LineSearchKind{
+
+        // Converts the line-search kind to a string 
+        std::string to_string(t const & kind) {
+            switch(kind){
+            case Brents:
+                return "Brents";
+            case GoldenSection:
+                return "GoldenSection";
+            case BackTracking:
+                return "BackTracking";
+            case TwoPointA:
+                return "TwoPointA";
+            case TwoPointB:
+                return "TwoPointB";
+            default:
+                throw;
+            }
+        }
+        
+        // Converts a string to a line-search kind 
+        t from_string(std::string const & kind) {
+            if(kind=="Brents")
+                return Brents; 
+            else if(kind=="GoldenSection")
+                return GoldenSection; 
+            else if(kind=="BackTracking")
+                return BackTracking; 
+            else if(kind=="TwoPointA")
+                return TwoPointA; 
+            else if(kind=="TwoPointB")
+                return TwoPointB; 
+            else
+                throw;
+        }
+
+        // Checks whether or not a string is valid
+        bool is_valid(std::string const & name) {
+            if( name=="Brents" ||
+                name=="GoldenSection" ||
+                name=="BackTracking" ||
+                name=="TwoPointA" ||
+                name=="TwoPointB" 
+            )
+                return true;
+            else
+                return false;
+        }
+
+        // Determine whether or not the line-search checks the sufficient
+        // decrease condition.
+        bool is_sufficient_decrease(t const & kind) {
+            switch(kind){
+            case GoldenSection:
+            case BackTracking:
+            case Brents:
+                return true;
+            case TwoPointA:
+            case TwoPointB:
+                return false;
+            default:
+                throw;
+            }
+        }
     }
-    
-    // Converts the interior point method to a string 
-    std::string InteriorPointMethod::to_string(
-        InteriorPointMethod::t const & ipm
-    ){
-        switch(ipm){
-        case InteriorPointMethod::PrimalDual:
-            return "PrimalDual";
-        case InteriorPointMethod::PrimalDualLinked:
-            return "PrimalDualLinked";
-        case InteriorPointMethod::LogBarrier:
-            return "LogBarrier";
-        default:
-            throw;
+        
+    // Different points in the optimization algorithm
+    namespace OptimizationLocation {
+
+        // Converts the optimization location to a string 
+        std::string to_string(t const & loc) {
+            switch(loc){
+            case BeginningOfOptimization:
+                return "BeginningOfOptimization";
+            case BeforeInitialFuncAndGrad:
+                return "BeforeInitialFuncAndGrad";
+            case AfterInitialFuncAndGrad:
+                return "AfterInitialFuncAndGrad";
+            case BeforeOptimizationLoop:
+                return "BeforeOptimizationLoop";
+            case BeginningOfOptimizationLoop:
+                return "BeginningOfOptimizationLoop";
+            case BeforeSaveOld:
+                return "BeforeSaveOld";
+            case BeforeStep:
+                return "BeforeStep";
+            case BeforeGetStep:
+                return "BeforeGetStep";
+            case GetStep:
+                return "GetStep";
+            case AfterStepBeforeGradient:
+                return "AfterStepBeforeGradient";
+            case AfterGradient:
+                return "AfterGradient";
+            case BeforeQuasi:
+                return "BeforeQuasi";
+            case AfterQuasi:
+                return "AfterQuasi";
+            case EndOfOptimizationIteration:
+                return "EndOfOptimizationIteration";
+            case BeforeLineSearch:
+                return "BeforeLineSearch";
+            case AfterRejectedTrustRegion:
+                return "AfterRejectedTrustRegion";
+            case AfterRejectedLineSearch:
+                return "AfterRejectedLineSearch";
+            case BeforeActualVersusPredicted:
+                return "BeforeActualVersusPredicted";
+            case EndOfKrylovIteration:
+                return "EndOfKrylovIteration";
+            case EndOfOptimization:
+                return "EndOfOptimization";
+            default:
+                throw;
+            }
+        }
+        
+        // Converts a string to a line-search kind 
+        t from_string(std::string const & loc) {
+            if(loc=="BeginningOfOptimization")
+                return BeginningOfOptimization;
+            else if(loc=="BeforeInitialFuncAndGrad")
+                return BeforeInitialFuncAndGrad;
+            else if(loc=="AfterInitialFuncAndGrad")
+                return AfterInitialFuncAndGrad;
+            else if(loc=="BeforeOptimizationLoop")
+                return BeforeOptimizationLoop;
+            else if(loc=="BeginningOfOptimizationLoop")
+                return BeginningOfOptimizationLoop;
+            else if(loc=="BeforeSaveOld")
+                return BeforeSaveOld; 
+            else if(loc=="BeforeStep")
+                return BeforeStep; 
+            else if(loc=="BeforeGetStep")
+                return BeforeGetStep; 
+            else if(loc=="GetStep")
+                return GetStep; 
+            else if(loc=="AfterStepBeforeGradient")
+                return AfterStepBeforeGradient; 
+            else if(loc=="AfterGradient")
+                return AfterGradient;
+            else if(loc=="BeforeQuasi")
+                return BeforeQuasi;
+            else if(loc=="AfterQuasi")
+                return AfterQuasi;
+            else if(loc=="EndOfOptimizationIteration")
+                return EndOfOptimizationIteration; 
+            else if(loc=="BeforeLineSearch")
+                return BeforeLineSearch;
+            else if(loc=="AfterRejectedTrustRegion")
+                return AfterRejectedTrustRegion;
+            else if(loc=="AfterRejectedLineSearch")
+                return AfterRejectedLineSearch;
+            else if(loc=="BeforeActualVersusPredicted")
+                return BeforeActualVersusPredicted;
+            else if(loc=="EndOfKrylovIteration")
+                return EndOfKrylovIteration;
+            else if(loc=="EndOfOptimization")
+                return EndOfOptimization;
+            else
+                throw;
+        }
+
+        // Checks whether or not a string is valid
+        bool is_valid(std::string const & name) {
+            if( name=="BeginningOfOptimization" ||
+                name=="BeforeInitialFuncAndGrad" ||
+                name=="AfterInitialFuncAndGrad" ||
+                name=="BeforeOptimizationLoop" ||
+                name=="BeginningOfOptimizationLoop" ||
+                name=="BeforeSaveOld" || 
+                name=="BeforeStep" || 
+                name=="BeforeGetStep" || 
+                name=="GetStep" || 
+                name=="AfterStepBeforeGradient" ||
+                name=="AfterGradient" ||
+                name=="BeforeQuasi" ||
+                name=="AfterQuasi" ||
+                name=="EndOfOptimizationIteration" ||
+                name=="BeforeLineSearch" ||
+                name=="AfterRejectedTrustRegion" ||
+                name=="AfterRejectedLineSearch" ||
+                name=="BeforeActualVersusPredicted" ||
+                name=="EndOfKrylovIteration" ||
+                name=="EndOfOptimization"
+            )
+                return true;
+            else
+                return false;
         }
     }
     
-    // Converts a string to an interior point method 
-    InteriorPointMethod::t InteriorPointMethod::from_string(
-        std::string const & ipm
-    ){
-        if(ipm=="PrimalDual")
-            return InteriorPointMethod::PrimalDual; 
-        else if(ipm=="PrimalDualLinked")
-            return InteriorPointMethod::PrimalDualLinked; 
-        else if(ipm=="LogBarrier")
-            return InteriorPointMethod::LogBarrier; 
-        else
-            throw;
-    }
+    // Different problem classes
+    namespace ProblemClass{
+        
+        // Converts the problem class to a string
+        std::string to_string(t const & problem_class){
+            switch(problem_class){
+            case Unconstrained:
+                return "Unconstrained";
+            case EqualityConstrained:
+                return "EqualityConstrained";
+            case InequalityConstrained:
+                return "InequalityConstrained";
+            case Constrained:
+                return "Constrained";
+            default:
+                    throw;
+            }
+        }
 
-    // Checks whether or not a string is valid
-    bool InteriorPointMethod::is_valid::operator () (
-        std::string const & name
-    ) const {
-        if( name=="PrimalDual" ||
-            name=="PrimalDualLinked" ||
-            name=="LogBarrier"
-        )
-            return true;
-        else
-            return false;
-    }
-    
-    // Converts the centrality strategy to a string
-    std::string CentralityStrategy::to_string(
-        CentralityStrategy::t const & cstrat
-    ){
-        switch(cstrat){
-        case CentralityStrategy::Constant:
-            return "Constant";
-        case CentralityStrategy::StairStep:
-            return "StairStep";
-        case CentralityStrategy::PredictorCorrector:
-            return "PredictorCorrector";
-        default:
-            throw;
+        // Converts a string to a problem class 
+        t from_string(std::string const &problem_class){
+            if(problem_class=="Unconstrained")
+                return Unconstrained;
+            else if(problem_class=="EqualityConstrained")
+                return EqualityConstrained;
+            else if(problem_class=="InequalityConstrained")
+                return InequalityConstrained;
+            else if(problem_class=="Constrained")
+                return Constrained;
+            else
+                throw;
+        }
+
+        // Checks whether or not a string is valid
+        bool is_valid(std::string const & name) {
+            if( name=="Unconstrained" ||
+                name=="EqualityConstrained" ||
+                name=="InequalityConstrained" ||
+                name=="Constrained" 
+            )
+                return true;
+            else
+                return false;
         }
     }
     
-    // Converts a string to the cstrat
-    CentralityStrategy::t CentralityStrategy::from_string(
-        std::string const & cstrat
-    ){
-        if(cstrat=="Constant")
-            return CentralityStrategy::Constant; 
-        else if(cstrat=="StairStep")
-            return CentralityStrategy::StairStep; 
-        else if(cstrat=="PredictorCorrector")
-            return CentralityStrategy::PredictorCorrector; 
-        else
-            throw;
-    }
+    // Different truncated Krylov solvers 
+    namespace KrylovSolverTruncated{
+        
+        // Converts the Krylov solver to a string
+        std::string to_string(const t& truncated_krylov) {
+            switch(truncated_krylov){
+            case ConjugateDirection:
+                return "ConjugateDirection";
+            case MINRES:
+                return "MINRES";
+            default:
+                    throw;
+            }
+        }
 
-    // Checks whether or not a string is valid
-    bool CentralityStrategy::is_valid::operator () (
-        std::string const & name
-    ) const {
-        if( name=="Constant" ||
-            name=="StairStep" ||
-            name=="PredictorCorrector" 
-        )
-            return true;
-        else
-            return false;
+        // Converts a string to a problem class 
+        t from_string(std::string const & truncated_krylov) {
+            if(truncated_krylov=="ConjugateDirection")
+                return ConjugateDirection;
+            else if(truncated_krylov=="MINRES")
+                return MINRES;
+            else
+                throw;
+        }
+
+        // Checks whether or not a string is valid
+        bool is_valid(std::string const & name) {
+            if( name=="ConjugateDirection" ||
+                name=="MINRES" 
+            )
+                return true;
+            else
+                return false;
+        }
     }
-    
+        
+    // Different kinds of interior point methods
+    namespace InteriorPointMethod{
+
+        // Converts the interior point method to a string 
+        std::string to_string(t const & ipm) {
+            switch(ipm){
+            case PrimalDual:
+                return "PrimalDual";
+            case PrimalDualLinked:
+                return "PrimalDualLinked";
+            case LogBarrier:
+                return "LogBarrier";
+            default:
+                throw;
+            }
+        }
+        
+        // Converts a string to an interior point method 
+        t from_string(std::string const & ipm) {
+            if(ipm=="PrimalDual")
+                return PrimalDual; 
+            else if(ipm=="PrimalDualLinked")
+                return PrimalDualLinked; 
+            else if(ipm=="LogBarrier")
+                return LogBarrier; 
+            else
+                throw;
+        }
+
+        // Checks whether or not a string is valid
+        bool is_valid(std::string const & name) {
+            if( name=="PrimalDual" ||
+                name=="PrimalDualLinked" ||
+                name=="LogBarrier"
+            )
+                return true;
+            else
+                return false;
+        }
+    }
+        
+    // Different schemes for adjusting the interior point centrality 
+    namespace CentralityStrategy{
+
+        // Converts the centrality strategy to a string
+        std::string to_string(t const & cstrat) {
+            switch(cstrat){
+            case Constant:
+                return "Constant";
+            case StairStep:
+                return "StairStep";
+            case PredictorCorrector:
+                return "PredictorCorrector";
+            default:
+                throw;
+            }
+        }
+        
+        // Converts a string to the cstrat
+        t from_string(std::string const & cstrat) {
+            if(cstrat=="Constant")
+                return Constant; 
+            else if(cstrat=="StairStep")
+                return StairStep; 
+            else if(cstrat=="PredictorCorrector")
+                return PredictorCorrector; 
+            else
+                throw;
+        }
+
+        // Checks whether or not a string is valid
+        bool is_valid(std::string const & name) {
+            if( name=="Constant" ||
+                name=="StairStep" ||
+                name=="PredictorCorrector" 
+            )
+                return true;
+            else
+                return false;
+        }
+    }
+        
     // Different diagnostic tests on the optimization functions 
     namespace FunctionDiagnostics{
+
         // Converts the diagnostic checks to a string
         std::string to_string(t const & diag) {
             switch(diag){
@@ -658,6 +658,7 @@ namespace Optizelle{
     
     // Different diagnostic tests on the optimization functions 
     namespace DiagnosticScheme {
+
         // Converts the diagnostic scheme to a string
         std::string to_string(t const & dscheme) {
             switch(dscheme){

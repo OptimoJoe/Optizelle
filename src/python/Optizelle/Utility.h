@@ -47,122 +47,82 @@ Author: Joseph Young (joe@optimojoe.com)
 namespace Optizelle {
     namespace StoppingCondition { 
         // Converts t to a Python enumerated type
-        struct toPython : public std::unary_function <t const &,PyObject *> {
-            PyObject * operator () (t const & opt_stop) const;
-        };
+        PyObject * toPython(t const & opt_stop);
 
         // Converts a Python enumerated type to t 
-        struct fromPython : public std::unary_function <PyObject * const,t> {
-            t operator () (PyObject * const member) const;
-        };
+        t fromPython(PyObject * const member);
     }
 
     namespace KrylovStop {
         // Converts t to a Python enumerated type
-        struct toPython : public std::unary_function <t const &,PyObject *> {
-            PyObject * operator () (t const & krylov_stop) const;
-        };
+        PyObject * toPython(t const & krylov_stop);
 
         // Converts a Python enumerated type to t 
-        struct fromPython : public std::unary_function <PyObject * const,t> {
-            t operator () (PyObject * const member) const;
-        };
+        t fromPython(PyObject * const member);
     }
     
     namespace KrylovSolverTruncated {
         // Converts t to a Python enumerated type
-        struct toPython : public std::unary_function <t const &,PyObject *> {
-            PyObject * operator () (t const & truncated_krylov) const;
-        };
+        PyObject * toPython(t const & truncated_krylov);
 
         // Converts a Python enumerated type to t 
-        struct fromPython : public std::unary_function <PyObject * const,t> {
-            t operator () (PyObject * const member) const;
-        };
+        t fromPython(PyObject * const member);
     }
 
     namespace AlgorithmClass { 
         // Converts t to a Python enumerated type
-        struct toPython : public std::unary_function <t const &,PyObject *> {
-            PyObject * operator () (t const & algorithm_class) const;
-        };
+        PyObject * toPython(t const & algorithm_class);
 
         // Converts a Python enumerated type to t 
-        struct fromPython: public std::unary_function <PyObject * const,t> {
-            t operator () (PyObject * const member) const;
-        };
+        t fromPython(PyObject * const member);
     }
     
     namespace Operators{ 
         // Converts t to a Python enumerated type
-        struct toPython : public std::unary_function <t const &,PyObject *> {
-            PyObject * operator () (t const & op) const;
-        };
+        PyObject * toPython(t const & op);
 
         // Converts a Python enumerated type to t 
-        struct fromPython: public std::unary_function <PyObject * const,t> {
-            t operator () (PyObject * const member) const;
-        };
+        t fromPython(PyObject * const member);
     }
     
     namespace LineSearchDirection{ 
         // Converts t to a Python enumerated type
-        struct toPython : public std::unary_function <t const &,PyObject *> {
-            PyObject * operator () (t const & dir) const;
-        };
+        PyObject * toPython(t const & dir);
 
         // Converts a Python enumerated type to t 
-        struct fromPython: public std::unary_function <PyObject * const,t> {
-            t operator () (PyObject * const member) const;
-        };
+        t fromPython(PyObject * const member);
     }
     
     namespace LineSearchKind{ 
         // Converts t to a Python enumerated type
-        struct toPython : public std::unary_function <t const &,PyObject *> {
-            PyObject * operator () (t const & kind) const;
-        };
+        PyObject * toPython(t const & kind);
 
         // Converts a Python enumerated type to t 
-        struct fromPython: public std::unary_function <PyObject * const,t> {
-            t operator () (PyObject * const member) const;
-        };
+        t fromPython(PyObject * const member);
     }
     
     namespace OptimizationLocation{ 
         // Converts t to a Python enumerated type
-        struct toPython : public std::unary_function <t const &,PyObject *> {
-            PyObject * operator () (t const & loc) const;
-        };
+        PyObject * toPython(t const & loc);
 
         // Converts a Python enumerated type to t 
-        struct fromPython: public std::unary_function <PyObject * const,t> {
-            t operator () (PyObject * const member) const;
-        };
+        t fromPython(PyObject * const member);
     }
     
     namespace InteriorPointMethod{ 
         // Converts t to a Python enumerated type
-        struct toPython : public std::unary_function <t const &,PyObject *> {
-            PyObject * operator () (t const & ipm) const;
-        };
+        PyObject * toPython(t const & ipm);
 
         // Converts a Python enumerated type to t 
-        struct fromPython: public std::unary_function <PyObject * const,t> {
-            t operator () (PyObject * const member) const;
-        };
+        t fromPython(PyObject * const member);
     }
     
     namespace CentralityStrategy{ 
         // Converts t to a Python enumerated type
-        struct toPython : public std::unary_function <t const &,PyObject *> {
-            PyObject * operator () (t const & cstrat) const;
-        };
+        PyObject * toPython(t const & cstrat);
 
         // Converts a Python enumerated type to t 
-        struct fromPython: public std::unary_function <PyObject * const,t> {
-            t operator () (PyObject * const member) const;
-        };
+        t fromPython(PyObject * const member);
     }
     
     namespace FunctionDiagnostics{ 
@@ -491,7 +451,7 @@ namespace Optizelle {
                 pystate.toPython(state);
 
                 // Convert the lcoation to Python
-                PyObjectPtr loc(OptimizationLocation::toPython()(loc_));
+                PyObjectPtr loc(OptimizationLocation::toPython(loc_));
             
                 // Call the Python state manipulator 
                 // give it pystate and pyfns.  Note, pyfns is given raw.

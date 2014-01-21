@@ -874,7 +874,7 @@ namespace Optizelle {
         }
 
         // Checks whether or not a string is valid
-        bool is_valid::operator () (std::string const & name) const {
+        bool is_valid(std::string const & name) {
             if( name=="NegativeCurvature" ||
                 name=="RelativeErrorSmall" ||
                 name=="MaxItersExceeded" ||

@@ -1103,9 +1103,7 @@ namespace Optizelle {
         t from_string(std::string const & krylov_stop);
 
         // Checks whether or not a string is valid
-        struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (std::string const & name) const;
-        };
+        bool is_valid(std::string const & name);
     }
 
     // A orthogonalizes a vector Bx to a list of other Bxs.  

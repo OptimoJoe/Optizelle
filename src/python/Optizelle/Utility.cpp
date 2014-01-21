@@ -34,7 +34,7 @@ Author: Joseph Young (joe@optimojoe.com)
 namespace Optizelle {
     namespace StoppingCondition { 
         // Converts t to a Python enumerated type
-        PyObject * toPython::operator () (t const & opt_stop) const {
+        PyObject * toPython(t const & opt_stop) {
             // Do the conversion
             switch(opt_stop){
             case NotConverged:
@@ -61,7 +61,7 @@ namespace Optizelle {
         }
 
         // Converts a Python enumerated type to t 
-        t fromPython::operator () (PyObject * const member) const{
+        t fromPython(PyObject * const member) {
             // Convert the member to a Natural 
             Natural m=PyInt_AsSsize_t(member);
 
@@ -90,7 +90,7 @@ namespace Optizelle {
     
     namespace KrylovStop { 
         // Converts t to a Python enumerated type
-        PyObject * toPython::operator () (t const & krylov_stop) const {
+        PyObject * toPython(t const & krylov_stop) {
             // Do the conversion
             switch(krylov_stop){
             case NegativeCurvature:
@@ -114,7 +114,7 @@ namespace Optizelle {
         }
 
         // Converts a Python enumerated type to t 
-        t fromPython::operator () (PyObject * const member) const{
+        t fromPython(PyObject * const member) {
             // Convert the member to a Natural 
             Natural m=PyInt_AsSsize_t(member);
 
@@ -139,7 +139,7 @@ namespace Optizelle {
     
     namespace KrylovSolverTruncated { 
         // Converts t to a Python enumerated type
-        PyObject * toPython::operator () (t const & truncated_krylov) const {
+        PyObject * toPython(t const & truncated_krylov) {
             // Do the conversion
             switch(truncated_krylov){
             case ConjugateDirection:
@@ -154,7 +154,7 @@ namespace Optizelle {
         }
 
         // Converts a Python enumerated type to t 
-        t fromPython::operator () (PyObject * const member) const{
+        t fromPython(PyObject * const member) {
             // Convert the member to a Natural 
             Natural m=PyInt_AsSsize_t(member);
 
@@ -169,7 +169,7 @@ namespace Optizelle {
 
     namespace AlgorithmClass { 
         // Converts t to a Python enumerated type
-        PyObject * toPython::operator () (t const & algorithm_class) const {
+        PyObject * toPython(t const & algorithm_class) {
             // Do the conversion
             switch(algorithm_class){
             case TrustRegion:
@@ -184,7 +184,7 @@ namespace Optizelle {
         }
 
         // Converts a Python enumerated type to t 
-        t fromPython::operator () (PyObject * const member) const{
+        t fromPython(PyObject * const member) {
             // Convert the member to a Natural 
             Natural m=PyInt_AsSsize_t(member);
 
@@ -199,7 +199,7 @@ namespace Optizelle {
 
     namespace Operators { 
         // Converts t to a Python enumerated type
-        PyObject * toPython::operator () (t const & op) const {
+        PyObject * toPython(t const & op) {
             // Do the conversion
             switch(op){
             case Identity:
@@ -222,7 +222,7 @@ namespace Optizelle {
         }
 
         // Converts a Python enumerated type to t 
-        t fromPython::operator () (PyObject * const member) const{
+        t fromPython(PyObject * const member) {
             // Convert the member to a Natural 
             Natural m=PyInt_AsSsize_t(member);
 
@@ -245,7 +245,7 @@ namespace Optizelle {
 
     namespace LineSearchDirection {
         // Converts t to a Python enumerated type
-        PyObject * toPython::operator () (t const & dir) const {
+        PyObject * toPython(t const & dir) {
             // Do the conversion
             switch(dir){
             case SteepestDescent:
@@ -270,7 +270,7 @@ namespace Optizelle {
         }
 
         // Converts a Python enumerated type to t 
-        t fromPython::operator () (PyObject * const member) const{
+        t fromPython(PyObject * const member) {
             // Convert the member to a Natural 
             Natural m=PyInt_AsSsize_t(member);
 
@@ -299,7 +299,7 @@ namespace Optizelle {
 
     namespace LineSearchKind { 
         // Converts t to a Python enumerated type
-        PyObject * toPython::operator () (t const & kind) const {
+        PyObject * toPython(t const & kind) {
             // Do the conversion
             switch(kind){
             case Brents:
@@ -318,7 +318,7 @@ namespace Optizelle {
         }
 
         // Converts a Python enumerated type to t 
-        t fromPython::operator () (PyObject * const member) const{
+        t fromPython(PyObject * const member) {
             // Convert the member to a Natural 
             Natural m=PyInt_AsSsize_t(member);
 
@@ -337,7 +337,7 @@ namespace Optizelle {
 
     namespace OptimizationLocation { 
         // Converts t to a Python enumerated type
-        PyObject * toPython::operator () (t const & loc) const {
+        PyObject * toPython(t const & loc) {
             // Do the conversion
             switch(loc){
             case BeginningOfOptimization:
@@ -405,7 +405,7 @@ namespace Optizelle {
         }
 
         // Converts a Python enumerated type to t 
-        t fromPython::operator () (PyObject * const member) const{
+        t fromPython(PyObject * const member) {
             // Convert the member to a Natural 
             Natural m=PyInt_AsSsize_t(member);
 
@@ -474,7 +474,7 @@ namespace Optizelle {
 
     namespace InteriorPointMethod { 
         // Converts t to a Python enumerated type
-        PyObject * toPython::operator () (t const & ipm) const {
+        PyObject * toPython(t const & ipm) {
             // Do the conversion
             switch(ipm){
             case PrimalDual:
@@ -492,7 +492,7 @@ namespace Optizelle {
         }
 
         // Converts a Python enumerated type to t 
-        t fromPython::operator () (PyObject * const member) const{
+        t fromPython(PyObject * const member) {
             // Convert the member to a Natural 
             Natural m=PyInt_AsSsize_t(member);
 
@@ -511,7 +511,7 @@ namespace Optizelle {
 
     namespace CentralityStrategy { 
         // Converts t to a Python enumerated type
-        PyObject * toPython::operator () (t const & cstrat) const {
+        PyObject * toPython(t const & cstrat) {
             // Do the conversion
             switch(cstrat){
             case Constant:
@@ -527,7 +527,7 @@ namespace Optizelle {
         }
 
         // Converts a Python enumerated type to t 
-        t fromPython::operator () (PyObject * const member) const{
+        t fromPython(PyObject * const member) {
             // Convert the member to a Natural 
             Natural m=PyInt_AsSsize_t(member);
 
@@ -1791,7 +1791,7 @@ namespace Optizelle {
                     toPython::Natural("iter_max",state.iter_max,pystate);
                     toPython::Param <StoppingCondition::t> (
                         "opt_stop",
-                        StoppingCondition::toPython(),
+                        StoppingCondition::toPython,
                         state.opt_stop,
                         pystate);
                     toPython::Natural("krylov_iter",state.krylov_iter,pystate);
@@ -1803,7 +1803,7 @@ namespace Optizelle {
                         state.krylov_orthog_max,pystate);
                     toPython::Param <KrylovStop::t> (
                         "krylov_stop",
-                        KrylovStop::toPython(),
+                        KrylovStop::toPython,
                         state.krylov_stop,
                         pystate);
                     toPython::Real("krylov_rel_err",
@@ -1811,22 +1811,22 @@ namespace Optizelle {
                     toPython::Real("eps_krylov",state.eps_krylov,pystate);
                     toPython::Param <KrylovSolverTruncated::t> (
                         "krylov_solver",
-                        KrylovSolverTruncated::toPython(),
+                        KrylovSolverTruncated::toPython,
                         state.krylov_solver,
                         pystate);
                     toPython::Param <AlgorithmClass::t> (
                         "algorithm_class",
-                        AlgorithmClass::toPython(),
+                        AlgorithmClass::toPython,
                         state.algorithm_class,
                         pystate);
                     toPython::Param <Operators::t> (
                         "PH_type",
-                        Operators::toPython(),
+                        Operators::toPython,
                         state.PH_type,
                         pystate);
                     toPython::Param <Operators::t> (
                         "H_type",
-                        Operators::toPython(),
+                        Operators::toPython,
                         state.H_type,
                         pystate);
                     toPython::Real("norm_gradtyp",state.norm_gradtyp,pystate);
@@ -1861,12 +1861,12 @@ namespace Optizelle {
                     toPython::Real("eps_ls",state.eps_ls,pystate);
                     toPython::Param <LineSearchDirection::t> (
                         "dir",
-                        LineSearchDirection::toPython(),
+                        LineSearchDirection::toPython,
                         state.dir,
                         pystate);
                     toPython::Param <LineSearchKind::t> (
                         "kind",
-                        LineSearchKind::toPython(),
+                        LineSearchKind::toPython,
                         state.kind,
                         pystate);
                     toPython::Param <FunctionDiagnostics::t> (
@@ -1903,7 +1903,7 @@ namespace Optizelle {
                     fromPython::Natural("iter_max",pystate,state.iter_max);
                     fromPython::Param <StoppingCondition::t> (
                         "opt_stop",
-                        StoppingCondition::fromPython(),
+                        StoppingCondition::fromPython,
                         pystate,
                         state.opt_stop);
                     fromPython::Natural("krylov_iter",
@@ -1916,7 +1916,7 @@ namespace Optizelle {
                         pystate,state.krylov_orthog_max);
                     fromPython::Param <KrylovStop::t> (
                         "krylov_stop",
-                        KrylovStop::fromPython(),
+                        KrylovStop::fromPython,
                         pystate,
                         state.krylov_stop);
                     fromPython::Real("krylov_rel_err",
@@ -1924,22 +1924,22 @@ namespace Optizelle {
                     fromPython::Real("eps_krylov",pystate,state.eps_krylov);
                     fromPython::Param <KrylovSolverTruncated::t> (
                         "krylov_solver",
-                        KrylovSolverTruncated::fromPython(),
+                        KrylovSolverTruncated::fromPython,
                         pystate,
                         state.krylov_solver);
                     fromPython::Param <AlgorithmClass::t> (
                         "algorithm_class",
-                        AlgorithmClass::fromPython(),
+                        AlgorithmClass::fromPython,
                         pystate,
                         state.algorithm_class);
                     fromPython::Param <Operators::t> (
                         "PH_type",
-                        Operators::fromPython(),
+                        Operators::fromPython,
                         pystate,
                         state.PH_type);
                     fromPython::Param <Operators::t> (
                         "H_type",
-                        Operators::fromPython(),
+                        Operators::fromPython,
                         pystate,
                         state.H_type);
                     fromPython::Real("norm_gradtyp",
@@ -1975,12 +1975,12 @@ namespace Optizelle {
                     fromPython::Real("eps_ls",pystate,state.eps_ls);
                     fromPython::Param <LineSearchDirection::t> (
                         "dir",
-                        LineSearchDirection::fromPython(),
+                        LineSearchDirection::fromPython,
                         pystate,
                         state.dir);
                     fromPython::Param <LineSearchKind::t> (
                         "kind",
-                        LineSearchKind::fromPython(),
+                        LineSearchKind::fromPython,
                         pystate,
                         state.kind);
                     fromPython::Param <FunctionDiagnostics::t> (
@@ -2415,12 +2415,12 @@ namespace Optizelle {
                     toPython::Real("rpred",state.rpred,pystate);
                     toPython::Param <Operators::t> (
                         "PSchur_left_type",
-                        Operators::toPython(),
+                        Operators::toPython,
                         state.PSchur_left_type,
                         pystate);
                     toPython::Param <Operators::t> (
                         "PSchur_right_type",
-                        Operators::toPython(),
+                        Operators::toPython,
                         state.PSchur_right_type,
                         pystate);
                     toPython::Natural("augsys_iter_max",
@@ -2481,12 +2481,12 @@ namespace Optizelle {
                     fromPython::Real("rpred",pystate,state.rpred);
                     fromPython::Param <Operators::t> (
                         "PSchur_left_type",
-                        Operators::fromPython(),
+                        Operators::fromPython,
                         pystate,
                         state.PSchur_left_type);
                     fromPython::Param <Operators::t> (
                         "PSchur_right_type",
-                        Operators::fromPython(),
+                        Operators::fromPython,
                         pystate,
                         state.PSchur_right_type);
                     fromPython::Natural("augsys_iter_max",
@@ -2957,12 +2957,12 @@ namespace Optizelle {
                     toPython::Real("gamma",state.gamma,pystate);
                     toPython::Param <InteriorPointMethod::t> (
                         "ipm",
-                        InteriorPointMethod::toPython(),
+                        InteriorPointMethod::toPython,
                         state.ipm,
                         pystate);
                     toPython::Param <CentralityStrategy::t> (
                         "cstrat",
-                        CentralityStrategy::toPython(),
+                        CentralityStrategy::toPython,
                         state.cstrat,
                         pystate);
                     toPython::Param <FunctionDiagnostics::t> (
@@ -2995,12 +2995,12 @@ namespace Optizelle {
                     fromPython::Real("gamma",pystate,state.gamma);
                     fromPython::Param <InteriorPointMethod::t> (
                         "ipm",
-                        InteriorPointMethod::fromPython(),
+                        InteriorPointMethod::fromPython,
                         pystate,
                         state.ipm);
                     fromPython::Param <CentralityStrategy::t> (
                         "cstrat",
-                        CentralityStrategy::fromPython(),
+                        CentralityStrategy::fromPython,
                         pystate,
                         state.cstrat);
                     fromPython::Param <FunctionDiagnostics::t> (

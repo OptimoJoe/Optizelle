@@ -387,28 +387,28 @@ namespace Optizelle {
                     msg,
                     root["Optizelle"].get("krylov_solver",
                         KrylovSolverTruncated::to_string(state.krylov_solver)),
-                    KrylovSolverTruncated::is_valid(),
+                    KrylovSolverTruncated::is_valid,
                     KrylovSolverTruncated::from_string,
                     "krylov_solver");
                 state.algorithm_class=read::param <AlgorithmClass::t> (
                     msg,
                     root["Optizelle"].get("algorithm_class",
                         AlgorithmClass::to_string(state.algorithm_class)),
-                    AlgorithmClass::is_valid(),
+                    AlgorithmClass::is_valid,
                     AlgorithmClass::from_string,
                     "algorithm_class");
                 state.PH_type=read::param <Operators::t> (
                     msg,
                     root["Optizelle"].get("PH_type",
                         Operators::to_string(state.PH_type)),
-                    Operators::is_valid(),
+                    Operators::is_valid,
                     Operators::from_string,
                     "PH_type");
                 state.H_type=read::param <Operators::t> (
                     msg,
                     root["Optizelle"].get("H_type",
                         Operators::to_string(state.H_type)),
-                    Operators::is_valid(),
+                    Operators::is_valid,
                     Operators::from_string,
                     "H_type");
                 state.msg_level=read::natural(
@@ -448,14 +448,14 @@ namespace Optizelle {
                     msg,
                     root["Optizelle"].get("dir",
                         LineSearchDirection::to_string(state.dir)),
-                    LineSearchDirection::is_valid(),
+                    LineSearchDirection::is_valid,
                     LineSearchDirection::from_string,
                     "dir");
                 state.kind=read::param <LineSearchKind::t> (
                     msg,
                     root["Optizelle"].get("kind",
                         LineSearchKind::to_string(state.kind)),
-                    LineSearchKind::is_valid(),
+                    LineSearchKind::is_valid,
                     LineSearchKind::from_string,
                     "kind");
                 state.f_diag=read::param <FunctionDiagnostics::t> (
@@ -697,14 +697,14 @@ namespace Optizelle {
                     msg,
                     root["Optizelle"].get("PSchur_left_type",
                         Operators::to_string(state.PSchur_left_type)),
-                    Operators::is_valid(),
+                    Operators::is_valid,
                     Operators::from_string,
                     "PSchur_left_type");
                 state.PSchur_right_type=read::param <Operators::t> (
                     msg,
                     root["Optizelle"].get("PSchur_right_type",
                         Operators::to_string(state.PSchur_right_type)),
-                    Operators::is_valid(),
+                    Operators::is_valid,
                     Operators::from_string,
                     "PSchur_right_type");
                 state.g_diag=read::param <FunctionDiagnostics::t> (
@@ -885,14 +885,14 @@ namespace Optizelle {
                     msg,
                     root["Optizelle"].get("ipm",
                         InteriorPointMethod::to_string(state.ipm)),
-                    InteriorPointMethod::is_valid(),
+                    InteriorPointMethod::is_valid,
                     InteriorPointMethod::from_string,
                     "ipm");
                 state.cstrat=read::param <CentralityStrategy::t> (
                     msg,
                     root["Optizelle"].get("cstrat",
                         CentralityStrategy::to_string(state.cstrat)),
-                    CentralityStrategy::is_valid(),
+                    CentralityStrategy::is_valid,
                     CentralityStrategy::from_string,
                     "cstrat");
                 state.h_diag=read::param <FunctionDiagnostics::t> (

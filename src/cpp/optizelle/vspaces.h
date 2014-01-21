@@ -220,44 +220,14 @@ namespace Optizelle {
         };
 
         // Converts the cone to a string
-        static std::string to_string(t const & cone){
-            switch(cone){
-            case Linear:
-                return "Linear";
-            case Quadratic:
-                return "Quadratic";
-            case Semidefinite:
-                return "Semidefinite";
-            default:
-                throw;
-            }
-        }
+        std::string to_string(t const & cone);
         
         // Converts a string to a cone 
-        static t from_string(std::string const & cone){
-            if(cone=="Linear")
-                return Linear;
-            else if(cone=="Quadratic")
-                return Quadratic;
-            else if(cone=="Semidefinite")
-                return Semidefinite;
-            else
-                throw;
-        }
+        t from_string(std::string const & cone);
 
         // Checks whether or not a string is valid
-        struct is_valid : public std::unary_function<std::string, bool> {
-            bool operator () (std::string const & name) const {
-                if( name=="Linear" ||
-                    name=="Quadratic" ||
-                    name=="Semidefinite"
-                )
-                    return true;
-                else
-                    return false;
-            }
-        };
-    };
+        bool is_valid(std::string const & name); 
+    }
 
     // A vector spaces consisting of a finite product of semidefinite,
     // quadratic, and linear cones.  This uses the nonsymmetric product
