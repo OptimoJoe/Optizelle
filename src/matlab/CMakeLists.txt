@@ -8,7 +8,7 @@ if(ENABLE_MATLAB)
 
     # Make sure we can find the MATLAB libraries and then add the
     # directory with the sources.
-    find_package(MATLAB)
+    find_package(MATLAB REQUIRED)
     add_subdirectory(optizelle)
 
     # Check if we want to add examples for MATLAB 

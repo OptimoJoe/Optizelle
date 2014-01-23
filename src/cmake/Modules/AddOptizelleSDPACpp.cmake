@@ -33,7 +33,7 @@ macro(add_optizelle_sdpa_cpp dats params executable)
             
             # Diff the result of the optimization against the known solution
             add_test("Solution_to_${dat}"
-                "${CMAKE_BINARY_DIR}/src/cpp/unit/utility/diff_restart"
+                "${CMAKE_BINARY_DIR}/src/unit/utility/diff_restart"
                 ${phase2} solution.json)
         endforeach()
     endif()

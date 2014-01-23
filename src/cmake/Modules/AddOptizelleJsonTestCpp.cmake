@@ -26,7 +26,7 @@ macro(add_optizelle_json_test_cpp files executable)
 
             # Diff the result of the optimization against the known solution
             add_test("Solution_to_cpp_${unit}"
-                "${CMAKE_BINARY_DIR}/src/cpp/unit/utility/diff_restart"
+                "${CMAKE_BINARY_DIR}/src/unit/utility/diff_restart"
                 ${unit} solution.json)
         endforeach()
     endif()

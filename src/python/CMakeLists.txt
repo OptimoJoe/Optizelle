@@ -8,7 +8,7 @@ if(ENABLE_PYTHON)
 
     # Make sure we can find the Python libraries and then add the
     # directory with the sources.
-    find_package(PythonLibs)
-    find_package(PythonInterp)
+    find_package(PythonLibs REQUIRED)
+    find_package(PythonInterp REQUIRED)
     add_subdirectory(Optizelle)
 endif()

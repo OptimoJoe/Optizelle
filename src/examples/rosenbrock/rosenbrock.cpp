@@ -18,7 +18,7 @@ Real sq(Real x){
 // 
 // f(x,y)=(1-x)^2+100(y-x^2)^2
 //
-struct Rosen
+struct Rosenbrock
     : public Optizelle::ScalarValuedFunction <double,Optizelle::Rm>
 {
     typedef Optizelle::Rm <double> X;
@@ -88,7 +88,7 @@ int main(int argc,char* argv[]){
 
     // Create the bundle of functions 
     Optizelle::Unconstrained <double,Optizelle::Rm>::Functions::t fns;
-    fns.f.reset(new Rosen);
+    fns.f.reset(new Rosenbrock);
     fns.PH.reset(new RosenHInv(state.x));
     
     // Solve the optimization problem
