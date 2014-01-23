@@ -511,7 +511,7 @@ class Rm(object):
     @staticmethod
     def rand(x):
         """x <- random"""
-        numpy.copyto(x,map(lambda x:random.uniform(0.,1.),x))
+        numpy.copyto(x,map(lambda x:random.normalvariate(0.,1.),x))
 
     @staticmethod
     def prod(x,y,z):
