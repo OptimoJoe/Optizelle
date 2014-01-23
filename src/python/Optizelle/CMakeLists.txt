@@ -25,7 +25,7 @@ set_target_properties(optizelle_python
 # Copy in the rest of the Python files for the unit tests.  Otherwise, we
 # end of dirtying our source tree.
 add_custom_command(
-    TARGET optizelle_python PRE_BUILD
+    TARGET optizelle_python POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_SOURCE_DIR}/src/python/Optizelle
         $<TARGET_FILE_DIR:optizelle_python>)

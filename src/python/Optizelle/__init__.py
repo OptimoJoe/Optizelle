@@ -46,10 +46,11 @@ class Exception(Exception):
 
 class EnumeratedType:
     """A generic enumerated type"""
-    def to_string(self,i):
+    @classmethod
+    def to_string(cls,i):
         """Converts the enumerated type into a string"""
         return filter(lambda (name,value):value==i,
-            self.__class__.__dict__.items())[0][0]
+            cls.__dict__.items())[0][0]
         
 class KrylovStop(EnumeratedType):
     """Reasons we stop the Krylov method"""
