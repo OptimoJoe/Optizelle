@@ -44,7 +44,7 @@ class Exception(Exception):
     """General purpose exception for all of Optizelle's errors"""
     pass
 
-class EnumeratedType:
+class EnumeratedType(object):
     """A generic enumerated type"""
     @classmethod
     def to_string(cls,i):
@@ -226,11 +226,12 @@ def checkOperator(name,value):
     if not issubclass(type(value),Operator):
         raise TypeError("The %s member must be an Operator." % name)
 
-def checkMethod(vsname,name,value):
+def checkStaticMethod(vsname,name,value):
     """Check that we have a method"""
-    if not (hasattr(value,name) and inspect.isfunction(value.__dict__[name])):
-        raise TypeError("The %s member is required in the vector space %s."
-            % (name,vsname))
+    if not (
+        hasattr(value,name) and isinstance(value.__dict__[name],staticmethod)):
+        raise TypeError("The %s member is required as a static member in " ^
+            "the vector space %s." % (name,vsname))
 
 def checkVectorSpace(vsname,value):
     """Check that we have a valid-vector space"""
@@ -239,7 +240,7 @@ def checkVectorSpace(vsname,value):
     fns=["copy","scal","zero","axpy","innr"]
 
     # Now, check each of these
-    map(lambda name:checkMethod(vsname,name,value),fns) 
+    map(lambda name:checkStaticMethod(vsname,name,value),fns) 
 
 def checkEuclidean(vsname,value):
     """Check that we have a valid Euclidean-Jordan algebra"""
@@ -251,7 +252,7 @@ def checkEuclidean(vsname,value):
     fns=["prod","id","linv","barr","srch","symm"]
 
     # Now, check each of these
-    map(lambda name:checkMethod(vsname,name,value),fns) 
+    map(lambda name:checkStaticMethod(vsname,name,value),fns) 
 
 def checkMessaging(name,value):
     """Check that we have a messaging object"""
@@ -477,50 +478,62 @@ class StateManipulator(object):
 class Rm(object):
     """ Vector space for the nonnegative orthant.  For basic vectors in R^m, use this."""
 
+    @staticmethod
     def init(x):
         """Memory allocation and size setting"""
         return copy.deepcopy(x) 
 
+    @staticmethod
     def copy(x,y):
         """y <- x (Shallow.  No memory allocation.)"""
         numpy.copyto(y,x) 
 
+    @staticmethod
     def scal(alpha,x):
         """x <- alpha * x"""
         x.__imul__(alpha)
 
+    @staticmethod
     def zero(x):
         """x <- 0"""
         x.fill(0.)
 
+    @staticmethod
     def axpy(alpha,x,y):
         """y <- alpha * x + y"""
         y.__iadd__(alpha*x)
 
+    @staticmethod
     def innr(x,y):
         """<- <x,y>"""
         return numpy.inner(x,y) 
 
+    @staticmethod
     def rand(x):
         """x <- random"""
         numpy.copyto(x,map(lambda x:random.uniform(0.,1.),x))
 
+    @staticmethod
     def prod(x,y,z):
         """Jordan product, z <- x o y"""
         numpy.copyto(z,x*y)
 
+    @staticmethod
     def id(x):
         """Identity element, x <- e such that x o e = x"""
         x.fill(1.)
 
+    @staticmethod
     def linv(x,y,z):
         """Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y"""
         numpy.copyto(z,numpy.divide(y,x))
 
+    @staticmethod
     def barr(x):
         """Barrier function, <- barr(x) where x o grad barr(x) = e"""
         return reduce(lambda x,y:x+math.log(y),x,0.)
         
+    @staticmethod
     def srch(x,y):
         """Line search, <- argmax {alpha \in Real >= 0 : alpha x + y >= 0} where y > 0"""
         alpha = float("inf")
@@ -531,6 +544,7 @@ class Rm(object):
                     alpha=alpha0
         return alpha
 
+    @staticmethod
     def symm(x):
         """Symmetrization, x <- symm(x) such that L(symm(x)) is a symmetric operator"""
         pass

@@ -7,9 +7,9 @@ import Optizelle.Unconstrained.State
 
 def allocateVectors(self,X,Z,x,z):
     """Allocates memory for the state vectors"""
-    self.z=Z.init.__func__(z)
-    self.dz=Z.init.__func__(z)
-    self.h_x=Z.init.__func__(z)
+    self.z=Z.init(z)
+    self.dz=Z.init(z)
+    self.h_x=Z.init(z)
 
 class t(Optizelle.Unconstrained.State.t):
     """Internal state of the optimization"""

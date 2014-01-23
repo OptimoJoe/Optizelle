@@ -682,23 +682,6 @@ namespace Optizelle {
             PyTuple_SetItem(p,pos,o);
         }
 
-        // Like PyObject_GetAttrString, but returns obj.name1.name2 
-        PyObject * PyObject_GetAttrString2(
-            PyObject * const obj,
-            std::string const & name1,
-            std::string const & name2
-        ) {
-            // Grab name1 from obj and store in value 1 
-            PyObjectPtr value1(PyObject_GetAttrString(obj,name1.c_str()));
-
-            // Check if we grabbed name1 from obj.  If we did, evaluate
-            // name 2.  Otherwise, return null
-            if(value1.get())
-                return PyObject_GetAttrString(value1.get(),name2.c_str());
-            else
-                return nullptr;
-        }
-
         // Calls a Python function with one argument 
         PyObject * PyObject_CallObject1(
             PyObject * const fn,
@@ -913,8 +896,7 @@ namespace Optizelle {
         // Memory allocation and size setting 
         Vector Vector::init() { 
             // Call the init function on the internal and store in y 
-            PyObjectPtr init(PyObject_GetAttrString2(
-                vs.get(),"init","__func__"));
+            PyObjectPtr init(PyObject_GetAttrString(vs.get(),"init"));
             PyObjectPtr y(PyObject_CallObject1(
                 init.get(),
                 get()));
@@ -931,8 +913,7 @@ namespace Optizelle {
         // y <- x (Shallow.  No memory allocation.)  Internal is y.
         void Vector::copy(Vector & x) { 
             // Call the copy function on x and the internal 
-            PyObjectPtr copy(PyObject_GetAttrString2(
-                vs.get(),"copy","__func__"));
+            PyObjectPtr copy(PyObject_GetAttrString(vs.get(),"copy"));
             PyObjectPtr ret(PyObject_CallObject2(
                 copy.get(),
                 x.get(),
@@ -947,8 +928,7 @@ namespace Optizelle {
         // x <- alpha * x.  Internal is x.
         void Vector::scal(double const & alpha_) { 
             // Call the scal function on alpha and the internal storage 
-            PyObjectPtr scal(PyObject_GetAttrString2(
-                vs.get(),"scal","__func__"));
+            PyObjectPtr scal(PyObject_GetAttrString(vs.get(),"scal"));
             PyObjectPtr alpha(PyFloat_FromDouble(alpha_));
             PyObjectPtr ret(PyObject_CallObject2(
                 scal.get(),
@@ -964,8 +944,7 @@ namespace Optizelle {
         // x <- 0.  Internal is x. 
         void Vector::zero() { 
             // Call the zero function on this vector.
-            PyObjectPtr zero(PyObject_GetAttrString2(
-                vs.get(),"zero","__func__"));
+            PyObjectPtr zero(PyObject_GetAttrString(vs.get(),"zero"));
             PyObjectPtr ret(PyObject_CallObject1(
                 zero.get(),
                 get()));
@@ -979,8 +958,7 @@ namespace Optizelle {
         // y <- alpha * x + y.   Internal is y.
         void Vector::axpy(double const & alpha_,Vector & x) { 
             // Call the axpy function on alpha, x, and the internal storage.
-            PyObjectPtr axpy(PyObject_GetAttrString2(
-                vs.get(),"axpy","__func__"));
+            PyObjectPtr axpy(PyObject_GetAttrString(vs.get(),"axpy"));
             PyObjectPtr alpha(PyFloat_FromDouble(alpha_));
             PyObjectPtr ret(PyObject_CallObject3(
                 axpy.get(),
@@ -997,8 +975,7 @@ namespace Optizelle {
         // innr <- <x,y>.  Internal is y.
         double Vector::innr(Vector & x) { 
             // Call the innr function on x and the internal.  Store in z. 
-            PyObjectPtr innr(PyObject_GetAttrString2(
-                vs.get(),"innr","__func__"));
+            PyObjectPtr innr(PyObject_GetAttrString(vs.get(),"innr"));
             PyObjectPtr z(PyObject_CallObject2(
                 innr.get(),
                 x.get(),
@@ -1016,8 +993,7 @@ namespace Optizelle {
         // x <- random.  Internal is x. 
         void Vector::rand() { 
             // Call the rand function on this vector.
-            PyObjectPtr rand(PyObject_GetAttrString2(
-                vs.get(),"rand","__func__"));
+            PyObjectPtr rand(PyObject_GetAttrString(vs.get(),"rand"));
             PyObjectPtr ret(PyObject_CallObject1(
                 rand.get(),
                 get()));
@@ -1031,8 +1007,7 @@ namespace Optizelle {
         // Jordan product, z <- x o y.  Internal is z.
         void Vector::prod(Vector & x,Vector & y) { 
             // Call the prod function on x, y, and the internal 
-            PyObjectPtr prod(PyObject_GetAttrString2(
-                vs.get(),"prod","__func__"));
+            PyObjectPtr prod(PyObject_GetAttrString(vs.get(),"prod"));
             PyObjectPtr ret(PyObject_CallObject3(
                 prod.get(),
                 x.get(),
@@ -1048,8 +1023,7 @@ namespace Optizelle {
         // Identity element, x <- e such that x o e = x .  Internal is x.
         void Vector::id() { 
             // Call the id function on the internal.
-            PyObjectPtr id(PyObject_GetAttrString2(
-                vs.get(),"id","__func__"));
+            PyObjectPtr id(PyObject_GetAttrString(vs.get(),"id"));
             PyObjectPtr ret(PyObject_CallObject1(
                 id.get(),
                 get()));
@@ -1064,8 +1038,7 @@ namespace Optizelle {
         // Internal is z.
         void Vector::linv(Vector& x, Vector& y) { 
             // Call the linv function on x, y, and the internal
-            PyObjectPtr linv(PyObject_GetAttrString2(
-                vs.get(),"linv","__func__"));
+            PyObjectPtr linv(PyObject_GetAttrString(vs.get(),"linv"));
             PyObjectPtr ret(PyObject_CallObject3(
                 linv.get(),
                 x.get(),
@@ -1082,8 +1055,7 @@ namespace Optizelle {
         // Internal is x.
         double Vector::barr() { 
             // Call the barr function on the internal.  Store in z.
-            PyObjectPtr barr(PyObject_GetAttrString2(
-                vs.get(),"barr","__func__"));
+            PyObjectPtr barr(PyObject_GetAttrString(vs.get(),"barr"));
             PyObjectPtr z(PyObject_CallObject1(
                 barr.get(),
                 get()));
@@ -1101,8 +1073,7 @@ namespace Optizelle {
         // where y > 0.  Internal is y.
         double Vector::srch(Vector& x) {  
             // Call the srch function on x and the internal.  Store in z.
-            PyObjectPtr srch(PyObject_GetAttrString2(
-                vs.get(),"srch","__func__"));
+            PyObjectPtr srch(PyObject_GetAttrString(vs.get(),"srch"));
             PyObjectPtr z(PyObject_CallObject2(
                 srch.get(),
                 x.get(),
@@ -1121,8 +1092,7 @@ namespace Optizelle {
         // operator.  Internal is x.
         void Vector::symm() { 
             // Call the symm function on the internal.
-            PyObjectPtr symm(PyObject_GetAttrString2(
-                vs.get(),"symm","__func__"));
+            PyObjectPtr symm(PyObject_GetAttrString(vs.get(),"symm"));
             PyObjectPtr ret(PyObject_CallObject1(
                 symm.get(),
                 get()));
@@ -1138,8 +1108,7 @@ namespace Optizelle {
         // has been allocated both in the vector as well as Python.
         void Vector::toPython(PyObject * const ptr) {
             // Call the copy function on the internal and x
-            PyObjectPtr copy(PyObject_GetAttrString2(
-                vs.get(),"copy","__func__"));
+            PyObjectPtr copy(PyObject_GetAttrString(vs.get(),"copy"));
             PyObjectPtr ret(PyObject_CallObject2(
                 copy.get(),
                 get(),
@@ -1155,8 +1124,7 @@ namespace Optizelle {
         // has been allocated both in the vector as well as Python.
         void Vector::fromPython(PyObject * const ptr) {
             // Call the copy function on ptr and the internal 
-            PyObjectPtr copy(PyObject_GetAttrString2(
-                vs.get(),"copy","__func__"));
+            PyObjectPtr copy(PyObject_GetAttrString(vs.get(),"copy"));
             PyObjectPtr ret(PyObject_CallObject2(
                 copy.get(),
                 ptr,

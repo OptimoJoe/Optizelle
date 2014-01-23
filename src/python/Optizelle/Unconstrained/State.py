@@ -8,12 +8,12 @@ import copy
 
 def allocateVectors(self,X,x):
     """Allocates memory for the state vectors"""
-    self.x=X.init.__func__(x)
-    self.grad=X.init.__func__(x)
-    self.dx=X.init.__func__(x)
-    self.x_old=X.init.__func__(x)
-    self.grad_old=X.init.__func__(x)
-    self.dx_old=X.init.__func__(x)
+    self.x=X.init(x)
+    self.grad=X.init(x)
+    self.dx=X.init(x)
+    self.x_old=X.init(x)
+    self.grad_old=X.init(x)
+    self.dx_old=X.init(x)
         
 
 class t(object):

@@ -148,13 +148,6 @@ namespace Optizelle {
         // takes control of its arguments.
         void MyPyTuple_SetItem(PyObject * p,Natural const & pos,PyObject * o);
 
-        // Like PyObject_GetAttrString, but returns obj.name1.name2 
-        PyObject * PyObject_GetAttrString2(
-            PyObject * const obj,
-            std::string const & name1,
-            std::string const & name2
-        );
-
         // Calls a Python function with one argument 
         PyObject * PyObject_CallObject1(
             PyObject * const fn,
