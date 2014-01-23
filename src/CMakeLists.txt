@@ -10,6 +10,7 @@ include(AddOptizelleTestPython)
 include(AddOptizelleSDPACpp)
 include(AddOptizelleExampleCpp)
 include(AddOptizelleExamplePython)
+include(AddOptizelleExampleMatlab)
 include(AddOptizelleExampleSupporting)
 include(AddOptizelleUnitCpp)
 

@@ -3,6 +3,7 @@ project(quadratic)
 # Compile and install the example
 add_optizelle_example_cpp(${PROJECT_NAME})
 add_optizelle_example_python(${PROJECT_NAME})
+add_optizelle_example_matlab(${PROJECT_NAME})
 
 # Installs the supporting files 
 add_optizelle_example_supporting(${PROJECT_NAME}

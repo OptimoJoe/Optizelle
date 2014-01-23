@@ -10,6 +10,7 @@ import Optizelle.Unconstrained.Algorithms
 import Optizelle.json.Unconstrained
 import numpy
 import sys
+import copy
 
 # Defines the vector space used for optimization.
 class MyVS(object):
@@ -71,7 +72,7 @@ class Rosenbrock(Optizelle.ScalarValuedFunction):
 x = numpy.array([-1.2,1.0])
 
 # Create an unconstrained state based on this vector
-state=Optizelle.Unconstrained.State.t(Optizelle.Rm,Optizelle.Messaging(),x)
+state=Optizelle.Unconstrained.State.t(MyVS,Optizelle.Messaging(),x)
 
 # Setup some algorithmic parameters
 
@@ -101,8 +102,7 @@ fns=Optizelle.Unconstrained.Functions.t()
 fns.f=Rosenbrock()
 
 # Solve the optimization problem
-Optizelle.Unconstrained.Algorithms.getMin(
-    Optizelle.Rm,Optizelle.Messaging(),fns,state)
+Optizelle.Unconstrained.Algorithms.getMin(MyVS,Optizelle.Messaging(),fns,state)
 
 # Print out the reason for convergence
 print "The algorithm converged due to: %s" % (

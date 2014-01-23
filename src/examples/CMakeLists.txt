@@ -5,6 +5,10 @@ if(ENABLE_PYTHON)
     mark_as_advanced(CLEAR ENABLE_PYTHON_EXAMPLES)
     set(ENABLE_PYTHON_EXAMPLES OFF CACHE BOOL "Enable examples for Python?")
 endif()
+if(ENABLE_MATLAB)
+    mark_as_advanced(CLEAR ENABLE_MATLAB_EXAMPLES)
+    set(ENABLE_MATLAB_EXAMPLES OFF CACHE BOOL "Enable examples for Python?")
+endif()
 
 # Add all examples or unit tests
 add_subdirectory(diagnostic_checks)
