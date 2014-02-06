@@ -31,6 +31,7 @@ __all__ = [
     "ScalarValuedFunction",
     "VectorValuedFunction",
     "Operator",
+    "StateManipulator",
 
     "Exception",
 
@@ -188,7 +189,7 @@ def checkNatural(name,value):
 def checkEnum(name,value):
     """Checks that an input is an enumerated type """
     if type(value)!=int or value < 0:
-        raise TypeError("The %s member must be an enumerated type (natural)."
+        raise TypeError("The %s member must be an enumerated type (natural.)"
             % name)
 
 def checkEnumRange(name,enum,value):
@@ -237,7 +238,7 @@ def checkVectorSpace(vsname,value):
     """Check that we have a valid-vector space"""
 
     # Define all the functions we care about
-    fns=["copy","scal","zero","axpy","innr"]
+    fns=["init","copy","scal","zero","axpy","innr","rand"]
 
     # Now, check each of these
     map(lambda name:checkStaticMethod(vsname,name,value),fns) 
@@ -476,7 +477,7 @@ class StateManipulator(object):
         pass
 
 class Rm(object):
-    """ Vector space for the nonnegative orthant.  For basic vectors in R^m, use this."""
+    """Vector space for the nonnegative orthant.  For basic vectors in R^m, use this."""
 
     @staticmethod
     def init(x):

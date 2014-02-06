@@ -495,7 +495,7 @@ namespace Optizelle {
             } 
 
             // y <- alpha * x + y 
-            static void axpy(Real const & alpha, Vector const & x, Vector & y) { 
+            static void axpy(Real const & alpha, Vector const & x, Vector & y) {
                 y.axpy(alpha,const_cast <Vector &> (x));
             } 
 

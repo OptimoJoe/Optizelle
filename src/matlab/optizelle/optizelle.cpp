@@ -29,1210 +29,1346 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 Author: Joseph Young (joe@optimojoe.com)
 */
 
-#include <string>
-#include <sstream>
-#include <memory>
-#include "mex.h"
-#include "optizelle/optizelle.h"
-#include "optizelle/json.h"
+#include "optizelle.h"
 
-// Defines a simple Matlab autopointer
-struct mxArrayPtr {
-private:
-    // Internal storage for the pointer
-    mxArray* ptr;
+namespace Optizelle {
+    namespace StoppingCondition { 
+        // Converts t to a Matlab enumerated type
+        mxArray * toMatlab(t const & opt_stop) {
+            // Do the conversion
+            switch(opt_stop){
+            case NotConverged:
+                return Matlab::enumToMxArray(
+                    "StoppingCondition","NotConverged");
+            case RelativeGradientSmall:
+                return Matlab::enumToMxArray(
+                    "StoppingCondition","RelativeGradientSmall");
+            case RelativeStepSmall:
+                return Matlab::enumToMxArray(
+                    "StoppingCondition","RelativeStepSmall");
+            case MaxItersExceeded:
+                return Matlab::enumToMxArray(
+                    "StoppingCondition","MaxItersExceeded");
+            case InteriorPointInstability:
+                return Matlab::enumToMxArray(
+                    "StoppingCondition","InteriorPointInstability");
+            case UserDefined:
+                return Matlab::enumToMxArray(
+                    "StoppingCondition","UserDefined");
+            default:
+                throw;
+            }
+        }
 
-public:
-    // On the default construction, we create an empty pointer
-    mxArrayPtr() : ptr(NULL) { }
+        // Converts a Matlab enumerated type to t 
+        t fromMatlab(mxArray * const member) {
+            // Convert the member to a Natural 
+            Natural m(*mxGetPr(member));
 
-    // On construction, just initialize the internal pointer
-    mxArrayPtr(mxArray* ptr_) : ptr(ptr_) {}
-
-    // For a reset, we free the memory and then assign the new vector
-    void reset(mxArray* ptr_) {
-        if(ptr) mxDestroyArray(ptr);
-        ptr=ptr_;
-    }
-
-    // On a get, we return the pointer
-    mxArray* get() const {
-        return ptr;
-    }
-
-    // On a release, return the underlying pointer and then clear the
-    // internal representation.
-    mxArray* release() {
-        mxArray* ptr_=ptr;
-        ptr=NULL;
-        return ptr_;
-    }
-
-    // On destruction, free the memory if it has been allocated
-    ~mxArrayPtr() {
-        if(ptr!=NULL) mxDestroyArray(ptr);
-        ptr=NULL;
-    }
-};
-
-// Handles a Matlab exception
-void handleException(int err,std::string msg) {
-    if(err) {
-        // Print out our error message and then return control
-        // to Matlab.
-        std::stringstream ss;
-        ss << msg << std::endl; 
-        mexErrMsgTxt(ss.str().c_str());
-    }
-}
-
-// Defines a vector for use in a vector space 
-struct MatVector : public mxArrayPtr {
-private:
-    // References to the algebra required in Matlab
-    mxArrayPtr copy_;
-    mxArrayPtr scal_;
-    mxArrayPtr zero_;
-    mxArrayPtr axpy_;
-    mxArrayPtr innr_;
-    mxArrayPtr rand_;
-    mxArrayPtr prod_;
-    mxArrayPtr id_;
-    mxArrayPtr linv_;
-    mxArrayPtr barr_;
-    mxArrayPtr srch_;
-    mxArrayPtr symm_;
-
-public:
-    // On basic initialization, just make sure that the internal storage is
-    // NULL.
-    MatVector() : mxArrayPtr(), copy_(NULL), scal_(NULL), zero_(NULL),
-        axpy_(NULL), innr_(NULL), rand_(NULL), prod_(NULL), id_(NULL),
-        linv_(NULL), barr_(NULL), srch_(NULL), symm_(NULL) {}
-
-    // On a simple vector, initialize both the internal storage as well as
-    // the basic linear algebra.
-    MatVector(
-        mxArray* vec,
-        mxArray* copy__,
-        mxArray* scal__,
-        mxArray* zero__,
-        mxArray* axpy__,
-        mxArray* innr__,
-        mxArray* rand__ 
-    ) : prod_(NULL), id_(NULL), linv_(NULL), barr_(NULL), srch_(NULL),
-        symm_(NULL)
-    {
-        // Compute a deep copy of the data in the supplied vector 
-        reset(mxDuplicateArray(vec));
-
-        // Now, copy out all of the algebra functions
-        copy_.reset(mxDuplicateArray(copy__));
-        scal_.reset(mxDuplicateArray(scal__));
-        zero_.reset(mxDuplicateArray(zero__));
-        axpy_.reset(mxDuplicateArray(axpy__));
-        innr_.reset(mxDuplicateArray(innr__));
-        rand_.reset(mxDuplicateArray(rand__));
-    }
-
-    // On a general vector, initialize both the internal storage as well as
-    // all the linear algebra 
-    MatVector(
-        mxArray* vec,
-        mxArray* copy__,
-        mxArray* scal__,
-        mxArray* zero__,
-        mxArray* axpy__,
-        mxArray* innr__,
-        mxArray* rand__,
-        mxArray* prod__,
-        mxArray* id__,
-        mxArray* linv__,
-        mxArray* barr__,
-        mxArray* srch__,
-        mxArray* symm__
-    ) { 
-        // Compute a deep copy of the data in the supplied vector 
-        reset(mxDuplicateArray(vec));
-
-        // Now, copy out all of the algebra functions
-        copy_.reset(mxDuplicateArray(copy__));
-        scal_.reset(mxDuplicateArray(scal__));
-        zero_.reset(mxDuplicateArray(zero__));
-        axpy_.reset(mxDuplicateArray(axpy__));
-        innr_.reset(mxDuplicateArray(innr__));
-        rand_.reset(mxDuplicateArray(rand__));
-        prod_.reset(mxDuplicateArray(prod__));
-        id_.reset(mxDuplicateArray(id__));
-        linv_.reset(mxDuplicateArray(linv__));
-        barr_.reset(mxDuplicateArray(barr__));
-        srch_.reset(mxDuplicateArray(srch__));
-        symm_.reset(mxDuplicateArray(symm__));
-    }
-
-    // Create a move constructor so we can interact with stl objects
-    MatVector(MatVector && vec) noexcept {
-        // Grab the memory for the vector 
-        reset(vec.release());
-
-        // Now, grab all of the algebra functions
-        copy_.reset(vec.copy_.release());
-        scal_.reset(vec.scal_.release());
-        zero_.reset(vec.zero_.release());
-        axpy_.reset(vec.axpy_.release());
-        innr_.reset(vec.innr_.release());
-        rand_.reset(vec.rand_.release());
-        prod_.reset(vec.prod_.release());
-        id_.reset(vec.id_.release());
-        linv_.reset(vec.linv_.release());
-        barr_.reset(vec.barr_.release());
-        srch_.reset(vec.srch_.release());
-        symm_.reset(vec.symm_.release());
+            if(m==Matlab::enumToNatural("StoppingCondition","NotConverged"))
+                return NotConverged;
+            else if(m==Matlab::enumToNatural(
+                "StoppingCondition","RelativeGradientSmall")
+            )
+                return RelativeGradientSmall;
+            else if(m==Matlab::enumToNatural(
+                "StoppingCondition","RelativeStepSmall")
+            )
+                return RelativeStepSmall;
+            else if(m==Matlab::enumToNatural(
+                "StoppingCondition","MaxItersExceeded")
+            )
+                return MaxItersExceeded;
+            else if(m==Matlab::enumToNatural(
+                "StoppingCondition","InteriorPointInstability")
+            )
+                return InteriorPointInstability;
+            else if(m==Matlab::enumToNatural("StoppingCondition","UserDefined"))
+                return UserDefined;
+        }
     }
     
-    // Move assignment operator
-    MatVector const & operator = (MatVector && vec) noexcept {
-        // Grab the memory for the vector 
-        reset(vec.release());
+    namespace KrylovStop { 
+        // Converts t to a Matlab enumerated type
+        mxArray * toMatlab(t const & krylov_stop) {
+            // Do the conversion
+            switch(krylov_stop){
+            case NegativeCurvature:
+                return Matlab::enumToMxArray("KrylovStop","NegativeCurvature");
+            case RelativeErrorSmall:
+                return Matlab::enumToMxArray(
+                    "KrylovStop","RelativeErrorSmall");
+            case MaxItersExceeded:
+                return Matlab::enumToMxArray("KrylovStop","MaxItersExceeded");
+            case TrustRegionViolated:
+                return Matlab::enumToMxArray(
+                    "KrylovStop","TrustRegionViolated");
+            case Instability:
+                return Matlab::enumToMxArray("KrylovStop","Instability");
+            case InvalidTrustRegionCenter:
+                return Matlab::enumToMxArray(
+                    "KrylovStop","InvalidTrustRegionCenter");
+            default:
+                throw;
+            }
+        }
 
-        // Now, grab all of the algebra functions
-        copy_.reset(vec.copy_.release());
-        scal_.reset(vec.scal_.release());
-        zero_.reset(vec.zero_.release());
-        axpy_.reset(vec.axpy_.release());
-        innr_.reset(vec.innr_.release());
-        rand_.reset(vec.rand_.release());
-        prod_.reset(vec.prod_.release());
-        id_.reset(vec.id_.release());
-        linv_.reset(vec.linv_.release());
-        barr_.reset(vec.barr_.release());
-        srch_.reset(vec.srch_.release());
-        symm_.reset(vec.symm_.release());
+        // Converts a Matlab enumerated type to t 
+        t fromMatlab(mxArray * const member) {
+            // Convert the member to a Natural 
+            Natural m(*mxGetPr(member));
 
-        return *this;
-    }
-
-    // Memory allocation and size setting 
-    MatVector init() {
-        // Create and return a vector based on the internal
-        if( prod_.get() && id_.get() && linv_.get() && barr_.get() &&
-            srch_.get() && symm_.get()
-        )
-            return std::move(MatVector(
-                get(),
-                copy_.get(),
-                scal_.get(),
-                zero_.get(),
-                axpy_.get(),
-                innr_.get(),
-                rand_.get(),
-                prod_.get(),
-                id_.get(),
-                linv_.get(),
-                barr_.get(),
-                srch_.get(),
-                symm_.get()));
-        else
-            return std::move(MatVector(
-                get(),
-                copy_.get(),
-                scal_.get(),
-                zero_.get(),
-                axpy_.get(),
-                innr_.get(),
-                rand_.get()));
-    }
-
-    // y <- x (Shallow.  No memory allocation.) 
-    void copy(const mxArray* x){
-        reset(mxDuplicateArray(x));
-    }
-
-    // y <- x (Shallow.  No memory allocation.) 
-    void copy(const MatVector& x) {
-        mxArray* input[2]={copy_.get(),x.get()};
-        mxArray* output[1];
-        int err=mexCallMATLAB(1,output,2,input,"feval");
-        handleException(err,"Error in the vector space copy function");
-        reset(output[0]);
-    }
-
-    // x <- alpha * x 
-    void scal(const double& alpha_) {
-        // Create memory for the scalar
-        mxArrayPtr alpha(mxCreateDoubleMatrix(1,1,mxREAL));
-        mxGetPr(alpha.get())[0]=alpha_;
-
-        // Create the inputs and outputs
-        mxArray* input[3]={scal_.get(),alpha.get(),get()};
-        mxArray* output[1];
-
-        // Compute the scalar multiplication and store the result
-        int err=mexCallMATLAB(1,output,3,input,"feval");
-        handleException(err,"Error in the vector space scal function");
-        reset(output[0]);
-    }
-
-    // x <- 0 
-    void zero() {
-        // Create the inputs and outputs 
-        mxArray* input[2]={zero_.get(),get()};
-        mxArray* output[1];
-
-        // Find the zero vector and store the result.
-        int err=mexCallMATLAB(1,output,2,input,"feval");
-        handleException(err,"Error in the vector space zero function");
-        reset(output[0]);
-    }
-
-    // y <- alpha * x + y 
-    void axpy(const double& alpha_, const MatVector& x) {
-        // Create memory for the scalar
-        mxArrayPtr alpha(mxCreateDoubleMatrix(1,1,mxREAL));
-        mxGetPr(alpha.get())[0]=alpha_;
-
-        // Create the inputs and outputs 
-        mxArray* input[4]={axpy_.get(),alpha.get(),x.get(),get()};
-        mxArray* output[1];
-
-        // Compute the addition and store the result
-        int err=mexCallMATLAB(1,output,4,input,"feval");
-        handleException(err,"Error in the vector space axpy function");
-        reset(output[0]);
-    }
-
-    // innr <- <x,y> 
-    double innr(const MatVector& x) const {
-        // Create the inputs and outputs 
-        mxArray* input[3]={innr_.get(),x.get(),get()};
-        mxArray* output[1];
-
-        // Compute the inner product 
-        int err=mexCallMATLAB(1,output,3,input,"feval");
-        handleException(err,"Error in the vector space innr function");
-        mxArrayPtr output_(output[0]);
-
-        // Get the result of the computation 
-        double alpha=mxGetScalar(output_.get());
-
-        // Return the result 
-        return alpha;
-    }
-
-    // x <- random 
-    void rand() {
-        // Create the inputs and outputs 
-        mxArray* input[2]={rand_.get(),get()};
-        mxArray* output[1];
-
-        // Find the rand vector and store the result.
-        int err=mexCallMATLAB(1,output,2,input,"feval");
-        handleException(err,"Error in the vector space rand function");
-        reset(output[0]);
-    }
-
-    // Jordan product, z <- x o y 
-    void prod(const MatVector& x, const MatVector& y) {
-        // Create the inputs and outputs 
-        mxArray* input[3]={prod_.get(),x.get(),y.get()};
-        mxArray* output[1];
-
-        // Compute the product and store the result 
-        int err=mexCallMATLAB(1,output,3,input,"feval");
-        handleException(err,"Error in the vector space prod function");
-        reset(output[0]);
-    }
-
-    // Identity element, x <- e such that x o e = x 
-    void id() {
-        // Create the inputs and outputs 
-        mxArray* input[2]={id_.get(),get()};
-        mxArray* output[1];
-
-        // Find the identity element and store the result
-        int err=mexCallMATLAB(1,output,2,input,"feval");
-        handleException(err,"Error in the vector space id function");
-        reset(output[0]);
-    }
-
-    // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y 
-    void linv(const MatVector& x, const MatVector& y) {
-        // Create the inputs and outputs 
-        mxArray* input[3]={linv_.get(),x.get(),y.get()};
-        mxArray* output[1];
-
-        // Compute the product inverse and store the result 
-        int err=mexCallMATLAB(1,output,3,input,"feval");
-        handleException(err,"Error in the vector space linv function");
-        reset(output[0]);
-    }
-
-    // Barrier function, barr <- barr(x) where x o grad barr(x) = e 
-    double barr() const {
-        // Create the inputs and outputs 
-        mxArray* input[2]={barr_.get(),get()};
-        mxArray* output[1];
-
-        // Compute the barrier function 
-        int err=mexCallMATLAB(1,output,2,input,"feval");
-        handleException(err,"Error in the vector space barr function");
-        mxArrayPtr output_(output[0]);
-
-        // Get the result of the computation 
-        double alpha=mxGetScalar(output_.get());
-
-        // Return the result 
-        return alpha;
-    }
-
-    // Line search, srch <- argmax {alphain Real >= 0 : alpha x + y >= 0} 
-    // where y > 0.  If the argmax is infinity, then return Real(-1.). 
-    double srch(const MatVector& x) const {
-        // Create the inputs and outputs 
-        mxArray* input[3]={srch_.get(),x.get(),get()};
-        mxArray* output[1];
-
-        // Compute the search function 
-        int err=mexCallMATLAB(1,output,3,input,"feval");
-        handleException(err,"Error in the vector space srch function");
-        mxArrayPtr output_(output[0]);
-        
-        // Get the result of the computation 
-        double alpha=mxGetScalar(output_.get());
-
-        // Return the result 
-        return alpha;
-    }
-
-    // Symmetrization, x <- symm(x) such that L(symm(x)) is a symmetric
-    // operator.
-    void symm() {
-        // Create the inputs and outputs 
-        mxArray* input[2]={symm_.get(),get()};
-        mxArray* output[1];
-
-        // Find the symmetrization and store the result
-        int err=mexCallMATLAB(1,output,2,input,"feval");
-        handleException(err,"Error in the vector space symm function");
-        reset(output[0]);
-    }
-};
-
-        
-template <typename Real=double> 
-struct MatlabVS { 
-    // Setup the vector 
-    typedef MatVector Vector; 
-        
-    // Memory allocation and size setting 
-    static Vector init(const Vector & x) {
-        return std::move(const_cast <Vector &> (x).init());
-    }       
-                
-    // y <- x (Shallow.  No memory allocation.) 
-    static void copy(const Vector& x, Vector& y) {
-        y.copy(x);
-    } 
-    
-    // x <- alpha * x 
-    static void scal(const Real& alpha, Vector& x) { 
-        x.scal(alpha);
-    }   
-        
-    // x <- 0 
-    static void zero(Vector& x) { 
-        x.zero();
-    }
-        
-    // y <- alpha * x + y 
-    static void axpy(const Real& alpha, const Vector& x, Vector& y) {
-        y.axpy(alpha,x);
-    }   
-            
-    // innr <- <x,y> 
-    static Real innr(const Vector& x,const Vector& y) {
-        return y.innr(x);
-    } 
-        
-    // x <- random 
-    static void rand(Vector& x) { 
-        x.rand();
+            if(m==Matlab::enumToNatural("KrylovStop","NegativeCurvature"))
+                return NegativeCurvature;
+            else if(m==Matlab::enumToNatural("KrylovStop","RelativeErrorSmall"))
+                return RelativeErrorSmall;
+            else if(m==Matlab::enumToNatural("KrylovStop","MaxItersExceeded"))
+                return MaxItersExceeded;
+            else if(m==Matlab::enumToNatural(
+                "KrylovStop","TrustRegionViolated")
+            )
+                return TrustRegionViolated;
+            else if(m==Matlab::enumToNatural("KrylovStop","Instability"))
+                return Instability;
+            else if(m==Matlab::enumToNatural(
+                "KrylovStop","InvalidTrustRegionCenter")
+            )
+                return InvalidTrustRegionCenter;
+        }
     }
     
-    // Jordan product, z <- x o y 
-    static void prod(const Vector& x, const Vector& y, Vector& z) {
-        z.prod(x,y);
-    }   
-        
-    // Identity element, x <- e such that x o e = x 
-    static void id(Vector& x) { 
-        x.id();
-    }   
-        
-    // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y 
-    static void linv(const Vector& x, const Vector& y, Vector& z) {
-        z.linv(x,y);
-    }
-        
-    // Barrier function, barr <- barr(x) where x o grad barr(x) = e 
-    static Real barr(const Vector& x) {
-        return x.barr();
-    }
-
-    // Line search, srch <- argmax {alpha in Real >= 0 : alpha x + y >= 0} 
-    // where y > 0.  If the argmax is infinity, then return Real(-1.). 
-    static Real srch(const Vector& x,const Vector& y) {
-        return y.srch(x);
-    }
-        
-    // Symmetrization, x <- symm(x) such that L(symm(x)) is a symmetric
-    // operator.
-    static void symm(Vector& x) {
-        return x.symm();
-    }
-};
-
-// A simple scalar valued function using Matlab provided functions 
-struct MatlabScalarValuedFunction
-    : public Optizelle::ScalarValuedFunction <double,MatlabVS>
-{
-private:
-    // The Matlab functions
-    mxArrayPtr eval_;
-    mxArrayPtr grad_;
-    mxArrayPtr hessvec_;
-
-    // Disallow the default constructor
-    MatlabScalarValuedFunction() : eval_(NULL), grad_(NULL), hessvec_(NULL) {}
-
-public:
-    // When we construct the function, we read in all the names from the
-    // Matlab structure.  We need to check the structure prior to
-    // constructing this object.
-    MatlabScalarValuedFunction(mxArray* f) {
-        eval_.reset(mxDuplicateArray(mxGetField(f,0,"eval"))); 
-        grad_.reset(mxDuplicateArray(mxGetField(f,0,"grad"))); 
-        hessvec_.reset(mxDuplicateArray(mxGetField(f,0,"hessvec"))); 
-    }
-
-    // <- f(x) 
-    double eval(const MatVector& x) const {
-        // Create the inputs and outputs 
-        mxArray* input[2]={eval_.get(),x.get()}; 
-        mxArray* output[1];
-
-        // Evaluate the function 
-        mexCallMATLAB(1,output,2,input,"feval"); 
-        int err=mexCallMATLAB(1,output,2,input,"feval");
-        handleException(err,
-            "Error in the scalar valued function (objective) evaluation");
-        mxArrayPtr output_(output[0]);
-
-        // Get the result of the computation 
-        double alpha=mxGetScalar(output_.get()); 
-
-        // Return the result 
-        return alpha; 
-    }
-
-    // g = grad f(x) 
-    void grad(const MatVector& x,MatVector& g) const { 
-        mxArray* input[2]={grad_.get(),x.get()}; 
-        mxArray* output[1];
-        int err=mexCallMATLAB(1,output,2,input,"feval");
-        handleException(err,
-            "Error in the scalar valued function (objective) gradient");
-        g.reset(output[0]);
-    }
-
-    // H_dx = hess f(x) dx 
-    void hessvec(const MatVector& x,const MatVector& dx,MatVector& H_dx) const {
-        mxArray* input[3]={hessvec_.get(),x.get(),dx.get()}; 
-        mxArray* output[1];
-        int err=mexCallMATLAB(1,output,3,input,"feval");
-        handleException(err,
-            "Error in the scalar valued function (objective) Hessian-vector "
-            "product");
-        H_dx.reset(output[0]);
-    }
-};
-
-// A vector valued function using Matlab provided functions 
-struct MatlabVectorValuedFunction
-    : public Optizelle::VectorValuedFunction <double,MatlabVS,MatlabVS> {
-private:
-    // Create some type shortcuts
-    typedef MatlabVS <>::Vector X_Vector;
-    typedef MatlabVS <>::Vector Y_Vector;
-
-    // The Matlab functions
-    mxArrayPtr eval_;
-    mxArrayPtr p_;
-    mxArrayPtr ps_;
-    mxArrayPtr pps_;
-
-    // Prevent the default constructor from being called
-    MatlabVectorValuedFunction() :
-        eval_(NULL), p_(NULL), ps_(NULL), pps_(NULL) {}
-
-public:
-    // When we construct the function, we read in all the names from the
-    // Matlab structure.  We need to check the structure prior to
-    // constructing this object.
-    MatlabVectorValuedFunction(mxArray* f) {
-        eval_.reset(mxDuplicateArray(mxGetField(f,0,"eval")));
-        p_.reset(mxDuplicateArray(mxGetField(f,0,"p"))); 
-        ps_.reset(mxDuplicateArray(mxGetField(f,0,"ps")));
-        pps_.reset(mxDuplicateArray(mxGetField(f,0,"pps"))); 
-    }
-
-    // y=f(x)
-    void eval(const X_Vector& x,Y_Vector& y) const { 
-        mxArray* input[2]={eval_.get(),x.get()}; 
-        mxArray* output[1];
-        mexCallMATLAB(1,output,2,input,"feval");
-        int err=mexCallMATLAB(1,output,2,input,"feval");
-        handleException(err,
-            "Error in the vector valued function (constraint) evaluation");
-        y.reset(output[0]);
-    }
-
-     // y=f'(x)dx 
-     void p(
-         const X_Vector& x,
-         const X_Vector& dx,
-         Y_Vector& y
-     ) const { 
-        mxArray* input[3]={p_.get(),x.get(),dx.get()}; 
-        mxArray* output[1];
-        int err=mexCallMATLAB(1,output,3,input,"feval");
-        handleException(err,
-            "Error in the vector valued function (constraint) derivative");
-        y.reset(output[0]);
-     }
-
-     // z=f'(x)*dy
-     void ps(
-         const X_Vector& x,
-         const Y_Vector& dy,
-         X_Vector& z
-     ) const {
-        mxArray* input[3]={ps_.get(),x.get(),dy.get()}; 
-        mxArray* output[1];
-        int err=mexCallMATLAB(1,output,3,input,"feval");
-        handleException(err,
-            "Error in the vector valued function (constraint) derivative "
-            "adjoint");
-        z.reset(output[0]);
-     }
-     
-     // z=(f''(x)dx)*dy
-     void pps(
-         const X_Vector& x,
-         const X_Vector& dx,
-         const Y_Vector& dy,
-         X_Vector& z
-     ) const { 
-        mxArray* input[4]={pps_.get(),x.get(),dx.get(),dy.get()}; 
-        mxArray* output[1];
-        int err=mexCallMATLAB(1,output,4,input,"feval");
-        handleException(err,
-            "Error in the vector valued function (constraint) second "
-            "derivative adjoint");
-        z.reset(output[0]);
-     }
-};
-
-// An operator using Matlab provided functions 
-struct MatlabOperator : public Optizelle::Operator <double,MatlabVS,MatlabVS> {
-private:
-    // Create some type shortcuts
-    typedef MatlabVS <>::Vector X_Vector;
-    typedef MatlabVS <>::Vector Y_Vector;
-
-    // The Matlab functions
-    mxArrayPtr eval_;
-
-    // The base point around where we evaluate the operator
-    X_Vector& x; 
-
-    // Name of the operator
-    std::string name;
-    
-public:
-    // When we construct the function, we read in all the names from the
-    // Matlab structure.  We need to check the structure prior to
-    // constructing this object.
-    MatlabOperator(mxArray* f,X_Vector& x_,std::string name_)
-        :  eval_(nullptr), x(x_), name(name_)
-    {
-        eval_.reset(mxDuplicateArray(mxGetField(f,0,"eval"))); 
-    }
-
-    // y=f(x)
-    virtual void eval(const X_Vector& dx,Y_Vector& y) const { 
-        mxArray* input[3]={eval_.get(),x.get(),dx.get()}; 
-        mxArray* output[1];
-        int err=mexCallMATLAB(1,output,3,input,"feval");
-        handleException(err,"Error in the operator " + name);
-        y.reset(output[0]);
-    }
-};
-
-// A messaging utility that hooks directly into Matlab
-struct MatlabMessaging : public Optizelle::Messaging {
-    // Prints a message
-    void print(const std::string& msg) const {
-        std::string msg_ = msg + "\n";
-        mexPrintf(msg_.c_str());
-        mexEvalString("drawnow");
-    }
-
-    // Prints an error
-    void error(const std::string& msg) const {
-        mexErrMsgTxt(msg.c_str());
-    }
-};
-
-// Checks that a structure array contains certain functions
-void check_fns(
-    const mxArray* X,
-    std::string ops[],
-    Optizelle::Natural nops,
-    std::string type,
-    std::string name
-) {
-    // Create a type shortcut
-    typedef Optizelle::Natural Natural;
-
-    // The argument should be a structure array
-    if(!mxIsStruct(X))
-        MatlabMessaging().error("The " + type + " " + name +
-            " must be a structure array.");
-
-    // Check that the structure contains all the functions
-    for(Natural i=0;i<nops;i++)
-        if(mxGetField(X,0,ops[i].c_str())==NULL)
-            MatlabMessaging().error("Missing the " + ops[i] + 
-                " function in the " + type + " " + name +".");
-    
-    // Check that all of the listed functions are really functions 
-    for(Natural i=0;i<nops;i++)
-        if(!mxIsClass(mxGetField(X,0,ops[i].c_str()),"function_handle"))
-            MatlabMessaging().error("The field " + ops[i] +
-                " in the " + type + " " + name + " must be a function.");
-}
-
-// Check that we have all the operations necessary for a vector space
-void check_vector_space(const mxArray* X,std::string name) {
-    std::string ops[6] = { "copy", "scal", "zero", "axpy", "innr", "rand" };
-    check_fns(X,ops,6,"vector space",name);
-}
-
-// Check that we have all the operations necessary for a Euclidean-Jordan
-// algebra
-void check_euclidean_jordan(const mxArray* X,std::string name) {
-    // First, check that we have a valid vector space
-    check_vector_space(X,name);
-
-    // Next, we check we have a valid Euclidean-Jordan algebra
-    std::string ops[6] = { "prod", "id", "linv", "barr", "srch", "symm" };
-    check_fns(X,ops,6,"vector space",name);
-}
-
-// Check that we have all the operations necessary for a scalar valued function 
-void check_scalar_valued_fn(const mxArray* X,std::string name) {
-    std::string ops[3] = { "eval", "grad", "hessvec" };
-    check_fns(X,ops,3,"scalar valued function",name);
-}
-
-
-// Check that we have all the operations necessary for a vector valued function 
-void check_vector_valued_fn(const mxArray* X,std::string name) {
-    std::string ops[4] = { "eval", "p", "ps", "pps" };
-    check_fns(X,ops,4,"vector valued function",name);
-}
-
-// Determine the problem class from a bundle of vector spaces 
-Optizelle::ProblemClass::t get_problem_class_from_vs(const mxArray* VS) {
-    // First, check that we have a structure array        
-    if(!mxIsStruct(VS))
-        MatlabMessaging().error("The bundle of vector spaces must be a "
-            "structure array.");
-
-    // Next, insure that we have at least X
-    if(mxGetField(VS,0,"X")==NULL)
-        MatlabMessaging().error("The bundle of vector spaces must " 
-            "contain X.");
-
-    // Check that X is a vector space
-    check_vector_space(mxGetField(VS,0,"X"),"X");
-
-    // Set the initial algorithm class
-    Optizelle::ProblemClass::t problem_class = Optizelle::ProblemClass::Unconstrained;
-
-    // Next, check if we have any equality constraints
-    if(mxGetField(VS,0,"Y") != NULL) {
-
-        // Check for the vector space operations
-        check_vector_space(mxGetField(VS,0,"Y"),"Y");
-
-        // Adjust the algorithm class
-        problem_class
-            = Optizelle::ProblemClass::EqualityConstrained;
-    }
-
-    // Next, check if we have inequality constraints
-    if(mxGetField(VS,0,"Z") != NULL) {
-
-        // Check for the Euclidean-Jordan algebra operations
-        check_euclidean_jordan(mxGetField(VS,0,"Z"),"Z");
-
-        // Adjust the algorithm class
-        if(problem_class==Optizelle::ProblemClass::EqualityConstrained)
-            problem_class = Optizelle::ProblemClass::Constrained;
-        else
-            problem_class = Optizelle::ProblemClass::InequalityConstrained;
-    }
-
-    return problem_class;
-}
-
-// Determine the problem class from a bundle of vector spaces 
-Optizelle::ProblemClass::t get_problem_class_from_fns(const mxArray* fns) {
-    // First, check that we have a structure array        
-    if(!mxIsStruct(fns))
-        MatlabMessaging().error("The bundle of functions must be a "
-            "structure array.");
-
-    // Next, insure that we have at least f
-    if(mxGetField(fns,0,"f")==NULL)
-        MatlabMessaging().error("The bundle of functions must " 
-            "contain f.");
-
-    // Check that f is a scalar value function 
-    check_scalar_valued_fn(mxGetField(fns,0,"f"),"f");
-
-    // Set the initial algorithm class
-    Optizelle::ProblemClass::t problem_class
-        = Optizelle::ProblemClass::Unconstrained;
-
-    // Next, check if we have any equality constraints
-    if(mxGetField(fns,0,"g") != NULL) {
-
-        // Check for the vector space operations
-        check_vector_valued_fn(mxGetField(fns,0,"g"),"g");
-
-        // Adjust the algorithm class
-        problem_class
-            = Optizelle::ProblemClass::EqualityConstrained;
-    }
-
-    // Next, check if we have inequality constraints
-    if(mxGetField(fns,0,"h") != NULL) {
-
-        // Check for the Euclidean-Jordan algebra operations
-        check_vector_valued_fn(mxGetField(fns,0,"h"),"h");
-
-        // Adjust the algorithm class
-        if(problem_class==Optizelle::ProblemClass::EqualityConstrained)
-            problem_class = Optizelle::ProblemClass::Constrained;
-        else
-            problem_class = Optizelle::ProblemClass::InequalityConstrained;
-    }
-
-    return problem_class;
-}
-
-// Check that we have a valid vector space.
-void checkVS(const mxArray* VS) {
-    // This implicitly checks that the vector space is valid
-    get_problem_class_from_vs(VS);
-}
-
-// Check that we have a valid function bundle.
-void checkFns(const mxArray* VS,const mxArray* fns) {
-    // Infer problem classes for both the vector space and the functions
-    Optizelle::ProblemClass::t problem_class_vs=get_problem_class_from_vs(VS);
-    Optizelle::ProblemClass::t problem_class_fn=get_problem_class_from_fns(fns);
-
-    // Make sure the problem class inferred by the vector space matches
-    // that from the function class
-    if(problem_class_vs != problem_class_fn) {
-        std::stringstream ss;
-        ss << "The problem class inferred from the vector space ("
-            << Optizelle::ProblemClass::to_string(problem_class_vs) 
-            << ") does not match\nthe problem class inferred from the "
-            << "optimization functions ("
-            << Optizelle::ProblemClass::to_string(problem_class_fn)
-            << ").";
-
-        MatlabMessaging().error(ss.str());
-    }
-}
-
-// Check that the bundle of points aligns with the current vector space.
-// We use this bundle of points for optimization 
-void check_optimization_pts(const mxArray* VS,const mxArray* pts) {
-    // Get the problem class from the vector space
-    Optizelle::ProblemClass::t problem_class=get_problem_class_from_vs(VS);
-    
-    // First, check that the bundle of points is a structure array        
-    if(!mxIsStruct(pts))
-        MatlabMessaging().error("The bundle of points must be a "
-            "structure array.");
-
-    // Next, insure that we have x, y, and z 
-    if(mxGetField(pts,0,"x")==NULL)
-        MatlabMessaging().error("The bundle of points must contain x.");
-    if((problem_class == Optizelle::ProblemClass::EqualityConstrained 
-        || problem_class == Optizelle::ProblemClass::Constrained) 
-        && mxGetField(pts,0,"y")==NULL
-    )
-        MatlabMessaging().error("The bundle of points must contain y.");
-    if((problem_class == Optizelle::ProblemClass::InequalityConstrained 
-        || problem_class == Optizelle::ProblemClass::Constrained) 
-        && mxGetField(pts,0,"z")==NULL
-    )
-        MatlabMessaging().error("The bundle of points must contain z.");
-}
-
-// Check that the bundle of points aligns with the current vector space.
-// We use this bundle of points for the finite difference tests.
-void check_diagnostic_pts(const mxArray* VS,const mxArray* pts) {
-    // Get the problem class from the vector space
-    Optizelle::ProblemClass::t problem_class=get_problem_class_from_vs(VS);
-
-    // First, check that the bundle of points is a structure array        
-    if(!mxIsStruct(pts))
-        MatlabMessaging().error("The bundle of points must be a "
-            "structure array.");
-
-    // Next, insure that we have at least x, dx, and dxx 
-    if(mxGetField(pts,0,"x")==NULL)
-        MatlabMessaging().error("The bundle of points must contain x.");
-    if(mxGetField(pts,0,"dx")==NULL)
-        MatlabMessaging().error("The bundle of points must contain dx.");
-    if(mxGetField(pts,0,"dxx")==NULL)
-        MatlabMessaging().error("The bundle of points must contain dxx.");
-
-    // Now, if we're equality constrained, check for dy 
-    if(problem_class == Optizelle::ProblemClass::EqualityConstrained ||
-       problem_class == Optizelle::ProblemClass::Constrained
-    ) {
-        if(mxGetField(pts,0,"dy")==NULL)
-            MatlabMessaging().error("For equality constrained problems, "
-                "the bundle of points must contain dy.");
-    }
-
-    // If we're inequality constrained, check for dz
-    if(problem_class == Optizelle::ProblemClass::InequalityConstrained ||
-       problem_class == Optizelle::ProblemClass::Constrained
-    ) {
-        if(mxGetField(pts,0,"dz")==NULL)
-            MatlabMessaging().error("For inequality constrained problems, "
-                "the bundle of points must contain dz.");
-    }
-}
-
-// Check that our paramters are denoted by a string
-void checkParams(const mxArray* params) {
-    if(!mxIsChar(params))
-        MatlabMessaging().error("The parameters must be a string that denotes "
-            "a JSON parameter file.");
-}
-
-void mexFunction(
-    int nOutput,mxArray* pOutput[],
-    int nInput,const mxArray* pInput[]
-) {
-    
-    // Check the number of arguments
-    if(!(nInput==3 && nOutput==0) && !(nInput==4 && nOutput==1))
-        MatlabMessaging().error("Optizelle usage:\n"
-            "Optimization: x=Optizelle(VS,fns,pts,params)\n"
-            "Diagnostics:  Optizelle(VS,fns,pts)");
-
-    // Check the vector spaces
-    checkVS(pInput[0]);
-
-    // Check the bundle of functions
-    checkFns(pInput[0],pInput[1]);
-
-    // Determine if we're optimizing or doing diagnostics
-    bool diagnostics = nInput==3;
-     
-    // Get the problem class
-    Optizelle::ProblemClass::t problem_class=get_problem_class_from_vs(pInput[0]);
-
-    // Create a bundle of functions
-    Optizelle::Constrained <double,MatlabVS,MatlabVS,MatlabVS>::Functions::t fns;
-    fns.f.reset(new MatlabScalarValuedFunction (mxGetField(pInput[1],0,"f")));
-    switch(problem_class) {
-    case Optizelle::ProblemClass::Unconstrained:
-        break;
-    case Optizelle::ProblemClass::EqualityConstrained:
-        fns.g.reset(new MatlabVectorValuedFunction
-            (mxGetField(pInput[1],0,"g")));
-        break;
-    case Optizelle::ProblemClass::InequalityConstrained:
-        fns.h.reset(new MatlabVectorValuedFunction
-            (mxGetField(pInput[1],0,"h")));
-        break;
-    case Optizelle::ProblemClass::Constrained:
-        fns.g.reset(new MatlabVectorValuedFunction
-            (mxGetField(pInput[1],0,"g")));
-        fns.h.reset(new MatlabVectorValuedFunction
-            (mxGetField(pInput[1],0,"h")));
-        break;
-    }
-
-    // Initialize points for x, y, and z when required.  In addition,
-    // initialize points for dx, dxx, dy, and dz when doing the finite
-    // difference tests
-    mxArray* X(mxGetField(pInput[0],0,"X"));
-    std::unique_ptr <MatVector> x;
-    std::unique_ptr <MatVector> dx;
-    std::unique_ptr <MatVector> dxx;
-    std::unique_ptr <MatVector> y;
-    std::unique_ptr <MatVector> dy;
-    std::unique_ptr <MatVector> z;
-    std::unique_ptr <MatVector> dz;
-
-    // Check that we have a valid set of optimization points (x,y,z)
-    check_optimization_pts(pInput[0],pInput[2]);
-
-    // Always initialize x
-    x.reset(new MatVector(
-        mxGetField(pInput[2],0,"x"),
-        mxGetField(X,0,"copy"),
-        mxGetField(X,0,"scal"),
-        mxGetField(X,0,"zero"),
-        mxGetField(X,0,"axpy"),
-        mxGetField(X,0,"innr"),
-        mxGetField(X,0,"rand")));
-    
-    // If we need to do a finite difference, initialize dx and dxx
-    if(diagnostics) {
-        // Check that we have all the valid directions for the finite
-        // difference tests.
-        check_diagnostic_pts(pInput[0],pInput[2]);
-
-        // Get the points for checking the objective
-        dx.reset(new MatVector(x->init()));
-            dx->copy(mxGetField(pInput[2],0,"dx"));
-        dxx.reset(new MatVector(x->init()));
-            dxx->copy(mxGetField(pInput[2],0,"dx"));
-    }
-    
-    // Possibly initialize y and dy
-    if(problem_class == Optizelle::ProblemClass::EqualityConstrained ||
-       problem_class == Optizelle::ProblemClass::Constrained
-    ) {
-        mxArray* Y(mxGetField(pInput[0],0,"Y"));
-        y.reset(new MatVector(
-            mxGetField(pInput[2],0,"y"),
-            mxGetField(Y,0,"copy"),
-            mxGetField(Y,0,"scal"),
-            mxGetField(Y,0,"zero"),
-            mxGetField(Y,0,"axpy"),
-            mxGetField(Y,0,"innr"),
-            mxGetField(Y,0,"rand")));
-        if(diagnostics) {
-            dy.reset(new MatVector(y->init()));
-                dy->copy(mxGetField(pInput[2],0,"dy"));
+    namespace KrylovSolverTruncated { 
+        // Converts t to a Matlab enumerated type
+        mxArray * toMatlab(t const & truncated_krylov) {
+            // Do the conversion
+            switch(truncated_krylov){
+            case ConjugateDirection:
+                return Matlab::enumToMxArray(
+                    "KrylovSolverTruncated","ConjugateDirection");
+            case MINRES:
+                return Matlab::enumToMxArray(
+                    "KrylovSolverTruncated","MINRES");
+            default:
+                throw;
+            }
+        }
+
+        // Converts a Matlab enumerated type to t 
+        t fromMatlab(mxArray * const member) {
+            // Convert the member to a Natural 
+            Natural m(*mxGetPr(member));
+
+            if(m==Matlab::enumToNatural(
+                "KrylovSolverTruncated","ConjugateDirection")
+            )
+                return ConjugateDirection;
+            else if(m==Matlab::enumToNatural("KrylovSolverTruncated","MINRES"))
+                return MINRES;
         }
     }
 
-    // Possibly initialize z and dz
-    if(problem_class == Optizelle::ProblemClass::InequalityConstrained ||
-       problem_class == Optizelle::ProblemClass::Constrained
-    ) {
-        mxArray* Z(mxGetField(pInput[0],0,"Z"));
-        z.reset(new MatVector(
-            mxGetField(pInput[2],0,"z"),
-            mxGetField(Z,0,"copy"),
-            mxGetField(Z,0,"scal"),
-            mxGetField(Z,0,"zero"),
-            mxGetField(Z,0,"axpy"),
-            mxGetField(Z,0,"innr"),
-            mxGetField(Z,0,"rand"),
-            mxGetField(Z,0,"prod"),
-            mxGetField(Z,0,"id"),
-            mxGetField(Z,0,"linv"),
-            mxGetField(Z,0,"barr"),
-            mxGetField(Z,0,"srch"),
-            mxGetField(Z,0,"symm")));
-        if(diagnostics) {
-            dz.reset(new MatVector(z->init()));
-                dz->copy(mxGetField(pInput[2],0,"dz"));
+    namespace AlgorithmClass { 
+        // Converts t to a Matlab enumerated type
+        mxArray * toMatlab(t const & algorithm_class) {
+            // Do the conversion
+            switch(algorithm_class){
+            case TrustRegion:
+                return Matlab::enumToMxArray("AlgorithmClass","TrustRegion");
+            case LineSearch:
+                return Matlab::enumToMxArray("AlgorithmClass","LineSearch");
+            case UserDefined:
+                return Matlab::enumToMxArray("AlgorithmClass","UserDefined");
+            default:
+                throw;
+            }
+        }
+
+        // Converts a Matlab enumerated type to t 
+        t fromMatlab(mxArray * const member) {
+            // Convert the member to a Natural 
+            Natural m(*mxGetPr(member));
+
+            if(m==Matlab::enumToNatural("AlgorithmClass","TrustRegion"))
+                return TrustRegion;
+            else if(m==Matlab::enumToNatural("AlgorithmClass","LineSearch"))
+                return LineSearch;
+            else if(m==Matlab::enumToNatural("AlgorithmClass","UserDefined"))
+                return UserDefined;
         }
     }
 
-    // If we're doing diagnostics, diagnose
-    if(diagnostics) {
-        // Do a finite difference check and symmetric check on the objective
-        MatlabMessaging().print("Diagnostics on the objective.");
-        Optizelle::Diagnostics::gradientCheck<double,MatlabVS>
-            (MatlabMessaging(),*(fns.f),*x,*dx,"f");
-        Optizelle::Diagnostics::hessianCheck <double,MatlabVS>
-            (MatlabMessaging(),*(fns.f),*x,*dx,"f");
-        Optizelle::Diagnostics::hessianSymmetryCheck <double,MatlabVS>
-            (MatlabMessaging(),*(fns.f),*x,*dx,*dxx,"f");
+    namespace Operators { 
+        // Converts t to a Matlab enumerated type
+        mxArray * toMatlab(t const & op) {
+            // Do the conversion
+            switch(op){
+            case Identity:
+                return Matlab::enumToMxArray("Operators","Identity");
+            case ScaledIdentity:
+                return Matlab::enumToMxArray("Operators","ScaledIdentity");
+            case BFGS:
+                return Matlab::enumToMxArray("Operators","BFGS");
+            case InvBFGS:
+                return Matlab::enumToMxArray("Operators","InvBFGS");
+            case SR1:
+                return Matlab::enumToMxArray("Operators","SR1");
+            case InvSR1:
+                return Matlab::enumToMxArray("Operators","InvSR1");
+            case UserDefined:
+                return Matlab::enumToMxArray("Operators","UserDefined");
+            default:
+                throw;
+            }
+        }
 
-        // Run diagnostics on the equality constraints if necessary 
-        if(problem_class == Optizelle::ProblemClass::EqualityConstrained ||
-           problem_class == Optizelle::ProblemClass::Constrained
+        // Converts a Matlab enumerated type to t 
+        t fromMatlab(mxArray * const member) {
+            // Convert the member to a Natural 
+            Natural m(*mxGetPr(member));
+
+            if(m==Matlab::enumToNatural("Operators","Identity"))
+                return Identity;
+            else if(m==Matlab::enumToNatural("Operators","ScaledIdentity"))
+                return ScaledIdentity;
+            else if(m==Matlab::enumToNatural("Operators","BFGS"))
+                return BFGS;
+            else if(m==Matlab::enumToNatural("Operators","InvBFGS"))
+                return InvBFGS;
+            else if(m==Matlab::enumToNatural("Operators","SR1"))
+                return SR1;
+            else if(m==Matlab::enumToNatural("Operators","InvSR1"))
+                return InvSR1;
+            else if(m==Matlab::enumToNatural("Operators","UserDefined"))
+                return UserDefined;
+        }
+    }
+
+    namespace LineSearchDirection {
+        // Converts t to a Matlab enumerated type
+        mxArray * toMatlab(t const & dir) {
+            // Do the conversion
+            switch(dir){
+            case SteepestDescent:
+                return Matlab::enumToMxArray("LineSearchDirection",
+                    "SteepestDescent");
+            case FletcherReeves:
+                return Matlab::enumToMxArray("LineSearchDirection",
+                    "FletcherReeves");
+            case PolakRibiere:
+                return Matlab::enumToMxArray("LineSearchDirection",
+                    "PolakRibiere");
+            case HestenesStiefel:
+                return Matlab::enumToMxArray("LineSearchDirection",
+                    "HestenesStiefel");
+            case BFGS:
+                return Matlab::enumToMxArray("LineSearchDirection","BFGS");
+            case NewtonCG:
+                return Matlab::enumToMxArray("LineSearchDirection","NewtonCG");
+            default:
+                throw;
+            }
+        }
+
+        // Converts a Matlab enumerated type to t 
+        t fromMatlab(mxArray * const member) {
+            // Convert the member to a Natural 
+            Natural m(*mxGetPr(member));
+
+            if(m==Matlab::enumToNatural("LineSearchDirection",
+                "SteepestDescent")
+            )
+                return SteepestDescent;
+            else if(m==Matlab::enumToNatural("LineSearchDirection",
+                "FletcherReeves")
+            )
+                return FletcherReeves;
+            else if(m==Matlab::enumToNatural("LineSearchDirection",
+                "PolakRibiere")
+            )
+                return PolakRibiere;
+            else if(m==Matlab::enumToNatural("LineSearchDirection",
+                "HestenesStiefel")
+            )
+                return HestenesStiefel;
+            else if(m==Matlab::enumToNatural("LineSearchDirection","BFGS"))
+                return BFGS;
+            else if(m==Matlab::enumToNatural("LineSearchDirection","NewtonCG"))
+                return NewtonCG;
+        }
+    }
+
+    namespace LineSearchKind { 
+        // Converts t to a Matlab enumerated type
+        mxArray * toMatlab(t const & kind) {
+            // Do the conversion
+            switch(kind){
+            case Brents:
+                return Matlab::enumToMxArray("LineSearchKind","Brents");
+            case GoldenSection:
+                return Matlab::enumToMxArray("LineSearchKind","GoldenSection");
+            case BackTracking:
+                return Matlab::enumToMxArray("LineSearchKind","BackTracking");
+            case TwoPointA:
+                return Matlab::enumToMxArray("LineSearchKind","TwoPointA");
+            case TwoPointB:
+                return Matlab::enumToMxArray("LineSearchKind","TwoPointB");
+            default:
+                throw;
+            }
+        }
+
+        // Converts a Matlab enumerated type to t 
+        t fromMatlab(mxArray * const member) {
+            // Convert the member to a Natural 
+            Natural m(*mxGetPr(member));
+
+            if(m==Matlab::enumToNatural("LineSearchKind","Brents"))
+                return Brents;
+            else if(m==Matlab::enumToNatural("LineSearchKind","GoldenSection"))
+                return GoldenSection;
+            else if(m==Matlab::enumToNatural("LineSearchKind","BackTracking"))
+                return BackTracking;
+            else if(m==Matlab::enumToNatural("LineSearchKind","TwoPointA"))
+                return TwoPointA;
+            else if(m==Matlab::enumToNatural("LineSearchKind","TwoPointB"))
+                return TwoPointB;
+        }
+    }
+
+    namespace OptimizationLocation { 
+        // Converts t to a Matlab enumerated type
+        mxArray * toMatlab(t const & loc) {
+            // Do the conversion
+            switch(loc){
+            case BeginningOfOptimization:
+                return Matlab::enumToMxArray(
+                    "OptimizationLocation","BeginningOfOptimization");
+            case BeforeInitialFuncAndGrad:
+                return Matlab::enumToMxArray(
+                    "OptimizationLocation","BeforeInitialFuncAndGrad");
+            case AfterInitialFuncAndGrad:
+                return Matlab::enumToMxArray(
+                    "OptimizationLocation","AfterInitialFuncAndGrad");
+            case BeforeOptimizationLoop:
+                return Matlab::enumToMxArray(
+                    "OptimizationLocation","BeforeOptimizationLoop");
+            case BeginningOfOptimizationLoop:
+                return Matlab::enumToMxArray(
+                    "OptimizationLocation","BeginningOfOptimizationLoop");
+            case BeforeSaveOld:
+                return Matlab::enumToMxArray(
+                    "OptimizationLocation","BeforeSaveOld");
+            case BeforeStep:
+                return Matlab::enumToMxArray(
+                    "OptimizationLocation","BeforeStep");
+            case BeforeGetStep:
+                return Matlab::enumToMxArray(
+                    "OptimizationLocation","BeforeGetStep");
+            case GetStep:
+                return Matlab::enumToMxArray("OptimizationLocation","GetStep");
+            case AfterStepBeforeGradient:
+                return Matlab::enumToMxArray(
+                    "OptimizationLocation","AfterStepBeforeGradient");
+            case AfterGradient:
+                return Matlab::enumToMxArray(
+                    "OptimizationLocation","AfterGradient");
+            case BeforeQuasi:
+                return Matlab::enumToMxArray(
+                    "OptimizationLocation","BeforeQuasi");
+            case AfterQuasi:
+                return Matlab::enumToMxArray(
+                    "OptimizationLocation","AfterQuasi");
+            case EndOfOptimizationIteration:
+                return Matlab::enumToMxArray(
+                    "OptimizationLocation","EndOfOptimizationIteration");
+            case BeforeLineSearch:
+                return Matlab::enumToMxArray(
+                    "OptimizationLocation","BeforeLineSearch");
+            case AfterRejectedTrustRegion:
+                return Matlab::enumToMxArray(
+                    "OptimizationLocation","AfterRejectedTrustRegion");
+            case AfterRejectedLineSearch:
+                return Matlab::enumToMxArray(
+                    "OptimizationLocation","AfterRejectedLineSearch");
+            case BeforeActualVersusPredicted:
+                return Matlab::enumToMxArray(
+                    "OptimizationLocation","BeforeActualVersusPredicted");
+            case EndOfKrylovIteration:
+                return Matlab::enumToMxArray(
+                    "OptimizationLocation","EndOfKrylovIteration");
+            case EndOfOptimization:
+                return Matlab::enumToMxArray(
+                    "OptimizationLocation","EndOfOptimization");
+            default:
+                throw;
+            }
+        }
+
+        // Converts a Matlab enumerated type to t 
+        t fromMatlab(mxArray * const member) {
+            // Convert the member to a Natural 
+            Natural m(*mxGetPr(member));
+
+            if(m==Matlab::enumToNatural(
+                "OptimizationLocation","BeginningOfOptimization"))
+                return BeginningOfOptimization;
+            else if(m==Matlab::enumToNatural(
+                "OptimizationLocation","BeforeInitialFuncAndGrad"))
+                return BeforeInitialFuncAndGrad;
+            else if(m==Matlab::enumToNatural(
+                "OptimizationLocation","AfterInitialFuncAndGrad"))
+                return AfterInitialFuncAndGrad;
+            else if(m==Matlab::enumToNatural(
+                "OptimizationLocation","BeforeOptimizationLoop"))
+                return BeforeOptimizationLoop;
+            else if(m==Matlab::enumToNatural(
+                "OptimizationLocation","BeginningOfOptimizationLoop"))
+                return BeginningOfOptimizationLoop;
+            else if(m==Matlab::enumToNatural(
+                "OptimizationLocation","BeforeSaveOld"))
+                return BeforeSaveOld;
+            else if(m==Matlab::enumToNatural(
+                "OptimizationLocation","BeforeStep"))
+                return BeforeStep;
+            else if(m==Matlab::enumToNatural(
+                "OptimizationLocation","BeforeGetStep"))
+                return BeforeGetStep;
+            else if(m==Matlab::enumToNatural(
+                "OptimizationLocation","GetStep"))
+                return GetStep;
+            else if(m==Matlab::enumToNatural(
+                "OptimizationLocation","AfterStepBeforeGradient"))
+                return AfterStepBeforeGradient;
+            else if(m==Matlab::enumToNatural(
+                "OptimizationLocation","AfterGradient"))
+                return AfterGradient;
+            else if(m==Matlab::enumToNatural(
+                "OptimizationLocation","BeforeQuasi"))
+                return BeforeQuasi;
+            else if(m==Matlab::enumToNatural(
+                "OptimizationLocation","AfterQuasi"))
+                return AfterQuasi;
+            else if(m==Matlab::enumToNatural(
+                "OptimizationLocation","EndOfOptimizationIteration"))
+                return EndOfOptimizationIteration;
+            else if(m==Matlab::enumToNatural(
+                "OptimizationLocation","BeforeLineSearch"))
+                return BeforeLineSearch;
+            else if(m==Matlab::enumToNatural(
+                "OptimizationLocation","AfterRejectedTrustRegion"))
+                return AfterRejectedTrustRegion;
+            else if(m==Matlab::enumToNatural(
+                "OptimizationLocation","AfterRejectedLineSearch"))
+                return AfterRejectedLineSearch;
+            else if(m==Matlab::enumToNatural(
+                "OptimizationLocation","BeforeActualVersusPredicted"))
+                return BeforeActualVersusPredicted;
+            else if(m==Matlab::enumToNatural(
+                "OptimizationLocation","EndOfKrylovIteration"))
+                return EndOfKrylovIteration;
+            else if(m==Matlab::enumToNatural(
+                "OptimizationLocation","EndOfOptimization"))
+                return EndOfOptimization;
+        }
+    }
+
+    namespace InteriorPointMethod { 
+        // Converts t to a Matlab enumerated type
+        mxArray * toMatlab(t const & ipm) {
+            // Do the conversion
+            switch(ipm){
+            case PrimalDual:
+                return Matlab::enumToMxArray("InteriorPointMethod",
+                    "PrimalDual");
+            case PrimalDualLinked:
+                return Matlab::enumToMxArray("InteriorPointMethod",
+                    "PrimalDualLinked");
+            case LogBarrier:
+                return Matlab::enumToMxArray("InteriorPointMethod",
+                    "LogBarrier");
+            default:
+                throw;
+            }
+        }
+
+        // Converts a Matlab enumerated type to t 
+        t fromMatlab(mxArray * const member) {
+            // Convert the member to a Natural 
+            Natural m(*mxGetPr(member));
+
+            if(m==Matlab::enumToNatural("InteriorPointMethod","PrimalDual"))
+                return PrimalDual;
+            else if(m==Matlab::enumToNatural("InteriorPointMethod",
+                "PrimalDualLinked")
+            )
+                return PrimalDualLinked;
+            else if(m==Matlab::enumToNatural("InteriorPointMethod",
+                "LogBarrier")
+            )
+                return LogBarrier;
+        }
+    }
+
+    namespace CentralityStrategy { 
+        // Converts t to a Matlab enumerated type
+        mxArray * toMatlab(t const & cstrat) {
+            // Do the conversion
+            switch(cstrat){
+            case Constant:
+                return Matlab::enumToMxArray("CentralityStrategy","Constant");
+            case StairStep:
+                return Matlab::enumToMxArray("CentralityStrategy","StairStep");
+            case PredictorCorrector:
+                return Matlab::enumToMxArray("CentralityStrategy",
+                    "PredictorCorrector");
+            default:
+                throw;
+            }
+        }
+
+        // Converts a Matlab enumerated type to t 
+        t fromMatlab(mxArray * const member) {
+            // Convert the member to a Natural 
+            Natural m(*mxGetPr(member));
+
+            if(m==Matlab::enumToNatural("CentralityStrategy","Constant"))
+                return Constant;
+            else if(m==Matlab::enumToNatural("CentralityStrategy","StairStep"))
+                return StairStep;
+            else if(m==Matlab::enumToNatural("CentralityStrategy",
+                "PredictorCorrector")
+            )
+                return PredictorCorrector;
+        }
+    }
+
+    namespace FunctionDiagnostics { 
+        // Converts t to a Matlab enumerated type
+        mxArray * toMatlab(t const & diag) {
+            // Do the conversion
+            switch(diag){
+            case NoDiagnostics:
+                return Matlab::enumToMxArray("FunctionDiagnostics",
+                    "NoDiagnostics");
+            case FirstOrder:
+                return Matlab::enumToMxArray("FunctionDiagnostics",
+                    "FirstOrder");
+            case SecondOrder:
+                return Matlab::enumToMxArray("FunctionDiagnostics",
+                    "SecondOrder");
+            default:
+                throw;
+            }
+        }
+
+        // Converts a Matlab enumerated type to t 
+        t fromMatlab(mxArray * const member) {
+            // Convert the member to a Natural 
+            Natural m(*mxGetPr(member));
+
+            if(m==Matlab::enumToNatural("FunctionDiagnostics","NoDiagnostics"))
+                return NoDiagnostics;
+            else if(m==Matlab::enumToNatural("FunctionDiagnostics",
+                "FirstOrder")
+            )
+                return FirstOrder;
+            else if(m==Matlab::enumToNatural("FunctionDiagnostics",
+                "SecondOrder")
+            )
+                return SecondOrder;
+        }
+    }
+
+    namespace DiagnosticScheme { 
+        // Converts t to a Matlab enumerated type
+        mxArray * toMatlab(t const & dscheme) {
+            // Do the conversion
+            switch(dscheme){
+            case Never:
+                return Matlab::enumToMxArray("DiagnosticScheme","Never");
+            case DiagnosticsOnly:
+                return Matlab::enumToMxArray("DiagnosticScheme",
+                    "DiagnosticsOnly");
+            case EveryIteration:
+                return Matlab::enumToMxArray("DiagnosticScheme",
+                    "EveryIteration");
+            default:
+                throw;
+            }
+        }
+
+        // Converts a Matlab enumerated type to t 
+        t fromMatlab(mxArray * const member) {
+            // Convert the member to a Natural 
+            Natural m(*mxGetPr(member));
+
+            if(m==Matlab::enumToNatural("DiagnosticScheme","Never"))
+                return Never;
+            else if(m==Matlab::enumToNatural("DiagnosticScheme",
+                "DiagnosticsOnly")
+            )
+                return DiagnosticsOnly;
+            else if(m==Matlab::enumToNatural("DiagnosticScheme",
+                "EveryIteration")
+            )
+                return EveryIteration;
+        }
+    }
+
+    namespace Matlab {
+        // Calls a Matlab function with one argument 
+        std::pair <mxArray *,int> mxArray_CallObject1(
+            mxArray * const fn,
+            mxArray * const arg1
         ) {
-            MatlabMessaging()
-                .print("\nDiagnostics on the equality constraint.");
-        
-            // Do some finite difference tests on the constraint
-            Optizelle::Diagnostics::derivativeCheck <double,MatlabVS,MatlabVS>
-                (MatlabMessaging(),*(fns.g),*x,*dx,*dy,"g");
-            Optizelle::Diagnostics
-                ::derivativeAdjointCheck<double,MatlabVS,MatlabVS>
-                (MatlabMessaging(),*(fns.g),*x,*dx,*dy,"g");
-            Optizelle::Diagnostics
-                ::secondDerivativeCheck<double,MatlabVS,MatlabVS>
-                (MatlabMessaging(),*(fns.g),*x,*dx,*dy,"g");
+            mxArray* input[2]={fn,arg1};
+            mxArray* output[1];
+            int err=mexCallMATLAB(1,output,2,input,"feval");
+            return std::pair <mxArray*,int> (output[0],err);
         }
-
-        // Run diagnostics on the equality constraints if necessary 
-        if(problem_class == Optizelle::ProblemClass::InequalityConstrained ||
-           problem_class == Optizelle::ProblemClass::Constrained
+        
+        // Calls a Matlab function with two arguments
+        std::pair <mxArray *,int> mxArray_CallObject2(
+            mxArray * const fn,
+            mxArray * const arg1,
+            mxArray * const arg2
         ) {
-            MatlabMessaging()
-                .print("\nDiagnostics on the inequality constraint.");
-
-            // Do some finite difference tests on the constraint
-            Optizelle::Diagnostics::derivativeCheck <double,MatlabVS,MatlabVS>
-                (MatlabMessaging(),*(fns.h),*x,*dx,*dz,"h");
-            Optizelle::Diagnostics::derivativeAdjointCheck
-                <double,MatlabVS,MatlabVS>
-                (MatlabMessaging(),*(fns.h),*x,*dx,*dz,"h");
-            Optizelle::Diagnostics::secondDerivativeCheck
-                <double,MatlabVS,MatlabVS>
-                (MatlabMessaging(),*(fns.h),*x,*dx,*dz,"h");
+            mxArray* input[3]={fn,arg1,arg2};
+            mxArray* output[1];
+            int err=mexCallMATLAB(1,output,3,input,"feval");
+            return std::pair <mxArray*,int> (output[0],err);
+        }
+        
+        // Calls a Matlab function with three arguments
+        std::pair <mxArray *,int> mxArray_CallObject3(
+            mxArray * const fn,
+            mxArray * const arg1,
+            mxArray * const arg2,
+            mxArray * const arg3
+        ) {
+            mxArray* input[4]={fn,arg1,arg2,arg3};
+            mxArray* output[1];
+            int err=mexCallMATLAB(1,output,3,input,"feval");
+            return std::pair <mxArray*,int> (output[0],err);
+        }
+        
+        // Calls a Matlab function with four arguments
+        std::pair <mxArray *,int> mxArray_CallObject4(
+            mxArray * const fn,
+            mxArray * const arg1,
+            mxArray * const arg2,
+            mxArray * const arg3,
+            mxArray * const arg4
+        ) {
+            mxArray* input[5]={fn,arg1,arg2,arg3,arg4};
+            mxArray* output[1];
+            int err=mexCallMATLAB(1,output,5,input,"feval");
+            return std::pair <mxArray*,int> (output[0],err);
         }
 
-    // Otherwise, let us solve an optimization problem
-    } else {
-        // Check that we have a valid parameter file
-        checkParams(pInput[3]);
-        mwSize buflen = mxGetNumberOfElements(pInput[3])+1;
-        std::vector <char> params_(buflen);
-        mxGetString(pInput[3],&(params_[0]),buflen);
-        std::string params(params_.begin(),params_.end());
+        // Creates a Matlab double from a C++ double
+        mxArray * mxArray_FromDouble(double const x_) {
+            mxArray * x(mxCreateDoubleMatrix(1,1,mxREAL));
+            mxGetPr(x)[0]=x_;
+        }
 
-        // Create something to hold the solution
-        const char* pnames[4]={"x","y","z","opt_stop"};
-        pOutput[0]=mxCreateStructMatrix(1,1,4,pnames);
+        // Imports the Optizelle structure
+        mxArray * importOptizelle() {
+            mxArray* output[1];
+            int err=mexCallMATLAB(1,output,0,nullptr,"setupOptizelle");
+            if(err)
+                mexErrMsgTxt("Unable to import the Optizelle structure");
+            return output[0];
+        }
+
+        // Converts an Optizelle enumerated type to a mxArray * 
+        mxArray * enumToMxArray(
+            std::string const & type,
+            std::string const & member 
+        ) {
+            // Grab the Optizelle module
+            mxArrayPtr optizelle(importOptizelle());
+
+            // Grab the type enumerated type
+            mxArrayPtr matenum(mxGetField(optizelle.get(),0,type.c_str()));
+
+            // Finally, grab the actual specified member in this enumerated type
+            return mxGetField(matenum.get(),0,member.c_str());
+        }
+       
+        // Converts an Optizelle enumerated type to a Natural
+        Natural enumToNatural(
+            std::string const & type,
+            std::string const & member 
+        ) {
+            // Grab the mxArray * for the type and member requested
+            mxArrayPtr obj(enumToMxArray(type,member));
+
+            // Convert and return the member
+            return Natural(*mxGetPr(obj.get()));
+        }
+
+        // On construction, initialize the pointer and figure out if
+        // we're capturing the pointer or attaching to it
+        mxArrayPtr::mxArrayPtr(
+            mxArray * const ptr_,
+            mxArrayPtrMode::t const mode_ 
+        ) : ptr(ptr_), mode(mode_) { }
+            
+        // Move constructor
+        mxArrayPtr::mxArrayPtr(mxArrayPtr&& ptr_) noexcept
+            : ptr(ptr_.release()), mode(ptr_.mode) {}
         
-        // Do the optimization
-        switch(problem_class) {
-        case Optizelle::ProblemClass::Unconstrained: {
-            // Allocate memory for the state
-            Optizelle::Unconstrained <double,MatlabVS>::State::t state(*x);
+        // Move assignment operator
+        mxArrayPtr const & mxArrayPtr::operator=(mxArrayPtr&& ptr_) noexcept {
+            ptr=ptr_.release();
+            mode=ptr_.mode;
+            return *this;
+        }
 
-            // If we have a preconditioner, add it
-            if(mxGetField(pInput[1],0,"PH")!=NULL)
-                fns.PH.reset(new MatlabOperator
-                    (mxGetField(pInput[1],0,"PH"),state.x,"PH"));
+        // For a reset, we destroy the pointer and then assign a new
+        // value.
+        void mxArrayPtr::reset(mxArray * const ptr_) {
+            if(ptr!=nullptr && mode!=mxArrayPtrMode::Attach)
+                mxDestroyArray(ptr);
+            ptr=ptr_;
+            mode = mxArrayPtrMode::Capture;
+        }
 
-            // Read the parameters and optimize
-            Optizelle::json::Unconstrained <double,MatlabVS>
-                ::read(MatlabMessaging(),params,state);
-            Optizelle::Unconstrained<double,MatlabVS>::Algorithms
-                ::getMin(MatlabMessaging(),fns,state);
+        // For an attach, we destroy the pointer then assign a new value
+        void mxArrayPtr::attach(mxArray * const ptr_) {
+            if(ptr!=nullptr && mode!=mxArrayPtrMode::Attach)
+                mxDestroyArray(ptr);
+            ptr=ptr_;
+            mode = mxArrayPtrMode::Attach;
+        }
 
-            // Save the answer
-            mxSetField(pOutput[0],0,"x",state.x.release());
-            mxSetField(pOutput[0],0,"opt_stop",mxCreateString(
-                Optizelle::StoppingCondition::to_string(state.opt_stop).c_str()));
-            break;
-        } case Optizelle::ProblemClass::InequalityConstrained: {
-            // Allocate memory for the state
-            Optizelle::InequalityConstrained <double,MatlabVS,MatlabVS>::State::t
-                state(*x,*z);
+        // On a get, we simply return the pointer.
+        mxArray * mxArrayPtr::get() {
+            return ptr;
+        }
+    
+        // On a release, we return the underlying pointer and then clear
+        // the vector.  This will prevent destruction later. 
+        mxArray * mxArrayPtr::release() {
+            mxArray * ptr_=ptr;
+            ptr=nullptr;
+            return ptr_;
+        }
 
-            // If we have a preconditioner, add it
-            if(mxGetField(pInput[1],0,"PH")!=NULL)
-                fns.PH.reset(new MatlabOperator
-                    (mxGetField(pInput[1],0,"PH"),state.x,"PH"));
-
-            // Read the parameters and optimize
-            Optizelle::json::InequalityConstrained <double,MatlabVS,MatlabVS>
-                ::read(MatlabMessaging(),params,state);
-            Optizelle::InequalityConstrained<double,MatlabVS,MatlabVS>::Algorithms
-                ::getMin(MatlabMessaging(),fns,state);
+        // On destruction, destroy the pointer. 
+        mxArrayPtr::~mxArrayPtr() {
+            if(ptr!=nullptr && mode!=mxArrayPtrMode::Attach)
+                mxDestroyArray(ptr);
+            ptr=nullptr;
+        }
             
-            // Save the answer
-            mxSetField(pOutput[0],0,"x",state.x.release());
-            mxSetField(pOutput[0],0,"z",state.z.release());
-            mxSetField(pOutput[0],0,"opt_stop",mxCreateString(
-                Optizelle::StoppingCondition::to_string(state.opt_stop).c_str()));
-            break;
-        } case Optizelle::ProblemClass::EqualityConstrained: {
-            // Allocate memory for the state
-            Optizelle::EqualityConstrained <double,MatlabVS,MatlabVS>::State::t
-                state(*x,*y);
-
-            // If we have a preconditioner, add it
-            if(mxGetField(pInput[1],0,"PH")!=NULL)
-                fns.PH.reset(new MatlabOperator
-                    (mxGetField(pInput[1],0,"PH"),state.x,"PH"));
-            if(mxGetField(pInput[1],0,"PSchur_left")!=NULL)
-                fns.PSchur_left.reset(new MatlabOperator
-                    (mxGetField(pInput[1],0,"PSchur_left"),state.x,
-                    "PSchur_left"));
-            if(mxGetField(pInput[1],0,"PSchur_right")!=NULL)
-                fns.PSchur_right.reset(new MatlabOperator
-                    (mxGetField(pInput[1],0,"PSchur_right"),state.x,
-                    "PSchur_right"));
-
-            // Read the parameters and optimize
-            Optizelle::json::EqualityConstrained <double,MatlabVS,MatlabVS>
-                ::read(MatlabMessaging(),params,state);
-            Optizelle::EqualityConstrained<double,MatlabVS,MatlabVS>::Algorithms
-                ::getMin(MatlabMessaging(),fns,state);
+        // On construction, we just grab the pointer to the messaging object
+        Messaging::Messaging(
+            mxArray * const ptr_,
+            mxArrayPtrMode::t const mode
+        ) : mxArrayPtr(ptr_,mode) {}
             
-            // Save the answer
-            mxSetField(pOutput[0],0,"x",state.x.release());
-            mxSetField(pOutput[0],0,"y",state.y.release());
-            mxSetField(pOutput[0],0,"opt_stop",mxCreateString(
-                Optizelle::StoppingCondition::to_string(state.opt_stop).c_str()));
-            break;
-        } case Optizelle::ProblemClass::Constrained: {
-            // Allocate memory for the state
-            Optizelle::Constrained <double,MatlabVS,MatlabVS,MatlabVS>::State::t
-                state(*x,*y,*z);
+        // Move constructor
+        Messaging::Messaging(Messaging && msg) noexcept
+            : mxArrayPtr(msg.release(),msg.mode) {}
 
-            // If we have a preconditioner, add it
-            if(mxGetField(pInput[1],0,"PH")!=NULL)
-                fns.PH.reset(new MatlabOperator
-                    (mxGetField(pInput[1],0,"PH"),state.x,"PH"));
-            if(mxGetField(pInput[1],0,"PSchur_left")!=NULL)
-                fns.PSchur_left.reset(new MatlabOperator
-                    (mxGetField(pInput[1],0,"PSchur_left"),state.x,
-                    "PSchur_left"));
-            if(mxGetField(pInput[1],0,"PSchur_right")!=NULL)
-                fns.PSchur_right.reset(new MatlabOperator
-                    (mxGetField(pInput[1],0,"PSchur_right"),state.x,
-                    "PSchur_right"));
-
-            // Read the parameters and optimize
-            Optizelle::json::Constrained <double,MatlabVS,MatlabVS,MatlabVS>
-                ::read(MatlabMessaging(),params,state);
-            Optizelle::Constrained<double,MatlabVS,MatlabVS,MatlabVS>::Algorithms
-                ::getMin(MatlabMessaging(),fns,state);
+        // Move assignment operator
+        Messaging const & Messaging::operator = (Messaging && msg) noexcept {
+            ptr = msg.release();
+            mode = msg.mode;
+            return *this;
+        }
             
-            // Save the answer
-            mxSetField(pOutput[0],0,"x",state.x.release());
-            mxSetField(pOutput[0],0,"y",state.y.release());
-            mxSetField(pOutput[0],0,"z",state.z.release());
-            mxSetField(pOutput[0],0,"opt_stop",mxCreateString(
-                Optizelle::StoppingCondition::to_string(state.opt_stop).c_str()));
-        } }
+        // Prints a message
+        void Messaging::print(std::string const & msg_) const {
+            // Call the print function on msg
+            mxArrayPtr print(mxGetField(ptr,0,"print"));
+            mxArrayPtr msg(mxCreateString(msg_.c_str()));
+            std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
+                print.get(),
+                msg.get()));
+
+            // Check errors
+            if(ret_err.second !=0)
+                error("Evaluation of the print function in the Messaging "
+                    "object failed.");
+        }
+
+        // Prints an error
+        void Messaging::error(std::string const & msg_) const {
+            // Call the error function on msg
+            mxArrayPtr error(mxGetField(ptr,0,"error"));
+            mxArrayPtr msg(mxCreateString(msg_.c_str()));
+            std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
+                error.get(),
+                msg.get()));
+
+            // Check errors
+            if(ret_err.second !=0) {
+                std::string msg2="Evaluation of the error function in the "
+                    "Messaging object failed.\n";
+                mexErrMsgTxt(msg2.c_str());
+            }
+        }
+
+        // Create a vector with the appropriate messaging and vector space 
+        Vector::Vector(
+            mxArray * const msg_,
+            mxArray * const vs_,
+            mxArray * const vec,
+            mxArrayPtrMode::t mode
+        ) : 
+            mxArrayPtr(vec,mode),
+            msg(msg_,mxArrayPtrMode::Attach),
+            vs(vs_,mxArrayPtrMode::Attach)
+        {}
+            
+        // Create a move constructor so we can interact with stl objects
+        Vector::Vector(Vector && vec) noexcept :
+            mxArrayPtr(std::move(vec)),
+            msg(std::move(vec.msg)),
+            vs(std::move(vec.vs))
+        { }
+            
+        // Move assignment operator
+        Vector const & Vector::operator = (Vector && vec) noexcept {
+            ptr = vec.release(); 
+            mode = vec.mode;
+            msg = std::move(vec.msg);
+            vs = std::move(vec.vs);
+            return *this;
+        }
+
+        // Memory allocation and size setting 
+        Vector Vector::init() { 
+            // Call the init function on the internal and store in y 
+            mxArrayPtr init(mxGetField(vs.get(),0,"init"));
+            std::pair <mxArrayPtr,int> y_err(mxArray_CallObject1(
+                init.get(),
+                get()));
+
+            // Check errors
+            if(y_err.second!=0)
+                msg.error(
+                    "Evaluation of the vector space function init failed.");
+
+            // Create and return a new vector based on y
+            return std::move(Vector(msg.get(),vs.get(),y_err.first.release()));
+        } 
+        
+        // y <- x (Shallow.  No memory allocation.)  Internal is y.
+        void Vector::copy(Vector & x) { 
+            // Call the copy function on x and the internal 
+            mxArrayPtr copy(mxGetField(vs.get(),0,"copy"));
+            std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
+                copy.get(),
+                x.get()));
+
+            // Check errors
+            if(ret_err.second!=0)
+                msg.error(
+                    "Evaluation of the vector space function copy failed.");
+
+            // Assign y
+            reset(ret_err.first.release());
+        } 
+
+        // x <- alpha * x.  Internal is x.
+        void Vector::scal(double const & alpha_) { 
+            // Call the scal function on alpha and the internal storage 
+            mxArrayPtr scal(mxGetField(vs.get(),0,"scal"));
+            mxArrayPtr alpha(mxArray_FromDouble(alpha_));
+            std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
+                scal.get(),
+                alpha.get()));
+
+            // Check errors
+            if(ret_err.second!=0)
+                msg.error(
+                    "Evaluation of the vector space function scal failed.");
+
+            // Assign x
+            reset(ret_err.first.release());
+        } 
+
+        // x <- 0.  Internal is x. 
+        void Vector::zero() { 
+            // Call the zero function on this vector.
+            mxArrayPtr zero(mxGetField(vs.get(),0,"zero"));
+            std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
+                zero.get(),
+                get()));
+
+            // Check errors
+            if(ret_err.second!=0)
+                msg.error(
+                    "Evaluation of the vector space function zero failed.");
+
+            // Assign x
+            reset(ret_err.first.release());
+        } 
+
+        // y <- alpha * x + y.   Internal is y.
+        void Vector::axpy(double const & alpha_,Vector & x) { 
+            // Call the axpy function on alpha, x, and the internal storage.
+            mxArrayPtr axpy(mxGetField(vs.get(),0,"axpy"));
+            mxArrayPtr alpha(mxArray_FromDouble(alpha_));
+            std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject3(
+                axpy.get(),
+                alpha.get(),
+                x.get(),
+                get()));
+           
+            // Check errors
+            if(ret_err.second!=0)
+                msg.error(
+                    "Evaluation of the vector space function axpy failed.");
+
+            // Assign y
+            reset(ret_err.first.release());
+        } 
+
+        // innr <- <x,y>.  Internal is y.
+        double Vector::innr(Vector & x) { 
+            // Call the innr function on x and the internal.  Store in z. 
+            mxArrayPtr innr(mxGetField(vs.get(),0,"innr"));
+            std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject2(
+                innr.get(),
+                x.get(),
+                get()));
+
+            // Check errors
+            if(ret_err.second!=0)
+                msg.error(
+                    "Evaluation of the vector space function innr failed.");
+
+            // Return the result 
+            return mxGetPr(ret_err.first.get())[0]; 
+        } 
+
+        // x <- random.  Internal is x. 
+        void Vector::rand() { 
+            // Call the rand function on this vector.
+            mxArrayPtr rand(mxGetField(vs.get(),0,"rand"));
+            std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
+                rand.get(),
+                get()));
+
+            // Check errors
+            if(ret_err.second!=0)
+                msg.error(
+                    "Evaluation of the vector space function rand failed.");
+            
+            // Assign x
+            reset(ret_err.first.release());
+        } 
+
+        // Jordan product, z <- x o y.  Internal is z.
+        void Vector::prod(Vector & x,Vector & y) { 
+            // Call the prod function on x, y, and the internal 
+            mxArrayPtr prod(mxGetField(vs.get(),0,"prod"));
+            std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject2(
+                prod.get(),
+                x.get(),
+                y.get()));
+
+            // Check errors
+            if(ret_err.second!=0)
+                msg.error(
+                    "Evaluation of the vector space function prod failed.");
+            
+            // Assign z
+            reset(ret_err.first.release());
+        } 
+
+        // Identity element, x <- e such that x o e = x .  Internal is x.
+        void Vector::id() { 
+            // Call the id function on the internal.
+            mxArrayPtr id(mxGetField(vs.get(),0,"id"));
+            std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
+                id.get(),
+                get()));
+
+            // Check errors
+            if(ret_err.second!=0)
+                msg.error(
+                    "Evaluation of the vector space function id failed.");
+            
+            // Assign x
+            reset(ret_err.first.release());
+        } 
+
+        // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y.
+        // Internal is z.
+        void Vector::linv(Vector& x, Vector& y) { 
+            // Call the linv function on x, y, and the internal
+            mxArrayPtr linv(mxGetField(vs.get(),0,"linv"));
+            std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject2(
+                linv.get(),
+                x.get(),
+                y.get()));
+
+            // Check errors
+            if(ret_err.second!=0)
+                msg.error(
+                    "Evaluation of the vector space function linv failed.");
+            
+            // Assign z
+            reset(ret_err.first.release());
+        } 
+
+        // Barrier function, barr <- barr(x) where x o grad barr(x) = e.
+        // Internal is x.
+        double Vector::barr() { 
+            // Call the barr function on the internal.  Store in z.
+            mxArrayPtr barr(mxGetField(vs.get(),0,"barr"));
+            std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
+                barr.get(),
+                get()));
+
+            // Check errors
+            if(ret_err.second!=0)
+                msg.error(
+                    "Evaluation of the vector space function barr failed.");
+
+            // Return the result 
+            return mxGetPr(ret_err.first.get())[0]; 
+        } 
+
+        // Line search, srch <- argmax {alpha in Real >= 0 : alpha x + y >= 0} 
+        // where y > 0.  Internal is y.
+        double Vector::srch(Vector& x) {  
+            // Call the srch function on x and the internal.  Store in z.
+            mxArrayPtr srch(mxGetField(vs.get(),0,"srch"));
+            std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject2(
+                srch.get(),
+                x.get(),
+                get()));
+
+            // Check errors
+            if(ret_err.second!=0)
+                msg.error(
+                    "Evaluation of the vector space function srch failed.");
+
+            // Return the result 
+            return mxGetPr(ret_err.first.get())[0]; 
+        } 
+
+        // Symmetrization, x <- symm(x) such that L(symm(x)) is a symmetric
+        // operator.  Internal is x.
+        void Vector::symm() { 
+            // Call the symm function on the internal.
+            mxArrayPtr symm(mxGetField(vs.get(),0,"symm"));
+            std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
+                symm.get(),
+                get()));
+
+            // Check errors
+            if(ret_err.second!=0)
+                msg.error(
+                    "Evaluation of the vector space function symm failed.");
+            
+            // Assign x
+            reset(ret_err.first.release());
+
+        } 
+        
+        // Converts (copies) a value into Matlab.  
+        mxArray * Vector::toMatlab() {
+            // Call the copy function on the internal and x
+            mxArrayPtr copy(mxGetField(vs.get(),0,"copy"));
+            std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
+                copy.get(),
+                get()));
+
+            // Check errors
+            if(ret_err.second!=0)
+                msg.error(
+                    "Evaluation of the vector space function copy failed.");
+            
+            // Return the pointer 
+            return ret_err.first.release();
+        } 
+        
+        // Converts (copies) a value from Matlab.  This assumes that the
+        // vector space functions have already been properly assigned.
+        void Vector::fromMatlab(mxArray * const ptr) {
+            // Call the copy function on ptr and the internal 
+            mxArrayPtr copy(mxGetField(vs.get(),0,"copy"));
+            std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
+                copy.get(),
+                ptr));
+
+            // Check errors
+            if(ret_err.second!=0)
+                msg.error(
+                    "Evaluation of the vector space function copy failed.");
+
+            // Copy in the value
+            reset(ret_err.first.release());
+        } 
+
+#if 0
+        // Convert a C++ state to a Matlab state 
+        template <>
+        void State <MxUnconstrained>::toMatlab(
+            typename MxUnconstrained::State::t const & state
+        ) {
+            Unconstrained::State::toMatlab(state,ptr);
+        }
+        template <>
+        void State <MxEqualityConstrained>::toMatlab(
+            typename MxEqualityConstrained::State::t const & state
+        ) {
+            EqualityConstrained::State::toMatlab(state,ptr);
+        }
+        template <>
+        void State <MxInequalityConstrained>::toMatlab(
+            typename MxInequalityConstrained::State::t const & state
+        ) {
+            InequalityConstrained::State::toMatlab(state,ptr);
+        }
+        template <>
+        void State <MxConstrained>::toMatlab(
+            typename MxConstrained::State::t const & state
+        ) {
+            Constrained::State::toMatlab(state,ptr);
+        }
+
+        // Convert a Matlab state to C++ 
+        template <>
+        void State <MxUnconstrained>::fromMatlab(
+            typename MxUnconstrained::State::t & state
+        ) {
+            Unconstrained::State::fromMatlab(ptr,state);
+        }
+        template <>
+        void State <MxEqualityConstrained>::fromMatlab(
+            typename MxEqualityConstrained::State::t & state
+        ) {
+            EqualityConstrained::State::fromMatlab(ptr,state);
+        }
+        template <>
+        void State <MxInequalityConstrained>::fromMatlab(
+            typename MxInequalityConstrained::State::t & state
+        ) {
+            InequalityConstrained::State::fromMatlab(ptr,state);
+        }
+        template <>
+        void State <MxConstrained>::fromMatlab(
+            typename MxConstrained::State::t & state
+        ) {
+            Constrained::State::fromMatlab(ptr,state);
+        }
+        
+        // Convert a Matlab bundle to C++ 
+        template <>
+        void Functions <MxUnconstrained>::fromMatlab(
+            typename MxUnconstrained::Functions::t & fns 
+        ) {
+            Unconstrained::Functions::fromMatlab(
+                msg.get(),ptr,mxstate.get(),state,fns);
+        }
+        template <>
+        void Functions <MxEqualityConstrained>::fromMatlab(
+            typename MxEqualityConstrained::Functions::t & fns 
+        ) {
+            EqualityConstrained::Functions::fromMatlab(
+                msg.get(),ptr,mxstate.get(),state,fns);
+        }
+        template <>
+        void Functions <MxInequalityConstrained>::fromMatlab(
+            typename MxInequalityConstrained::Functions::t & fns 
+        ) {
+            InequalityConstrained::Functions::fromMatlab(
+                msg.get(),ptr,mxstate.get(),state,fns);
+        }
+        template <>
+        void Functions <MxConstrained>::fromMatlab(
+            typename MxConstrained::Functions::t & fns 
+        ) {
+            Constrained::Functions::fromMatlab(
+                msg.get(),ptr,mxstate.get(),state,fns);
+        }
+#endif
+
+        // Create a function 
+        ScalarValuedFunction::ScalarValuedFunction(
+            mxArray * const msg_,
+            mxArray * const f,
+            mxArrayPtrMode::t mode
+        ) :
+            mxArrayPtr(f,mode),
+            msg(msg_,mxArrayPtrMode::Attach)
+        { }
+
+        // <- f(x) 
+        double ScalarValuedFunction::eval(Vector const & x) const { 
+            // Call the objective function on x.
+            mxArrayPtr eval(mxGetField(ptr,0,"eval"));
+            std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
+                eval.get(),
+                const_cast <Vector &> (x).get()));
+
+            // Check errors
+            if(ret_err.second!=0)
+                msg.error("Evaluation of the objective f failed.");
+
+            // Return the result 
+            return mxGetPr(ret_err.first.get())[0]; 
+        }
+
+        // grad = grad f(x) 
+        void ScalarValuedFunction::grad(
+            Vector const & x,
+            Vector & grad
+        ) const { 
+            // Call the gradient function on x
+            mxArrayPtr mxgrad(mxGetField(ptr,0,"grad"));
+            std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
+                mxgrad.get(),
+                const_cast <Vector &>(x).get()));
+
+            // Check errors
+            if(ret_err.second!=0)
+                msg.error("Evaluation of the gradient of f failed.");
+
+            // Assign grad 
+            grad.reset(ret_err.first.release());
+        }
+
+        // H_dx = hess f(x) dx 
+        void ScalarValuedFunction::hessvec(
+            Vector const & x,
+            Vector const & dx,
+            Vector & H_dx
+        ) const {
+            // Call the hessvec function on x and dx,
+            mxArrayPtr hessvec(mxGetField(ptr,0,"hessvec"));
+            std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject2(
+                hessvec.get(),
+                const_cast <Vector &> (x).get(),
+                const_cast <Vector &> (dx).get()));
+
+            // Check errors
+            if(ret_err.second!=0)
+                msg.error("Evaluation of the Hessian-vector product"
+                    " of f failed.");
+            
+            // Assign H_dx
+            H_dx.reset(ret_err.first.release());
+        }
+
+        // Create a function 
+        VectorValuedFunction::VectorValuedFunction(
+            std::string const & name_,
+            mxArray * const msg_,
+            mxArray * const f,
+            mxArrayPtrMode::t mode
+        ) :
+            mxArrayPtr(f,mode),
+            msg(msg_,mxArrayPtrMode::Attach),
+            name(name_)
+        {}
+
+        // y=f(x)
+        void VectorValuedFunction::eval(
+            Vector const & x,
+            VectorValuedFunction::Y_Vector& y
+        ) const {
+            // Call the objective function on x.
+            mxArrayPtr eval(mxGetField(ptr,0,"eval"));
+            std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
+                eval.get(),
+                const_cast <Vector &> (x).get()));
+
+            // Check errors
+            if(ret_err.second!=0) {
+                std::stringstream ss;
+                ss << "Evaluation of the constraint " << name << " failed.";
+                msg.error(ss.str());
+            }
+            
+            // Assign y 
+            y.reset(ret_err.first.release());
+        }
+
+        // y=f'(x)dx 
+        void VectorValuedFunction::p(
+            Vector const & x,
+            Vector const & dx,
+            VectorValuedFunction::Y_Vector& y
+        ) const {
+            // Call the prime function on x and dx
+            mxArrayPtr p(mxGetField(ptr,0,"p"));
+            std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject2(
+                p.get(),
+                const_cast <Vector &> (x).get(),
+                const_cast <Vector &> (dx).get()));
+           
+            // Check errors
+            if(ret_err.second!=0) {
+                std::stringstream ss;
+                ss << "Evaluation of the derivative of the constraint "
+                    << name << " failed.";
+                msg.error(ss.str());
+            }
+            
+            // Assign y 
+            y.reset(ret_err.first.release());
+        }
+
+        // z=f'(x)*dy
+        void VectorValuedFunction::ps(
+            Vector const & x,
+            Vector const & dy,
+            VectorValuedFunction::X_Vector& z
+        ) const {
+            // Call the prime-adjoint function on x and dy
+            mxArrayPtr ps(mxGetField(ptr,0,"ps"));
+            std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject2(
+                ps.get(),
+                const_cast <Vector &> (x).get(),
+                const_cast <Vector &> (dy).get()));
+
+            // Check errors
+            if(ret_err.second!=0) {
+                std::stringstream ss;
+                ss << "Evaluation of the derivative-adjoint of the constraint "
+                    << name << " failed.";
+                msg.error(ss.str());
+            }
+            
+            // Assign z
+            z.reset(ret_err.first.release());
+        }
+             
+        // z=(f''(x)dx)*dy
+        void VectorValuedFunction::pps(
+            Vector const & x,
+            Vector const & dx,
+            Vector const & dy,
+            X_Vector& z
+        ) const { 
+            // Call the prime-adjoint function on x, dx, and dy
+            mxArrayPtr pps(mxGetField(ptr,0,"pps"));
+            std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject3(
+                pps.get(),
+                const_cast <Vector &> (x).get(),
+                const_cast <Vector &> (dx).get(),
+                const_cast <Vector &> (dy).get()));
+
+            // Check errors
+            if(ret_err.second!=0) {
+                std::stringstream ss;
+                ss << "Evaluation of the second derivative-adjoint of the "
+                    "constraint " << name << " failed.";
+                msg.error(ss.str());
+            }
+            
+            // Assign z 
+            z.reset(ret_err.first.release());
+        }
     }
 }
