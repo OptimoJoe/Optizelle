@@ -131,6 +131,11 @@ namespace Optizelle {
     }
 
     namespace Matlab {
+        // Used to catch Matlab exceptions
+        struct Exception : public std::exception {
+            Exception();
+        };
+
         // Calls a Matlab function with one argument 
         std::pair <mxArray *,int> mxArray_CallObject1(
             mxArray * const fn,
@@ -163,6 +168,9 @@ namespace Optizelle {
 
         // Creates a Matlab double from a C++ double
         mxArray * mxArray_FromDouble(double const x_);
+
+        // Creates a Matlab int from a C++ size_t 
+        mxArray * mxArray_FromSize_t(Natural const x_);
 
         // Imports the Optizelle structure
         mxArray * importOptizelle();
@@ -349,7 +357,7 @@ namespace Optizelle {
             ) : mxArrayPtr(ptr_,mode) {}
 
             // Convert a C++ state to a Matlab state 
-            mxArray * toMatlab(typename ProblemClass::State::t const & state);
+            void toMatlab(typename ProblemClass::State::t const & state);
 
             // Convert a Matlab state to C++ 
             void fromMatlab(typename ProblemClass::State::t & state);
@@ -441,7 +449,7 @@ namespace Optizelle {
             
                 // Call the Matlab state manipulator 
                 // give it mxstate and mxfns.  Note, mxfns is given raw.
-                mxArrayPtr eval(mxGetField(get(),0,"eval"));
+                mxArrayPtr eval(mxGetField(ptr,0,"eval"));
                 std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject3(
                     eval.get(),
                     mxfns.get(),
@@ -699,7 +707,7 @@ namespace Optizelle {
                 mxstate.toMatlab(state);
 
                 // Apply the operator to the state, x, and y
-                mxArrayPtr eval(mxGetField(get(),0,"eval"));
+                mxArrayPtr eval(mxGetField(ptr,0,"eval"));
                 std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject2(
                     eval.get(),
                     mxstate.get(),
@@ -717,6 +725,281 @@ namespace Optizelle {
                 y.reset(ret_err.first.release());
             }
         };
+        
+        // Converts elements from C++ to Matlab 
+        namespace toMatlab {
+            // Sets a real in a Matlab state 
+            void Real(
+                std::string const & name,
+                double const & value,
+                mxArray * const obj 
+            );
+
+            // Sets a natural in a Matlab state 
+            void Natural(
+                std::string const & name,
+                Optizelle::Natural const & value,
+                mxArray * const obj 
+            );
+           
+            // Sets a parameter in a Matlab state 
+            template <typename enum_t>
+            void Param(
+                std::string const & name,
+                std::function<mxArray *(enum_t const &)> const & toMatlab,
+                enum_t const & value,
+                mxArray * const obj
+            ) {
+                mxArrayPtr item(toMatlab(value));
+                mxSetField(obj,0,name.c_str(),item.release());
+            }
+            
+            // Sets a vector in a Matlab state 
+            void Vector(
+                std::string const & name,
+                Matlab::Vector const & value,
+                mxArray * const obj 
+            );
+            
+            // Sets a list of vectors in a Matlab state 
+            void VectorList(
+                std::string const & name,
+                std::list <Matlab::Vector> const & values,
+                mxArray * const obj 
+            );
+            
+            // Sets a scalar-valued function in a Matlab function bundle 
+            void ScalarValuedFunction(
+                std::string const & name,
+                mxArray * const msg,
+                mxArray * const obj,
+                std::unique_ptr <MxScalarValuedFunction> & value
+            );
+            
+            // Sets a vector-valued function in a Matlab function bundle 
+            void VectorValuedFunction(
+                std::string const & name,
+                mxArray * const msg,
+                mxArray * const obj,
+                std::unique_ptr <MxVectorValuedFunction> & value
+            );
+            
+            // Sets an operator in a Matlab function bundle 
+            template <typename ProblemClass>
+            void Operator(
+                std::string const & name,
+                mxArray * const msg,
+                mxArray * const obj,
+                mxArray * const mxstate,
+                typename ProblemClass::State::t const & state,
+                std::unique_ptr <MxOperator> & value
+            ) {
+                value.reset(new Matlab::Operator <ProblemClass> (
+                    name,
+                    msg,
+                    mxGetField(obj,0,name.c_str()),
+                    mxstate,
+                    state));
+            }
+        
+            // Sets restart vectors in Matlab 
+            void Vectors(
+                Matlab::Vectors const & values,
+                mxArray * const mxvalues 
+            );
+
+            // Sets restart reals in Matlab 
+            void Reals(
+                Matlab::Reals const & values,
+                mxArray * const mxvalues 
+            );
+            
+            // Sets restart naturals in Matlab 
+            void Naturals(
+                Matlab::Naturals const & values,
+                mxArray * const mxvalues 
+            );
+            
+            // Sets restart parameters in Matlab 
+            void Params(
+                Matlab::Params const & values,
+                mxArray * const mxvalues 
+            );
+        }
+
+        // Converts elements from Matlab to C++ 
+        namespace fromMatlab {
+            // Sets a real in a C++ state 
+            void Real(
+                std::string const & name,
+                mxArray * const obj,
+                double & value
+            );
+            
+            // Sets a natural in a C++ state 
+            void Natural(
+                std::string const & name,
+                mxArray * const obj,
+                Optizelle::Natural & value
+            );
+           
+            // Sets a param C++ state 
+            template <typename enum_t>
+            void Param(
+                std::string const & name,
+                std::function<enum_t(mxArray * const)> const & fromMatlab,
+                mxArray * const obj,
+                enum_t & value
+            ) {
+                mxArrayPtr item(mxGetField(
+                    const_cast <mxArray *> (obj),0,name.c_str()));
+                value = fromMatlab(item.get());
+            }
+            
+            // Sets a vector in a C++ state 
+            void Vector(
+                std::string const & name,
+                mxArray * const obj,
+                Matlab::Vector & value
+            );
+            
+            // Sets a list of vectors in a C++ state 
+            void VectorList(
+                std::string const & name,
+                mxArray * const obj,
+                Matlab::Vector const & vec,
+                std::list <Matlab::Vector> & values
+            );
+        
+            // Sets restart vectors in C++ 
+            void Vectors(
+                Matlab::Vector const & vec,
+                mxArray * const mxvalues,
+                Matlab::Vectors & values
+            );
+            
+            // Sets restart reals in C++ 
+            void Reals(
+                mxArray * const mxvalues,
+                Matlab::Reals & values
+            );
+            
+            // Sets restart naturals in C++ 
+            void Naturals(
+                mxArray * const mxvalues,
+                Matlab::Naturals & values
+            );
+            
+            // Sets restart parameters in C++ 
+            void Params(
+                mxArray * const mxvalues,
+                Matlab::Params & values
+            );
+        }
+
+        // Routines that manipulate and support problems of the form
+        // 
+        // min_{x \in X} f(x)
+        //
+        // where f : X -> R.
+        namespace Unconstrained {
+
+            // Routines that manipulate the internal state of the optimization 
+            // algorithm
+            namespace State {
+                // Convert a C++ state to a Matlab state 
+                void toMatlab_(
+                    typename MxUnconstrained::State::t const & state,
+                    mxArray * const mxstate
+                );
+                void toMatlab(
+                    typename MxUnconstrained::State::t const & state,
+                    mxArray * const mxstate
+                );
+                
+                // Convert a Matlab state to C++ 
+                void fromMatlab_(
+                    mxArray * const mxstate,
+                    typename MxUnconstrained::State::t & state
+                );
+                void fromMatlab(
+                    mxArray * const mxstate,
+                    typename MxUnconstrained::State::t & state
+                );
+                
+                // Creates a state and inserts the elements into mxstate 
+                void create(
+                    int nOutput,mxArray* pOutput[],
+                    int nInput,mxArray* pInput[]
+                );
+                
+                // Read json parameters from file
+                void readJson(
+                    int nOutput,mxArray* pOutput[],
+                    int nInput,mxArray* pInput[]
+                );
+            }
+
+            // All the functions required by an optimization algorithm.  
+            namespace Functions{
+                // Convert a Matlab bundle to C++ 
+                template <typename ProblemClass>
+                void fromMatlab_(
+                    mxArray * const msg,
+                    mxArray * const mxfns,
+                    mxArray * const mxstate,
+                    typename ProblemClass::State::t const & state,
+                    typename MxUnconstrained::Functions::t & fns 
+                ) {
+                    toMatlab::ScalarValuedFunction("f",msg,mxfns,fns.f);
+                    toMatlab::Operator <ProblemClass> (
+                        "PH",msg,mxfns,mxstate,state,fns.PH);
+                }
+                void fromMatlab(
+                    mxArray * const msg,
+                    mxArray * const mxfns,
+                    mxArray * const mxstate,
+                    typename MxUnconstrained::State::t const & state,
+                    typename MxUnconstrained::Functions::t & fns 
+                );
+            }
+
+            // This contains the different algorithms used for optimization
+            namespace Algorithms {
+                // Solves an optimization problem
+                void getMin(
+                    int nOutput,mxArray* pOutput[],
+                    int nInput,mxArray* pInput[]
+                );
+            }
+        
+            // Utilities for restarting the optimization
+            namespace Restart {
+                // Release the data into structures controlled by the user 
+                void release(
+                    int nOutput,mxArray* pOutput[],
+                    int nInput,mxArray* pInput[]
+                );
+
+                // Capture data from structures controlled by the user.  
+                void capture(
+                    int nOutput,mxArray* pOutput[],
+                    int nInput,mxArray* pInput[]
+                );
+
+                // Writes a json restart file
+                void write_restart(
+                    int nOutput,mxArray* pOutput[],
+                    int nInput,mxArray* pInput[]
+                );
+
+                // Reads a json restart file
+                void read_restart(
+                    int nOutput,mxArray* pOutput[],
+                    int nInput,mxArray* pInput[]
+                );
+            }
+        }
     }
 }
 

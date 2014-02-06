@@ -1439,7 +1439,7 @@ namespace Optizelle {
                 Optizelle::Natural const & value,
                 PyObject * const obj 
             ) {
-                PyObjectPtr item(PyInt_FromSsize_t(value));
+                PyObjectPtr item(PyInt_FromSize_t(value));
                 PyObject_SetAttrString(obj,name.c_str(),item.get());
             }
         
