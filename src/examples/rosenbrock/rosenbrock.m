@@ -1,7 +1,7 @@
 % In this example, we setup and minimize the Rosenbrock function.
 function rosenbrock(fname)
     % Read in the name for the input file
-    if nargin ~=2
+    if nargin ~=1
         error('rosenbrock <parameters>');
     end
 
@@ -18,7 +18,7 @@ end
 % 
 % f(x,y)=(1-x)^2+100(y-x^2)^2
 %
-function self = Rosenbrock(self)
+function self = Rosenbrock()
     
     % Evaluation of the Rosenbrock function
     self.eval = @(x) sq(1.-x(1))+100.*sq(x(2)-sq(x(1)));
@@ -35,7 +35,7 @@ function self = Rosenbrock(self)
 end
 
 % Define a perfect preconditioner for the Hessian
-function self = RosenHInv(self)
+function self = RosenHInv()
     self.eval = @(state,dx) eval(state,dx);
 
     function result = eval(state,dx)
@@ -52,7 +52,7 @@ end
 function main(fname)
 
     % Grab the Optizelle library
-    Optizelle = setupOptizelle ();
+    Optizelle = setupOptizelle();
 
     % Generate an initial guess for Rosenbrock
     x = [-1.2;1.];
@@ -61,16 +61,16 @@ function main(fname)
     state=Optizelle.Unconstrained.State.t(Optizelle.Rm,Optizelle.Messaging,x);
 
     % Read the parameters from file
-    Optizelle.json.Unconstrained.read(Optizelle.Rm,Optizelle.Messaging, ...
+    state=Optizelle.json.Unconstrained.read(Optizelle.Rm,Optizelle.Messaging, ...
         fname,state);
 
     % Create the bundle of functions 
-    fns.Optizelle.Unconstrained.Functions.t;
-    fns.f=Rosenrock(Optizelle.ScalarValuedFunction);
-    fns.PH=RosenHInv(Optizelle.Operator);
+    fns=Optizelle.Unconstrained.Functions.t;
+    fns.f=Rosenbrock();
+    fns.PH=RosenHInv();
     
     % Solve the optimization problem
-    Optizelle.Unconstrained.Algorithms.getMin( ...
+    state = Optizelle.Unconstrained.Algorithms.getMin( ...
         Optizelle.Rm,Optizelle.Messaging,fns,state);
 
     % Print out the reason for convergence

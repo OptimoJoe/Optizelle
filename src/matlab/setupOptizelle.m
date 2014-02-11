@@ -4,6 +4,11 @@
 %
 function Optizelle=setupOptizelle()
 
+persistent Optizelle
+
+% Intialization is expensive.  Don't do it more than once.
+if isempty(Optizelle) 
+
 % Add the optizelle directory to the path, which contains a number of helper
 % functions.  In theory, I could just use pwd, but I really want to know where
 % *this* file is and not the current directory.
@@ -12,13 +17,18 @@ dir = dir(1:end-15);
 dir = sprintf('%s/optizelle',dir);
 addpath(dir);
 
+% Flattens a cell array
+flattenCell=@(x)x{:};
+
 % Creates an enumerated type from a cell list of names
-createEnum = @(x)struct(feval(
-    @(y)y{:}, ...
-    {x{:};feval( ...
-        @(z)z{:}, ...
-        num2cell(1:length(x)))}), ...
-    'toString',@(i)x{i});
+createEnum = @(x)struct(flattenCell( ...
+    {x{:};flattenCell(num2cell(1:length(x)))}), ...
+    'to_string',@(i)x{i});
+
+% Merges two structures
+mergeStruct = @(s1,s2) struct(flattenCell(... 
+    {flattenCell(feval(@(x,y){x{:},y{:}},fieldnames(s1),fieldnames(s2)));...
+     flattenCell(feval(@(x,y){x{:},y{:}},struct2cell(s1),struct2cell(s2)))}));
 
 % Reasons we stop the Krylov method
 Optizelle.KrylovStop = createEnum( { ...
@@ -160,8 +170,7 @@ Optizelle.Messaging = struct( ...
 
 % A function that has free reign to manipulate or analyze the state.  This 
 % should be used cautiously. 
-Optizelle.StateManipulator = struct( ...
-    'eval',@(x)x);
+Optizelle.StateManipulator = getStateManipulator();
 
 % Vector space for the nonnegative orthant.  For basic vectors in R^m, use this.
 Optizelle.Rm = struct( ...
@@ -178,3 +187,44 @@ Optizelle.Rm = struct( ...
     'barr',@(x)sum(log(x)), ...
     'srch',@(x,y) feval(@(z)min([min(z(find(z>0)));inf]),-y./x), ...
     'symm',@(x)x);
+
+%Creates an unconstrained state
+Optizelle.Unconstrained.State.t = @UnconstrainedStateCreate;
+
+% All the functions required by an optimization algorithm
+err_fns=@(x)error(sprintf( ...
+    'The %s function is not defined in a bundle of functions.',x));
+Optizelle.Unconstrained.Functions.t= struct( ...
+    'f',@(x)err_fns('f'), ...
+    'PH',@(x)err_fns('PH'));
+
+% Converts a vector to a JSON formatted string
+Optizelle.json.Serialization.serialize = @serialize;
+
+% Serializes a matlab column vector for the vector space Optizelle.Rm
+Optizelle.json.Serialization.serialize( ...
+    'register',@(x)strrep(mat2str(x'),' ',', '),@isvector);
+
+% Converts a JSON formatted string to a vector 
+Optizelle.json.Serialization.deserialize = @deserialize;
+
+% Deserializes a matlab column vector for the vector space Optizelle.Rm
+Optizelle.json.Serialization.deserialize( ...
+    'register',@(x,x_json)str2num(x_json)',@isvector);
+
+% Solves an unconstrained optimization problem
+Optizelle.Unconstrained.Algorithms.getMin = @UnconstrainedAlgorithmsGetMin;
+
+% Release the state in an unconstrained optimization problem 
+Optizelle.Unconstrained.Restart.release = @UnconstrainedRestartRelease;
+
+% Capture the state in an unconstrained optimization problem 
+Optizelle.Unconstrained.Restart.capture = @UnconstrainedRestartCapture;
+
+% Reads unconstrained state parameters from file 
+Optizelle.json.Unconstrained.read = @UnconstrainedStateReadJson;
+
+% Writes a json restart file
+Optizelle.json.Unconstrained.write_restart = @UnconstrainedRestartWriteRestart;
+
+end

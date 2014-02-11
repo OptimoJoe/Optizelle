@@ -172,8 +172,10 @@ namespace Optizelle {
         // Creates a Matlab int from a C++ size_t 
         mxArray * mxArray_FromSize_t(Natural const x_);
 
-        // Imports the Optizelle structure
-        mxArray * importOptizelle();
+        // Imports a piece of the Optizelle module.  This makes a deep
+        // copy of the eventual imported object, so the result needs
+        // to have its memory managed. 
+        mxArray * importOptizelle(std::string const & module);
 
         // Converts an Optizelle enumerated type to a mxArray * 
         mxArray * enumToMxArray(
@@ -767,40 +769,6 @@ namespace Optizelle {
                 std::list <Matlab::Vector> const & values,
                 mxArray * const obj 
             );
-            
-            // Sets a scalar-valued function in a Matlab function bundle 
-            void ScalarValuedFunction(
-                std::string const & name,
-                mxArray * const msg,
-                mxArray * const obj,
-                std::unique_ptr <MxScalarValuedFunction> & value
-            );
-            
-            // Sets a vector-valued function in a Matlab function bundle 
-            void VectorValuedFunction(
-                std::string const & name,
-                mxArray * const msg,
-                mxArray * const obj,
-                std::unique_ptr <MxVectorValuedFunction> & value
-            );
-            
-            // Sets an operator in a Matlab function bundle 
-            template <typename ProblemClass>
-            void Operator(
-                std::string const & name,
-                mxArray * const msg,
-                mxArray * const obj,
-                mxArray * const mxstate,
-                typename ProblemClass::State::t const & state,
-                std::unique_ptr <MxOperator> & value
-            ) {
-                value.reset(new Matlab::Operator <ProblemClass> (
-                    name,
-                    msg,
-                    mxGetField(obj,0,name.c_str()),
-                    mxstate,
-                    state));
-            }
         
             // Sets restart vectors in Matlab 
             void Vectors(
@@ -870,6 +838,40 @@ namespace Optizelle {
                 Matlab::Vector const & vec,
                 std::list <Matlab::Vector> & values
             );
+            
+            // Sets a scalar-valued function in a C++ function bundle 
+            void ScalarValuedFunction(
+                std::string const & name,
+                mxArray * const msg,
+                mxArray * const obj,
+                std::unique_ptr <MxScalarValuedFunction> & value
+            );
+            
+            // Sets a vector-valued function in a C++ function bundle 
+            void VectorValuedFunction(
+                std::string const & name,
+                mxArray * const msg,
+                mxArray * const obj,
+                std::unique_ptr <MxVectorValuedFunction> & value
+            );
+            
+            // Sets an operator in a C++ function bundle 
+            template <typename ProblemClass>
+            void Operator(
+                std::string const & name,
+                mxArray * const msg,
+                mxArray * const obj,
+                mxArray * const mxstate,
+                typename ProblemClass::State::t const & state,
+                std::unique_ptr <MxOperator> & value
+            ) {
+                value.reset(new Matlab::Operator <ProblemClass> (
+                    name,
+                    msg,
+                    mxGetField(obj,0,name.c_str()),
+                    mxstate,
+                    state));
+            }
         
             // Sets restart vectors in C++ 
             void Vectors(
@@ -907,6 +909,13 @@ namespace Optizelle {
             // Routines that manipulate the internal state of the optimization 
             // algorithm
             namespace State {
+                // Returns the fields names of the state
+                std::vector <char const *> fieldNames_();
+                std::vector <char const *> fieldNames();
+                
+                // Create the structure for a Matlab state
+                mxArray * mxCreate();
+
                 // Convert a C++ state to a Matlab state 
                 void toMatlab_(
                     typename MxUnconstrained::State::t const & state,
@@ -951,8 +960,8 @@ namespace Optizelle {
                     typename ProblemClass::State::t const & state,
                     typename MxUnconstrained::Functions::t & fns 
                 ) {
-                    toMatlab::ScalarValuedFunction("f",msg,mxfns,fns.f);
-                    toMatlab::Operator <ProblemClass> (
+                    fromMatlab::ScalarValuedFunction("f",msg,mxfns,fns.f);
+                    fromMatlab::Operator <ProblemClass> (
                         "PH",msg,mxfns,mxstate,state,fns.PH);
                 }
                 void fromMatlab(

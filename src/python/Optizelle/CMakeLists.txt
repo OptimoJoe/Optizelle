@@ -1,8 +1,5 @@
 project(optizelle_python)
 
-# Turn on position independent code.
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
 # Grab the current directory for some Python includes
 set(OPTIZELLE_PYTHON_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -12,11 +9,7 @@ include_directories(${PYTHON_INCLUDE_DIRS})
 include_directories(${OPTIZELLE_PYTHON_INCLUDE_DIRS})
 add_library(optizelle_python SHARED ${optizelle_python_srcs})
 target_link_libraries(optizelle_python
-    optizelle_static
-    ${PYTHON_LIBRARIES}
-    ${JSONCPP_LIBRARIES}
-    ${LAPACK_LIBRARIES}
-    ${BLAS_LIBRARIES})
+    optizelle_shared)
 set_target_properties(optizelle_python
     PROPERTIES OUTPUT_NAME Utility)
 set_target_properties(optizelle_python

@@ -276,6 +276,40 @@ def checkType(name,value):
     if type(value)!=type(type):
         raise TypeError("The %s argument must be a type." % (name))
 
+def checkVectors(name,value):
+    """Check that we have a list of restart vectors"""
+    if not issubclass(type(value),list):
+        raise TypeError("The %s argument must be a list." % (name))
+    map(lambda (i,x):checkString("%s[%d][0]" % (name,i),x[0]),
+        enumerate(value))
+
+def checkReals(name,value):
+    """Check that we have a list of restart reals"""
+    if not issubclass(type(value),list):
+        raise TypeError("The %s argument must be a list." % (name))
+    map(lambda (i,x):checkString("%s[%d][0]" % (name,i),x[0]),
+        enumerate(value))
+    map(lambda (i,x):checkFloat("%s[%d][1]" % (name,i),x[1]),
+        enumerate(value))
+
+def checkNaturals(name,value):
+    """Check that we have a list of restart naturals"""
+    if not issubclass(type(value),list):
+        raise TypeError("The %s argument must be a list." % (name))
+    map(lambda (i,x):checkString("%s[%d][0]" % (name,i),x[0]),
+        enumerate(value))
+    map(lambda (i,x):checkNatural("%s[%d][1]" % (name,i),x[1]),
+        enumerate(value))
+
+def checkParams(name,value):
+    """Check that we have a list of restart parameters"""
+    if not issubclass(type(value),list):
+        raise TypeError("The %s argument must be a list." % (name))
+    map(lambda (i,x):checkString("%s[%d][0]" % (name,i),x[0]),
+        enumerate(value))
+    map(lambda (i,x):checkString("%s[%d][1]" % (name,i),x[1]),
+        enumerate(value))
+
 def createFloatProperty(name,desc):
     """Create a floating-point property"""
     def getter(self):

@@ -11,10 +11,7 @@ macro(add_optizelle_unit_cpp name)
         # Compile and link the example
         add_executable(${name} "${name}.cpp")
         target_link_libraries(${name}
-            optizelle_static
-            ${JSONCPP_LIBRARIES}
-            ${LAPACK_LIBRARIES}
-            ${BLAS_LIBRARIES})
+            optizelle_shared)
             
         add_test("Execution_of_cpp_${name}" ${name})
     endif()

@@ -615,6 +615,66 @@ namespace Optizelle {
         }
     }
 
+    namespace json {
+        // Serialization utility for the Rm vector space
+        template <>
+        struct Serialization <double,Matlab::MatlabVS> {
+            static std::string serialize (Matlab::Vector const & x) {
+                // Grab the serialization routine 
+                Matlab::mxArrayPtr serialize(Matlab::importOptizelle(
+                    "json.Serialization.serialize"));
+
+                // Call the serialize routine on the vector
+                std::pair <Matlab::mxArrayPtr,int> xjson_err(
+                    Matlab::mxArray_CallObject1(
+                        serialize.get(),
+                        const_cast <Matlab::Vector &> (x).get()));
+            
+                // Check errors
+                if(xjson_err.second !=0)
+                    mexErrMsgTxt(
+                        "Evaluation of the serialize function failed.");
+
+                // Convert the serialized vector to a string and return it 
+                return std::string(mxArrayToString(xjson_err.first.get()));
+            }
+
+            static Matlab::Vector deserialize (
+                Matlab::Vector const & x_,
+                std::string const & x_json_
+            ) {
+                // Grab the deserialization routine 
+                Matlab::mxArrayPtr deserialize(Matlab::importOptizelle(
+                    "json.Serialization.deserialize"));
+
+                // Convert the inputed string into Matlab
+                Matlab::mxArrayPtr x_json(mxCreateString(x_json_.c_str()));
+
+                // Allocate memory for a new Matlab vector
+                Matlab::Vector x(const_cast <Matlab::Vector &> (x_).init());
+
+                // Call the deserialize routine on the reference vector and the
+                // json vector
+                std::pair<Matlab::mxArrayPtr,int> xraw_err(
+                    Matlab::mxArray_CallObject2(
+                        deserialize.get(),
+                        x.get(),
+                        x_json.get()));
+                
+                // Check errors
+                if(xraw_err.second !=0)
+                    mexErrMsgTxt(
+                        "Evaluation of the deserialize function failed.");
+
+                // Move the raw information into the Matlab vector
+                x.reset(xraw_err.first.release());
+
+                // Move out the new vector
+                return std::move(x);
+            }
+        };
+    }
+
     namespace Matlab {
         // Used to catch Matlab exceptions
         Exception::Exception() {}
@@ -624,8 +684,8 @@ namespace Optizelle {
             mxArray * const fn,
             mxArray * const arg1
         ) {
-            mxArray* input[2]={fn,arg1};
-            mxArray* output[1];
+            mxArray * input[2]={fn,arg1};
+            mxArray * output[1];
             int err=mexCallMATLAB(1,output,2,input,"feval");
             return std::pair <mxArray*,int> (output[0],err);
         }
@@ -651,7 +711,7 @@ namespace Optizelle {
         ) {
             mxArray* input[4]={fn,arg1,arg2,arg3};
             mxArray* output[1];
-            int err=mexCallMATLAB(1,output,3,input,"feval");
+            int err=mexCallMATLAB(1,output,4,input,"feval");
             return std::pair <mxArray*,int> (output[0],err);
         }
         
@@ -673,21 +733,36 @@ namespace Optizelle {
         mxArray * mxArray_FromDouble(double const x_) {
             mxArray * x(mxCreateDoubleMatrix(1,1,mxREAL));
             mxGetPr(x)[0]=x_;
+            return x;
         }
 
         // Creates a Matlab int from a C++ size_t 
         mxArray * mxArray_FromSize_t(Natural const x_) {
             mxArray * x(mxCreateDoubleMatrix(1,1,mxREAL));
             mxGetPr(x)[0]=x_;
+            return x;
         }
 
-        // Imports the Optizelle structure
-        mxArray * importOptizelle() {
-            mxArray* output[1];
+        // Imports a piece of the Optizelle module.  This makes a deep
+        // copy of the eventual imported object, so the result needs
+        // to have its memory managed. 
+        mxArray * importOptizelle(std::string const & module) {
+            // Grab Optizelle
+            mxArray * output[1];
             int err=mexCallMATLAB(1,output,0,nullptr,"setupOptizelle");
             if(err)
                 mexErrMsgTxt("Unable to import the Optizelle structure");
-            return output[0];
+            mxArrayPtr optizelle(output[0]);
+
+            // Grab each submodule
+            std::istringstream iss(module);
+            std::string name;
+            mxArray * submodule(optizelle.get());
+            while(getline(iss,name,'.'))
+                submodule = mxGetField(submodule,0,name.c_str());
+
+            // Return a deep copy of the result
+            return mxDuplicateArray(submodule);
         }
 
         // Converts an Optizelle enumerated type to a mxArray * 
@@ -695,14 +770,10 @@ namespace Optizelle {
             std::string const & type,
             std::string const & member 
         ) {
-            // Grab the Optizelle module
-            mxArrayPtr optizelle(importOptizelle());
-
-            // Grab the type enumerated type
-            mxArrayPtr matenum(mxGetField(optizelle.get(),0,type.c_str()));
-
-            // Finally, grab the actual specified member in this enumerated type
-            return mxGetField(matenum.get(),0,member.c_str());
+            // Grab a copy of the enumerated type
+            std::stringstream ss;
+            ss << type << '.' << member;
+            return importOptizelle(ss.str().c_str());
         }
        
         // Converts an Optizelle enumerated type to a Natural
@@ -768,7 +839,7 @@ namespace Optizelle {
         // On destruction, destroy the pointer. 
         mxArrayPtr::~mxArrayPtr() {
             if(ptr!=nullptr && mode!=mxArrayPtrMode::Attach)
-                mxDestroyArray(ptr);
+                ;//mxDestroyArray(ptr);
             ptr=nullptr;
         }
             
@@ -792,10 +863,10 @@ namespace Optizelle {
         // Prints a message
         void Messaging::print(std::string const & msg_) const {
             // Call the print function on msg
-            mxArrayPtr print(mxGetField(ptr,0,"print"));
+            mxArray * print(mxGetField(ptr,0,"print"));
             mxArrayPtr msg(mxCreateString(msg_.c_str()));
             std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
-                print.get(),
+                print,
                 msg.get()));
 
             // Check errors
@@ -807,10 +878,10 @@ namespace Optizelle {
         // Prints an error
         void Messaging::error(std::string const & msg_) const {
             // Call the error function on msg
-            mxArrayPtr error(mxGetField(ptr,0,"error"));
+            mxArray * error(mxGetField(ptr,0,"error"));
             mxArrayPtr msg(mxCreateString(msg_.c_str()));
             std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
-                error.get(),
+                error,
                 msg.get()));
 
             // Check errors
@@ -852,9 +923,9 @@ namespace Optizelle {
         // Memory allocation and size setting 
         Vector Vector::init() { 
             // Call the init function on the internal and store in y 
-            mxArrayPtr init(mxGetField(vs.get(),0,"init"));
+            mxArray * init(mxGetField(vs.get(),0,"init"));
             std::pair <mxArrayPtr,int> y_err(mxArray_CallObject1(
-                init.get(),
+                init,
                 get()));
 
             // Check errors
@@ -869,9 +940,9 @@ namespace Optizelle {
         // y <- x (Shallow.  No memory allocation.)  Internal is y.
         void Vector::copy(Vector & x) { 
             // Call the copy function on x and the internal 
-            mxArrayPtr copy(mxGetField(vs.get(),0,"copy"));
+            mxArray * copy(mxGetField(vs.get(),0,"copy"));
             std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
-                copy.get(),
+                copy,
                 x.get()));
 
             // Check errors
@@ -886,11 +957,12 @@ namespace Optizelle {
         // x <- alpha * x.  Internal is x.
         void Vector::scal(double const & alpha_) { 
             // Call the scal function on alpha and the internal storage 
-            mxArrayPtr scal(mxGetField(vs.get(),0,"scal"));
+            mxArray * scal(mxGetField(vs.get(),0,"scal"));
             mxArrayPtr alpha(mxArray_FromDouble(alpha_));
-            std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
-                scal.get(),
-                alpha.get()));
+            std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject2(
+                scal,
+                alpha.get(),
+                get()));
 
             // Check errors
             if(ret_err.second!=0)
@@ -904,9 +976,9 @@ namespace Optizelle {
         // x <- 0.  Internal is x. 
         void Vector::zero() { 
             // Call the zero function on this vector.
-            mxArrayPtr zero(mxGetField(vs.get(),0,"zero"));
+            mxArray * zero(mxGetField(vs.get(),0,"zero"));
             std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
-                zero.get(),
+                zero,
                 get()));
 
             // Check errors
@@ -921,10 +993,10 @@ namespace Optizelle {
         // y <- alpha * x + y.   Internal is y.
         void Vector::axpy(double const & alpha_,Vector & x) { 
             // Call the axpy function on alpha, x, and the internal storage.
-            mxArrayPtr axpy(mxGetField(vs.get(),0,"axpy"));
+            mxArray * axpy(mxGetField(vs.get(),0,"axpy"));
             mxArrayPtr alpha(mxArray_FromDouble(alpha_));
             std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject3(
-                axpy.get(),
+                axpy,
                 alpha.get(),
                 x.get(),
                 get()));
@@ -941,9 +1013,9 @@ namespace Optizelle {
         // innr <- <x,y>.  Internal is y.
         double Vector::innr(Vector & x) { 
             // Call the innr function on x and the internal.  Store in z. 
-            mxArrayPtr innr(mxGetField(vs.get(),0,"innr"));
+            mxArray * innr(mxGetField(vs.get(),0,"innr"));
             std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject2(
-                innr.get(),
+                innr,
                 x.get(),
                 get()));
 
@@ -959,9 +1031,9 @@ namespace Optizelle {
         // x <- random.  Internal is x. 
         void Vector::rand() { 
             // Call the rand function on this vector.
-            mxArrayPtr rand(mxGetField(vs.get(),0,"rand"));
+            mxArray * rand(mxGetField(vs.get(),0,"rand"));
             std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
-                rand.get(),
+                rand,
                 get()));
 
             // Check errors
@@ -976,9 +1048,9 @@ namespace Optizelle {
         // Jordan product, z <- x o y.  Internal is z.
         void Vector::prod(Vector & x,Vector & y) { 
             // Call the prod function on x, y, and the internal 
-            mxArrayPtr prod(mxGetField(vs.get(),0,"prod"));
+            mxArray * prod(mxGetField(vs.get(),0,"prod"));
             std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject2(
-                prod.get(),
+                prod,
                 x.get(),
                 y.get()));
 
@@ -994,9 +1066,9 @@ namespace Optizelle {
         // Identity element, x <- e such that x o e = x .  Internal is x.
         void Vector::id() { 
             // Call the id function on the internal.
-            mxArrayPtr id(mxGetField(vs.get(),0,"id"));
+            mxArray * id(mxGetField(vs.get(),0,"id"));
             std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
-                id.get(),
+                id,
                 get()));
 
             // Check errors
@@ -1012,9 +1084,9 @@ namespace Optizelle {
         // Internal is z.
         void Vector::linv(Vector& x, Vector& y) { 
             // Call the linv function on x, y, and the internal
-            mxArrayPtr linv(mxGetField(vs.get(),0,"linv"));
+            mxArray * linv(mxGetField(vs.get(),0,"linv"));
             std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject2(
-                linv.get(),
+                linv,
                 x.get(),
                 y.get()));
 
@@ -1031,9 +1103,9 @@ namespace Optizelle {
         // Internal is x.
         double Vector::barr() { 
             // Call the barr function on the internal.  Store in z.
-            mxArrayPtr barr(mxGetField(vs.get(),0,"barr"));
+            mxArray * barr(mxGetField(vs.get(),0,"barr"));
             std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
-                barr.get(),
+                barr,
                 get()));
 
             // Check errors
@@ -1049,9 +1121,9 @@ namespace Optizelle {
         // where y > 0.  Internal is y.
         double Vector::srch(Vector& x) {  
             // Call the srch function on x and the internal.  Store in z.
-            mxArrayPtr srch(mxGetField(vs.get(),0,"srch"));
+            mxArray * srch(mxGetField(vs.get(),0,"srch"));
             std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject2(
-                srch.get(),
+                srch,
                 x.get(),
                 get()));
 
@@ -1068,9 +1140,9 @@ namespace Optizelle {
         // operator.  Internal is x.
         void Vector::symm() { 
             // Call the symm function on the internal.
-            mxArrayPtr symm(mxGetField(vs.get(),0,"symm"));
+            mxArray * symm(mxGetField(vs.get(),0,"symm"));
             std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
-                symm.get(),
+                symm,
                 get()));
 
             // Check errors
@@ -1086,9 +1158,9 @@ namespace Optizelle {
         // Converts (copies) a value into Matlab.  
         mxArray * Vector::toMatlab() {
             // Call the copy function on the internal and x
-            mxArrayPtr copy(mxGetField(vs.get(),0,"copy"));
+            mxArray * copy(mxGetField(vs.get(),0,"copy"));
             std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
-                copy.get(),
+                copy,
                 get()));
 
             // Check errors
@@ -1104,9 +1176,9 @@ namespace Optizelle {
         // vector space functions have already been properly assigned.
         void Vector::fromMatlab(mxArray * const ptr) {
             // Call the copy function on ptr and the internal 
-            mxArrayPtr copy(mxGetField(vs.get(),0,"copy"));
+            mxArray * copy(mxGetField(vs.get(),0,"copy"));
             std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
-                copy.get(),
+                copy,
                 ptr));
 
             // Check errors
@@ -1219,9 +1291,9 @@ namespace Optizelle {
         // <- f(x) 
         double ScalarValuedFunction::eval(Vector const & x) const { 
             // Call the objective function on x.
-            mxArrayPtr eval(mxGetField(ptr,0,"eval"));
+            mxArray * eval(mxGetField(ptr,0,"eval"));
             std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
-                eval.get(),
+                eval,
                 const_cast <Vector &> (x).get()));
 
             // Check errors
@@ -1238,9 +1310,9 @@ namespace Optizelle {
             Vector & grad
         ) const { 
             // Call the gradient function on x
-            mxArrayPtr mxgrad(mxGetField(ptr,0,"grad"));
+            mxArray * mxgrad(mxGetField(ptr,0,"grad"));
             std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
-                mxgrad.get(),
+                mxgrad,
                 const_cast <Vector &>(x).get()));
 
             // Check errors
@@ -1258,9 +1330,9 @@ namespace Optizelle {
             Vector & H_dx
         ) const {
             // Call the hessvec function on x and dx,
-            mxArrayPtr hessvec(mxGetField(ptr,0,"hessvec"));
+            mxArray * hessvec(mxGetField(ptr,0,"hessvec"));
             std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject2(
-                hessvec.get(),
+                hessvec,
                 const_cast <Vector &> (x).get(),
                 const_cast <Vector &> (dx).get()));
 
@@ -1291,9 +1363,9 @@ namespace Optizelle {
             VectorValuedFunction::Y_Vector& y
         ) const {
             // Call the objective function on x.
-            mxArrayPtr eval(mxGetField(ptr,0,"eval"));
+            mxArray * eval(mxGetField(ptr,0,"eval"));
             std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
-                eval.get(),
+                eval,
                 const_cast <Vector &> (x).get()));
 
             // Check errors
@@ -1314,9 +1386,9 @@ namespace Optizelle {
             VectorValuedFunction::Y_Vector& y
         ) const {
             // Call the prime function on x and dx
-            mxArrayPtr p(mxGetField(ptr,0,"p"));
+            mxArray * p(mxGetField(ptr,0,"p"));
             std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject2(
-                p.get(),
+                p,
                 const_cast <Vector &> (x).get(),
                 const_cast <Vector &> (dx).get()));
            
@@ -1339,9 +1411,9 @@ namespace Optizelle {
             VectorValuedFunction::X_Vector& z
         ) const {
             // Call the prime-adjoint function on x and dy
-            mxArrayPtr ps(mxGetField(ptr,0,"ps"));
+            mxArray * ps(mxGetField(ptr,0,"ps"));
             std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject2(
-                ps.get(),
+                ps,
                 const_cast <Vector &> (x).get(),
                 const_cast <Vector &> (dy).get()));
 
@@ -1365,9 +1437,9 @@ namespace Optizelle {
             X_Vector& z
         ) const { 
             // Call the prime-adjoint function on x, dx, and dy
-            mxArrayPtr pps(mxGetField(ptr,0,"pps"));
+            mxArray * pps(mxGetField(ptr,0,"pps"));
             std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject3(
-                pps.get(),
+                pps,
                 const_cast <Vector &> (x).get(),
                 const_cast <Vector &> (dx).get(),
                 const_cast <Vector &> (dy).get()));
@@ -1450,28 +1522,6 @@ namespace Optizelle {
                 mxSetField(obj,0,name.c_str(),items.release());
             }
         
-            // Sets a scalar-valued function in a Matlab function bundle 
-            void ScalarValuedFunction(
-                std::string const & name,
-                mxArray * const msg,
-                mxArray * const obj,
-                std::unique_ptr <MxScalarValuedFunction> & value
-            ) {
-                value.reset(new Matlab::ScalarValuedFunction(msg,
-                    mxGetField(obj,0,name.c_str())));
-            }
-            
-            // Sets a vector-valued function in a Matlab function bundle 
-            void VectorValuedFunction(
-                std::string const & name,
-                mxArray * const msg,
-                mxArray * const obj,
-                std::unique_ptr <MxVectorValuedFunction> & value
-            ) {
-                value.reset(new Matlab::VectorValuedFunction(name,msg,
-                    mxGetField(obj,0,name.c_str())));
-            }
-
             // Sets restart vectors in Matlab 
             void Vectors(
                 Matlab::Vectors const & values,
@@ -1588,8 +1638,8 @@ namespace Optizelle {
                 mxArray * const obj,
                 double & value
             ) {
-                mxArrayPtr item(mxGetField(obj,0,name.c_str()));
-                value=mxGetPr(item.get())[0];
+                mxArray * item(mxGetField(obj,0,name.c_str()));
+                value=mxGetPr(item)[0];
             }
             
             // Sets a natural in a C++ state 
@@ -1598,8 +1648,8 @@ namespace Optizelle {
                 mxArray * const obj,
                 Optizelle::Natural & value
             ) {
-                mxArrayPtr item(mxGetField(obj,0,name.c_str()));
-                value=Optizelle::Natural(mxGetPr(item.get())[0]);
+                mxArray * item(mxGetField(obj,0,name.c_str()));
+                value=Optizelle::Natural(mxGetPr(item)[0]);
             }
             
             // Sets a list of vectors in a C++ state 
@@ -1610,14 +1660,14 @@ namespace Optizelle {
                 std::list <Matlab::Vector> & values
             ) {
                 // Grab the list of items
-                mxArrayPtr items(mxGetField(obj,0,name.c_str()));
+                mxArray * items(mxGetField(obj,0,name.c_str()));
 
                 // Loop over all the elements in items and insert them one
                 // at a time into values
                 values.clear();
-                for(Optizelle::Natural i=0;i<mxGetN(items.get());i++) {
+                for(Optizelle::Natural i=0;i<mxGetN(items);i++) {
                     // Grab the current item from Matlab
-                    mxArray * item(mxGetCell(items.get(),i));
+                    mxArray * item(mxGetCell(items,i));
 
                     // Create a new vector in values 
                     values.emplace_back(std::move(
@@ -1628,14 +1678,36 @@ namespace Optizelle {
                 }
             }
             
+            // Sets a scalar-valued function in a C++ function bundle 
+            void ScalarValuedFunction(
+                std::string const & name,
+                mxArray * const msg,
+                mxArray * const obj,
+                std::unique_ptr <MxScalarValuedFunction> & value
+            ) {
+                value.reset(new Matlab::ScalarValuedFunction(msg,
+                    mxGetField(obj,0,name.c_str()),mxArrayPtrMode::Attach));
+            }
+            
+            // Sets a vector-valued function in a C++ function bundle 
+            void VectorValuedFunction(
+                std::string const & name,
+                mxArray * const msg,
+                mxArray * const obj,
+                std::unique_ptr <MxVectorValuedFunction> & value
+            ) {
+                value.reset(new Matlab::VectorValuedFunction(name,msg,
+                    mxGetField(obj,0,name.c_str()),mxArrayPtrMode::Attach));
+            }
+            
             // Sets a vector in a C++ state 
             void Vector(
                 std::string const & name,
                 mxArray * const obj,
                 Matlab::Vector & value
             ) {
-                mxArrayPtr item(mxGetField(obj,0,name.c_str()));
-                value.fromMatlab(item.get());
+                mxArray * item(mxGetField(obj,0,name.c_str()));
+                value.fromMatlab(item);
             }
         
             // Sets restart vectors in C++ 
@@ -1729,6 +1801,71 @@ namespace Optizelle {
             // Routines that manipulate the internal state of the optimization 
             // algorithm
             namespace State {
+                // Returns the fields names of the state
+                std::vector <char const *> fieldNames_() {
+                    std::vector <const char*> names = {
+                    "eps_grad",
+                    "eps_dx",
+                    "stored_history",
+                    "history_reset",
+                    "iter",
+                    "iter_max",
+                    "opt_stop",
+                    "krylov_iter",
+                    "krylov_iter_max",
+                    "krylov_iter_total",
+                    "krylov_orthog_max",
+                    "krylov_stop",
+                    "krylov_rel_err",
+                    "eps_krylov",
+                    "krylov_solver",
+                    "algorithm_class",
+                    "PH_type",
+                    "H_type",
+                    "norm_gradtyp",
+                    "norm_dxtyp",
+                    "x",
+                    "grad",
+                    "dx",
+                    "x_old",
+                    "grad_old",
+                    "dx_old",
+                    "oldY",
+                    "oldS",
+                    "f_x",
+                    "f_xpdx",
+                    "msg_level",
+                    "delta",
+                    "eta1",
+                    "eta2",
+                    "ared",
+                    "pred",
+                    "rejected_trustregion",
+                    "alpha0",
+                    "alpha",
+                    "c1",
+                    "linesearch_iter",
+                    "linesearch_iter_max",
+                    "linesearch_iter_total",
+                    "eps_ls",
+                    "dir",
+                    "kind",
+                    "f_diag",
+                    "dscheme"};
+
+                    return std::move(names);
+                }
+                std::vector <char const *> fieldNames() {
+                    return fieldNames_();
+                }
+
+                // Create the structure for a Matlab state
+                mxArray * mxCreate() {
+                    std::vector <char const *> names
+                        = Unconstrained::State::fieldNames();
+                    return mxCreateStructMatrix(1,1,names.size(),&(names[0]));
+                }
+
                 // Convert a C++ state to a Matlab state 
                 void toMatlab_(
                     typename MxUnconstrained::State::t const & state,
@@ -1960,11 +2097,12 @@ namespace Optizelle {
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 ){
-                    // Calling convention should be (mxstate,X,msg,x) 
-                    mxArray *mxstate_=pInput[0],
-                            *X=pInput[1],
-                            *msg=pInput[2],
-                            *x_=pInput[3];
+                    // Calling convention should be (X,msg,x) -> (mxstate_out)
+                    mxArray *X=pInput[0],
+                            *msg=pInput[1],
+                            *x_=pInput[2];
+                    pOutput[0] = Unconstrained::State::mxCreate();
+                    mxArray *mxstate_out_=pOutput[0];
 
                     // Make sure we bail if we detect a Matlab exception
                     try {
@@ -1972,14 +2110,14 @@ namespace Optizelle {
                         Vector x(msg,X,x_,mxArrayPtrMode::Attach);
 
                         // Create a Matlab state 
-                        Matlab::State <MxUnconstrained> mxstate(mxstate_,
+                        Matlab::State<MxUnconstrained> mxstate_out(mxstate_out_,
                             mxArrayPtrMode::Attach);
 
                         // Create a new C++ state
                         typename MxUnconstrained::State::t state(x);
 
                         // Convert the state to a Matlab state
-                        mxstate.toMatlab(state);
+                        mxstate_out.toMatlab(state);
 
                         // Return nothing 
                         return; 
@@ -1993,11 +2131,14 @@ namespace Optizelle {
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 ) {
-                    // Calling convention should be (X,msg,fname,mxstate) 
+                    // Calling convention should be (X,msg,fname,mxstate)
+                    // -> (mxstate_out)
                     mxArray *X=pInput[0],
                             *msg_=pInput[1],
                             *fname_=pInput[2],
                             *mxstate_=pInput[3];
+                    pOutput[0] = Unconstrained::State::mxCreate();
+                    mxArray *mxstate_out_=pOutput[0];
 
                     // Make sure we bail if we detect a Matlab exception
                     try {
@@ -2011,10 +2152,11 @@ namespace Optizelle {
                         // Create a Matlab state 
                         Matlab::State <MxUnconstrained> mxstate(mxstate_,
                             mxArrayPtrMode::Attach);
+                        Matlab::State<MxUnconstrained> mxstate_out(mxstate_out_,
+                            mxArrayPtrMode::Attach);
                     
                         // Grab the base vectors from the Matlab state
-                        Vector x(msg_,X,
-                            mxGetField(mxstate.get(),0,"x"));
+                        Vector x(msg_,X,mxGetField(mxstate.get(),0,"x"));
 
                         // Create a new C++ state
                         typename MxUnconstrained::State::t state(x);
@@ -2026,7 +2168,7 @@ namespace Optizelle {
                         MxJsonUnconstrained::read(msg,fname,state);
 
                         // Convert the C++ state to a Matlab state
-                        mxstate.toMatlab(state);
+                        mxstate_out.toMatlab(state);
                                 
                         // Return nothing 
                         return; 
@@ -2059,12 +2201,14 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 ) {
                     // Calling convention should be
-                    // (X,msg,smanip,fns,state)
+                    // (X,msg,smanip,mxfns,mxstate) -> (mxstate_out)
                     mxArray *X=pInput[0],
                             *msg_=pInput[1],
                             *smanip_=pInput[2],
                             *mxfns_=pInput[3],
                             *mxstate_=pInput[4];
+                    pOutput[0] = Unconstrained::State::mxCreate();
+                    mxArray *mxstate_out_=pOutput[0];
 
                     // Make sure we bail if we detect a Matlab exception
                     try {
@@ -2074,6 +2218,8 @@ namespace Optizelle {
                             
                         // Create a Matlab state 
                         Matlab::State <MxUnconstrained> mxstate(mxstate_,
+                            mxArrayPtrMode::Attach);
+                        Matlab::State<MxUnconstrained> mxstate_out(mxstate_out_,
                             mxArrayPtrMode::Attach);
                         
                         // Grab the base vectors from the Matlab state
@@ -2113,7 +2259,7 @@ namespace Optizelle {
                             msg,smanip,fns,state);
                         
                         // Convert the C++ state to a Matlab state
-                        mxstate.toMatlab(state);
+                        mxstate_out.toMatlab(state);
 
                         // Return nothing 
                         return; 
@@ -2131,14 +2277,14 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 ) {
                     // Calling convention should be
-                    // (X,msg,state,xs,reals,nats,params)
+                    // (X,msg,mxstate) -> (xs,reals,nats,params)
                     mxArray *X=pInput[0],
                             *msg=pInput[1],
-                            *mxstate_=pInput[2],
-                            *pyxs=pInput[3],
-                            *pyreals=pInput[4],
-                            *pynats=pInput[5],
-                            *pyparams=pInput[6];
+                            *mxstate_=pInput[2];
+                    mxArray *mxxs,
+                            *mxreals,
+                            *mxnats,
+                            *mxparams;
 
                     // Make sure we bail if we detect a Matlab exception
                     try {
@@ -2147,8 +2293,7 @@ namespace Optizelle {
                             mxArrayPtrMode::Attach);
                         
                         // Grab the base vectors from the Matlab state
-                        Vector x(msg,X,
-                            mxGetField(mxstate.get(),0,"x"));
+                        Vector x(msg,X,mxGetField(mxstate.get(),0,"x"));
 
                         // Create a C++ state
                         typename MxUnconstrained::State::t state(x);
@@ -2164,11 +2309,23 @@ namespace Optizelle {
                         MxUnconstrained::Restart
                             ::release(state,xs,reals,nats,params);
 
+                        // Allocate memory for the Matlab versions
+                        mxxs = mxCreateCellMatrix(1,xs.size());
+                        mxreals = mxCreateCellMatrix(1,reals.size());
+                        mxnats = mxCreateCellMatrix(1,nats.size());
+                        mxparams = mxCreateCellMatrix(1,params.size());
+
                         // Convert the restart information to Matlab 
-                        toMatlab::Vectors(xs,pyxs);
-                        toMatlab::Reals(reals,pyreals);
-                        toMatlab::Naturals(nats,pynats);
-                        toMatlab::Params(params,pyparams);
+                        toMatlab::Vectors(xs,mxxs);
+                        toMatlab::Reals(reals,mxreals);
+                        toMatlab::Naturals(nats,mxnats);
+                        toMatlab::Params(params,mxparams);
+
+                        // Set the ouptuts
+                        pOutput[0]=mxxs;
+                        pOutput[1]=mxreals;
+                        pOutput[2]=mxnats;
+                        pOutput[3]=mxparams;
 
                         // Return nothing 
                         return; 
@@ -2183,14 +2340,17 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 ) {
                     // Calling convention should be
-                    // (X,msg,state,xs,reals,nats,params)
+                    // (X,msg,mxstate,mxxs,mxreals,mxnats,mxparams)
+                    // -> mxstate_out
                     mxArray *X=pInput[0],
                             *msg_=pInput[1],
                             *mxstate_=pInput[2],
-                            *pyxs=pInput[3],
-                            *pyreals=pInput[4],
-                            *pynats=pInput[5],
-                            *pyparams=pInput[6];
+                            *mxxs=pInput[3],
+                            *mxreals=pInput[4],
+                            *mxnats=pInput[5],
+                            *mxparams=pInput[6];
+                    pOutput[0] = Unconstrained::State::mxCreate();
+                    mxArray *mxstate_out_=pOutput[0];
 
                     // Make sure we bail if we detect a Matlab exception
                     try {
@@ -2201,10 +2361,11 @@ namespace Optizelle {
                         // Create a Matlab state 
                         Matlab::State <MxUnconstrained> mxstate(mxstate_,
                             mxArrayPtrMode::Attach);
+                        Matlab::State<MxUnconstrained> mxstate_out(mxstate_out_,
+                            mxArrayPtrMode::Attach);
                         
                         // Grab the base vectors from the Matlab state
-                        Vector x(msg_,X,
-                            mxGetField(mxstate.get(),0,"x"));
+                        Vector x(msg_,X,mxGetField(mxstate.get(),0,"x"));
 
                         // Create a C++ state
                         typename MxUnconstrained::State::t state(x);
@@ -2216,17 +2377,17 @@ namespace Optizelle {
                         MxUnconstrained::Restart::Params params;
                         
                         // Convert the restart information from Matlab 
-                        fromMatlab::Vectors(x,pyxs,xs);
-                        fromMatlab::Reals(pyreals,reals);
-                        fromMatlab::Naturals(pynats,nats);
-                        fromMatlab::Params(pyparams,params);
+                        fromMatlab::Vectors(x,mxxs,xs);
+                        fromMatlab::Reals(mxreals,reals);
+                        fromMatlab::Naturals(mxnats,nats);
+                        fromMatlab::Params(mxparams,params);
 
                         // Do a capture 
                         MxUnconstrained::Restart
                             ::capture(msg,state,xs,reals,nats,params);
 
                         // Convert the C++ state to a Matlab state
-                        mxstate.toMatlab(state);
+                        mxstate_out.toMatlab(state);
 
                         // Return nothing 
                         return; 
@@ -2240,7 +2401,7 @@ namespace Optizelle {
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 ) {
-                    // Calling convention should be (X,msg,fname,state)
+                    // Calling convention should be (X,msg,fname,state) -> ()
                     mxArray *X=pInput[0],
                             *msg_=pInput[1],
                             *fname_=pInput[2],
@@ -2260,8 +2421,7 @@ namespace Optizelle {
                             mxArrayPtrMode::Attach);
                         
                         // Grab the base vectors from the Matlab state
-                        Vector x(msg_,X,
-                            mxGetField(mxstate.get(),0,"x"));
+                        Vector x(msg_,X,mxGetField(mxstate.get(),0,"x"));
                         
                         // Create a C++ state
                         typename MxUnconstrained::State::t state(x);
@@ -2284,12 +2444,13 @@ namespace Optizelle {
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 ) {
-                    // Calling convention should be (X,msg,fname,x,state)
+                    // Calling convention should be (X,msg,fname,x) -> (mxstate)
                     mxArray *X=pInput[0],
                             *msg_=pInput[1],
                             *fname_=pInput[2],
-                            *x_=pInput[3],
-                            *mxstate_=pInput[4];
+                            *x_=pInput[3];
+                    pOutput[0] = Unconstrained::State::mxCreate();
+                    mxArray *mxstate_out_=pOutput[0];
 
                     // Make sure we bail if we detect a Matlab exception
                     try {
@@ -2301,7 +2462,7 @@ namespace Optizelle {
                         std::string fname(mxArrayToString(fname_));
 
                         // Create a Matlab state 
-                        Matlab::State <MxUnconstrained> mxstate(mxstate_,
+                        Matlab::State<MxUnconstrained> mxstate_out(mxstate_out_,
                             mxArrayPtrMode::Attach);
                         
                         // Grab the reference vector 
@@ -2314,7 +2475,7 @@ namespace Optizelle {
                         MxJsonUnconstrained::read_restart(msg,fname,x,state);
                         
                         // Convert the C++ state to a Matlab state
-                        mxstate.toMatlab(state);
+                        mxstate_out.toMatlab(state);
 
                         // Return nothing 
                         return; 

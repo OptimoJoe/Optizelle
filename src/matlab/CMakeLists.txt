@@ -10,4 +10,7 @@ if(ENABLE_MATLAB)
     # directory with the sources.
     find_package(MATLAB REQUIRED)
     add_subdirectory(optizelle)
+
+    # Install the setup file
+    install(FILES setupOptizelle.m DESTINATION share/optizelle/matlab/)
 endif()

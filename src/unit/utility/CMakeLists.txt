@@ -10,9 +10,6 @@ if(ENABLE_CPP_UNIT)
     # Compile and link the diff utility
     add_executable(diff_restart diff_restart.cpp)
     target_link_libraries(diff_restart
-        optizelle_static
-        ${JSONCPP_LIBRARIES}
-        ${LAPACK_LIBRARIES}
-        ${BLAS_LIBRARIES})
+        optizelle_shared)
 
 endif()

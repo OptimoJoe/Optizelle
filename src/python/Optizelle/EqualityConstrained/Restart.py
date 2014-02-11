@@ -47,24 +47,11 @@ def capture(X,Y,msg,state,xs,ys,reals,nats,params):
     Optizelle.checkVectorSpace("Y",Y)
     Optizelle.checkMessaging("msg",msg)
     Optizelle.EqualityConstrained.State.checkT("state",state)
-
-    map(lambda (i,x):Optizelle.checkString("xs[%d][0]" % (i),x[0]),
-        enumerate(xs))
-    map(lambda (i,x):Optizelle.checkString("ys[%d][0]" % (i),x[0]),
-        enumerate(ys))
-    map(lambda (i,x):Optizelle.checkString("reals[%d][0]" % (i),x[0]),
-        enumerate(reals))
-    map(lambda (i,x):Optizelle.checkString("nats[%d][0]" % (i),x[0]),
-        enumerate(nats))
-    map(lambda (i,x):Optizelle.checkString("params[%d][0]" % (i),x[0]),
-        enumerate(params))
-
-    map(lambda (i,x):Optizelle.checkFloat("reals[%d][1]" % (i),x[1]),
-        enumerate(reals))
-    map(lambda (i,x):Optizelle.checkNatural("nats[%d][1]" % (i),x[1]),
-        enumerate(nats))
-    map(lambda (i,x):Optizelle.checkString("params[%d][1]" % (i),x[1]),
-        enumerate(params))
+    Optizelle.checkVectors('xs',xs)
+    Optizelle.checkVectors('ys',ys)
+    Optizelle.checkReals('reals',reals)
+    Optizelle.checkNaturals('nats',nats)
+    Optizelle.checkParams('params',params)
 
     # Capture the restart information
     Optizelle.Utility.EqualityConstrainedRestartCapture(

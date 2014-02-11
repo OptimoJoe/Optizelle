@@ -657,8 +657,8 @@ namespace Optizelle {
                 // Allocate memory for a new Python vector
                 Python::Vector x(const_cast <Python::Vector &> (x_).init());
                 
-                // Call the deserialize routine on the reference vector json
-                // vector
+                // Call the deserialize routine on the reference vector and the
+                // json vector
                 Python::PyObjectPtr x_raw(Python::PyObject_CallObject2(
                     deserialize.get(),
                     x.get(),
@@ -1484,28 +1484,6 @@ namespace Optizelle {
                 // Insert the items into obj
                 PyObject_SetAttrString(obj,name.c_str(),items.get());
             }
-        
-            // Sets a scalar-valued function in a Python function bundle 
-            void ScalarValuedFunction(
-                std::string const & name,
-                PyObject * const msg,
-                PyObject * const obj,
-                std::unique_ptr <PyScalarValuedFunction> & value
-            ) {
-                value.reset(new Python::ScalarValuedFunction(msg,
-                    PyObject_GetAttrString(obj,name.c_str())));
-            }
-            
-            // Sets a vector-valued function in a Python function bundle 
-            void VectorValuedFunction(
-                std::string const & name,
-                PyObject * const msg,
-                PyObject * const obj,
-                std::unique_ptr <PyVectorValuedFunction> & value
-            ) {
-                value.reset(new Python::VectorValuedFunction(name,msg,
-                    PyObject_GetAttrString(obj,name.c_str())));
-            }
 
             // Sets restart vectors in Python 
             void Vectors(
@@ -1640,6 +1618,28 @@ namespace Optizelle {
                     // Copy the Python item into the new value
                     values.back().fromPython(item);
                 }
+            }
+        
+            // Sets a scalar-valued function in a C++ function bundle 
+            void ScalarValuedFunction(
+                std::string const & name,
+                PyObject * const msg,
+                PyObject * const obj,
+                std::unique_ptr <PyScalarValuedFunction> & value
+            ) {
+                value.reset(new Python::ScalarValuedFunction(msg,
+                    PyObject_GetAttrString(obj,name.c_str())));
+            }
+            
+            // Sets a vector-valued function in a C++ function bundle 
+            void VectorValuedFunction(
+                std::string const & name,
+                PyObject * const msg,
+                PyObject * const obj,
+                std::unique_ptr <PyVectorValuedFunction> & value
+            ) {
+                value.reset(new Python::VectorValuedFunction(name,msg,
+                    PyObject_GetAttrString(obj,name.c_str())));
             }
             
             // Sets a vector in a C++ state 
