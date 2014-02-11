@@ -884,12 +884,9 @@ namespace Optizelle {
                 error,
                 msg.get()));
 
-            // Check errors
-            if(ret_err.second !=0) {
-                std::string msg2="Evaluation of the error function in the "
-                    "Messaging object failed.\n";
-                mexErrMsgTxt(msg2.c_str());
-            }
+            // We do an additional call to the error handler to exit the
+            // mex file.  This also helps if the above error function fails.
+            mexErrMsgTxt(msg_.c_str());
         }
 
         // Create a vector with the appropriate messaging and vector space 

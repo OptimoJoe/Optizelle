@@ -19,3 +19,4 @@ add_optizelle_example_supporting(${PROJECT_NAME}
 # Add some unit tests
 add_optizelle_json_test_cpp("*.json" ${PROJECT_NAME})
 add_optizelle_json_test_python("*.json" ${PROJECT_NAME})
+add_optizelle_json_test_matlab("*.json" ${PROJECT_NAME})

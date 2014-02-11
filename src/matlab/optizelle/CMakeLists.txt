@@ -16,6 +16,18 @@ add_optizelle_mex(UnconstrainedRestartCapture)
 add_optizelle_mex(UnconstrainedRestartWriteRestart)
 add_optizelle_mex(UnconstrainedRestartReadRestart)
 
+# Copy in the rest of the Matlab files for the unit tests. 
+add_custom_command(
+    TARGET UnconstrainedRestartReadRestart POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/src/matlab/optizelle
+        $<TARGET_FILE_DIR:UnconstrainedRestartReadRestart>)
+add_custom_command(
+    TARGET UnconstrainedRestartReadRestart POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+        ${CMAKE_SOURCE_DIR}/src/matlab/setupOptizelle.m
+        $<TARGET_FILE_DIR:UnconstrainedRestartReadRestart>/..)
+
 install(FILES
     getStateManipulator.m
     serialize.m

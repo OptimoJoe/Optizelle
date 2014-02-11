@@ -2,14 +2,14 @@
 % it runs through a complete example from defining a valid vector space,
 % to setting parameters, to solving the problem.  For reference, the optimal
 % solution to the Rosenbrock function is (1,1).
-function rosenbrock_custom_VS(fname)
+function rosenbrock_custom_VS()
     % Read in the name for the input file
-    if nargin ~=2
-        error('rosenbrock_custom_VS <parameters>');
+    if nargin ~=0
+        error('rosenbrock_custom_VS()');
     end
 
     % Execute the optimization
-    main(fname);
+    main();
 end
 
 
@@ -46,7 +46,7 @@ end
 % 
 % f(x,y)=(1-x)^2+100(y-x^2)^2
 %
-function self = Rosenbrock(self)
+function self = Rosenbrock()
     
     % Evaluation of the Rosenbrock function
     self.eval = @(x) sq(1.-x(1))+100.*sq(x(2)-sq(x(1)));
@@ -63,16 +63,16 @@ function self = Rosenbrock(self)
 end
 
 % Actually runs the program
-function main(fname)
+function main()
 
     % Grab the Optizelle library
-    Optizelle = setupOptizelle ();
+    Optizelle = setupOptizelle();
 
     % Generate an initial guess for Rosenbrock
     x = [-1.2;1.];
 
     % Create an unconstrained state based on this vector
-    state=Optizelle.Unconstrained.State.t(MyVS(),Optizelle.Messaging(),x);
+    state=Optizelle.Unconstrained.State.t(MyVS(),Optizelle.Messaging,x);
 
     % Setup some algorithmic parameters
 
@@ -102,11 +102,11 @@ function main(fname)
 
     % Create the bundle of functions 
     fns=Optizelle.Unconstrained.Functions.t;
-    fns.f=Rosenbrock()
+    fns.f=Rosenbrock();
 
     % Solve the optimization problem
-    Optizelle.Unconstrained.Algorithms.getMin(MyVS(),Optizelle.Messaging, ...
-        fns,state)
+    state=Optizelle.Unconstrained.Algorithms.getMin( ...
+        MyVS(),Optizelle.Messaging,fns,state);
 
     % Print out the final answer
     fprintf('The optimal point is: (%e,%e)\n',state.x(1),state.x(2));

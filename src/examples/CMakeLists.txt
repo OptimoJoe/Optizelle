@@ -7,7 +7,7 @@ if(ENABLE_PYTHON)
 endif()
 if(ENABLE_MATLAB)
     mark_as_advanced(CLEAR ENABLE_MATLAB_EXAMPLES)
-    set(ENABLE_MATLAB_EXAMPLES OFF CACHE BOOL "Enable examples for Python?")
+    set(ENABLE_MATLAB_EXAMPLES OFF CACHE BOOL "Enable examples for MATLAB?")
 endif()
 
 # Add all examples or unit tests

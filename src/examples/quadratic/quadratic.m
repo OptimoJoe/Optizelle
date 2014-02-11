@@ -2,7 +2,7 @@
 % optimal solution to this function is (1,1,1).
 function quadratic(fname)
     % Read in the name for the input file
-    if nargin ~=2
+    if nargin ~=1
         error('quadratic <parameters>')
     end
 
@@ -19,7 +19,7 @@ end
 % 
 % f(x,y,z)=(x-1)^2+(2y-2)^2+(3z-3)^2
 %
-function self = Quad(self)
+function self = Quad()
 
     % Evaluation of the quadratic function
     self.eval = @(x) sq(x(1)-1.)+sq(2*x(2)-2.)+sq(3*x(3)-3.);
@@ -38,7 +38,7 @@ function self = Quad(self)
 end
 
 % Define an almost perfect preconditioner for the Hessian
-function self = QuadHInv(self)
+function self = QuadHInv()
     self.eval = @(state,dx) [
         dx(1)/2.;
         dx(2)/8.;
@@ -50,25 +50,25 @@ end
 function main(fname)
 
     % Grab the Optizelle library
-    Optizelle = setupOptizelle ();
+    Optizelle = setupOptizelle();
 
     % Generate an initial guess 
-    x = [-1.2,1.1,2.];
+    x = [-1.2;1.1;2.];
 
     % Create an unconstrained state based on this vector
     state=Optizelle.Unconstrained.State.t(Optizelle.Rm,Optizelle.Messaging,x);
 
     % Read the parameters from file
-    Optizelle.json.Unconstrained.read(Optizelle.Rm,Optizelle.Messaging, ...
+    state=Optizelle.json.Unconstrained.read(Optizelle.Rm,Optizelle.Messaging,...
         fname,state);
 
     % Create the bundle of functions 
     fns=Optizelle.Unconstrained.Functions.t;
-    fns.f=Quad(Optizelle.ScalarValuedFunction);
-    fns.PH=QuadHInv(Optizelle.Operator);
+    fns.f=Quad();
+    fns.PH=QuadHInv();
 
     % Solve the optimization problem
-    Optizelle.Unconstrained.Algorithms.getMin( ...
+    state=Optizelle.Unconstrained.Algorithms.getMin( ...
         Optizelle.Rm,Optizelle.Messaging,fns,state);
 
     % Print out the reason for convergence

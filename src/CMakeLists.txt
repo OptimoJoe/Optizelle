@@ -5,8 +5,10 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
 # Add some useful macros for examples and unit testing 
 include(AddOptizelleJsonTestCpp)
 include(AddOptizelleJsonTestPython)
+include(AddOptizelleJsonTestMatlab)
 include(AddOptizelleTestCpp)
 include(AddOptizelleTestPython)
+include(AddOptizelleTestMatlab)
 include(AddOptizelleSDPACpp)
 include(AddOptizelleExampleCpp)
 include(AddOptizelleExamplePython)
