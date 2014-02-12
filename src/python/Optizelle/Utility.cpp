@@ -633,6 +633,14 @@ namespace Optizelle {
                     Python::PyObject_CallObject1(
                         serialize.get(),
                         const_cast <Python::Vector &> (x).get()));
+            
+                // Check errors
+                if(x_json.get()==nullptr) {
+                    std::string msg(
+                        "Evaluation of the serialize function failed.");
+                    PySys_WriteStderr("%s",msg.c_str());
+                    Python::PyErr_SetString_Optizelle(msg);
+                }
 
                 // Convert the serialized vector to a string and return it 
                 return std::string(PyString_AsString(x_json.get()));
@@ -663,6 +671,14 @@ namespace Optizelle {
                     deserialize.get(),
                     x.get(),
                     x_json.get()));
+            
+                // Check errors
+                if(x_raw.get()==nullptr) {
+                    std::string msg(
+                        "Evaluation of the deserialize function failed.");
+                    PySys_WriteStderr("%s",msg.c_str());
+                    Python::PyErr_SetString_Optizelle(msg);
+                }
 
                 // Move the raw information into the Python vector
                 x.reset(x_raw.release());
