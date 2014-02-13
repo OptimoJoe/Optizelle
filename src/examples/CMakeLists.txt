@@ -13,6 +13,7 @@ endif()
 # Add all examples or unit tests
 add_subdirectory(diagnostic_checks)
 add_subdirectory(nw_sqp_exercise)
+add_subdirectory(parest)
 add_subdirectory(quadratic)
 add_subdirectory(rosenbrock)
 add_subdirectory(rosenbrock_custom_VS)

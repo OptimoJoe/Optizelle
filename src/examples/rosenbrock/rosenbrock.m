@@ -61,7 +61,7 @@ function main(fname)
     state=Optizelle.Unconstrained.State.t(Optizelle.Rm,Optizelle.Messaging,x);
 
     % Read the parameters from file
-    state=Optizelle.json.Unconstrained.read(Optizelle.Rm,Optizelle.Messaging, ...
+    state=Optizelle.json.Unconstrained.read(Optizelle.Rm,Optizelle.Messaging,...
         fname,state);
 
     % Create the bundle of functions 

@@ -2,7 +2,7 @@
 % an optimal solution of x = (-1.71,1.59,1.82.-0.763,-0.763).
 function nw_sqp_exercise(fname)
     % Read in the name for the input file
-    if nargin ~=2
+    if nargin ~=1
         error('nw_sqp_exercise <parameters>')
     end
 
@@ -13,6 +13,11 @@ end
 % Squares its input
 function z = sq(x)
     z=x*x;
+end
+
+% Power function
+function z = pow(x,n)
+   z=x^n; 
 end
 
 % Indexing for vectors
@@ -43,15 +48,15 @@ end
 %
 % f(x) = exp(x1 x2 x3 x4 x5) - (1/2) (x1^3 + x2^3 + 1)^2
 %
-function MyObj(self):
+function self = MyObj()
 
     % Evaluation 
     self.eval = @(x) ...
         (exp(x(itok(1))*x(itok(2))*x(itok(3))*x(itok(4))*x(itok(5))) ...
-            - sq(pow(x(itok(1)),3)+pow(x(itok(2)),3)+1.)/2.)
+            - sq(pow(x(itok(1)),3)+pow(x(itok(2)),3)+1.)/2.);
 
     % Gradient
-    self.grad= @(x) [
+    self.grad= @(x) [ ...
         (x(itok(2))*x(itok(3))*x(itok(4))*x(itok(5)) ...
             * exp(x(itok(1))*x(itok(2))*x(itok(3))*x(itok(4))*x(itok(5))) ...
             - 3.*sq(x(itok(1))) ...
@@ -151,7 +156,7 @@ function MyObj(self):
         H_dx = zeros(5,1);
         for i = 1:5 
             for j = 1:5 
-                H_dx(i) += H(ijtokp(i,j))*dx(j)
+                H_dx(i) += H(ijtokp(i,j))*dx(j);
             end
         end
     end
@@ -162,7 +167,7 @@ end
 %       [ x2 x3 - 5 x4 x5                       ]
 %       [ x1^3 + x2^3 + 1                       ]
 %
-function self = MyEq(self)
+function self = MyEq()
 
     % y=g(x) 
     self.eval = @(x) [
@@ -172,7 +177,7 @@ function self = MyEq(self)
         (pow(x(itok(1)),3) + pow(x(itok(2)),3) + 1.)];
 
     % Generate a dense version of the Jacobian
-    function jac = generateJac(x):
+    function jac = generateJac(x)
         jac = zeros(15,1);
 
         jac(ijtok(1,1,3)) = 2.*x(itok(1));
@@ -191,16 +196,16 @@ function self = MyEq(self)
     end
 
     % y=g'(x)dx
-    self.p = @(x,dx) generateJac(x)*dx; 
+    self.p = @(x,dx) reshape(generateJac(x),3,5)*dx; 
 
     % z=g'(x)*dy
-    self.ps = @(x,dy) generateJac(x)'*dy; 
+    self.ps = @(x,dy) reshape(generateJac(x),3,5)'*dy; 
 
     % z=(g''(x)dx)*dy
-    self.pps = @(x,dy,dy) pps(x,dx,dy); 
+    self.pps = @(x,dx,dy) pps(x,dx,dy); 
     function z = pps(x,dx,dy)
         % Generate a dense tensor that holds the second derivative adjoint
-        D = zeros(75,1)
+        D = zeros(75,1);
         D(ijktol(1,1,1,3,5)) = 2.;
         D(ijktol(1,2,2,3,5)) = 2.;
         D(ijktol(1,3,3,3,5)) = 2.;
@@ -244,16 +249,16 @@ function main(fname)
         Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,x,y);
 
     % Read the parameters from file
-    Optizelle.json.EqualityConstrained.read(Optizelle.Rm,Optizelle.Rm, ...
+    state=Optizelle.json.EqualityConstrained.read(Optizelle.Rm,Optizelle.Rm, ...
         Optizelle.Messaging,fname,state);
 
     % Create the bundle of functions 
     fns=Optizelle.EqualityConstrained.Functions.t;
-    fns.f=MyObj(Optizelle.ScalarValuedFunction);
-    fns.g=MyEq(Optizelle.VectorValuedFunction);
+    fns.f=MyObj();
+    fns.g=MyEq();
 
     % Solve the optimization problem
-    Optizelle.EqualityConstrained.Algorithms.getMin( ...
+    state = Optizelle.EqualityConstrained.Algorithms.getMin( ...
         Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,fns,state);
 
     % Print out the reason for convergence
@@ -270,9 +275,9 @@ function main(fname)
         end
         fprintf('%13e',state.x(itok(i)));
         if i==5,
-            fprintf(' ]');
+            fprintf(' ]\n');
         else
-            fprint(' ;');
+            fprintf(' ;\n');
         end
     end
 

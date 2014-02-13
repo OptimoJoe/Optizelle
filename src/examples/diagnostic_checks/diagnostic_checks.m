@@ -1,13 +1,8 @@
 % This example demonstrates how to run a series of diagnostic tests
 % on functions and then immediately exit.
-function diagnostic_checks(fname)
-    % Read in the name for the input file
-    if nargin ~=2
-        error('diagnostic_checks <parameters>');
-    end
-
+function diagnostic_checks()
     % Execute the optimization
-    main(fname);
+    main();
 end
 
 % Squares its input
@@ -34,7 +29,7 @@ end
 % 
 % f(x,y)=(1-x)^2+100(y-x^2)^2
 %
-function self = Rosenbrock(self)
+function self = Rosenbrock()
 
     % Evaluation of the Rosenbrock function
     self.eval = @(x) sq(1.-x(1))+100.*sq(x(2)-sq(x(1)));
@@ -56,7 +51,7 @@ end
 %       [ 3 x1^2 x2 + x2 ^3 ]
 %       [ log(x1) + 3 x2 ^5 ]
 %
-function Utility(self)
+function self=Utility()
 
     % y=g(x) 
     self.eval = @(x) [
@@ -83,7 +78,7 @@ function Utility(self)
           +15.*quad(x(2))*dy(3))];
 
     % z=(g''(x)dx)*dy
-    self.pps = @(x,dy,dy) [
+    self.pps = @(x,dx,dy) [
         (  (-cos(x(1))*dx(1)*sin(x(2))-sin(x(1))*cos(x(2))*dx(2))*dy(1) ...
           +(6.*dx(1)*x(2) + 6.*x(1)*dx(2))*dy(2) ...
           +(-1./sq(x(1))*dx(1))*dy(3));
@@ -98,12 +93,12 @@ function main(fname)
     Optizelle = setupOptizelle ();
 
     % Allocate memory for an initial guess and equality multiplier 
-    x = [1.2,2.3];
+    x = [1.2;2.3];
     y = zeros(3,1);
 
     % Create an optimization state
     state=Optizelle.EqualityConstrained.State.t( ...
-        Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,x,y)
+        Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,x,y);
 
     %Modify the state so that we just run our diagnostics and exit
     state.dscheme = Optizelle.DiagnosticScheme.DiagnosticsOnly;
@@ -112,8 +107,8 @@ function main(fname)
 
     % Create a bundle of functions
     fns=Optizelle.EqualityConstrained.Functions.t;
-    fns.f=Rosenrock(Optizelle.ScalarValuedFunction);
-    fns.g=Utility(Optizelle.VectorValuedFunction);
+    fns.f=Rosenbrock();
+    fns.g=Utility();
 
     % Even though this looks like we're solving an optimization problem,
     % we're actually just going to run our diagnostics and then exit.

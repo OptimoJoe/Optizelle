@@ -188,16 +188,6 @@ Optizelle.Rm = struct( ...
     'srch',@(x,y) feval(@(z)min([min(z(find(z>0)));inf]),-y./x), ...
     'symm',@(x)x);
 
-%Creates an unconstrained state
-Optizelle.Unconstrained.State.t = @UnconstrainedStateCreate;
-
-% All the functions required by an optimization algorithm
-err_fns=@(x)error(sprintf( ...
-    'The %s function is not defined in a bundle of functions.',x));
-Optizelle.Unconstrained.Functions.t= struct( ...
-    'f',@(x)err_fns('f'), ...
-    'PH',@(x)err_fns('PH'));
-
 % Converts a vector to a JSON formatted string
 Optizelle.json.Serialization.serialize = @serialize;
 
@@ -211,6 +201,16 @@ Optizelle.json.Serialization.deserialize = @deserialize;
 % Deserializes a matlab column vector for the vector space Optizelle.Rm
 Optizelle.json.Serialization.deserialize( ...
     'register',@(x,x_json)str2num(x_json)',@isvector);
+
+%Creates an unconstrained state
+Optizelle.Unconstrained.State.t = @UnconstrainedStateCreate;
+
+% All the functions required by an optimization algorithm
+err_fns=@(x)error(sprintf( ...
+    'The %s function is not defined in a bundle of functions.',x));
+Optizelle.Unconstrained.Functions.t= struct( ...
+    'f',@(x)err_fns('f'), ...
+    'PH',@(x)err_fns('PH'));
 
 % Solves an unconstrained optimization problem
 Optizelle.Unconstrained.Algorithms.getMin = @UnconstrainedAlgorithmsGetMin;
@@ -227,4 +227,35 @@ Optizelle.json.Unconstrained.read = @UnconstrainedStateReadJson;
 % Writes a json restart file
 Optizelle.json.Unconstrained.write_restart = @UnconstrainedRestartWriteRestart;
 
+%Creates an equality constrained state
+Optizelle.EqualityConstrained.State.t = @EqualityConstrainedStateCreate;
+
+% All the functions required by an optimization algorithm
+err_fns=@(x)error(sprintf( ...
+    'The %s function is not defined in a bundle of functions.',x));
+Optizelle.EqualityConstrained.Functions.t= mergeStruct( ...
+    Optizelle.Unconstrained.Functions.t, ...
+    struct( ...
+        'g',@(x)err_fns('g'), ...
+        'PSchur_left',@(x)err_fns('PSchur_left'), ...
+        'PSchur_right',@(x)err_fns('PSchur_right')));
+
+% Solves an equality constrained optimization problem
+Optizelle.EqualityConstrained.Algorithms.getMin = ...
+    @EqualityConstrainedAlgorithmsGetMin;
+
+% Release the state in an equality constrained optimization problem 
+Optizelle.EqualityConstrained.Restart.release = ...
+    @EqualityConstrainedRestartRelease;
+
+% Capture the state in an equality constrained optimization problem 
+Optizelle.EqualityConstrained.Restart.capture = ...
+    @EqualityConstrainedRestartCapture;
+
+% Reads equality constrained state parameters from file 
+Optizelle.json.EqualityConstrained.read = @EqualityConstrainedStateReadJson;
+
+% Writes a json restart file
+Optizelle.json.EqualityConstrained.write_restart = ...
+    @EqualityConstrainedRestartWriteRestart;
 end
