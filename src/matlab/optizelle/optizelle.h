@@ -1122,6 +1122,115 @@ namespace Optizelle {
                 );
             }
         }
+        
+        // Routines that manipulate and support problems of the form
+        // 
+        // min_{x \in X} f(x) st h(x) >=_K 0
+        //
+        // where f : X -> R and h : X -> Z
+        namespace InequalityConstrained {
+
+            // Routines that manipulate the internal state of the optimization 
+            // algorithm
+            namespace State {
+                // Returns the fields names of the state
+                std::vector <char const *> fieldNames_();
+                std::vector <char const *> fieldNames();
+                
+                // Create the structure for a Matlab state
+                mxArray * mxCreate();
+
+                // Convert a C++ state to a Matlab state 
+                void toMatlab_(
+                    typename MxInequalityConstrained::State::t const & state,
+                    mxArray * const mxstate
+                );
+                void toMatlab(
+                    typename MxInequalityConstrained::State::t const & state,
+                    mxArray * const mxstate
+                );
+                
+                // Convert a Matlab state to C++ 
+                void fromMatlab_(
+                    mxArray * const mxstate,
+                    typename MxInequalityConstrained::State::t & state
+                );
+                void fromMatlab(
+                    mxArray * const mxstate,
+                    typename MxInequalityConstrained::State::t & state
+                );
+                
+                // Creates a state and inserts the elements into mxstate 
+                void create(
+                    int nOutput,mxArray* pOutput[],
+                    int nInput,mxArray* pInput[]
+                );
+                
+                // Read json parameters from file
+                void readJson(
+                    int nOutput,mxArray* pOutput[],
+                    int nInput,mxArray* pInput[]
+                );
+            }
+
+            // All the functions required by an optimization algorithm.  
+            namespace Functions{
+                // Convert a Matlab bundle to C++ 
+                template <typename ProblemClass>
+                void fromMatlab_(
+                    mxArray * const msg,
+                    mxArray * const mxfns,
+                    mxArray * const mxstate,
+                    typename ProblemClass::State::t const & state,
+                    typename MxInequalityConstrained::Functions::t & fns 
+                ) {
+                    fromMatlab::VectorValuedFunction("h",msg,mxfns,fns.h);
+                }
+                void fromMatlab(
+                    mxArray * const msg,
+                    mxArray * const mxfns,
+                    mxArray * const mxstate,
+                    typename MxInequalityConstrained::State::t const & state,
+                    typename MxInequalityConstrained::Functions::t & fns 
+                );
+            }
+
+            // This contains the different algorithms used for optimization
+            namespace Algorithms {
+                // Solves an optimization problem
+                void getMin(
+                    int nOutput,mxArray* pOutput[],
+                    int nInput,mxArray* pInput[]
+                );
+            }
+        
+            // Utilities for restarting the optimization
+            namespace Restart {
+                // Release the data into structures controlled by the user 
+                void release(
+                    int nOutput,mxArray* pOutput[],
+                    int nInput,mxArray* pInput[]
+                );
+
+                // Capture data from structures controlled by the user.  
+                void capture(
+                    int nOutput,mxArray* pOutput[],
+                    int nInput,mxArray* pInput[]
+                );
+
+                // Writes a json restart file
+                void write_restart(
+                    int nOutput,mxArray* pOutput[],
+                    int nInput,mxArray* pInput[]
+                );
+
+                // Reads a json restart file
+                void read_restart(
+                    int nOutput,mxArray* pOutput[],
+                    int nInput,mxArray* pInput[]
+                );
+            }
+        }
     }
 }
 

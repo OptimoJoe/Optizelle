@@ -258,4 +258,34 @@ Optizelle.json.EqualityConstrained.read = @EqualityConstrainedStateReadJson;
 % Writes a json restart file
 Optizelle.json.EqualityConstrained.write_restart = ...
     @EqualityConstrainedRestartWriteRestart;
+
+%Creates an inequality constrained state
+Optizelle.InequalityConstrained.State.t = @InequalityConstrainedStateCreate;
+
+% All the functions required by an optimization algorithm
+err_fns=@(x)error(sprintf( ...
+    'The %s function is not defined in a bundle of functions.',x));
+Optizelle.InequalityConstrained.Functions.t= mergeStruct( ...
+    Optizelle.Unconstrained.Functions.t, ...
+    struct( ...
+        'h',@(x)err_fns('h')));
+
+% Solves an inequality constrained optimization problem
+Optizelle.InequalityConstrained.Algorithms.getMin = ...
+    @InequalityConstrainedAlgorithmsGetMin;
+
+% Release the state in an inequality constrained optimization problem 
+Optizelle.InequalityConstrained.Restart.release = ...
+    @InequalityConstrainedRestartRelease;
+
+% Capture the state in an inequality constrained optimization problem 
+Optizelle.InequalityConstrained.Restart.capture = ...
+    @InequalityConstrainedRestartCapture;
+
+% Reads inequality constrained state parameters from file 
+Optizelle.json.InequalityConstrained.read = @InequalityConstrainedStateReadJson;
+
+% Writes a json restart file
+Optizelle.json.InequalityConstrained.write_restart = ...
+    @InequalityConstrainedRestartWriteRestart;
 end

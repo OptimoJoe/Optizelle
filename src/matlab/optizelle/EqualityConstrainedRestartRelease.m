@@ -1,4 +1,4 @@
-% Release the state in an unconstrained optimization problem 
+% Release the state in an equality constrained optimization problem 
 function [xs,ys,reals,nats,params]=EqualityConstrainedRestartRelease( ...
     X,Y,msg,state)
 

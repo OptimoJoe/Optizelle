@@ -1,8 +1,8 @@
 % Optimize a simple optimization problem with an optimal solution
 % of (1/3,1/3)
-function simple_equality(fname)
+function simple_inequality(fname)
     % Read in the name for the input file
-    if nargin ~=2
+    if nargin ~=1
         error('simple_equality <parameters>');
     end
 
@@ -19,7 +19,7 @@ end
 % 
 % f(x,y)=(x+1)^2+(y+1)^2
 %
-function self = MyObj(self)
+function self = MyObj()
 
     % Evaluation 
     self.eval = @(x) sq(x(1)+1.)+sq(x(2)+1.);
@@ -40,7 +40,7 @@ end
 % h(x,y)= [ x + 2y >= 1 ] 
 %         [ 2x + y >= 1 ] 
 %
-function self = MyIneq(self)
+function self = MyIneq()
 
     % y=h(x) 
     self.eval = @(x) [
@@ -58,7 +58,8 @@ function self = MyIneq(self)
         2.*dy(1)+dy(2) ];
 
     % z=(h''(x)dx)*dy
-    self.pps = @(x,dy,dy) zeros(2,1); 
+    self.pps = @(x,dx,dy) zeros(2,1); 
+end
 
 % Actually runs the program
 function main(fname)
@@ -77,16 +78,16 @@ function main(fname)
         Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,x,z);
 
     % Read the parameters from file
-    Optizelle.json.InequalityConstrained.read( ...
+    state=Optizelle.json.InequalityConstrained.read( ...
         Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,fname,state);
 
     % Create a bundle of functions
     fns=Optizelle.InequalityConstrained.Functions.t;
-    fns.f=MyObj(Optizelle.ScalarValuedFunction);
-    fns.h=MyIneq(Optizelle.VectorValuedFunction);
+    fns.f=MyObj();
+    fns.h=MyIneq();
 
     % Solve the optimization problem
-    Optizelle.InequalityConstrained.Algorithms.getMin( ...
+    state=Optizelle.InequalityConstrained.Algorithms.getMin( ...
         Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,fns,state);
 
     % Print out the reason for convergence
