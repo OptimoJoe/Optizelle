@@ -29,19 +29,26 @@ add_optizelle_mex(InequalityConstrainedRestartRelease)
 add_optizelle_mex(InequalityConstrainedRestartCapture)
 add_optizelle_mex(InequalityConstrainedRestartWriteRestart)
 add_optizelle_mex(InequalityConstrainedRestartReadRestart)
+add_optizelle_mex(ConstrainedStateCreate)
+add_optizelle_mex(ConstrainedStateReadJson)
+add_optizelle_mex(ConstrainedAlgorithmsGetMin)
+add_optizelle_mex(ConstrainedRestartRelease)
+add_optizelle_mex(ConstrainedRestartCapture)
+add_optizelle_mex(ConstrainedRestartWriteRestart)
+add_optizelle_mex(ConstrainedRestartReadRestart)
 
 
 # Copy in the rest of the Matlab files for the unit tests. 
 add_custom_command(
-    TARGET InequalityConstrainedRestartReadRestart POST_BUILD
+    TARGET ConstrainedRestartReadRestart POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_SOURCE_DIR}/src/matlab/optizelle
-        $<TARGET_FILE_DIR:InequalityConstrainedRestartReadRestart>)
+        $<TARGET_FILE_DIR:ConstrainedRestartReadRestart>)
 add_custom_command(
-    TARGET InequalityConstrainedRestartReadRestart POST_BUILD
+    TARGET ConstrainedRestartReadRestart POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy
         ${CMAKE_SOURCE_DIR}/src/matlab/setupOptizelle.m
-        $<TARGET_FILE_DIR:InequalityConstrainedRestartReadRestart>/..)
+        $<TARGET_FILE_DIR:ConstrainedRestartReadRestart>/..)
 
 install(FILES
     getStateManipulator.m
@@ -74,4 +81,6 @@ install(FILES
     checkEqualityConstrainedFunctionsT.m
     checkInequalityConstrainedStateT.m
     checkInequalityConstrainedFunctionsT.m
+    checkConstrainedStateT.m
+    checkConstrainedFunctionsT.m
     DESTINATION share/optizelle/matlab/optizelle)

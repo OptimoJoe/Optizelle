@@ -1,4 +1,4 @@
-% Creates an equality constrained state 
+% Creates an inequality constrained state 
 function self=InequalityConstrainedStateCreate(X,Z,msg,x,z)
     % Check our arguments
     checkVectorSpace('X',X)

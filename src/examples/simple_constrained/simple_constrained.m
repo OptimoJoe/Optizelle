@@ -2,7 +2,7 @@
 % of (1/3,1/3)
 function simple_constrained(fname)
     % Read in the name for the input file
-    if nargin ~=2
+    if nargin ~=1
         error('simple_constrained <parameters>');
     end
 
@@ -19,7 +19,7 @@ end
 % 
 % f(x,y)=(x+1)^2+(y+1)^2
 %
-function self = MyObj(self)
+function self = MyObj()
 
     % Evaluation 
     self.eval = @(x) sq(x(1)+1.)+sq(x(2)+1.);
@@ -39,7 +39,7 @@ end
 %
 % g(x,y)= [ x + 2y = 1 ] 
 %
-function self = MyEq(self)
+function self = MyEq()
 
     % y=g(x) 
     self.eval = @(x) [x(1)+2.*x(2)-1.];
@@ -53,14 +53,14 @@ function self = MyEq(self)
         2.*dy(1)];
 
     % z=(g''(x)dx)*dy
-    self.pps = @(x,dy,dy) zeros(2,1); 
+    self.pps = @(x,dx,dy) zeros(2,1); 
 end
 
 % Define simple inequalities 
 %
 % h(x,y)= [ 2x + y >= 1 ] 
 %
-function self = MyIneq(self)
+function self = MyIneq()
 
     % y=h(x) 
     self.eval = @(x) [
@@ -76,14 +76,14 @@ function self = MyIneq(self)
         dy(1)];
 
     % z=(h''(x)dx)*dy
-    self.pps = @(x,dy,dy) [ 0. ]; 
+    self.pps = @(x,dx,dy) [ 0. ]; 
 end
 
 % Actually runs the program
 function main(fname)
 
     % Grab the Optizelle library
-    Optizelle = setupOptizelle ();
+    Optizelle = setupOptizelle();
 
     % Generate an initial guess 
     x = [2.1;1.1];
@@ -99,17 +99,17 @@ function main(fname)
         Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,x,y,z);
 
     % Read the parameters from file
-    Optizelle.json.Constrained.read( ...
+    state = Optizelle.json.Constrained.read( ...
         Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,fname,state);
 
     % Create a bundle of functions
-    fns=Optizelle.Constrained.Functions.t;
-    fns.f=MyObj(Optizelle.ScalarValuedFunction);
-    fns.g=MyEq(Optizelle.ScalarValuedFunction);
-    fns.h=MyIneq(Optizelle.ScalarValuedFunction);
+    fns = Optizelle.Constrained.Functions.t;
+    fns.f = MyObj();
+    fns.g = MyEq();
+    fns.h = MyIneq();
 
     % Solve the optimization problem
-    Optizelle.Constrained.Algorithms.getMin(
+    state = Optizelle.Constrained.Algorithms.getMin(
         Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,fns,state);
 
     % Print out the reason for convergence
@@ -122,5 +122,5 @@ function main(fname)
     % Write out the final answer to file
     Optizelle.json.Constrained.write_restart( ...
         Optizelle.Rm,Optizelle.Rm,Optizelle.Rm, ...
-        Optizelle.Messaging(),'solution.json',state);
+        Optizelle.Messaging,'solution.json',state);
 end

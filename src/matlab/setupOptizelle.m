@@ -288,4 +288,30 @@ Optizelle.json.InequalityConstrained.read = @InequalityConstrainedStateReadJson;
 % Writes a json restart file
 Optizelle.json.InequalityConstrained.write_restart = ...
     @InequalityConstrainedRestartWriteRestart;
+
+%Creates a constrained state
+Optizelle.Constrained.State.t = @ConstrainedStateCreate;
+
+% All the functions required by an optimization algorithm
+Optizelle.Constrained.Functions.t= ...
+    mergeStruct( ...
+        mergeStruct( ...
+            Optizelle.Unconstrained.Functions.t, ...
+            Optizelle.EqualityConstrained.Functions.t), ...
+        Optizelle.InequalityConstrained.Functions.t);
+
+% Solves a constrained optimization problem
+Optizelle.Constrained.Algorithms.getMin = @ConstrainedAlgorithmsGetMin;
+
+% Release the state in a constrained optimization problem 
+Optizelle.Constrained.Restart.release = @ConstrainedRestartRelease;
+
+% Capture the state in a constrained optimization problem 
+Optizelle.Constrained.Restart.capture = @ConstrainedRestartCapture;
+
+% Reads constrained state parameters from file 
+Optizelle.json.Constrained.read = @ConstrainedStateReadJson;
+
+% Writes a json restart file
+Optizelle.json.Constrained.write_restart = @ConstrainedRestartWriteRestart;
 end
