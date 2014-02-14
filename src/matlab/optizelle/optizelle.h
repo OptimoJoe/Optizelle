@@ -451,9 +451,8 @@ namespace Optizelle {
 
                 // Convert the lcoation to Matlab
                 mxArrayPtr loc(OptimizationLocation::toMatlab(loc_));
-#if 0            
-                // Call the Matlab state manipulator 
-                // give it mxstate and mxfns.  Note, mxfns is given raw.
+
+                // Call the Matlab state manipulator give it mxstate and mxfns. 
                 mxArray * eval(mxGetField(ptr,0,"eval"));
                 std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject3(
                     eval,
@@ -469,7 +468,6 @@ namespace Optizelle {
                 // Convert the returned state to the C++ state 
                 mxstate.reset(ret_err.first.release());
                 mxstate.fromMatlab(state);
-#endif
             }
         };
 
