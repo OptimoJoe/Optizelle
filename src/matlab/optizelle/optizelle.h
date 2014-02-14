@@ -451,12 +451,12 @@ namespace Optizelle {
 
                 // Convert the lcoation to Matlab
                 mxArrayPtr loc(OptimizationLocation::toMatlab(loc_));
-            
+#if 0            
                 // Call the Matlab state manipulator 
                 // give it mxstate and mxfns.  Note, mxfns is given raw.
-                mxArrayPtr eval(mxGetField(ptr,0,"eval"));
+                mxArray * eval(mxGetField(ptr,0,"eval"));
                 std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject3(
-                    eval.get(),
+                    eval,
                     mxfns.get(),
                     mxstate.get(),
                     loc.get()));
@@ -469,6 +469,7 @@ namespace Optizelle {
                 // Convert the returned state to the C++ state 
                 mxstate.reset(ret_err.first.release());
                 mxstate.fromMatlab(state);
+#endif
             }
         };
 
@@ -712,9 +713,9 @@ namespace Optizelle {
                 mxstate.toMatlab(state);
 
                 // Apply the operator to the state, x, and y
-                mxArrayPtr eval(mxGetField(ptr,0,"eval"));
+                mxArray * eval(mxGetField(ptr,0,"eval"));
                 std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject2(
-                    eval.get(),
+                    eval,
                     mxstate.get(),
                     const_cast <X_Vector &> (x).get()));
                 
@@ -822,9 +823,9 @@ namespace Optizelle {
                 mxArray * const obj,
                 enum_t & value
             ) {
-                mxArrayPtr item(mxGetField(
+                mxArray * item(mxGetField(
                     const_cast <mxArray *> (obj),0,name.c_str()));
-                value = fromMatlab(item.get());
+                value = fromMatlab(item);
             }
             
             // Sets a vector in a C++ state 
@@ -873,7 +874,8 @@ namespace Optizelle {
                     msg,
                     mxGetField(obj,0,name.c_str()),
                     mxstate,
-                    state));
+                    state,
+                    mxArrayPtrMode::Attach));
             }
         
             // Sets restart vectors in C++ 
