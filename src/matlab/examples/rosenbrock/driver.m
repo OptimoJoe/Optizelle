@@ -10,6 +10,7 @@ X.scal=@(alpha,x)alpha*x;
 X.zero=@(x)zeros(size(x));
 X.axpy=@(alpha,x,y)alpha*x+y;
 X.innr=@(x,y)x'*y;
+X.rand=@(x)randn(x);
 
 % Create a bundle of vector spaces
 clear VS;
