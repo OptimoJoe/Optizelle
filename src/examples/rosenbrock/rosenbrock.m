@@ -52,7 +52,8 @@ end
 function main(fname)
 
     % Grab the Optizelle library
-    Optizelle = setupOptizelle();
+    global Optizelle;
+    setupOptizelle();
 
     % Generate an initial guess for Rosenbrock
     x = [-1.2;1.];

@@ -175,12 +175,9 @@ namespace Optizelle {
         // Creates a Matlab int from a C++ size_t 
         mxArray * mxArray_FromSize_t(Natural const x_);
 
-        // Imports a piece of the Optizelle module.  This makes a deep
-        // copy of the eventual imported object, so the result needs
-        // to have its memory managed. 
-        mxArray * importOptizelle(std::string const & module);
-
-        // Converts an Optizelle enumerated type to a mxArray * 
+        // Converts an Optizelle enumerated type to a mxArray *.  This points
+        // directly into the Optizelle structure, so be careful with its
+        // memory.
         mxArray * enumToMxArray(
             std::string const & type,
             std::string const & member 
@@ -450,23 +447,23 @@ namespace Optizelle {
                 mxstate.toMatlab(state);
 
                 // Convert the lcoation to Matlab
-                mxArrayPtr loc(OptimizationLocation::toMatlab(loc_));
+                mxArray * loc(mxDuplicateArray(
+                    OptimizationLocation::toMatlab(loc_)));
 
                 // Call the Matlab state manipulator give it mxstate and mxfns. 
                 mxArray * eval(mxGetField(ptr,0,"eval"));
-                std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject3(
+                std::pair <mxArray *,int> ret_err(mxArray_CallObject3(
                     eval,
                     mxfns.get(),
                     mxstate.get(),
-                    loc.get()));
+                    loc));
             
                 // Check errors
-                if(ret_err.second!=0)
+                if(ret_err.second)
                     msg.error("Evaluation of the StateManipulator object "
                         "failed.");
-
                 // Convert the returned state to the C++ state 
-                mxstate.reset(ret_err.first.release());
+                mxstate.reset(ret_err.first);
                 mxstate.fromMatlab(state);
             }
         };
@@ -712,13 +709,13 @@ namespace Optizelle {
 
                 // Apply the operator to the state, x, and y
                 mxArray * eval(mxGetField(ptr,0,"eval"));
-                std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject2(
+                std::pair <mxArray *,int> ret_err(mxArray_CallObject2(
                     eval,
                     mxstate.get(),
                     const_cast <X_Vector &> (x).get()));
                 
                 // Check errors
-                if(ret_err.second!=0) {
+                if(ret_err.second) {
                     std::stringstream ss;
                     ss << "Evaluation of the eval function in the operator "
                         << name << " failed.";
@@ -726,7 +723,7 @@ namespace Optizelle {
                 }
             
                 // Copy the returned value into y 
-                y.reset(ret_err.first.release());
+                y.reset(ret_err.first);
             }
         };
         
@@ -754,8 +751,8 @@ namespace Optizelle {
                 enum_t const & value,
                 mxArray * const obj
             ) {
-                mxArrayPtr item(toMatlab(value));
-                mxSetField(obj,0,name.c_str(),item.release());
+                mxArray * item(toMatlab(value));
+                mxSetField(obj,0,name.c_str(),mxDuplicateArray(item));
             }
             
             // Sets a vector in a Matlab state 

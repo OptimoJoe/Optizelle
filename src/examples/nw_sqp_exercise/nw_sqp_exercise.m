@@ -236,7 +236,8 @@ end
 % Actually runs the program
 function main(fname)
     % Grab the Optizelle library
-    Optizelle = setupOptizelle ();
+    global Optizelle;
+    setupOptizelle();
 
     % Generate an initial guess for the primal
     x = [-1.8;1.7;1.9;-0.8;-0.8];

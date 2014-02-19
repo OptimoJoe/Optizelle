@@ -21,7 +21,8 @@ end
 function main(fname)
 
     % Grab the Optizelle library
-    Optizelle = setupOptizelle();
+    global Optizelle;
+    setupOptizelle();
 
     % Set the size of the problem
     m = 2; % Size of x1

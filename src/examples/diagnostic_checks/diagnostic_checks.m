@@ -90,7 +90,8 @@ end
 % Actually runs the program
 function main(fname)
     % Grab the Optizelle library
-    Optizelle = setupOptizelle ();
+    global Optizelle;
+    setupOptizelle ();
 
     % Allocate memory for an initial guess and equality multiplier 
     x = [1.2;2.3];

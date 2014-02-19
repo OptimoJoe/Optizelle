@@ -2,9 +2,9 @@
 %
 % Optizelle = setupOptizelle ()
 %
-function Optizelle=setupOptizelle()
+function setupOptizelle()
 
-persistent Optizelle
+global Optizelle
 
 % Intialization is expensive.  Don't do it more than once.
 if isempty(Optizelle) 

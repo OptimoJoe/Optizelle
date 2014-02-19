@@ -105,7 +105,8 @@ end
 function main(fname)
 
     % Grab the Optizelle library
-    Optizelle = setupOptizelle();
+    global Optizelle;
+    setupOptizelle();
 
     % Set the amount of infeasibility that we want to allow
     epsilon = 1e-8;

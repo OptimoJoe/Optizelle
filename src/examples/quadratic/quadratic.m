@@ -50,7 +50,8 @@ end
 function main(fname)
 
     % Grab the Optizelle library
-    Optizelle = setupOptizelle();
+    global Optizelle;
+    setupOptizelle();
 
     % Generate an initial guess 
     x = [-1.2;1.1;2.];
