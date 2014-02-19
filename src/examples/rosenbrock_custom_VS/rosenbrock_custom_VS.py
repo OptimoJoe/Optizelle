@@ -10,36 +10,44 @@ import Optizelle.Unconstrained.Algorithms
 import Optizelle.json.Unconstrained
 import numpy
 import sys
+import copy
 
 # Defines the vector space used for optimization.
 class MyVS(object):
+    @staticmethod
     def init(x):
         """Memory allocation and size setting"""
         return copy.deepcopy(x)
 
+    @staticmethod
     def copy(x,y):
         """y <- x (Shallow.  No memory allocation.)"""
         y[:]=x[:]
 
+    @staticmethod
     def scal(alpha,x):
         """x <- alpha * x"""
         for i in xrange(0,len(x)):
             x[i]=alpha*x[i]
 
+    @staticmethod
     def zero(x):
         """x <- 0"""
         for i in xrange(0,len(x)):
             x[i]=0.
 
+    @staticmethod
     def axpy(alpha,x,y):
         """y <- alpha * x + y"""
         for i in xrange(0,len(x)):
             y[i]=alpha*x[i]+y[i]
 
+    @staticmethod
     def innr(x,y):
         """<- <x,y>"""
         return reduce(lambda z,xy:xy[0]*xy[1]+z,zip(x,y),0.)
 
+    @staticmethod
     def rand(x):
         """x <- random"""
         for i in xrange(0,len(x)):
@@ -71,7 +79,7 @@ class Rosenbrock(Optizelle.ScalarValuedFunction):
 x = numpy.array([-1.2,1.0])
 
 # Create an unconstrained state based on this vector
-state=Optizelle.Unconstrained.State.t(Optizelle.Rm,Optizelle.Messaging(),x)
+state=Optizelle.Unconstrained.State.t(MyVS,Optizelle.Messaging(),x)
 
 # Setup some algorithmic parameters
 
@@ -101,12 +109,11 @@ fns=Optizelle.Unconstrained.Functions.t()
 fns.f=Rosenbrock()
 
 # Solve the optimization problem
-Optizelle.Unconstrained.Algorithms.getMin(
-    Optizelle.Rm,Optizelle.Messaging(),fns,state)
+Optizelle.Unconstrained.Algorithms.getMin(MyVS,Optizelle.Messaging(),fns,state)
 
 # Print out the reason for convergence
 print "The algorithm converged due to: %s" % (
-    Optizelle.StoppingCondition().to_string(state.opt_stop))
+    Optizelle.StoppingCondition.to_string(state.opt_stop))
 
 # Print out the final answer
 print "The optimal point is: (%e,%e)" % (state.x[0],state.x[1])

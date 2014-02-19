@@ -1,9 +1,6 @@
 # This example demonstrates how to run a series of diagnostic tests
 # on functions and then immediately exit.
 
-#include "optizelle/optizelle.h"
-#include "optizelle/vspaces.h"
-
 import Optizelle 
 import Optizelle.EqualityConstrained.State
 import Optizelle.EqualityConstrained.Functions

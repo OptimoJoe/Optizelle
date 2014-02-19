@@ -259,7 +259,7 @@ struct MyEq
         const Y::Vector& dy,
         X::Vector& z
     ) const {
-        // Generate a dense tensor that holds the second derivative adjoNatural 
+        // Generate a dense tensor that holds the second derivative adjoint
         std::vector <Real> D(75,Real(0.));
         D[ijktol(1,1,1,3,5)] = Real(2.);
         D[ijktol(1,2,2,3,5)] = Real(2.);

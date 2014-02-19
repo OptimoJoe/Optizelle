@@ -31,6 +31,7 @@ __all__ = [
     "ScalarValuedFunction",
     "VectorValuedFunction",
     "Operator",
+    "StateManipulator",
 
     "Exception",
 
@@ -44,12 +45,13 @@ class Exception(Exception):
     """General purpose exception for all of Optizelle's errors"""
     pass
 
-class EnumeratedType:
+class EnumeratedType(object):
     """A generic enumerated type"""
-    def to_string(self,i):
+    @classmethod
+    def to_string(cls,i):
         """Converts the enumerated type into a string"""
         return filter(lambda (name,value):value==i,
-            self.__class__.__dict__.items())[0][0]
+            cls.__dict__.items())[0][0]
         
 class KrylovStop(EnumeratedType):
     """Reasons we stop the Krylov method"""
@@ -187,7 +189,7 @@ def checkNatural(name,value):
 def checkEnum(name,value):
     """Checks that an input is an enumerated type """
     if type(value)!=int or value < 0:
-        raise TypeError("The %s member must be an enumerated type (natural)."
+        raise TypeError("The %s member must be an enumerated type (natural.)"
             % name)
 
 def checkEnumRange(name,enum,value):
@@ -225,20 +227,21 @@ def checkOperator(name,value):
     if not issubclass(type(value),Operator):
         raise TypeError("The %s member must be an Operator." % name)
 
-def checkMethod(vsname,name,value):
+def checkStaticMethod(vsname,name,value):
     """Check that we have a method"""
-    if not (hasattr(value,name) and inspect.isfunction(value.__dict__[name])):
-        raise TypeError("The %s member is required in the vector space %s."
-            % (name,vsname))
+    if not (
+        hasattr(value,name) and isinstance(value.__dict__[name],staticmethod)):
+        raise TypeError("The %s member is required as a static member in " ^
+            "the vector space %s." % (name,vsname))
 
 def checkVectorSpace(vsname,value):
     """Check that we have a valid-vector space"""
 
     # Define all the functions we care about
-    fns=["copy","scal","zero","axpy","innr"]
+    fns=["init","copy","scal","zero","axpy","innr","rand"]
 
     # Now, check each of these
-    map(lambda name:checkMethod(vsname,name,value),fns) 
+    map(lambda name:checkStaticMethod(vsname,name,value),fns) 
 
 def checkEuclidean(vsname,value):
     """Check that we have a valid Euclidean-Jordan algebra"""
@@ -250,7 +253,7 @@ def checkEuclidean(vsname,value):
     fns=["prod","id","linv","barr","srch","symm"]
 
     # Now, check each of these
-    map(lambda name:checkMethod(vsname,name,value),fns) 
+    map(lambda name:checkStaticMethod(vsname,name,value),fns) 
 
 def checkMessaging(name,value):
     """Check that we have a messaging object"""
@@ -272,6 +275,40 @@ def checkType(name,value):
     """Check that we have a type"""
     if type(value)!=type(type):
         raise TypeError("The %s argument must be a type." % (name))
+
+def checkVectors(name,value):
+    """Check that we have a list of restart vectors"""
+    if not issubclass(type(value),list):
+        raise TypeError("The %s argument must be a list." % (name))
+    map(lambda (i,x):checkString("%s[%d][0]" % (name,i),x[0]),
+        enumerate(value))
+
+def checkReals(name,value):
+    """Check that we have a list of restart reals"""
+    if not issubclass(type(value),list):
+        raise TypeError("The %s argument must be a list." % (name))
+    map(lambda (i,x):checkString("%s[%d][0]" % (name,i),x[0]),
+        enumerate(value))
+    map(lambda (i,x):checkFloat("%s[%d][1]" % (name,i),x[1]),
+        enumerate(value))
+
+def checkNaturals(name,value):
+    """Check that we have a list of restart naturals"""
+    if not issubclass(type(value),list):
+        raise TypeError("The %s argument must be a list." % (name))
+    map(lambda (i,x):checkString("%s[%d][0]" % (name,i),x[0]),
+        enumerate(value))
+    map(lambda (i,x):checkNatural("%s[%d][1]" % (name,i),x[1]),
+        enumerate(value))
+
+def checkParams(name,value):
+    """Check that we have a list of restart parameters"""
+    if not issubclass(type(value),list):
+        raise TypeError("The %s argument must be a list." % (name))
+    map(lambda (i,x):checkString("%s[%d][0]" % (name,i),x[0]),
+        enumerate(value))
+    map(lambda (i,x):checkString("%s[%d][1]" % (name,i),x[1]),
+        enumerate(value))
 
 def createFloatProperty(name,desc):
     """Create a floating-point property"""
@@ -474,52 +511,64 @@ class StateManipulator(object):
         pass
 
 class Rm(object):
-    """ Vector space for the nonnegative orthant.  For basic vectors in R^m, use this."""
+    """Vector space for the nonnegative orthant.  For basic vectors in R^m, use this."""
 
+    @staticmethod
     def init(x):
         """Memory allocation and size setting"""
         return copy.deepcopy(x) 
 
+    @staticmethod
     def copy(x,y):
         """y <- x (Shallow.  No memory allocation.)"""
         numpy.copyto(y,x) 
 
+    @staticmethod
     def scal(alpha,x):
         """x <- alpha * x"""
         x.__imul__(alpha)
 
+    @staticmethod
     def zero(x):
         """x <- 0"""
         x.fill(0.)
 
+    @staticmethod
     def axpy(alpha,x,y):
         """y <- alpha * x + y"""
         y.__iadd__(alpha*x)
 
+    @staticmethod
     def innr(x,y):
         """<- <x,y>"""
         return numpy.inner(x,y) 
 
+    @staticmethod
     def rand(x):
         """x <- random"""
-        numpy.copyto(x,map(lambda x:random.uniform(0.,1.),x))
+        numpy.copyto(x,map(lambda x:random.normalvariate(0.,1.),x))
 
+    @staticmethod
     def prod(x,y,z):
         """Jordan product, z <- x o y"""
         numpy.copyto(z,x*y)
 
+    @staticmethod
     def id(x):
         """Identity element, x <- e such that x o e = x"""
         x.fill(1.)
 
+    @staticmethod
     def linv(x,y,z):
         """Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y"""
         numpy.copyto(z,numpy.divide(y,x))
 
+    @staticmethod
     def barr(x):
         """Barrier function, <- barr(x) where x o grad barr(x) = e"""
         return reduce(lambda x,y:x+math.log(y),x,0.)
         
+    @staticmethod
     def srch(x,y):
         """Line search, <- argmax {alpha \in Real >= 0 : alpha x + y >= 0} where y > 0"""
         alpha = float("inf")
@@ -530,6 +579,7 @@ class Rm(object):
                     alpha=alpha0
         return alpha
 
+    @staticmethod
     def symm(x):
         """Symmetrization, x <- symm(x) such that L(symm(x)) is a symmetric operator"""
         pass

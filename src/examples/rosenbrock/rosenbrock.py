@@ -65,7 +65,7 @@ Optizelle.Unconstrained.Algorithms.getMin(
 
 # Print out the reason for convergence
 print "The algorithm converged due to: %s" % (
-    Optizelle.StoppingCondition().to_string(state.opt_stop))
+    Optizelle.StoppingCondition.to_string(state.opt_stop))
 
 # Print out the final answer
 print "The optimal point is: (%e,%e)" % (state.x[0],state.x[1])

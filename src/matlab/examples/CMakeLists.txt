@@ -1,4 +1,0 @@
-add_subdirectory(diagnostic_checks)
-add_subdirectory(rosenbrock)
-add_subdirectory(rosenbrock_ineq)
-add_subdirectory(parest)

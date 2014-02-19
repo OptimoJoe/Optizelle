@@ -88,7 +88,7 @@ namespace Optizelle {
         static void rand(Vector & x){
             std::random_device rd;
             std::mt19937 gen(rd());
-            std::uniform_real_distribution<Real> dis(Real(0.),Real(1.));
+            std::normal_distribution<Real> dis(Real(0.),Real(1.));
             
             // This is not parallel since it doesn't appear that our generator
             // works properly when parallel.
@@ -536,7 +536,7 @@ namespace Optizelle {
         static void rand(Vector & x){
             std::random_device rd;
             std::mt19937 gen(rd());
-            std::uniform_real_distribution<Real> dis(Real(0.),Real(1.));
+            std::normal_distribution<Real> dis(Real(0.),Real(1.));
 
             // This is not parallel since it doesn't appear that our generator
             // works properly when parallel.

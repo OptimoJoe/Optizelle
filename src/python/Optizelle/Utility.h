@@ -148,13 +148,6 @@ namespace Optizelle {
         // takes control of its arguments.
         void MyPyTuple_SetItem(PyObject * p,Natural const & pos,PyObject * o);
 
-        // Like PyObject_GetAttrString, but returns obj.name1.name2 
-        PyObject * PyObject_GetAttrString2(
-            PyObject * const obj,
-            std::string const & name1,
-            std::string const & name2
-        );
-
         // Calls a Python function with one argument 
         PyObject * PyObject_CallObject1(
             PyObject * const fn,
@@ -502,7 +495,7 @@ namespace Optizelle {
             } 
 
             // y <- alpha * x + y 
-            static void axpy(Real const & alpha, Vector const & x, Vector & y) { 
+            static void axpy(Real const & alpha, Vector const & x, Vector & y) {
                 y.axpy(alpha,const_cast <Vector &> (x));
             } 
 
@@ -785,40 +778,6 @@ namespace Optizelle {
                 std::list <Python::Vector> const & values,
                 PyObject * const obj 
             );
-            
-            // Sets a scalar-valued function in a Python function bundle 
-            void ScalarValuedFunction(
-                std::string const & name,
-                PyObject * const msg,
-                PyObject * const obj,
-                std::unique_ptr <PyScalarValuedFunction> & value
-            );
-            
-            // Sets a vector-valued function in a Python function bundle 
-            void VectorValuedFunction(
-                std::string const & name,
-                PyObject * const msg,
-                PyObject * const obj,
-                std::unique_ptr <PyVectorValuedFunction> & value
-            );
-            
-            // Sets an operator in a Python function bundle 
-            template <typename ProblemClass>
-            void Operator(
-                std::string const & name,
-                PyObject * const msg,
-                PyObject * const obj,
-                PyObject * const pystate,
-                typename ProblemClass::State::t const & state,
-                std::unique_ptr <PyOperator> & value
-            ) {
-                value.reset(new Python::Operator <ProblemClass> (
-                    name,
-                    msg,
-                    PyObject_GetAttrString(obj,name.c_str()),
-                    pystate,
-                    state));
-            }
         
             // Sets restart vectors in Python 
             void Vectors(
@@ -888,6 +847,40 @@ namespace Optizelle {
                 Python::Vector const & vec,
                 std::list <Python::Vector> & values
             );
+            
+            // Sets a scalar-valued function in a C++ function bundle 
+            void ScalarValuedFunction(
+                std::string const & name,
+                PyObject * const msg,
+                PyObject * const obj,
+                std::unique_ptr <PyScalarValuedFunction> & value
+            );
+            
+            // Sets a vector-valued function in a C++ function bundle 
+            void VectorValuedFunction(
+                std::string const & name,
+                PyObject * const msg,
+                PyObject * const obj,
+                std::unique_ptr <PyVectorValuedFunction> & value
+            );
+            
+            // Sets an operator in a C++ function bundle 
+            template <typename ProblemClass>
+            void Operator(
+                std::string const & name,
+                PyObject * const msg,
+                PyObject * const obj,
+                PyObject * const pystate,
+                typename ProblemClass::State::t const & state,
+                std::unique_ptr <PyOperator> & value
+            ) {
+                value.reset(new Python::Operator <ProblemClass> (
+                    name,
+                    msg,
+                    PyObject_GetAttrString(obj,name.c_str()),
+                    pystate,
+                    state));
+            }
         
             // Sets restart vectors in C++ 
             void Vectors(
@@ -969,8 +962,8 @@ namespace Optizelle {
                     typename ProblemClass::State::t const & state,
                     typename PyUnconstrained::Functions::t & fns 
                 ) {
-                    toPython::ScalarValuedFunction("f",msg,pyfns,fns.f);
-                    toPython::Operator <ProblemClass> (
+                    fromPython::ScalarValuedFunction("f",msg,pyfns,fns.f);
+                    fromPython::Operator <ProblemClass> (
                         "PH",msg,pyfns,pystate,state,fns.PH);
                 }
                 void fromPython(
@@ -1072,10 +1065,10 @@ namespace Optizelle {
                     typename ProblemClass::State::t const & state,
                     typename PyEqualityConstrained::Functions::t & fns 
                 ) {
-                    toPython::VectorValuedFunction("g",msg,pyfns,fns.g);
-                    toPython::Operator <ProblemClass> ("PSchur_left",
+                    fromPython::VectorValuedFunction("g",msg,pyfns,fns.g);
+                    fromPython::Operator <ProblemClass> ("PSchur_left",
                         msg,pyfns,pystate,state,fns.PSchur_left);
-                    toPython::Operator <ProblemClass> ("PSchur_right",
+                    fromPython::Operator <ProblemClass> ("PSchur_right",
                         msg,pyfns,pystate,state,fns.PSchur_right);
                 }
                 void fromPython(
@@ -1177,7 +1170,7 @@ namespace Optizelle {
                     typename ProblemClass::State::t const & state,
                     typename PyInequalityConstrained::Functions::t & fns 
                 ) {
-                    toPython::VectorValuedFunction("h",msg,pyfns,fns.h);
+                    fromPython::VectorValuedFunction("h",msg,pyfns,fns.h);
                 }
                 void fromPython(
                     PyObject * const msg,

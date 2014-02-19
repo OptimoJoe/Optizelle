@@ -7,19 +7,19 @@ import Optizelle.Unconstrained.State
 
 def allocateVectors(self,X,Y,x,y):
     """Allocates memory for the state vectors"""
-    self.y=Y.init.__func__(y)
-    self.dy=Y.init.__func__(y)
-    self.g_x=Y.init.__func__(y)
-    self.gpxdxn_p_gx=Y.init.__func__(y)
-    self.gpxdxt=Y.init.__func__(y)
-    self.dx_n=X.init.__func__(x)
-    self.dx_ncp=X.init.__func__(x)
-    self.dx_t=X.init.__func__(x)
-    self.dx_t_uncorrected=X.init.__func__(x)
-    self.dx_tcp_uncorrected=X.init.__func__(x)
-    self.H_dxn=X.init.__func__(x)
-    self.W_gradpHdxn=X.init.__func__(x)
-    self.H_dxtuncorrected=X.init.__func__(x)
+    self.y=Y.init(y)
+    self.dy=Y.init(y)
+    self.g_x=Y.init(y)
+    self.gpxdxn_p_gx=Y.init(y)
+    self.gpxdxt=Y.init(y)
+    self.dx_n=X.init(x)
+    self.dx_ncp=X.init(x)
+    self.dx_t=X.init(x)
+    self.dx_t_uncorrected=X.init(x)
+    self.dx_tcp_uncorrected=X.init(x)
+    self.H_dxn=X.init(x)
+    self.W_gradpHdxn=X.init(x)
+    self.H_dxtuncorrected=X.init(x)
 
 class t(Optizelle.Unconstrained.State.t):
     """Internal state of the optimization"""

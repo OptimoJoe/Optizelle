@@ -5,13 +5,17 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
 # Add some useful macros for examples and unit testing 
 include(AddOptizelleJsonTestCpp)
 include(AddOptizelleJsonTestPython)
+include(AddOptizelleJsonTestMatlab)
 include(AddOptizelleTestCpp)
 include(AddOptizelleTestPython)
+include(AddOptizelleTestMatlab)
 include(AddOptizelleSDPACpp)
 include(AddOptizelleExampleCpp)
 include(AddOptizelleExamplePython)
+include(AddOptizelleExampleMatlab)
 include(AddOptizelleExampleSupporting)
 include(AddOptizelleUnitCpp)
+include(AddOptizelleMex)
 
 # See if we're going to build the documentation for the package
 set(ENABLE_DOCUMENTATION OFF CACHE BOOL "Enable documentation generation?")
@@ -23,6 +27,10 @@ endif()
 # or if we build the library.
 set(ENABLE_CPP_LIBRARY OFF CACHE BOOL "Enable libraries for C++?")
 if(ENABLE_CPP_LIBRARY)
+
+    # Turn on position independent code.  This simplifies building both static
+    # and shared libraries.
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
     # Grab our third party library dependencies
     add_subdirectory(thirdparty)

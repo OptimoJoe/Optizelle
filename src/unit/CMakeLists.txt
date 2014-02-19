@@ -8,6 +8,10 @@ if(ENABLE_PYTHON)
     mark_as_advanced(CLEAR ENABLE_PYTHON_UNIT)
     set(ENABLE_PYTHON_UNIT OFF CACHE BOOL "Enable unit tests for Python?")
 endif()
+if(ENABLE_MATLAB)
+    mark_as_advanced(CLEAR ENABLE_MATLAB_UNIT)
+    set(ENABLE_MATLAB_UNIT OFF CACHE BOOL "Enable unit tests for MATLAB?")
+endif()
 
 # Basic unit tests and utility functions
 add_subdirectory(capture_and_release)

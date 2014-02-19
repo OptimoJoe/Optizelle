@@ -205,7 +205,7 @@ class MyEq(Optizelle.VectorValuedFunction):
 
     # z=(g''(x)dx)*dy
     def pps(self,x,dx,dy,z):
-        # Generate a dense tensor that holds the second derivative adjoNatural 
+        # Generate a dense tensor that holds the second derivative adjoint
         D = numpy.zeros(75)
         D[ijktol(1,1,1,3,5)] = 2.
         D[ijktol(1,2,2,3,5)] = 2.
@@ -259,7 +259,7 @@ Optizelle.EqualityConstrained.Algorithms.getMin(
 
 # Print out the reason for convergence
 print "The algorithm converged due to: %s" % (
-    Optizelle.StoppingCondition().to_string(state.opt_stop))
+    Optizelle.StoppingCondition.to_string(state.opt_stop))
 
 # Print out the final answer
 print "The optimal point is:"
