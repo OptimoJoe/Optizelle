@@ -699,14 +699,14 @@ namespace Optizelle{
 
     // Converts a variety of basic datatypes to strings
     std::ostream& Utility::formatReal(std::ostream & out) {
-        return out<<std::setprecision(2) << std::scientific << std::setw(10)
+        return out<<std::setprecision(2) << std::scientific << std::setw(12)
             << std::left;
     }
     std::ostream& Utility::formatInt(std::ostream & out) {
-        return out << std::setw(10) << std::left;
+        return out << std::setw(12) << std::left;
     }
     std::ostream& Utility::formatString(std::ostream & out) {
-        return out << std::setw(10) << std::left;
+        return out << std::setw(12) << std::left;
     }
     
     // Converts anything to a string.

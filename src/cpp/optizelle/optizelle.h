@@ -1305,7 +1305,7 @@ namespace Optizelle{
         std::string atos(KrylovStop::t const & x);
 
         // Blank separator for printing
-        std::string const blankSeparator = ".         ";
+        std::string const blankSeparator = ".           ";
     }
        
     // Routines that manipulate and support problems of the form
