@@ -21,6 +21,11 @@ include(AddOptizelleMex)
 set(ENABLE_DOCUMENTATION OFF CACHE BOOL "Enable documentation generation?")
 if(ENABLE_DOCUMENTATION)
     add_subdirectory(doc)
+
+# If we're not building the documentation, hide some of the parameters
+else()
+    set(ENABLE_A4_PAPER OFF CACHE BOOL "Generate A4 sized documentation?  If false, the document is letter sized." FORCE)
+    mark_as_advanced(FORCE ENABLE_A4_PAPER)
 endif()
         
 # Figure out if we're doing a barebones header only installation
@@ -65,6 +70,7 @@ else()
     set(ENABLE_MATLAB OFF CACHE BOOL "Enable the MATLAB build?" FORCE)
     set(ENABLE_MATLAB_EXAMPLES OFF CACHE BOOL "Enable examples for MATLAB?"
         FORCE)
+    set(ENABLE_MATLAB_UNIT OFF CACHE BOOL "Enable unit tests for MATLAB?" FORCE)
     mark_as_advanced(FORCE
         ENABLE_BUILD_JSONCPP
         ENABLE_BUILD_BLAS_AND_LAPACK
@@ -75,5 +81,6 @@ else()
         ENABLE_PYTHON_UNIT
         ENABLE_MATLAB
         ENABLE_MATLAB_EXAMPLES
+        ENABLE_MATLAB_UNIT
         ENABLE_OPENMP)
 endif()

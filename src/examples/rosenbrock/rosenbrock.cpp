@@ -1,5 +1,5 @@
 // In this example, we setup and minimize the Rosenbrock function.
-//
+
 #include <vector>
 #include <iostream>
 #include <string>

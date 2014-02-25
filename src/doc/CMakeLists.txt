@@ -1,5 +1,24 @@
 project(doc)
+
+# Determine if we want an a4 sized document
+mark_as_advanced(CLEAR ENABLE_A4_PAPER)
+set(ENABLE_A4_PAPER OFF CACHE BOOL
+    "Generate A4 sized documentation?  If false, the document is letter sized.")
+if(ENABLE_A4_PAPER)
+    set(PAPERTYPE "a4paper")
+else()
+    set(PAPERTYPE "letterpaper")
+endif()
+
+# Grab the LaTeX package
 include(UseLATEX)
+
+# Set a couple of paths to source files
+set(LICENSEPATH "${CMAKE_SOURCE_DIR}")
+set(ROSENBROCKPATH "${CMAKE_SOURCE_DIR}/src/examples/rosenbrock/")
+set(OUTPUTPATH "${CMAKE_CURRENT_SOURCE_DIR}")
+
+# Compile the manual
 add_latex_document(optizelle.tex DEFAULT_PDF
     INPUTS rosen_code.tex rosen_input.tex rosen_output.tex
            simple_ineq_code.tex simple_ineq_input.tex simple_ineq_output.tex
@@ -17,6 +36,7 @@ add_latex_document(optizelle.tex DEFAULT_PDF
            solutionExtractionSpecification.tex
            messagingSpecification.tex
            vectorSpaceSpecification.tex
+    CONFIGURE optizelle.tex
 )
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/optizelle.pdf
     DESTINATION share/optizelle/doc)

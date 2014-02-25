@@ -1,6 +1,7 @@
 project(third_party_libraries)
 
 # Build jsoncpp
+mark_as_advanced(CLEAR ENABLE_BUILD_JSONCPP)
 set(ENABLE_BUILD_JSONCPP OFF CACHE BOOL "Build jsoncpp from source?")
 if(ENABLE_BUILD_JSONCPP)
     include(ExternalProject)
@@ -36,6 +37,7 @@ set(JSONCPP_INCLUDE_DIR ${JSONCPP_INCLUDE_DIR} PARENT_SCOPE)
 set(JSONCPP_INCLUDE_DIRS ${JSONCPP_INCLUDE_DIRS} PARENT_SCOPE)
 
 # Build BLAS and LAPACK
+mark_as_advanced(CLEAR ENABLE_BUILD_BLAS_AND_LAPACK)
 set(ENABLE_BUILD_BLAS_AND_LAPACK OFF CACHE BOOL
     "Build BLAS and LAPACK from source?")
 if(ENABLE_BUILD_BLAS_AND_LAPACK)

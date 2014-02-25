@@ -4,31 +4,67 @@
 \usepackage{amssymb}
 \usepackage{listings}
 \usepackage{xcolor}
-\usepackage{url}
+\usepackage[colorlinks=true]{hyperref}
 \usepackage{subfig}
 \usepackage{longtable}
 \usepackage{amsmath}
+\usepackage[top=0.1\paperheight,bottom=0.1\paperheight,left=0.1\paperwidth,right=0.1\paperwidth,paper=@PAPERTYPE@]{geometry}
+\usepackage[Bjornstrup]{fncychap} % Make sure this comes after geometry
 
 % Change the figure numbering to be chap.sec.num
 \renewcommand{\thefigure}{\arabic{chapter}.\arabic{section}.\arabic{figure}}
 
 % Simple macros to help printing
 \newcommand{\re}{\mathbb{R}}
+\newcommand{\st}{\textnormal{st}}
+        
+% Different optimization formulations
+\newcommand{\unconstrained}{\begin{array}[t]{rcl}\min\limits_{x\in X}&& f(x)\end{array}}
+\newcommand{\equalityConstrained}{\begin{array}[t]{rcl}\min\limits_{x\in X}&&f(x)\\\st && g(x)=0\end{array}}
+\newcommand{\inequalityConstrained}{\begin{array}[t]{rcl}\min\limits_{x\in X}&&f(x)\\\st && h(x)\succeq 0\end{array}}
+\newcommand{\constrained}{\begin{array}[t]{rcl}\min\limits_{x\in X}&&f(x)\\\st && g(x)=0\\&&h(x)\succeq 0\end{array}}
 
 % Create some new environments for displaying code and output
-\lstdefinelanguage{OptizelleOutput}{
-    morekeywords={Iter,f,x,merit,grad,dx,KryWhy,KryErr,KryIter,ared,pred,
-        ared/pred,mu,mu_est,g},
-    sensitive=false,
-    literate=
+
+% Use the following for all languages
+\lstset{
+    showstringspaces=false,
+    basicstyle=\footnotesize,
+    backgroundcolor=\color{black!5},
+    includerangemarker=false,
+    keywordstyle=\color{blue}\ttfamily,
+    stringstyle=\color{red}\ttfamily,
+    commentstyle=\color{green!40!black}\ttfamily,
+    morecomment=[l][\color{magenta}]{\#}
 }
 
+% C++
+\lstdefinestyle{C++}{
+    language=C++,
+    rangeprefix=//---,
+    rangesuffix=---
+}
+
+% Python
+\lstdefinestyle{Python}{
+    language=Python,
+    rangeprefix=\#---,
+    rangesuffix=---,
+}
+
+% MATLAB
+\lstdefinestyle{Matlab}{
+    language=Matlab,
+    rangeprefix=\%---,
+    rangesuffix=---,
+}
+
+% JSON 
 \colorlet{punct}{red!60!black}
 \definecolor{background}{HTML}{EEEEEE}
 \definecolor{delim}{RGB}{20,105,176}
 \colorlet{numb}{magenta!60!black}
-\lstdefinelanguage{json}{
-    basicstyle=\normalfont\ttfamily,
+\lstdefinestyle{json}{
     stepnumber=1,
     numbersep=8pt,
     showstringspaces=false,
@@ -52,25 +88,16 @@
       {\}}{{{\color{delim}{\}}}}}{1}
       {[}{{{\color{delim}{[}}}}{1}
       {]}{{{\color{delim}{]}}}}{1},
+    rangeprefix=\"---,
+    rangesuffix=---\"\ :\ null
 }
 
-\lstdefinestyle{C++}{
-    language=C++,
-    backgroundcolor=\color{black!5},
-    showstringspaces=false,
-    basicstyle=\footnotesize
-} 
-
+% Optizelle output
 \lstdefinestyle{OptizelleOutput}{
-    language=OptizelleOutput,
-    backgroundcolor=\color{black!5},
-    basicstyle=\scriptsize
-}
-
-\lstdefinestyle{json}{
-    language=json,
-    backgroundcolor=\color{black!5},
-    basicstyle=\footnotesize
+    morekeywords={Iter,f,x,merit,grad,dx,KryWhy,KryErr,KryIter,ared,pred,
+        ared/pred,mu,mu_est,g},
+    sensitive=false,
+    literate=
 }
 
 % Create some Lagrangian macros
@@ -78,135 +105,273 @@
 \newcommand{\eqGradLag}[2]{\nabla f(#1)+g^\prime(#1)^*#2}
 \newcommand{\conGradLag}[3]{\nabla f(#1)+g^\prime(#1)^*#2-h^\prime(#1)^*#3}
 
-\title{Optizelle}
-\author{Joseph Young}
+\title{Optizelle v@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@.@CPACK_PACKAGE_VERSION_PATCH@}
+\author{OptimoJoe\\Joseph Young}
 \begin{document}
 \maketitle
 \tableofcontents
 
-\chapter{Introduction}
+\chapter{Introduction}\label{ch:Introduction}
 
-        Optizelle contains a collection of routines used to solve a variety of nonlinear optimization problems.  It focuses on open ended abstractions that make it easy to interface to existing applications.
+        Optizelle [op-t\textit{\!uh}-{\bf zel}] is an open source software library designed to solve general purpose nonlinear optimization problems of the form
+        \begin{center}\begin{tabular}{|l|l|}\hline
+        \multicolumn{1}{|c|}{\bf Unconstrained} &
+        \multicolumn{1}{c|}{\bf Equality Constrained}\\
+        $\unconstrained$ &
+        $\equalityConstrained$ \\\hline
+        \multicolumn{1}{|c|}{\bf Inequality Constrained} &
+        \multicolumn{1}{c|}{\bf Constrained}\\
+        $\inequalityConstrained$ &
+        $\constrained$ \\\hline
+        \end{tabular}\end{center}
+It features 
+\begin{itemize}
+    \item {\bf State of the art algorithms}
+        \begin{itemize}
+            \item Unconstrained -- Steepest Descent, Preconditioned Nonlinear-CG (Fletcher-Reeves, Polak-Ribiere, Hestenes-Stiefel), BFGS, Newton-CG, SR1, Trust-Region Newton (Truncated-CG and Truncated-MINRES), Barzilai-Borwein Two-Point Approximation.
+            \item Equality Constrained -- Inexact Composite Step SQP.
+            \item Inequality Constrained -- Primal-Dual Interior Point Method for Cone Constraints (Linear, Second-Order Cone, and Semidefinite), Log-Barrier Method for Cone Constraints.
+            \item Constrained -- Any combination of the above.
+        \end{itemize}
+    \item {\bf Open source}
+        \begin{itemize}
+            \item Released under the 2-Clause BSD License.
+            \item Free and ready to use with both open and closed sourced commericial codes.
+        \end{itemize}
+    \item {\bf Multilanguage support}
+        \begin{itemize}
+            \item Interfaces to C++, MATLAB/Octave, and Python.
+        \end{itemize}
+    \item {\bf Robust computations and repeatibility}
+        \begin{itemize}
+            \item Can stop, archive, and restart the computation from any optimization iteration.
+            \item Combined with the multilanguage support, the optimization can be started in one language and migrated to another.  For example, archived optimization runs that started in MATLAB can be migrated and completed in C++.
+        \end{itemize}
+    \item {\bf User-defined parallelism}
+        \begin{itemize}
+            \item Fully compatible with OpenMP, MPI, or GPUs.
+        \end{itemize}
+    \item {\bf Extensible linear algebra}
+        \begin{itemize}
+            \item Supports user-defined vector algebra and preconditioners.
+            \item Enables sparse, dense, and matrix-free computations.
+            \item Ability to define custom inner products and compatibility with preconditioners such as algebraic multigrid make Optizelle well-suited for PDE constrained optimization.
+        \end{itemize}
+    \item {\bf Sophisticated Control of the Optimization Algorithms}
+        \begin{itemize}
+            \item Allows the user to insert arbitrary code into the optimization algorithm, which enables custom heuristics to be embedded without modifying the source.  For example, in signal processing applications, the optimization iterates could be run through a band-pass filter at the end of each optimization iteration.
+        \end{itemize}
+\end{itemize}
 
-\subparagraph{Algorithms}
-        Optizelle provides the following algorithms 
-\begin{center}\begin{tabular}{l|p{0.6\textwidth}}
-Problem Class & Algorithms\\\hline
-Unconstrained & Steepest Descent, Preconditioned Nonlinear-CG (Fletcher-Reeves, Polak-Ribiere, Hestenes-Stiefel), BFGS, Newton-CG, SR1, Trust-Region Newton (Truncated-CG and Truncated-MINRES), Barzilai-Borwein Two-Point Approximation\\\\
-Equality Constrained & Inexact Composite Step SQP\\\\
-Inequality Constrained & Primal-Dual Interior Point Method for Cone Constraints (Linear, Second-Order Cone, and Semidefinite), Log-Barrier Method for Cone Constraints\\\\
-Constrained & Any combination of the above .
-\end{tabular}\end{center}
-Changing from one algorithm to another is as simple as changing one parameter in the input deck.
+\section{Licensing}
 
-\subparagraph{Extensible Linear Algebra}
-Although Optizelle provides a default interface where the optimization variables are represented by C++ STL vectors, Optizelle's vector and linear algebra can be fully replaced by the user.  This means Optizelle can use arbitrary vectors, structures, or classes as its optimization variables.  This includes distributed vectors that use MPI.  In addition, Optizelle may utilize user defined preconditioning software provided by the user.  Together, this allows Optizelle to more easily integrate into an existing software package.
+        Optizelle is copyrighted by OptimoJoe and licensed under the 2-Clause BSD License:
+\lstinputlisting{@LICENSEPATH@/LICENSE}
+In short, Optizelle is free to use in both open and closed sourced codes.  If you do so, we ask that you provide a citation or link to \url{http://www.optimojoe.com}.
 
-\subparagraph{Multiple Programming Languages} Optizelle provides interfaces for C++, MATLAB, and Python.
+\section{Support}
+        
+        News, updates, download information, and support forums for Optizelle can be found at
+\begin{center}
+    \mbox{\url{http://www.optimojoe.com/optizelle}}
+\end{center}
+If you are interested in paid support and consulting, please contact us at \mbox{\href{mailto:contact@optimojoe.com}{contact@optimojoe.com}}.
 
-\subparagraph{Sophisticated Control of the Optimization Algorithm} Optizelle allows the user to insert arbitrary code into the optimization algorithm.  This allows  custom processing code to manipulate the optimization iterates between iterations.  For example, in signal processing applications, the optimization iterates can be run through a band-pass filter at the end of each optimization iteration.
+\section{Brief Example}
 
-\subparagraph{Customized Restarts} Optizelle supports user defined restart procedures, which allow the entire state of the optimization algorithm to be transferred to the user and then written to disk.  This allows Optizelle to stopped and started at the user convenience.  It also enables sophisticated diagnostics to be run on the performance of the optimization algorithms.
-
-        Simple examples of Optizelle applications are provided below.
-
-\section{Unconstrained Optimization}
-
-        The Optizelle unconstrained optimization routines solve problems of the form
+        In order to see a short example of Optizelle in action, consider the unconstrained minimization of the Rosenbrock function
 $$
-        \min_{x\in X} f(x)
+    \begin{array}{rcl}
+        \min\limits_{x\in\re^2} && (1-x_1)^2+100(x_2-x_1^2)^2.
+    \end{array}
 $$
-where $f:X\rightarrow \re$ denotes a differentiable function.  For example, we formulate the minimization of the Rosenbrock function as
-$$
-        \min_{x\in\re^2} (1-x_1)^2+100(x_2-x_1^2)^2.
-$$
-In Optizelle, we minimize the Rosenbrock function with the code in Listing \ref{lst:Rosen} and the input specification in Listing \ref{lst:RosenJSON}, which generates the output in Listing \ref{lst:RosenOut}.  We explain the functions used to generate this example in Chapter \ref{ch:Basic}, the input specification in Chapter \ref{ch:Input}, and the output in Chapter \ref{ch:Output}.
+In order to optimize this function, we use the following code and parameters, which generates the subsequent output.
+\subsection{C++}
+\lstinputlisting[style=C++]{@ROSENBROCKPATH@/rosenbrock.cpp}
+\subsection{MATLAB}
+\lstinputlisting[style=Matlab]{@ROSENBROCKPATH@/rosenbrock.m}
+\subsection{Python}
+\lstinputlisting[style=Python]{@ROSENBROCKPATH@/rosenbrock.py}
+\subsection{Parameters}
+\lstinputlisting[style=json,linerange=params0-params1]{@ROSENBROCKPATH@/tr_newton.json}
+\subsection{Output}
+\lstinputlisting[style=OptizelleOutput]{@OUTPUTPATH@/rosen_output.txt}
 
-\input{rosen_code.tex}
-\input{rosen_input.tex}
-\input{rosen_output.tex}
+\section{History}
 
-\section{Inequality Constrained Optimization}
-
-        The Optizelle inequality constrained optimization routines solve problems in the form
-$$
-        \min_{x\in X} \{ f(x) : h(x)\succeq 0\}
-$$
-where $f:X\rightarrow \re$ denotes a differentiable function, $h:X\rightarrow Z$ denotes an affine function, and $\succeq$ denotes a partial order that corresponds to a symmetric cone.  A symmetric cone includes inequalities such as pointwise inequalities, second-order cones, and semidefinite cones.  For example, these problems include linearly constrained quadratic programs such as
-$$
-        \min_{x\in\re^2}\{(x_1+1)^2+(x_2+1)^2 : x_1 + 2x_2 \geq 1, 2x_1 + x_2\geq 1\}
-$$
-In Optizelle, we minimize the above inequality constrained problem with the code in Listing \ref{lst:simpleIneq} and the input specification in Listing \ref{lst:simpleIneqJSON}, which generates the output in Listing \ref{lst:simpleIneqOut}.  As with the unconstrained example, we explain the functions used to generate this example in Chapter \ref{ch:Basic}, the input specification in Chapter \ref{ch:Input}, and the output in Chapter \ref{ch:Output}.
-
-\input{simple_ineq_code.tex}
-\input{simple_ineq_input.tex}
-\input{simple_ineq_output.tex}
-
-\section{Equality Constrained Optimization}
-
-        The Optizelle equality constrained optimization routines solve problems in the form
-$$
-        \min_{x\in X} \{ f(x) : g(x)=0 \}
-$$
-where $f:X\rightarrow \re$ and $g:X\rightarrow Y$ denote differentiable functions.  For example, these problems include linearly constrained quadratic programs such as
-$$
-        \min_{x\in\re^2}\{x_1^2+x_2^2 : (x_1-2)^2 + (x_2-2)^2 = 1 \}
-$$
-In order to minimize this formulation in Optizelle, we use the code in Listing \ref{lst:simpleEq} and the input specification in Listing \ref{lst:simpleEqJSON}, which generates the output in Listing \ref{lst:simpleEqOut}.  Similar to the previous two examples, we explain the functions used to generate this example in Chapter \ref{ch:Basic}, the input specification in Chapter \ref{ch:Input}, and the output in Chapter \ref{ch:Output}.
-
-\input{simple_eq_code.tex}
-\input{simple_eq_input.tex}
-\input{simple_eq_output.tex}
-
-\section{Constrained Optimization}
-
-        The Optizelle constrained optimization routines solve problems in the form
-$$
-        \min_{x\in X} \{ f(x) : g(x)=0, h(x)\succeq 0 \}
-$$
-where $f:X\rightarrow \re$ and $g:X\rightarrow Y$ denote differentiable functions, $h:X\rightarrow Z$ denotes an affine function, and $\succeq$ denotes a partial order that corresponds to a symmetric cone.  For example, these formulations include constrained problems such as 
-$$
-        \min_{x\in\re^2}\{(x_1+1)^2+(x_2+1)^2 :  x_1 + 2x_2 = 1, 2x_1 + x_2 \geq 1 \} 
-$$
-In order to minimize this formulation in Optizelle, we use the code in Listing \ref{lst:simpleCon} and the input specification in Listing \ref{lst:simpleConJSON}, which generates the output in Listing \ref{lst:simpleConOut}.  As with the other examples in the introduction, we explain the functions used to generate this example in Chapter \ref{ch:Basic}, the input specification in Chapter \ref{ch:Input}, and the output in Chapter \ref{ch:Output}.
-
-\input{simple_con_code.tex}
-\input{simple_con_input.tex}
-\input{simple_con_output.tex}
-
+        Optizelle originated in 2010 as a code called PEOpt (Parameter Estimation Using Optimization) written by Joseph Young at Sandia National Laboratories.  There, it was used as the comptuational driver for a variety of both internal and external customers.  Due to the scale of the problems involved and the nuances of high-performance computing environments, PEOpt was designed specifically to integrate with large, existing code bases as quickly and unobtrusively as possible.  Later, Sandia approved the open source release of PEOpt on two separate occasions in 2012 and 2013 under the 2-Clause BSD License.  It was from this released code that Joseph continued work on Optizelle through a new company called OptimoJoe.
+        
 \chapter{Installation}\label{ch:Install}
 
-    Optizelle uses CMake as its build mechanism.  Using CMake, we choose which options to include in our installation.  In the most simple case, we build only the C++ library.  In a more complete case, we build the C++, MATLAB, and Python libraries complete with their unit tests and accompaning examples.  We discuss these methods below.
-    
-\section{Library Installation with CMake}
+        In the following chapter, we discuss how to download, build, and incorporate Optizelle into a new project.
 
-        In order to fully install Optizelle using CMake, we require CMake version 2.8.9 or better.  Then, in the base Optizelle directory, execute the following commands
-\begin{verbatim}
-mkdir build
-cd build
-ccmake ../src
-make
-make install
-\end{verbatim}
-The command \texttt{ccmake} executes the curses version of CMake, which displays several different options.  The Optizelle specific flags are
+\section{Downloading}
+
+        Optizelle can be downloaded from
 \begin{center}
-\begin{longtable}{lp{0.75\textwidth}}
-Flag:         &\texttt{ENABLE\_DOCUMENTATION}\\
-Type:         &Bool\\
-Default:      &Off\\
-Dependencies: &None\\
+    \mbox{\url{http://www.optimojoe.com/optizelle}}
+\end{center}
+as a zipped archive.  Here, we also provide direct access to our source code repository.
+
+\section{Dependencies}
+
+        Optizelle depends on the following software packages
+\begin{center}\begin{tabular}{|p{.2\textwidth}|p{.1\textwidth}|p{.1\textwidth}|p{.5\textwidth}|}\hline
+{\bf Dependency} & {\bf Version} & {\bf Optional?} & {\bf Purpose} \\\hline
+\hyperref[tbl:compilers]{C++11} & & No & Compilation of the core library\\\hline
+\hyperref[tbl:compilers]{FORTRAN 77} & & No & Determines the name mangling scheme for BLAS and LAPACK\\\hline
+\href{http://cmake.org}{CMake} & $\geq$ 2.8.9 & No & Build system\\\hline
+\hyperref[tbl:make]{Make} & & No & Build system\\\hline
+\href{http://jsoncpp.sourceforge.net}{JsonCpp} & $\geq$ 0.6.0-rc2 & No & Parsing of the configuration files and the default archive/restart engine\\\hline
+\href{http://www.netlib.org/lapack}{BLAS and LAPACK} & $\geq$ 3.4.2 & No & Dense kernels for the default vector spaces in the C++ interface\\\hline
+\href{http://www.ctan.org}{pdflatex} & & Yes & Documentation generation \\\hline
+\href{http://python.org}{Python} & 2.7.x & Yes & Python interface \\\hline
+\href{http://www.numpy.org}{NumPy} & $\geq$ 1.8 & Yes & Dense kernels for the default vector spaces in the Python interface\\\hline
+\href{https://www.gnu.org/software/octave}{Octave} & & Yes & MATLAB/Octave interface\\\hline
+\href{http://www.mathworks.com/products/matlab}{MATLAB} & & Yes & MATLAB/Octave interface\\\hline
+\end{tabular}\end{center}
+
+        As far as C++11 and FORTRAN 77 compilers, in theory, any valid compiler should work.  A small list of these compilers is
+\phantomsection\label{tbl:compilers}
+\begin{center}\begin{tabular}{|p{.15\textwidth}|p{.25\textwidth}|p{.2\textwidth}|p{.3\textwidth}|}\hline
+{\bf Compiler} & {\bf Language} & {\bf Platform} & {\bf Download Location}\\\hline
+GCC $\geq 4.7$ & C++11, FORTRAN 77 & Linux, Unix, OS X & \url{http://gcc.gnu.org}\\\hline
+Clang & C++11 & Linux, Unix, OS X & \url{http://clang.llvm.org}\\\hline
+DragonEgg & C++11, FORTRAN 77 & Linux, Unix, OS X & \url{http://dragonegg.llvm.org}\\\hline
+MinGW & C++11, FORTRAN 77 & Windows & \url{http://www.mingw.org}\\\hline
+Cygwin (GCC) & C++11, FORTRAN 77 & Windows & \url{http://www.cygwin.com}\\\hline
+\end{tabular}\end{center}
+On Windows, Visual Studio does not compile prepackaged with a FORTRAN 77 compiler.  Though, one can be purchased from a commercial vendor.  As a result, we recommend using either MinGW or Cygwin on Windows.  The primary difference between the two is that Cygwin will create a dependency to the Cygwin runtime libraries during compilation, but MinGW will not.  This becomes important when distributing applications built with Optizelle.  On OS X, the default compilers tend to use old versions of LLVM-GCC (4.2), which is not sufficient to compile Optizelle.  Newer versions of GCC can be found through \href{https://www.macports.org}{MacPorts} or \href{http://hpc.sourceforge.net}{HPC Mac OS X}.
+
+       Next, Optizelle requires a Make utility compatible with CMake.  A small slection of such utilities is 
+\phantomsection\label{tbl:make}
+\begin{center}\begin{tabular}{|p{.2\textwidth}|p{.2\textwidth}|p{.5\textwidth}|}\hline
+{\bf Make} & {\bf Platform} & {\bf Download Location}\\\hline
+GNU Make & Linux, Unix, OS X & \url{https://www.gnu.org/software/make}\\\hline
+MSYS & Windows & \url{http://www.mingw.org}\\\hline
+Cygwin (GNU Make) & Windows & \url{http://www.cygwin.com}\\\hline
+NMake & Windows & \url{http://msdn.microsoft.com/en-us/vstudio}\\\hline
+\end{tabular}\end{center}
+
+        Finally, Optizelle is compatible with high-performance varieties of BLAS and LAPACK as long as they contain support for the newer LAPACK functions.  A small subset of these libraries are
+\begin{center}\begin{tabular}{|p{.3\textwidth}|p{.6\textwidth}|}\hline
+{\bf BLAS/LAPACK Library} & {\bf Download Location}\\\hline
+ATLAS & \url{http://math-atlas.sourceforge.net}\\\hline
+Intel MKL & \url{http://software.intel.com/en-us/intel-mkl}\\\hline
+AMD ACML & \url{http://developer.amd.com/tools-and-sdks/cpu-development/amd-core-math-library-acml}\\\hline
+Goto BLAS & \url{https://www.tacc.utexas.edu/tacc-projects/gotoblas2}\\\hline
+\end{tabular}\end{center}
+
+\section{Building}
+
+        Optizelle uses CMake as its build system.  On Linux, Unix, OS X, or Cygwin, execute the following commands from the base Optizelle directory:
+\begin{enumerate}
+    \item {\tt mkdir build}
+    \item {\tt cd build}
+    \item {\tt ccmake ..}
+    \item Configure the build.
+    \item {\tt make}
+    \item {\tt make install} 
+\end{enumerate}
+On Windows, if not using Cygwin, execute the following commands:
+\begin{enumerate}
+    \item Using Windows Explorer, create a directory called {\tt build} in the base Optizelle directory.
+    \item Run {\tt cmake-gui.exe}
+    \item Set the source directory to the base Optizelle directory.
+    \item Set the build directory to the {\tt build} folder created above.
+    \item Configure the build.
+    \item Build the code (\texttt{make} and \texttt{make install} with MSYS.)
+\end{enumerate}
+
+\section{Configuring}
+
+        Optizelle provides several different options within CMake in order to customie the build.  We describe these flags in the table below.          
+\begin{center}
+\begin{longtable}{p{0.15\textwidth}p{0.75\textwidth}}
+Flag:         &\texttt{CMAKE\_INSTALL\_PREFIX}\\
+Type:         &\texttt{PATH}\\
+Default:      &Varies\\
+Depends on:   &None\\
+Enables:      &None\\
 Autodetect?:  &No\\
-Description:  &Enables the build of the Optizelle manual from the LaTeX source.  It
-              builds a pdf file of the manual.\\
+Description:  &Install location of Optizelle.\\
+\\
+Flag:         &\texttt{ENABLE\_DOCUMENTATION}\\
+Type:         &\texttt{BOOL}\\
+Default:      &\texttt{OFF}\\
+Depends on:   &None\\
+Enables:      &\texttt{PDFLATEX\_COMPILER}, \texttt{ENABLE\_A4\_PAPER}\\
+Autodetect?:  &No\\
+Description:  &Enables the build of the Optizelle manual from the LaTeX source.
+               It builds a pdf file of the manual.\\
+\\
+Flag:         &\texttt{PDFLATEX\_COMPILER}\\
+Type:         &\texttt{FILEPATH}\\
+Default:      &None\\
+Depends on:   &None\\
+Enables:      &None\\
+Autodetect?:  &Yes\\
+Description:  &Executable with full path for the pdflatex executable.\\
+\\
+Flag:         &\texttt{ENABLE\_A4\_PAPER}\\
+Type:         &\texttt{BOOL}\\
+Default:      &\texttt{OFF}\\
+Depends on:   &None\\
+Enables:      &None\\
+Autodetect?:  &No\\
+Description:  &When \texttt{ON}, the manual uses A4 paper.  Otherwise, the manual uses Letter paper.\\
 \\
 Flag:         &\texttt{ENABLE\_CPP\_LIBRARY}\\
-Type:         &Bool\\
-Default:      &Off\\
-Dependencies: &\texttt{BLAS\_LIBRARY}, \texttt{LAPACK\_LIBRARY},
-              \texttt{JSONCPP\_INCLUDE\_DIR}, \texttt{JSONCPP\_LIBRARY}\\
+Type:         &\texttt{BOOL}\\
+Default:      &\texttt{OFF}\\
+Depends on:   &None\\
+Enables:      & \texttt{CMAKE\_CXX\_FLAGS}, 
+                \texttt{CMAKE\_BUILD\_TYPE},
+                \texttt{ENABLE\_OPENMP}, 
+                \texttt{ENABLE\_BUILD\_BLAS\_AND\_LAPACK},
+                \texttt{ENABLE\_BUILD\_JSONCPP},
+                \texttt{BLAS\_LIBRARY},
+                \texttt{LAPACK\_LIBRARY},
+                \texttt{JSONCPP\_INCLUDE\_DIR},
+                \texttt{JSONCPP\_LIBRARY},
+                \texttt{ENABLE\_CPP\_EXAMPLES},
+                \texttt{ENABLE\_CPP\_UNIT},
+                \texttt{ENABLE\_PYTHON},
+                \texttt{ENABLE\_MATLAB}\\
 Autodetect?:  &No\\
-Description:  &Enables the the library build for Optizelle.  This includes the
-              built-in vector spaces for real vectors or cone programming.\\
+Description:  &Enables the Optizelle C++ library.\\
+\\
+Flag:         &\texttt{CMAKE\_CXX\_FLAGS}\\
+Type:         &\texttt{STRING}\\
+Default:      &None\\
+Depends on:   &\texttt{ENABLE\_CPP\_LIBRARY}\\
+Enables:      &None\\
+Autodetect?:  &No\\
+Description:  &C++ compiler specific flags.  Note, we usually require a special flag to enable C++11 compilation such as \texttt{-std=c++11} on GCC.\\
+\\
+Flag:         &\texttt{CMAKE\_BUILD\_TYPE}\\
+Type:         &\texttt{STRING}\\
+Default:      &None\\
+Depends on:   &\texttt{ENABLE\_CPP\_LIBRARY}\\
+Enables:      &None\\
+Autodetect?:  &No\\
+Description:  &Generally set to either \texttt{RELEASE} or \texttt{DEBUG}.  Set to \texttt{RELEASE} for production libraries.  Set to \texttt{DEBUG} to allow profiling through utilities such as \href{http://oprofile.sourceforge.net}{OProfile}.\\
+\\
+Flag:         &\texttt{ENABLE\_OPENMP}\\
+Type:         &\texttt{BOOL}\\
+Default:      &\texttt{OFF}\\
+Depends on:   &\texttt{ENABLE\_CPP\_LIBRARY}\\
+Enables:      &None\\
+Autodetect?:  &No\\
+Description:  &Enable OpenMP/threaded support for the default, dense vector spaces.  Note, many BLAS and LAPACK libraries such as those from ATLAS benefit from OpenMP directives.\\
+\\
+Flag:         &\texttt{ENABLE\_BUILD\_BLAS\_AND\_LAPACK}\\
+Type:         &\texttt{BOOL}\\
+Default:      &\texttt{OFF}\\
+Depends on:   &\texttt{ENABLE\_CPP\_LIBRARY}\\
+Enables:      &None\\
+Autodetect?:  &No\\
+Description:  &Builds BLAS and LAPACK from source in case an optimized version is not available.  We install these libraries to \texttt{\${CMAKE\_BINARY\_DIR}/installed/lib} where \texttt{\${CMAKE\_BINARY\_DIR}} denotes the build directory for CMake.\\
 \\
 Flag:         &\texttt{ENABLE\_CPP\_EXAMPLES}\\
 Type:         &Bool\\
