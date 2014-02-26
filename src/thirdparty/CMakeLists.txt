@@ -4,25 +4,38 @@ project(third_party_libraries)
 mark_as_advanced(CLEAR ENABLE_BUILD_JSONCPP)
 set(ENABLE_BUILD_JSONCPP OFF CACHE BOOL "Build jsoncpp from source?")
 if(ENABLE_BUILD_JSONCPP)
+
+    # Determine the location of the JsonCpp archive
+    set(JSONCPP_ARCHIVE_UNDEFINED "JSONCPP_ARCHIVE-UNDEFINED")
+    set(JSONCPP_ARCHIVE ${JSONCPP_ARCHIVE_UNDEFINED} CACHE FILEPATH 
+        "JsonCpp archive with full path.")
+    # Make sure that it is defined and throw an error message if it is not
+    if(JSONCPP_ARCHIVE STREQUAL JSONCPP_ARCHIVE_UNDEFINED) 
+        mark_as_advanced(CLEAR JSONCPP_ARCHIVE)
+        message(FATAL_ERROR
+            "The JsonCpp archive with full path must be defined in the variable JSONCPP_ARCHIVE.")
+    endif()
+    mark_as_advanced(FORCE JSONCPP_ARCHIVE)
+
     include(ExternalProject)
     ExternalProject_Add(
         JsonCpp
-        URL ${CMAKE_BINARY_DIR}/jsoncpp-src-0.6.0-rc2.tar.gz
+        URL ${JSONCPP_ARCHIVE} 
         URL_MD5 363e2f4cbd3aeb63bf4e571f377400fb
         PATCH_COMMAND ${CMAKE_COMMAND} -E copy
             "${CMAKE_CURRENT_SOURCE_DIR}/jsoncpp/CMakeLists.txt"
             CMakeLists.txt
         CMAKE_ARGS
-            -DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_BINARY_DIR}/installed
+            -DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_INSTALL_PREFIX}
             -DCMAKE_BUILD_TYPE:STRING=RELEASE
     )
 
     # Set the location of jsoncpp
     set(JSONCPP_LIBRARY
-        "${CMAKE_BINARY_DIR}/installed/lib/${CMAKE_STATIC_LIBRARY_PREFIX}json${CMAKE_STATIC_LIBRARY_SUFFIX}"
+        "${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}json${CMAKE_SHARED_LIBRARY_SUFFIX}"
         CACHE FILEPATH "Path to a library." FORCE)
     set(JSONCPP_LIBRARIES ${JSONCPP_LIBRARY}) 
-    set(JSONCPP_INCLUDE_DIR ${CMAKE_BINARY_DIR}/installed/include CACHE
+    set(JSONCPP_INCLUDE_DIR ${CMAKE_INSTALL_PREFIX}/include CACHE
         PATH "Path to a file." FORCE)
     set(JSONCPP_INCLUDE_DIRS ${JSONCPP_INCLUDE_DIR})
     mark_as_advanced(JSONCPP_INCLUDE_DIR JSONCPP_LIBRARY)
@@ -41,26 +54,39 @@ mark_as_advanced(CLEAR ENABLE_BUILD_BLAS_AND_LAPACK)
 set(ENABLE_BUILD_BLAS_AND_LAPACK OFF CACHE BOOL
     "Build BLAS and LAPACK from source?")
 if(ENABLE_BUILD_BLAS_AND_LAPACK)
+    # Determine the location of the LAPACK archive
+    set(LAPACK_ARCHIVE_UNDEFINED "LAPACK_ARCHIVE-UNDEFINED")
+    set(LAPACK_ARCHIVE ${LAPACK_ARCHIVE_UNDEFINED} CACHE FILEPATH 
+        "LAPACK archive with full path.")
+    # Make sure that it is defined and throw an error message if it is not
+    if(LAPACK_ARCHIVE STREQUAL LAPACK_ARCHIVE_UNDEFINED) 
+        mark_as_advanced(CLEAR LAPACK_ARCHIVE)
+        message(FATAL_ERROR
+            "The LAPACK archive with full path must be defined in the variable LAPACK_ARCHIVE.")
+    endif()
+    mark_as_advanced(FORCE LAPACK_ARCHIVE)
+
     include(ExternalProject)
     ExternalProject_Add(
         LAPACK 
-        URL ${CMAKE_BINARY_DIR}/lapack-3.4.2.tgz
+        URL ${LAPACK_ARCHIVE}
         URL_MD5 61bf1a8a4469d4bdb7604f5897179478 
         CMAKE_ARGS
-            -DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_BINARY_DIR}/installed
+            -DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_INSTALL_PREFIX}
             -DBUILD_TESTING:BOOL=OFF
             -DCMAKE_BUILD_TYPE:STRING=RELEASE
+            -DBUILD_SHARED_LIBS:BOOL=ON
     )
 
     # Set the location of BLAS and LAPACK 
     set(BLAS_LIBRARY
-        "${CMAKE_BINARY_DIR}/installed/lib/${CMAKE_STATIC_LIBRARY_PREFIX}blas${CMAKE_STATIC_LIBRARY_SUFFIX}"
+        "${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}blas${CMAKE_SHARED_LIBRARY_SUFFIX}"
         CACHE FILEPATH "Path to a library." FORCE)
     set(BLAS_LIBRARIES ${BLAS_LIBRARY}) 
     mark_as_advanced(BLAS_LIBRARY)
     
     set(LAPACK_LIBRARY
-        "${CMAKE_BINARY_DIR}/installed/lib/${CMAKE_STATIC_LIBRARY_PREFIX}lapack${CMAKE_STATIC_LIBRARY_SUFFIX}"
+        "${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}lapack${CMAKE_SHARED_LIBRARY_SUFFIX}"
         CACHE FILEPATH "Path to a library." FORCE)
     set(LAPACK_LIBRARIES ${LAPACK_LIBRARY}) 
     mark_as_advanced(LAPACK_LIBRARY)
