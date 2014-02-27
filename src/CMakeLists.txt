@@ -30,8 +30,8 @@ endif()
         
 # Figure out if we're doing a barebones header only installation
 # or if we build the library.
-set(ENABLE_CPP_LIBRARY OFF CACHE BOOL "Enable libraries for C++?")
-if(ENABLE_CPP_LIBRARY)
+set(ENABLE_CPP OFF CACHE BOOL "Enable libraries for C++?")
+if(ENABLE_CPP)
 
     # Turn on position independent code.  This simplifies building both static
     # and shared libraries.
