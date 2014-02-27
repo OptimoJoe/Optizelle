@@ -614,7 +614,13 @@ Description:  &Enables the build of unit tests that help validate the
 \begin{center}
         \texttt{make install}
 \end{center}
-from the CMake build directory using GNU Make, MSYS, or Cygwin.  If using a different Make utility, call it on the \textct{install} target.  The CMake variable \textct{CMAKE_INSTALL_PREFIX} determines Optizelle's base installation directory.  From there, we install Optizelle into the following directory tree.  For brevity, we do not list all of the installed files in this diagram, but a selection of the most important files.
+from the CMake build directory using GNU Make, MSYS, or Cygwin.  If using a different Make utility, call it on the \textct{install} target.  For a complete list of installed files, see 
+\begin{center}
+    \textct{install_manifest.txt}
+\end{center}
+located in the CMake build directory.
+
+    The CMake variable \textct{CMAKE_INSTALL_PREFIX} determines Optizelle's base installation directory.  From there, we install Optizelle into the following directory tree.  For brevity, we do not list all of the installed files in this diagram, but a selection of the most important files.
 \begin{center}\begin{minipage}[t]{1\columnwidth}
     \dirtree{%
         .1 \$\{CMAKE\_INSTALL\_PREFIX\}.
@@ -629,7 +635,7 @@ from the CMake build directory using GNU Make, MSYS, or Cygwin.  If using a diff
         .2 share.
         .3 optizelle.
         .4 doc.
-        .5 optizelle.pdf.
+        .5 Optizelle-@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@.@CPACK_PACKAGE_VERSION_PATCH@.pdf.
         .4 python.
         .5 Optizelle.
         .4 matlab.
@@ -637,14 +643,8 @@ from the CMake build directory using GNU Make, MSYS, or Cygwin.  If using a diff
         .4 examples.
     }
 \end{minipage}\end{center}
-For a complete list of installed files, see the file
-\begin{center}
-    \textct{install_manifest.txt}
-\end{center} 
-located in CMake's build directory.
-
 \phantomsection\label{lnk:jsoncppinstall}
-    If the \textct{ENABLE_BUILD_JSONCPP} variable is set to \textct{ON}, then CMake automatically installs JsonCpp to the following location.
+If the \textct{ENABLE_BUILD_JSONCPP} variable is set to \textct{ON}, then we also install JsonCpp to the following location.
 \begin{center}\begin{minipage}[t]{1\columnwidth}
     \dirtree{%
         .1 \$\{CMAKE\_INSTALL\_PREFIX\}.
@@ -656,14 +656,8 @@ located in CMake's build directory.
         .4 json.h.
     }
 \end{minipage}\end{center}
-For a complete list of installed files, see the file
-\begin{center}
-    \textct{src/thirdparty/JsonCpp-prefix/src/JsonCpp-build/install_manifest.txt}
-\end{center}    
-located inside the CMake build directory.
-
 \phantomsection\label{lnk:lapackinstall}
-    Finally, if the \textct{ENABLE_BUILD_BLAS_AND_LAPACK} variable is set to \textct{ON}, then CMake automatically installs BLAS and LAPACK to the following location.
+Finally, if the \textct{ENABLE_BUILD_BLAS_AND_LAPACK} variable is set to \textct{ON}, then we install BLAS and LAPACK to the following location.
 \begin{center}\begin{minipage}[t]{1\columnwidth}
     \dirtree{%
         .1 \$\{CMAKE\_INSTALL\_PREFIX\}.
@@ -672,11 +666,6 @@ located inside the CMake build directory.
         .3 liblapack.so.
     }
 \end{minipage}\end{center}
-As before, a complete list of installed files can be found in the file
-\begin{center}
-    \textct{src/thirdparty/LAPACK-prefix/src/LAPACK-build/install_manifest.txt}
-\end{center}
-located in the CMake build directory.
 
 \section{Uninstalling}
 
@@ -684,11 +673,21 @@ located in the CMake build directory.
 \begin{center}
     \textct{xargs rm < install_manifest.txt}
 \end{center}
-from the CMake build directory.  If Optizelle built JsonCpp or BLAS and LAPACK, the following two commands uninstall their corresponding packages.
-\begin{center}\begin{tabular}{l}
-    \textct{xargs rm < src/thirdparty/JsonCpp-prefix/src/JsonCpp-build/install_manifest.txt}\\
-    \textct{xargs rm < src/thirdparty/LAPACK-prefix/src/LAPACK-build/install_manifest.txt}
-\end{tabular}\end{center}
+from the CMake build directory. 
+
+\section{Distributing}
+
+        Optizelle uses CPack, part of the CMake package, in order to distribute the Optizelle source and compiled binaries.  In order to make a new distributable source package on Linux, Unix, OS X, MSYS, or Cygwin run 
+\begin{center}
+    \textct{make package_source}
+\end{center}
+from the CMake build directory.  If using an altnernative Make utility, run it on the target \textct{package_source} from the same directory.  Note, all files in the Optizelle directory tree except for the current build directory are included in the source package with this method.  Specifically, if the directory structure contains multiple build directories, CMake incorporates these in the source package as well, which is probably undesirable. 
+
+        In order to package compiled binaries to other systems, run
+\begin{center}
+    \textct{cpack}
+\end{center}
+in the build directory.  This encapsulates Optizelle as well as JsonCpp, BLAS, and LAPACK if they were also built during compilation.
 
 \chapter{Basic API}\label{ch:Basic}
 

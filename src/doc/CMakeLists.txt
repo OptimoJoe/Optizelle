@@ -38,5 +38,7 @@ add_latex_document(optizelle.tex DEFAULT_PDF
            vectorSpaceSpecification.tex
     CONFIGURE optizelle.tex
 )
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/optizelle.pdf
-    DESTINATION share/optizelle/doc)
+install(
+    FILES ${CMAKE_CURRENT_BINARY_DIR}/optizelle.pdf
+    DESTINATION share/optizelle/doc
+    RENAME Optizelle-${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}.pdf)
