@@ -17,6 +17,9 @@ include(UseLATEX)
 set(LICENSEPATH "${CMAKE_SOURCE_DIR}")
 set(ROSENBROCKPATH "${CMAKE_SOURCE_DIR}/src/examples/rosenbrock/")
 set(OUTPUTPATH "${CMAKE_CURRENT_SOURCE_DIR}")
+set(OPTIZELLECPPPATH "${CMAKE_SOURCE_DIR}/src/cpp/optizelle/")
+set(OPTIZELLEPYTHONPATH "${CMAKE_SOURCE_DIR}/src/python/Optizelle/")
+set(OPTIZELLEMATLABPATH "${CMAKE_SOURCE_DIR}/src/matlab/")
 
 # Compile the manual
 add_latex_document(optizelle.tex DEFAULT_PDF

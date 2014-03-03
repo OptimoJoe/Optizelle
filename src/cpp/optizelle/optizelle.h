@@ -47,6 +47,7 @@ Author: Joseph Young (joe@optimojoe.com)
 
 namespace Optizelle{
 
+    //---ScalarValuedFunction0---
     // A scalar valued function interface, f : X -> R
     template <
         typename Real,
@@ -70,6 +71,7 @@ namespace Optizelle{
         // Allow a derived class to deallocate memory
         virtual ~ScalarValuedFunction() {}
     };
+    //---ScalarValuedFunction1---
     
     template <
         typename Real,

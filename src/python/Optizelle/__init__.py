@@ -437,6 +437,7 @@ def createOperatorProperty(name,desc):
 
     return property(getter,setter,deleter,desc)
 
+#---ScalarValuedFunction0---
 class ScalarValuedFunction(object):
     """A simple scalar valued function interface, f : X -> R"""
 
@@ -456,6 +457,7 @@ class ScalarValuedFunction(object):
     def hessvec(self,x,dx,H_dx):
         """<- hess f(x) dx"""
         _err(self,"grad")
+#---ScalarValuedFunction1---
 
 class VectorValuedFunction(object):
     """A vector valued function interface, f : X -> Y"""
