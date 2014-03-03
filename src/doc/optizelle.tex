@@ -17,33 +17,32 @@
 % underscores.  Code found at:
 % https://tex.stackexchange.com/questions/20890/define-an-escape-underscore-environment
 \makeatletter
-\newcommand{\textct}{\begingroup\@activeus\@textct}
-\newcommand*{\@textct}[1]{\texttt{#1}\endgroup}
+\DeclareRobustCommand*{\textct}[1]{%
+  \begingroup\@activeus\scantokens{\texttt{#1}\endinput}\endgroup}
 \begingroup\lccode`\~=`\_\relax
    \lowercase{\endgroup\def\@activeus{\catcode`\_=\active \let~\_}}
 \makeatother
 
 % Sets an environment for CMake flags.  Code found at:
 % https://tex.stackexchange.com/questions/163491/options-for-creating-tables-with-repeated-elements
-\newcommand{\cmakelabels}{%
-  \ifcase\value{cmakelabelcount}\or
-    Flag:\or
-    Type:\or
-    Default:\or
-    Depends on:\or
-    Enables:\or
-    Autodetect?:\or
-    Description?:\or
-    \fi
+\newenvironment{cmakelist}
+{\par
+\centering\begin{longtable}{p{0.15\textwidth}p{0.75\textwidth}}}
+{\end{longtable}\par}
+\newcommand\cmakeitem[7]{%
+    Flag: & #1\\
+    Type: & #2\\
+    Default: & #3\\
+    Depends on: & #4\\
+    Enables: & #5\\
+    Autodetect?: & #6\\
+    Description: & #7\\
+    \\
 }
-\newcommand{\printcmakelabel}{%
-  \stepcounter{cmakelabelcount}%
-  \ifnum\value{cmakelabelcount}=9% This needs to be 1+#labels above
-    \setcounter{cmakelabelcount}{1}%
-  \fi
-  \cmakelabels
-}
-\newcounter{cmakelabelcount}
+
+% Used for labeling and referring to CMake flags
+\newcommand{\textctlabel}[1]{\phantomsection\label{itm:#1}\textct{#1}}
+\newcommand{\textctref}[1]{\hyperref[itm:#1]{\textct{#1}}}
 
 % Change the figure numbering to be chap.sec.num
 \renewcommand{\thefigure}{\arabic{chapter}.\arabic{section}.\arabic{figure}}
@@ -321,326 +320,357 @@ On Windows, if not using Cygwin, execute the following commands:
 \section{Configuring}
 
         Optizelle provides several different options within CMake in order to customize the build.  We describe these flags in the table below.          
-\begin{center}
-\begin{longtable}{>{\printcmakelabel}p{0.15\textwidth}p{0.75\textwidth}}
-    &\textct{CMAKE_INSTALL_PREFIX}\\
-    &\textct{PATH}\\
-    &Varies\\
-    &None\\
-    &None\\
-    &No\\
-    &Install location of Optizelle.\\
-\\
-    &\textct{ENABLE_DOCUMENTATION}\\
-    &\textct{BOOL}\\
-    &\textct{OFF}\\
-    &None\\
-    &\textct{PDFLATEX_COMPILER}, \textct{ENABLE_A4_PAPER}\\
-    &No\\
-    &Enables the build of the Optizelle manual from the LaTeX source.
-    It builds a pdf file of the manual.\\
-\\
-    &\textct{PDFLATEX_COMPILER}\\
-    &\textct{FILEPATH}\\
-    &None\\
-    &None\\
-    &None\\
-    &Yes\\
-    &Complete path and executable for pdflatex.\\
-\\
-    &\textct{ENABLE_A4_PAPER}\\
-    &\textct{BOOL}\\
-    &\textct{OFF}\\
-    &None\\
-    &None\\
-    &No\\
-    &When \textct{ON}, the manual uses A4 paper.  Otherwise, the manual uses
-    Letter paper.\\
-\\
-    &\textct{ENABLE_CPP}\\
-    &\textct{BOOL}\\
-    &\textct{OFF}\\
-    &None\\
-    &\textct{CMAKE_CXX_FLAGS}, 
-    \textct{CMAKE_BUILD_TYPE},
-    \textct{ENABLE_OPENMP}, 
-    \textct{ENABLE_BUILD_BLAS_AND_LAPACK},
-    \textct{ENABLE_BUILD_JSONCPP},
-    \textct{BLAS_LIBRARY},
-    \textct{LAPACK_LIBRARY},
-    \textct{JSONCPP_INCLUDE_DIR},
-    \textct{JSONCPP_LIBRARY},
-    \textct{ENABLE_CPP_EXAMPLES},
-    \textct{ENABLE_CPP_UNIT},
-    \textct{ENABLE_PYTHON},
-    \textct{ENABLE_MATLAB}\\
-    &No\\
-    &Enables the Optizelle C++ library.\\
-\\
-    &\textct{CMAKE_CXX_FLAGS}\\
-    &\textct{STRING}\\
-    &None\\
-    &\textct{ENABLE_CPP}\\
-    &None\\
-    &No\\
-    &C++ compiler specific flags.  Note, we usually require a special flag to
-    enable C++11 compilation such as \textct{-std=c++11} on GCC.\\
-\\
-    &\textct{CMAKE_BUILD_TYPE}\\
-    &\textct{STRING}\\
-    &None\\
-    &\textct{ENABLE_CPP}\\
-    &None\\
-    &No\\
-    &Generally set to either \textct{RELEASE} or \textct{DEBUG}.  Set to
-    \textct{RELEASE} for production libraries.  Set to \textct{DEBUG} to allow
-    profiling through utilities such as
-    \href{http://oprofile.sourceforge.net}{OProfile}.\\
-\\
-    &\textct{ENABLE_OPENMP}\\
-    &\textct{BOOL}\\
-    &\textct{OFF}\\
-    &\textct{ENABLE_CPP}\\
-    &None\\
-    &No\\
-    &Enable OpenMP/threaded support for the default, dense vector spaces.
-    Note, many BLAS and LAPACK libraries such as those from ATLAS benefit from
-    OpenMP directives.\\
-\\
-    &\textct{ENABLE_BUILD_BLAS_AND_LAPACK}\\
-    &\textct{BOOL}\\
-    &\textct{OFF}\\
-    &\textct{ENABLE_CPP}\\
-    &\textct{LAPACK_ARCHIVE}\\
-    &No\\
-    &Builds BLAS and LAPACK from source in case an optimized version is not
-    available.\\  
-\\
-    &\textct{LAPACK_ARCHIVE}\\
-    &\textct{FILEPATH}\\
-    &None\\
-    &\textct{ENABLE_BUILD_BLAS_AND_LAPACK}\\
-    &None\\
-    &No\\
-    &Location of the LAPACK archive downloaded from
-    \href{http://www.netlib.org/lapack}{Netlib}.\\
-\\
-    &\textct{ENABLE_BUILD_JSONCPP}\\
-    &\textct{BOOL}\\
-    &\textct{OFF}\\
-    &\textct{ENABLE_CPP}\\
-    &\textct{JSONCPP_ARCHIVE}\\
-    &No\\
-    &Builds JsonCpp from source.\\ 
-\\
-    &\textct{JSONCPP_ARCHIVE}\\
-    &\textct{FILEPATH}\\
-    &None\\
-    &\textct{ENABLE_BUILD_JSONCPP}\\
-    &None\\
-    &No\\
-    &Location of the JsonCpp archive downloaded from
-    \href{http://jsoncpp.sourceforge.net}{SourceForge}.\\
-\\
-    &\textct{BLAS_LIBRARY}\\
-    &\textct{FILEPATH}\\
-    &None \\
-    &\textct{ENABLE_CPP}\\
-    &None\\
-    &Yes \\
-    &A semicolon separated list of the complete path and library used
-    to provide BLAS.  This must include all required libraries in
-    order to successfully compile a BLAS dependent application.  For
-    example, using ATLAS BLAS, one possible entry is:
-    \textct{/usr/lib/libf77blas.a;/usr/lib/libatlas.a}\\
-\\
-    &\textct{LAPACK_LIBRARY} \\
-    &\textct{FILEPATH}\\
-    &None \\
-    &\textct{ENABLE_CPP}\\
-    &None\\
-    &Yes \\
-    &A semicolon separated list of the complete path and library used
-    to provide LAPACK.  This must include all required libraries,
-    except for BLAS libraries specified in \textct{BLAS_LIBRARY}, in
-    order to successfully compile a LAPACK dependent application.
-    For example, using ATLAS LAPACK, one possible entry is:
-    \textct{/usr/lib/liblapack.a;/usr/lib/libgfortran.so.3}\\
-\\
-    &\textct{JSONCPP_INCLUDE_DIR} \\
-    &\textct{PATH}\\
-    &None \\
-    &\textct{ENABLE_CPP}\\
-    &None\\
-    &Yes \\
-    &A path that indicates where the jsoncpp headers have been 
-    installed.  The actual headers must be found in 
-    \textct{\$\{JSONCPP_INCLUDE_DIR\}/json/}.\\
-\\
-    &\textct{JSONCPP_LIBRARY}\\
-    &\textct{FILEPATH}\\
-    &None \\
-    &\textct{ENABLE_CPP}\\
-    &None\\
-    &Yes \\
-    &Complete path and library for JsonCpp. \\
-\\
-    &\textct{ENABLE_CPP_EXAMPLES}\\
-    &\textct{BOOL}\\
-    &\textct{OFF}\\
-    &\textct{ENABLE_CPP}\\
-    &None\\
-    &No\\
-    &Enables the build and installation of simple examples that
-    demonstrate the use of Optizelle.\\
-\\
-    &\textct{ENABLE_CPP_UNIT}\\
-    &\textct{BOOL}\\
-    &\textct{OFF}\\
-    &\textct{ENABLE_CPP}\\
-    &None\\
-    &No\\
-    &Enables the build of unit tests that help validate the 
-    Optizelle code.  Execute these unit tests by running
-    \textct{ctest} in the CMake build directory.\\
-\\
-    &\textct{ENABLE_PYTHON}\\
-    &\textct{BOOL}\\
-    &\textct{OFF}\\
-    &\textct{ENABLE_CPP}\\
-    &\textct{PYTHON_INCLUDE_DIR},
-    \textct{PYTHON_LIBRARY},
-    \textct{PYTHON_EXECUTABLE},
-    \textct{ENABLE_PYTHON_EXAMPLES},
-    \textct{ENABLE_PYTHON_UNIT}\\
-    &No\\
-    &Enables the build of the Python wrappers for Optizelle.\\
-\\
-    &\textct{PYTHON_INCLUDE_DIR} \\
-    &\textct{FILEPATH}\\
-    &None \\
-    &\textct{ENABLE_PYTHON}\\
-    &None\\
-    &Yes \\
-    &A path that indicates where the Python 2.7 headers have been 
-    installed.  We do not prefix these headers, so we look directly
-    in the directory provided here.\\
-\\
-    &\textct{PYTHON_LIBRARY}\\
-    &\textct{FILEPATH}\\
-    &None\\
-    &\textct{ENABLE_PYTHON}\\
-    &None\\
-    &Yes\\
-    &Complete path and library for Python 2.7. \\
-\\
-    &\textct{PYTHON_EXECUTABLE}\\
-    &\textct{FILEPATH}\\
-    &None\\
-    &\textct{ENABLE_PYTHON}\\
-    &None\\
-    &Yes\\
-    &Complete path and executable for Python 2.7. \\
-\\
-    &\textct{ENABLE_PYTHON_EXAMPLES}\\
-    &\textct{BOOL}\\
-    &\textct{OFF}\\
-    &\textct{ENABLE_PYTHON}\\
-    &None\\
-    &No\\
-    &Enables the build and installation of simple examples that 
-    demonstrate the use of the Python wrappers for Optizelle.\\
-\\
-    &\textct{ENABLE_PYTHON_UNIT}\\
-    &\textct{BOOL}\\
-    &\textct{OFF}\\
-    &\textct{ENABLE_PYTHON}\\
-    &None\\
-    &No\\
-    &Enables the build of unit tests that help validate the 
-    Python wrappers for the Optizelle code.  Execute these unit
-    tests by running \textct{ctest} in the CMake build directory.\\
-\\
-    &\textct{ENABLE_MATLAB}\\
-    &\textct{BOOL}\\
-    &\textct{OFF}\\
-    &\textct{ENABLE_CPP}\\
-    &\textct{MATLAB_MEX_EXTENSION},
-    \textct{MATLAB_INCLUDE_DIR},
-    \textct{MATLAB_LIBRARY},
-    \textct{MATLAB_EXECUTABLE},
-    \textct{MATLAB_RUN_FLAG},
-    \textct{ENABLE_MATLAB_EXAMPLES},
-    \textct{ENABLE_MATLAB_UNIT}\\
-    &No\\
-    &Enables the build of the MATLAB/Octave wrappers for Optizelle.\\
-\\
-    &\textct{MATLAB_MEX_EXTENSION} \\
-    &\textct{STRING}\\
-    &None \\
-    &\textct{ENABLE_MATLAB}\\
-    &None\\
-    &No\\
-    &Extension of mex files on the system.  This can be found
-    by typing in the command 'mexext' inside of MATLAB/Octave.\\
-\\
-    &\textct{MATLAB_INCLUDE_DIR} \\
-    &\textct{FILEPATH}\\
-    &None \\
-    &\textct{ENABLE_MATLAB}\\
-    &None\\
-    &Yes \\
-    &Path that indicates where the MATLAB/Octave header
-    \textct{mex.h} has been installed.  We do not prefix these 
-    headers, so we look directly in the directory provided here.\\
-\\
-    &\textct{MATLAB_LIBRARY}\\
-    &\textct{FILEPATH}\\
-    &None\\
-    &\textct{ENABLE_MATLAB}\\
-    &None\\
-    &Yes\\
-    &Complete path and library for MATLAB/Octave (\textct{mex}
-    for MATLAB and \textct{octinterp} for Octave.)\\
-\\
-    &\textct{MATLAB_EXECUTABLE}\\
-    &\textct{FILEPATH}\\
-    &None\\
-    &\textct{ENABLE_MATLAB}\\
-    &None\\
-    &No\\
-    &Complete path and executable for MATLAB/Octave. \\
-\\
-    &\textct{MATLAB_RUN_FLAG}\\
-    &\textct{STRING}\\
-    &None\\
-    &\textct{ENABLE_MATLAB}\\
-    &None\\
-    &No\\
-    &MATLAB/Octave command line flag to run a script (\textct{-r}
-    for MATLAB and \textct{--eval} for Octave.) \\
-\\
-    &\textct{ENABLE_MATLAB_EXAMPLES}\\
-    &\textct{BOOL}\\
-    &\textct{OFF}\\
-    &\textct{ENABLE_MATLAB}\\
-    &None\\
-    &No\\
-    &Enables the build and installation of simple examples that 
-    demonstrate the use of the MATLAB/Octave wrappers for
-    Optizelle.\\
-\\
-    &\textct{ENABLE_MATLAB_UNIT}\\
-    &\textct{BOOL}\\
-    &\textct{OFF}\\
-    &\textct{ENABLE_MATLAB}\\
-    &None\\
-    &No\\
-    &Enables the build of unit tests that help validate the 
-    MATLAB/Octave wrappers for the Optizelle code.  Execute these unit
-    tests by running \textct{ctest} in the CMake build directory.\\
-\end{longtable}
-\end{center}
+\begin{cmakelist}
+    \cmakeitem
+        {\textctlabel{CMAKE_INSTALL_PREFIX}}
+        {\textct{PATH}}
+        {Varies}
+        {None}
+        {None}
+        {No}
+        {Install location of Optizelle.}
+
+    \cmakeitem
+        {\textctlabel{ENABLE_DOCUMENTATION}}
+        {\textct{BOOL}}
+        {\textct{OFF}}
+        {None}
+        {\textctref{PDFLATEX_COMPILER},
+            \textctref{ENABLE_A4_PAPER}}
+        {No}
+        {Enables the build of the Optizelle manual from the LaTeX source.
+        It builds a pdf file of the manual.}
+
+    \cmakeitem
+        {\textctlabel{PDFLATEX_COMPILER}}
+        {\textct{FILEPATH}}
+        {None}
+        {\textctref{ENABLE_DOCUMENTATION}}
+        {None}
+        {Yes}
+        {Complete path and executable for pdflatex.}
+
+    \cmakeitem
+        {\textctlabel{ENABLE_A4_PAPER}}
+        {\textct{BOOL}}
+        {\textct{OFF}}
+        {\textctref{ENABLE_DOCUMENTATION}}
+        {None}
+        {No}
+        {When \textct{ON}, the manual uses A4 paper.  Otherwise, the manual uses
+        Letter paper.}
+
+    \cmakeitem
+        {\textctlabel{ENABLE_CPP}}
+        {\textct{BOOL}}
+        {\textct{OFF}}
+        {None}
+        {\textctref{CMAKE_CXX_FLAGS}, 
+            \textctref{CMAKE_BUILD_TYPE},
+            \textctref{ENABLE_OPENMP}, 
+            \textctref{ENABLE_BUILD_BLAS_AND_LAPACK},
+            \textctref{ENABLE_BUILD_JSONCPP},
+            \textctref{BLAS_LIBRARY},
+            \textctref{LAPACK_LIBRARY},
+            \textctref{JSONCPP_INCLUDE_DIR},
+            \textctref{JSONCPP_LIBRARY},
+            \textctref{ENABLE_CPP_EXAMPLES},
+            \textctref{ENABLE_CPP_UNIT},
+            \textctref{ENABLE_PYTHON},
+            \textctref{ENABLE_MATLAB}}
+        {No}
+        {Enables the Optizelle C++ library.}
+
+    \cmakeitem
+        {\textctlabel{CMAKE_CXX_FLAGS}}
+        {\textct{STRING}}
+        {None}
+        {\textctref{ENABLE_CPP}}
+        {None}
+        {No}
+        {C++ compiler specific flags.  Note, we usually require a special flag
+        to enable C++11 compilation such as \textct{-std=c++11} on GCC.}
+
+    \cmakeitem
+        {\textctlabel{CMAKE_BUILD_TYPE}}
+        {\textct{STRING}}
+        {None}
+        {\textctref{ENABLE_CPP}}
+        {None}
+        {No}
+        {Generally set to either \textct{RELEASE} or \textct{DEBUG}.  Set to
+        \textct{RELEASE} for production libraries.  Set to \textct{DEBUG} to
+        allow profiling through utilities such as
+        \href{http://oprofile.sourceforge.net}{OProfile}.}
+
+    \cmakeitem
+        {\textctlabel{ENABLE_OPENMP}}
+        {\textct{BOOL}}
+        {\textct{OFF}}
+        {\textctref{ENABLE_CPP}}
+        {None}
+        {No}
+        {Enable OpenMP/threaded support for the default, dense vector spaces.
+        Note, many BLAS and LAPACK libraries such as those from ATLAS benefit
+        from OpenMP directives.}
+
+    \cmakeitem
+        {\textctlabel{ENABLE_BUILD_BLAS_AND_LAPACK}}
+        {\textct{BOOL}}
+        {\textct{OFF}}
+        {\textctref{ENABLE_CPP}}
+        {\textctref{LAPACK_ARCHIVE}}
+        {No}
+        {Builds BLAS and LAPACK from source in case an optimized version is not
+        available.}  
+
+    \cmakeitem
+        {\textctlabel{LAPACK_ARCHIVE}}
+        {\textct{FILEPATH}}
+        {None}
+        {\textctref{ENABLE_BUILD_BLAS_AND_LAPACK}}
+        {None}
+        {No}
+        {Location of the LAPACK archive downloaded from
+        \href{http://www.netlib.org/lapack}{Netlib}.}
+
+    \cmakeitem
+        {\textctlabel{ENABLE_BUILD_JSONCPP}}
+        {\textct{BOOL}}
+        {\textct{OFF}}
+        {\textctref{ENABLE_CPP}}
+        {\textctref{JSONCPP_ARCHIVE}}
+        {No}
+        {Builds JsonCpp from source.} 
+
+    \cmakeitem
+        {\textctlabel{JSONCPP_ARCHIVE}}
+        {\textct{FILEPATH}}
+        {None}
+        {\textctref{ENABLE_BUILD_JSONCPP}}
+        {None}
+        {No}
+        {Location of the JsonCpp archive downloaded from
+        \href{http://jsoncpp.sourceforge.net}{SourceForge}.}
+
+    \cmakeitem
+        {\textctlabel{BLAS_LIBRARY}}
+        {\textct{FILEPATH}}
+        {None }
+        {\textctref{ENABLE_CPP}}
+        {None}
+        {Yes }
+        {A semicolon separated list of the complete path and library used
+        to provide BLAS.  This must include all required libraries in
+        order to successfully compile a BLAS dependent application.  For
+        example, using ATLAS BLAS, one possible entry is:
+        \textct{/usr/lib/libf77blas.a;/usr/lib/libatlas.a}}
+
+    \cmakeitem
+        {\textctlabel{LAPACK_LIBRARY} }
+        {\textct{FILEPATH}}
+        {None }
+        {\textctref{ENABLE_CPP}}
+        {None}
+        {Yes }
+        {A semicolon separated list of the complete path and library used
+        to provide LAPACK.  This must include all required libraries,
+        except for BLAS libraries specified in \textctref{BLAS_LIBRARY}, in
+        order to successfully compile a LAPACK dependent application.
+        For example, using ATLAS LAPACK, one possible entry is:
+        \textct{/usr/lib/liblapack.a;/usr/lib/libgfortran.so.3}}
+
+    \cmakeitem
+        {\textctlabel{JSONCPP_INCLUDE_DIR} }
+        {\textct{PATH}}
+        {None }
+        {\textctref{ENABLE_CPP}}
+        {None}
+        {Yes }
+        {A path that indicates where the jsoncpp headers have been 
+        installed.  The actual headers must be found in 
+        \textct{\$\{JSONCPP_INCLUDE_DIR\}/json/}.}
+
+    \cmakeitem
+        {\textctlabel{JSONCPP_LIBRARY}}
+        {\textct{FILEPATH}}
+        {None }
+        {\textctref{ENABLE_CPP}}
+        {None}
+        {Yes }
+        {Complete path and library for JsonCpp. }
+
+    \cmakeitem
+        {\textctlabel{ENABLE_CPP_EXAMPLES}}
+        {\textct{BOOL}}
+        {\textct{OFF}}
+        {\textctref{ENABLE_CPP}}
+        {None}
+        {No}
+        {Enables the build and installation of simple examples that
+        demonstrate the use of Optizelle.}
+
+    \cmakeitem
+        {\textctlabel{ENABLE_CPP_UNIT}}
+        {\textct{BOOL}}
+        {\textct{OFF}}
+        {\textctref{ENABLE_CPP}}
+        {None}
+        {No}
+        {Enables the build of unit tests that help validate the 
+        Optizelle code.  Execute these unit tests by running
+        \textct{ctest} in the CMake build directory.}
+
+    \cmakeitem
+        {\textctlabel{ENABLE_PYTHON}}
+        {\textct{BOOL}}
+        {\textct{OFF}}
+        {\textctref{ENABLE_CPP}}
+        {\textctref{PYTHON_INCLUDE_DIR},
+            \textctref{PYTHON_LIBRARY},
+            \textctref{PYTHON_EXECUTABLE},
+            \textctref{ENABLE_PYTHON_EXAMPLES},
+            \textctref{ENABLE_PYTHON_UNIT}}
+        {No}
+        {Enables the build of the Python wrappers for Optizelle.}
+
+    \cmakeitem
+        {\textctlabel{PYTHON_INCLUDE_DIR} }
+        {\textct{FILEPATH}}
+        {None }
+        {\textctref{ENABLE_PYTHON}}
+        {None}
+        {Yes }
+        {A path that indicates where the Python 2.7 headers have been 
+        installed.  We do not prefix these headers, so we look directly
+        in the directory provided here.}
+
+    \cmakeitem
+        {\textctlabel{PYTHON_LIBRARY}}
+        {\textct{FILEPATH}}
+        {None}
+        {\textctref{ENABLE_PYTHON}}
+        {None}
+        {Yes}
+        {Complete path and library for Python 2.7. }
+
+    \cmakeitem
+        {\textctlabel{PYTHON_EXECUTABLE}}
+        {\textct{FILEPATH}}
+        {None}
+        {\textctref{ENABLE_PYTHON}}
+        {None}
+        {Yes}
+        {Complete path and executable for Python 2.7. }
+
+    \cmakeitem
+        {\textctlabel{ENABLE_PYTHON_EXAMPLES}}
+        {\textct{BOOL}}
+        {\textct{OFF}}
+        {\textctref{ENABLE_PYTHON}}
+        {None}
+        {No}
+        {Enables the build and installation of simple examples that 
+        demonstrate the use of the Python wrappers for Optizelle.}
+
+    \cmakeitem
+        {\textctlabel{ENABLE_PYTHON_UNIT}}
+        {\textct{BOOL}}
+        {\textct{OFF}}
+        {\textctref{ENABLE_PYTHON}}
+        {None}
+        {No}
+        {Enables the build of unit tests that help validate the 
+        Python wrappers for the Optizelle code.  Execute these unit
+        tests by running \textct{ctest} in the CMake build directory.}
+
+    \cmakeitem
+        {\textctlabel{ENABLE_MATLAB}}
+        {\textct{BOOL}}
+        {\textct{OFF}}
+        {\textctref{ENABLE_CPP}}
+        {\textctref{MATLAB_MEX_EXTENSION},
+            \textctref{MATLAB_INCLUDE_DIR},
+            \textctref{MATLAB_LIBRARY},
+            \textctref{MATLAB_EXECUTABLE},
+            \textctref{MATLAB_RUN_FLAG},
+            \textctref{ENABLE_MATLAB_EXAMPLES},
+            \textctref{ENABLE_MATLAB_UNIT}}
+        {No}
+        {Enables the build of the MATLAB/Octave wrappers for Optizelle.}
+
+    \cmakeitem
+        {\textctlabel{MATLAB_MEX_EXTENSION} }
+        {\textct{STRING}}
+        {None}
+        {\textctref{ENABLE_MATLAB}}
+        {None}
+        {No}
+        {Extension of mex files on the system.  This can be found
+        by typing in the command 'mexext' inside of MATLAB/Octave.}
+
+    \cmakeitem
+        {\textctlabel{MATLAB_INCLUDE_DIR} }
+        {\textct{FILEPATH}}
+        {None}
+        {\textctref{ENABLE_MATLAB}}
+        {None}
+        {Yes }
+        {Path that indicates where the MATLAB/Octave header
+        \textct{mex.h} has been installed.  We do not prefix these 
+        headers, so we look directly in the directory provided here.}
+
+    \cmakeitem
+        {\textctlabel{MATLAB_LIBRARY}}
+        {\textct{FILEPATH}}
+        {None}
+        {\textctref{ENABLE_MATLAB}}
+        {None}
+        {Yes}
+        {Complete path and library for MATLAB/Octave (\textct{mex}
+        for MATLAB and \textct{octinterp} for Octave.)}
+
+    \cmakeitem
+        {\textctlabel{MATLAB_EXECUTABLE}}
+        {\textct{FILEPATH}}
+        {None}
+        {\textctref{ENABLE_MATLAB}}
+        {None}
+        {No}
+        {Complete path and executable for MATLAB/Octave. }
+
+    \cmakeitem
+        {\textctlabel{MATLAB_RUN_FLAG}}
+        {\textct{STRING}}
+        {None}
+        {\textctref{ENABLE_MATLAB}}
+        {None}
+        {No}
+        {MATLAB/Octave command line flag to run a script (\textct{-r}
+        for MATLAB and \textct{--eval} for Octave.) }
+
+    \cmakeitem
+        {\textctlabel{ENABLE_MATLAB_EXAMPLES}}
+        {\textct{BOOL}}
+        {\textct{OFF}}
+        {\textctref{ENABLE_MATLAB}}
+        {None}
+        {No}
+        {Enables the build and installation of simple examples that 
+        demonstrate the use of the MATLAB/Octave wrappers for
+        Optizelle.}
+
+    \cmakeitem
+        {\textctlabel{ENABLE_MATLAB_UNIT}}
+        {\textct{BOOL}}
+        {\textct{OFF}}
+        {\textctref{ENABLE_MATLAB}}
+        {None}
+        {No}
+        {Enables the build of unit tests that help validate the 
+        MATLAB/Octave wrappers for the Optizelle code.  Execute these unit
+        tests by running \textct{ctest} in the CMake build directory.}
+\end{cmakelist}
 
 \section{Installing}
 
@@ -654,10 +684,10 @@ from the CMake build directory using GNU Make, MSYS, or Cygwin.  If using a diff
 \end{center}
 located in the CMake build directory.
 
-    The CMake variable \textct{CMAKE_INSTALL_PREFIX} determines Optizelle's base installation directory.  From there, we install Optizelle into the following directory tree.  For brevity, we do not list all of the installed files in this diagram, but a selection of the most important files.
+    The CMake variable \textctref{CMAKE_INSTALL_PREFIX} determines Optizelle's base installation directory.  From there, we install Optizelle into the following directory tree.  For brevity, we do not list all of the installed files in this diagram, but a selection of the most important files.
 \begin{center}\begin{minipage}[t]{1\columnwidth}
     \dirtree{%
-        .1 \$\{CMAKE\_INSTALL\_PREFIX\}.
+        .1 \$\{\textctref{CMAKE_INSTALL_PREFIX}\}.
         .2 lib.
         .3 liboptizelle.a.
         .3 liboptizelle.so.
@@ -677,11 +707,10 @@ located in the CMake build directory.
         .4 examples.
     }
 \end{minipage}\end{center}
-\phantomsection\label{lnk:jsoncppinstall}
-If the \textct{ENABLE_BUILD_JSONCPP} variable is set to \textct{ON}, then we also install JsonCpp to the following location.
+If the \textctref{ENABLE_BUILD_JSONCPP} variable is set to \textct{ON}, then we also install JsonCpp to the following location.
 \begin{center}\begin{minipage}[t]{1\columnwidth}
     \dirtree{%
-        .1 \$\{CMAKE\_INSTALL\_PREFIX\}.
+        .1 \$\{\textctref{CMAKE_INSTALL_PREFIX}\}.
         .2 lib.
         .3 libjson.a.
         .3 libjson.so.
@@ -690,11 +719,10 @@ If the \textct{ENABLE_BUILD_JSONCPP} variable is set to \textct{ON}, then we als
         .4 json.h.
     }
 \end{minipage}\end{center}
-\phantomsection\label{lnk:lapackinstall}
-Finally, if the \textct{ENABLE_BUILD_BLAS_AND_LAPACK} variable is set to \textct{ON}, then we install BLAS and LAPACK to the following location.
+Finally, if the \textctref{ENABLE_BUILD_BLAS_AND_LAPACK} variable is set to \textct{ON}, then we install BLAS and LAPACK to the following location.
 \begin{center}\begin{minipage}[t]{1\columnwidth}
     \dirtree{%
-        .1 \$\{CMAKE\_INSTALL\_PREFIX\}.
+        .1 \$\{\textctref{CMAKE_INSTALL_PREFIX}\}.
         .2 lib.
         .3 libblas.so.
         .3 liblapack.so.
