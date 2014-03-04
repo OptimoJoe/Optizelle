@@ -1,17 +1,41 @@
 \documentclass{report}
 
 % All of the packages required
+
+% AMS math typesetting
 \usepackage{amssymb}
-\usepackage{listings}
-\usepackage{xcolor}
-\usepackage[colorlinks=true]{hyperref}
-\usepackage{subfig}
-\usepackage{longtable}
 \usepackage{amsmath}
+
+% Grabs code examples
+\usepackage{listings}
+
+% We use this with listings in order to color our code
+\usepackage{xcolor}
+
+% Creates both internal and external links.  At the moment, I like this
+% more than the url package
+\usepackage[colorlinks=true]{hyperref}
+
+\usepackage{subfig}
+
+% Creates multiple page tables
+\usepackage{longtable}
+
+% Sets both the paper type (letter or A4) as well as the margins
 \usepackage[top=0.1\paperheight,bottom=0.1\paperheight,left=0.1\paperwidth,right=0.1\paperwidth,paper=@PAPERTYPE@]{geometry}
-\usepackage[Bjornstrup]{fncychap} % Make sure this comes after geometry
+
+% Creates a slightly nicer looking manual.  Make sure this comes after geometry
+% or else all of the styles will be messed up.
+\usepackage[Bjornstrup]{fncychap} 
+
+% Type sets directory trees
 \usepackage{dirtree}
-\usepackage{array} % Needed for our tables with repeated elements
+
+% Needed for tables with repeated elements.
+\usepackage{array}
+
+% Allows us to stop a certain amount of text duplication
+\usepackage{collect}
 
 % Define a computer text environment.  This is monospaced and allows
 % underscores.  Code found at:
@@ -30,13 +54,13 @@
 \centering\begin{longtable}{p{0.15\textwidth}p{0.75\textwidth}}}
 {\end{longtable}\par}
 \newcommand\cmakeitem[7]{%
-    Flag: & #1\\
-    Type: & #2\\
-    Default: & #3\\
-    Depends on: & #4\\
-    Enables: & #5\\
-    Autodetect?: & #6\\
-    Description: & #7\\
+    \textbf{Flag} & #1\\
+    \textbf{Type} & #2\\
+    \textbf{Default} & #3\\
+    \textbf{Depends on} & #4\\
+    \textbf{Enables} & #5\\
+    \textbf{Autodetect?} & #6\\
+    \textbf{Description} & #7\\
     \\
 }
 
@@ -44,19 +68,31 @@
 \newcommand{\textctlabel}[1]{\phantomsection\label{itm:#1}\textct{#1}}
 \newcommand{\textctref}[1]{\hyperref[itm:#1]{\textct{#1}}}
 
+% Setup an API environment
+\newenvironment{apilist}
+{\par
+\centering\begin{longtable}{|ll|}\hline}
+{\end{longtable}\par}
+\newcommand\apiitem[4]{%
+    \textbf{Language} & #1\\
+    \textbf{Structure} & #2\\
+    \textbf{Interface} & #3\\
+    \textbf{Code} & #4\\\hline
+}
+
+% Setup an example environment
+\newenvironment{examplelist}
+{\par
+\centering\begin{longtable}{|ll|}\hline}
+{\end{longtable}\par}
+\newcommand\exampleitem[2]{%
+    \textbf{Language} & #1\\
+    \textbf{Code} & #2\\\hline
+}
+
 % Change the figure numbering to be chap.sec.num
 \renewcommand{\thefigure}{\arabic{chapter}.\arabic{section}.\arabic{figure}}
-
-% Simple macros to help printing
-\newcommand{\re}{\mathbb{R}}
-\newcommand{\st}{\textnormal{st}}
         
-% Different optimization formulations
-\newcommand{\unconstrained}{\begin{array}[t]{rcl}\min\limits_{x\in X}&& f(x)\end{array}}
-\newcommand{\equalityConstrained}{\begin{array}[t]{rcl}\min\limits_{x\in X}&&f(x)\\\st && g(x)=0\end{array}}
-\newcommand{\inequalityConstrained}{\begin{array}[t]{rcl}\min\limits_{x\in X}&&f(x)\\\st && h(x)\succeq 0\end{array}}
-\newcommand{\constrained}{\begin{array}[t]{rcl}\min\limits_{x\in X}&&f(x)\\\st && g(x)=0\\&&h(x)\succeq 0\end{array}}
-
 % Create some new environments for displaying code and output
 
 % Use the following for all languages
@@ -133,10 +169,21 @@
     literate=
 }
 
-% Create some Lagrangian macros
+% Simple macros to help math printing
+\newcommand{\re}{\mathbb{R}}
+\newcommand{\st}{\textnormal{st}}
 \newcommand{\ineqGradLag}[2]{\nabla f(#1)-h^\prime(#1)^*#2}
 \newcommand{\eqGradLag}[2]{\nabla f(#1)+g^\prime(#1)^*#2}
 \newcommand{\conGradLag}[3]{\nabla f(#1)+g^\prime(#1)^*#2-h^\prime(#1)^*#3}
+
+% Collections of text, tables, etc.
+\definecollection{col:OptimizationTypes}
+\definecollection{col:Unconstrained}
+\definecollection{col:EqualityConstrained}
+\definecollection{col:InequalityConstrained}
+\definecollection{col:Constrained}
+\definecollection{col:ScalarValuedFunction}
+\definecollection{col:ScalarValuedFunctionExample}
 
 \title{Optizelle v@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@.@CPACK_PACKAGE_VERSION_PATCH@}
 \author{OptimoJoe\\Joseph Young}
@@ -147,17 +194,43 @@
 \chapter{Introduction}\label{ch:Introduction}
 
         Optizelle [op-t\textit{\!uh}-{\bf zel}] is an open source software library designed to solve general purpose nonlinear optimization problems of the form
-        \begin{center}\begin{tabular}{|l|l|}\hline
-        \multicolumn{1}{|c|}{\bf Unconstrained} &
-        \multicolumn{1}{c|}{\bf Equality Constrained}\\
-        $\unconstrained$ &
-        $\equalityConstrained$ \\\hline
-        \multicolumn{1}{|c|}{\bf Inequality Constrained} &
-        \multicolumn{1}{c|}{\bf Constrained}\\
-        $\inequalityConstrained$ &
-        $\constrained$ \\\hline
-        \end{tabular}\end{center}
-It features 
+        \begin{collect}{col:Unconstrained}{}{}
+            $\begin{array}[t]{rcl}
+                \min\limits_{x\in X} && f(x)
+            \end{array}$
+        \end{collect}
+        \begin{collect}{col:EqualityConstrained}{}{}
+            $\begin{array}[t]{rcl}
+                \min\limits_{x\in X} && f(x)\\
+                \st && g(x)=0
+            \end{array}$
+        \end{collect}
+        \begin{collect}{col:InequalityConstrained}{}{}
+            $\begin{array}[t]{rcl}
+                \min\limits_{x\in X} && f(x)\\
+                \st && h(x)\succeq 0
+            \end{array}$
+        \end{collect}
+        \begin{collect}{col:Constrained}{}{}
+            $\begin{array}[t]{rcl}
+                \min\limits_{x\in X} && f(x)\\
+                \st && g(x)=0\\
+                    && h(x)\succeq 0
+            \end{array}$
+        \end{collect}
+        \begin{collect*}{col:OptimizationTypes}{}{}{}{}
+            \begin{center}\begin{tabular}{|l|l|}\hline
+                \multicolumn{1}{|c|}{\bf Unconstrained} &
+                \multicolumn{1}{c|}{\bf Equality Constrained}\\
+                \includecollection{col:Unconstrained} &
+                \includecollection{col:EqualityConstrained} \\\hline
+                \multicolumn{1}{|c|}{\bf Inequality Constrained} &
+                \multicolumn{1}{c|}{\bf Constrained}\\
+                \includecollection{col:InequalityConstrained} &
+                \includecollection{col:Constrained} \\\hline
+            \end{tabular}\end{center}
+        \end{collect*}
+\noindent It features 
 \begin{itemize}
     \item {\bf State of the art algorithms}
         \begin{itemize}
@@ -753,20 +826,12 @@ in the build directory.  This encapsulates Optizelle as well as JsonCpp, BLAS, a
 
 \chapter{Basic API}\label{ch:Basic}
 
-       Optizelle organizes its algorithms into four different categories: 
-    \begin{center}\begin{tabular}{|l|l|}\hline
-    \multicolumn{1}{|c|}{\bf Unconstrained} &
-    \multicolumn{1}{c|}{\bf Equality Constrained}\\
-    $\unconstrained$ &
-    $\equalityConstrained$ \\\hline
-    \multicolumn{1}{|c|}{\bf Inequality Constrained} &
-    \multicolumn{1}{c|}{\bf Constrained}\\
-    $\inequalityConstrained$ &
-    $\constrained$ \\\hline
-    \end{tabular}\end{center}
-Since these formulations necessitate different algorithms, the overall structure of Optizelle and the algorithms themselves have been segregated into these categories.  
+        We organize Optizelle's algorithms into four different categories: 
 
-        In order to optimize these formulations, we follow the general procedure
+        \includecollection{col:OptimizationTypes}
+
+\noindent Since these formulations necessitate different algorithms, we segregate the overall structure of Optizelle and the algorithms themselves into these categories.  
+        In order to optimize these formulations, we follow the general procedure:
 \begin{enumerate}
     \item Define the objective function.
     \item (Optional) Define the constraints.
@@ -780,41 +845,56 @@ We discuss how to implement each of the above steps below.
 
 \section{Notation}
 
-        Although we work to keep the interface to Optizelle consistent, each programming language we interface to possesses a slightly different semantics.  As such, the following sections contain
-        
+        Although we work to keep the interface to Optizelle consistent, each programming language we interface to possesses a slightly different semantics.  As such, the suceeding text contain blocks of the form
+\begin{apilist}
+    \apiitem
+        {}
+        {}
+        {}
+        {}
+\end{apilist}
+\noindent In these blocks, we first specify the \textbf{Language}, which includes C++, Python, and MATLAB/Octave.  Next, we list the name of the \textbf{Structure} under discussion.  In C++ and Python, this generally corresponds to a class whereas in MATLAB/Octave this becomes a struct array.  Note, these names include the complete namespace, module, or member to access the corresponding item.  Then, we denote the \textbf{Interface}, which is either \textit{Inheritance} or \textit{Members present}.  In the case of \textit{Inheritance}, we must create a new class that derives from the specified structure and fills in the missing details.  In the case of \textit{Members present}, we create a new structure that contains all of the necessary elements.  Finally, the \textbf{Code} section contains the actual code that defines the structure under discussion.  This provides the rest of the interface details. 
 
 \section{Define the Objective Function}
 
-        We define the objective function as
-\begin{center}\begin{longtable}{|ll|}\hline
-    \textbf{Language} & C++\\
-    \textbf{Structure} & \textct{Optizelle::ScalarValuedFunction}\\
-    \textbf{Interface} & Inheritance\\
-    \textbf{Code} & \lstinputlisting[style=C++,linerange=ScalarValuedFunction0-ScalarValuedFunction1]{@OPTIZELLECPPPATH@/optizelle.h}\\\hline
-    \textbf{Language} & Python\\
-    \textbf{Structure} & \textct{Optizelle.ScalarValuedFunction}\\
-    \textbf{Interface} & Inheritance\\
-    \textbf{Code} & \lstinputlisting[style=Python,linerange=ScalarValuedFunction0-ScalarValuedFunction1]{@OPTIZELLEPYTHONPATH@/__init__.py}\\\hline
-    \textbf{Language} & MATLAB/Octave\\
-    \textbf{Structure} & \textct{Optizelle.ScalarValuedFunction}\\
-    \textbf{Interface} & Members present\\
-    \textbf{Code} & \lstinputlisting[style=Matlab,linerange=ScalarValuedFunction0-ScalarValuedFunction1]{@OPTIZELLEMATLABPATH@/setupOptizelle.m}\\\hline
-\end{longtable}\end{center}
+        In the optimization problems
+        \includecollection{col:OptimizationTypes}
+\noindent the function $f:X\rightarrow\re$ denotes the \textit{objective function}.  Note, we restrict ourselves to scalar-valued functions and do not consider multi-objective optimization problems.  In order to optimize with this function, we require information about its evaluation and derivatives.  Specifically, we require its evaluation, $f(x)$, and gradient $\nabla f(x)$.  In order to second-order algorithms, we also require the Hessian-vector product, $\nabla^2 f(x)\delta x$.  In code, we specify this function as
+\begin{collect*}{col:ScalarValuedFunction}{}{}{}{}
+\begin{apilist}
+    \apiitem
+        {C++}
+        {\textct{Optizelle::ScalarValuedFunction}}
+        {Inheritance}
+        {\lstinputlisting[style=C++,linerange=ScalarValuedFunction0-ScalarValuedFunction1]{@OPTIZELLECPPPATH@/optizelle.h}}
 
-        In each of these cases, this specification corresponds to the evaluation of the objective, $f(x)$, gradient, $\nabla f(x)$, and Hessian-vector product, $\nabla^2 f(x)$, respectively.  Strictly, Optizelle only requires $f(x)$ and $\nabla f(x)$, but an appropriate first order method such as SR1 must be chosen when setting the optimization parameters.  In the case where the Hessian is not available, set the result of the Hessian vector product to zero. 
+    \apiitem
+        {Python}
+        {\textct{Optizelle.ScalarValuedFunction}}
+        {Inheritance}
+        {\lstinputlisting[style=Python,linerange=ScalarValuedFunction0-ScalarValuedFunction1]{@OPTIZELLEPYTHONPATH@/__init__.py}}
 
-        As an example, we define the Rosenbrock function as
+    \apiitem
+        {MATLAB/Octave}
+        {\textct{Optizelle.ScalarValuedFunction}}
+        {Members present}
+        {\lstinputlisting[style=Matlab,linerange=ScalarValuedFunction0-ScalarValuedFunction1]{@OPTIZELLEMATLABPATH@/setupOptizelle.m}}
+\end{apilist}
+\end{collect*}
+\noindent Note, we require that the Hessian-vector product always be present.  If one is not available, we simply return zero.
+        
+        As an example, the Rosenbrock function is the function $f:\re^2\rightarrow \re$ where 
 $$
         f(x)=(1-x_1)^2+100(x_2-x_1^2)^2.
 $$
-This means we define the gradient as
+This function has a gradient of
 $$
         \nabla f(x)=\begin{bmatrix}
-        -400x_1(x_2-x_1^2)-2(1-x_1)\\
-        200(x_2-x_1^2)
+            -400x_1(x_2-x_1^2)-2(1-x_1)\\
+            200(x_2-x_1^2)
         \end{bmatrix}
 $$
-and Hessian-vector product as
+and Hessian-vector product of 
 $$
         \nabla^2 f(x)\delta x=
         \begin{bmatrix}
@@ -822,8 +902,22 @@ $$
             -400x_1 & 200
         \end{bmatrix}\delta x.
 $$
-Using Optizelle's internal vector spaces, we implement these operators as
-\input{objectiveExample.tex}
+Using Optizelle's internal vector spaces, we implement these functions as 
+\begin{collect*}{col:ScalarValuedFunctionExample}{}{}{}{}
+\begin{examplelist}
+    \exampleitem
+        {C++}
+        {\lstinputlisting[style=C++,linerange=Objective0-Objective1]{@ROSENBROCKPATH@/rosenbrock.cpp}}
+
+    \exampleitem
+        {Python}
+        {\lstinputlisting[style=Python,linerange=Objective0-Objective1]{@ROSENBROCKPATH@/rosenbrock.py}}
+
+    \exampleitem
+        {MATLAB/Octave}
+        {\lstinputlisting[style=Matlab,linerange=Objective0-Objective1]{@ROSENBROCKPATH@/rosenbrock.m}}
+\end{examplelist}
+\end{collect*}
 
 \section{Define the Constraints}
 

@@ -14,6 +14,7 @@ Real sq(Real x){
     return x*x; 
 }
 
+//---Objective0---
 // Define the Rosenbrock function where
 // 
 // f(x,y)=(1-x)^2+100(y-x^2)^2
@@ -47,6 +48,7 @@ struct Rosenbrock
         H_dx[1]=-400.*x[0]*dx[0]+200.*dx[1];
     }
 };
+//---Objective1---
 
 // Define a perfect preconditioner for the Hessian
 struct RosenHInv :

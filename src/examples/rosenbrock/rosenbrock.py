@@ -11,6 +11,7 @@ import sys
 # Squares its input
 sq = lambda x:x*x
 
+#---Objective0---
 # Define the Rosenbrock function where
 # 
 # f(x,y)=(1-x)^2+100(y-x^2)^2
@@ -29,6 +30,7 @@ class Rosenbrock(Optizelle.ScalarValuedFunction):
     def hessvec(self,x,dx,H_dx):
     	H_dx[0] = (1200*sq(x[0])-400*x[1]+2)*dx[0]-400*x[0]*dx[1]
         H_dx[1] = -400*x[0]*dx[0] + 200*dx[1]
+#---Objective1---
 
 # Define a perfect preconditioner for the Hessian
 class RosenHInv(Optizelle.Operator):

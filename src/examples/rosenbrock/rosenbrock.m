@@ -14,6 +14,7 @@ function z = sq(x)
     z=x*x;
 end
 
+%---Objective0---
 % Define the Rosenbrock function where
 % 
 % f(x,y)=(1-x)^2+100(y-x^2)^2
@@ -33,6 +34,7 @@ function self = Rosenbrock()
         (1200.*sq(x(1))-400.*x(2)+2)*dx(1)-400.*x(1)*dx(2);
         -400.*x(1)*dx(1)+200.*dx(2)];
 end
+%---Objective1---
 
 % Define a perfect preconditioner for the Hessian
 function self = RosenHInv()

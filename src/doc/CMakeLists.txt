@@ -23,12 +23,7 @@ set(OPTIZELLEMATLABPATH "${CMAKE_SOURCE_DIR}/src/matlab/")
 
 # Compile the manual
 add_latex_document(optizelle.tex DEFAULT_PDF
-    INPUTS rosen_code.tex rosen_input.tex rosen_output.tex
-           simple_ineq_code.tex simple_ineq_input.tex simple_ineq_output.tex
-           simple_eq_code.tex simple_eq_input.tex simple_eq_output.tex
-           simple_con_code.tex simple_con_input.tex simple_con_output.tex
-           objectiveSpecification.tex objectiveExample.tex
-           constraintSpecification.tex constraintExample.tex
+    INPUTS constraintSpecification.tex constraintExample.tex
            initialGuessExample.tex
            allocateCodomainExample.tex
            stateSpecification.tex
