@@ -512,6 +512,7 @@ class StateManipulator(object):
         """Application"""
         pass
 
+#---Rm0---
 class Rm(object):
     """Vector space for the nonnegative orthant.  For basic vectors in R^m, use this."""
 
@@ -585,6 +586,7 @@ class Rm(object):
     def symm(x):
         """Symmetrization, x <- symm(x) such that L(symm(x)) is a symmetric operator"""
         pass
+#---Rm1---
 
 class RestartPackage(tuple):
     """Holds restart information"""

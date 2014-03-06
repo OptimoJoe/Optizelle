@@ -40,6 +40,7 @@ Author: Joseph Young (joe@optimojoe.com)
 namespace Optizelle {
     using namespace Optizelle;
 
+    //---Rm0---
     // Vector space for the nonnegative orthant.  For basic vectors
     // in R^m, use this.
     template <typename Real>
@@ -174,6 +175,7 @@ namespace Optizelle {
         // operator.
         static void symm(Vector & x) { }
     };
+    //---Rm1---
 
     namespace json {
         // Serialization utility for the Rm vector space

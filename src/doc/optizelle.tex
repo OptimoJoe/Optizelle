@@ -37,6 +37,12 @@
 % Allows us to stop a certain amount of text duplication
 \usepackage{collect}
 
+% Allows us to put a frame allow a selection of text, code, whatever
+\usepackage{mdframed}
+
+% Allows the create of starred macros
+\usepackage{suffix}
+
 % Define a computer text environment.  This is monospaced and allows
 % underscores.  Code found at:
 % https://tex.stackexchange.com/questions/20890/define-an-escape-underscore-environment
@@ -68,27 +74,36 @@
 \newcommand{\textctlabel}[1]{\phantomsection\label{itm:#1}\textct{#1}}
 \newcommand{\textctref}[1]{\hyperref[itm:#1]{\textct{#1}}}
 
-% Setup an API environment
+% Setup an API environment.  As a note, we use medskipamount since
+% \baselineskip interferes with something in mdframed and causes us to output
+% an infinite number of pages.
 \newenvironment{apilist}
 {\par
-\centering\begin{longtable}{|ll|}\hline}
-{\end{longtable}\par}
-\newcommand\apiitem[4]{%
-    \textbf{Language} & #1\\
-    \textbf{Structure} & #2\\
-    \textbf{Interface} & #3\\
-    \textbf{Code} & #4\\\hline
+\centering\begin{mdframed}[skipabove=\topsep,skipbelow=\topsep]}
+{\end{mdframed}\par}
+\newcommand\apiitem[4]{
+    \par\begin{tabular}{ll}
+        \textbf{Language} & #1\\
+        \textbf{Structure} & #2\\
+        \textbf{Interface} & #3\\
+        \textbf{Code}
+    \end{tabular}\par
+    #4\vspace{\medskipamount}
 }
+\WithSuffix\DeclareRobustCommand\apiitem*[4]{\apiitem{#1}{#2}{#3}{#4}\vspace{-\medskipamount}}
 
 % Setup an example environment
 \newenvironment{examplelist}
-{\par
-\centering\begin{longtable}{|ll|}\hline}
-{\end{longtable}\par}
-\newcommand\exampleitem[2]{%
-    \textbf{Language} & #1\\
-    \textbf{Code} & #2\\\hline
+    {\par\centering\begin{mdframed}[skipabove=\topsep,skipbelow=\topsep]}
+    {\end{mdframed}\par}
+\newcommand\exampleitem[2]{
+    \par\begin{tabular}{ll}
+        \textbf{Language} & #1\\
+        \textbf{Code}
+    \end{tabular}\par
+    #2\vspace{\medskipamount}
 }
+\WithSuffix\DeclareRobustCommand\exampleitem*[2]{\exampleitem{#1}{#2}\vspace{-\medskipamount}}
 
 % Change the figure numbering to be chap.sec.num
 \renewcommand{\thefigure}{\arabic{chapter}.\arabic{section}.\arabic{figure}}
@@ -138,7 +153,7 @@
     numbersep=8pt,
     showstringspaces=false,
     breaklines=true,
-    backgroundcolor=\color{background},
+    backgroundcolor=\color{white},
     literate=
      *{0}{{{\color{numb}0}}}{1}
       {1}{{{\color{numb}1}}}{1}
@@ -182,12 +197,18 @@
 \definecollection{col:EqualityConstrained}
 \definecollection{col:InequalityConstrained}
 \definecollection{col:Constrained}
+\newsavebox{\colImportOptizelleCpp}
+\newsavebox{\colImportOptizellePython}
+\newsavebox{\colImportOptizelleMatlab}
+\definecollection{col:ImportOptizelle}
+\definecollection{col:Rm}
 \definecollection{col:ScalarValuedFunction}
 \definecollection{col:ScalarValuedFunctionExample}
 
 \title{Optizelle v@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@.@CPACK_PACKAGE_VERSION_PATCH@}
 \author{OptimoJoe\\Joseph Young}
 \begin{document}
+
 \maketitle
 \tableofcontents
 
@@ -292,16 +313,27 @@ $$
     \end{array}
 $$
 In order to optimize this function, we use the following code and parameters, which generates the subsequent output.
-\subsection{C++}
-\lstinputlisting[style=C++]{@ROSENBROCKPATH@/rosenbrock.cpp}
-\subsection{MATLAB}
-\lstinputlisting[style=MATLAB]{@ROSENBROCKPATH@/rosenbrock.m}
-\subsection{Python}
-\lstinputlisting[style=Python]{@ROSENBROCKPATH@/rosenbrock.py}
-\subsection{Parameters}
-\lstinputlisting[style=json,linerange=params0-params1]{@ROSENBROCKPATH@/tr_newton.json}
-\subsection{Output}
-\lstinputlisting[style=OptizelleOutput]{@OUTPUTPATH@/rosen_output.txt}
+\begin{examplelist}
+    \exampleitem
+        {C++}
+        {\lstinputlisting[style=C++]{@ROSENBROCKPATH@/rosenbrock.cpp}}
+
+    \exampleitem
+        {Python}
+        {\lstinputlisting[style=Python]{@ROSENBROCKPATH@/rosenbrock.py}}
+
+    \exampleitem
+        {MATLAB/Octave}
+        {\lstinputlisting[style=MATLAB]{@ROSENBROCKPATH@/rosenbrock.m}}
+
+    \exampleitem
+        {Optizelle Parameters}
+        {\lstinputlisting[style=json,linerange=params0-params1]{@ROSENBROCKPATH@/tr_newton.json}}
+
+    \exampleitem
+        {Optizelle Output}
+        {\lstinputlisting[style=OptizelleOutput]{@OUTPUTPATH@/rosen_output.txt}}
+\end{examplelist}
 
 \section{History}
 
@@ -833,6 +865,8 @@ in the build directory.  This encapsulates Optizelle as well as JsonCpp, BLAS, a
 \noindent Since these formulations necessitate different algorithms, we segregate the overall structure of Optizelle and the algorithms themselves into these categories.  
         In order to optimize these formulations, we follow the general procedure:
 \begin{enumerate}
+    \item Import Optizelle.
+    \item Import or define the appropriate vector spaces.
     \item Define the objective function.
     \item (Optional) Define the constraints.
     \item Create the optimization state. 
@@ -843,17 +877,126 @@ in the build directory.  This encapsulates Optizelle as well as JsonCpp, BLAS, a
 \end{enumerate}
 We discuss how to implement each of the above steps below. 
 
-\section{Notation}
+\section{Import Optizelle}
 
-        Although we work to keep the interface to Optizelle consistent, each programming language we interface to possesses a slightly different semantics.  As such, the suceeding text contain blocks of the form
+        Each interface uses its own method to import Optizelle:
+\begin{lrbox}{\colImportOptizelleCpp}
+\begin{lstlisting}[style=C++,linewidth=0.8\textwidth]
+#include "optizelle/optizelle.h"
+#include "optizelle/vspaces.h"
+#include "optizelle/json.h"
+\end{lstlisting}
+\end{lrbox}
+
+\begin{lrbox}{\colImportOptizellePython}
+\begin{lstlisting}[style=Python,linewidth=0.8\textwidth]
+import Optizelle 
+
+import Optizelle.Unconstrained.State
+import Optizelle.Unconstrained.Functions
+import Optizelle.Unconstrained.Algorithms
+import Optizelle.Unconstrained.Restart
+import Optizelle.json.Unconstrained
+
+import Optizelle.EqualityConstrained.State
+import Optizelle.EqualityConstrained.Functions
+import Optizelle.EqualityConstrained.Algorithms
+import Optizelle.EqualityConstrained.Restart
+import Optizelle.json.EqualityConstrained
+
+import Optizelle.InequalityConstrained.State
+import Optizelle.InequalityConstrained.Functions
+import Optizelle.InequalityConstrained.Algorithms
+import Optizelle.InequalityConstrained.Restart
+import Optizelle.json.InequalityConstrained
+
+import Optizelle.Constrained.State
+import Optizelle.Constrained.Functions
+import Optizelle.Constrained.Algorithms
+import Optizelle.Constrained.Restart
+import Optizelle.json.Constrained
+\end{lstlisting}
+\end{lrbox}
+
+\begin{lrbox}{\colImportOptizelleMatlab}
+\begin{lstlisting}[style=Matlab,linewidth=0.8\textwidth]
+global Optizelle;
+setupOptizelle();
+\end{lstlisting}
+\end{lrbox}
+
+\begin{collect*}{col:ImportOptizelle}{}{}{}{}
+\begin{examplelist}
+    \exampleitem
+        {C++}
+        {\usebox{\colImportOptizelleCpp}}
+    \exampleitem
+        {Python}
+        {\usebox{\colImportOptizellePython}}
+    \exampleitem*
+        {MATLAB/Octave}
+        {\usebox{\colImportOptizelleMatlab}}
+\end{examplelist}
+\end{collect*}
+
+\noindent Generally, the module required by the structures below can be determined by the element in \textbf{Structure}.  For example, in Python, the structure \textct{Optizelle.Unconstrained.State.t} requires the module \linebreak\textct{Optizelle.Unconstrained.State}.  In C++, we always require \textct{optizelle/optizelle.h}, but only require \textct{optizelle/json.h} when working with JSON and \textct{optizelle/vspaces.h} when using our default vector spaces such as \textct{Optizelle::Rm} and \textct{Optizelle::SQL}.
+
+\section{Import Or Define the Appropriate Vector Spaces}
+        In the optimization problems
+        \includecollection{col:OptimizationTypes}
+\noindent we require that
+\begin{align*}
+    f :& X\rightarrow\re\\
+    g :& X\rightarrow Y\\
+    h :& X\rightarrow Z.
+\end{align*}
+Here, the spaces $X$, $Y$, and $Z$ denote vector spaces.  For most problems, these vector spaces just denote $\re^m$ for some value of $m$.  In this case, we use the following built-in vector space:
+\begin{collect*}{col:Rm}{}{}{}{}
 \begin{apilist}
     \apiitem
-        {}
-        {}
-        {}
-        {}
+        {C++}
+        {\textct{Optizelle::Rm}}
+        {Use as is}
+        {\lstinputlisting[style=C++,linerange=Rm0-Rm1]{@OPTIZELLECPPPATH@/vspaces.h}}
+
+    \apiitem
+        {Python}
+        {\textct{Optizelle.Rm}}
+        {Use as is}
+        {\lstinputlisting[style=Python,linerange=Rm0-Rm1]{@OPTIZELLEPYTHONPATH@/__init__.py}}
+
+    \apiitem*
+        {MATLAB/Octave}
+        {\textct{Optizelle.Rm}}
+        {Use as is}
+        {\lstinputlisting[style=Matlab,linerange=Rm0-Rm1]{@OPTIZELLEMATLABPATH@/setupOptizelle.m}}
 \end{apilist}
-\noindent In these blocks, we first specify the \textbf{Language}, which includes C++, Python, and MATLAB/Octave.  Next, we list the name of the \textbf{Structure} under discussion.  In C++ and Python, this generally corresponds to a class whereas in MATLAB/Octave this becomes a struct array.  Note, these names include the complete namespace, module, or member to access the corresponding item.  Then, we denote the \textbf{Interface}, which is either \textit{Inheritance} or \textit{Members present}.  In the case of \textit{Inheritance}, we must create a new class that derives from the specified structure and fills in the missing details.  In the case of \textit{Members present}, we create a new structure that contains all of the necessary elements.  Finally, the \textbf{Code} section contains the actual code that defines the structure under discussion.  This provides the rest of the interface details. 
+\end{collect*}
+Note, each of the above structures denotes an algebra on the vector-spaces.  For actual vectors, we simply use \textct{std::vector} in C++, NumPy arrays in Python, and column vectors in MATLAB/Octave.  In other words, from a strictly user point of view, we can safely use the above vector spaces, ignoring their implementation details, as long as we use either a \textct{std::vector}, NumPy array, or column vector for our variables.
+
+        Outside of Rm, we also allow these vector spaces of functions such as $L^2(\Omega)$ or martrices such as $\re^{m\times n}$ as long as these spaces provide sufficient vector-space operations.  Specifically, for $W\in\{X,Y,Z\}$, we require that $W$ provide the functions:
+\begin{center}\begin{tabular}{|lll|}\hline
+    \textbf{Name} & \textbf{Definition} & \textbf{Languages}\\\hline
+    \textct{init(x)} & $\textit{init}\leftarrow \xi(W)$ & C++, Python, MATLAB/Octave\\\hline
+
+    \textct{copy(x,y)} & $y\leftarrow x$ & C++, Python\\
+    \textct{copy(x)} & $\textit{copy}\leftarrow x$ & MATLAB/Octave\\\hline
+
+    \textct{scal(alpha,x)} & $x\leftarrow \alpha x$ & C++, Python\\
+    & $\textit{scal}\leftarrow \alpha x$ & MATLAB/Octave\\\hline
+
+    \textct{axpy(alpha,x,y)} & $y\leftarrow \alpha x+y$ & C++, Python\\
+    & $\textit{axpy}\leftarrow \alpha x+y$ & MATLAB/Octave\\\hline
+
+    \textct{innr(x,y)} & $\textit{innr}\leftarrow \langle x,y\rangle$ & C++, Python, MATLAB/Octave\\\hline
+    
+    \textct{zero(x)} & $x\leftarrow 0$ & C++, Python\\
+    & $\textit{zero}\leftarrow 0$ & MATLAB/Octave\\\hline
+    
+    \textct{rand(x)} & $x\leftarrow \psi(W)$ & C++, Python\\
+    & $\textit{rand}\leftarrow \psi(W)$ & MATLAB/Octave\\\hline
+\end{tabular}\end{center}
+Here, the notation $x\leftarrow \alpha x$ means we assign the element $x$ the value $\alpha x$ whereas the notation $\textit{scal}\leftarrow \alpha x$ means we return the result $\alpha x$.  Next, $\xi,\psi:\mathcal{P}(W)\rightarrow W$ denote choice functions where $\xi$ and $\psi$ are typically deterministic and stochastic, respectfully.  In other words, $\xi$ and $\psi$ choose either fixed or random elements of $W$.  More specifically, we use \textct{init} to allocate memory and \textct{rand} to conduct diagnostic tests.
 
 \section{Define the Objective Function}
 
@@ -920,6 +1063,34 @@ Using Optizelle's internal vector spaces, we implement these functions as
 \end{collect*}
 
 \section{Define the Constraints}
+        In the optimization problems
+        \includecollection{col:OptimizationTypes}
+\noindent the functions $g:X\rightarrow Y$ and $h:X\rightarrow Z$ denote the \textit{equality} and \textit{inequality constraints}, respectfully.  Here, we allow the equality constraints to be nonlinear, but require that the inequality constraints be affine.  Recall, an affine function is one where $h(\alpha x+(1-\alpha)x)=\alpha h(x)+(1-\alpha)h(y)$ for $\alpha\in\re$ or equivalently where $h^{\prime\prime}(x)=0$.  Note, we require affine inequality constraints in order to simplify the line search that maintains the nonnegativity of the inequality constraints.  In case we have a nonlinear inequality constraint, we must reformulate the problem in order to make it affine.  The easiest method for doing so is through the reformulations 
+$$\left.\begin{array}{rcl}
+        \min\limits_{x\in X} && f(x)\\
+        \st && h(x)\succeq 0
+\end{array}\right\}
+\leadsto
+\left\{\begin{array}{rcl}
+        \min\limits_{x\in X,z\in Z} && f(x)\\
+        \st && h(x)-z=0\\
+            && z\succeq 0
+\end{array}\right.$$
+and
+$$\left.\begin{array}{rcl}
+        \min\limits_{x\in X} && f(x)\\
+        \st && g(x)=0\\
+            && h(x)\succeq 0
+\end{array}\right\}
+\leadsto
+\left\{\begin{array}{rcl}
+        \min\limits_{x\in X,z\in Z} && f(x)\\
+        \st && \begin{bmatrix}g(x)\\h(x)-z\end{bmatrix}=\begin{bmatrix}0\\0\end{bmatrix}\\
+            && z\succeq 0.
+\end{array}\right.$$
+Next, we see that the functions $g$ and $h$ denote vector-valued functions.  Generally, the spaces $Y$ and $Z$ denote a space like $\re^m$, but they can represent any vector space as long as we provide Optizelle with the appropriate vector-space functions.  Notably, we use this feature to allow the inequality constraint $h(x)\succeq 0$ represent symmetric cone problems.  Expanding on this point, when $Z=\re^m$ and using the \textct{Rm} vector space in Optizelle, the inequality $h(x)\succeq 0$ denotes pointwise inequality.  However, if we use the \textct{SQL} vector space, we can also represent semidefinite and second-order cone inequalities.  A semidefinite inequality is one where $Z=\re^{m\times m}$ and we restrict $h(x)$ to be positive semidefinite.  A second-order cone inequality is one where $Z=\re^{m+1}$ and $h(x)=\begin{bmatrix} h_0(x) & \bar{h}(x)\end{bmatrix}^T$ and we restrict $h_0(x)\geq \|\bar{h}(x)\|_2$.
+
+Note, we restrict ourselves to scalar-valued functions and do not consider multi-objective optimization problems.  In order to optimize with this function, we require information about its evaluation and derivatives.  Specifically, we require its evaluation, $f(x)$, and gradient $\nabla f(x)$.  In order to second-order algorithms, we also require the Hessian-vector product, $\nabla^2 f(x)\delta x$.  In code, we specify this function as
 
         Optizelle defines the constraints as a vector-valued function that inherits from \texttt{Optizelle::VectorValuedFunction}, which Optizelle defines as
 \input{constraintSpecification.tex}
