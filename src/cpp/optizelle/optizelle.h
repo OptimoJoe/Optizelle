@@ -45,7 +45,9 @@ Author: Joseph Young (joe@optimojoe.com)
 #include<numeric>
 #include<optizelle/linalg.h>
 
+//---Optizelle0---
 namespace Optizelle{
+//---Optizelle1---
 
     //---ScalarValuedFunction0---
     // A scalar valued function interface, f : X -> R
@@ -9079,5 +9081,7 @@ namespace Optizelle{
             }
         };
     };
+//---Optizelle2---
 }
+//---Optizelle3---
 #endif

@@ -37,7 +37,10 @@ Author: Joseph Young (joe@optimojoe.com)
 #include "optizelle/optizelle.h"
 #include "optizelle/json.h"
 
+//---Optizelle0---
 namespace Optizelle {
+//---Optizelle1---
+
     using namespace Optizelle;
 
     //---Rm0---
@@ -1202,5 +1205,7 @@ namespace Optizelle {
     extern template struct Constrained<float,Rm,Rm,Rm>;
     extern template struct Constrained<double,Rm,Rm,SQL>;
     extern template struct Constrained<float,Rm,Rm,SQL>;
+//---Optizelle2---
 }
+//---Optizelle3---
 #endif

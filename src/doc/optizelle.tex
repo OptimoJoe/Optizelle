@@ -16,8 +16,6 @@
 % more than the url package
 \usepackage[colorlinks=true]{hyperref}
 
-\usepackage{subfig}
-
 % Creates multiple page tables
 \usepackage{longtable}
 
@@ -31,17 +29,12 @@
 % Type sets directory trees
 \usepackage{dirtree}
 
-% Needed for tables with repeated elements.
-\usepackage{array}
-
-% Allows us to stop a certain amount of text duplication
-\usepackage{collect}
-
-% Allows us to put a frame allow a selection of text, code, whatever
-\usepackage{mdframed}
-
-% Allows the create of starred macros
+% Allows the creation of starred macros
 \usepackage{suffix}
+
+% Allows the external creation of files.  We use this in order to get around
+% some of the irritating change in formatting that hyperref does.
+\usepackage{filecontents}
 
 % Define a computer text environment.  This is monospaced and allows
 % underscores.  Code found at:
@@ -53,57 +46,43 @@
    \lowercase{\endgroup\def\@activeus{\catcode`\_=\active \let~\_}}
 \makeatother
 
-% Sets an environment for CMake flags.  Code found at:
-% https://tex.stackexchange.com/questions/163491/options-for-creating-tables-with-repeated-elements
-\newenvironment{cmakelist}
-{\par
-\centering\begin{longtable}{p{0.15\textwidth}p{0.75\textwidth}}}
-{\end{longtable}\par}
-\newcommand\cmakeitem[7]{%
-    \textbf{Flag} & #1\\
-    \textbf{Type} & #2\\
-    \textbf{Default} & #3\\
-    \textbf{Depends on} & #4\\
-    \textbf{Enables} & #5\\
-    \textbf{Autodetect?} & #6\\
-    \textbf{Description} & #7\\
-    \\
-}
-
-% Used for labeling and referring to CMake flags
+% Used for labeling and referring to computer text 
 \newcommand{\textctlabel}[1]{\phantomsection\label{itm:#1}\textct{#1}}
 \newcommand{\textctref}[1]{\hyperref[itm:#1]{\textct{#1}}}
 
-% Setup an API environment.  As a note, we use medskipamount since
-% \baselineskip interferes with something in mdframed and causes us to output
-% an infinite number of pages.
-\newenvironment{apilist}
-{\par
-\centering\begin{mdframed}[skipabove=\topsep,skipbelow=\topsep]}
-{\end{mdframed}\par}
-\newcommand\apiitem[4]{
-    \par\begin{tabular}{ll}
-        \textbf{Language} & #1\\
-        \textbf{Structure} & #2\\
-        \textbf{Interface} & #3\\
-        \textbf{Code}
-    \end{tabular}\par
-    #4\vspace{\medskipamount}
-}
-\WithSuffix\DeclareRobustCommand\apiitem*[4]{\apiitem{#1}{#2}{#3}{#4}\vspace{-\medskipamount}}
+% Setup a CMake list environment.
+\newenvironment{boldlist}
+    {\begin{list}{}{
+        \labelwidth.15\textwidth
+        \leftmargin\dimexpr\leftmargin+.15\textwidth
+        \renewcommand\makelabel[1]{%
+            \textbf{##1}}}}
+    {\vspace{-\baselineskip}\end{list}}
 
-% Setup an example environment
-\newenvironment{examplelist}
-    {\par\centering\begin{mdframed}[skipabove=\topsep,skipbelow=\topsep]}
-    {\end{mdframed}\par}
-\newcommand\exampleitem[2]{
-    \par\begin{tabular}{ll}
-        \textbf{Language} & #1\\
-        \textbf{Code}
-    \end{tabular}\par
-    #2\vspace{\medskipamount}
-}
-\WithSuffix\DeclareRobustCommand\exampleitem*[2]{\exampleitem{#1}{#2}\vspace{-\medskipamount}}
+% CMake items
+\newcommand{\cmakeitem}[7]{
+    \item[Flag] #1
+    \item[Type]  #2
+    \item[Default] #3
+    \item[Dependency] #4
+    \item[Enables] #5
+    \item[Autodetect?] #6
+    \item[Description] #7
+    \item[]}
+
+%# API items
+\newcommand{\apiitem}[4]{
+    \item[Language] #1
+    \item[Structure]  #2
+    \item[Interface] #3
+    \item[Code] #4
+    \item[]}
+
+% Example items 
+\newcommand{\exampleitem}[2]{
+    \item[Language] #1
+    \item[Code] #2
+    \item[]}
 
 % Change the figure numbering to be chap.sec.num
 \renewcommand{\thefigure}{\arabic{chapter}.\arabic{section}.\arabic{figure}}
@@ -112,6 +91,7 @@
 
 % Use the following for all languages
 \lstset{
+    boxpos=t,
     showstringspaces=false,
     basicstyle=\footnotesize,
     backgroundcolor=\color{white},
@@ -192,18 +172,11 @@
 \newcommand{\conGradLag}[3]{\nabla f(#1)+g^\prime(#1)^*#2-h^\prime(#1)^*#3}
 
 % Collections of text, tables, etc.
-\definecollection{col:OptimizationTypes}
-\definecollection{col:Unconstrained}
-\definecollection{col:EqualityConstrained}
-\definecollection{col:InequalityConstrained}
-\definecollection{col:Constrained}
-\newsavebox{\colImportOptizelleCpp}
-\newsavebox{\colImportOptizellePython}
-\newsavebox{\colImportOptizelleMatlab}
-\definecollection{col:ImportOptizelle}
-\definecollection{col:Rm}
-\definecollection{col:ScalarValuedFunction}
-\definecollection{col:ScalarValuedFunctionExample}
+\newsavebox{\boxOptimizationTypes}
+\newsavebox{\boxUnconstrained}
+\newsavebox{\boxEqualityConstrained}
+\newsavebox{\boxInequalityConstrained}
+\newsavebox{\boxConstrained}
 
 \title{Optizelle v@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@.@CPACK_PACKAGE_VERSION_PATCH@}
 \author{OptimoJoe\\Joseph Young}
@@ -212,45 +185,48 @@
 \maketitle
 \tableofcontents
 
-\chapter{Introduction}\label{ch:Introduction}
+\chapter{Introduction}
 
         Optizelle [op-t\textit{\!uh}-{\bf zel}] is an open source software library designed to solve general purpose nonlinear optimization problems of the form
-        \begin{collect}{col:Unconstrained}{}{}
-            $\begin{array}[t]{rcl}
-                \min\limits_{x\in X} && f(x)
-            \end{array}$
-        \end{collect}
-        \begin{collect}{col:EqualityConstrained}{}{}
-            $\begin{array}[t]{rcl}
-                \min\limits_{x\in X} && f(x)\\
-                \st && g(x)=0
-            \end{array}$
-        \end{collect}
-        \begin{collect}{col:InequalityConstrained}{}{}
-            $\begin{array}[t]{rcl}
-                \min\limits_{x\in X} && f(x)\\
-                \st && h(x)\succeq 0
-            \end{array}$
-        \end{collect}
-        \begin{collect}{col:Constrained}{}{}
-            $\begin{array}[t]{rcl}
-                \min\limits_{x\in X} && f(x)\\
-                \st && g(x)=0\\
-                    && h(x)\succeq 0
-            \end{array}$
-        \end{collect}
-        \begin{collect*}{col:OptimizationTypes}{}{}{}{}
-            \begin{center}\begin{tabular}{|l|l|}\hline
-                \multicolumn{1}{|c|}{\bf Unconstrained} &
-                \multicolumn{1}{c|}{\bf Equality Constrained}\\
-                \includecollection{col:Unconstrained} &
-                \includecollection{col:EqualityConstrained} \\\hline
-                \multicolumn{1}{|c|}{\bf Inequality Constrained} &
-                \multicolumn{1}{c|}{\bf Constrained}\\
-                \includecollection{col:InequalityConstrained} &
-                \includecollection{col:Constrained} \\\hline
-            \end{tabular}\end{center}
-        \end{collect*}
+    \begin{lrbox}{\boxUnconstrained}
+        $\begin{array}[t]{rcl}
+            \min\limits_{x\in X} && f(x)
+        \end{array}$
+    \end{lrbox}
+    \begin{lrbox}{\boxEqualityConstrained}
+        $\begin{array}[t]{rcl}
+            \min\limits_{x\in X} && f(x)\\
+            \st && g(x)=0
+        \end{array}$
+    \end{lrbox}
+    \begin{lrbox}{\boxInequalityConstrained}
+        $\begin{array}[t]{rcl}
+            \min\limits_{x\in X} && f(x)\\
+            \st && h(x)\succeq 0
+        \end{array}$
+    \end{lrbox}
+    \begin{lrbox}{\boxConstrained}
+        $\begin{array}[t]{rcl}
+            \min\limits_{x\in X} && f(x)\\
+            \st && g(x)=0\\
+                && h(x)\succeq 0
+        \end{array}$
+    \end{lrbox}
+    \begin{lrbox}{\boxOptimizationTypes}
+        \begin{tabular}{|l|l|}\hline
+            \multicolumn{1}{|c|}{\bf Unconstrained} &
+            \multicolumn{1}{c|}{\bf Equality Constrained}\\
+            \usebox{\boxUnconstrained} &
+            \usebox{\boxEqualityConstrained} \\\hline
+            \multicolumn{1}{|c|}{\bf Inequality Constrained} &
+            \multicolumn{1}{c|}{\bf Constrained}\\
+            \usebox{\boxInequalityConstrained} &
+            \usebox{\boxConstrained} \\\hline
+        \end{tabular}
+    \end{lrbox}
+\begin{center}
+    \usebox{\boxOptimizationTypes}
+\end{center}
 \noindent It features 
 \begin{itemize}
     \item {\bf State of the art algorithms}
@@ -313,7 +289,7 @@ $$
     \end{array}
 $$
 In order to optimize this function, we use the following code and parameters, which generates the subsequent output.
-\begin{examplelist}
+\begin{boldlist}
     \exampleitem
         {C++}
         {\lstinputlisting[style=C++]{@ROSENBROCKPATH@/rosenbrock.cpp}}
@@ -333,7 +309,7 @@ In order to optimize this function, we use the following code and parameters, wh
     \exampleitem
         {Optizelle Output}
         {\lstinputlisting[style=OptizelleOutput]{@OUTPUTPATH@/rosen_output.txt}}
-\end{examplelist}
+\end{boldlist}
 
 \section{History}
 
@@ -425,7 +401,7 @@ On Windows, if not using Cygwin, execute the following commands:
 \section{Configuring}
 
         Optizelle provides several different options within CMake in order to customize the build.  We describe these flags in the table below.          
-\begin{cmakelist}
+\begin{boldlist}
     \cmakeitem
         {\textctlabel{CMAKE_INSTALL_PREFIX}}
         {\textct{PATH}}
@@ -569,7 +545,9 @@ On Windows, if not using Cygwin, execute the following commands:
         to provide BLAS.  This must include all required libraries in
         order to successfully compile a BLAS dependent application.  For
         example, using ATLAS BLAS, one possible entry is:
-        \textct{/usr/lib/libf77blas.a;/usr/lib/libatlas.a}}
+        \begin{center}
+            \textct{/usr/lib/libf77blas.a;/usr/lib/libatlas.a}
+        \end{center}}
 
     \cmakeitem
         {\textctlabel{LAPACK_LIBRARY} }
@@ -583,7 +561,9 @@ On Windows, if not using Cygwin, execute the following commands:
         except for BLAS libraries specified in \textctref{BLAS_LIBRARY}, in
         order to successfully compile a LAPACK dependent application.
         For example, using ATLAS LAPACK, one possible entry is:
-        \textct{/usr/lib/liblapack.a;/usr/lib/libgfortran.so.3}}
+        \begin{center}
+            \textct{/usr/lib/liblapack.a;/usr/lib/libgfortran.so.3}
+        \end{center}}
 
     \cmakeitem
         {\textctlabel{JSONCPP_INCLUDE_DIR} }
@@ -775,7 +755,7 @@ On Windows, if not using Cygwin, execute the following commands:
         {Enables the build of unit tests that help validate the 
         MATLAB/Octave wrappers for the Optizelle code.  Execute these unit
         tests by running \textct{ctest} in the CMake build directory.}
-\end{cmakelist}
+\end{boldlist}
 
 \section{Installing}
 
@@ -859,9 +839,9 @@ in the build directory.  This encapsulates Optizelle as well as JsonCpp, BLAS, a
 \chapter{Basic API}\label{ch:Basic}
 
         We organize Optizelle's algorithms into four different categories: 
-
-        \includecollection{col:OptimizationTypes}
-
+\begin{center}
+    \usebox{\boxOptimizationTypes}
+\end{center}
 \noindent Since these formulations necessitate different algorithms, we segregate the overall structure of Optizelle and the algorithms themselves into these categories.  
         In order to optimize these formulations, we follow the general procedure:
 \begin{enumerate}
@@ -880,16 +860,13 @@ We discuss how to implement each of the above steps below.
 \section{Import Optizelle}
 
         Each interface uses its own method to import Optizelle:
-\begin{lrbox}{\colImportOptizelleCpp}
-\begin{lstlisting}[style=C++,linewidth=0.8\textwidth]
+\begin{filecontents*}{import.cpp}
 #include "optizelle/optizelle.h"
 #include "optizelle/vspaces.h"
 #include "optizelle/json.h"
-\end{lstlisting}
-\end{lrbox}
+\end{filecontents*}
 
-\begin{lrbox}{\colImportOptizellePython}
-\begin{lstlisting}[style=Python,linewidth=0.8\textwidth]
+\begin{filecontents*}{import.py}
 import Optizelle 
 
 import Optizelle.Unconstrained.State
@@ -915,49 +892,49 @@ import Optizelle.Constrained.Functions
 import Optizelle.Constrained.Algorithms
 import Optizelle.Constrained.Restart
 import Optizelle.json.Constrained
-\end{lstlisting}
-\end{lrbox}
+\end{filecontents*}
 
-\begin{lrbox}{\colImportOptizelleMatlab}
-\begin{lstlisting}[style=Matlab,linewidth=0.8\textwidth]
+\begin{filecontents*}{import.m}
 global Optizelle;
 setupOptizelle();
-\end{lstlisting}
-\end{lrbox}
+\end{filecontents*}
 
-\begin{collect*}{col:ImportOptizelle}{}{}{}{}
-\begin{examplelist}
+\begin{boldlist}
     \exampleitem
         {C++}
-        {\usebox{\colImportOptizelleCpp}}
+        {\lstinputlisting[style=C++]{import.cpp}}
     \exampleitem
         {Python}
-        {\usebox{\colImportOptizellePython}}
-    \exampleitem*
+        {\lstinputlisting[style=Python]{import.py}}
+    \exampleitem
         {MATLAB/Octave}
-        {\usebox{\colImportOptizelleMatlab}}
-\end{examplelist}
-\end{collect*}
+        {\lstinputlisting[style=Matlab]{import.m}}
+\end{boldlist}
 
-\noindent Generally, the module required by the structures below can be determined by the element in \textbf{Structure}.  For example, in Python, the structure \textct{Optizelle.Unconstrained.State.t} requires the module \linebreak\textct{Optizelle.Unconstrained.State}.  In C++, we always require \textct{optizelle/optizelle.h}, but only require \textct{optizelle/json.h} when working with JSON and \textct{optizelle/vspaces.h} when using our default vector spaces such as \textct{Optizelle::Rm} and \textct{Optizelle::SQL}.
+\noindent In C++, we always require \textct{optizelle/optizelle.h}, but only require \textct{optizelle/json.h} when working with JSON and \textct{optizelle/vspaces.h} when using our default vector spaces such as \textct{Optizelle::Rm} and \textct{Optizelle::SQL}.  In Python, the module required by the structures below can be determined by the element in \textbf{Structure}.  For example, the structure \textct{Optizelle.Unconstrained.State.t} requires the module \textct{Optizelle.Unconstrained.State}.  Finally, in MATLAB/Octave, we encapsulate all of the required functions in the global variable \textct{Optizelle}.
 
 \section{Import Or Define the Appropriate Vector Spaces}
         In the optimization problems
-        \includecollection{col:OptimizationTypes}
+\begin{center}
+    \usebox{\boxOptimizationTypes}
+\end{center}
 \noindent we require that
 \begin{align*}
     f :& X\rightarrow\re\\
     g :& X\rightarrow Y\\
     h :& X\rightarrow Z.
 \end{align*}
-Here, the spaces $X$, $Y$, and $Z$ denote vector spaces.  For most problems, these vector spaces just denote $\re^m$ for some value of $m$.  In this case, we use the following built-in vector space:
-\begin{collect*}{col:Rm}{}{}{}{}
-\begin{apilist}
+Here, the spaces $X$, $Y$, and $Z$ denote vector spaces.  For most problems, these vector spaces just denote $\re^m$, but we also allow these vector spaces to be spaces of functions such as $L^2(\Omega)$ or matrices such as $\re^{m\times n}$ as long as they contain the necessary operations.
+
+        A vector space consists of two separate pieces: the actual vector and the operations required to compute on this vector.  In Optizelle, we maintain this separation.  For $\re^m$, we provide reasonable implementations for 
+
+In this case, we use the following built-in vector space:
+\begin{boldlist}
     \apiitem
         {C++}
         {\textct{Optizelle::Rm}}
         {Use as is}
-        {\lstinputlisting[style=C++,linerange=Rm0-Rm1]{@OPTIZELLECPPPATH@/vspaces.h}}
+        {\lstinputlisting[style=C++,linerange={Optizelle0-Optizelle1,Rm0-Rm1,Optizelle2-Optizelle3}]{@OPTIZELLECPPPATH@/vspaces.h}}
 
     \apiitem
         {Python}
@@ -965,14 +942,13 @@ Here, the spaces $X$, $Y$, and $Z$ denote vector spaces.  For most problems, the
         {Use as is}
         {\lstinputlisting[style=Python,linerange=Rm0-Rm1]{@OPTIZELLEPYTHONPATH@/__init__.py}}
 
-    \apiitem*
+    \apiitem
         {MATLAB/Octave}
         {\textct{Optizelle.Rm}}
         {Use as is}
         {\lstinputlisting[style=Matlab,linerange=Rm0-Rm1]{@OPTIZELLEMATLABPATH@/setupOptizelle.m}}
-\end{apilist}
-\end{collect*}
-Note, each of the above structures denotes an algebra on the vector-spaces.  For actual vectors, we simply use \textct{std::vector} in C++, NumPy arrays in Python, and column vectors in MATLAB/Octave.  In other words, from a strictly user point of view, we can safely use the above vector spaces, ignoring their implementation details, as long as we use either a \textct{std::vector}, NumPy array, or column vector for our variables.
+\end{boldlist}
+\noindent Note, each of the above structures denotes an algebra on the vector-spaces.  For actual vectors, we simply use \textct{std::vector} in C++, NumPy arrays in Python, and column vectors in MATLAB/Octave.  In other words, from a strictly user point of view, we can safely use the above vector spaces, ignoring their implementation details, as long as we use either a \textct{std::vector}, NumPy array, or column vector for our variables.
 
         Outside of Rm, we also allow these vector spaces of functions such as $L^2(\Omega)$ or martrices such as $\re^{m\times n}$ as long as these spaces provide sufficient vector-space operations.  Specifically, for $W\in\{X,Y,Z\}$, we require that $W$ provide the functions:
 \begin{center}\begin{tabular}{|lll|}\hline
@@ -1001,15 +977,16 @@ Here, the notation $x\leftarrow \alpha x$ means we assign the element $x$ the va
 \section{Define the Objective Function}
 
         In the optimization problems
-        \includecollection{col:OptimizationTypes}
+\begin{center}
+    \usebox{\boxOptimizationTypes}
+\end{center}
 \noindent the function $f:X\rightarrow\re$ denotes the \textit{objective function}.  Note, we restrict ourselves to scalar-valued functions and do not consider multi-objective optimization problems.  In order to optimize with this function, we require information about its evaluation and derivatives.  Specifically, we require its evaluation, $f(x)$, and gradient $\nabla f(x)$.  In order to second-order algorithms, we also require the Hessian-vector product, $\nabla^2 f(x)\delta x$.  In code, we specify this function as
-\begin{collect*}{col:ScalarValuedFunction}{}{}{}{}
-\begin{apilist}
+\begin{boldlist}
     \apiitem
         {C++}
         {\textct{Optizelle::ScalarValuedFunction}}
         {Inheritance}
-        {\lstinputlisting[style=C++,linerange=ScalarValuedFunction0-ScalarValuedFunction1]{@OPTIZELLECPPPATH@/optizelle.h}}
+        {\lstinputlisting[style=C++,linerange={Optizelle0-Optizelle1,ScalarValuedFunction0-ScalarValuedFunction1,Optizelle2-Optizelle3}]{@OPTIZELLECPPPATH@/optizelle.h}}
 
     \apiitem
         {Python}
@@ -1022,8 +999,7 @@ Here, the notation $x\leftarrow \alpha x$ means we assign the element $x$ the va
         {\textct{Optizelle.ScalarValuedFunction}}
         {Members present}
         {\lstinputlisting[style=Matlab,linerange=ScalarValuedFunction0-ScalarValuedFunction1]{@OPTIZELLEMATLABPATH@/setupOptizelle.m}}
-\end{apilist}
-\end{collect*}
+\end{boldlist}
 \noindent Note, we require that the Hessian-vector product always be present.  If one is not available, we simply return zero.
         
         As an example, the Rosenbrock function is the function $f:\re^2\rightarrow \re$ where 
@@ -1046,8 +1022,7 @@ $$
         \end{bmatrix}\delta x.
 $$
 Using Optizelle's internal vector spaces, we implement these functions as 
-\begin{collect*}{col:ScalarValuedFunctionExample}{}{}{}{}
-\begin{examplelist}
+\begin{boldlist}
     \exampleitem
         {C++}
         {\lstinputlisting[style=C++,linerange=Objective0-Objective1]{@ROSENBROCKPATH@/rosenbrock.cpp}}
@@ -1059,12 +1034,13 @@ Using Optizelle's internal vector spaces, we implement these functions as
     \exampleitem
         {MATLAB/Octave}
         {\lstinputlisting[style=Matlab,linerange=Objective0-Objective1]{@ROSENBROCKPATH@/rosenbrock.m}}
-\end{examplelist}
-\end{collect*}
+\end{boldlist}
 
 \section{Define the Constraints}
         In the optimization problems
-        \includecollection{col:OptimizationTypes}
+\begin{center}
+    \usebox{\boxOptimizationTypes}
+\end{center}
 \noindent the functions $g:X\rightarrow Y$ and $h:X\rightarrow Z$ denote the \textit{equality} and \textit{inequality constraints}, respectfully.  Here, we allow the equality constraints to be nonlinear, but require that the inequality constraints be affine.  Recall, an affine function is one where $h(\alpha x+(1-\alpha)x)=\alpha h(x)+(1-\alpha)h(y)$ for $\alpha\in\re$ or equivalently where $h^{\prime\prime}(x)=0$.  Note, we require affine inequality constraints in order to simplify the line search that maintains the nonnegativity of the inequality constraints.  In case we have a nonlinear inequality constraint, we must reformulate the problem in order to make it affine.  The easiest method for doing so is through the reformulations 
 $$\left.\begin{array}{rcl}
         \min\limits_{x\in X} && f(x)\\
