@@ -36,19 +36,21 @@ function self = Rosenbrock()
 end
 %---Objective1---
 
+%---Preconditioner0---
 % Define a perfect preconditioner for the Hessian
 function self = RosenHInv()
     self.eval = @(state,dx) eval(state,dx);
 
     function result = eval(state,dx)
         x = state.x;
-        one_over_det=1./(400000.*x(1)*x(1)-80000.*x(2)+400.);
+        one_over_det=1/(80000.*sq(x(1))-80000.*x(2)+400.);
         result = [
             one_over_det*(200.*dx(1)+400.*x(1)*dx(2));
             one_over_det*...
                 (400.*x(1)*dx(1)+(1200.*x(1)*x(1)-400.*x(2)+2.)*dx(2))];
     end
 end
+%---Preconditioner1---
 
 % Actually runs the program
 function main(fname)
@@ -57,15 +59,19 @@ function main(fname)
     global Optizelle;
     setupOptizelle();
 
+    %---State0---
     % Generate an initial guess for Rosenbrock
     x = [-1.2;1.];
 
     % Create an unconstrained state based on this vector
     state=Optizelle.Unconstrained.State.t(Optizelle.Rm,Optizelle.Messaging,x);
+    %---State1---
 
+    %---Parameters0---
     % Read the parameters from file
     state=Optizelle.json.Unconstrained.read(Optizelle.Rm,Optizelle.Messaging,...
         fname,state);
+    %---Parameters1---
 
     % Create the bundle of functions 
     fns=Optizelle.Unconstrained.Functions.t;

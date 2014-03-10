@@ -48,6 +48,7 @@ struct MyObj
     }
 };
 
+//---EqualityConstraint0---
 // Define a simple equality constraint
 //
 // g(x,y)= [ (x-2)^2 + (y-2)^2 = 1 ] 
@@ -96,6 +97,7 @@ struct MyEq
         z[1] = 2.*dx[1]*dy[0];
     }
 };
+//---EqualityConstraint1---
 
 int main(int argc,char* argv[]){
     // Read in the name for the input file

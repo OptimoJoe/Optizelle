@@ -57,7 +57,7 @@
         \leftmargin\dimexpr\leftmargin+.15\textwidth
         \renewcommand\makelabel[1]{%
             \textbf{##1}}}}
-    {\vspace{-\baselineskip}\end{list}}
+    {\vspace{-\dimexpr\baselineskip+2\itemsep}\end{list}}
 
 % CMake items
 \newcommand{\cmakeitem}[7]{
@@ -76,6 +76,20 @@
     \item[Structure]  #2
     \item[Interface] #3
     \item[Code] #4
+    \item[]}
+
+\newcommand{\apiitemshort}[3]{
+    \item[Language] #1
+    \item[Structure]  #2
+    \item[Interface] #3
+    \item[]}
+
+% Describing the vector space
+\newcommand{\vsitem}[4]{
+    \item[Language] #1
+    \item[Vector]  #2
+    \item[Operations]  #3
+    \item[Interface] #4
     \item[]}
 
 % Example items 
@@ -177,6 +191,19 @@
 \newsavebox{\boxEqualityConstrained}
 \newsavebox{\boxInequalityConstrained}
 \newsavebox{\boxConstrained}
+\newsavebox{\boxImport}
+
+% Labels for some sections
+\newcommand{\secimport}{Import Optizelle}
+\newcommand{\secimportvs}{Import or define the appropriate vector spaces}
+\newcommand{\secobjective}{Define the objective function}
+\newcommand{\secconstraints}{Define the constraints}
+\newcommand{\secpreconditioners}{Define the preconditioners}
+\newcommand{\secstate}{Create the optimization state}
+\newcommand{\secparams}{Set the optimization parameters}
+\newcommand{\chparameters}{Optimization parameters}
+\newcommand{\seccustomvector}{Vector spaces}
+\newcommand{\secmessaging}{Messaging objects}
 
 \title{Optizelle v@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@.@CPACK_PACKAGE_VERSION_PATCH@}
 \author{OptimoJoe\\Joseph Young}
@@ -845,19 +872,20 @@ in the build directory.  This encapsulates Optizelle as well as JsonCpp, BLAS, a
 \noindent Since these formulations necessitate different algorithms, we segregate the overall structure of Optizelle and the algorithms themselves into these categories.  
         In order to optimize these formulations, we follow the general procedure:
 \begin{enumerate}
-    \item Import Optizelle.
-    \item Import or define the appropriate vector spaces.
-    \item Define the objective function.
-    \item (Optional) Define the constraints.
-    \item Create the optimization state. 
-    \item Set the optimization parameters.
-    \item Bundle all the functions needed for optimization together. 
-    \item Solve the optimization problem. 
+    \item \hyperref[sec:import]{\secimport},
+    \item \hyperref[sec:importvs]{\secimportvs},
+    \item \hyperref[sec:objective]{\secobjective},
+    \item (Optional) \hyperref[sec:constraints]{\secconstraints},
+    \item (Optional) \hyperref[sec:preconditioners]{\secpreconditioners},
+    \item \hyperref[sec:state]{\secstate},
+    \item \hyperref[sec:params]{\secparams},
+    \item Bundle all the functions needed for optimization together.,
+    \item Solve the optimization problem,
     \item Extract the solution.
 \end{enumerate}
 We discuss how to implement each of the above steps below. 
 
-\section{Import Optizelle}
+\section{\secimport}\label{sec:import}
 
         Each interface uses its own method to import Optizelle:
 \begin{filecontents*}{import.cpp}
@@ -913,7 +941,7 @@ setupOptizelle();
 
 \noindent In C++, we always require \textct{optizelle/optizelle.h}, but only require \textct{optizelle/json.h} when working with JSON and \textct{optizelle/vspaces.h} when using our default vector spaces such as \textct{Optizelle::Rm} and \textct{Optizelle::SQL}.  In Python, the module required by the structures below can be determined by the element in \textbf{Structure}.  For example, the structure \textct{Optizelle.Unconstrained.State.t} requires the module \textct{Optizelle.Unconstrained.State}.  Finally, in MATLAB/Octave, we encapsulate all of the required functions in the global variable \textct{Optizelle}.
 
-\section{Import Or Define the Appropriate Vector Spaces}
+\section{\secimportvs}\label{sec:importvs}
         In the optimization problems
 \begin{center}
     \usebox{\boxOptimizationTypes}
@@ -924,63 +952,55 @@ setupOptizelle();
     g :& X\rightarrow Y\\
     h :& X\rightarrow Z.
 \end{align*}
-Here, the spaces $X$, $Y$, and $Z$ denote vector spaces.  For most problems, these vector spaces just denote $\re^m$, but we also allow these vector spaces to be spaces of functions such as $L^2(\Omega)$ or matrices such as $\re^{m\times n}$ as long as they contain the necessary operations.
+Here, the spaces $X$, $Y$, and $Z$ denote {\it vector spaces}, more specifically, Hilbert spaces.  For most problems, these vector spaces just denote $\re^m$, but we also allow these vector spaces to be spaces of functions such as $L^2(\Omega)$ or matrices such as $\re^{m\times n}$ as long as they contain the necessary operations that we describe in the section \hyperref[sec:customvector]{\seccustomvector}.
 
-        A vector space consists of two separate pieces: the actual vector and the operations required to compute on this vector.  In Optizelle, we maintain this separation.  For $\re^m$, we provide reasonable implementations for 
-
-In this case, we use the following built-in vector space:
+        A vector space consists of two separate pieces: the actual vector and the operations required to compute on this vector.  In Optizelle, we maintain this separation.  For $\re^m$, we provide reasonable implementations that use the following:
 \begin{boldlist}
-    \apiitem
+    \vsitem
         {C++}
+        {\textct{std::vector}}
         {\textct{Optizelle::Rm}}
         {Use as is}
-        {\lstinputlisting[style=C++,linerange={Optizelle0-Optizelle1,Rm0-Rm1,Optizelle2-Optizelle3}]{@OPTIZELLECPPPATH@/vspaces.h}}
-
-    \apiitem
-        {Python}
+    \vsitem
+        {C++}
+        {\textct{numpy.array}}
         {\textct{Optizelle.Rm}}
         {Use as is}
-        {\lstinputlisting[style=Python,linerange=Rm0-Rm1]{@OPTIZELLEPYTHONPATH@/__init__.py}}
-
-    \apiitem
+    \vsitem
         {MATLAB/Octave}
+        {\textct{[]} (column vector)}
         {\textct{Optizelle.Rm}}
         {Use as is}
-        {\lstinputlisting[style=Matlab,linerange=Rm0-Rm1]{@OPTIZELLEMATLABPATH@/setupOptizelle.m}}
 \end{boldlist}
-\noindent Note, each of the above structures denotes an algebra on the vector-spaces.  For actual vectors, we simply use \textct{std::vector} in C++, NumPy arrays in Python, and column vectors in MATLAB/Octave.  In other words, from a strictly user point of view, we can safely use the above vector spaces, ignoring their implementation details, as long as we use either a \textct{std::vector}, NumPy array, or column vector for our variables.
+\noindent To be precise, each of these vector spaces uses the inner product $\langle x,y\rangle=x^Ty$ and defines inequalities pointwise, $x\succeq y \Longleftrightarrow x_i \geq y_i$ for all $1\leq i\leq m$.  Note, we don't require users to use these vector operations in their code.  Simply, if we're happy with using the above vectors, we can use these operations exclusively in Optizelle and forget their details. 
 
-        Outside of Rm, we also allow these vector spaces of functions such as $L^2(\Omega)$ or martrices such as $\re^{m\times n}$ as long as these spaces provide sufficient vector-space operations.  Specifically, for $W\in\{X,Y,Z\}$, we require that $W$ provide the functions:
-\begin{center}\begin{tabular}{|lll|}\hline
-    \textbf{Name} & \textbf{Definition} & \textbf{Languages}\\\hline
-    \textct{init(x)} & $\textit{init}\leftarrow \xi(W)$ & C++, Python, MATLAB/Octave\\\hline
-
-    \textct{copy(x,y)} & $y\leftarrow x$ & C++, Python\\
-    \textct{copy(x)} & $\textit{copy}\leftarrow x$ & MATLAB/Octave\\\hline
-
-    \textct{scal(alpha,x)} & $x\leftarrow \alpha x$ & C++, Python\\
-    & $\textit{scal}\leftarrow \alpha x$ & MATLAB/Octave\\\hline
-
-    \textct{axpy(alpha,x,y)} & $y\leftarrow \alpha x+y$ & C++, Python\\
-    & $\textit{axpy}\leftarrow \alpha x+y$ & MATLAB/Octave\\\hline
-
-    \textct{innr(x,y)} & $\textit{innr}\leftarrow \langle x,y\rangle$ & C++, Python, MATLAB/Octave\\\hline
-    
-    \textct{zero(x)} & $x\leftarrow 0$ & C++, Python\\
-    & $\textit{zero}\leftarrow 0$ & MATLAB/Octave\\\hline
-    
-    \textct{rand(x)} & $x\leftarrow \psi(W)$ & C++, Python\\
-    & $\textit{rand}\leftarrow \psi(W)$ & MATLAB/Octave\\\hline
-\end{tabular}\end{center}
-Here, the notation $x\leftarrow \alpha x$ means we assign the element $x$ the value $\alpha x$ whereas the notation $\textit{scal}\leftarrow \alpha x$ means we return the result $\alpha x$.  Next, $\xi,\psi:\mathcal{P}(W)\rightarrow W$ denote choice functions where $\xi$ and $\psi$ are typically deterministic and stochastic, respectfully.  In other words, $\xi$ and $\psi$ choose either fixed or random elements of $W$.  More specifically, we use \textct{init} to allocate memory and \textct{rand} to conduct diagnostic tests.
-
-\section{Define the Objective Function}
+\section{\secobjective}\label{sec:objective}
 
         In the optimization problems
 \begin{center}
     \usebox{\boxOptimizationTypes}
 \end{center}
-\noindent the function $f:X\rightarrow\re$ denotes the \textit{objective function}.  Note, we restrict ourselves to scalar-valued functions and do not consider multi-objective optimization problems.  In order to optimize with this function, we require information about its evaluation and derivatives.  Specifically, we require its evaluation, $f(x)$, and gradient $\nabla f(x)$.  In order to second-order algorithms, we also require the Hessian-vector product, $\nabla^2 f(x)\delta x$.  In code, we specify this function as
+\noindent the function $f:X\rightarrow\re$ denotes the \textit{objective function}.  Note, we restrict ourselves to scalar-valued functions and do not consider multi-objective optimization problems.
+
+        In order to optimize with this function, we require information about its evaluation and derivatives.  Specifically, we require its evaluation, $f(x)$, and gradient, $\nabla f(x)$.  In order to use second-order algorithms, we also require the Hessian-vector product, $\nabla^2 f(x)\delta x$.  In the case that $f:\re^m\rightarrow\re$, we can obtain each of these quantities from its partial derivatives.  Specifically, we write
+$$
+        f(x)=f(x_1,\dots,x_m).
+$$
+Then, we have that
+\begin{align*}
+        \nabla f(x) =& \begin{bmatrix}
+            \frac{\partial f}{\partial x_1}(x)\\
+            \vdots\\
+            \frac{\partial f}{\partial x_m}(x)
+        \end{bmatrix},\\
+        \nabla^2 f(x)\delta x =& \begin{bmatrix}
+            \frac{\partial f}{\partial x_{11}}(x) & \dots & \frac{\partial f}{\partial x_{1m}}(x)\\
+            \vdots & \ddots & \vdots\\
+            \frac{\partial f}{\partial x_{m1}}(x) & \dots & \frac{\partial f}{\partial x_{mm}}(x)
+        \end{bmatrix}\delta x.
+\end{align*}
+        
+        In code, we specify this function as
 \begin{boldlist}
     \apiitem
         {C++}
@@ -1036,12 +1056,14 @@ Using Optizelle's internal vector spaces, we implement these functions as
         {\lstinputlisting[style=Matlab,linerange=Objective0-Objective1]{@ROSENBROCKPATH@/rosenbrock.m}}
 \end{boldlist}
 
-\section{Define the Constraints}
+\section{\secconstraints}\label{sec:constraints}
         In the optimization problems
 \begin{center}
     \usebox{\boxOptimizationTypes}
 \end{center}
-\noindent the functions $g:X\rightarrow Y$ and $h:X\rightarrow Z$ denote the \textit{equality} and \textit{inequality constraints}, respectfully.  Here, we allow the equality constraints to be nonlinear, but require that the inequality constraints be affine.  Recall, an affine function is one where $h(\alpha x+(1-\alpha)x)=\alpha h(x)+(1-\alpha)h(y)$ for $\alpha\in\re$ or equivalently where $h^{\prime\prime}(x)=0$.  Note, we require affine inequality constraints in order to simplify the line search that maintains the nonnegativity of the inequality constraints.  In case we have a nonlinear inequality constraint, we must reformulate the problem in order to make it affine.  The easiest method for doing so is through the reformulations 
+\noindent the vector-valued functions $g:X\rightarrow Y$ and $h:X\rightarrow Z$ denote the \textit{equality} and \textit{inequality constraints}, respectfully.
+
+        Here, we allow the equality constraints to be nonlinear, but require that the inequality constraints be affine.  Recall, an affine function is one where $h(\alpha x+(1-\alpha)x)=\alpha h(x)+(1-\alpha)h(y)$ for all $\alpha\in\re$ or equivalently where $h^{\prime\prime}(x)=0$.  Note, we require affine inequality constraints in order to simplify the line search that maintains the nonnegativity of the inequality constraints.  In case we have a nonlinear inequality constraint, we must reformulate the problem in order to make it affine.  The easiest method for doing so is through the reformulations 
 $$\left.\begin{array}{rcl}
         \min\limits_{x\in X} && f(x)\\
         \st && h(x)\succeq 0
@@ -1064,120 +1086,362 @@ $$\left.\begin{array}{rcl}
         \st && \begin{bmatrix}g(x)\\h(x)-z\end{bmatrix}=\begin{bmatrix}0\\0\end{bmatrix}\\
             && z\succeq 0.
 \end{array}\right.$$
-Next, we see that the functions $g$ and $h$ denote vector-valued functions.  Generally, the spaces $Y$ and $Z$ denote a space like $\re^m$, but they can represent any vector space as long as we provide Optizelle with the appropriate vector-space functions.  Notably, we use this feature to allow the inequality constraint $h(x)\succeq 0$ represent symmetric cone problems.  Expanding on this point, when $Z=\re^m$ and using the \textct{Rm} vector space in Optizelle, the inequality $h(x)\succeq 0$ denotes pointwise inequality.  However, if we use the \textct{SQL} vector space, we can also represent semidefinite and second-order cone inequalities.  A semidefinite inequality is one where $Z=\re^{m\times m}$ and we restrict $h(x)$ to be positive semidefinite.  A second-order cone inequality is one where $Z=\re^{m+1}$ and $h(x)=\begin{bmatrix} h_0(x) & \bar{h}(x)\end{bmatrix}^T$ and we restrict $h_0(x)\geq \|\bar{h}(x)\|_2$.
 
-Note, we restrict ourselves to scalar-valued functions and do not consider multi-objective optimization problems.  In order to optimize with this function, we require information about its evaluation and derivatives.  Specifically, we require its evaluation, $f(x)$, and gradient $\nabla f(x)$.  In order to second-order algorithms, we also require the Hessian-vector product, $\nabla^2 f(x)\delta x$.  In code, we specify this function as
-
-        Optizelle defines the constraints as a vector-valued function that inherits from \texttt{Optizelle::VectorValuedFunction}, which Optizelle defines as
-\input{constraintSpecification.tex}
-This abstract class corresponds to the evaluation of the constraint, $g(x)$, Fr\'{e}chet derivative (Jacobian)-vector product, $g^\prime(x)\delta x$, adjoint of the F\'{e}chet derivative (Jacobian)-vector product, $g^\prime(x)^*\delta y$, and the second derivative adjoint-vector product, $(g^{\prime\prime}(x)\delta x)^*\delta y$.  Here, $^*$ denotes the Hilbert-adjoint, which is most often the transpose of the operator.  Alternatively, if we work in $\re^m$ with the $\ell^2$ inner product, we can define these operators as
-\begin{align*}
-        g(x)&=\begin{bmatrix}
-            g_1(x)\\
-            \dots\\
-            g_m(x)
-        \end{bmatrix}
-        & g^\prime(x)\delta x&=\begin{bmatrix}
-                \nabla g_1(x)^T \delta x\\
-                \dots\\
-                \nabla g_m(x)^T \delta x
-        \end{bmatrix}\\
-        g^\prime(x)^*\delta y&=
-        \sum\limits_{i=1}^m \nabla g_i(x) [\delta y]_i 
-        & (g^{\prime\prime}(x)\delta x)^*\delta y&=
-        \sum\limits_{i=1}^m \nabla^2 g_i(x)\delta x [\delta y]_i 
-\end{align*}
-As with the objective function, the algorithms in Optizelle do not require second order information, but benefit from it when available.  As such, the evaluation of $(g^{\prime\prime}(x)\delta x)^*\delta y$ is not strictly required.  If not available, set the result of the second derivative adjoint-vector product to zero.
-
-        For example, we define a simple vector-valued function as
+        Similar to the objective fucntion, we require derivative information in order optimize effectively.  Specifically, we require the evaluation, $g(x)$, Fr\'{e}chet (total) derivative applied to a vector, $g^\prime(x)\delta x$, and the adjoint of the Fr\'{e}chet derivative applied to a vector, $g^\prime(x)^*\delta y$.  In order to use second order algorithms, we also require the second derivative operation $(g^{\prime\prime}(x)\delta x)^*\delta y$.  Note, we require the same operations from $h$, but since $h$ is affine, $(h^{\prime\prime}(x)\delta x)^*\delta z=0$.  In the case that $g:\re^m\rightarrow\re^n$, the derivation of these derivatives is quite simple.  Here, we write $g$ as
 $$
-    f(x)=\begin{bmatrix}
-        (x_1-2)^2 + (x_2-2)^2 - 1\\
-        x_1 + 2x_2 - 1.
-    \end{bmatrix}
+    g(x)=\begin{bmatrix}
+        g_1(x)\\
+        \vdots\\
+        g_n(x)
+        \end{bmatrix}.
+$$
+This means that we have
+\begin{align*}
+    g^\prime(x)\delta x =& \begin{bmatrix}
+        \nabla g_1(x)^T\\
+        \vdots\\
+        \nabla g_n(x)^T
+    \end{bmatrix}\delta x\\
+    g^\prime(x)^*\delta y =& \begin{bmatrix}
+        \nabla g_1(x) & \dots & \nabla g_n(x)
+    \end{bmatrix} \delta y\\
+    (g^{\prime\prime}(x)\delta x)^*\delta y =& \sum_{i=1}^n \delta y_i \nabla^2 g_i(x) \delta x.
+\end{align*}
+
+        In code, this becomes
+\begin{boldlist}
+    \apiitem
+        {C++}
+        {\textct{Optizelle::VectorValuedFunction}}
+        {Inheritance}
+        {\lstinputlisting[style=C++,linerange={Optizelle0-Optizelle1,VectorValuedFunction0-VectorValuedFunction1,Optizelle2-Optizelle3}]{@OPTIZELLECPPPATH@/optizelle.h}}
+
+    \apiitem
+        {Python}
+        {\textct{Optizelle.VectorValuedFunction}}
+        {Inheritance}
+        {\lstinputlisting[style=Python,linerange=VectorValuedFunction0-VectorValuedFunction1]{@OPTIZELLEPYTHONPATH@/__init__.py}}
+
+    \apiitem
+        {MATLAB/Octave}
+        {\textct{Optizelle.VectorValuedFunction}}
+        {Members present}
+        {\lstinputlisting[style=Matlab,linerange=VectorValuedFunction0-VectorValuedFunction1]{@OPTIZELLEMATLABPATH@/setupOptizelle.m}}
+\end{boldlist}
+\noindent Note, we require that the second derivative always be present.  If one is not available, we simply return zero.
+
+
+        For example, we define a simple equality constraint as 
+$$
+    g(x)=\begin{bmatrix}
+        (x_1-2)^2 + (x_2-2)^2 - 1
+    \end{bmatrix}.
 $$
 Then, we have that
 \begin{align*}
-    f^\prime(x)\delta x=&\begin{bmatrix}
-        2(x_1-2) & 2(x_2-2)\\
-        1 & 2
-    \end{bmatrix}\begin{bmatrix}\delta x_1\\\delta x_2\end{bmatrix}\\
-    f^\prime(x)^*\delta y=&
+    g^\prime(x)\delta x=&\begin{bmatrix}
+        2(x_1-2) & 2(x_2-2)
+    \end{bmatrix}\delta x\\
+    g^\prime(x)^*\delta y=&
         \begin{bmatrix}
             2(x_1-2)\\
             2(x_2-2)
-        \end{bmatrix}  \delta y_1
-        +
-        \begin{bmatrix}
-            1\\
-            2
-        \end{bmatrix} \delta y_2\\
-    (f^{\prime\prime}(x)\delta x)^*\delta y=&
-        \begin{bmatrix}
+        \end{bmatrix} \delta y\\
+    (g^{\prime\prime}(x)\delta x)^*\delta y=&
+        \delta y \begin{bmatrix}
             2 & 0\\
             0 & 2
-        \end{bmatrix}\begin{bmatrix}\delta x_1\\\delta x_2\end{bmatrix}
-            \delta y_1
-        +\begin{bmatrix}
-            0 & 0\\
-            0 & 0
-        \end{bmatrix}\begin{bmatrix}\delta x_1\\\delta x_2\end{bmatrix}
-            \delta y_2.
+        \end{bmatrix}\delta x
 \end{align*}
-In code, we implement these operators as
-\input{constraintExample.tex}
+Using Optizelle's internal vector spaces, we implement these functions as 
+\begin{boldlist}
+    \exampleitem
+        {C++}
+        {\lstinputlisting[style=C++,linerange=EqualityConstraint0-EqualityConstraint1]{@SIMPLEEQUALITYPATH@/simple_equality.cpp}}
 
-\section{Define an Initial Guess} 
+    \exampleitem
+        {Python}
+        {\lstinputlisting[style=Python,linerange=EqualityConstraint0-EqualityConstraint1]{@SIMPLEEQUALITYPATH@/simple_equality.py}}
 
-        The class \texttt{Optizelle::Rm} used in each of our examples defines an algebra for vectors in $\re^m$.  Underneath, the storage used for these vectors is simply a \texttt{std::vector}.  As such, we define our initial guess using this class.
+    \exampleitem
+        {MATLAB/Octave}
+        {\lstinputlisting[style=Matlab,linerange=EqualityConstraint0-EqualityConstraint1]{@SIMPLEEQUALITYPATH@/simple_equality.m}}
+\end{boldlist}
 
-        As an example, our initial guess for the Rosenbrock function was $\begin{bmatrix}-1.2 & 1\end{bmatrix}^T$.  We implement this in code as
-\input{initialGuessExample.tex}
+\section{\secpreconditioners}\label{sec:preconditioners}
 
-\section{Allocate Memory for Elements in the Codomain of the Constraints}
+        Since Optizelle is fully matrix-free, its performance depends highly on the quality of the preconditioners provided to it by the user.  To that end, there are two places where preconditioning matters:  the Hessian of the objective function and a KKT system that relates to the equality constraints.  Specifically, we benefit when we can define $P:X\rightarrow X$ such that
+$$
+        P\delta x \approx \nabla^2 f(x)^{-1}\delta x
+$$
+and $P:Y\rightarrow Y$ such that
+$$
+        P\delta y \approx (g^\prime(x)g^\prime(x)^*)^{-1}\delta y.
+$$
+        
+        Before we discuss these operators in detail, let us emphasize two points.  First, as we describe below, we require only the action of this preconditoner on a vector.  This enables Optizelle to continue to be matrix-free.  Second, even though we use matrix-free abstractions, most of the time, we're better off just using matrices.  At this point in time, both dense and sparse linear algebra libraries are extremely fast.  Unless we have a large PDE constrained optimization problem, just form a matrix of the operator, factor it, and move on.
+        
+        In the objective function, we use a preconditioner for the Hessian in several different places.  Foremost, we use it to precondition linear systems related to second-order algorithms such as Newton's method.  In addition, we use it within first-order algorithms such as nonlinear-CG.  Certainly, $\nabla^2 f(x)^{-1}$ represents the best such preconditioner, but the Hessian may become singular during the course of optimization, so we must take care in how we generate this preconditioner.  As such, even though $\nabla^2 f(x)$ is self-adjoint, the LU factorization provides a simple, effective manner to factorize the Hessian.  In other words, we find operators $L$ and $U$ such that
+$$
+        LU=\nabla^2 f(x)
+$$
+Then, our preconditioner $P:X\rightarrow X$ approximates 
+$$
+        P\delta x \approx U^{-1}L^{-1} \delta x.
+$$
+We say approximate because either $U^{-1}$ or $L^{-1}$ may not exist.  In this case, we can just modify our back solve to ignore any variables that cause problems.
 
-        As with our initial guess, we also use the class \texttt{Optizelle::Rm} to represent elements in the codomain of our constraints.  These elements correspond to the Lagrange multipliers or dual variables for the constrained algorithms, but, beyond label, we require no additional information about duality theory.  In addition, these elements are purely used for allocating memory.  This means that the value of these vectors when passed to Optizelle is ignored.
+        For the equality constraints, our algorithms require the repeated solution of a system whose operator is
+$$\begin{bmatrix}
+        I & g^\prime(x)^*\\
+        g^\prime(x) & 0
+\end{bmatrix}.$$
+As it happens, if $g\prime(x)$ is full-rank, the preconditioner
+$$\begin{bmatrix}
+        I & 0\\ 
+        0 & (g^\prime(x)g^\prime(x)^*)^{-1} 
+\end{bmatrix}$$
+allows a Krylov method to solve the above system in three iterations.  As such, Optizelle focuses on preconditioning the operator 
+$$
+        g^\prime(x)g^\prime(x)^*.
+$$
+Note, unlike the Hessian, this operator depends on the inner product used by the vector space because it involves an adjoint.  If we're working in $\re^m$ with the inner product $\langle x,y\rangle = x^Ty$, we can ignore this nuance.  Otherwise, we must modify our factorizations to correctly account for the change in inner product.  Outside of this difficulty, we note the operator is always symmetric and positive-semidefinite.  However, like the Hessian, it can and likely will become singular during the course of optimization.  As such, we propose two ways of dealing with this.  In one case, we use a $QR$ factorization of $g^\prime(x)^*$,
+$$
+        Q R = g^\prime(x)^*,
+$$
+then form the preconditioner $P: Y\rightarrow Y$
+$$
+    P\delta x \approx R^{-1}R^{-*}\delta x.
+$$
+Again, we must take care in case $R$ is singular.  Alternatively, we can just form $g^\prime(x)g^\prime(x)^*$ and find its $LU$ factorization like we do with the Hessian,
+$$
+        LU = g^\prime(x)g^\prime(x)^*.
+$$
+This gives us the preconditioner
+$$
+        P\delta x \approx U^{-1}L^{-1} \delta x.
+$$
+In theory, we can use a Choleski factorization to solve this system.  The problem with this approach is that the Choleski factorization will fail when $g^\prime(x)$ is not full rank.  Generally, we find it easier to fix a failing back solve, as is the case with a QR or LU factorization, than to fix a failing factorization.
 
-        For example, if we have a single equality constraint, we allocate memory for the codomain as
-\input{allocateCodomainExample.tex}
+        In code, we represent preconditioners as a generic linear operator
+\begin{boldlist}
+    \apiitem
+        {C++}
+        {\textct{Optizelle::Operator}}
+        {Inheritance}
+        {\lstinputlisting[style=C++,linerange={Optizelle0-Optizelle1,Operator0-Operator1,Optizelle2-Optizelle3}]{@OPTIZELLECPPPATH@/linalg.h}}
 
-\section{Create an Optimization State}\label{sec:State}
+    \apiitem
+        {Python}
+        {\textct{Optizelle.Operator}}
+        {Inheritance}
+        {\lstinputlisting[style=Python,linerange=Operator0-Operator1]{@OPTIZELLEPYTHONPATH@/__init__.py}}
+
+    \apiitem
+        {MATLAB/Octave}
+        {\textct{Optizelle.Operator}}
+        {Members present}
+        {\lstinputlisting[style=Matlab,linerange=Operator0-Operator1]{@OPTIZELLEMATLABPATH@/setupOptizelle.m}}
+\end{boldlist}
+As we can see, there is a slight difference when we compare C++ to Python and MATLAB/Octave.  In Python and MATLAB/Octave, we provide the preconditioner with the variable \textct{state} that we describe in the section \hyperref[sec:state]{\secstate}.  We omit this variable in C++.  If we need access to the state in C++, we can simply pass in a reference to it during the operator's construction.  In Python and MATLAB/Octave, this is not an option, so we must pass the state directly.  To be clear, access to the variable \textct{state} is important for most preconditioners.  Recall, we must either evaluate an approximation to $\nabla^2 f(x)^{-1} \delta x$ or $(g^\prime(x)g^\prime(x)^*)^{-1}\delta y$.  When Optizelle calls the preconditioner, it provides $\delta x$ and $\delta y$ and expects $P\delta x$ and $P\delta y$ as its return.  Optizelle does \textbf{not} call the preconditioner on the variables $x$ and $y$.  If we want access to these variables, we must find them in the state.
+
+        As another important note, Optizelle can not optimize user defined factorizations.  Meaning, during the course of an optimization iteration, we call these preconditioners several different times.  As such, if we factorize, it is critical to our performance that we cache these factorizations.  The easiest way to tell when a new factorization is needed is to monitor the variable \textct{x} inside of \textct{state}.  This variable represents the current optimization iterate and it does not change until we take a new step in the optimiation algorithms.
+
+        Recall, in our Rosenbrock example, we have a Hessian-vector product of
+$$
+        \nabla^2 f(x)\delta x=
+        \begin{bmatrix}
+            1200x_1^2-400x_2+2 & -400x_1\\
+            -400x_1 & 200
+        \end{bmatrix}\delta x.
+$$
+This allows us to find the inverse using Cramer's rule
+$$
+        \nabla^2 f(x)^{-1}\delta x=
+        \frac{1}{80000x_1^2-80000x_2+400}
+        \begin{bmatrix}
+            200 & 400x_1\\
+            400x_1 & 1200x_1^2-400x_2+2
+        \end{bmatrix}\delta x.
+$$
+Generally, using Cramer's rule is a bad idea, but we note it works fine on this small example.  Using this formulation, we define our preconditioner to the Hessian with the code 
+\begin{boldlist}
+    \exampleitem
+        {C++}
+        {\lstinputlisting[style=C++,linerange=Preconditioner0-Preconditioner1]{@ROSENBROCKPATH@/rosenbrock.cpp}}
+
+    \exampleitem
+        {Python}
+        {\lstinputlisting[style=Python,linerange=Preconditioner0-Preconditioner1]{@ROSENBROCKPATH@/rosenbrock.py}}
+
+    \exampleitem
+        {MATLAB/Octave}
+        {\lstinputlisting[style=Matlab,linerange=Preconditioner0-Preconditioner1]{@ROSENBROCKPATH@/rosenbrock.m}}
+\end{boldlist}
+
+        For our simple equality constraint
+$$
+    g(x)=\begin{bmatrix}
+        (x_1-2)^2 + (x_2-2)^2 - 1
+    \end{bmatrix}.
+$$
+We have that
+\begin{align*}
+    g^\prime(x)\delta x=&\begin{bmatrix}
+        2(x_1-2) & 2(x_2-2)
+    \end{bmatrix}\delta x\\
+    g^\prime(x)^*\delta y=&
+        \begin{bmatrix}
+            2(x_1-2)\\
+            2(x_2-2)
+        \end{bmatrix} \delta y.
+\end{align*}
+This means that
+$$
+        g^\prime(x)g^\prime(x)^*\delta y=(4(x_1-2)^2+4(x_2-2)^2)\delta y
+$$
+and we have a perfect preconditioner
+$$
+        (g^\prime(x)g^\prime(x)^*)^{-1}\delta y=\frac{1}{4(x_1-2)^2+4(x_2-2)^2}\delta y.
+$$
+We implement this in our simple equality example with the code
+
+\section{\secstate}\label{sec:state}
 
         In Optizelle, the optimization state contains an entire description of the current state of the optimization algorithm.  This is unique to the particular optimization formulation, but all algorithms in a particular formulations share the same state.  Most algorithms do not require information about all of these pieces, but they are present to make it easier to switch from one algorithm to another.  For example, trust-region and line-search algorithms share several components, but the trust-region radius is unique to trust-region algorithms and the line-search step length is unique to line-search algorithms.  Nevertheless, we may want to switch from one algorithm to another, so they share the same components.
 
         In order to define an optimization state, we instantiate the state class within the particular class of formulation we require.  The syntax is
-\input{stateSpecification.tex}
-where these states correspond to the unconstrained, inequality constrained, equality constrained, and constrained formulations, respectively.  The variables \texttt{x}, \texttt{y}, and \texttt{z} correspond to elements in the domain of the objective, codomain of the equality constraints, and codomain of the inequality constraints, respectively.  Finally, the first template parameter denotes the floating point precision used by the optimization.  The remaining template parameters denote the vector space used by each of the elements, \texttt{x}, \texttt{y}, and \texttt{z}. 
 
-\section{Set the Optimization Parameters}
+\begin{filecontents*}{state.cpp}
+Optizelle::Unconstrained <Real,XX>::State::t(x)
+Optizelle::EqualityConstrained <Real,XX,YY>::State::t(x,y)
+Optizelle::InequalityConstrained <Real,XX,ZZ>::State::t(x,z)
+Optizelle::Constrained <Real,XX,ZZ>::State::t(x,y,z)
+\end{filecontents*}
 
-        For each optimization problem, the parameters required for an efficient optimization solve can vary wildly.  Nevertheless, the parameters that guide this process reside within the state object.  There are two mechanisms for modifying these entries.  First, the state object created in Section \ref{sec:State} is simply a class with a variety of elements.  These can be modified directly.  Alternatively, if the Optizelle library is installed, we can use the JSON reader.  The syntax for reading a parameter file in JSON format from file is
-\input{jsonReaderSpecification.tex}
-where these four different commands correspond to unconstrained, inequality constrained, equality constrained, and constrained formulations, respectively.  As before, the template parameters denote first the precision required and then the vector spaces used by the optimization.
+\begin{filecontents*}{state.py}
+Optizelle.Unconstrained.State.t(X,msg,x)
+Optizelle.EqualityConstrained.State.t(X,Y,msg,x,y)
+Optizelle.InequalityConstrained.State.t(X,Y,msg,x,z)
+Optizelle.Constrained.State.t(X,Y,Z,msg,x,y,z)
+\end{filecontents*}
 
-        Note, although the names of the parameters used by each are identical, the format is slightly different depending on whether we directly modify the state or use the JSON reader.  For example, the following JSON file modifies the stopping criteria for the gradient
-\input{jsonReaderExample1.tex}
-This has the same affect as the code
-\input{jsonReaderExample2.tex}
+\begin{filecontents*}{state.m}
+state = Optizelle.Unconstrained.State.t(X,msg,x)
+state = Optizelle.EqualityConstrained.State.t(X,Y,msg,x,y)
+state = Optizelle.InequalityConstrained.State.t(X,Y,msg,x,z)
+state = Optizelle.Constrained.State.t(X,Y,Z,msg,x,y,z)
+\end{filecontents*}
 
-        As far as the actual parameters and their affect, we discuss this in Chapter \ref{ch:Input}.
+\begin{boldlist}
+    \apiitemshort
+        {C++}
+        {\lstinputlisting[style=C++]{state.cpp}}
+        {Use as is}
+    \apiitemshort
+        {Python}
+        {\lstinputlisting[style=Python]{state.py}}
+        {Use as is}
+    \apiitemshort
+        {MATLAB/Octave}
+        {\lstinputlisting[style=Matlab]{state.m}}
+        {Use as is}
+\end{boldlist}
 
-\section{Accumulate the Functions}
+\noindent Here, \textct{XX}, \textct{YY}, and \text{ZZ} in C++ and \textct{X}, \textct{Y}, and \text{Z} in Python and MATLAB/Octave corresponds to the vector spaces $X$, $Y$, and $Z$ described in the section \hyperref[sec:importvs]{\secimportvs}.  Likely, they are just \textct{Optizelle::Rm} or \textct{Optizelle.Rm}.  As a note, We use double letters in C++ to remind us that these spaces denote templates and not objects.  Next, the variable \textct{x} denotes an initial guess for the optimizzation problem.  This guess is very important to the performance of the algorithms, so choose wisely.  The variables \textct{y} and \textct{z} represent arbitrary elements in the codomain of $g$ and $h$, respectively.  We do not use the values of these variables, so any properly allocated vector works fine.  Finally, in Python and MATLAB/Octave, we require a messaging object \textct{msg}.  In the simple case, we can simply use \textct{Optizelle.Messaging}.  For more complicated cases, see the section \hyperref[sec:messaging]{\secmessaging}.
+
+        As an example, we create the optimization state in the Rosenbrock example with the following code:
+\begin{boldlist}
+    \exampleitem
+        {C++}
+        {\lstinputlisting[style=C++,linerange=State0-State1]{@ROSENBROCKPATH@/rosenbrock.cpp}}
+
+    \exampleitem
+        {Python}
+        {\lstinputlisting[style=Python,linerange=State0-State1]{@ROSENBROCKPATH@/rosenbrock.py}}
+
+    \exampleitem
+        {MATLAB/Octave}
+        {\lstinputlisting[style=Matlab,linerange=State0-State1]{@ROSENBROCKPATH@/rosenbrock.m}}
+\end{boldlist}
+
+\section{\secparams}\label{sec:params}
+
+        For each optimization problem, the parameters required for an efficient optimization solve can vary wildly.  Nevertheless, the parameters that guide this process reside within the state object.  There are two mechanisms for modifying these entries.  First, the state object created in the section \hyperref[sec:state]{\secstate} is simply an object with a variety of elements that can be modified directly.  Alternatively, and preferably, we can use the JSON reader.  The syntax for reading a parameter file in JSON format from file is
+\begin{filecontents*}{json.cpp}
+Optizelle::json::Unconstrained <Real,XX>
+    ::read(Optizelle::Messaging(),fname,state);
+Optizelle::json::EqualityConstrained <Real,XX,YY>
+    ::read(Optizelle::Messaging(),fname,state);
+Optizelle::json::InequalityConstrained <Real,XX,ZZ>
+    ::read(Optizelle::Messaging(),fname,state);
+Optizelle::json::Constrained <Real,XX,YY,ZZ>
+    ::read(Optizelle::Messaging(),fname,state)
+\end{filecontents*}
+
+\begin{filecontents*}{json.py}
+Optizelle.json.Unconstrained.read(X,msg,fname,state)
+Optizelle.json.EqualityConstrained.read(X,Y,msg,fname,state)
+Optizelle.json.InequalityConstrained.read(X,Z,msg,fname,state)
+Optizelle.json.Constrained.read(X,Y,Z,msg,fname,state)
+\end{filecontents*}
+
+\begin{filecontents*}{json.m}
+state = Optizelle.json.Unconstrained.read(X,msg,fname,state)
+state = Optizelle.json.EqualityConstrained.read(X,Y,msg,fname,state)
+state = Optizelle.json.InequalityConstrained.read(X,Z,msg,fname,state)
+state = Optizelle.json.Constrained.read(X,Y,Z,msg,fname,state)
+\end{filecontents*}
+
+\begin{boldlist}
+    \apiitemshort
+        {C++}
+        {\lstinputlisting[style=C++]{json.cpp}}
+        {Use as is}
+    \apiitemshort
+        {Python}
+        {\lstinputlisting[style=Python]{json.py}}
+        {Use as is}
+    \apiitemshort
+        {MATLAB/Octave}
+        {\lstinputlisting[style=Matlab]{json.m}}
+        {Use as is}
+\end{boldlist}
+Here, most of the parameters required are identical to those required in the section \hyperref[sec:state]{\secstate}.  The lone, new parameter is \textct{fname}, which corresponds to a string of the file name where we read the JSON formatted parameters.  As to what these parameters are, we discuss that in the chapter \hyperref[ch:parameters]{\chparameters}.
+
+        In our Rosenbrock example, we use the following code to read the optimizzation parameters
+\begin{boldlist}
+    \exampleitem
+        {C++}
+        {\lstinputlisting[style=C++,linerange=Parameters0-Parameters1]{@ROSENBROCKPATH@/rosenbrock.cpp}}
+
+    \exampleitem
+        {Python}
+        {\lstinputlisting[style=Python,linerange=Parameters0-Parameters1]{@ROSENBROCKPATH@/rosenbrock.py}}
+
+    \exampleitem
+        {MATLAB/Octave}
+        {\lstinputlisting[style=Matlab,linerange=Parameters0-Parameters1]{@ROSENBROCKPATH@/rosenbrock.m}}
+\end{boldlist}
+
+\section{Accumulate the functions}
 
         In order to pass the functions used in the optimization to Optizelle, we accumulate each of them into a bundle of functions.  These bundles are simple structures that contain a number of \texttt{std::auto\_ptr} objects that point to the appropriate function.  The syntax for creating these objects is
 \input{functionBundleSpecification.tex}
 where \texttt{f} refers to a \texttt{ScalarValuedFunction} that denotes the objective, \texttt{g} refers to a \texttt{VectorValuedFunction} that denotes the equality constraint, and \texttt{h} refers to an affine \texttt{VectorValuedFunction} that denotes the inequality constraint.  Note, each of these structures only contains elements appropriate for their particular formulation.  For example, the bundle of functions that corresponds to unconstrained optimization only contains the element for \texttt{f} and not for \texttt{g} and \texttt{h}.
 
-\section{Call the Optimization Solver}
+\section{Call the optimiation solver}
 
        Once the state, parameters, and functions are set, calling the optimization solver is straightforward.  Simply, we call one of the four commands
 \input{solverSpecification.tex}
 These commands accept three input arguments: the messaging object, the bundle of functions, and the state.  The messaging object \texttt{Optizelle::Messaging()} sends the output to \texttt{stdout}.  This can be modified and we discuss how in Chapter \ref{ch:Advanced}.  Once the solver routine has been called, the optimization algorithms iterate until the stopping criteria is satisfied.  Generally, this creates a collection diagnostic information and we discuss the format of these output in Chapter \ref{ch:Output}.
 
-\section{Extract the Solution}
+\section{Extract the solution}
 
         After the optimization routine concludes, the solution resides inside of the optimization state in a variable called \texttt{x}.  This is a \texttt{std::list} that contains a single element, the solution.  Optizelle stores each of its vector arguments inside of list in order to more efficiently manage memory.  This makes more advanced optimization techniques such as saving the state of the optimization and restarting a computation later easier.  The command required to extract the solution is the same for each formulation
 \input{solutionExtractionSpecification.tex}
+
+\chapter{Optimization Parameters}\label{ch:parameters}
 
 \chapter{Input Specifications}\label{ch:Input}
 
@@ -1344,13 +1608,71 @@ Name & Description\\
 
         Optizelle contains many additional features such as customizing the output and defining custom vector spaces.  We detail these features below.
 
-\section{Messaging Object}
+\section{\secmessaging}\label{sec:messaging}
 
         Optizelle messaging objects inherit from \texttt{Optizelle::Messaging}, which Optizelle defines as
 \input{messagingSpecification.tex}
 Hence, messaging objects have two functions, \texttt{print} and \texttt{error}, that both accept a string and print the result.  The only difference between \texttt{print} and \texttt{error} is that \texttt{error} must safely exit the program.  Within a larger program, it is common to modify the messaging object so that Optizelle's output goes directly to a specified file.
+        
+\section{Symmetric Cone Programming}        
+        In the case of C++, we also provide a built-in vector space for semidefinite, second-order cone, and linear (SQL) programs:
+\begin{boldlist}
+    \apiitem
+        {C++}
+        {\textct{Optizelle::SQL}}
+        {Use as is}
+        {\lstinputlisting[style=C++,linerange={Optizelle0-Optizelle1,Cone0-Cone1,SQL0,SQL1,Optizelle2-Optizelle3}]{@OPTIZELLECPPPATH@/vspaces.h}}
+\end{boldlist}
 
-\section{Custom Vector Spaces}
+\noindent Take special note of the constructor:
+
+\begin{flushleft}
+    \lstinputlisting[style=C++,linerange={SQLConstructor0-SQLConstructor1}]{@OPTIZELLECPPPATH@/vspaces.h}
+\end{flushleft}
+\noindent In order to construct an SQL vector, we must provide a vector of \textct{Cone::t}s that describe the cones and a vector of \textct{Natural}s that describe the sizes.  In order to access these elements on the vector \textct{x}, we use the following indexing functions
+\begin{center}\begin{tabular}{llll}
+Number of cones & Type of cone & Type of Indexing & Use\\\hline
+Single  & Quadradic/Linear & Specific element & \textct{x(i)}\\
+Multiple  & Quadradic/Linear & Specific element & \textct{x(k,i)}\\
+Multiple & Semidefinite & Specific element & \textct{x(k,i,j)}\\
+Multiple & Semidefinite/Quadratic/Linear & First element & \textct{x.front(k)}\\
+Multiple & Quadratic & First element & \textct{x.naught(k)}\\
+Multiple & Quadratic & Second element & \textct{x.bar(k)}
+\end{tabular}\end{center}
+\noindent Finally, we have a couple of query functions
+\begin{center}\begin{tabular}{lll}
+Purpose & Use\\\hline
+Size of block & \textct{x.blkSize(k)}\\
+Type of block & \textct{x.blkType(k)}\\
+Number of blocks & \textct{x.numblocks()}
+\end{tabular}\end{center}
+
+        Outside of Rm, we also allow these vector spaces of functions such as $L^2(\Omega)$ or martrices such as $\re^{m\times n}$ as long as these spaces provide sufficient vector-space operations.  Specifically, for $W\in\{X,Y,Z\}$, we require that $W$ provide the functions:
+\begin{center}\begin{tabular}{|lll|}\hline
+    \textbf{Name} & \textbf{Definition} & \textbf{Languages}\\\hline
+    \textct{init(x)} & $\textit{init}\leftarrow \xi(W)$ & C++, Python, MATLAB/Octave\\\hline
+
+    \textct{copy(x,y)} & $y\leftarrow x$ & C++, Python\\
+    \textct{copy(x)} & $\textit{copy}\leftarrow x$ & MATLAB/Octave\\\hline
+
+    \textct{scal(alpha,x)} & $x\leftarrow \alpha x$ & C++, Python\\
+    & $\textit{scal}\leftarrow \alpha x$ & MATLAB/Octave\\\hline
+
+    \textct{axpy(alpha,x,y)} & $y\leftarrow \alpha x+y$ & C++, Python\\
+    & $\textit{axpy}\leftarrow \alpha x+y$ & MATLAB/Octave\\\hline
+
+    \textct{innr(x,y)} & $\textit{innr}\leftarrow \langle x,y\rangle$ & C++, Python, MATLAB/Octave\\\hline
+    
+    \textct{zero(x)} & $x\leftarrow 0$ & C++, Python\\
+    & $\textit{zero}\leftarrow 0$ & MATLAB/Octave\\\hline
+    
+    \textct{rand(x)} & $x\leftarrow \psi(W)$ & C++, Python\\
+    & $\textit{rand}\leftarrow \psi(W)$ & MATLAB/Octave\\\hline
+\end{tabular}\end{center}
+Here, the notation $x\leftarrow \alpha x$ means we assign the element $x$ the value $\alpha x$ whereas the notation $\textit{scal}\leftarrow \alpha x$ means we return the result $\alpha x$.  Next, $\xi,\psi:\mathcal{P}(W)\rightarrow W$ denote choice functions where $\xi$ and $\psi$ are typically deterministic and stochastic, respectfully.  In other words, $\xi$ and $\psi$ choose either fixed or random elements of $W$.  More specifically, we use \textct{init} to allocate memory and \textct{rand} to conduct diagnostic tests.
+
+
+\section{\seccustomvector}\label{sec:customvector}
 
         Optizelle allows the use of a custom vector space provided by the user.  This allows Optizelle to more easily work with programs that store their information in a custom format.  Simply, we define a new vector space rather than trying to convert the internal data into a \texttt{std::vector}.  The requirements for a new vector space are a structure of the form
 \input{vectorSpaceSpecification.tex}

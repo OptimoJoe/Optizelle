@@ -32,6 +32,7 @@ class MyObj(Optizelle.ScalarValuedFunction):
         H_dx[0]=2.*dx[0]
         H_dx[1]=2.*dx[1] 
 
+#---EqualityConstraint0---
 # Define a simple equality constraint
 #
 # g(x,y)= [ (x-2)^2 + (y-2)^2 = 1 ] 
@@ -55,6 +56,7 @@ class MyEq(Optizelle.VectorValuedFunction):
     def pps(self,x,dx,dy,z):
         z[0] = 2.*dx[0]*dy[0];
         z[1] = 2.*dx[1]*dy[0];
+#---EqualityConstraint1---
 
 # Read in the name for the input file
 if len(sys.argv)!=2:

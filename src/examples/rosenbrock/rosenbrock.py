@@ -32,29 +32,35 @@ class Rosenbrock(Optizelle.ScalarValuedFunction):
         H_dx[1] = -400*x[0]*dx[0] + 200*dx[1]
 #---Objective1---
 
+#---Preconditioner0---
 # Define a perfect preconditioner for the Hessian
 class RosenHInv(Optizelle.Operator):
     def eval(self,state,dx,result):
         x = state.x
-        one_over_det=1./(400000.*x[0]*x[0]-80000.*x[1]+400.)
+        one_over_det=1./(80000.*sq(x[0])-80000.*x[1]+400.)
         result[0]=one_over_det*(200.*dx[0]+400.*x[0]*dx[1])
         result[1]=(one_over_det*
             (400.*x[0]*dx[0]+(1200.*x[0]*x[0]-400.*x[1]+2.)*dx[1]))
+#---Preconditioner1---
     
 # Read in the name for the input file
 if len(sys.argv)!=2:
     sys.exit("python rosenbrock.py <parameters>")
 fname = sys.argv[1]
 
+#---State0---
 # Generate an initial guess for Rosenbrock
 x = numpy.array([-1.2,1.0])
 
 # Create an unconstrained state based on this vector
 state=Optizelle.Unconstrained.State.t(Optizelle.Rm,Optizelle.Messaging(),x)
+#---State1---
     
+#---Parameters0---
 # Read the parameters from file
 Optizelle.json.Unconstrained.read(Optizelle.Rm,Optizelle.Messaging(),
     fname,state)
+#---Parameters1---
 
 # Create the bundle of functions 
 fns=Optizelle.Unconstrained.Functions.t()

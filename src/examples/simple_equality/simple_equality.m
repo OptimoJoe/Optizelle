@@ -35,6 +35,7 @@ function self = MyObj()
         2.*dx(2)];
 end
 
+%---EqualityConstraint0---
 % Define a simple equality constraint
 %
 % g(x,y)= [ (x-2)^2 + (y-2)^2 = 1 ] 
@@ -59,6 +60,7 @@ function self = MyEq()
         2.*dx(1)*dy(1); ...
         2.*dx(2)*dy(1) ];
 end
+%---EqualityConstraint1---
 
 % Actually runs the program
 function main(fname)

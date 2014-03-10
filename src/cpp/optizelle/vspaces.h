@@ -43,7 +43,6 @@ namespace Optizelle {
 
     using namespace Optizelle;
 
-    //---Rm0---
     // Vector space for the nonnegative orthant.  For basic vectors
     // in R^m, use this.
     template <typename Real>
@@ -178,7 +177,6 @@ namespace Optizelle {
         // operator.
         static void symm(Vector & x) { }
     };
-    //---Rm1---
 
     namespace json {
         // Serialization utility for the Rm vector space
@@ -215,7 +213,8 @@ namespace Optizelle {
             }
         };
     }
-
+    
+    //---Cone0---
     // Different cones used in SQL problems
     namespace Cone {
         enum t {
@@ -233,7 +232,9 @@ namespace Optizelle {
         // Checks whether or not a string is valid
         bool is_valid(std::string const & name); 
     }
+    //---Cone1---
 
+    //---SQL0---
     // A vector spaces consisting of a finite product of semidefinite,
     // quadratic, and linear cones.  This uses the nonsymmetric product
     // for the SDP blocks where x o y = xy.  This is not a true Euclidean-Jordan
@@ -272,6 +273,7 @@ namespace Optizelle {
             // Eliminate constructors 
             NO_DEFAULT_COPY_ASSIGNMENT(Vector);
 
+            //---SQLConstructor0---
             // We require a vector of cone types and their sizes.
             Vector (
                 std::vector <Cone::t> const & types_,
@@ -280,6 +282,7 @@ namespace Optizelle {
             ) : data(), offsets(), types(types_), sizes(sizes_),
                 inverse(), inverse_offsets(), inverse_base(),
                 inverse_base_offsets()
+            //---SQLConstructor1---
             {
 
                 // Insure that the type of cones and their sizes lines up.
@@ -429,6 +432,7 @@ namespace Optizelle {
                 return types.size();
             }
         };
+    //---SQL1---
 
         // Gets the matrix inverse of a block of the SQL vector.
         static void get_inverse(

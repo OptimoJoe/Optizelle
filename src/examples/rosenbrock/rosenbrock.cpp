@@ -50,6 +50,7 @@ struct Rosenbrock
 };
 //---Objective1---
 
+//---Preconditioner0---
 // Define a perfect preconditioner for the Hessian
 struct RosenHInv :
     public Optizelle::Operator <double,Optizelle::Rm,Optizelle::Rm>
@@ -62,12 +63,13 @@ private:
 public:
     RosenHInv(X::Vector& x_) : x(x_) {}
     void eval(const X_Vector& dx,X_Vector &result) const {
-        double one_over_det=1./(400000.*x[0]*x[0]-80000.*x[1]+400.);
+        double one_over_det=1./(80000.*sq(x[0])-80000.*x[1]+400.);
         result[0]=one_over_det*(200.*dx[0]+400.*x[0]*dx[1]);
         result[1]=one_over_det*
             (400.*x[0]*dx[0]+(1200.*x[0]*x[0]-400.*x[1]+2.)*dx[1]);
     }
 };
+//---Preconditioner1---
 
 int main(int argc,char* argv[]){
     // Read in the name for the input file
@@ -77,16 +79,20 @@ int main(int argc,char* argv[]){
     }
     std::string fname(argv[1]);
 
+    //---State0---
     // Generate an initial guess for Rosenbrock
     std::vector <double> x(2);
     x[0]=-1.2; x[1]=1.;
 
     // Create an unconstrained state based on this vector
     Optizelle::Unconstrained <double,Optizelle::Rm>::State::t state(x);
+    //---State1---
 
+    //---Parameters0---
     // Read the parameters from file
     Optizelle::json::Unconstrained <double,Optizelle::Rm>
         ::read(Optizelle::Messaging(),fname,state);
+    //---Parameters1---
 
     // Create the bundle of functions 
     Optizelle::Unconstrained <double,Optizelle::Rm>::Functions::t fns;

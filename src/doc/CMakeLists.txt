@@ -16,6 +16,7 @@ include(UseLATEX)
 # Set a couple of paths to source files
 set(LICENSEPATH "${CMAKE_SOURCE_DIR}")
 set(ROSENBROCKPATH "${CMAKE_SOURCE_DIR}/src/examples/rosenbrock/")
+set(SIMPLEEQUALITYPATH "${CMAKE_SOURCE_DIR}/src/examples/simple_equality/")
 set(OUTPUTPATH "${CMAKE_CURRENT_SOURCE_DIR}")
 set(OPTIZELLECPPPATH "${CMAKE_SOURCE_DIR}/src/cpp/optizelle/")
 set(OPTIZELLEPYTHONPATH "${CMAKE_SOURCE_DIR}/src/python/Optizelle/")

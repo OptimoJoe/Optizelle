@@ -32,6 +32,12 @@ Author: Joseph Young (joe@optimojoe.com)
 #include "optizelle.h"
 
 namespace Optizelle {
+    // In theory, I'd like to keep this variable local, but for some strange
+    // reason Octave keeps moving around this memory.  As such, rather than
+    // having it be static, I made it global and then grab the correct pointer
+    // each time we enter these routines.
+    mxArray * optizelle;
+
     namespace StoppingCondition { 
         // Converts t to a Matlab enumerated type
         mxArray * toMatlab(t const & opt_stop) {
@@ -740,9 +746,6 @@ namespace Optizelle {
             std::string const & type_,
             std::string const & member_
         ) {
-            // Grab Optizelle
-            static mxArray * optizelle = mexGetVariable("global","Optizelle");
-
             // Grab the type 
             mxArray * type = mxGetField(optizelle,0,type_.c_str());
 
@@ -2093,6 +2096,9 @@ namespace Optizelle {
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 ){
+                    // Grab Optizelle
+                    optizelle = mexGetVariable("global","Optizelle");
+
                     // Calling convention should be (X,msg,x) -> (mxstate_out)
                     mxArray *X=pInput[0],
                             *msg=pInput[1],
@@ -2127,6 +2133,9 @@ namespace Optizelle {
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 ) {
+                    // Grab Optizelle
+                    optizelle = mexGetVariable("global","Optizelle");
+
                     // Calling convention should be (X,msg,fname,mxstate)
                     // -> (mxstate_out)
                     mxArray *X=pInput[0],
@@ -2197,6 +2206,9 @@ namespace Optizelle {
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 ) {
+                    // Grab Optizelle
+                    optizelle = mexGetVariable("global","Optizelle");
+
                     // Calling convention should be
                     // (X,msg,smanip,mxfns,mxstate) -> (mxstate_out)
                     mxArray *X=pInput[0],
@@ -2273,6 +2285,9 @@ namespace Optizelle {
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 ) {
+                    // Grab Optizelle
+                    optizelle = mexGetVariable("global","Optizelle");
+
                     // Calling convention should be
                     // (X,msg,mxstate) -> (xs,reals,nats,params)
                     mxArray *X=pInput[0],
@@ -2337,6 +2352,9 @@ namespace Optizelle {
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 ) {
+                    // Grab Optizelle
+                    optizelle = mexGetVariable("global","Optizelle");
+
                     // Calling convention should be
                     // (X,msg,mxstate,mxxs,mxreals,mxnats,mxparams)
                     // -> mxstate_out
@@ -2400,6 +2418,9 @@ namespace Optizelle {
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 ) {
+                    // Grab Optizelle
+                    optizelle = mexGetVariable("global","Optizelle");
+
                     // Calling convention should be (X,msg,fname,state) -> ()
                     mxArray *X=pInput[0],
                             *msg_=pInput[1],
@@ -2444,6 +2465,9 @@ namespace Optizelle {
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 ) {
+                    // Grab Optizelle
+                    optizelle = mexGetVariable("global","Optizelle");
+
                     // Calling convention should be (X,msg,fname,x) -> (mxstate)
                     mxArray *X=pInput[0],
                             *msg_=pInput[1],
@@ -2690,6 +2714,9 @@ namespace Optizelle {
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 ){
+                    // Grab Optizelle
+                    optizelle = mexGetVariable("global","Optizelle");
+
                     // Calling convention should be (X,Y,msg,x,y)->(mxstate_out)
                     mxArray *X=pInput[0],
                             *Y=pInput[1],
@@ -2727,6 +2754,9 @@ namespace Optizelle {
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 ) {
+                    // Grab Optizelle
+                    optizelle = mexGetVariable("global","Optizelle");
+
                     // Calling convention should be (X,Y,msg,fname,mxstate)
                     // -> (mxstate_out)
                     mxArray *X=pInput[0],
@@ -2802,6 +2832,9 @@ namespace Optizelle {
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 ) {
+                    // Grab Optizelle
+                    optizelle = mexGetVariable("global","Optizelle");
+
                     // Calling convention should be
                     // (X,Y,msg,smanip,mxfns,mxstate) -> (mxstate_out)
                     mxArray *X=pInput[0],
@@ -2881,6 +2914,9 @@ namespace Optizelle {
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 ) {
+                    // Grab Optizelle
+                    optizelle = mexGetVariable("global","Optizelle");
+
                     // Calling convention should be
                     // (X,Y,msg,mxstate) -> (xs,ys,reals,nats,params)
                     mxArray *X=pInput[0],
@@ -2953,6 +2989,9 @@ namespace Optizelle {
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 ) {
+                    // Grab Optizelle
+                    optizelle = mexGetVariable("global","Optizelle");
+
                     // Calling convention should be
                     // (X,Y,msg,mxstate,mxxs,mxys,mxreals,mxnats,mxparams)
                     // -> mxstate_out
@@ -3022,6 +3061,9 @@ namespace Optizelle {
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 ) {
+                    // Grab Optizelle
+                    optizelle = mexGetVariable("global","Optizelle");
+
                     // Calling convention should be (X,Y,msg,fname,state) -> ()
                     mxArray *X=pInput[0],
                             *Y=pInput[1],
@@ -3070,6 +3112,9 @@ namespace Optizelle {
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 ) {
+                    // Grab Optizelle
+                    optizelle = mexGetVariable("global","Optizelle");
+
                     // Calling convention should be
                     // (X,Y,msg,fname,x,y) -> (mxstate)
                     mxArray *X=pInput[0],
@@ -3243,6 +3288,9 @@ namespace Optizelle {
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 ){
+                    // Grab Optizelle
+                    optizelle = mexGetVariable("global","Optizelle");
+
                     // Calling convention should be (X,Z,msg,x,z)->(mxstate_out)
                     mxArray *X=pInput[0],
                             *Z=pInput[1],
@@ -3280,6 +3328,9 @@ namespace Optizelle {
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 ) {
+                    // Grab Optizelle
+                    optizelle = mexGetVariable("global","Optizelle");
+
                     // Calling convention should be (X,Z,msg,fname,mxstate)
                     // -> (mxstate_out)
                     mxArray *X=pInput[0],
@@ -3355,6 +3406,9 @@ namespace Optizelle {
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 ) {
+                    // Grab Optizelle
+                    optizelle = mexGetVariable("global","Optizelle");
+
                     // Calling convention should be
                     // (X,Z,msg,smanip,mxfns,mxstate) -> (mxstate_out)
                     mxArray *X=pInput[0],
@@ -3434,6 +3488,9 @@ namespace Optizelle {
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 ) {
+                    // Grab Optizelle
+                    optizelle = mexGetVariable("global","Optizelle");
+
                     // Calling convention should be
                     // (X,Z,msg,mxstate) -> (xs,zs,reals,nats,params)
                     mxArray *X=pInput[0],
@@ -3506,6 +3563,9 @@ namespace Optizelle {
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 ) {
+                    // Grab Optizelle
+                    optizelle = mexGetVariable("global","Optizelle");
+
                     // Calling convention should be
                     // (X,Z,msg,mxstate,mxxs,mxzs,mxreals,mxnats,mxparams)
                     // -> mxstate_out
@@ -3575,6 +3635,9 @@ namespace Optizelle {
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 ) {
+                    // Grab Optizelle
+                    optizelle = mexGetVariable("global","Optizelle");
+
                     // Calling convention should be (X,Z,msg,fname,state) -> ()
                     mxArray *X=pInput[0],
                             *Z=pInput[1],
@@ -3623,6 +3686,9 @@ namespace Optizelle {
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 ) {
+                    // Grab Optizelle
+                    optizelle = mexGetVariable("global","Optizelle");
+
                     // Calling convention should be
                     // (X,Z,msg,fname,x,z) -> (mxstate)
                     mxArray *X=pInput[0],
@@ -3727,6 +3793,9 @@ namespace Optizelle {
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 ){
+                    // Grab Optizelle
+                    optizelle = mexGetVariable("global","Optizelle");
+
                     // Calling convention should be
                     // (X,Y,Z,msg,x,y,z)->(mxstate_out)
                     mxArray *X=pInput[0],
@@ -3768,6 +3837,9 @@ namespace Optizelle {
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 ) {
+                    // Grab Optizelle
+                    optizelle = mexGetVariable("global","Optizelle");
+
                     // Calling convention should be (X,Y,Z,msg,fname,mxstate)
                     // -> (mxstate_out)
                     mxArray *X=pInput[0],
@@ -3848,6 +3920,9 @@ namespace Optizelle {
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 ) {
+                    // Grab Optizelle
+                    optizelle = mexGetVariable("global","Optizelle");
+
                     // Calling convention should be
                     // (X,Z,msg,smanip,mxfns,mxstate) -> (mxstate_out)
                     mxArray *X=pInput[0],
@@ -3930,6 +4005,9 @@ namespace Optizelle {
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 ) {
+                    // Grab Optizelle
+                    optizelle = mexGetVariable("global","Optizelle");
+
                     // Calling convention should be
                     // (X,Y,Z,msg,mxstate) -> (xs,ys,zs,reals,nats,params)
                     mxArray *X=pInput[0],
@@ -4010,6 +4088,9 @@ namespace Optizelle {
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 ) {
+                    // Grab Optizelle
+                    optizelle = mexGetVariable("global","Optizelle");
+
                     // Calling convention should be
                     //(X,Y,Z,msg,mxstate,mxxs,mxys,mxzs,mxreals,mxnats,mxparams)
                     // -> mxstate_out
@@ -4085,6 +4166,9 @@ namespace Optizelle {
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 ) {
+                    // Grab Optizelle
+                    optizelle = mexGetVariable("global","Optizelle");
+
                     // Calling convention should be (X,Y,Z,msg,fname,state)-> ()
                     mxArray *X=pInput[0],
                             *Y=pInput[1],
@@ -4136,6 +4220,9 @@ namespace Optizelle {
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 ) {
+                    // Grab Optizelle
+                    optizelle = mexGetVariable("global","Optizelle");
+
                     // Calling convention should be
                     // (X,Y,Z,msg,fname,x,y,z) -> (mxstate)
                     mxArray *X=pInput[0],

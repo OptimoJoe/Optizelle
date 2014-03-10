@@ -1,6 +1,8 @@
-% Optielle optimization library
+% Optizelle optimization library
 %
-% Optizelle = setupOptizelle ()
+% Usage:
+% global Optizelle;
+% setupOptizelle();
 %
 function setupOptizelle()
 
@@ -150,6 +152,7 @@ Optizelle.ScalarValuedFunction = struct( ...
     'hess_vec',@(x,dx)err_svf('hess_vec'));
 %---ScalarValuedFunction1---
 
+%---VectorValuedFunction0---
 % A vector valued function interface, f : X -> Y
 err_vvf=@(x)error(sprintf( ...
     'The %s function is not defined in a VectorValuedFunction.',x));
@@ -158,12 +161,15 @@ Optizelle.VectorValuedFunction = struct( ...
     'p',@(x,dx)err_vvf('p'),
     'ps',@(x,dy)err_vvf('ps'),
     'pps',@(x,dx,dy)err_vvf('pps'));
+%---VectorValuedFunction1---
 
+%---Operator0---
 % A linear operator specification, A : X->Y 
 err_op=@(x)error(sprintf( ...
     'The %s function is not defined in an Operator.',x));
 Optizelle.Operator = struct( ...
-    'eval',@(x)err_op('eval'));
+    'eval',@(state,x)err_op('eval'));
+%---Operator1---
 
 % Defines how we output messages to the user
 Optizelle.Messaging = struct( ...
@@ -174,7 +180,6 @@ Optizelle.Messaging = struct( ...
 % should be used cautiously. 
 Optizelle.StateManipulator = getStateManipulator();
 
-%---Rm0---
 % Vector space for the nonnegative orthant.  For basic vectors in R^m, use this.
 Optizelle.Rm = struct( ...
     'init',@(x)x, ...
@@ -190,7 +195,6 @@ Optizelle.Rm = struct( ...
     'barr',@(x)sum(log(x)), ...
     'srch',@(x,y) feval(@(z)min([min(z(find(z>0)));inf]),-y./x), ...
     'symm',@(x)x);
-%---Rm1---
 
 % Converts a vector to a JSON formatted string
 Optizelle.json.Serialization.serialize = @serialize;

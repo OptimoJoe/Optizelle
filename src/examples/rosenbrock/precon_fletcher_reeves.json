@@ -6,6 +6,7 @@
       "PH_type" : "UserDefined",
       "iter_max" : 50,
       "linesearch_iter_max" : 7,
+      "alpha0" : 1e-2,
       "eps_dx" : 1e-10
    },
    "Naturals" : {

@@ -459,6 +459,7 @@ class ScalarValuedFunction(object):
         _err(self,"grad")
 #---ScalarValuedFunction1---
 
+#---VectorValuedFunction0---
 class VectorValuedFunction(object):
     """A vector valued function interface, f : X -> Y"""
 
@@ -482,7 +483,9 @@ class VectorValuedFunction(object):
     def pps(self,x,dx,dy,z):
         """z <- (f''(x)dx)*dy"""
         _err(self,"pps")
-    
+#---VectorValuedFunction1---
+
+#---Operator0---
 class Operator(object):
     """A linear operator specification, A : X->Y"""
     
@@ -494,6 +497,7 @@ class Operator(object):
     def eval(self,state,x,y):
         """y <- A(x)"""
         _err(self,"eval")
+#---Operator1---
 
 class Messaging(object):
     """Defines how we output messages to the user"""
@@ -512,7 +516,6 @@ class StateManipulator(object):
         """Application"""
         pass
 
-#---Rm0---
 class Rm(object):
     """Vector space for the nonnegative orthant.  For basic vectors in R^m, use this."""
 
@@ -586,7 +589,6 @@ class Rm(object):
     def symm(x):
         """Symmetrization, x <- symm(x) such that L(symm(x)) is a symmetric operator"""
         pass
-#---Rm1---
 
 class RestartPackage(tuple):
     """Holds restart information"""

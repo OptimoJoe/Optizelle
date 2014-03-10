@@ -155,6 +155,7 @@ namespace Optizelle{
     };
 
 
+    //---VectorValuedFunction0---
     // A vector valued function interface, f : X -> Y
     template <
         typename Real,
@@ -196,6 +197,7 @@ namespace Optizelle{
          // Allow a derived class to deallocate memory
          virtual ~VectorValuedFunction() {}
     };
+    //---VectorValuedFunction1---
 
     // Defines how we output messages to the user
     struct Messaging {

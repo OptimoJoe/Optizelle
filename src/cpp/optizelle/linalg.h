@@ -65,7 +65,10 @@ Author: Joseph Young (joe@optimojoe.com)
     Name(Name const &) = delete; \
     Name& operator = (Name const &) = delete;
 
+//---Optizelle0---
 namespace Optizelle {
+//---Optizelle1---
+
     typedef size_t Natural;
     typedef ptrdiff_t Integer;
 
@@ -604,6 +607,7 @@ namespace Optizelle {
     // Indexing for vectors 
     Natural itok(Natural const & i);
 
+    //---Operator0---
     // A linear operator specification, A : X->Y
     template <
         typename Real,
@@ -621,6 +625,7 @@ namespace Optizelle {
         // Allow a derived class to deallocate memory 
         virtual ~Operator() {}
     };
+    //---Operator1---
 
     /* Given a Schur decomposition of A, A=V D V', solve the Sylvester equation
     
@@ -2519,6 +2524,8 @@ namespace Optizelle {
             return rel_err;
         }
     } 
+//---Optizelle2---
 }
+//---Optizelle3---
 
 #endif

@@ -37,6 +37,12 @@ Author: Joseph Young (joe@optimojoe.com)
 #include "optizelle/json.h"
 
 namespace Optizelle {
+    // In theory, I'd like to keep this variable local, but for some strange
+    // reason Octave keeps moving around this memory.  As such, rather than
+    // having it be static, I made it global and then grab the correct pointer
+    // each time we enter these routines.
+    extern mxArray * optizelle;
+
     namespace StoppingCondition { 
         // Converts t to a Matlab enumerated type
         mxArray * toMatlab(t const & opt_stop);
