@@ -54,9 +54,16 @@ class MyEq(Optizelle.VectorValuedFunction):
 
     # z=(g''(x)dx)*dy
     def pps(self,x,dx,dy,z):
-        z[0] = 2.*dx[0]*dy[0];
-        z[1] = 2.*dx[1]*dy[0];
+        z[0] = 2.*dx[0]*dy[0]
+        z[1] = 2.*dx[1]*dy[0]
 #---EqualityConstraint1---
+
+#---Preconditioner0---
+# Define a Schur preconditioner for the equality constraints 
+class MyPrecon(Optizelle.Operator):
+    def eval(self,state,dy,result): 
+        result[0]=dy[0]/sq(4.*(x[0]-2.)+4.*sq(x[1]-2.))
+#---Preconditioner1---
 
 # Read in the name for the input file
 if len(sys.argv)!=2:
@@ -81,6 +88,7 @@ Optizelle.json.EqualityConstrained.read(
 fns=Optizelle.EqualityConstrained.Functions.t()
 fns.f=MyObj()
 fns.g=MyEq()
+fns.PSchur_left=MyPrecon()
 
 # Solve the optimization problem
 Optizelle.EqualityConstrained.Algorithms.getMin(

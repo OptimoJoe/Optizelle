@@ -1205,7 +1205,7 @@ allows a Krylov method to solve the above system in three iterations.  As such, 
 $$
         g^\prime(x)g^\prime(x)^*.
 $$
-Note, unlike the Hessian, this operator depends on the inner product used by the vector space because it involves an adjoint.  If we're working in $\re^m$ with the inner product $\langle x,y\rangle = x^Ty$, we can ignore this nuance.  Otherwise, we must modify our factorizations to correctly account for the change in inner product.  Outside of this difficulty, we note the operator is always symmetric and positive-semidefinite.  However, like the Hessian, it can and likely will become singular during the course of optimization.  As such, we propose two ways of dealing with this.  In one case, we use a $QR$ factorization of $g^\prime(x)^*$,
+Note, unlike the Hessian, we allow both left and right preconditioners for this operator.  In addition, this operator depends on the inner product used by the vector space because it involves an adjoint.  If we're working in $\re^m$ with the inner product $\langle x,y\rangle = x^Ty$, we can ignore this nuance.  Otherwise, we must modify our factorizations to correctly account for the change in inner product.  Outside of this difficulty, we note the operator is always symmetric and positive-semidefinite.  However, like the Hessian, it can and likely will become singular during the course of optimization.  As such, we propose two ways of dealing with this.  In one case, we use a $QR$ factorization of $g^\prime(x)^*$,
 $$
         Q R = g^\prime(x)^*,
 $$
@@ -1264,7 +1264,7 @@ $$
             400x_1 & 1200x_1^2-400x_2+2
         \end{bmatrix}\delta x.
 $$
-Generally, using Cramer's rule is a bad idea, but we note it works fine on this small example.  Using this formulation, we define our preconditioner to the Hessian with the code 
+Generally, we claim using Cramer's rule is a bad idea, but it works fine on this small example.  Using this formulation, we define our preconditioner to the Hessian with the code 
 \begin{boldlist}
     \exampleitem
         {C++}
@@ -1305,6 +1305,19 @@ $$
         (g^\prime(x)g^\prime(x)^*)^{-1}\delta y=\frac{1}{4(x_1-2)^2+4(x_2-2)^2}\delta y.
 $$
 We implement this in our simple equality example with the code
+\begin{boldlist}
+    \exampleitem
+        {C++}
+        {\lstinputlisting[style=C++,linerange=Preconditioner0-Preconditioner1]{@SIMPLEEQUALITYPATH@/simple_equality.cpp}}
+
+    \exampleitem
+        {Python}
+        {\lstinputlisting[style=Python,linerange=Preconditioner0-Preconditioner1]{@SIMPLEEQUALITYPATH@/simple_equality.py}}
+
+    \exampleitem
+        {MATLAB/Octave}
+        {\lstinputlisting[style=Matlab,linerange=Preconditioner0-Preconditioner1]{@SIMPLEEQUALITYPATH@/simple_equality.m}}
+\end{boldlist}
 
 \section{\secstate}\label{sec:state}
 

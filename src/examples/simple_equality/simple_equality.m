@@ -62,6 +62,13 @@ function self = MyEq()
 end
 %---EqualityConstraint1---
 
+%---Preconditioner0---
+% Define a Schur preconditioner for the equality constraints 
+function self = MyPrecon()
+    self.eval=@(state,dy)dy(1)/sq(4.*(state.x(1)-2.)+4.*sq(state.x(2)-2.));
+end
+%---Preconditioner1---
+
 % Actually runs the program
 function main(fname)
 
@@ -85,8 +92,9 @@ function main(fname)
 
     % Create a bundle of functions
     fns=Optizelle.EqualityConstrained.Functions.t;
-    fns.f=MyObj(Optizelle.ScalarValuedFunction);
-    fns.g=MyEq(Optizelle.VectorValuedFunction);
+    fns.f=MyObj();
+    fns.g=MyEq();
+    fns.PSchur_left=MyPrecon();
 
     % Solve the optimization problem
     state = Optizelle.EqualityConstrained.Algorithms.getMin( ...

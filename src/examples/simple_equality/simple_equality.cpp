@@ -99,6 +99,26 @@ struct MyEq
 };
 //---EqualityConstraint1---
 
+//---Preconditioner0---
+// Define a Schur preconditioner for the equality constraints 
+struct MyPrecon:
+    public Optizelle::Operator <double,Optizelle::Rm,Optizelle::Rm>
+{
+public:
+    typedef Optizelle::Rm <double> X;
+    typedef X::Vector X_Vector;
+    typedef Optizelle::Rm <double> Y;
+    typedef Y::Vector Y_Vector;
+private:
+    X_Vector& x;
+public:
+    MyPrecon(X::Vector& x_) : x(x_) {}
+    void eval(const Y_Vector& dy,Y_Vector &result) const {
+        result[0]=dy[0]/sq(4.*(x[0]-2.)+4.*sq(x[1]-2.));
+    }
+};
+//---Preconditioner1---
+
 int main(int argc,char* argv[]){
     // Read in the name for the input file
     if(argc!=2) {
@@ -128,6 +148,7 @@ int main(int argc,char* argv[]){
     Optizelle::EqualityConstrained <double,Rm,Rm>::Functions::t fns;
     fns.f.reset(new MyObj);
     fns.g.reset(new MyEq);
+    fns.PSchur_left.reset(new MyPrecon(state.x));
 
     // Solve the optimization problem
     Optizelle::EqualityConstrained <double,Rm,Rm>::Algorithms

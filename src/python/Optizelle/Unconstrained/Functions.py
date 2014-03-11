@@ -7,8 +7,8 @@ import Optizelle
 class t(object):
     """All the functions required by an optimization algorithm""" 
     def __init__(self):
-        self._f=None 
-        self._PH=None 
+        self._f=Optizelle.ScalarValuedFunction()
+        self._PH=Optizelle.Operator()
 
     # Create all of the properties
     f = Optizelle.createScalarValuedFunctionProperty(

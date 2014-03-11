@@ -43,7 +43,7 @@ function self = RosenHInv()
 
     function result = eval(state,dx)
         x = state.x;
-        one_over_det=1/(80000.*sq(x(1))-80000.*x(2)+400.);
+        one_over_det=1./(80000.*sq(x(1))-80000.*x(2)+400.);
         result = [
             one_over_det*(200.*dx(1)+400.*x(1)*dx(2));
             one_over_det*...

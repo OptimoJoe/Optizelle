@@ -2,6 +2,7 @@
    "Optizelle" : {
       "msg_level" : 1,
       "H_type" : "UserDefined",
+      "PSchur_left_type" : "UserDefined",
       "iter_max" : 50,
       "delta" : 100,
       "eps_dx" : 1e-16
