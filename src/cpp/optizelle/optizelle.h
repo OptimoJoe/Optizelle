@@ -2200,12 +2200,8 @@ namespace Optizelle{
                 // Preconditioner for the Hessian of the objective
                 std::unique_ptr <Operator <Real,XX,XX> > PH;
 
-                // Symmetric, positive definite operator that changes the
-                // scaling of the trust-region.
-                std::unique_ptr <Operator <Real,XX,XX> > TRS;
-
                 // Initialize all of the pointers to null
-                t() : f(nullptr), PH(nullptr), TRS(nullptr) {}
+                t() : f(nullptr), PH(nullptr) {}
                 
                 // A trick to allow dynamic casting later
                 virtual ~t() {}
@@ -2802,11 +2798,6 @@ namespace Optizelle{
                         break;
                 }
 
-                // If a trust-region operator has not been provided, use the
-                // identity.
-                if(fns.TRS.get()==nullptr)
-                    fns.TRS.reset(new Identity());
-
                 // Check that all functions are defined (namely, the 
                 // objective).
                 check(msg,fns);
@@ -3294,7 +3285,6 @@ namespace Optizelle{
                 ScalarValuedFunctionModifications <Real,XX> const & f_mod
                     = *(fns.f_mod);
                 Operator <Real,XX,XX> const & PH=*(fns.PH);
-                Operator <Real,XX,XX> const & TRS=*(fns.TRS);
                 Real const & eps_dx=state.eps_dx;
                 Real const & eps_krylov=state.eps_krylov;
                 Natural const & krylov_iter_max=state.krylov_iter_max;
@@ -3352,7 +3342,8 @@ namespace Optizelle{
                             H,
                             minus_grad,
                             PH,
-                            TRS,
+                            typename Unconstrained <Real,XX>::Functions
+                                ::Identity(),
                             eps_krylov,
                             krylov_iter_max,
                             krylov_orthog_max,
@@ -3373,7 +3364,8 @@ namespace Optizelle{
                             H,
                             minus_grad,
                             PH,
-                            TRS,
+                            typename Unconstrained <Real,XX>::Functions
+                                ::Identity(),
                             eps_krylov,
                             krylov_iter_max,
                             krylov_orthog_max,
@@ -3854,7 +3846,6 @@ namespace Optizelle{
                 ScalarValuedFunctionModifications <Real,XX> const & f_mod
                     = *(fns.f_mod);
                 Operator <Real,XX,XX> const & PH=*(fns.PH);
-                Operator <Real,XX,XX> const & TRS=*(fns.TRS);
                 X_Vector const & x=state.x;
                 X_Vector const & grad=state.grad;
                 LineSearchDirection::t const & dir=state.dir;
@@ -3924,7 +3915,8 @@ namespace Optizelle{
                             H,
                             minus_grad,
                             PH,
-                            TRS,
+                            typename Unconstrained <Real,XX>::Functions
+                                ::Identity(),
                             eps_krylov,
                             krylov_iter_max,
                             krylov_orthog_max,
@@ -3945,7 +3937,8 @@ namespace Optizelle{
                             H,
                             minus_grad,
                             PH,
-                            TRS,
+                            typename Unconstrained <Real,XX>::Functions
+                                ::Identity(),
                             eps_krylov,
                             krylov_iter_max,
                             krylov_orthog_max,
@@ -5323,12 +5316,6 @@ namespace Optizelle{
                         break;
                 }
 
-                // If a trust-region operator has not been provided, use the
-                // identity.
-                if(fns.TRS.get()==nullptr)
-                    fns.TRS.reset(new typename
-                        Unconstrained <Real,XX>::Functions::Identity());
-                
                 // Check that all functions are defined 
                 check(msg,fns);
                 
@@ -6057,7 +6044,6 @@ namespace Optizelle{
                 
                 // Create shortcuts to the functions that we need
                 ScalarValuedFunction <Real,XX> const & f=*(fns.f);
-                Operator <Real,XX,XX> const & TRS=*(fns.TRS);
                     
                 // Setup the Hessian operator and allocate memory for the
                 // Cauchy point.
@@ -6081,7 +6067,8 @@ namespace Optizelle{
                         H,
                         minus_W_gradpHdxn,
                         NullspaceProjForKrylovMethod(state,fns), // Add in PH?
-                        TRS,
+                        typename Unconstrained <Real,XX>::Functions
+                            ::Identity(),
                         eps_krylov,
                         krylov_iter_max,
                         krylov_orthog_max,
@@ -6102,7 +6089,8 @@ namespace Optizelle{
                         H,
                         minus_W_gradpHdxn,
                         NullspaceProjForKrylovMethod(state,fns), // Add in PH?
-                        TRS,
+                        typename Unconstrained <Real,XX>::Functions
+                            ::Identity(),
                         eps_krylov,
                         krylov_iter_max,
                         krylov_orthog_max,
@@ -7744,16 +7732,6 @@ namespace Optizelle{
 
                 // Modify the objective 
                 fns.f_mod.reset(new InequalityModifications(state,fns));
-
-                // Set the trust-region scaling
-#if 0
-                fns.TRS.reset(
-                    new typename Algorithms::TrustRegionScaling(fns,state));
-#else
-                if(fns.TRS.get()==nullptr)
-                    fns.TRS.reset(new typename Unconstrained <Real,XX>
-                        ::Functions::Identity());
-#endif
             }
 
             // Initialize any missing functions 
