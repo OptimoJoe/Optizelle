@@ -9,12 +9,12 @@ function rosenbrock(fname)
     main(fname);
 end
 
+%---Objective0---
 % Squares its input
 function z = sq(x)
     z=x*x;
 end
 
-%---Objective0---
 % Define the Rosenbrock function where
 % 
 % f(x,y)=(1-x)^2+100(y-x^2)^2
@@ -73,21 +73,27 @@ function main(fname)
         fname,state);
     %---Parameters1---
 
+    %---Functions0---
     % Create the bundle of functions 
     fns=Optizelle.Unconstrained.Functions.t;
     fns.f=Rosenbrock();
     fns.PH=RosenHInv();
-    
+    %---Functions1---
+
+    %---Solver0---
     % Solve the optimization problem
     state = Optizelle.Unconstrained.Algorithms.getMin( ...
         Optizelle.Rm,Optizelle.Messaging,fns,state);
+    %---Solver1---
 
     % Print out the reason for convergence
     fprintf('The algorithm converged due to: %s\n', ...
         Optizelle.StoppingCondition.to_string(state.opt_stop));
 
+    %---Extract0---
     % Print out the final answer
     fprintf('The optimal point is: (%e,%e)\n',state.x(1),state.x(2));
+    %---Extract1---
 
     % Write out the final answer to file
     Optizelle.json.Unconstrained.write_restart( ...

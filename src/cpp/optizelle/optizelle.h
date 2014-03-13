@@ -7398,7 +7398,8 @@ namespace Optizelle{
                         state.cstrat
                             = CentralityStrategy::from_string(item->second);
                     else if(item->first=="h_diag")
-                        state.h_diag=FunctionDiagnostics::from_string(item->second);
+                        state.h_diag=FunctionDiagnostics::from_string(
+                            item->second);
                 }
             }
 

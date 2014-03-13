@@ -98,6 +98,16 @@
     \item[Code] #2
     \item[]}
 
+% Function bundle items
+\newcommand{\functionitem}[5]{
+    \item[Element] #1
+    \item[Type] #2
+    \item[\mbox{Problem Class}] #3
+    \item[Required] #4
+    \item[Description] #5
+    \item[]}
+
+
 % Change the figure numbering to be chap.sec.num
 \renewcommand{\thefigure}{\arabic{chapter}.\arabic{section}.\arabic{figure}}
         
@@ -789,7 +799,7 @@ On Windows, if not using Cygwin, execute the following commands:
         tests by running \textct{ctest} in the CMake build directory.}
 \end{boldlist}
 
-\section{Installing}
+\section{Installing}\label{sec:installing}
 
     After building Optizelle, installation is as simple as executing
 \begin{center}
@@ -807,7 +817,9 @@ located in the CMake build directory.
         .1 \$\{\textctref{CMAKE_INSTALL_PREFIX}\}.
         .2 lib.
         .3 liboptizelle.a.
+        .3 optizelle.lib.
         .3 liboptizelle.so.
+        .3 optizelle.dll.
         .2 include.
         .3 optizelle.
         .4 optizelle.h.
@@ -1060,6 +1072,40 @@ Using Optizelle's internal vector spaces, we implement these functions as
     \exampleitem
         {MATLAB/Octave}
         {\lstinputlisting[style=Matlab,linerange=Objective0-Objective1]{@ROSENBROCKPATH@/rosenbrock.m}}
+\end{boldlist}
+
+        In our simple equality example, we have an objective $f:\re^2\rightarrow \re$ where 
+$$
+        f(x)=x_1^2+x_2^2
+$$
+This function has a gradient of
+$$
+        \nabla f(x)=\begin{bmatrix}
+            2x_1\\ 
+            2x_2
+        \end{bmatrix}
+$$
+and Hessian-vector product of 
+$$
+        \nabla^2 f(x)\delta x=
+        \begin{bmatrix}
+            2 & 0\\
+            0 & 2
+        \end{bmatrix}\delta x.
+$$
+We implement this function with the code:
+\begin{boldlist}
+    \exampleitem
+        {C++}
+        {\lstinputlisting[style=C++,linerange=Objective0-Objective1]{@SIMPLEEQUALITYPATH@/simple_equality.cpp}}
+
+    \exampleitem
+        {Python}
+        {\lstinputlisting[style=Python,linerange=Objective0-Objective1]{@SIMPLEEQUALITYPATH@/simple_equality.py}}
+
+    \exampleitem
+        {MATLAB/Octave}
+        {\lstinputlisting[style=Matlab,linerange=Objective0-Objective1]{@SIMPLEEQUALITYPATH@/simple_equality.m}}
 \end{boldlist}
 
 \section{\secconstraints}\label{sec:constraints}
@@ -1334,24 +1380,24 @@ We implement this in our simple equality example with the code
         In order to define an optimization state, we instantiate the state class within the particular class of formulation we require.  The syntax is
 
 \begin{filecontents*}{state.cpp}
-Optizelle::Unconstrained <Real,XX>::State::t(x)
-Optizelle::EqualityConstrained <Real,XX,YY>::State::t(x,y)
-Optizelle::InequalityConstrained <Real,XX,ZZ>::State::t(x,z)
-Optizelle::Constrained <Real,XX,ZZ>::State::t(x,y,z)
+Optizelle::Unconstrained <Real,XX>::State::t state(x);
+Optizelle::EqualityConstrained <Real,XX,YY>::State::t state(x,y);
+Optizelle::InequalityConstrained <Real,XX,ZZ>::State::t state(x,z);
+Optizelle::Constrained <Real,XX,ZZ>::State::t state(x,y,z);
 \end{filecontents*}
 
 \begin{filecontents*}{state.py}
-Optizelle.Unconstrained.State.t(X,msg,x)
-Optizelle.EqualityConstrained.State.t(X,Y,msg,x,y)
-Optizelle.InequalityConstrained.State.t(X,Y,msg,x,z)
-Optizelle.Constrained.State.t(X,Y,Z,msg,x,y,z)
-\end{filecontents*}
-
-\begin{filecontents*}{state.m}
 state = Optizelle.Unconstrained.State.t(X,msg,x)
 state = Optizelle.EqualityConstrained.State.t(X,Y,msg,x,y)
 state = Optizelle.InequalityConstrained.State.t(X,Y,msg,x,z)
 state = Optizelle.Constrained.State.t(X,Y,Z,msg,x,y,z)
+\end{filecontents*}
+
+\begin{filecontents*}{state.m}
+state = Optizelle.Unconstrained.State.t(X,msg,x);
+state = Optizelle.EqualityConstrained.State.t(X,Y,msg,x,y);
+state = Optizelle.InequalityConstrained.State.t(X,Y,msg,x,z);
+state = Optizelle.Constrained.State.t(X,Y,Z,msg,x,y,z);
 \end{filecontents*}
 
 \begin{boldlist}
@@ -1384,6 +1430,20 @@ state = Optizelle.Constrained.State.t(X,Y,Z,msg,x,y,z)
     \exampleitem
         {MATLAB/Octave}
         {\lstinputlisting[style=Matlab,linerange=State0-State1]{@ROSENBROCKPATH@/rosenbrock.m}}
+\end{boldlist}
+In our simple equality example, we have:
+\begin{boldlist}
+    \exampleitem
+        {C++}
+        {\lstinputlisting[style=C++,linerange=State0-State1]{@SIMPLEEQUALITYPATH@/simple_equality.cpp}}
+
+    \exampleitem
+        {Python}
+        {\lstinputlisting[style=Python,linerange=State0-State1]{@SIMPLEEQUALITYPATH@/simple_equality.py}}
+
+    \exampleitem
+        {MATLAB/Octave}
+        {\lstinputlisting[style=Matlab,linerange=State0-State1]{@SIMPLEEQUALITYPATH@/simple_equality.m}}
 \end{boldlist}
 
 \section{\secparams}\label{sec:params}
@@ -1430,7 +1490,7 @@ state = Optizelle.json.Constrained.read(X,Y,Z,msg,fname,state)
 \end{boldlist}
 Here, most of the parameters required are identical to those required in the section \hyperref[sec:state]{\secstate}.  The lone, new parameter is \textct{fname}, which corresponds to a string of the file name where we read the JSON formatted parameters.  As to what these parameters are, we discuss that in the chapter \hyperref[ch:parameters]{\chparameters}.
 
-        In our Rosenbrock example, we use the following code to read the optimizzation parameters
+        In our Rosenbrock example, we use the following code to read the optimizzation parameters:
 \begin{boldlist}
     \exampleitem
         {C++}
@@ -1444,25 +1504,318 @@ Here, most of the parameters required are identical to those required in the sec
         {MATLAB/Octave}
         {\lstinputlisting[style=Matlab,linerange=Parameters0-Parameters1]{@ROSENBROCKPATH@/rosenbrock.m}}
 \end{boldlist}
+This becomes the following in our simple equality example: 
+\begin{boldlist}
+    \exampleitem
+        {C++}
+        {\lstinputlisting[style=C++,linerange=Parameters0-Parameters1]{@SIMPLEEQUALITYPATH@/simple_equality.cpp}}
+
+    \exampleitem
+        {Python}
+        {\lstinputlisting[style=Python,linerange=Parameters0-Parameters1]{@SIMPLEEQUALITYPATH@/simple_equality.py}}
+
+    \exampleitem
+        {MATLAB/Octave}
+        {\lstinputlisting[style=Matlab,linerange=Parameters0-Parameters1]{@SIMPLEEQUALITYPATH@/simple_equality.m}}
+\end{boldlist}
 
 \section{\secaccumulatefns}\label{sec:accumulatefns}
 
-        In order to pass the functions used in the optimization to Optizelle, we accumulate each of them into a bundle of functions.  These bundles are simple structures that contain a number of \texttt{std::auto\_ptr} objects that point to the appropriate function.  The syntax for creating these objects is
-\input{functionBundleSpecification.tex}
-where \texttt{f} refers to a \texttt{ScalarValuedFunction} that denotes the objective, \texttt{g} refers to a \texttt{VectorValuedFunction} that denotes the equality constraint, and \texttt{h} refers to an affine \texttt{VectorValuedFunction} that denotes the inequality constraint.  Note, each of these structures only contains elements appropriate for their particular formulation.  For example, the bundle of functions that corresponds to unconstrained optimization only contains the element for \texttt{f} and not for \texttt{g} and \texttt{h}.
+        In order to pass the functions used in the optimization to Optizelle, we accumulate each of them into a bundle of functions.  These bundles are simple structures that contain the appropriate function.  The syntax for creating these objects is
+
+\begin{filecontents*}{functions.cpp}
+Optizelle::Unconstrained <Real,XX>::Functions::t fns;
+Optizelle::EqualityConstrained <Real,XX,YY>::Functions::t fns;
+Optizelle::InequalityConstrained <Real,XX,ZZ>::Functions::t fns;
+Optizelle::Constrained <Real,XX,ZZ>::Functions::t fns;
+\end{filecontents*}
+
+\begin{filecontents*}{functions.py}
+fns = Optizelle.Unconstrained.Functions.t()
+fns = Optizelle.EqualityConstrained.Functions.t()
+fns = Optizelle.InequalityConstrained.Functions.t()
+fns = Optizelle.Constrained.Functions.t()
+\end{filecontents*}
+
+\begin{filecontents*}{functions.m}
+fns = Optizelle.Unconstrained.Functions.t;
+fns = Optizelle.EqualityConstrained.Functions.t;
+fns = Optizelle.InequalityConstrained.Functions.t;
+fns = Optizelle.Constrained.Functions.t;
+\end{filecontents*}
+
+\begin{boldlist}
+    \apiitemshort
+        {C++}
+        {\lstinputlisting[style=C++]{functions.cpp}}
+        {Use as is}
+    \apiitemshort
+        {Python}
+        {\lstinputlisting[style=Python]{functions.py}}
+        {Use as is}
+    \apiitemshort
+        {MATLAB/Octave}
+        {\lstinputlisting[style=Matlab]{functions.m}}
+        {Use as is}
+\end{boldlist}
+\noindent As was in the case in the section \hyperref[sec:state]{\secstate}, \textct{XX}, \textct{YY}, and \text{ZZ} in C++ and \textct{X}, \textct{Y}, and \text{Z} in Python and MATLAB/Octave corresponds to the vector spaces $X$, $Y$, and $Z$ described in the section \hyperref[sec:importvs]{\secimportvs}.  Likely, they are just \textct{Optizelle::Rm} or \textct{Optizelle.Rm}.  
+
+        Now, each of structures contains a number of required and optional elements.  We summarize these elements as follows.
+\begin{boldlist}
+    \functionitem
+        {\textct{f}}
+        {\textct{ScalarValuedFunction}}
+        {Unconstrained, Equality Constrained, Inequality Constrained, Constrained}
+        {Yes}
+        {Objective function.}
+
+    \functionitem
+        {\textct{PH}}
+        {\textct{Operator}}
+        {Unconstrained, Equality Constrained, Inequality Constrained, Constrained}
+        {No}
+        {Preconditioner for the Hessian of the objective function, $\nabla^2 f(x)$.}
+
+    \functionitem
+        {\textct{g}}
+        {\textct{VectorValuedFunction}}
+        {Equality Constrained, Constrained}
+        {Yes}
+        {Equality constraint.}
+
+    \functionitem
+        {\textct{PSchur_left}}
+        {\textct{Operator}}
+        {Equality Constrained, Constrained}
+        {No}
+        {Left Schur preconditioner for derivative of the equality constraint, $g^\prime(x)g^\prime(x)^*$.}
+
+    \functionitem
+        {\textct{PSchur_right}}
+        {\textct{Operator}}
+        {Equality Constrained, Constrained}
+        {No}
+        {Right Schur preconditioner for derivative of the equality constraint, $g^\prime(x)g^\prime(x)^*$.}
+
+    \functionitem
+        {\textct{h}}
+        {\textct{VectorValuedFunction}}
+        {Inequality Constrained, Constrained}
+        {Yes}
+        {Inequality constraint.}
+\end{boldlist}
+\noindent In C++, we represent each of the these elements as a \textct{std::unique_ptr} using the type specified above.  In Python, we use simple class elements.  In MATLAB/Octave, we use a structure array.  As a final note, since they are optional, we do \textbf{not} utilize \textct{PH}, \textct{PSchur_left}, or \textct{PSchur_right} by default even when they are defined.  In order to active these functions, we must modify the \textct{PH_type}, \textct{PSchur_left_type}, and \textct{PSchur_right_type} elements in the state, respectively.  We describe these variables in the chapter \hyperref[ch:parameters]{\chparameters}.
+
+        In our Rosenbrock example, we accumlate our functions with the following code
+\begin{boldlist}
+    \exampleitem
+        {C++}
+        {\lstinputlisting[style=C++,linerange=Functions0-Functions1]{@ROSENBROCKPATH@/rosenbrock.cpp}}
+
+    \exampleitem
+        {Python}
+        {\lstinputlisting[style=Python,linerange=Functions0-Functions1]{@ROSENBROCKPATH@/rosenbrock.py}}
+
+    \exampleitem
+        {MATLAB/Octave}
+        {\lstinputlisting[style=Matlab,linerange=Functions0-Functions1]{@ROSENBROCKPATH@/rosenbrock.m}}
+\end{boldlist}
+\noindent As another example, we accomplish the same task in our simple equality example with the code
+\begin{boldlist}
+    \exampleitem
+        {C++}
+        {\lstinputlisting[style=C++,linerange=Functions0-Functions1]{@SIMPLEEQUALITYPATH@/simple_equality.cpp}}
+
+    \exampleitem
+        {Python}
+        {\lstinputlisting[style=Python,linerange=Functions0-Functions1]{@SIMPLEEQUALITYPATH@/simple_equality.py}}
+
+    \exampleitem
+        {MATLAB/Octave}
+        {\lstinputlisting[style=Matlab,linerange=Functions0-Functions1]{@SIMPLEEQUALITYPATH@/simple_equality.m}}
+\end{boldlist}
+
 
 \section{\secsolve}\label{sec:solve}
 
        Once the state, parameters, and functions are set, calling the optimization solver is straightforward.  Simply, we call one of the four commands
-\input{solverSpecification.tex}
-These commands accept three input arguments: the messaging object, the bundle of functions, and the state.  The messaging object \texttt{Optizelle::Messaging()} sends the output to \texttt{stdout}.  This can be modified and we discuss how in Chapter \ref{ch:Advanced}.  Once the solver routine has been called, the optimization algorithms iterate until the stopping criteria is satisfied.  Generally, this creates a collection diagnostic information and we discuss the format of these output in Chapter \ref{ch:Output}.
+\begin{filecontents*}{solver.cpp}
+Optizelle::Unconstrained<Real,XX>::Algorithms::getMin(msg,fns,state);
+Optizelle::EqualityConstrained<Real,XX,YY>::Algorithms::getMin(msg,fns,state);
+Optizelle::InequalityConstrained<Real,XX,ZZ>::Algorithms::getMin(msg,fns,state);
+Optizelle::Constrained<Real,XX,YY,ZZ>::Algorithms::getMin(msg,fns,state);
+\end{filecontents*}
+
+\begin{filecontents*}{solver.py}
+Optizelle.Unconstrained.Algorithms.getMin(X,msg,fns,state)
+Optizelle.EqualityConstrained.Algorithms.getMin(X,Y,msg,fns,state)
+Optizelle.InequalityConstrained.Algorithms.getMin(X,Z,msg,fns,state)
+Optizelle.Constrained.Algorithms.getMin(X,Y,Z,msg,fns,state)
+\end{filecontents*}
+
+\begin{filecontents*}{solver.m}
+state = Optizelle.Unconstrained.Algorithms.getMin(X,msg,fns,state);
+state = Optizelle.EqualityConstrained.Algorithms.getMin(X,Y,msg,fns,state);
+state = Optizelle.InequalityConstrained.Algorithms.getMin(X,Z,msg,fns,state);
+state = Optizelle.Constrained.Algorithms.getMin(X,Y,Z,msg,fns,state);
+\end{filecontents*}
+
+\begin{boldlist}
+    \apiitemshort
+        {C++}
+        {\lstinputlisting[style=C++]{solver.cpp}}
+        {Use as is}
+    \apiitemshort
+        {Python}
+        {\lstinputlisting[style=Python]{solver.py}}
+        {Use as is}
+    \apiitemshort
+        {MATLAB/Octave}
+        {\lstinputlisting[style=Matlab]{solver.m}}
+        {Use as is}
+\end{boldlist}
+\noindent As was in the case in the section \hyperref[sec:state]{\secstate}, \textct{XX}, \textct{YY}, and \text{ZZ} in C++ and \textct{X}, \textct{Y}, and \text{Z} in Python and MATLAB/Octave corresponds to the vector spaces $X$, $Y$, and $Z$ described in the section \hyperref[sec:importvs]{\secimportvs}.  Likely, they are just \textct{Optizelle::Rm} or \textct{Optizelle.Rm}.  Next, we call the function with a messaging object, \textct{msg}.  In the simple case, we can simply use \textct{Optizelle::Messaging()} in C++, \textct{Optizelle.Messaging()} in Python, and \textct{Optizelle.Messaging} in MATLAB/Octave.  For more complicated cases, see the section \hyperref[sec:messaging]{\secmessaging}.  Finally, we pass in the state and bundle of functions that we discussed in the sections \hyperref[sec:state]{\secstate} and \hyperref[sec:accumulatefns]{\secaccumulatefns}, respectively.
+        
+        In our Rosenbrock example, we call Optizelle's solver with the code:
+\begin{boldlist}
+    \exampleitem
+        {C++}
+        {\lstinputlisting[style=C++,linerange=Solver0-Solver1]{@ROSENBROCKPATH@/rosenbrock.cpp}}
+
+    \exampleitem
+        {Python}
+        {\lstinputlisting[style=Python,linerange=Solver0-Solver1]{@ROSENBROCKPATH@/rosenbrock.py}}
+
+    \exampleitem
+        {MATLAB/Octave}
+        {\lstinputlisting[style=Matlab,linerange=Solver0-Solver1]{@ROSENBROCKPATH@/rosenbrock.m}}
+\end{boldlist}
+\noindent With the simple equality example, this becomes: 
+\begin{boldlist}
+    \exampleitem
+        {C++}
+        {\lstinputlisting[style=C++,linerange=Solver0-Solver1]{@SIMPLEEQUALITYPATH@/simple_equality.cpp}}
+
+    \exampleitem
+        {Python}
+        {\lstinputlisting[style=Python,linerange=Solver0-Solver1]{@SIMPLEEQUALITYPATH@/simple_equality.py}}
+
+    \exampleitem
+        {MATLAB/Octave}
+        {\lstinputlisting[style=Matlab,linerange=Solver0-Solver1]{@SIMPLEEQUALITYPATH@/simple_equality.m}}
+\end{boldlist}
 
 \section{\secextract}\label{sec:extract}
 
-        After the optimization routine concludes, the solution resides inside of the optimization state in a variable called \texttt{x}.  This is a \texttt{std::list} that contains a single element, the solution.  Optizelle stores each of its vector arguments inside of list in order to more efficiently manage memory.  This makes more advanced optimization techniques such as saving the state of the optimization and restarting a computation later easier.  The command required to extract the solution is the same for each formulation
-\input{solutionExtractionSpecification.tex}
-   
+        After the optimization routine concludes, the solution resides inside of the optimization state in a variable called \textct{x}.  At this point, we can examine our solution and run any post optimization diagnostics we require.
+
+        In our Rosenbrock example, we print out the final solution with the code: 
+\begin{boldlist}
+    \exampleitem
+        {C++}
+        {\lstinputlisting[style=C++,linerange=Extract0-Extract1]{@ROSENBROCKPATH@/rosenbrock.cpp}}
+
+    \exampleitem
+        {Python}
+        {\lstinputlisting[style=Python,linerange=Extract0-Extract1]{@ROSENBROCKPATH@/rosenbrock.py}}
+
+    \exampleitem
+        {MATLAB/Octave}
+        {\lstinputlisting[style=Matlab,linerange=Extract0-Extract1]{@ROSENBROCKPATH@/rosenbrock.m}}
+\end{boldlist}
+\noindent In our simple equality example, this becomes: 
+\begin{boldlist}
+    \exampleitem
+        {C++}
+        {\lstinputlisting[style=C++,linerange=Extract0-Extract1]{@SIMPLEEQUALITYPATH@/simple_equality.cpp}}
+
+    \exampleitem
+        {Python}
+        {\lstinputlisting[style=Python,linerange=Extract0-Extract1]{@SIMPLEEQUALITYPATH@/simple_equality.py}}
+
+    \exampleitem
+        {MATLAB/Octave}
+        {\lstinputlisting[style=Matlab,linerange=Extract0-Extract1]{@SIMPLEEQUALITYPATH@/simple_equality.m}}
+\end{boldlist}
+        
 \section{\seccompilerun}\label{sec:compilerun}
+
+        As a final step, we need to either compile or run the program.  Each language has its own nuances that we describe below
+
+\subsection{C++}
+
+        As described in the \hyperref[sec:installing]{Installing} section of the manual, we install the C++ relevant headers and libraries to
+\begin{center}\begin{minipage}[t]{1\columnwidth}
+    \dirtree{%
+        .1 \$\{\textctref{CMAKE_INSTALL_PREFIX}\}.
+        .2 lib.
+        .3 liboptizelle.a.
+        .3 optizelle.lib.
+        .3 liboptizelle.so.
+        .3 optizelle.dll.
+        .2 include.
+        .3 optizelle.
+        .4 optizelle.h.
+        .4 json.h.
+        .4 vspaces.h.
+    }
+\end{minipage}\end{center}
+Therefore, in order to compile an Optizelle program, we must add the directory
+\begin{center}
+        \$\{\textctref{CMAKE_INSTALL_PREFIX}\}\textct{/include}
+\end{center}
+to the list of include directories and
+\begin{center}
+        \$\{\textctref{CMAKE_INSTALL_PREFIX}\}\textct{/lib}
+\end{center}
+to the list of library directories.  For the static library, we link either \textct{liboptizelle.a} or \textct{optizelle.lib}.  For the dynamic library, we link either \textct{liboptizelle.so} or \textct{optizelle.dll}.
+
+        Note, Optizelle depends on JsonCpp, BLAS, and LAPACK as well.  Therfore, these headers and libraries must be included in any compilation command as well.  For example, in GCC, we may have the following set of build flags
+\begin{center}
+        \textct{-I/usr/include -L/usr/lib -loptizelle -ljson -lblas -llapack}
+\end{center}
+where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
+
+\subsection{Python}
+
+        In Python, we install the relevant Python files to the following directory tree:
+\begin{center}\begin{minipage}[t]{1\columnwidth}
+    \dirtree{%
+        .1 \$\{\textctref{CMAKE_INSTALL_PREFIX}\}.
+        .2 share.
+        .3 optizelle.
+        .4 python.
+    }
+\end{minipage}\end{center}
+In order to use Optizelle, we must add this directory to the Python path.  We accomplish this with a command such as
+\begin{center}
+        \textct{PYTHONPATH=/usr/share/optizelle/python python}
+\end{center}
+where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
+
+\subsection{MATLAB/Octave}
+
+        For MATLAB/Octave, we install Optizelle to the following directory tree:
+\begin{center}\begin{minipage}[t]{1\columnwidth}
+    \dirtree{%
+        .1 \$\{\textctref{CMAKE_INSTALL_PREFIX}\}.
+        .2 share.
+        .3 optizelle.
+        .4 matlab.
+    }
+\end{minipage}\end{center}
+Then, for example, we add this to our path with the command
+\begin{center}
+        \textct{addpath('/usr/share/optizelle/matlab')}
+\end{center}
+where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.  Alternatively, in MATLAB, we can add the path at runtime with the command
+\begin{center}
+        \textct{MATLABPATH=/usr/share/optizelle/matlab matlab}
+\end{center}
+In Octave, this becomes
+\begin{center}
+        \textct{OCTAVE_PATH=/usr/share/optizelle/matlab octave}
+\end{center}
 
 \chapter{Optimization Parameters}\label{ch:parameters}
 

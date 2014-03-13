@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <cstdlib>
 
+//---Objective0---
 // Squares its input
 template <typename Real>
 Real sq(Real const & x){
@@ -47,6 +48,7 @@ struct MyObj
         H_dx[1]=2.*dx[1]; 
     }
 };
+//---Objective1---
 
 //---EqualityConstraint0---
 // Define a simple equality constraint
@@ -130,6 +132,7 @@ int main(int argc,char* argv[]){
     // Create a type shortcut
     using Optizelle::Rm;
 
+    //---State0---
     // Generate an initial guess 
     std::vector <double> x(2);
     x[0]=2.1; x[1]=1.1;
@@ -139,30 +142,39 @@ int main(int argc,char* argv[]){
 
     // Create an optimization state
     Optizelle::EqualityConstrained <double,Rm,Rm>::State::t state(x,y);
+    //---State1---
 
+    //---Parameters0---
     // Read the parameters from file
     Optizelle::json::EqualityConstrained <double,Optizelle::Rm,Optizelle::Rm>
         ::read(Optizelle::Messaging(),fname,state);
-    
+    //---Parameters1---
+   
+    //---Functions0---
     // Create a bundle of functions
     Optizelle::EqualityConstrained <double,Rm,Rm>::Functions::t fns;
     fns.f.reset(new MyObj);
     fns.g.reset(new MyEq);
     fns.PSchur_left.reset(new MyPrecon(state.x));
+    //---Functions1---
 
+    //---Solver0---
     // Solve the optimization problem
     Optizelle::EqualityConstrained <double,Rm,Rm>::Algorithms
         ::getMin(Optizelle::Messaging(),fns,state);
+    //---Solver1---
 
     // Print out the reason for convergence
     std::cout << "The algorithm converged due to: " <<
         Optizelle::StoppingCondition::to_string(state.opt_stop) <<
         std::endl;
 
+    //---Extract0---
     // Print out the final answer
     std::cout << std::scientific << std::setprecision(16)
         << "The optimal point is: (" << state.x[0] << ','
 	<< state.x[1] << ')' << std::endl;
+    //---Extract1---
 
     // Write out the final answer to file
     Optizelle::json::EqualityConstrained <double,Optizelle::Rm,Optizelle::Rm>

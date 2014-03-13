@@ -10,6 +10,7 @@ function simple_equality(fname)
     main(fname);
 end
 
+%---Objective0---
 % Squares its input
 function z = sq(x)
     z=x*x;
@@ -34,6 +35,7 @@ function self = MyObj()
         2.*dx(1); ...
         2.*dx(2)];
 end
+%---Objective1---
 
 %---EqualityConstraint0---
 % Define a simple equality constraint
@@ -76,6 +78,7 @@ function main(fname)
     global Optizelle;
     setupOptizelle();
 
+    %---State0---
     % Generate an initial guess 
     x = [2.1;1.1];
 
@@ -85,27 +88,36 @@ function main(fname)
     % Create an optimization state
     state = Optizelle.EqualityConstrained.State.t( ...
         Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,x,y);
+    %---State1---
 
+    %---Parameters0---
     % Read the parameters from file
     state = Optizelle.json.EqualityConstrained.read( ...
         Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,fname,state);
+    %---Parameters1---
 
+    %---Functions0---
     % Create a bundle of functions
     fns=Optizelle.EqualityConstrained.Functions.t;
     fns.f=MyObj();
     fns.g=MyEq();
     fns.PSchur_left=MyPrecon();
+    %---Functions1---
 
+    %---Solver0---
     % Solve the optimization problem
     state = Optizelle.EqualityConstrained.Algorithms.getMin( ...
         Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,fns,state);
+    %---Solver1---
 
     % Print out the reason for convergence
     fprintf('The algorithm converged due to: %s\n', ...
         Optizelle.StoppingCondition.to_string(state.opt_stop));
 
+    %---Extract0---
     % Print out the final answer
     fprintf('The optimal point is: (%e,%e)\n',state.x(1),state.x(2));
+    %---Extract1---
 
     % Write out the final answer to file
     Optizelle.json.EqualityConstrained.write_restart( ...

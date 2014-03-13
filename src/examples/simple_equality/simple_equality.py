@@ -9,6 +9,7 @@ import Optizelle.json.EqualityConstrained
 import numpy
 import sys
 
+#---Objective0---
 # Squares its input
 sq = lambda x:x*x
 
@@ -31,6 +32,7 @@ class MyObj(Optizelle.ScalarValuedFunction):
     def hessvec(self,x,dx,H_dx):
         H_dx[0]=2.*dx[0]
         H_dx[1]=2.*dx[1] 
+#---Objective1---
 
 #---EqualityConstraint0---
 # Define a simple equality constraint
@@ -70,6 +72,7 @@ if len(sys.argv)!=2:
     sys.exit("simple_equality.py <parameters>")
 fname=sys.argv[1]
 
+#---State0---
 # Generate an initial guess 
 x = numpy.array([2.1,1.1])
 
@@ -79,27 +82,36 @@ y = numpy.array([0.])
 # Create an optimization state
 state=Optizelle.EqualityConstrained.State.t(
     Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging(),x,y)
+#---State1---
 
+#---Parameters0---
 # Read the parameters from file
 Optizelle.json.EqualityConstrained.read(
     Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging(),fname,state)
+#---Parameters1---
 
+#---Functions0---
 # Create a bundle of functions
 fns=Optizelle.EqualityConstrained.Functions.t()
 fns.f=MyObj()
 fns.g=MyEq()
 fns.PSchur_left=MyPrecon()
+#---Functions1---
 
+#---Solver0---
 # Solve the optimization problem
 Optizelle.EqualityConstrained.Algorithms.getMin(
     Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging(),fns,state)
+#---Solver1---
 
 # Print out the reason for convergence
 print "The algorithm converged due to: %s" % (
     Optizelle.StoppingCondition.to_string(state.opt_stop))
 
+#---Extract0---
 # Print out the final answer
 print "The optimal point is: (%e,%e)" % (state.x[0],state.x[1])
+#---Extract1---
 
 # Write out the final answer to file
 Optizelle.json.EqualityConstrained.write_restart(

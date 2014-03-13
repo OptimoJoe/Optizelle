@@ -8,10 +8,10 @@ import Optizelle.json.Unconstrained
 import numpy
 import sys
 
+#---Objective0---
 # Squares its input
 sq = lambda x:x*x
 
-#---Objective0---
 # Define the Rosenbrock function where
 # 
 # f(x,y)=(1-x)^2+100(y-x^2)^2
@@ -62,21 +62,27 @@ Optizelle.json.Unconstrained.read(Optizelle.Rm,Optizelle.Messaging(),
     fname,state)
 #---Parameters1---
 
+#---Functions0---
 # Create the bundle of functions 
 fns=Optizelle.Unconstrained.Functions.t()
 fns.f=Rosenbrock()
 fns.PH=RosenHInv()
+#---Functions1---
 
+#---Solver0---
 # Solve the optimization problem
 Optizelle.Unconstrained.Algorithms.getMin(
     Optizelle.Rm,Optizelle.Messaging(),fns,state)
+#---Solver1---
 
 # Print out the reason for convergence
 print "The algorithm converged due to: %s" % (
     Optizelle.StoppingCondition.to_string(state.opt_stop))
 
+#---Extract0---
 # Print out the final answer
 print "The optimal point is: (%e,%e)" % (state.x[0],state.x[1])
+#---Extract1---
 
 # Write out the final answer to file
 Optizelle.json.Unconstrained.write_restart(

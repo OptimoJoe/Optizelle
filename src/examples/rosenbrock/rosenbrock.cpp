@@ -8,13 +8,13 @@
 #include "optizelle/vspaces.h"
 #include "optizelle/json.h"
 
+//---Objective0---
 // Squares its input
 template <typename Real>
 Real sq(Real x){
     return x*x; 
 }
 
-//---Objective0---
 // Define the Rosenbrock function where
 // 
 // f(x,y)=(1-x)^2+100(y-x^2)^2
@@ -94,23 +94,29 @@ int main(int argc,char* argv[]){
         ::read(Optizelle::Messaging(),fname,state);
     //---Parameters1---
 
+    //---Functions0---
     // Create the bundle of functions 
     Optizelle::Unconstrained <double,Optizelle::Rm>::Functions::t fns;
     fns.f.reset(new Rosenbrock);
     fns.PH.reset(new RosenHInv(state.x));
-    
+    //---Functions1---
+
+    //---Solver0---
     // Solve the optimization problem
     Optizelle::Unconstrained <double,Optizelle::Rm>::Algorithms
         ::getMin(Optizelle::Messaging(),fns,state);
+    //---Solver1---
 
     // Print out the reason for convergence
     std::cout << "The algorithm converged due to: " <<
         Optizelle::StoppingCondition::to_string(state.opt_stop) <<
         std::endl;
 
+    //---Extract0---
     // Print out the final answer
     std::cout << "The optimal point is: (" << state.x[0] << ','
 	<< state.x[1] << ')' << std::endl;
+    //---Extract1---
 
     // Write out the final answer to file
     Optizelle::json::Unconstrained <double,Optizelle::Rm>::write_restart(
