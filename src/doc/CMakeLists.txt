@@ -24,16 +24,7 @@ set(OPTIZELLEMATLABPATH "${CMAKE_SOURCE_DIR}/src/matlab/")
 
 # Compile the manual
 add_latex_document(optizelle.tex DEFAULT_PDF
-    INPUTS constraintSpecification.tex constraintExample.tex
-           initialGuessExample.tex
-           allocateCodomainExample.tex
-           stateSpecification.tex
-           jsonReaderSpecification.tex jsonReaderExample1.tex
-               jsonReaderExample2.tex
-           functionBundleSpecification.tex
-           solverSpecification.tex
-           solutionExtractionSpecification.tex
-           messagingSpecification.tex
+    INPUTS messagingSpecification.tex
            vectorSpaceSpecification.tex
     CONFIGURE optizelle.tex
 )

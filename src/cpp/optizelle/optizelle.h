@@ -214,9 +214,11 @@ namespace Optizelle{
     // Which algorithm class do we use
     namespace AlgorithmClass{
         enum t : Natural{
+            //---AlgorithmClass0---
             TrustRegion,            // Trust-Region algorithms
             LineSearch,             // Line-search algorithms
             UserDefined             // User provides the iterate 
+            //---AlgorithmClass1---
         };
 
         // Converts the algorithm class to a string
@@ -232,12 +234,14 @@ namespace Optizelle{
     // Reasons why we stop the algorithm
     namespace StoppingCondition{
         enum t : Natural{
+            //---StoppingCondition0---
             NotConverged,            // Algorithm did not converge
             RelativeGradientSmall,   // Relative gradient was sufficiently small
             RelativeStepSmall,       // Relative change in the step is small
             MaxItersExceeded,        // Maximum number of iterations exceeded
             InteriorPointInstability,// Instability in the interior point method
             UserDefined              // Some user defined stopping condition 
+            //---StoppingCondition1---
         };
 
         // Converts the stopping condition to a string 
@@ -253,6 +257,7 @@ namespace Optizelle{
     // Various operators for both Hessian approximations and preconditioners
     namespace Operators{
         enum t : Natural{
+            //---Operators0---
             Identity,          // Identity approximation
             ScaledIdentity,    // Scaled identity approximation
             BFGS,              // BFGS approximation
@@ -261,6 +266,7 @@ namespace Optizelle{
             InvSR1,            // Inverse SR1 approximation
             UserDefined        // User defined operator (such as the true
                                // Hessian for Newton's method)
+            //---Operators1---
         };
         
         // Converts the operator type to a string 
@@ -276,12 +282,14 @@ namespace Optizelle{
     // Different kinds of search directions 
     namespace LineSearchDirection{
         enum t : Natural{
+            //---LineSearchDirection0---
             SteepestDescent,          // SteepestDescent 
             FletcherReeves,           // Fletcher-Reeves CG
             PolakRibiere,             // Polak-Ribiere CG
             HestenesStiefel,          // HestenesStiefel CG
             BFGS,                     // Limited-memory BFGS 
             NewtonCG                  // Newton-CG
+            //---LineSearchDirection1---
         };
         
         // Converts the line-search direction to a string 
@@ -297,11 +305,13 @@ namespace Optizelle{
     // Different sorts of line searches
     namespace LineSearchKind{
         enum t : Natural{
+            //---LineSearchKind0---
             Brents,           // Brent's minimization
             GoldenSection,    // Golden-section search 
             BackTracking,     // BackTracking search 
             TwoPointA,        // Barzilai and Borwein's method A
             TwoPointB         // Barzilai and Borwein's method B
+            //---LineSearchKind1---
         };
             
         // Converts the line-search kind to a string 
@@ -321,6 +331,7 @@ namespace Optizelle{
     // Different points in the optimization algorithm
     namespace OptimizationLocation{
         enum t : Natural{
+            //---OptimizationLocation0---
             // Occurs at the start of the optimization function 
             BeginningOfOptimization,
 
@@ -332,6 +343,7 @@ namespace Optizelle{
             
             // Occurs just before the main optimization loop 
             BeforeOptimizationLoop,
+            //---OptimizationLocation1---
                        
             // Occurs at the beginning of the optimization loop
             BeginningOfOptimizationLoop,
@@ -344,6 +356,7 @@ namespace Optizelle{
 
             // Occurs before we calculate our new step.
             BeforeGetStep,
+            //---OptimizationLocation2---
             
             // Occurs during a user defined get step calculation.
             GetStep,
@@ -360,6 +373,7 @@ namespace Optizelle{
 
             // Occurs before we update our quasi-Newton information. 
             BeforeQuasi,
+            //---OptimizationLocation3---
 
             // Occurs after we update our quasi-Newton information. 
             AfterQuasi,
@@ -374,6 +388,7 @@ namespace Optizelle{
 
             // This occurs after a rejected trust-region step
             AfterRejectedTrustRegion,
+            //---OptimizationLocation4---
 
             // This occurs after a rejected line-search step
             AfterRejectedLineSearch,
@@ -387,6 +402,7 @@ namespace Optizelle{
 
             // This occurs at the end of all optimization 
             EndOfOptimization
+            //---OptimizationLocation5---
         };
             
         // Converts the optimization location to a string 
@@ -402,10 +418,12 @@ namespace Optizelle{
     // Different problem classes
     namespace ProblemClass{
         enum t : Natural{
+            //---ProblemClass0---
             Unconstrained,         // Unconstrained optimization 
             EqualityConstrained,   // Equality constrained optimization 
             InequalityConstrained, // Inequality constrained optimization 
             Constrained            // Fully constrained optimization 
+            //---ProblemClass1---
         };
 
         // Converts the problem class to a string
@@ -421,8 +439,10 @@ namespace Optizelle{
     // Different truncated Krylov solvers 
     namespace KrylovSolverTruncated{
         enum t : Natural{
+            //---KrylovSolverTruncated0---
             ConjugateDirection,         // Conjugate direction 
             MINRES                      // MINRES 
+            //---KrylovSolverTruncated1---
         };
 
         // Converts the problem class to a string
@@ -439,10 +459,12 @@ namespace Optizelle{
     // Different kinds of interior point methods
     namespace InteriorPointMethod{
         enum t : Natural{
+            //---InteriorPointMethod0---
             PrimalDual,          // Standard primal-dual interior point method 
             PrimalDualLinked,    // A primal dual IPM, but the primal and dual
                                  // variables are kept in lock step.
             LogBarrier           // Primal log-barrier method 
+            //---InteriorPointMethod1---
         };
         
         // Converts the interior point method to a string 
@@ -458,6 +480,7 @@ namespace Optizelle{
     // Different schemes for adjusting the interior point centrality 
     namespace CentralityStrategy{
         enum t : Natural{
+            //---CentralityStrategy0---
             Constant,           // We keep sigma fixed at each iteration.
             StairStep,          // If the relative improvement in the
                                 // interior point parameter does not exceed
@@ -465,6 +488,7 @@ namespace Optizelle{
                                 // reduction.  Otherwise, we hold sigma
                                 // constant.
             PredictorCorrector  // On odd iterations, sigma=1, on even, sigma=0.
+            //---CentralityStrategy1---
         };
         
         // Converts the centrality strategy to a string
@@ -480,9 +504,11 @@ namespace Optizelle{
     // Different function diagnostics on the optimization functions 
     namespace FunctionDiagnostics {
         enum t : Natural{
+            //---FunctionDiagnostics0---
             NoDiagnostics,      // No diagnostic checks
             FirstOrder,         // First-order function checks
             SecondOrder         // Second-order function checks
+            //---FunctionDiagnostics1---
         };
         
         // Converts the diagnostic checks to a string
@@ -498,9 +524,11 @@ namespace Optizelle{
     // When and how often we compute our intrusive diagnostics 
     namespace DiagnosticScheme {
         enum t : Natural{
+            //---DiagnosticScheme0---
             Never,              // Never compute our diagnostic checks 
             DiagnosticsOnly,    // No optimization.  Only diagnostics.
             EveryIteration      // Every iteration at the start of the iteration
+            //---DiagnosticScheme1---
         };
         
         // Converts the diagnostic scheme to a string
@@ -1426,7 +1454,7 @@ namespace Optizelle{
                 // Hessian approximation
                 Operators::t H_type;
 
-                // Norm of a typical tradient
+                // Norm of a typical gradient
                 Real norm_gradtyp;
 
                 // Norm of a typical trial step
@@ -1435,11 +1463,10 @@ namespace Optizelle{
                 // Optimization variable 
                 X_Vector x; 
                 
-                // Gradient, possibly of the objective, possibly of the
-                // Lagrangian.  It depends on the context.
+                // Gradient of the objective
                 X_Vector grad;
                 
-                // Trial step 
+                // Optimization step 
                 X_Vector dx;
                 
                 // Old optimization variable 
@@ -1525,56 +1552,246 @@ namespace Optizelle{
 
                 // Initialization constructors
                 explicit t(X_Vector const & x_) :
-                    eps_grad(1e-8),
-                    eps_dx(1e-8),
-                    stored_history(0),
-                    history_reset(5),
-                    iter(1),
-                    iter_max(10),
-                    opt_stop(StoppingCondition::NotConverged),
-                    krylov_iter(0),
-                    krylov_iter_max(10),
-                    krylov_iter_total(0),
-                    krylov_orthog_max(1),
-                    krylov_stop(KrylovStop::RelativeErrorSmall),
-                    krylov_rel_err(std::numeric_limits<Real>::quiet_NaN()),
-                    eps_krylov(1e-2),
-                    krylov_solver(KrylovSolverTruncated::ConjugateDirection),
-                    algorithm_class(AlgorithmClass::TrustRegion),
-                    PH_type(Operators::Identity),
-                    H_type(Operators::UserDefined),
-                    norm_gradtyp(std::numeric_limits<Real>::quiet_NaN()),
-                    norm_dxtyp(std::numeric_limits<Real>::quiet_NaN()),
+                    eps_grad(
+                        //---eps_grad0---
+                        1e-8
+                        //---eps_grad1---
+                    ),
+                    eps_dx(
+                        //---eps_dx0---
+                        1e-8
+                        //---eps_dx1---
+                    ),
+                    stored_history(
+                        //---stored_history0---
+                        0
+                        //---stored_history1---
+                    ),
+                    history_reset(
+                        //---history_reset0---
+                        5
+                        //---history_reset1---
+                    ),
+                    iter(
+                        //---iter0---
+                        1
+                        //---iter1---
+                    ),
+                    iter_max(
+                        //---iter_max0---
+                        10
+                        //---iter_max1---
+                    ),
+                    opt_stop(
+                        //---opt_stop0---
+                        StoppingCondition::NotConverged
+                        //---opt_stop1---
+                    ),
+                    krylov_iter(
+                        //---krylov_iter0---
+                        0
+                        //---krylov_iter1---
+                    ),
+                    krylov_iter_max(
+                        //---krylov_iter_max0---
+                        10
+                        //---krylov_iter_max1---
+                    ),
+                    krylov_iter_total(
+                        //---krylov_iter_total0---
+                        0
+                        //---krylov_iter_total1---
+                    ),
+                    krylov_orthog_max(
+                        //---krylov_orthog_max0---
+                        1
+                        //---krylov_orthog_max1---
+                    ),
+                    krylov_stop(
+                        //---krylov_stop0---
+                        KrylovStop::RelativeErrorSmall
+                        //---krylov_stop1---
+                    ),
+                    krylov_rel_err(
+                        //---krylov_rel_err0---
+                        std::numeric_limits<Real>::quiet_NaN()
+                        //---krylov_rel_err1---
+                    ),
+                    eps_krylov(
+                        //---eps_krylov0---
+                        1e-2
+                        //---eps_krylov1---
+                    ),
+                    krylov_solver(
+                        //---krylov_solver0---
+                        KrylovSolverTruncated::ConjugateDirection
+                        //---krylov_solver1---
+                    ),
+                    algorithm_class(
+                        //---algorithm_class0---
+                        AlgorithmClass::TrustRegion
+                        //---algorithm_class1---
+                    ),
+                    PH_type(
+                        //---PH_type0---
+                        Operators::Identity
+                        //---PH_type1---
+                    ),
+                    H_type(
+                        //---H_type0---
+                        Operators::UserDefined
+                        //---H_type1---
+                    ),
+                    norm_gradtyp(
+                        //---norm_gradtyp0---
+                        std::numeric_limits<Real>::quiet_NaN()
+                        //---norm_gradtyp1---
+                    ),
+                    norm_dxtyp(
+                        //---norm_dxtyp0---
+                        std::numeric_limits<Real>::quiet_NaN()
+                        //---norm_dxtyp1---
+                    ),
                     x(X::init(x_)),
-                    grad(X::init(x_)),
-                    dx(X::init(x_)),
-                    x_old(X::init(x_)),
-                    grad_old(X::init(x_)),
-                    dx_old(X::init(x_)),
-                    oldY(),
-                    oldS(), 
-                    f_x(std::numeric_limits<Real>::quiet_NaN()),
-                    f_xpdx(std::numeric_limits<Real>::quiet_NaN()),
-                    msg_level(1),
-                    delta(1.),
-                    eta1(.1),
-                    eta2(.9),
-                    ared(std::numeric_limits<Real>::quiet_NaN()),
-                    pred(std::numeric_limits<Real>::quiet_NaN()),
-                    rejected_trustregion(0),
-                    alpha0(1.),
-                    alpha(std::numeric_limits <Real>::quiet_NaN()),
-                    c1(1e-4),
-                    linesearch_iter(0),
-                    linesearch_iter_max(5),
-                    linesearch_iter_total(0),
-                    eps_ls(1e-2),
-                    dir(LineSearchDirection::SteepestDescent),
-                    kind(LineSearchKind::GoldenSection),
-                    f_diag(FunctionDiagnostics::NoDiagnostics),
-                    dscheme(DiagnosticScheme::Never)
+                    grad(
+                        //---grad0---
+                        X::init(x_)
+                        //---grad1---
+                    ),
+                    dx(
+                        //---dx0---
+                        X::init(x_)
+                        //---dx1---
+                    ),
+                    x_old(
+                        //---x_old0---
+                        X::init(x_)
+                        //---x_old1---
+                    ),
+                    grad_old(
+                        //---grad_old0---
+                        X::init(x_)
+                        //---grad_old1---
+                    ),
+                    dx_old(
+                        //---dx_old0---
+                        X::init(x_)
+                        //---dx_old1---
+                    ),
+                    oldY(
+                        //---oldY0---
+                        // Empty
+                        //---oldY1--- 
+                    ),
+                    oldS(
+                        //---oldS0---
+                        // Empty
+                        //---oldS1--- 
+                    ), 
+                    f_x(
+                        //---f_x0---
+                        std::numeric_limits<Real>::quiet_NaN()
+                        //---f_x1---
+                    ),
+                    f_xpdx(
+                        //---f_xpdx0---
+                        std::numeric_limits<Real>::quiet_NaN()
+                        //---f_xpdx1---
+                    ),
+                    msg_level(
+                        //---msg_level0---
+                        1
+                        //---msg_level1---
+                    ),
+                    delta(
+                        //---delta0---
+                        1.
+                        //---delta1---
+                    ),
+                    eta1(
+                        //---eta10---
+                        .1
+                        //---eta11---
+                    ),
+                    eta2(
+                        //---eta20---
+                        .9
+                        //---eta21---
+                    ),
+                    ared(
+                        //---ared0---
+                        std::numeric_limits<Real>::quiet_NaN()
+                        //---ared1---
+                    ),
+                    pred(
+                        //---pred0---
+                        std::numeric_limits<Real>::quiet_NaN()
+                        //---pred1---
+                    ),
+                    rejected_trustregion(
+                        //---rejected_trustregion0---
+                        0
+                        //---rejected_trustregion1---
+                    ),
+                    alpha0(
+                        //---alpha00---
+                        1.
+                        //---alpha01---
+                    ),
+                    alpha(
+                        //---alpha0---
+                        std::numeric_limits <Real>::quiet_NaN()
+                        //---alpha1---
+                    ),
+                    c1(
+                        //---c10---
+                        1e-4
+                        //---c11---
+                    ),
+                    linesearch_iter(
+                        //---linesearch_iter0---
+                        0
+                        //---linesearch_iter1---
+                    ),
+                    linesearch_iter_max(
+                        //---linesearch_iter_max0---
+                        5
+                        //---linesearch_iter_max1---
+                    ),
+                    linesearch_iter_total(
+                        //---linesearch_iter_total0---
+                        0
+                        //---linesearch_iter_total1---
+                    ),
+                    eps_ls(
+                        //---eps_ls0---
+                        1e-2
+                        //---eps_ls1---
+                    ),
+                    dir(
+                        //---dir0---
+                        LineSearchDirection::SteepestDescent
+                        //---dir1---
+                    ),
+                    kind(
+                        //---kind0---
+                        LineSearchKind::GoldenSection
+                        //---kind1---
+                    ),
+                    f_diag(
+                        //---f_diag0---
+                        FunctionDiagnostics::NoDiagnostics
+                        //---f_diag1---
+                    ),
+                    dscheme(
+                        //---dscheme0---
+                        DiagnosticScheme::Never
+                        //---dscheme1---
+                    )
                 {
-                    X::copy(x_,x);
+                        //---x0---
+                        X::copy(x_,x);
+                        //---x1---
                 }
                 
                 // A trick to allow dynamic casting later
@@ -1589,147 +1806,320 @@ namespace Optizelle{
                 
                 // Check that the tolerance for the gradient stopping condition
                 // is positive
-                if(state.eps_grad <= Real(0.)) 
+                if(!(
+                    //---eps_grad_valid0---
+                    state.eps_grad > Real(0.)
+                    //---eps_grad_valid1---
+                )) 
                     ss << "The tolerance for the gradient stopping condition "
                         "must be positive: eps_grad = " << state.eps_grad;
             
                 // Check that the tolerance for the step length stopping
                 // condition is positive
-                else if(state.eps_dx <= Real(0.)) 
+                else if(!(
+                    //---eps_dx_valid0---
+                    state.eps_dx > Real(0.)
+                    //---eps_dx_valid1---
+                ))
                     ss << "The tolerance for the step length stopping "
                         "condition must be positive: eps_dx = " << state.eps_dx;
+                    
+                    //---stored_history_valid0---
+                    // Any 
+                    //---stored_history_valid1---
+                    
+                    //---history_reset_valid0---
+                    // Any 
+                    //---history_reset_valid1---
         
                 // Check that the current iteration is positive
-                else if(state.iter == 0) 
+                else if(!(
+                    //---iter_valid0---
+                    state.iter > 0
+                    //---iter_valid1---
+                ))
                     ss << "The current optimization iteration must be "
                         "positive: iter = " << state.iter;
 
                 // Check that the maximum iteration is positive
-                else if(state.iter_max == 0) 
+                else if(!(
+                    //---iter_max_valid0---
+                    state.iter_max > 0
+                    //---iter_max_valid1---
+                ))
                     ss << "The maximum optimization iteration must be "
                         "positive: iter_max = " << state.iter_max;
+                    
+                    //---opt_stop_valid0---
+                    // Any 
+                    //---opt_stop_valid1---
+                    
+                    //---krylov_iter_valid0---
+                    // Any 
+                    //---krylov_iter_valid1---
 
                 // Check that the maximum Krylov iteration is positive
-                else if(state.krylov_iter_max == 0) 
+                else if(!(
+                    //---krylov_iter_max_valid0---
+                    state.krylov_iter_max > 0
+                    //---krylov_iter_max_valid1---
+                ))
                     ss << "The maximum Krylov iteration must be "
                         "positive: krylov_iter_max = " << state.krylov_iter_max;
+                    
+                    //---krylov_iter_total_valid0---
+                    // Any 
+                    //---krylov_iter_total_valid1---
 
                 // Check that the number of vectors we orthogonalize against
                 // is at least 1.
-                else if(state.krylov_orthog_max == 0) 
+                else if(!(
+                    //---krylov_orthog_max_valid0---
+                    state.krylov_orthog_max > 0
+                    //---krylov_orthog_max_valid1---
+                ))
                     ss << "The maximum number of vectors the Krylov method"
                     "orthogonalizes against must be positive: "
                     "krylov_orthog_max = " << state.krylov_orthog_max;
+                    
+                    //---krylov_stop_valid0---
+                    // Any 
+                    //---krylov_stop_valid1---
 
-                // Check that relative error in the Krylov method is nonnegative
-                else if(state.krylov_rel_err < Real(0.)) 
-                    ss << "The relative error in the Krylov method must be "
-                        "nonnegative: krylov_rel_err = " <<state.krylov_rel_err;
+                    //---krylov_rel_err_valid0---
+                    // Any 
+                    //---krylov_rel_err_valid1---
                 
                 // Check that the stopping tolerance for the Krylov method is
                 // positive
-                else if(state.eps_krylov <= Real(0.)) 
+                else if(!(
+                    //---eps_krylov_valid0---
+                    state.eps_krylov > Real(0.)
+                    //---eps_krylov_valid1---
+                ))
                     ss << "The tolerance for the Krylov method stopping "
                         "condition must be positive: eps_krylov = "
                     << state.eps_krylov;
+                    
+                    //---krylov_solver_valid0---
+                    // Any 
+                    //---krylov_solver_valid1---
+                    
+                    //---algorithm_class_valid0---
+                    // Any 
+                    //---algorithm_class_valid1---
+                    
+                    //---PH_type_valid0---
+                    // Any 
+                    //---PH_type_valid1---
+                    
+                    //---H_type_valid0---
+                    // Any 
+                    //---H_type_valid1---
 
                 // Check that the norm of a typical gradient is nonnegative or
                 // if we're on the first iteration, we allow a NaN
-                else if(state.norm_gradtyp < Real(0.)
-                    || (state.iter!=1 && state.norm_gradtyp!=state.norm_gradtyp)
-                ) 
+                else if(!(
+                    //---norm_gradtyp_valid0---
+                    state.norm_gradtyp >= Real(0.)
+                    || (state.iter==1 && state.norm_gradtyp!=state.norm_gradtyp)
+                    //---norm_gradtyp_valid1---
+                )) 
                     ss << "The norm of a typical gradient must be nonnegative: "
                         "norm_gradtyp = " << state.norm_gradtyp; 
 
                 // Check that the norm of a typical trial step is nonnegative or
                 // if we're on the first iteration, we allow a NaN
-                else if(state.norm_dxtyp < Real(0.)
-                    || (state.iter!=1 && state.norm_dxtyp!=state.norm_dxtyp)
-                ) 
+                else if(!(
+                    //---norm_dxtyp_valid0---
+                    state.norm_dxtyp >= Real(0.)
+                    || (state.iter==1 && state.norm_dxtyp!=state.norm_dxtyp)
+                    //---norm_dxtyp_valid1---
+                )) 
                     ss << "The norm of a typical trial step must be "
                         "nonnegative: norm_dxtyp = " << state.norm_dxtyp; 
+                    
+                    //---x_valid0---
+                    // Any 
+                    //---x_valid1---
+                    
+                    //---grad_valid0---
+                    // Any 
+                    //---grad_valid1---
+                    
+                    //---dx_valid0---
+                    // Any 
+                    //---dx_valid1---
+                    
+                    //---x_old_valid0---
+                    // Any 
+                    //---x_old_valid1---
+                    
+                    //---grad_old_valid0---
+                    // Any 
+                    //---grad_old_valid1---
+                    
+                    //---dx_old_valid0---
+                    // Any 
+                    //---dx_old_valid1---
+                    
+                    //---oldY_valid0---
+                    // Any 
+                    //---oldY_valid1---
+                    
+                    //---oldS_valid0---
+                    // Any 
+                    //---oldS_valid1---
 
                 // Check that the objective value isn't a NaN past
                 // iteration 1
-                else if(state.iter!=1 && state.f_x!=state.f_x)
+                else if(!(
+                    //---f_x_valid0---
+                    state.iter > 1
+                    || (state.iter==1 && state.f_x!=state.f_x)
+                    //---f_x_valid1---
+                ))
                     ss<< "The objective value must be a number: f_x = "
                         << state.f_x;
 
                 // Check that the objective value at a trial step isn't
                 // a NaN past iteration 1
-                else if(state.iter!=1
-                     && state.f_xpdx != state.f_xpdx
-                ) 
+                else if(!(
+                    //---f_xpdx_valid0---
+                    state.iter > 1
+                    || (state.iter==1 && state.f_xpdx != state.f_xpdx)
+                    //---f_xpdx_valid1---
+                ))
                     ss << "The objective value at the trial step must be a "
                         "number: f_xpdx = " << state.f_xpdx;
+                    
+                    //---msg_level0---
+                    // Any 
+                    //---msg_level1---
 
                 // Check that the trust-region radius is nonnegative 
-                else if(state.delta<Real(0.))
+                else if(!(
+                    //---delta_valid0---
+                    state.delta >= Real(0.)
+                    //---delta_valid1---
+                ))
                     ss<< "The trust-region radius must be nonnegative: delta = "
                         << state.delta; 
 
                 // Check that the predicted vs. actual reduction tolerance
                 // is between 0 and 1
-                else if(state.eta1 < Real(0.) || state.eta1 > Real(1.))
+                else if(!(
+                    //---eta1_valid0---
+                    state.eta1 > Real(0.) && state.eta1 < Real(1.)
+                    //---eta1_valid1---
+                ))
                     ss << "The tolerance for whether or not we accept a "
                         "trust-region step must be between 0 and 1: eta1 = "
                         << state.eta1;
                 
                 // Check that the other predicted vs. actual reduction tolerance
                 // is between 0 and 1
-                else if(state.eta2 < Real(0.) || state.eta2 > Real(1.))
+                else if(!(
+                    //---eta2_valid0---
+                    state.eta2 > state.eta1 && state.eta2 < Real(1.)
+                    //---eta2_valid1---
+                ))
                     ss << "The tolerance for whether or not we increase the "
-                        "trust-region radius must be between 0 and 1: eta2 = "
-                        << state.eta2;
-
-                // Check that eta2 > eta1
-                else if(state.eta1 >= state.eta2) 
-                    ss << "The trust-region tolerances for accepting steps "
-                        "must satisfy the relationship that eta1 < eta2: "
-                        "eta1 = " << state.eta1 << ", eta2 = " << state.eta2;
+                        "trust-region radius must be between eta1 and 1: eta2 "
+                        "= " << state.eta2;
+                    
+                    //---ared_valid0---
+                    // Any 
+                    //---ared_valid1---
+                    
+                    //---pred_valid0---
+                    // Any 
+                    //---pred_valid1---
+                    
+                    //---rejected_trustregion_valid0---
+                    // Any 
+                    //---rejected_trustregion_valid1---
 
                 // Check that the base line-search step length is positive 
-                else if(state.alpha0 <= Real(0.)) 
+                else if(!(
+                    //---alpha0_valid0---
+                    state.alpha0 > Real(0.)
+                    //---alpha0_valid1---
+                ))
                     ss << "The base line-search step length must be positive: "
                         "alpha0 = " << state.alpha0;
+                    
+                    //---alpha_valid0---
+                    // Any 
+                    //---alpha_valid1---
 
                 // Check that the sufficient decrease parameter lies between
                 // 0 and 1.
-                else if(state.c1 <= Real(0.) || state.c1 >= Real(1.)) 
+                else if(!(
+                    //---c1_valid0---
+                    state.c1 > Real(0.) && state.c1 < Real(1.)
+                    //---c1_valid1---
+                ))
                     ss << "The sufficient decrease parameter must lie between "
                         "0 and 1: c1 = " << state.c1;
-
-                // Check that the stopping tolerance for the line-search
-                // methods is positive
-                else if(state.eps_ls <= Real(0.)) 
-                    ss << "The tolerance for the line-search stopping "
-                        "condition must be positive: eps_ls = " << state.eps_ls;
+                    
+                    //---linesearch_iter_valid0---
+                    // Any 
+                    //---linesearch_iter_valid1---
 
                 // Check that the number of line-search iterations is positve 
-                else if(state.linesearch_iter_max <= 0) 
+                else if(!(
+                    //---linesearch_iter_max_valid0---
+                    state.linesearch_iter_max > 0
+                    //---linesearch_iter_max_valid1---
+                ))
                     ss << "The maximum number of line-search iterations must "
                         "be positive: linesearch_iter_max = "
                         << state.linesearch_iter_max;
+                    
+                    //---linesearch_iter_total_valid0---
+                    // Any 
+                    //---linesearch_iter_total_valid1---
+
+                // Check that the stopping tolerance for the line-search
+                // methods is positive
+                else if(!(
+                    //---eps_ls_valid0---
+                    state.eps_ls > Real(0.)
+                    //---eps_ls_valid1---
+                )) 
+                    ss << "The tolerance for the line-search stopping "
+                        "condition must be positive: eps_ls = " << state.eps_ls;
+                    
+                    //---dir_valid0---
+                    // Any 
+                    //---dir_valid1---
 
                 // If we're using a golden-section search, make sure we allow
-                // at least two iterations.
-                else if(state.kind==LineSearchKind::GoldenSection && 
-                    state.linesearch_iter_max <= 1
-                ) 
-                    ss << "When using a golden-seciton search, we require at "
+                // at least two iterations.  In addition, if we're using the
+                // Barzilai-Borwein two point Hessian approximation, make sure
+                // the direction is steepest descent.
+                else if(!(
+                    //---kind_valid0---
+                    (state.kind!=LineSearchKind::GoldenSection 
+                        || state.linesearch_iter_max >= 2) &&
+                    (state.kind!=LineSearchKind::TwoPointA ||
+                        state.kind!=LineSearchKind::TwoPointB ||
+                        state.dir==LineSearchDirection::SteepestDescent)
+                    //---kind_valid1---
+                )) {
+                    ss << "When using a golden-section search, we require at "
                         "least 2 line-search iterations: linesearch_iter_max = "
-                        << state.linesearch_iter_max;
-
-                // If we're using the Barzilai-Borwein two point Hessian
-                // approximation, make sure the direction is steepest descent.
-                else if((state.kind==LineSearchKind::TwoPointA ||
-                    state.kind==LineSearchKind::TwoPointB) &&
-                    state.dir!=LineSearchDirection::SteepestDescent
-                )
+                        << state.linesearch_iter_max << std::endl << std::endl;
+                    
                     ss << "When using the Barzilai-Borwein two point Hessian "
                         "approximation line-search, the search direction must "
                         "be set to SteepestDescent: dir = "
                         << LineSearchDirection::to_string(state.dir);
+                }
+                    //---f_diag0---
+                    // Any 
+                    //---f_diag1---
 
                 // If there's an error, print it
                 if(ss.str()!="") msg.error(ss.str());
@@ -4467,7 +4857,7 @@ namespace Optizelle{
                 // How often we restart the augmented system solve
                 Natural augsys_rst_freq;
                 
-                // Equality constraint evaluated at x.  This is used in the
+                // Equality constraint evaluated at x.  We use this in the
                 // quasinormal step as well as in the computation of the
                 // linear Taylor series at x in the direciton dx_n.
                 Y_Vector g_x;
@@ -4476,8 +4866,8 @@ namespace Optizelle{
                 // the value at the first iteration.
                 Real norm_gxtyp;
                 
-                // Linear Taylor series at x in the direction dx_n.  This is
-                // used both in the predicted reduction as well as the
+                // Linear Taylor series at x in the direction dx_n.  We use  
+                // this both in the predicted reduction as well as the
                 // residual predicted reduction. 
                 Y_Vector gpxdxn_p_gx;
 
@@ -4485,7 +4875,7 @@ namespace Optizelle{
                 // this is used in the residual predicted reduction.
                 Y_Vector gpxdxt;
 
-                // Norm of gpxdxn_p_gx.  This is used in the penalty parameter
+                // Norm of gpxdxn_p_gx.  We use this in the penalty parameter
                 // computation and predicted reduction. 
                 Real norm_gpxdxnpgx;
 
@@ -4504,17 +4894,17 @@ namespace Optizelle{
                 // Cauchy point for tangential step prior to correction
                 X_Vector dx_tcp_uncorrected;
                 
-                // Hessian applied to the normal step.  This is required by
+                // Hessian applied to the normal step.  We require this in 
                 // W_gradpHdxn as well as the predicted reduction.
                 X_Vector H_dxn;
 
                 // Quantity grad f(x) + g'(x)*y + H dx_n projected into the
-                // null-space of the constraints.  This is required in the
+                // null-space of the constraints.  We require this in the
                 // tangential subproblem and the predicted reduction.
                 X_Vector W_gradpHdxn;
                 
-                // Hessian applied to the uncorrected tangential step.  This
-                // is needed in the predicted reduction.
+                // Hessian applied to the uncorrected tangential step.  We 
+                // require this in the predicted reduction.
                 X_Vector H_dxtuncorrected;
 
                 // Function diagnostics on g
@@ -4524,41 +4914,180 @@ namespace Optizelle{
                 explicit t(X_Vector const & x_,Y_Vector const & y_) : 
                     Unconstrained <Real,XX>::State::t(x_),
                     y(Y::init(y_)),
-                    dy(Y::init(y_)),
-                    zeta(0.8),
-                    eta0(0.5),
-                    rho(1.0),
-                    rho_old(rho),
-                    rho_bar(1e-8),
-                    eps_constr(1e-8),
-                    xi_qn(1e-4),
-                    xi_pg(1e-4),
-                    xi_proj(1e-4),
-                    xi_tang(1e-4),
-                    xi_lmh(1e-4),
-                    xi_lmg(1e4),
-                    xi_4(2.),
-                    rpred(std::numeric_limits<Real>::quiet_NaN()),
-                    PSchur_left_type(Operators::Identity),
-                    PSchur_right_type(Operators::Identity),
-                    augsys_iter_max(100),
-                    augsys_rst_freq(0),
-                    g_x(Y::init(y_)),
-                    norm_gxtyp(std::numeric_limits<Real>::quiet_NaN()),
-                    gpxdxn_p_gx(Y::init(y_)),
-                    gpxdxt(Y::init(y_)),
-                    norm_gpxdxnpgx(std::numeric_limits<Real>::quiet_NaN()),
-                    dx_n(X::init(x_)),
-                    dx_ncp(X::init(x_)),
-                    dx_t(X::init(x_)),
-                    dx_t_uncorrected(X::init(x_)),
-                    dx_tcp_uncorrected(X::init(x_)),
-                    H_dxn(X::init(x_)),
-                    W_gradpHdxn(X::init(x_)),
-                    H_dxtuncorrected(X::init(x_)),
-                    g_diag(FunctionDiagnostics::NoDiagnostics)
+                    dy(
+                        //---dy0---
+                        Y::init(y_)
+                        //---dy1---
+                    ),
+                    zeta(
+                        //---zeta0---
+                        0.8
+                        //---zeta1---
+                    ),
+                    eta0(
+                        //---eta00---
+                        0.5
+                        //---eta01---
+                    ),
+                    rho(
+                        //---rho0---
+                        1.0
+                        //---rho1---
+                    ),
+                    rho_old(
+                        //---rho_old0---
+                        rho
+                        //---rho_old1---
+                    ),
+                    rho_bar(
+                        //---rho_bar0---
+                        1e-8
+                        //---rho_bar1---
+                    ),
+                    eps_constr(
+                        //---eps_constr0---
+                        1e-8
+                        //---eps_constr1---
+                    ),
+                    xi_qn(
+                        //---xi_qn0---
+                        1e-4
+                        //---xi_qn1---
+                    ),
+                    xi_pg(
+                        //---xi_pg0---
+                        1e-4
+                        //---xi_pg1---
+                    ),
+                    xi_proj(
+                        //---xi_proj0---
+                        1e-4
+                        //---xi_proj1---
+                    ),
+                    xi_tang(
+                        //---xi_tang0---
+                        1e-4
+                        //---xi_tang1---
+                    ),
+                    xi_lmh(
+                        //---xi_lmh0---
+                        1e-4
+                        //---xi_lmh1---
+                    ),
+
+                        //---xi_all0---
+                        // None
+                        //---xi_all1---
+
+                    xi_lmg(
+                        //---xi_lmg0---
+                        1e4
+                        //---xi_lmg1---
+                    ),
+                    xi_4(
+                        //---xi_40---
+                        2.
+                        //---xi_41---
+                    ),
+                    rpred(
+                        //---rpred0---
+                        std::numeric_limits<Real>::quiet_NaN()
+                        //---rpred1---
+                    ),
+                    PSchur_left_type(
+                        //---PSchur_left_type0---
+                        Operators::Identity
+                        //---PSchur_left_type1---
+                    ),
+                    PSchur_right_type(
+                        //---PSchur_right_type0---
+                        Operators::Identity
+                        //---PSchur_right_type1---
+                    ),
+                    augsys_iter_max(
+                        //---augsys_iter_max0---
+                        100
+                        //---augsys_iter_max1---
+                    ),
+                    augsys_rst_freq(
+                        //---augsys_rst_freq0---
+                        0
+                        //---augsys_rst_freq1---
+                    ),
+                    g_x(
+                        //---g_x0---
+                        Y::init(y_)
+                        //---g_x1---
+                    ),
+                    norm_gxtyp(
+                        //---norm_gxtyp0---
+                        std::numeric_limits<Real>::quiet_NaN()
+                        //---norm_gxtyp1---
+                    ),
+                    gpxdxn_p_gx(
+                        //---gpxdxn_p_gx0---
+                        Y::init(y_)
+                        //---gpxdxn_p_gx1---
+                    ),
+                    gpxdxt(
+                        //---gpxdxt0---
+                        Y::init(y_)
+                        //---gpxdxt1---
+                    ),
+                    norm_gpxdxnpgx(
+                        //---norm_gpxdxnpgx0---
+                        std::numeric_limits<Real>::quiet_NaN()
+                        //---norm_gpxdxnpgx1---
+                    ),
+                    dx_n(
+                        //---dx_n0---
+                        X::init(x_)
+                        //---dx_n1---
+                    ),
+                    dx_ncp(
+                        //---dx_ncp0---
+                        X::init(x_)
+                        //---dx_ncp1---
+                    ),
+                    dx_t(
+                        //---dx_t0---
+                        X::init(x_)
+                        //---dx_t1---
+                    ),
+                    dx_t_uncorrected(
+                        //---dx_t_uncorrected0---
+                        X::init(x_)
+                        //---dx_t_uncorrected1---
+                    ),
+                    dx_tcp_uncorrected(
+                        //---dx_tcp_uncorrected0---
+                        X::init(x_)
+                        //---dx_tcp_uncorrected1---
+                    ),
+                    H_dxn(
+                        //---H_dxn0---
+                        X::init(x_)
+                        //---H_dxn1---
+                    ),
+                    W_gradpHdxn(
+                        //---W_gradpHdxn0---
+                        X::init(x_)
+                        //---W_gradpHdxn1---
+                    ),
+                    H_dxtuncorrected(
+                        //---H_dxtuncorrected0---
+                        X::init(x_)
+                        //---H_dxtuncorrected1---
+                    ),
+                    g_diag(
+                        //---g_diag0---
+                        FunctionDiagnostics::NoDiagnostics
+                        //---g_diag1---
+                    )
                 {
-                    Y::copy(y_,y);
+                        //---y0---
+                        Y::copy(y_,y);
+                        //---y1---
                 }
             };
             
@@ -4567,97 +5096,168 @@ namespace Optizelle{
                    
                 // Use this to build an error message
                 std::stringstream ss;
+                    
+                    //---y_valid0---
+                    // Any
+                    //---y_valid1---
+                    
+                    //---dy_valid0---
+                    // Any
+                    //---dy_valid1---
                 
                 // Check that the fraction of the trust-region used for the
                 // quasi-Newton step is between 0 and 1
                 // is positive
-                if(state.zeta <= Real(0.) || state.zeta >= Real(1.)) 
+                if(!(
+                    //---zeta_valid0---
+                    state.zeta > Real(0.) && state.zeta < Real(1.)
+                    //---zeta_valid1---
+                )) 
                     ss << "The fraction of the trust-region used for the "
                         "quasi-Newton step must lie in the interval (0,1): "
                         "zeta = " << state.zeta;
                 
                 // Check that the trust-region parameter that bounds the
                 // error in the preduction reduction lies between 0 and 1-eta1.
-                else if(state.eta0 <= Real(0.)
-                    || state.eta0 >= Real(1.)-state.eta1) 
+                else if(!(
+                    //---eta0_valid0---
+                    state.eta0 > Real(0.) && state.eta0 < Real(1.)-state.eta1
+                    //---eta0_valid1---
+                )) 
                     ss << "The trust-region parameter that bounds the error "
                         "in the predicted reduction must lie in the interval "
                         "(0,1-eta1): eta0 = " << state.eta0;
 
                 // Check that the augmented Lagrangian penalty parameter is
                 // greater than or equal to 1
-                else if(state.rho < Real(1.))
+                else if(!(
+                    //---rho_valid0---
+                    state.rho >= Real(1.)
+                    //---rho_valid1---
+                ))
                     ss << "The augmented Lagrangian penalty parameter must be "
                         "greater than or equal to 1: rho = " << state.rho;
 
                 // Check that the last penalty parameter is greater than or
                 // equal to 1
-                else if(state.rho_old < Real(1.))
+                else if(!(
+                    //---rho_old_valid0---
+                    state.rho_old >= Real(1.)
+                    //---rho_old_valid1---
+                ))
                     ss << "The previous augmented Lagrangian penalty parameter"
                         "must be greater than or equal to 1: rho_old = "
                         << state.rho_old;
 
                 // Check that the fixed increased to the augmented Lagrangian
                 // penalty parameter is positive 
-                else if(state.rho_bar <= Real(0.))
+                else if(!(
+                    //---rho_bar_valid0---
+                    state.rho_bar > Real(0.)
+                    //---rho_bar_valid1---
+                ))
                     ss << "The fixed increase to the augmented Lagrangian "
                         "penalty paramter must be positive: rho_bar = " 
                         << state.rho_bar;
 
                 // Check that the stopping tolerance for the norm of the
                 // constraints is positive
-                else if(state.eps_constr <= Real(0.))
+                else if(!(
+                    //---eps_constr_valid0---
+                    state.eps_constr > Real(0.)
+                    //---eps_constr_valid1---
+                ))
                     ss << "The tolerance used in the norm of the constraints "
                         "stopping condition must be positive: eps_constr = "
                         << state.eps_constr;
 
                 // Check that the quasi-Newton step inexactness tolerance lies 
                 // in the interval (0,1) 
-                else if(state.xi_qn <= Real(0.) || state.xi_qn >= Real(1.))
+                else if(!(
+                    //---xi_qn_valid0---
+                    state.xi_qn > Real(0.) && state.xi_qn < Real(1.)
+                    //---xi_qn_valid1---
+                ))
                     ss << "The quasi-Newton step inexactness tolerance must "
                         "lie in the interval (0,1): xi_qn = " << state.xi_qn;
                 
                 // Check that the projected gradient inexactness tolerance lies 
                 // in the interval (0,1) 
-                else if(state.xi_pg <= Real(0.) || state.xi_pg >= Real(1.))
+                else if(!(
+                    //---xi_pg_valid0---
+                    state.xi_pg > Real(0.) && state.xi_pg < Real(1.)
+                    //---xi_pg_valid1---
+                ))
                     ss << "The projected gradient inexactness tolerance must "
                         "lie in the interval (0,1): xi_pg = " << state.xi_pg;
                 
                 // Check that the nullspace projection inexactness tolerance
                 // lies in the interval (0,1) 
-                else if(state.xi_proj <= Real(0.) || state.xi_proj >= Real(1.))
+                else if(!(
+                    //---xi_proj_valid0---
+                    state.xi_proj > Real(0.) && state.xi_proj < Real(1.)
+                    //---xi_proj_valid1---
+                ))
                     ss << "The nullspace projection inexactness tolerance must "
                         "lie in the interval (0,1): xi_proj = "<< state.xi_proj;
                 
                 // Check that the tangential step inexactness tolerance
                 // lies in the interval (0,1) 
-                else if(state.xi_tang <= Real(0.) || state.xi_tang >= Real(1.))
+                else if(!(
+                    //---xi_tang_valid0---
+                    state.xi_tang > Real(0.) && state.xi_tang < Real(1.)
+                    //---xi_tang_valid1---
+                ))
                     ss << "The tangential step inexactness tolerance must "
                         "lie in the interval (0,1): xi_tang = "<< state.xi_tang;
                 
                 // Check that the Lagrange multiplier inexactness tolerance
                 // lies in the interval (0,1) 
-                else if(state.xi_lmh <= Real(0.) || state.xi_lmh >= Real(1.))
+                else if(!(
+                    //---xi_lmh_valid0---
+                    state.xi_lmh > Real(0.) && state.xi_lmh < Real(1.)
+                    //---xi_lmh_valid1---
+                ))
                     ss << "The Lagrange multiplier inexactness tolerance must "
                         "lie in the interval (0,1): xi_lmh = " << state.xi_lmh;
+                    
+                    //---xi_all_valid0---
+                    // state.xi_all > Real(0.) && state.xi_all < Real(1.)
+                    //---xi_all_valid1---
 
                 // Check that the absolute tolerance on the residual of the
                 // Lagrange multiplier solve is positive
-                else if(state.xi_lmg <= Real(0.))
+                else if(!(
+                    //---xi_lmg_valid0---
+                    state.xi_lmg > Real(0.)
+                    //---xi_lmg_valid1---
+                ))
                     ss << "The Lagrange multiplier residual tolerance must "
                         "be positive: xi_lmg = " << state.xi_lmg;
 
                 // Check that the tolerance for the error acceptable in
                 // the tangential step is greater than 1.
-                else if(state.xi_4 <= Real(1.))
+                else if(!(
+                    //---xi_4_valid0---
+                    state.xi_4 > Real(1.)
+                    //---xi_4_valid1---
+                ))
                     ss << "The tolerance on the acceptable error in the "
                         "tangential step must be greater than or equal to 1: "
                         "xi_4 = " << state.xi_4;
+                    
+                    //---rpred_valid0---
+                    // Any
+                    //---rpred_valid1---
                 
                 // Check that the left preconditioner for the augmented system
                 // is either defined by the user or the identity.
-                else if(state.PSchur_left_type != Operators::Identity &&
-                    state.PSchur_left_type != Operators::UserDefined)
+                else if(!(
+                    //---PSchur_left_type_valid0---
+                    state.PSchur_left_type == Operators::Identity || 
+                    state.PSchur_left_type == Operators::UserDefined
+                    //---PSchur_left_type_valid1---
+                ))
                     ss << "The left preconditioner for the augmented system "
                         "must be either user defined or the identity: "
                         "PSchur_left_type = "
@@ -4665,8 +5265,12 @@ namespace Optizelle{
                 
                 // Check that the right preconditioner for the augmented system
                 // is either defined by the user or the identity.
-                else if(state.PSchur_right_type != Operators::Identity &&
-                    state.PSchur_right_type != Operators::UserDefined)
+                else if(!(
+                    //---PSchur_right_type_valid0---
+                    state.PSchur_right_type == Operators::Identity || 
+                    state.PSchur_right_type == Operators::UserDefined
+                    //---PSchur_right_type_valid1---
+                ))
                     ss << "The right preconditioner for the augmented system "
                         "must be either user defined or the identity: "
                         "PSchur_right_type = "
@@ -4674,10 +5278,84 @@ namespace Optizelle{
 
                 // Check that the number of iterations used when solving the
                 // augmented system is positive
-                else if(state.augsys_iter_max <= 0)
+                else if(!(
+                    //---augsys_iter_max_valid0---
+                    state.augsys_iter_max > 0
+                    //---augsys_iter_max_valid1---
+                ))
                     ss << "The number of iterations used when solving the "
                         "augmented system must be positive: augsys_iter_max = "
                         << state.augsys_iter_max;
+                    
+                    //---augsys_rst_freq_valid0---
+                    // Any
+                    //---augsys_rst_freq_valid1---
+                    
+                    //---g_x_valid0---
+                    // Any
+                    //---g_x_valid1---
+
+                // Check that the norm of a typical constraint is nonnegative or
+                // if we're on the first iteration, we allow a NaN
+                else if(!(
+                    //---norm_gxtyp_valid0---
+                    state.norm_gxtyp >= Real(0.)
+                    || (state.iter==1 && state.norm_gxtyp!=state.norm_gxtyp)
+                    //---norm_gxtyp_valid1---
+                )) 
+                    ss << "The norm of a typical constraint must be "
+                        "nonnegative: norm_gxtyp = " << state.norm_gxtyp; 
+                    
+                    //---gpxdxn_p_gx_valid0---
+                    // Any
+                    //---gpxdxn_p_gx_valid1---
+                    
+                    //---gpxdxt_valid0---
+                    // Any
+                    //---gpxdxt_valid1---
+                    
+                    //---norm_gpxdxnpgx_valid0---
+                    // Any
+                    //---norm_gpxdxnpgx_valid1---
+                    
+                    //---dx_n_valid0---
+                    // Any
+                    //---dx_n_valid1---
+                    
+                    //---dx_ncp_valid0---
+                    // Any
+                    //---dx_ncp_valid1---
+                    
+                    //---dx_t_valid0---
+                    // Any
+                    //---dx_t_valid1---
+                    
+                    //---dx_t_uncorrected_valid0---
+                    // Any
+                    //---dx_t_uncorrected_valid1---
+                    
+                    //---dx_tcp_uncorrected_valid0---
+                    // Any
+                    //---dx_tcp_uncorrected_valid1---
+                    
+                    //---H_dxn_valid0---
+                    // Any
+                    //---H_dxn_valid1---
+                    
+                    //---W_gradpHdxn_valid0---
+                    // Any
+                    //---W_gradpHdxn_valid1---
+                    
+                    //---H_dxtuncorrected_valid0---
+                    // Any
+                    //---H_dxtuncorrected_valid1---
+                    
+                    //---g_diag_valid0---
+                    // Any
+                    //---g_diag_valid1---
+
+                // If there's an error, print it
+                if(ss.str()!="") msg.error(ss.str());
             }
             static void check(Messaging const & msg,t const & state) {
                 Unconstrained <Real,XX>::State::check_(msg,state);
@@ -7104,8 +7782,8 @@ namespace Optizelle{
 
                 // The inequality constraint evaluated at x.  In theory,
                 // we can always just evaluate this when we need it.  However,
-                // we do require its computation both in the gradient as well
-                // as Hessian calculations.  More specifically, when computing
+                // we require its computation both in the gradient as well as
+                // Hessian calculations.  More specifically, when computing
                 // with SDP constraints, we require a factorization of this
                 // quantity.  By caching it, we have the ability to cache the
                 // factorization.
@@ -7124,8 +7802,7 @@ namespace Optizelle{
                 // Relative stopping criteria for the interior point parameter
                 Real eps_mu;
 
-                // The amount that we reduce the interior point parameter by
-                // everytime we approach the central path
+                // Rate that we decrease the interior point parameter
                 Real sigma;
 
                 // How close we move to the boundary during a single step
@@ -7144,19 +7821,65 @@ namespace Optizelle{
                 t(X_Vector const & x_,Z_Vector const & z_) :
                     Unconstrained <Real,XX>::State::t(x_),
                     z(Z::init(z_)),
-                    dz(Z::init(z_)),
-                    h_x(Z::init(z_)),
-                    mu(std::numeric_limits<Real>::quiet_NaN()),
-                    mu_est(std::numeric_limits<Real>::quiet_NaN()),
-                    mu_typ(std::numeric_limits<Real>::quiet_NaN()),
-                    eps_mu(1e-8),
-                    sigma(0.5),
-                    gamma(0.95),
-                    ipm(InteriorPointMethod::PrimalDual),
-                    cstrat(CentralityStrategy::Constant),
-                    h_diag(FunctionDiagnostics::NoDiagnostics)
+                    dz(
+                        //---dz0---
+                        Z::init(z_)
+                        //---dz1---
+                    ),
+                    h_x(
+                        //---h_x0---
+                        Z::init(z_)
+                        //---h_x1---
+                    ),
+                    mu(
+                        //---mu0---
+                        std::numeric_limits<Real>::quiet_NaN()
+                        //---mu1---
+                    ),
+                    mu_est(
+                        //---mu_est0---
+                        std::numeric_limits<Real>::quiet_NaN()
+                        //---mu_est1---
+                    ),
+                    mu_typ(
+                        //---mu_typ0---
+                        std::numeric_limits<Real>::quiet_NaN()
+                        //---mu_typ1---
+                    ),
+                    eps_mu(
+                        //---eps_mu0---
+                        1e-8
+                        //---eps_mu1---
+                    ),
+                    sigma(
+                        //---sigma0---
+                        0.5
+                        //---sigma1---
+                    ),
+                    gamma(
+                        //---gamma0---
+                        0.95
+                        //---gamma1---
+                    ),
+                    ipm(
+                        //---ipm0---
+                        InteriorPointMethod::PrimalDual
+                        //---ipm1---
+                    ),
+                    cstrat(
+                        //---cstrat0---
+                        CentralityStrategy::Constant
+                        //---cstrat1---
+                    ),
+                    h_diag(
+                        //---h_diag0---
+                        FunctionDiagnostics::NoDiagnostics
+                        //---h_diag1---
+                    )
                 {
-                    Z::copy(z_,z);
+                        //---z0---
+                        Z::copy(z_,z);
+                        //---z1---
                 }
                 
                 // A trick to allow dynamic casting later
@@ -7167,37 +7890,91 @@ namespace Optizelle{
             static void check_(Messaging const & msg,t const & state) {
                 // Use this to build an error message
                 std::stringstream ss;
+                    
+                    //---z_valid0---
+                    // Any
+                    //---z_valid1---
+                    
+                    //---dz_valid0---
+                    // Any
+                    //---dz_valid1---
+                    
+                    //---h_x_valid0---
+                    // Any
+                    //---h_x_valid1---
                 
-                // Check that the interior point parameter is positive 
-                if(state.mu <= Real(0.)) 
+                // Check that the interior point parameter is positive after
+                // iteration 1.
+                if(!(
+                    //---mu_valid0---
+                    (state.iter > 1 && state.mu > Real(0.)) ||
+                    (state.iter == 1 & state.mu != state.mu)
+                    //---mu_valid1---
+                )) 
                     ss << "The interior point parameter must be positive: " 
                         "mu = " << state.mu;
                 
-                // Check that the interior point parameter estimate is positive 
-                if(state.mu_est <= Real(0.)) 
-                    ss << "The interior point parameter estimate must be "
-                        "positive: mu_est = " << state.mu_est;
+                // Check that the estimated interior point parameter is a 
+                // non-nan past iteration 1.
+                else if(!(
+                    //---mu_est_valid0---
+                    state.iter > 1  ||
+                    (state.iter == 1 & state.mu != state.mu)
+                    //---mu_est_valid1---
+                )) 
+                    ss << "The estimated interior point parameter must be "
+                        "number: mu = " << state.mu;
 
                 // Check that the typical interior point parameter is positive 
-                if(state.mu_typ <= Real(0.)) 
+                // or if we're on the first iteration, we allow NaN.
+                else if(!(
+                    //---mu_typ_valid0---
+                    state.mu_typ > Real(0.)
+                    || (state.iter==1 && state.mu_typ!=state.mu_typ)
+                    //---mu_typ_valid1---
+                ))
                     ss << "The typical interior point parameter must be "
                         "positive:  mu_typ = " << state.mu_typ;
 
                 // Check that the interior point stopping tolerance is positive 
-                else if(state.eps_mu <= Real(0.)) 
+                else if(!(
+                    //---eps_mu_valid0---
+                    state.eps_mu > Real(0.)
+                    //---eps_mu_valid1---
+                ))
                     ss << "The interior point stopping tolerance must be "
                         "positive: eps_mu = " << state.eps_mu;
 
                 // Check that the reduction in the interior point parameter
                 // is between 0 and 1.
-                else if(state.sigma <= Real(0.) || state.sigma >= Real(1.)) 
+                else if(!(
+                    //---sigma_valid0---
+                    state.sigma > Real(0.) && state.sigma < Real(1.)
+                    //---sigma_valid1---
+                ))
                     ss << "The reduction in the interior point parameter "
                         "must be between 0 and 1: sigma = " << state.sigma;
 
                 // Check that the fraction to the boundary is between 0 and 1. 
-                else if(state.gamma <= Real(0.) || state.gamma >= Real(1.)) 
+                else if(!(
+                    //---gamma_valid0---
+                    state.gamma > Real(0.) && state.gamma < Real(1.)
+                    //---gamma_valid1---
+                ))
                     ss << "The fraction to the boundary must be between " 
                         "0 and 1: gamma= " << state.gamma;
+                    
+                    //---ipm_valid0---
+                    // Any
+                    //---ipm_valid1---
+                    
+                    //---cstrat_valid0---
+                    // Any
+                    //---cstrat_valid1---
+                    
+                    //---hdiag_valid0---
+                    // Any
+                    //---hdiag_valid1---
 
                 // If there's an error, print it
                 if(ss.str()!="") msg.error(ss.str());

@@ -164,12 +164,12 @@ int main(int argc,char* argv[]){
         ::getMin(Optizelle::Messaging(),fns,state);
     //---Solver1---
 
+    //---Extract0---
     // Print out the reason for convergence
     std::cout << "The algorithm converged due to: " <<
         Optizelle::StoppingCondition::to_string(state.opt_stop) <<
         std::endl;
 
-    //---Extract0---
     // Print out the final answer
     std::cout << std::scientific << std::setprecision(16)
         << "The optimal point is: (" << state.x[0] << ','

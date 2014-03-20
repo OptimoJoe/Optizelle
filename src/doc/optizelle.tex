@@ -46,15 +46,46 @@
    \lowercase{\endgroup\def\@activeus{\catcode`\_=\active \let~\_}}
 \makeatother
 
+% Enable gobble for lstlisting.  Code found at:
+%https://tex.stackexchange.com/questions/48903/how-to-extend-the-lstinputlisting-command
+\errorcontextlines=\maxdimen
+\newlength{\rawgobble}
+\newlength{\gobble}
+\newlength{\gobblea}
+% The width of a single space. basicstyle from lstset should be used
+\sbox0{\normalsize\ttfamily \ }
+% Remove a single space
+\settowidth{\rawgobble}{\normalsize\ttfamily \ }
+\setlength{\rawgobble}{-\rawgobble}
+\makeatletter
+\def\sepstar#1*#2\relax{%
+    \def\sepstarone{#1}%
+    \def\sepstartwo{#2}%
+}
+\lst@Key{firstlineandnumber}\relax{\def\lst@firstline{#1\relax}\def\lst@firstnumber{#1\relax}}
+\lst@Key{widthgobble}{0*0}{%
+    % Reindent a bit by multiplying with 0.9, then multiply by tabsize and number of indentation levels
+    \sepstar #1\relax
+    \setlength{\gobble}{0.9\rawgobble}%
+    \setlength{\gobble}{\sepstarone\gobble}%
+    \setlength{\gobble}{\sepstartwo\gobble}%
+    \setlength{\gobblea}{\gobble}%
+    \addtolength{\gobblea}{10pt}%
+    \def\lst@xleftmargin{\gobble}%
+    \def\lst@framexleftmargin{\gobble}%
+    \def\lst@numbersep{\gobblea}%
+}
+\makeatother
+
 % Used for labeling and referring to computer text 
 \newcommand{\textctlabel}[1]{\phantomsection\label{itm:#1}\textct{#1}}
 \newcommand{\textctref}[1]{\hyperref[itm:#1]{\textct{#1}}}
 
-% Setup a CMake list environment.
+% Setup a bolded list environment.
 \newenvironment{boldlist}
     {\begin{list}{}{
-        \labelwidth.15\textwidth
-        \leftmargin\dimexpr\leftmargin+.15\textwidth
+        \labelwidth.16\textwidth
+        \leftmargin\dimexpr\leftmargin+.16\textwidth
         \renewcommand\makelabel[1]{%
             \textbf{##1}}}}
     {\vspace{-\dimexpr\baselineskip+2\itemsep}\end{list}}
@@ -98,6 +129,12 @@
     \item[Code] #2
     \item[]}
 
+% Short example items.  Basically, the minipage stops page wrapping, so the example better be short.
+\newcommand{\shortexampleitem}[2]{
+    \item[Language] #1
+    \item[Code]\begin{minipage}[t]{\textwidth}\vspace{\dimexpr-\medskipamount-2ex}#2\end{minipage}
+    \item[]}
+
 % Function bundle items
 \newcommand{\functionitem}[5]{
     \item[Element] #1
@@ -107,6 +144,137 @@
     \item[Description] #5
     \item[]}
 
+% Type items 
+\newcommand{\typeitem}[2]{
+    \item[Type] #1
+    \item[Description] #2
+    \item[]}
+
+% Enumerated items 
+\newcommand{\enumitem}[1]{
+    \item[Type] \textctlabel{#1}
+    \item[Values]\begin{minipage}[t]{\textwidth}\vspace{\dimexpr-\medskipamount-2ex}
+        \lstinputlisting[style=C++,linerange=#1 0-#1 1,widthgobble=3*4]{@OPTIZELLECPPPATH@/optizelle.h}
+    \end{minipage}
+    \item[]}
+\newcommand{\enumitemlong}[1]{
+    \item[Type] \textctlabel{#1}
+    \item[Values]
+        \begin{minipage}[t]{\textwidth}\vspace{\dimexpr-\medskipamount-2ex}
+            \lstinputlisting[style=C++,linerange=#1 0-#1 1,widthgobble=3*4]{@OPTIZELLECPPPATH@/optizelle.h}
+        \end{minipage}
+        \begin{minipage}[t]{\textwidth}\vspace{\dimexpr-\medskipamount-2ex}
+            \lstinputlisting[style=C++,linerange=#1 1-#1 2,widthgobble=3*4]{@OPTIZELLECPPPATH@/optizelle.h}
+        \end{minipage}
+        \begin{minipage}[t]{\textwidth}\vspace{\dimexpr-\medskipamount-2ex}
+            \lstinputlisting[style=C++,linerange=#1 2-#1 3,widthgobble=3*4]{@OPTIZELLECPPPATH@/optizelle.h}
+        \end{minipage}
+        \begin{minipage}[t]{\textwidth}\vspace{\dimexpr-\medskipamount-2ex}
+            \lstinputlisting[style=C++,linerange=#1 3-#1 4,widthgobble=3*4]{@OPTIZELLECPPPATH@/optizelle.h}
+        \end{minipage}
+        \begin{minipage}[t]{\textwidth}\vspace{\dimexpr-\medskipamount-2ex}
+            \lstinputlisting[style=C++,linerange=#1 4-#1 5,widthgobble=3*4]{@OPTIZELLECPPPATH@/optizelle.h}
+        \end{minipage}
+    \item[]}
+\newcommand{\enumitemalt}[1]{
+    \item[Type] \textctlabel{#1}
+    \item[Values]\begin{minipage}[t]{\textwidth}\vspace{\dimexpr-\medskipamount-2ex}
+        \lstinputlisting[style=C++,linerange=#1 0-#1 1,widthgobble=3*4]{@OPTIZELLECPPPATH@/linalg.h}
+    \end{minipage}
+    \item[]}
+
+% Parameter items
+\newcommand{\paramitem}[5]{
+    \item[Name] \textctlabel{#1}
+    \item[Type] #2
+    \item[\mbox{Valid Value}]
+        \begin{minipage}[t]{\textwidth}\vspace{\dimexpr-\medskipamount-2ex}
+            \lstinputlisting[style=C++,linerange=#1 _valid0-#1 _valid1,widthgobble=5*4]{@OPTIZELLECPPPATH@/optizelle.h}
+        \end{minipage}
+    \item[\mbox{Problem Class}] #3
+    \item[\mbox{JSON Param}] #4
+    \item[Default]
+        \begin{minipage}[t]{\textwidth}\vspace{\dimexpr-\medskipamount-2ex}
+            \lstinputlisting[style=C++,linerange=#1 0-#1 1,widthgobble=6*4]{@OPTIZELLECPPPATH@/optizelle.h}
+        \end{minipage}
+    \item[Description] #5
+    \item[]}
+
+\newcommand{\paramitemu}[4]{
+    \paramitem
+        {#1}
+        {\textctref{#2}}
+        {Unconstrained, Equality Constrained, Inequality Constrained, Constrained}
+        {#3}
+        {#4}}
+
+\newcommand{\paramiteml}[4]{
+    \paramitem
+        {#1}
+        {\textctref{List}(\textctref{#2})}
+        {Unconstrained, Equality Constrained, Inequality Constrained, Constrained}
+        {#3}
+        {#4}}
+
+\newcommand{\paramitemf}[4]{
+    \paramitem
+        {#1}
+        {\textctref{Function}(\textctref{#2})}
+        {Equality Constrained, Constrained}
+        {#3}
+        {#4}}
+
+\newcommand{\paramiteme}[4]{
+    \paramitem
+        {#1}
+        {\textctref{#2}}
+        {Equality Constrained, Constrained}
+        {#3}
+        {#4}}
+
+\newcommand{\paramitemi}[4]{
+    \paramitem
+        {#1}
+        {\textctref{#2}}
+        {Inequality Constrained, Constrained}
+        {#3}
+        {#4}}
+
+\newcommand{\paramitemc}[4]{
+    \paramitem
+        {#1}
+        {\textctref{#2}}
+        {Constrained}
+        {#3}
+        {#4}}
+
+% Formulation items 
+\newcommand{\formitem}[4]{
+    \item[Unconstrained] #1
+    \item[Equality] #2
+    \item[Inequality] #3
+    \item[Constrained] #4
+    \item[]}
+
+\newcommand{\formiteme}[2]{
+    \item[Equality] #1
+    \item[Constrained] #2
+    \item[]}
+
+\newcommand{\formitemi}[2]{
+    \item[Inequality] #1
+    \item[Constrained] #2
+    \item[]}
+
+\newcommand{\ipmitem}[3]{
+    \item[\mbox{Primal-Dual}] #1
+    \item[Linked] #2
+    \item[\mbox{Log Barrier}] #3}
+
+\newcommand{\cstratitem}[3]{
+    \item[Constant] #1
+    \item[\mbox{Stair Step}] #2
+    \item[\mbox{Predictor-Corrector}] #3}
 
 % Change the figure numbering to be chap.sec.num
 \renewcommand{\thefigure}{\arabic{chapter}.\arabic{section}.\arabic{figure}}
@@ -115,9 +283,11 @@
 
 % Use the following for all languages
 \lstset{
+    tabsize=4,
+    columns=flexible,
     boxpos=t,
     showstringspaces=false,
-    basicstyle=\footnotesize,
+    basicstyle=\normalsize\ttfamily,
     backgroundcolor=\color{white},
     includerangemarker=false,
     keywordstyle=\color{blue}\ttfamily,
@@ -191,9 +361,24 @@
 % Simple macros to help math printing
 \newcommand{\re}{\mathbb{R}}
 \newcommand{\st}{\textnormal{st}}
+
+\newcommand{\uncMerit}[1]{f(#1)}
+\newcommand{\uncGradLag}[1]{\nabla f(#1)}
+\newcommand{\uncHessVec}[1]{\hyperref[itm:H_type]{H}(#1)\textctref{dx}}
+
+\newcommand{\ineqMerit}[1]{f(#1) - \textctref{mu} \cdot \textct{Z::barr}(h(#1))}
 \newcommand{\ineqGradLag}[2]{\nabla f(#1)-h^\prime(#1)^*#2}
+\newcommand{\ineqGradSchur}[1]{\nabla f(#1)-\textctref{mu}\cdot h^\prime(#1)^*L(h(#1))^{-1}e}
+\newcommand{\ineqHessVec}[2]{\hyperref[itm:H_type]{H}(#1)\textctref{dx}+h^\prime(#1)^*L(h(#1))^{-1} (h^\prime(#1) \textctref{dx} \circ #2)}
+
+\newcommand{\eqMerit}[2]{f(#1) + \langle #2,g(#1) \rangle + \textctref{rho} || g(#1) ||^2}
 \newcommand{\eqGradLag}[2]{\nabla f(#1)+g^\prime(#1)^*#2}
+\newcommand{\eqHessVec}[2]{\hyperref[itm:H_type]{H}(#1)\textctref{dx}+(g^{\prime\prime}(#1)\textctref{dx})^*#2}
+
+\newcommand{\conMerit}[2]{f(#1) + \langle #2,g(#1) \rangle + \textctref{rho} || g(#1) ||^2 - \textctref{mu} \cdot \textct{Z::barr}(h(#1))}
 \newcommand{\conGradLag}[3]{\nabla f(#1)+g^\prime(#1)^*#2-h^\prime(#1)^*#3}
+\newcommand{\conGradSchur}[2]{\nabla f(#1)+g^\prime(#1)^*#2-\textctref{mu}\cdot h^\prime(#1)^*L(h(#1))^{-1}e}
+\newcommand{\conHessVec}[3]{\hyperref[itm:H_type]{H}(#1)\textctref{dx}+(g^{\prime\prime}(#1)\textctref{dx})^*#2+h^\prime(#1)^*L(h(#1))^{-1} (h^\prime(#1) \textctref{dx} \circ #3)}
 
 % Collections of text, tables, etc.
 \newsavebox{\boxOptimizationTypes}
@@ -211,12 +396,12 @@
 \newcommand{\secpreconditioners}{(Optional) Define the preconditioners}
 \newcommand{\secstate}{Create the optimization state}
 \newcommand{\secparams}{Set the optimization parameters}
-\newcommand{\secaccumulatefns}{Accumulate the functions}
+\newcommand{\secfns}{Accumulate the functions}
 \newcommand{\secsolve}{Call the optimization solver}
 \newcommand{\secextract}{Extract the solution}
 \newcommand{\seccompilerun}{Compile/run the program}
 
-\newcommand{\chparameters}{Optimization parameters}
+\newcommand{\chparams}{Optimization Parameters}
 \newcommand{\seccustomvector}{Vector spaces}
 \newcommand{\secmessaging}{Messaging objects}
 
@@ -896,7 +1081,7 @@ in the build directory.  This encapsulates Optizelle as well as JsonCpp, BLAS, a
     \item \hyperref[sec:preconditioners]{\secpreconditioners},
     \item \hyperref[sec:state]{\secstate},
     \item \hyperref[sec:params]{\secparams},
-    \item \hyperref[sec:accumulatefns]{\secaccumulatefns},
+    \item \hyperref[sec:fns]{\secfns},
     \item \hyperref[sec:solve]{\secsolve},
     \item \hyperref[sec:extract]{\secextract},
     \item \hyperref[sec:compilerun]{\seccompilerun}.
@@ -1419,31 +1604,31 @@ state = Optizelle.Constrained.State.t(X,Y,Z,msg,x,y,z);
 
         As an example, we create the optimization state in the Rosenbrock example with the following code:
 \begin{boldlist}
-    \exampleitem
+    \shortexampleitem
         {C++}
-        {\lstinputlisting[style=C++,linerange=State0-State1]{@ROSENBROCKPATH@/rosenbrock.cpp}}
+        {\lstinputlisting[style=C++,linerange=State0-State1,,widthgobble=1*4]{@ROSENBROCKPATH@/rosenbrock.cpp}}
 
-    \exampleitem
+    \shortexampleitem
         {Python}
         {\lstinputlisting[style=Python,linerange=State0-State1]{@ROSENBROCKPATH@/rosenbrock.py}}
 
-    \exampleitem
+    \shortexampleitem
         {MATLAB/Octave}
-        {\lstinputlisting[style=Matlab,linerange=State0-State1]{@ROSENBROCKPATH@/rosenbrock.m}}
+        {\lstinputlisting[style=Matlab,linerange=State0-State1,widthgobble=1*4]{@ROSENBROCKPATH@/rosenbrock.m}}
 \end{boldlist}
 In our simple equality example, we have:
 \begin{boldlist}
-    \exampleitem
+    \shortexampleitem
         {C++}
-        {\lstinputlisting[style=C++,linerange=State0-State1]{@SIMPLEEQUALITYPATH@/simple_equality.cpp}}
+        {\lstinputlisting[style=C++,linerange=State0-State1,widthgobble=1*4]{@SIMPLEEQUALITYPATH@/simple_equality.cpp}}
 
-    \exampleitem
+    \shortexampleitem
         {Python}
         {\lstinputlisting[style=Python,linerange=State0-State1]{@SIMPLEEQUALITYPATH@/simple_equality.py}}
 
-    \exampleitem
+    \shortexampleitem
         {MATLAB/Octave}
-        {\lstinputlisting[style=Matlab,linerange=State0-State1]{@SIMPLEEQUALITYPATH@/simple_equality.m}}
+        {\lstinputlisting[style=Matlab,linerange=State0-State1,widthgobble=1*4]{@SIMPLEEQUALITYPATH@/simple_equality.m}}
 \end{boldlist}
 
 \section{\secparams}\label{sec:params}
@@ -1488,38 +1673,38 @@ state = Optizelle.json.Constrained.read(X,Y,Z,msg,fname,state)
         {\lstinputlisting[style=Matlab]{json.m}}
         {Use as is}
 \end{boldlist}
-Here, most of the parameters required are identical to those required in the section \hyperref[sec:state]{\secstate}.  The lone, new parameter is \textct{fname}, which corresponds to a string of the file name where we read the JSON formatted parameters.  As to what these parameters are, we discuss that in the chapter \hyperref[ch:parameters]{\chparameters}.
+Here, most of the parameters required are identical to those required in the section \hyperref[sec:state]{\secstate}.  The lone, new parameter is \textct{fname}, which corresponds to a string of the file name where we read the JSON formatted parameters.  As to what these parameters are, we discuss that in the chapter \hyperref[ch:params]{\chparams}.
 
         In our Rosenbrock example, we use the following code to read the optimizzation parameters:
 \begin{boldlist}
-    \exampleitem
+    \shortexampleitem
         {C++}
-        {\lstinputlisting[style=C++,linerange=Parameters0-Parameters1]{@ROSENBROCKPATH@/rosenbrock.cpp}}
+        {\lstinputlisting[style=C++,linerange=Parameters0-Parameters1,widthgobble=1*4]{@ROSENBROCKPATH@/rosenbrock.cpp}}
 
-    \exampleitem
+    \shortexampleitem
         {Python}
         {\lstinputlisting[style=Python,linerange=Parameters0-Parameters1]{@ROSENBROCKPATH@/rosenbrock.py}}
 
-    \exampleitem
+    \shortexampleitem
         {MATLAB/Octave}
-        {\lstinputlisting[style=Matlab,linerange=Parameters0-Parameters1]{@ROSENBROCKPATH@/rosenbrock.m}}
+        {\lstinputlisting[style=Matlab,linerange=Parameters0-Parameters1,widthgobble=1*4]{@ROSENBROCKPATH@/rosenbrock.m}}
 \end{boldlist}
 This becomes the following in our simple equality example: 
 \begin{boldlist}
-    \exampleitem
+    \shortexampleitem
         {C++}
-        {\lstinputlisting[style=C++,linerange=Parameters0-Parameters1]{@SIMPLEEQUALITYPATH@/simple_equality.cpp}}
+        {\lstinputlisting[style=C++,linerange=Parameters0-Parameters1,widthgobble=1*4]{@SIMPLEEQUALITYPATH@/simple_equality.cpp}}
 
-    \exampleitem
+    \shortexampleitem
         {Python}
         {\lstinputlisting[style=Python,linerange=Parameters0-Parameters1]{@SIMPLEEQUALITYPATH@/simple_equality.py}}
 
-    \exampleitem
+    \shortexampleitem
         {MATLAB/Octave}
-        {\lstinputlisting[style=Matlab,linerange=Parameters0-Parameters1]{@SIMPLEEQUALITYPATH@/simple_equality.m}}
+        {\lstinputlisting[style=Matlab,linerange=Parameters0-Parameters1,widthgobble=1*4]{@SIMPLEEQUALITYPATH@/simple_equality.m}}
 \end{boldlist}
 
-\section{\secaccumulatefns}\label{sec:accumulatefns}
+\section{\secfns}\label{sec:fns}
 
         In order to pass the functions used in the optimization to Optizelle, we accumulate each of them into a bundle of functions.  These bundles are simple structures that contain the appropriate function.  The syntax for creating these objects is
 
@@ -1604,35 +1789,35 @@ fns = Optizelle.Constrained.Functions.t;
         {Yes}
         {Inequality constraint.}
 \end{boldlist}
-\noindent In C++, we represent each of the these elements as a \textct{std::unique_ptr} using the type specified above.  In Python, we use simple class elements.  In MATLAB/Octave, we use a structure array.  As a final note, since they are optional, we do \textbf{not} utilize \textct{PH}, \textct{PSchur_left}, or \textct{PSchur_right} by default even when they are defined.  In order to active these functions, we must modify the \textct{PH_type}, \textct{PSchur_left_type}, and \textct{PSchur_right_type} elements in the state, respectively.  We describe these variables in the chapter \hyperref[ch:parameters]{\chparameters}.
+\noindent In C++, we represent each of the these elements as a \textct{std::unique_ptr} using the type specified above.  In Python, we use simple class elements.  In MATLAB/Octave, we use a structure array.  As a final note, since they are optional, we do \textbf{not} utilize \textct{PH}, \textct{PSchur_left}, or \textct{PSchur_right} by default even when they are defined.  In order to active these functions, we must modify the \textct{PH_type}, \textct{PSchur_left_type}, and \textct{PSchur_right_type} elements in the state, respectively.  We describe these variables in the chapter \hyperref[ch:params]{\chparams}.
 
         In our Rosenbrock example, we accumlate our functions with the following code
 \begin{boldlist}
-    \exampleitem
+    \shortexampleitem
         {C++}
-        {\lstinputlisting[style=C++,linerange=Functions0-Functions1]{@ROSENBROCKPATH@/rosenbrock.cpp}}
+        {\lstinputlisting[style=C++,linerange=Functions0-Functions1,widthgobble=1*4]{@ROSENBROCKPATH@/rosenbrock.cpp}}
 
-    \exampleitem
+    \shortexampleitem
         {Python}
         {\lstinputlisting[style=Python,linerange=Functions0-Functions1]{@ROSENBROCKPATH@/rosenbrock.py}}
 
-    \exampleitem
+    \shortexampleitem
         {MATLAB/Octave}
-        {\lstinputlisting[style=Matlab,linerange=Functions0-Functions1]{@ROSENBROCKPATH@/rosenbrock.m}}
+        {\lstinputlisting[style=Matlab,linerange=Functions0-Functions1,widthgobble=1*4]{@ROSENBROCKPATH@/rosenbrock.m}}
 \end{boldlist}
 \noindent As another example, we accomplish the same task in our simple equality example with the code
 \begin{boldlist}
-    \exampleitem
+    \shortexampleitem
         {C++}
-        {\lstinputlisting[style=C++,linerange=Functions0-Functions1]{@SIMPLEEQUALITYPATH@/simple_equality.cpp}}
+        {\lstinputlisting[style=C++,linerange=Functions0-Functions1,widthgobble=1*4]{@SIMPLEEQUALITYPATH@/simple_equality.cpp}}
 
-    \exampleitem
+    \shortexampleitem
         {Python}
         {\lstinputlisting[style=Python,linerange=Functions0-Functions1]{@SIMPLEEQUALITYPATH@/simple_equality.py}}
 
-    \exampleitem
+    \shortexampleitem
         {MATLAB/Octave}
-        {\lstinputlisting[style=Matlab,linerange=Functions0-Functions1]{@SIMPLEEQUALITYPATH@/simple_equality.m}}
+        {\lstinputlisting[style=Matlab,linerange=Functions0-Functions1,widthgobble=1*4]{@SIMPLEEQUALITYPATH@/simple_equality.m}}
 \end{boldlist}
 
 
@@ -1674,68 +1859,68 @@ state = Optizelle.Constrained.Algorithms.getMin(X,Y,Z,msg,fns,state);
         {\lstinputlisting[style=Matlab]{solver.m}}
         {Use as is}
 \end{boldlist}
-\noindent As was in the case in the section \hyperref[sec:state]{\secstate}, \textct{XX}, \textct{YY}, and \text{ZZ} in C++ and \textct{X}, \textct{Y}, and \text{Z} in Python and MATLAB/Octave corresponds to the vector spaces $X$, $Y$, and $Z$ described in the section \hyperref[sec:importvs]{\secimportvs}.  Likely, they are just \textct{Optizelle::Rm} or \textct{Optizelle.Rm}.  Next, we call the function with a messaging object, \textct{msg}.  In the simple case, we can simply use \textct{Optizelle::Messaging()} in C++, \textct{Optizelle.Messaging()} in Python, and \textct{Optizelle.Messaging} in MATLAB/Octave.  For more complicated cases, see the section \hyperref[sec:messaging]{\secmessaging}.  Finally, we pass in the state and bundle of functions that we discussed in the sections \hyperref[sec:state]{\secstate} and \hyperref[sec:accumulatefns]{\secaccumulatefns}, respectively.
+\noindent As was in the case in the section \hyperref[sec:state]{\secstate}, \textct{XX}, \textct{YY}, and \text{ZZ} in C++ and \textct{X}, \textct{Y}, and \text{Z} in Python and MATLAB/Octave corresponds to the vector spaces $X$, $Y$, and $Z$ described in the section \hyperref[sec:importvs]{\secimportvs}.  Likely, they are just \textct{Optizelle::Rm} or \textct{Optizelle.Rm}.  Next, we call the function with a messaging object, \textct{msg}.  In the simple case, we can simply use \textct{Optizelle::Messaging()} in C++, \textct{Optizelle.Messaging()} in Python, and \textct{Optizelle.Messaging} in MATLAB/Octave.  For more complicated cases, see the section \hyperref[sec:messaging]{\secmessaging}.  Finally, we pass in the state and bundle of functions that we discussed in the sections \hyperref[sec:state]{\secstate} and \hyperref[sec:fns]{\secfns}, respectively.
         
         In our Rosenbrock example, we call Optizelle's solver with the code:
 \begin{boldlist}
-    \exampleitem
+    \shortexampleitem
         {C++}
-        {\lstinputlisting[style=C++,linerange=Solver0-Solver1]{@ROSENBROCKPATH@/rosenbrock.cpp}}
+        {\lstinputlisting[style=C++,linerange=Solver0-Solver1,widthgobble=1*4]{@ROSENBROCKPATH@/rosenbrock.cpp}}
 
-    \exampleitem
+    \shortexampleitem
         {Python}
         {\lstinputlisting[style=Python,linerange=Solver0-Solver1]{@ROSENBROCKPATH@/rosenbrock.py}}
 
-    \exampleitem
+    \shortexampleitem
         {MATLAB/Octave}
-        {\lstinputlisting[style=Matlab,linerange=Solver0-Solver1]{@ROSENBROCKPATH@/rosenbrock.m}}
+        {\lstinputlisting[style=Matlab,linerange=Solver0-Solver1,widthgobble=1*4]{@ROSENBROCKPATH@/rosenbrock.m}}
 \end{boldlist}
 \noindent With the simple equality example, this becomes: 
 \begin{boldlist}
-    \exampleitem
+    \shortexampleitem
         {C++}
-        {\lstinputlisting[style=C++,linerange=Solver0-Solver1]{@SIMPLEEQUALITYPATH@/simple_equality.cpp}}
+        {\lstinputlisting[style=C++,linerange=Solver0-Solver1,widthgobble=1*4]{@SIMPLEEQUALITYPATH@/simple_equality.cpp}}
 
-    \exampleitem
+    \shortexampleitem
         {Python}
         {\lstinputlisting[style=Python,linerange=Solver0-Solver1]{@SIMPLEEQUALITYPATH@/simple_equality.py}}
 
-    \exampleitem
+    \shortexampleitem
         {MATLAB/Octave}
-        {\lstinputlisting[style=Matlab,linerange=Solver0-Solver1]{@SIMPLEEQUALITYPATH@/simple_equality.m}}
+        {\lstinputlisting[style=Matlab,linerange=Solver0-Solver1,widthgobble=1*4]{@SIMPLEEQUALITYPATH@/simple_equality.m}}
 \end{boldlist}
 
 \section{\secextract}\label{sec:extract}
 
-        After the optimization routine concludes, the solution resides inside of the optimization state in a variable called \textct{x}.  At this point, we can examine our solution and run any post optimization diagnostics we require.
+        After the optimization routine concludes, the solution resides inside of the optimization state in a variable called \textctref{x} and the reason we stopped the optimization resides in a variable called \textctref{opt_stop}.  At this point, we can examine our solution and run any post optimization diagnostics we require.
 
         In our Rosenbrock example, we print out the final solution with the code: 
 \begin{boldlist}
-    \exampleitem
+    \shortexampleitem
         {C++}
-        {\lstinputlisting[style=C++,linerange=Extract0-Extract1]{@ROSENBROCKPATH@/rosenbrock.cpp}}
+        {\lstinputlisting[style=C++,linerange=Extract0-Extract1,widthgobble=1*4]{@ROSENBROCKPATH@/rosenbrock.cpp}}
 
-    \exampleitem
+    \shortexampleitem
         {Python}
         {\lstinputlisting[style=Python,linerange=Extract0-Extract1]{@ROSENBROCKPATH@/rosenbrock.py}}
 
-    \exampleitem
+    \shortexampleitem
         {MATLAB/Octave}
-        {\lstinputlisting[style=Matlab,linerange=Extract0-Extract1]{@ROSENBROCKPATH@/rosenbrock.m}}
+        {\lstinputlisting[style=Matlab,linerange=Extract0-Extract1,widthgobble=1*4]{@ROSENBROCKPATH@/rosenbrock.m}}
 \end{boldlist}
 \noindent In our simple equality example, this becomes: 
 \begin{boldlist}
-    \exampleitem
+    \shortexampleitem
         {C++}
-        {\lstinputlisting[style=C++,linerange=Extract0-Extract1]{@SIMPLEEQUALITYPATH@/simple_equality.cpp}}
+        {\lstinputlisting[style=C++,linerange=Extract0-Extract1,widthgobble=1*4]{@SIMPLEEQUALITYPATH@/simple_equality.cpp}}
 
-    \exampleitem
+    \shortexampleitem
         {Python}
         {\lstinputlisting[style=Python,linerange=Extract0-Extract1]{@SIMPLEEQUALITYPATH@/simple_equality.py}}
 
-    \exampleitem
+    \shortexampleitem
         {MATLAB/Octave}
-        {\lstinputlisting[style=Matlab,linerange=Extract0-Extract1]{@SIMPLEEQUALITYPATH@/simple_equality.m}}
+        {\lstinputlisting[style=Matlab,linerange=Extract0-Extract1,widthgobble=1*4]{@SIMPLEEQUALITYPATH@/simple_equality.m}}
 \end{boldlist}
         
 \section{\seccompilerun}\label{sec:compilerun}
@@ -1817,127 +2002,819 @@ In Octave, this becomes
         \textct{OCTAVE_PATH=/usr/share/optizelle/matlab octave}
 \end{center}
 
-\chapter{Optimization Parameters}\label{ch:parameters}
+\chapter{\chparams}\label{ch:params}
+        
+        The parameters that guide the optimization solver have a dramatic effect its performance.  To that end, we find each of these parameters within the optimization state that we initially discussed in the section \hyperref[sec:state]{\secstate}.  These parameters are based on the cannonical formulations
+\begin{center}
+    \usebox{\boxOptimizationTypes}
+\end{center}
+\noindent and come in one of nine types:
+\begin{boldlist}
+    \typeitem
+        {\textctlabel{Real}}
+        {Floating point numbers.  In C++, this may be a type such as \textct{double} or \textct{float} as long as it matches the template parameters used in items such as \textct{state} and \textct{fns}.  In Python and Matlab/Octave, we use the default floating point representation.}
 
-\chapter{Input Specifications}\label{ch:Input}
+    \typeitem
+        {\textctlabel{Natural}}
+        {Nonnegative integer.  In C++, we use the type \textct{Optizelle::Natural}, which we set to be \textct{size_t}.  In Python, we use the default integer representation.  In MATLAB/Octave, we use the default floating point representation.}
 
-        The parameters that guide the optimization solver have a dramatic effect on the performance of the internal algorithms.  As such, we catalog these parameters and their affect below. 
+    \typeitem
+        {\textctlabel{Enumerated}}
+        {Enumerated type.  In C++, we use an \textct{enum} type called \textct{t} wrapped inside a namespace that we type explicitely to \textct{Natural}.  For example, we refer to the algorithm class as \textctref{AlgorithmClass} and define its type as \textct{AlgorithmClass::t}.  Then, we refer to the enumerated values as 
+        \begin{itemize}
+            \item \textct{AlgorithmClass::TrustRegion},
+            \item \textct{AlgorithmClass::LineSearch},
+            \item \textct{AlgorithmClass::UserDefined}.
+        \end{itemize}
+        In Python, we use integers, which we wrap inside of a class.  For example, the class \textct{AlgorithmClass} contains three integer values that we access with
+        \begin{itemize} 
+            \item \textct{AlgorithmClass.TrustRegion},
+            \item \textct{AlgorithmClass.LineSearch},
+            \item \textct{AlgorithmClass.UserDefined}.
+        \end{itemize}
+        In MATLAB/Octave, we use floating point numbers, which we wrap inside of a structured array.  For example, the structure array \textct{AlgorithmClass} contains three floating point values that we designate as
+        \begin{itemize} 
+            \item \textct{AlgorithmClass.TrustRegion},
+            \item \textct{AlgorithmClass.LineSearch},
+            \item \textct{AlgorithmClass.UserDefined}.
+        \end{itemize}
+        In all cases, we also provide a function called \textct{to_string} in the class or namespace that converts the enumerated type to a string with the name of the enumerated element.  Using our previous example of \textctref{AlgorithmClass}, in C++ we use
+        \begin{center}
+            \textct{AlgorithmClass::to_string}
+            \end{center}
+        whereas in Python and MATLAB/Octave we use
+        \begin{center}
+            \textct{AlgorithmClass.to_string}.
+        \end{center}
+        As to our specific enumerated types, we ellaborate on them \hyperref[lst:enumerated]{below}.}
 
-\begin{longtable}{llp{0.4\textwidth}}
-\multicolumn{3}{p{\textwidth}}{\bf Parameters for: Unconstrained, Inequality Constrained, Equality Constrained, Constrained}\\
-Name & Default & Description\\
-\texttt{eps\_grad} & $10^{-8}$ 
-    & Relative tolerance for the gradient stopping criteria.  In unconstrained problems, Optizelle terminates when $\| \nabla f(x_k) \| \leq \epsilon \| \nabla f(x_0) \|$ where $x_k$ denotes the solution at the $k$-th iteration.  For inequality constrained problems, the gradient stopping criteria is $\| \ineqGradLag{x_k}{z_k} \| \leq \epsilon \| \ineqGradLag{x_0}{z_0}) \|$.  For equality constrained problems, this becomes $\| \eqGradLag{x_k}{y_k} \| \leq \epsilon \| \eqGradLag{x_0}{y_0} \|$.  Finally, for constrained problems, the stopping criteria is $\| \conGradLag{x_k}{y_k}{z_k} \| \leq \epsilon \| \conGradLag{x_0}{y_0}{z_0} \|$.\\
-\\
-\texttt{eps\_dx} & $10^{-8}$
-    & Relative tolerance for the step length stopping criteria.  In unconstrained problems, Optizelle terminates when $\|\delta x\| \leq \epsilon \|\nabla f(x_0)\|$ where $\delta x$ denotes the step in the optimization variables at the current iteration and $x_0$ denotes the initial guess provided to the optimization.  For inequality constrained problems, Optizelle terminates when $\|\delta x\| \leq \epsilon \| \ineqGradLag{x_0}{z_0} \|$.  For equality constrained problems, this becomes $\|\delta x\| \leq \epsilon \| \eqGradLag{x_0}{y_0} \|$.  For constrained problems, this becomes $\|\delta x\| \leq \epsilon \| \conGradLag{x_0}{y_0}{z_0} \|$.\\
-\\
-\texttt{stored\_history} & 0
-    & Number of vectors stored for use with quasi-Newton methods such as SR1 and BFGS\\
-\\
-\texttt{history\_reset} & 5
-    & Number of failed trust-region iterations or line-search batches before the quasi-Newton information is discarded and Optizelle takes a steepest descent direction.\\
-\\
-\texttt{iter\_max} & 10
-    & Maximum number of optimization iterations.\\
-\\
-\texttt{krylov\_iter\_max} & 10 
-    & Maximum number of iterations taken by either truncated-CG or truncated-MINRES when solving the optimality system.\\
-\\
-\texttt{krylov\_orthog\_max} & 0 
-    & Numbers of vectors stored and used in the orthogonalization of truncated-CG or truncated-MINRES.  In exact arithmetic, the number can be provably 0. In practice, if memory is available, it may be worthwhile to over orthogonalize. \\
-\\
-\texttt{eps\_krylov} & $10^{-2}$
-    & Relative stopping criteria for truncated-CG or truncated-MINRES.  In truncated-CG, the stopping criteria when solving the system $Ax=b$ with preconditioner $B$ is $\|B(Ax_k-b)\|\leq \epsilon\|B(Ax_0-b)\|$.  In truncated-MINRES, the stopping criteria is $\|Ax_k-b\|_B \leq \epsilon\|Ax_0-b\|_B$.\\
-\\
-\texttt{krylov\_solver} & \texttt{ConjugateDirection}
-    & Linear system solver used when solving the optimality conditions.  This can either be \texttt{ConjugateDirection} or \texttt{MINRES}.\\
-\\
-\texttt{algorithm\_class} & \texttt{TrustRegion}
-    & Class of algorithm used in optimization.  This can either be \texttt{TrustRegion}, \texttt{LineSearch}, or \texttt{UserDefined}.\\
-\\
-\texttt{PH\_type} & \texttt{Identity}
-    & Preconditioner used when solving the optimality conditions.  This can be either \texttt{Identity}, \texttt{InvBFGS}, or \texttt{InvSR1}, which correspond to the identity operator, a BFGS-based preconditioner, or a SR1 based preconditioner, respectively.\\
-\texttt{H\_type} & \texttt{UserDefined}
-    & Hessian approximation for the objective function.  This can be either \texttt{UserDefined}, \texttt{Identity}, \texttt{ScaledIdentity}, \texttt{BFGS}, or \texttt{SR1}.  If \texttt{UserDefined} is chosen, Optizelle uses the \texttt{hessvec} calculation inside of the objective function to calculate the Hessian-vector product.  Otherwise, the \texttt{Identity}, \texttt{BFGS}, and \texttt{SR1} approximations corresponds to the identity operator, BFGS, and SR1 operators, respectively.  Finally, the \texttt{ScaledIdentity} option directs Optizelle to use a scaled version of the identity matrix defined as $\|\nabla f(x)\|/(2\Delta) I$ where $\Delta$ denotes the trust-region radius.  This forces the algorithm to take a steepest-descent step the size of the trust-region at every iteration.  This implements a steepest-descent algorithm with a trust-region method. \\
-\\
-\texttt{msg\_level} & 1
-    & Controls the amount of diagnostic output produced by Optizelle.  Here, 0 denotes no output and 1 denotes print information about each optimization iteration.\\
-\\
-\texttt{delta} & 1.0
-    & Initial size of the trust-region radius\\
-\\
-\texttt{eta1} & 0.1
-    & When the actual versus predicted reduction for a trust-region method is below this threshold, the step is rejected.  Otherwise, it is accepted.\\
-\\
-\texttt{eta2} & 0.9
-    & When the actual versus predicted reduction for a trust-region method is above this threshold, the trust-region radius is increased when the trust-region radius inhibits the progress of the algorithm.\\
-\\
-\texttt{alpha0} & 1.0
-    & Initial line-search step length.\\
-\\
-\texttt{linesearch\_iter\_max} & 5
-    & Maximum number of line-search iterations conducted before checking for a reduction in the objective value.\\
-\\
-\texttt{dir} & \texttt{SteepestDescent}
-    & Line-search direction taken by a line-search algorithm.  This can be either \texttt{SteepestDescent}, \texttt{FletcherReeves}, \texttt{PolakRibiere}, \texttt{HestenesStiefel}, \texttt{BFGS}, or \texttt{NewtonCG}.  The \texttt{FletcherReeves}, \texttt{PolakRibiere}, and \texttt{HestenesStiefel} directions corresponds to different flavors of Nonlinear-CG.  The \texttt{BFGS} direction implements a standard BFGS algorithm.  Finally, \texttt{NewtonCG} defines a Newton-CG algorithm that uses the current Hessian approximation defined by \texttt{H\_type} in order to calculate the direction.\\
-\\
-\texttt{kind} & \texttt{GoldenSection}
-    & Kind of line-search algorithm used in a line-search algorithm.  This can be either \texttt{GoldenSection}, \texttt{BackTracking}, \texttt{TwoPointA}, or \texttt{TwoPointB}.  The algorithms \texttt{GoldenSection} and \texttt{BackTracking} correspond to a golden section search and a back tracking line-search, respectively.  \texttt{TwoPointA} and \texttt{TwoPointB} correspond to a line-search based on a two-point approximation of the Hessian.  This is used by the Barzilai-Borwein algorithm for unconstrained optimization.  If either \texttt{TwoPointA} or \texttt{TwoPointB} are chosen, it is important to set \texttt{dir} to \texttt{SteepestDescent}.\\
-\\
-\multicolumn{3}{p{\textwidth}}{\bf Parameters for: Inequality Constrained, Constrained}\\
-Name & Default & Description\\
-\texttt{eps\_mu} & $10^{-8}$
-    & Absolute tolerance for the interior point stopping criteria.  Optizelle defines the estimate of the infeasibility with respect to the complementary slackness stopping condition as $\langle z,h(x) \rangle/\langle e,e\rangle$ where $z$ denotes the inequality multiplier and $e$ denotes the identity element for the inequality algebra.  For linear bound constraints, this is the vector of all ones, so $\langle e,e\rangle=m$ where $m$ denotes the number of variables.  Hence, the stopping criteria for the inequality constraints is $\mu < \epsilon$.  Since we always choose a starting inequality multiplier so that $\langle z,h(x) \rangle/\langle e,e\rangle=1$, this tolerance is effectively a relative tolerance as well.\\
-\\
-\texttt{sigma} & $0.5$
-    & Rate at which Optizelle attempts to decrease the interior point parameter.  Specifically, if the current estimate of the interior point parameter is $\mu$, then we attempt to reduce $\mu$ to $\sigma \mu$.\\
-\\
-\texttt{gamma} & $0.95$
-    & How close Optizelle allows a step in the optimization algorithm to approach the boundary.  A step of $1.0$ would allow a step to touch the boundary of the inequality constraint in a single step, which is disallowed by the interior point algorithm.\\
-\\
-\texttt{ipm} & \texttt{PrimalDual}
-    & Kind of interior-point method used by Optizelle.  Optizelle allows either \texttt{PrimalDual}, \texttt{PrimalDualLinked}, or \texttt{LogBarrier}.  This corresponds to either a primal-dual interior point method, a primal-dual interior point method where the primal and dual step lengths are linked together, or a log-barrier algorithm.\\
-\\
-\texttt{cstrat} & \texttt{Constant}
-    & Centrality strategy used by the interior-point method.  Optizelle allows either \texttt{Constant}, \texttt{StairStep}, or \texttt{PredictorCorrector} strategies.  This corresponds to a constant reduction in the interior point parameter by $\sigma$, reducing $\sigma$ only when the relative reduction in the interior point parameter $\mu$ is less than the relative reduction in the gradient stopping condition, or a predictor-corrector strategy where on even iterations $\sigma=0$ and on odd iterations $\sigma=1$.\\
-\\
-\multicolumn{3}{p{\textwidth}}{\bf Parameters for: Equality Constrained, Constrained}\\
-Name & Default & Description\\
-\texttt{zeta} & 0.8 & Fraction of the trust-region used for the quasi-normal step.\\
-\\
-\texttt{eta0} & 0.5 & Trust-region parameter that bounds the error in the predicted-reduction.\\
-\\
-\texttt{rho} & 1.0 & Initial penalty parameter used in the augmented Lagrangian.  For globalization purposes, the equality constrained algorithm uses an augmented Lagrangian of the form $f(x)+\langle y,g(x)\rangle+\rho\|g(x)\|^2$.  For the constrained algorithms, Optizelle uses an augmented Lagrangian of the form $f(x)+\langle y,g(x)\rangle+\rho\|g(x)\|^2-\mu \textnormal{barr}(h(x))$ where $\textnormal{barr}(x)$ denotes the barrier functioned defined in the inequality algebra.\\
-\\
-\texttt{rho\_bar} & $10^{-8}$ & Fixed increase in the penalty parameter in the augmented Lagrangian merit function.\\
-\\
-\texttt{eps\_constr} & $10^{-8}$ & Relative stopping tolerance for feasibility with respect to the equality constraint.  Optizelle requires that $\|g(x_k)\|<\epsilon\|g(x_0)||$ in order to terminate where $x_k$ denotes the solution at the $k$-th iteration.\\
-\\
-\texttt{xi\_all} & $10^{-4}$ & Relative stopping tolerance for all of the augmented system solves, \texttt{xi\_qn}, \texttt{xi\_pg}, \texttt{xi\_proj}, \texttt{xi\_proj}, \texttt{xi\_tang}, and \texttt{xi\_lmh}, described below.\\
-\\
-\texttt{xi\_qn} & \texttt{xi\_all} & Relative stopping tolerance for the augmented system solve associated with the quasi-Newton step.\\
-\\
-\texttt{xi\_pg} & \texttt{xi\_all} & Relative stopping tolerance for the augmented system solve associated with the projection of the gradient prior to solving the tangential subproblem.\\
-\\
-\texttt{xi\_proj} & \texttt{xi\_all} & Relative stopping tolerance for the augmented system solve associated with the null-space projection of the iterate in the tangential subproblem.\\ 
-\\
-\texttt{xi\_tang} & \texttt{xi\_all} & Relative stopping tolerance for the augmented system solve associated with the tangential step computation after solving the tangential subproblem. \\
-\\
-\texttt{xi\_lmh} & \texttt{xi\_all} & Relative stopping tolerance for the augmented system solve associated with the equality multiplier computation.\\
-\\
-\texttt{xi\_lmg} & $10^4$ & Absolute tolerance on the residual of the equality multiplier solve. \\
-\\
-\texttt{xi\_4} & 2.0 & Tolerance for how much error is acceptable after computing the tangential step given the result from the tangential subproblem.\\
-\\
-\texttt{augsys\_iter\_max} & 100 & Maximum number of GMRES iterations allowed when solving an augmented system.\\
-\\
-\texttt{augsys\_rst\_freq} & 0 & Restarts GMRES every specified number of iterations in order to save memory.  When 0, Optizelle uses no restarting.\\
-\\
-\texttt{PSchur\_left\_type} & \texttt{Identity} & Type of left Schur preconditioner used by Optizelle during an augmented system solve.  This can be either \texttt{Identity} or \texttt{UserDefined}.  An augmented system solve finds the solution of a linear system where the operator has the form $\begin{bmatrix} I & g^\prime(x)^*\\g^\prime(x) & 0\end{bmatrix}$.  The Schur preconditioner for this problem is an operator of the form $\begin{bmatrix} I & 0\\ 0 & B\end{bmatrix}$ where $B$ is the operator specified by this parameter.  Note, if we specify $B=(g^\prime(x)g^\prime(x)^*)^{-1}$, then the augmented system solves in 3 iterations.\\
-\\
-\texttt{PSchur\_right\_type} & \texttt{Identity} & Type of right Schur preconditioner used by Optizelle during an augmented system solve.  This can be either \texttt{Identity} or \texttt{UserDefined}.
-\end{longtable}
+    \typeitem
+        {\textctlabel{X_Vector}}
+        {User defined vector within the vector space $X$, the domain of our objective function, $f:X\rightarrow\re$.} 
+
+    \typeitem
+        {\textctlabel{Y_Vector}}
+        {User defined vector within the vector space $Y$, the codomain of our equality constraint, $g:X\rightarrow Y$ with $g(x)=0$.} 
+
+    \typeitem
+        {\textctlabel{Z_Vector}}
+        {User defined vector within the vector space $Z$, the codomain of our inequality constraint, $h:X\rightarrow Z$ with $h(x)\succeq 0$.} 
+
+    \typeitem
+        {\textctlabel{List}}
+        {List of a specified kind of vectors.  In C++, this denotes a \textct{std::list}.  In Python, this becomes a \textct{list}.  Finally, in MATLAB/Octave, we use a cell array.} 
+
+    \typeitem
+        {\textctlabel{Function}}
+        {Function of a specified kind of variable.  This type represents a function inside the state structure that we use to set a number of similar parameters.  However, in the JSON parameter files, we set it like it was just another parameter.}
+\end{boldlist}
+
+\noindent We further classify our enumerated types into the following:
+
+\phantomsection\label{lst:enumerated}
+\begin{boldlist}
+    \enumitem {AlgorithmClass}
+
+    \enumitem {StoppingCondition}
+    
+    \enumitem {Operators}
+    
+    \enumitem {LineSearchDirection}
+    
+    \enumitem {LineSearchKind}
+
+    \enumitemlong {OptimizationLocation}
+    
+    \enumitem {ProblemClass}
+    
+    \enumitem {KrylovSolverTruncated}
+    
+    \enumitem {InteriorPointMethod}
+    
+    \enumitem {CentralityStrategy}
+    
+    \enumitem {FunctionDiagnostics}
+    
+    \enumitem {DiagnosticScheme}
+    
+    \enumitemalt {KrylovStop}
+\end{boldlist}
+        
+        Based on these types, we catalog the precise meaning of our parameters below.  As a note, the field \textbf{JSON Param} denotes whether or not we allow the parameter to be set in the JSON file described in the section \hyperref[sec:params]{\secparams}.  Generally, these settable pameters correspond to parameters that tune the behavior the algorithms.  The other parameters correspond to internal quantities that assist in diagnostics or advanced heuristics.
+\begin{boldlist}
+    \paramitemu
+        {eps_grad}
+        {Real}
+        {Yes}
+        {Relative tolerance for the gradient stopping criteria reported in \textctref{opt_stop}.  We satisfy this stopping criteria when 
+        \begin{boldlist}
+            \formitem
+                {$\|\uncGradLag{\textctref{x})}\| \leq \textctref{eps_grad} \cdot \textctref{norm_gradtyp}$,}
+                {$\|\eqGradLag{\textctref{x}}{\textctref{y}}\| \leq \textctref{eps_grad} \cdot \textctref{norm_gradtyp}$,}
+                {$\|\ineqGradLag{\textctref{x}}{\textctref{z}}\| \leq \textctref{eps_grad} \cdot \textctref{norm_gradtyp}$,}
+                {$\|\conGradLag{\textctref{x}}{\textctref{y}}{\textctref{z}}\| \leq \textctref{eps_grad} \cdot \textctref{norm_gradtyp}$.}
+        \end{boldlist}}
+    
+    \paramitemu
+        {eps_dx}
+        {Real}
+        {Yes}
+        {Relative tolerance for the step length stopping criteria reported in \textctref{opt_stop}.  We satisfy this stopping criteria when
+        $$
+            \|\textctref{dx}\| < \textctref{eps_dx}\cdot\textctref{norm_dxtyp}.
+        $$}
+    
+    \paramitemu
+        {stored_history}
+        {Natural}
+        {Yes}
+        {Number of vectors stored for use with quasi-Newton methods such as SR1 and BFGS.}
+
+    \paramitemu
+        {history_reset}
+        {Natural}
+        {Yes}
+        {Number of failed trust-region iterations or line-search batches before we discard the quasi-Newton information and take a step in the steepest descent direction.}
+
+    \paramitemu
+        {iter}
+        {Natural}
+        {No}
+        {Current optimiation iteration.}
+
+    \paramitemu
+        {iter_max}
+        {Natural}
+        {Yes}
+        {Maximum number of optimization iterations for the stopping criteria reported in \textctref{opt_stop}.  We satisfy this stopping critera when
+        $$
+                \textctref{iter}\geq \textctref{iter_max}
+        $$}
+
+    \paramitemu
+        {opt_stop}
+        {StoppingCondition}
+        {No}
+        {Why we've stopping the optimization.  We use the following logic when determining when to stop
+        \begin{enumerate}
+            \item If the optimiation iteration exceeds the maximum number of iterations, stop.  We control this with the parameter \textctref{iter_max}.
+            \item If size of the optimization step becomes too small, stop.  We control this with the parameter \textctref{eps_dx}.
+            \item If we have inequality constraints and the estimated interior point parameter \textctref{mu_est} becomes negative, stop.
+            \item If the size of the gradient becomes too small and we satisfy the following additional conditions, stop.  We control this with the parameter \textctref{eps_grad}.
+            \begin{enumerate}
+                \item For problems with equality constraints, we require that the norm of the equality constraint be small.  We control this with the parameter \textctref{eps_constr}.
+                \item For problems with inequality constraints, we require that estimated interior point parameter be small.  We control this with the parameter \textctref{eps_mu}.
+            \end{enumerate}
+        \end{enumerate}}
+    
+    \paramitemu
+        {krylov_iter}
+        {Natural}
+        {No}
+        {Current number of iterations taken by the truncated Krylov methods, conjugate direction and MINRES, when solving the optimality conditions.} 
+    
+    \paramitemu
+        {krylov_iter_max}
+        {Natural}
+        {Yes}
+        {Maximum number of iterations taken by the truncated Krylov solver, \textctref{krylov_solver}, when solving the optimality conditions.} 
+    
+    \paramitemu
+        {krylov_iter_total}
+        {Natural}
+        {No}
+        {Total number of iterations ever taken by the truncated Krylov, \textctref{krylov_solver}, when solving the optimality conditions.  This gives information about the total amount computational effort taken by Optizelle.}
+    
+    \paramitemu
+        {krylov_orthog_max}
+        {Natural}
+        {Yes}
+        {Numbers of vectors stored and used in the orthogonalization of our truncated Krylov solver, \textctref{krylov_solver}.  In order to turn conjugate direction into conjugate gradient, set this to parameter to $1$.  In practice, if memory is available, it may be worthwhile to over orthogonalize.} 
+    
+    \paramitemu
+        {krylov_stop}
+        {KrylovStop}
+        {No}
+        {Reason why the truncated Krylov solver, \textctref{krylov_solver}, exited when solving the optimality system.}
+    
+    \paramitemu
+        {krylov_rel_err}
+        {Real}
+        {No}
+        {Relative error in the solution returned by the truncated Krylov solver, \textctref{krylov_solver}, when solving the optimality system.}
+    
+    \paramitemu
+        {eps_krylov}
+        {Real}
+        {Yes}
+        {Relative stopping criteria for our truncated Krylov solver, \textctref{krylov_solver}.  In conjugate directions, when solving the system $Ax=b$ with preconditioner $B$, we use the stopping criteria  $\|B(Ax_k-b)\|\leq \textctref{eps_krylov}\|B(Ax_0-b)\|$.  In MINRES, we use the stopping criteria $\|Ax_k-b\|_B \leq \textctref{eps_krylov}\|Ax_0-b\|_B$.}
+    
+    \paramitemu
+        {krylov_solver}
+        {KrylovSolverTruncated}
+        {Yes}
+        {Truncated krylov solver used when solving the optimality conditions.}
+    
+    \paramitemu
+        {algorithm_class}
+        {AlgorithmClass}
+        {Yes}
+        {Class of algorithm used in optimization.}
+    
+    \paramitemu
+        {PH_type}
+        {Operators}
+        {Yes}
+        {Preconditioner used when solving the optimality conditions.  Note, in order to accomodate the nullspace projection, we currently ignore this quantity if problems with equality constraints.}
+    
+    \paramitemu
+        {H_type}
+        {Operators}
+        {Yes}
+        {Hessian approximation for the objective function.} 
+    
+    \paramitemu
+        {norm_gradtyp}
+        {Real}
+        {No}
+        {Norm of a typical gradient defined as
+        \begin{boldlist}
+            \formitem
+                {$\|\uncGradLag{\textctref{x}_0}\|$,} 
+                {$\|\eqGradLag{\textctref{x}_0}{\textctref{y}_0}\|$,}
+                {$\|\ineqGradLag{\textctref{x}_0}{\textctref{z}_0}\|$,}
+                {$\|\conGradLag{\textctref{x}_0}{\textctref{y}_0}{\textctref{z}_0}\|$,}
+        \end{boldlist}
+        where $\textctref{x}_0$, $\textctref{y}_0$, and $\textctref{z}_0$ denote our variables at the first iteration.  We use \textctref{norm_gradtyp} with the stopping criteria described in \textctref{eps_grad}.}
+    
+    \paramitemu
+        {norm_dxtyp}
+        {Real}
+        {No}
+        {Norm of a typical optimization step.  Similar to \textctref{norm_gradtyp}, we set this to be the gradient found at the initial guess and use it in the stopping criteria described in \textctref{eps_dx}.  Since an optimization algorithm may have numerical issues on the first optimization iteration, we do not use the first optimization step generated.  By using the norm of the gradient, we approximate the norm of a step taken by the steepest descent algorithm.}
+    
+    \paramitemu
+        {x}
+        {X_Vector}
+        {No}
+        {Optimization variable.}
+    
+    \paramitemu
+        {grad}
+        {X_Vector}
+        {No}
+        {Gradient of the objective, $\nabla f(\textctref{x})$. }
+    
+    \paramitemu
+        {dx}
+        {X_Vector}
+        {No}
+        {Optimization step.  Every iteration we set \textctref{x}=\textctref{x}+\textctref{dx}.}
+    
+    \paramitemu
+        {x_old}
+        {X_Vector}
+        {No}
+        {Optimization variable from the last iteration.}
+    
+    \paramitemu
+        {grad_old}
+        {X_Vector}
+        {No}
+        {Gradient of the objective from the last iteration.}
+    
+    \paramitemu
+        {dx_old}
+        {X_Vector}
+        {No}
+        {Optimization step from the last iteration.}
+    
+    \paramiteml
+        {oldY}
+        {X_Vector}
+        {No}
+        {Difference in prior gradients,
+        $$
+            [\nabla f(\textctref{x}_{\textctref{iter}})-\nabla f(\textctref{x}_{\textctref{iter}-1}),\dots,\nabla f(\textctref{x}_{\textctref{iter}-\textctref{stored_history}})-\nabla f(\textctref{x}_{\textctref{iter}-\textctref{stored_history}-1})].
+        $$
+        We use this list in our quasi-Newton methods.}
+    
+    \paramiteml
+        {oldS}
+        {X_Vector}
+        {No}
+        {Difference in prior optimization steps,
+        $$
+            [x_{\textctref{iter}}-x_{\textctref{iter}-1},\dots,x_{\textctref{iter}-\textctref{stored_history}}-x_{\textctref{iter}-\textctref{stored_history}-1}].
+        $$
+        We use this list in our quasi-Newton methods.}
+    
+    \paramitemu
+        {f_x}
+        {Real}
+        {No}
+        {Current value of the objective function, $f(\textctref{x})$.}
+    
+    \paramitemu
+        {f_xpdx}
+        {Real}
+        {No}
+        {Value of the objective function at the trial step, $f(\textctref{x}+\textctref{dx})$.}
+    
+    \paramitemu
+        {msg_level}
+        {Natural}
+        {Yes}
+        {Messaging level.  To turn messages off, use $0$.  For normal messaging, set to $1$.}
+
+    \paramitemu
+        {delta}
+        {Real}
+        {Yes}
+        {Trust region radius.  We use this as a starting value.  Later, we adjust the radius depending on the behavior of the algorithms.}
+
+    \paramitemu
+        {eta1}
+        {Real}
+        {Yes}
+        {When the actual versus predicted reduction for a trust-region method is below this threshold, we reject the step.  Otherwise, we accept it.}
+
+    \paramitemu
+        {eta2}
+        {Real}
+        {Yes}
+        {When the actual versus predicted reduction for a trust-region method is above this threshold and the size of the trial step equals the trust-region radius, we increase the size of the trust-region radius.}
+
+    \paramitemu
+        {ared}
+        {Real}
+        {No}
+        {Actual reduction in the merit function between the current iterate and the iterate after taking the trial step,
+        $$
+            \textctref{ared}\equiv\textct{merit}(\textctref{x}) - \textct{merit}(\textctref{x}+\textctref{dx}).
+        $$
+        We use the following merit functions, $\textct{merit}:\textctref{X_Vector}\rightarrow\textctref{Real}$,
+        \begin{boldlist}
+            \formitem
+                {$\uncMerit{\textctref{x}},$}
+                {$\eqMerit{\textctref{x}}{\textctref{y}},$}
+                {$\ineqMerit{\textctref{x}},$}
+                {$\conMerit{\textctref{x}}{\textctref{y}}.$}
+        \end{boldlist}}
+
+    \paramitemu
+        {pred}
+        {Real}
+        {No}
+        {Predicted reduction in the merit function between the current iterate and the iterate after taking the trial step,
+        $$
+            \textctref{pred}\equiv\textct{model}(0) - \textct{model}(\textctref{dx}).
+        $$
+        We use the following model functions, $\textct{model}:\textctref{X_Vector}\rightarrow\textctref{Real}$,
+        \begin{boldlist}
+            \formitem
+                {$$
+                    \uncMerit{\textctref{x}}
+                    +\langle \uncGradLag{\textctref{x}},\textctref{dx}\rangle
+                    +\frac{1}{2}\langle \uncHessVec{\textctref{x}},\textctref{dx}\rangle,
+                $$}
+                {$$\begin{array}{l}
+                    \eqMerit{\textctref{x}}{\textctref{y}}\\
+                    +\langle \eqGradLag{\textctref{x}}{\textctref{y}},\textctref{dx}\rangle\\
+                    +\frac{1}{2}\langle \eqHessVec{\textctref{x}}{\textctref{y}},\textctref{dx}\rangle,
+                \end{array}$$}
+                {$$\begin{array}{l}
+                    \ineqMerit{\textctref{x}}\\
+                    +\langle \ineqGradSchur{\textctref{x}},\textctref{dx}\rangle\\
+                    +\frac{1}{2}\langle \ineqHessVec{\textctref{x}}{\textctref{z}},\textctref{dx}\rangle,
+                \end{array}$$}
+                {$$\begin{array}{l}
+                    \conMerit{\textctref{x}}{\textctref{y}}\\
+                    +\langle \conGradSchur{\textctref{x}}{\textctref{y}},\textctref{dx}\rangle\\
+                    +\frac{1}{2}\langle \conHessVec{\textctref{x}}{\textctref{y}}{\textctref{z}},\textctref{dx}\rangle.
+                \end{array}$$}
+        \end{boldlist}}
+
+    \paramitemu
+        {rejected_trustregion}
+        {Natural}
+        {No}
+        {Number of rejected trust-region steps.  We use this quantity to help gauge the performance of the trust-region algorithms.}
+
+    \paramitemu
+        {alpha0}
+        {Real}
+        {Yes}
+        {Base line-search step length.  Generally, our line-search methods search for a scaling $\textctref{alpha}\in[0,2\cdot\textctref{alpha0}]$.  Once we find \textctref{alpha}, we increase \textctref{alpha0} when our search always brackets to the right and decrease it when our search always brackets to the left.}
+
+    \paramitemu
+        {alpha}
+        {Real}
+        {No}
+        {Actual line-search step length.  After our line-search process completes, we modify our step $\textctref{dx}\leftarrow \textctref{alpha} \cdot \textctref{dx}$} 
+
+    \paramitemu
+        {c1}
+        {Real}
+        {Yes}
+        {Sufficient decrease parameter.  We only take a step when $\hyperref[itm:ared]{\textct{merit}}(\textctref{x}+\textctref{alpha}\cdot\textctref{dx}) < \hyperref[itm:ared]{\textct{merit}}(\textctref{x})+\textctref{c1}\cdot\textctref{alpha}\langle\tilde{x},\textctref{dx}\rangle$ where we define $\tilde{x}$ as
+        \begin{boldlist}
+            \formitem
+                {$\uncGradLag{\textctref{x}},$}
+                {$\eqGradLag{\textctref{x}}{\textctref{y}},$}
+                {$\ineqGradSchur{\textctref{x}},$}
+                {$\conGradSchur{\textctref{x}}{\textctref{y}}.$}
+        \end{boldlist}}
+
+    \paramitemu
+        {linesearch_iter}
+        {Natural}
+        {No}
+        {Current number of iterations used in the line search.  We use this to determine the amount of computational effort used by Optizelle during the last iteration.}
+
+    \paramitemu
+        {linesearch_iter_max}
+        {Natural}
+        {Yes}
+        {Maximum number of iterations used in the line search before checking the sufficient decrease condition.  We use this to tune the amount of work done by the line search.} 
+
+    \paramitemu
+        {linesearch_iter_total}
+        {Natural}
+        {No}
+        {Total number of iterations ever taken by the line search.  We use this to determine the amount of computational effort used by Optizelle.}
+
+    \paramitemu
+        {eps_ls}
+        {Real}
+        {Yes}
+        {Relative stopping tolerance used by the line search.  At the moment, we do not use this parameter.}
+
+    \paramitemu
+        {dir}
+        {LineSearchDirection}
+        {Yes}
+        {Line-search direction taken by the line-search algorithm.}
+
+    \paramitemu
+        {kind}
+        {LineSearchKind}
+        {Yes}
+        {Kind of line-search used in the line-search algorithm.} 
+
+    \paramitemu
+        {f_diag}
+        {FunctionDiagnostics}
+        {Yes}
+        {Function diagnostics on $f$.}
+
+    \paramitemu
+        {dscheme}
+        {DiagnosticScheme}
+        {Yes}
+        {Which diagnostic scheme, if any, to employ.}
+
+    \paramiteme
+        {y}
+        {Y_Vector}
+        {No}
+        {Equality multiplier (dual variable or Lagrange multiplier.)}
+
+    \paramiteme
+        {y}
+        {Y_Vector}
+        {No}
+        {Equality multiplier (dual variable or Lagrange multiplier.)}
+
+    \paramiteme
+        {dy}
+        {Y_Vector}
+        {No}
+        {Step in the equality multiplier.  Every iteration we set \textctref{y}=\textctref{y}+\textctref{dy}.} 
+
+    \paramiteme
+        {zeta}
+        {Real}
+        {Yes}
+        {Fraction of the total trust region used in the quasi-normal step.}
+
+    \paramiteme
+        {eta0}
+        {Real}
+        {Yes}
+        {Trust-region parameter that bounds the error in the predicted-reduction.}
+
+    \paramiteme
+        {rho}
+        {Real}
+        {Yes}
+        {Penalty parameter for the augmented-Lagrangian.  In problems with equality constraints, this term appears in the merit functions
+        \begin{boldlist}
+            \formiteme
+                {$\eqMerit{\textctref{x}}{\textctref{y}},$}
+                {$\conMerit{\textctref{x}}{\textctref{y}}.$}
+        \end{boldlist}}
+
+    \paramiteme
+        {rho_old}
+        {Real}
+        {No}
+        {Penalty parameter from the last iteration.} 
+
+    \paramiteme
+        {rho_bar}
+        {Real}
+        {Yes}
+        {Fixed increase in the penalty parameter in the augmented Lagrangian merit function.}
+
+    \paramiteme
+        {eps_constr}
+        {Real}
+        {Yes}
+        {Relative stopping tolerance for feasibility with respect to the equality constraint reported in \textctref{opt_stop}.  We satisfy this stopping criteria when
+        $$
+            \|g(\textctref{x})\| < \textctref{eps_constr}\cdot\textctref{norm_gxtyp}.
+        $$}
+
+    \paramiteme
+        {xi_qn}
+        {Real}
+        {Yes}
+        {Relative stopping tolerance for the augmented system solve associated with the quasi-Newton step.}
+
+    \paramiteme
+        {xi_pg}
+        {Real}
+        {Yes}
+        {Relative stopping tolerance for the augmented system solve associated with the projection of the gradient prior to solving the tangential subproblem.}
+
+    \paramiteme
+        {xi_proj}
+        {Real}
+        {Yes}
+        {Relative stopping tolerance for the augmented system solve associated with the null-space projection of the iterate in the tangential subproblem.}
+
+    \paramiteme
+        {xi_tang}
+        {Real}
+        {Yes}
+        {Relative stopping tolerance for the augmented system solve associated with the tangential step computation after solving the tangential subproblem.}
+
+    \paramiteme
+        {xi_lmh}
+        {Real}
+        {Yes}
+        {Relative stopping tolerance for the augmented system solve associated with the equality multiplier computation.}
+
+    \paramitemf
+        {xi_all}
+        {Real}
+        {Yes}
+        {Relative stopping tolerance for all of the augmented system solves, \textctref{xi_qn}, \textctref{xi_pg}, \textctref{xi_proj}, \textctref{xi_proj}, \textctref{xi_tang}, and \textctref{xi_lmh}.}
+
+    \paramiteme
+        {xi_lmg}
+        {Real}
+        {Yes}
+        {Absolute tolerance on the residual of the equality multiplier solve.}
+
+    \paramiteme
+        {xi_4}
+        {Real}
+        {Yes}
+        {Tolerance for how much error is acceptable after computing the tangential step given the result from the tangential subproblem.}
+
+    \paramiteme
+        {rpred}
+        {Real}
+        {No}
+        {Residual term in the predicted reduction.  We use this quantity to determine if we computed a tangential step that is accurate enough.}
+
+    \paramiteme
+        {PSchur_left_type}
+        {Operator}
+        {Yes}
+        {Left preconditioner for the augmented system.  For a full discussion of this preconditioner, see the section \hyperref[sec:preconditioners]{\secpreconditioners}.}
+
+    \paramiteme
+        {PSchur_right_type}
+        {Operator}
+        {Yes}
+        {Right preconditioner for the augmented system.  For a full discussion of this preconditioner, see the section \hyperref[sec:preconditioners]{\secpreconditioners}.}
+
+    \paramiteme
+        {augsys_iter_max}
+        {Natural}
+        {Yes}
+        {Maximum number of GMRES iterations allowed when solving an augmented system.}
+
+    \paramiteme
+        {augsys_rst_freq}
+        {Natural}
+        {Yes}
+        {How often we restart the augmented system solve.  We restart GMRES every specified number of iterations in order to save memory.  When 0, we do not restart.} 
+
+    \paramiteme
+        {g_x}
+        {Y_Vector}
+        {No}
+        {Equality constraint evaluated a \textctref{x}, $g(\textctref{x})$.  We use this in the quasinormal step as well as in the computation of the linear Taylor series at \textctref{x} in the direciton \textctref{dx_n}.}
+
+    \paramiteme
+        {norm_gxtyp}
+        {Real}
+        {No}
+        {Norm of a typical equality constraint.  Generally, we use the norm of the equality constraint at the first iteration.} 
+
+    \paramiteme
+        {gpxdxn_p_gx}
+        {Y_Vector}
+        {No}
+        {Linear Taylor series at \textctref{x} in the direction \textctref{dx_n}.  We use this both in the predicted reduction as well as the residual predicted reduction.}
+
+    \paramiteme
+        {gpxdxt}
+        {Y_Vector}
+        {No}
+        {Derivative of the constraint applied to the tangential step this is used in the residual predicted reduction.}
+
+    \paramiteme
+        {norm_gpxdxnpgx}
+        {Real}
+        {No}
+        {Norm of \textctref{gpxdxn_p_gx}.  We use this in the penalty parameter computation and predicted reduction.}
+
+    \paramiteme
+        {dx_n}
+        {X_Vector}
+        {No}
+        {Normal step.}
+
+    \paramiteme
+        {dx_ncp}
+        {X_Vector}
+        {No}
+        {Cauchy point for normal step.}
+
+    \paramiteme
+        {dx_t}
+        {X_Vector}
+        {No}
+        {(Corrected) tangential step.}
+
+    \paramiteme
+        {dx_t}
+        {X_Vector}
+        {No}
+        {(Corrected) tangential step.}
+
+    \paramiteme
+        {dx_t_uncorrected}
+        {X_Vector}
+        {No}
+        {Tangential step prior to correction.}
+
+    \paramiteme
+        {dx_tcp_uncorrected}
+        {X_Vector}
+        {No}
+        {Cauchy point for tangential step prior to correction.}
+
+    \paramiteme
+        {H_dxn}
+        {X_Vector}
+        {No}
+        {Hessian applied to the normal step.  We require this in \textctref{W_gradpHdxn} as well as the predicted reduction.}
+
+    \paramiteme
+        {W_gradpHdxn}
+        {X_Vector}
+        {No}
+        {Quantity grad $f(\textctref{x}) + g^\prime(\textctref{x})*\textctref{y} + \hyperref[itm:H_type]{H} \textctref{dx_n}$ projected into the null-space of the constraints.  We require this in the tangential subproblem and the predicted reduction.}
+    
+    \paramiteme
+        {H_dxtuncorrected}
+        {X_Vector}
+        {No}
+        {Hessian applied to the uncorrected tangential step.  We require this in the predicted reduction.}
+
+    \paramiteme
+        {g_diag}
+        {FunctionDiagnostics}
+        {Yes}
+        {Function diagnostics on $g$.}
+
+    \paramitemi
+        {z}
+        {Z_Vector}
+        {No}
+        {Inequality multiplier (dual variable or Lagrange multiplier.)}
+
+    \paramitemi
+        {dz}
+        {Z_Vector}
+        {No}
+        {Step in the inequality multiplier.  Every iteration we set \textctref{z}=\textctref{z}+\textctref{dz}.} 
+
+    \paramitemi
+        {h_x}
+        {Z_Vector}
+        {No}
+        {The inequality constraint evaluated at x.  In theory, we can always just evaluate this when we need it.  However, we require its computation both in the gradient as well as Hessian calculations.  More specifically, when computing with SDP constraints, we require a factorization of this quantity.  By caching it, we have the ability to cache the factorization.}
+
+    \paramitemi
+        {mu}
+        {Real}
+        {No}
+        {Interior point parameter.  As the interior point method progresses, we drive this value toward zero.}
+
+    \paramitemi
+        {mu_est}
+        {Real}
+        {No}
+        {Current interior point estimate.  We define this as
+        $$
+                \textctref{mu_est}\equiv\frac{\langle \textctref{z},\textctref{h_x} \rangle}{\langle e,e\rangle}.
+        $$}
+
+    \paramitemi
+        {mu_typ}
+        {Real}
+        {No}
+        {Typical value for \textctref{mu}.  Generally, we use the value of \textctref{mu_est} at the first iteration, which we currently guarantee to be $1$.}
+
+    \paramitemi
+        {eps_mu}
+        {Real}
+        {Yes}
+        {Relative stopping tolerance for satisfying the complementary slackness condition for the inequality constraint.  We satisfy this stopping criteria when
+        $$
+                \textctref{mu_est} \leq \textctref{eps_mu}\cdot\textctref{mu_typ}
+        $$}
+    
+    \paramitemi
+        {sigma}
+        {Real}
+        {Yes}
+        {Rate that we decrease the interior point parameter.  When set to 0, we take a pure optimality step.  When set to 1, we take a step toward the central path.  As such, we must balance these two desires with this parameter.  The precise behavior of how we decrease the interior point parameter is governed between this parmater and \textctref{cstrat}.}
+    
+    \paramitemi
+        {gamma}
+        {Real}
+        {Yes}
+        {How close we move to the boundary during a single step.  A step of $1.0$ allows a step to touch the boundary of the inequality constraint in a single step, which is disallowed by the interior point algorithm.}
+    
+    \paramitemi
+        {ipm}
+        {InteriorPointMethod}
+        {Yes}
+        {Type of interior point method.  In all cases, we use the same merit function described in parameter \textctref{ared}.  Rather, the difference between these algorithms lies in how we choose the inequality multiplier \textctref{z} and conduct the line search that maintains positivity with respect to the inequality constraint
+        \begin{boldlist}
+            \ipmitem
+                {Variables \textctref{z} and \textctref{dz} vary independently of \textctref{x} and \textctref{dx},}
+                {Multiplier \textctref{z} set to
+                $$
+                    L(h(\textctref{x}))^{-1} (-h^\prime(\textctref{x})\textctref{dx} \circ \textctref{z} + \textctref{mu}\cdot e),
+                $$}
+                {Multiplier \textctref{z} set to
+                $$
+                    \textctref{mu} \cdot L(h(\textctref{x}))^{-1} e.
+                $$}
+        \end{boldlist}
+        Implicitely, these choices affect the Hessian modification that we apply during the course of the interior point method.  Nevertheless, in almost all cases, we're better off using the primal-dual interior point method.}
+    
+    \paramitemi
+        {cstrat}
+        {CentralityStrategy}
+        {Yes}
+        {Centrality strategy.  This parameter affects how we follow the central path during the course of optimization.  Specifically, the complementary slackness conditions modified by the interior point algorithm require that
+        $$
+                \textctref{x}\circ\textctref{z} = \textctref{mu} \cdot e.
+        $$
+        Then, we drive \textctref{mu} toward zero.  How we drive \textctref{mu} toward zero depends on this parameter.  Precisely,
+        \begin{boldlist}
+        \cstratitem
+            {Set $\textctref{mu}=\textctref{sigma}\cdot\textctref{mu_est}$}
+            {If
+                $$
+                \log_{10}(\textctref{norm_gradtyp})-\log_{10}(\textct{norm_grad}) < \log_{10}(\textctref{mu_typ})-\log_{10}(\textctref{mu_est})
+                $$
+                where we define \textct{norm_grad} as
+                \begin{boldlist}
+                    \formitemi
+                        {$\|\ineqGradLag{\textctref{x}}{\textctref{z}}\|,$} 
+                        {$\|\conGradLag{\textctref{x}}{\textctref{y}}{\textctref{z}}\|,$} 
+                \end{boldlist}
+                then we set $\textctref{mu}=\textctref{sigma}\cdot\textctref{mu_est}$.  Otherwise, we hold \textctref{mu} constant.  In other words, we only reduce \textctref{mu} when the progress toward satisfying the gradient stopping condition exceeds that of the interior point condition.}
+            {On odd iterations, we set $\textctref{mu}=1$.  On even, we set $\textctref{mu}=0$.}
+        \end{boldlist}}
+
+    \paramitemi
+        {h_diag}
+        {FunctionDiagnostics}
+        {Yes}
+        {Function diagnostics on $h$.}
+\end{boldlist}
 
 \chapter{Output}\label{ch:Output}
 

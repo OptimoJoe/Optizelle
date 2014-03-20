@@ -1088,6 +1088,7 @@ namespace Optizelle {
     // Reasons we stop the Krylov method
     namespace KrylovStop{
         enum t{
+            //---KrylovStop0---
             NegativeCurvature,        // Negative curvature detected
             RelativeErrorSmall,       // Relative error is small
             MaxItersExceeded,         // Maximum number of iterations exceeded
@@ -1099,6 +1100,7 @@ namespace Optizelle {
                                       // the trust-region radius.  This means
                                       // that our starting solution of 0
                                       // violates the trust-region.
+            //---KrylovStop1---
         };
 
         // Converts the Krylov stopping condition to a string 
@@ -1262,8 +1264,8 @@ namespace Optizelle {
             return;
         }
 
-        // Find the Br application.  We use this to find the B-norm of the
-        // residual.  Then, we save the original B-norm of the residual.
+        // Find the Br application.  We use this to find the norm of the
+        // B-residual.  Then, we save the original norm of the B-residual.
         B.eval(r,Br);
         norm_Br0 = sqrt(X::innr(Br,Br));
         norm_Br = norm_Br0; 

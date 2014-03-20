@@ -110,11 +110,11 @@ function main(fname)
         Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,fns,state);
     %---Solver1---
 
+    %---Extract0---
     % Print out the reason for convergence
     fprintf('The algorithm converged due to: %s\n', ...
         Optizelle.StoppingCondition.to_string(state.opt_stop));
 
-    %---Extract0---
     % Print out the final answer
     fprintf('The optimal point is: (%e,%e)\n',state.x(1),state.x(2));
     %---Extract1---
