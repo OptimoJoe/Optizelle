@@ -33,6 +33,7 @@ Author: Joseph Young (joe@optimojoe.com)
 #define JSON_H
 
 #include <fstream>
+#include <typeinfo>
 #include "optizelle/optizelle.h"
 #include "json/json.h"
 
@@ -178,11 +179,21 @@ namespace Optizelle {
         struct Serialization {
             static std::string serialize(
                 typename XX <Real>::Vector const & x
-            ) { }
+            ) { 
+                std::cerr << "Optizelle::json::Serialization <>::serialize "
+                    << "undefined for the type: "
+                    << typeid(XX <Real>).name() << std::endl;
+                exit(EXIT_FAILURE);
+            }
             static typename XX <Real>::Vector deserialize(
                 typename XX <Real>::Vector const & x,
                 std::string const & x_json
-            ) { }
+            ) { 
+                std::cerr << "Optizelle::json::Serialization <>::deserialize "
+                    << "undefined for the type: "
+                    << typeid(XX <Real>).name() << std::endl;
+                exit(EXIT_FAILURE);
+            }
         };
 
         // Routines to serialize lists of elements for restarting

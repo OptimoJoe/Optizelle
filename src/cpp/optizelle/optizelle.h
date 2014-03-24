@@ -43,7 +43,7 @@ Author: Joseph Young (joe@optimojoe.com)
 #include<functional>
 #include<algorithm>
 #include<numeric>
-#include<optizelle/linalg.h>
+#include "optizelle/linalg.h"
 
 //---Optizelle0---
 namespace Optizelle{
@@ -3694,6 +3694,7 @@ namespace Optizelle{
                 std::list <X_Vector>& oldY=state.oldY; 
                 std::list <X_Vector>& oldS=state.oldS; 
                 Natural & history_reset=state.history_reset;
+                Real & alpha = state.alpha;
                 
                 // Allocate some memory for the scaled trial step and the
                 // trust-region center
@@ -3777,6 +3778,11 @@ namespace Optizelle{
                         / (std::numeric_limits <Real>::epsilon()+residual_err0);
                     krylov_iter_total += krylov_iter;
 
+                    // Set alpha=1 since we're taking a full step.  This helps
+                    // keep things consistent if we every switch to a
+                    // line-search method.
+                    alpha = Real(1.);
+
                     // Manipulate the state if required
                     smanip.eval(fns,state,
                         OptimizationLocation::BeforeActualVersusPredicted);
@@ -3800,14 +3806,16 @@ namespace Optizelle{
                         OptimizationLocation::AfterRejectedTrustRegion);
 
                     // Alternatively, check if the step becomes so small
-                    // that we're not making progress.  In this case, break
-                    // and allow the stopping conditions to terminate
-                    // optimization.  We use a zero length step so that we
-                    // do not modify the current iterate.
+                    // that we're not making progress or if we have a step
+                    // with Nans in it.  In this case, break and allow the
+                    // stopping conditions to terminate optimization.  We use a
+                    // zero length step so that we do not modify the current
+                    // iterate.
                     Real norm_dx = sqrt(X::innr(dx,dx));
-                    if(norm_dx < eps_dx*norm_dxtyp) {
-                        X::scal(Real(0.),dx);
-                        norm_dx=Real(0.);
+                    if(norm_dx < eps_dx*norm_dxtyp
+                        || norm_dx!=norm_dx 
+                    ) {
+                        X::zero(dx);
                         break;
                     }
                 } 
@@ -4416,10 +4424,14 @@ namespace Optizelle{
                             alpha0/=Real(2.);
 
                             // Check if the step becomes so small that we're not
-                            // making progress.  In this case, take a zero step 
-                            // and allow the stopping conditions to exit
-                            if(alpha*sqrt(X::innr(dx,dx)) < eps_dx*norm_dxtyp) {
-                                X::scal(Real(0.),dx);
+                            // making progress or if we have a step with NaNs in
+                            // it.  In this case, take a zero step and allow
+                            // the stopping conditions to exit
+                            Real norm_dx = sqrt(X::innr(dx,dx));
+                            if(alpha*norm_dx < eps_dx*norm_dxtyp
+                                || norm_dx!=norm_dx
+                            ) {
+                                X::zero(dx);
                                 break;
                             }
 
@@ -7521,13 +7533,16 @@ namespace Optizelle{
                         OptimizationLocation::AfterRejectedTrustRegion);
 
                     // Alternatively, check if the step becomes so small
-                    // that we're not making progress.  In this case, break
-                    // and allow the stopping conditions to terminate
-                    // optimization.  We use a zero length step so that we
-                    // do not modify the current iterate.
+                    // that we're not making progress or if we have a step
+                    // with NaNs in it.  In this case, break and allow the
+                    // stopping conditions to terminate optimization.  We use a
+                    // zero length step so that we do not modify the current
+                    // iterate.
                     Real norm_dx = sqrt(X::innr(dx,dx));
-                    if(norm_dx < eps_dx*norm_dxtyp) {
-                        X::scal(Real(0.),dx);
+                    if(norm_dx < eps_dx*norm_dxtyp
+                        || norm_dx!=norm_dx
+                    ) {
+                        X::zero(dx);
                         break;
                     }
                 } 

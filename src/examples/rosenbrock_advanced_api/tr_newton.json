@@ -1,0 +1,15 @@
+{
+   "Optizelle" : {
+      "msg_level" : 1,
+      "algorithm_class" : "TrustRegion",
+      "H_type" : "UserDefined",
+      "iter_max" : 50,
+      "eps_krylov" : 1e-12
+   },
+   "Naturals" : {
+      "iter" : 22
+   },
+   "X_Vectors" : {
+      "x" : [ 1.0, 1.0 ] 
+   }
+}

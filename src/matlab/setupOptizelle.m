@@ -233,6 +233,9 @@ Optizelle.json.Unconstrained.read = @UnconstrainedStateReadJson;
 % Writes a json restart file
 Optizelle.json.Unconstrained.write_restart = @UnconstrainedRestartWriteRestart;
 
+% Reads a json restart file
+Optizelle.json.Unconstrained.read_restart = @UnconstrainedRestartReadRestart;
+
 %Creates an equality constrained state
 Optizelle.EqualityConstrained.State.t = @EqualityConstrainedStateCreate;
 
@@ -263,6 +266,10 @@ Optizelle.json.EqualityConstrained.read = @EqualityConstrainedStateReadJson;
 Optizelle.json.EqualityConstrained.write_restart = ...
     @EqualityConstrainedRestartWriteRestart;
 
+% Reads a json restart file
+Optizelle.json.EqualityConstrained.read_restart = ...
+    @EqualityConstrainedRestartReadRestart;
+
 %Creates an inequality constrained state
 Optizelle.InequalityConstrained.State.t = @InequalityConstrainedStateCreate;
 
@@ -291,6 +298,10 @@ Optizelle.json.InequalityConstrained.read = @InequalityConstrainedStateReadJson;
 Optizelle.json.InequalityConstrained.write_restart = ...
     @InequalityConstrainedRestartWriteRestart;
 
+% Reads a json restart file
+Optizelle.json.InequalityConstrained.read_restart = ...
+    @InequalityConstrainedRestartReadRestart;
+
 %Creates a constrained state
 Optizelle.Constrained.State.t = @ConstrainedStateCreate;
 
@@ -316,4 +327,7 @@ Optizelle.json.Constrained.read = @ConstrainedStateReadJson;
 
 % Writes a json restart file
 Optizelle.json.Constrained.write_restart = @ConstrainedRestartWriteRestart;
+
+% Reads a json restart file
+Optizelle.json.Constrained.read_restart = @ConstrainedRestartReadRestart;
 end

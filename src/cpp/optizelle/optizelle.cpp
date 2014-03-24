@@ -29,7 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 Author: Joseph Young (joe@optimojoe.com)
 */
 
-#include<optizelle/optizelle.h>
+#include "optizelle/optizelle.h"
 
 namespace Optizelle{
 

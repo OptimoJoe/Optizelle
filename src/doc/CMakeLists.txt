@@ -27,6 +27,7 @@ add_latex_document(optizelle.tex DEFAULT_PDF
     INPUTS messagingSpecification.tex
            vectorSpaceSpecification.tex
     CONFIGURE optizelle.tex
+    USE_INDEX
 )
 install(
     FILES ${CMAKE_CURRENT_BINARY_DIR}/optizelle.pdf

@@ -36,6 +36,10 @@
 % some of the irritating change in formatting that hyperref does.
 \usepackage{filecontents}
 
+% Index creation
+\usepackage{makeidx}
+\makeindex
+
 % Define a computer text environment.  This is monospaced and allows
 % underscores.  Code found at:
 % https://tex.stackexchange.com/questions/20890/define-an-escape-underscore-environment
@@ -92,8 +96,8 @@
 
 % CMake items
 \newcommand{\cmakeitem}[7]{
-    \item[Flag] #1
-    \item[Type]  #2
+    \item[Flag] \index{CMake Flags!\textct{#1}}{\textctlabel{#1}}
+    \item[Type] \textct{#2}
     \item[Default] #3
     \item[Dependency] #4
     \item[Enables] #5
@@ -146,19 +150,19 @@
 
 % Type items 
 \newcommand{\typeitem}[2]{
-    \item[Type] #1
+    \item[Type] \index{Parameter Types!\textct{#1}}{\textctlabel{#1}}
     \item[Description] #2
     \item[]}
 
 % Enumerated items 
 \newcommand{\enumitem}[1]{
-    \item[Type] \textctlabel{#1}
+    \item[Type] \index{Enumerated Types!\textct{#1}}{\textctlabel{#1}}
     \item[Values]\begin{minipage}[t]{\textwidth}\vspace{\dimexpr-\medskipamount-2ex}
         \lstinputlisting[style=C++,linerange=#1 0-#1 1,widthgobble=3*4]{@OPTIZELLECPPPATH@/optizelle.h}
     \end{minipage}
     \item[]}
 \newcommand{\enumitemlong}[1]{
-    \item[Type] \textctlabel{#1}
+    \item[Type] \index{Enumerated Types!\textct{#1}}{\textctlabel{#1}}
     \item[Values]
         \begin{minipage}[t]{\textwidth}\vspace{\dimexpr-\medskipamount-2ex}
             \lstinputlisting[style=C++,linerange=#1 0-#1 1,widthgobble=3*4]{@OPTIZELLECPPPATH@/optizelle.h}
@@ -177,7 +181,7 @@
         \end{minipage}
     \item[]}
 \newcommand{\enumitemalt}[1]{
-    \item[Type] \textctlabel{#1}
+    \item[Type] \index{Enumerated Types!\textct{#1}}{\textctlabel{#1}}
     \item[Values]\begin{minipage}[t]{\textwidth}\vspace{\dimexpr-\medskipamount-2ex}
         \lstinputlisting[style=C++,linerange=#1 0-#1 1,widthgobble=3*4]{@OPTIZELLECPPPATH@/linalg.h}
     \end{minipage}
@@ -185,7 +189,7 @@
 
 % Parameter items
 \newcommand{\paramitem}[5]{
-    \item[Name] \textctlabel{#1}
+    \item[Name] \index{Parameters!\textct{#1}}{\textctlabel{#1}}
     \item[Type] #2
     \item[\mbox{Valid Value}]
         \begin{minipage}[t]{\textwidth}\vspace{\dimexpr-\medskipamount-2ex}
@@ -630,8 +634,8 @@ On Windows, if not using Cygwin, execute the following commands:
         Optizelle provides several different options within CMake in order to customize the build.  We describe these flags in the table below.          
 \begin{boldlist}
     \cmakeitem
-        {\textctlabel{CMAKE_INSTALL_PREFIX}}
-        {\textct{PATH}}
+        {CMAKE_INSTALL_PREFIX}
+        {PATH}
         {Varies}
         {None}
         {None}
@@ -639,8 +643,8 @@ On Windows, if not using Cygwin, execute the following commands:
         {Install location of Optizelle.}
 
     \cmakeitem
-        {\textctlabel{ENABLE_DOCUMENTATION}}
-        {\textct{BOOL}}
+        {ENABLE_DOCUMENTATION}
+        {BOOL}
         {\textct{OFF}}
         {None}
         {\textctref{PDFLATEX_COMPILER},
@@ -650,8 +654,8 @@ On Windows, if not using Cygwin, execute the following commands:
         It builds a pdf file of the manual.}
 
     \cmakeitem
-        {\textctlabel{PDFLATEX_COMPILER}}
-        {\textct{FILEPATH}}
+        {PDFLATEX_COMPILER}
+        {FILEPATH}
         {None}
         {\textctref{ENABLE_DOCUMENTATION}}
         {None}
@@ -659,8 +663,8 @@ On Windows, if not using Cygwin, execute the following commands:
         {Complete path and executable for pdflatex.}
 
     \cmakeitem
-        {\textctlabel{ENABLE_A4_PAPER}}
-        {\textct{BOOL}}
+        {ENABLE_A4_PAPER}
+        {BOOL}
         {\textct{OFF}}
         {\textctref{ENABLE_DOCUMENTATION}}
         {None}
@@ -669,8 +673,8 @@ On Windows, if not using Cygwin, execute the following commands:
         Letter paper.}
 
     \cmakeitem
-        {\textctlabel{ENABLE_CPP}}
-        {\textct{BOOL}}
+        {ENABLE_CPP}
+        {BOOL}
         {\textct{OFF}}
         {None}
         {\textctref{CMAKE_CXX_FLAGS}, 
@@ -690,8 +694,8 @@ On Windows, if not using Cygwin, execute the following commands:
         {Enables the Optizelle C++ library.}
 
     \cmakeitem
-        {\textctlabel{CMAKE_CXX_FLAGS}}
-        {\textct{STRING}}
+        {CMAKE_CXX_FLAGS}
+        {STRING}
         {None}
         {\textctref{ENABLE_CPP}}
         {None}
@@ -700,8 +704,8 @@ On Windows, if not using Cygwin, execute the following commands:
         to enable C++11 compilation such as \textct{-std=c++11} on GCC.}
 
     \cmakeitem
-        {\textctlabel{CMAKE_BUILD_TYPE}}
-        {\textct{STRING}}
+        {CMAKE_BUILD_TYPE}
+        {STRING}
         {None}
         {\textctref{ENABLE_CPP}}
         {None}
@@ -712,8 +716,8 @@ On Windows, if not using Cygwin, execute the following commands:
         \href{http://oprofile.sourceforge.net}{OProfile}.}
 
     \cmakeitem
-        {\textctlabel{ENABLE_OPENMP}}
-        {\textct{BOOL}}
+        {ENABLE_OPENMP}
+        {BOOL}
         {\textct{OFF}}
         {\textctref{ENABLE_CPP}}
         {None}
@@ -723,8 +727,8 @@ On Windows, if not using Cygwin, execute the following commands:
         from OpenMP directives.}
 
     \cmakeitem
-        {\textctlabel{ENABLE_BUILD_BLAS_AND_LAPACK}}
-        {\textct{BOOL}}
+        {ENABLE_BUILD_BLAS_AND_LAPACK}
+        {BOOL}
         {\textct{OFF}}
         {\textctref{ENABLE_CPP}}
         {\textctref{LAPACK_ARCHIVE}}
@@ -733,8 +737,8 @@ On Windows, if not using Cygwin, execute the following commands:
         available.}  
 
     \cmakeitem
-        {\textctlabel{LAPACK_ARCHIVE}}
-        {\textct{FILEPATH}}
+        {LAPACK_ARCHIVE}
+        {FILEPATH}
         {None}
         {\textctref{ENABLE_BUILD_BLAS_AND_LAPACK}}
         {None}
@@ -743,8 +747,8 @@ On Windows, if not using Cygwin, execute the following commands:
         \href{http://www.netlib.org/lapack}{Netlib}.}
 
     \cmakeitem
-        {\textctlabel{ENABLE_BUILD_JSONCPP}}
-        {\textct{BOOL}}
+        {ENABLE_BUILD_JSONCPP}
+        {BOOL}
         {\textct{OFF}}
         {\textctref{ENABLE_CPP}}
         {\textctref{JSONCPP_ARCHIVE}}
@@ -752,8 +756,8 @@ On Windows, if not using Cygwin, execute the following commands:
         {Builds JsonCpp from source.} 
 
     \cmakeitem
-        {\textctlabel{JSONCPP_ARCHIVE}}
-        {\textct{FILEPATH}}
+        {JSONCPP_ARCHIVE}
+        {FILEPATH}
         {None}
         {\textctref{ENABLE_BUILD_JSONCPP}}
         {None}
@@ -762,9 +766,9 @@ On Windows, if not using Cygwin, execute the following commands:
         \href{http://jsoncpp.sourceforge.net}{SourceForge}.}
 
     \cmakeitem
-        {\textctlabel{BLAS_LIBRARY}}
-        {\textct{FILEPATH}}
-        {None }
+        {BLAS_LIBRARY}
+        {FILEPATH}
+        {None}
         {\textctref{ENABLE_CPP}}
         {None}
         {Yes }
@@ -777,12 +781,12 @@ On Windows, if not using Cygwin, execute the following commands:
         \end{center}}
 
     \cmakeitem
-        {\textctlabel{LAPACK_LIBRARY} }
-        {\textct{FILEPATH}}
-        {None }
+        {LAPACK_LIBRARY}
+        {FILEPATH}
+        {None}
         {\textctref{ENABLE_CPP}}
         {None}
-        {Yes }
+        {Yes}
         {A semicolon separated list of the complete path and library used
         to provide LAPACK.  This must include all required libraries,
         except for BLAS libraries specified in \textctref{BLAS_LIBRARY}, in
@@ -793,19 +797,19 @@ On Windows, if not using Cygwin, execute the following commands:
         \end{center}}
 
     \cmakeitem
-        {\textctlabel{JSONCPP_INCLUDE_DIR} }
-        {\textct{PATH}}
-        {None }
+        {JSONCPP_INCLUDE_DIR}
+        {PATH}
+        {None}
         {\textctref{ENABLE_CPP}}
         {None}
-        {Yes }
+        {Yes}
         {A path that indicates where the jsoncpp headers have been 
         installed.  The actual headers must be found in 
         \textct{\$\{JSONCPP_INCLUDE_DIR\}/json/}.}
 
     \cmakeitem
-        {\textctlabel{JSONCPP_LIBRARY}}
-        {\textct{FILEPATH}}
+        {JSONCPP_LIBRARY}
+        {FILEPATH}
         {None }
         {\textctref{ENABLE_CPP}}
         {None}
@@ -813,8 +817,8 @@ On Windows, if not using Cygwin, execute the following commands:
         {Complete path and library for JsonCpp. }
 
     \cmakeitem
-        {\textctlabel{ENABLE_CPP_EXAMPLES}}
-        {\textct{BOOL}}
+        {ENABLE_CPP_EXAMPLES}
+        {BOOL}
         {\textct{OFF}}
         {\textctref{ENABLE_CPP}}
         {None}
@@ -823,8 +827,8 @@ On Windows, if not using Cygwin, execute the following commands:
         demonstrate the use of Optizelle.}
 
     \cmakeitem
-        {\textctlabel{ENABLE_CPP_UNIT}}
-        {\textct{BOOL}}
+        {ENABLE_CPP_UNIT}
+        {BOOL}
         {\textct{OFF}}
         {\textctref{ENABLE_CPP}}
         {None}
@@ -834,8 +838,8 @@ On Windows, if not using Cygwin, execute the following commands:
         \textct{ctest} in the CMake build directory.}
 
     \cmakeitem
-        {\textctlabel{ENABLE_PYTHON}}
-        {\textct{BOOL}}
+        {ENABLE_PYTHON}
+        {BOOL}
         {\textct{OFF}}
         {\textctref{ENABLE_CPP}}
         {\textctref{PYTHON_INCLUDE_DIR},
@@ -847,19 +851,19 @@ On Windows, if not using Cygwin, execute the following commands:
         {Enables the build of the Python wrappers for Optizelle.}
 
     \cmakeitem
-        {\textctlabel{PYTHON_INCLUDE_DIR} }
-        {\textct{FILEPATH}}
-        {None }
+        {PYTHON_INCLUDE_DIR}
+        {FILEPATH}
+        {None}
         {\textctref{ENABLE_PYTHON}}
         {None}
-        {Yes }
+        {Yes}
         {A path that indicates where the Python 2.7 headers have been 
         installed.  We do not prefix these headers, so we look directly
         in the directory provided here.}
 
     \cmakeitem
-        {\textctlabel{PYTHON_LIBRARY}}
-        {\textct{FILEPATH}}
+        {PYTHON_LIBRARY}
+        {FILEPATH}
         {None}
         {\textctref{ENABLE_PYTHON}}
         {None}
@@ -867,8 +871,8 @@ On Windows, if not using Cygwin, execute the following commands:
         {Complete path and library for Python 2.7. }
 
     \cmakeitem
-        {\textctlabel{PYTHON_EXECUTABLE}}
-        {\textct{FILEPATH}}
+        {PYTHON_EXECUTABLE}
+        {FILEPATH}
         {None}
         {\textctref{ENABLE_PYTHON}}
         {None}
@@ -876,8 +880,8 @@ On Windows, if not using Cygwin, execute the following commands:
         {Complete path and executable for Python 2.7. }
 
     \cmakeitem
-        {\textctlabel{ENABLE_PYTHON_EXAMPLES}}
-        {\textct{BOOL}}
+        {ENABLE_PYTHON_EXAMPLES}
+        {BOOL}
         {\textct{OFF}}
         {\textctref{ENABLE_PYTHON}}
         {None}
@@ -886,8 +890,8 @@ On Windows, if not using Cygwin, execute the following commands:
         demonstrate the use of the Python wrappers for Optizelle.}
 
     \cmakeitem
-        {\textctlabel{ENABLE_PYTHON_UNIT}}
-        {\textct{BOOL}}
+        {ENABLE_PYTHON_UNIT}
+        {BOOL}
         {\textct{OFF}}
         {\textctref{ENABLE_PYTHON}}
         {None}
@@ -897,8 +901,8 @@ On Windows, if not using Cygwin, execute the following commands:
         tests by running \textct{ctest} in the CMake build directory.}
 
     \cmakeitem
-        {\textctlabel{ENABLE_MATLAB}}
-        {\textct{BOOL}}
+        {ENABLE_MATLAB}
+        {BOOL}
         {\textct{OFF}}
         {\textctref{ENABLE_CPP}}
         {\textctref{MATLAB_MEX_EXTENSION},
@@ -912,8 +916,8 @@ On Windows, if not using Cygwin, execute the following commands:
         {Enables the build of the MATLAB/Octave wrappers for Optizelle.}
 
     \cmakeitem
-        {\textctlabel{MATLAB_MEX_EXTENSION} }
-        {\textct{STRING}}
+        {MATLAB_MEX_EXTENSION}
+        {STRING}
         {None}
         {\textctref{ENABLE_MATLAB}}
         {None}
@@ -922,8 +926,8 @@ On Windows, if not using Cygwin, execute the following commands:
         by typing in the command 'mexext' inside of MATLAB/Octave.}
 
     \cmakeitem
-        {\textctlabel{MATLAB_INCLUDE_DIR} }
-        {\textct{FILEPATH}}
+        {MATLAB_INCLUDE_DIR}
+        {FILEPATH}
         {None}
         {\textctref{ENABLE_MATLAB}}
         {None}
@@ -933,8 +937,8 @@ On Windows, if not using Cygwin, execute the following commands:
         headers, so we look directly in the directory provided here.}
 
     \cmakeitem
-        {\textctlabel{MATLAB_LIBRARY}}
-        {\textct{FILEPATH}}
+        {MATLAB_LIBRARY}
+        {FILEPATH}
         {None}
         {\textctref{ENABLE_MATLAB}}
         {None}
@@ -943,8 +947,8 @@ On Windows, if not using Cygwin, execute the following commands:
         for MATLAB and \textct{octinterp} for Octave.)}
 
     \cmakeitem
-        {\textctlabel{MATLAB_EXECUTABLE}}
-        {\textct{FILEPATH}}
+        {MATLAB_EXECUTABLE}
+        {FILEPATH}
         {None}
         {\textctref{ENABLE_MATLAB}}
         {None}
@@ -952,8 +956,8 @@ On Windows, if not using Cygwin, execute the following commands:
         {Complete path and executable for MATLAB/Octave. }
 
     \cmakeitem
-        {\textctlabel{MATLAB_RUN_FLAG}}
-        {\textct{STRING}}
+        {MATLAB_RUN_FLAG}
+        {STRING}
         {None}
         {\textctref{ENABLE_MATLAB}}
         {None}
@@ -962,8 +966,8 @@ On Windows, if not using Cygwin, execute the following commands:
         for MATLAB and \textct{--eval} for Octave.) }
 
     \cmakeitem
-        {\textctlabel{ENABLE_MATLAB_EXAMPLES}}
-        {\textct{BOOL}}
+        {ENABLE_MATLAB_EXAMPLES}
+        {BOOL}
         {\textct{OFF}}
         {\textctref{ENABLE_MATLAB}}
         {None}
@@ -973,8 +977,8 @@ On Windows, if not using Cygwin, execute the following commands:
         Optizelle.}
 
     \cmakeitem
-        {\textctlabel{ENABLE_MATLAB_UNIT}}
-        {\textct{BOOL}}
+        {ENABLE_MATLAB_UNIT}
+        {BOOL}
         {\textct{OFF}}
         {\textctref{ENABLE_MATLAB}}
         {None}
@@ -2011,15 +2015,15 @@ In Octave, this becomes
 \noindent and come in one of nine types:
 \begin{boldlist}
     \typeitem
-        {\textctlabel{Real}}
+        {Real}
         {Floating point numbers.  In C++, this may be a type such as \textct{double} or \textct{float} as long as it matches the template parameters used in items such as \textct{state} and \textct{fns}.  In Python and Matlab/Octave, we use the default floating point representation.}
 
     \typeitem
-        {\textctlabel{Natural}}
+        {Natural}
         {Nonnegative integer.  In C++, we use the type \textct{Optizelle::Natural}, which we set to be \textct{size_t}.  In Python, we use the default integer representation.  In MATLAB/Octave, we use the default floating point representation.}
 
     \typeitem
-        {\textctlabel{Enumerated}}
+        {Enumerated}
         {Enumerated type.  In C++, we use an \textct{enum} type called \textct{t} wrapped inside a namespace that we type explicitely to \textct{Natural}.  For example, we refer to the algorithm class as \textctref{AlgorithmClass} and define its type as \textct{AlgorithmClass::t}.  Then, we refer to the enumerated values as 
         \begin{itemize}
             \item \textct{AlgorithmClass::TrustRegion},
@@ -2049,23 +2053,23 @@ In Octave, this becomes
         As to our specific enumerated types, we ellaborate on them \hyperref[lst:enumerated]{below}.}
 
     \typeitem
-        {\textctlabel{X_Vector}}
+        {X_Vector}
         {User defined vector within the vector space $X$, the domain of our objective function, $f:X\rightarrow\re$.} 
 
     \typeitem
-        {\textctlabel{Y_Vector}}
+        {Y_Vector}
         {User defined vector within the vector space $Y$, the codomain of our equality constraint, $g:X\rightarrow Y$ with $g(x)=0$.} 
 
     \typeitem
-        {\textctlabel{Z_Vector}}
+        {Z_Vector}
         {User defined vector within the vector space $Z$, the codomain of our inequality constraint, $h:X\rightarrow Z$ with $h(x)\succeq 0$.} 
 
     \typeitem
-        {\textctlabel{List}}
+        {List}
         {List of a specified kind of vectors.  In C++, this denotes a \textct{std::list}.  In Python, this becomes a \textct{list}.  Finally, in MATLAB/Octave, we use a cell array.} 
 
     \typeitem
-        {\textctlabel{Function}}
+        {Function}
         {Function of a specified kind of variable.  This type represents a function inside the state structure that we use to set a number of similar parameters.  However, in the JSON parameter files, we set it like it was just another parameter.}
 \end{boldlist}
 
@@ -3032,5 +3036,10 @@ where we assume $y\succ 0$.  Hence, $\alpha$ denotes the maximum distance Optize
 \subsection{symm}
 
         The function \texttt{symm} denotes the symmetrization operator.  Optizelle requires this operator since we relax the commutativity requirement from the Euclidean-Jordan algebra.  For linear bound constraints and second-order cone constraints, this operation does nothing.  In addition, for semidefinite constraints where $X\circ Y=\frac{XY+YX}{2}$, this operation does nothing.  However, for semidefinite constraints where $X\circ Y=XY$, Optizelle requires $\textnormal{symm}(X)=\frac{X+X^T}{2}$.
+
+\clearpage
+\addcontentsline{toc}{chapter}{Index}
+\printindex
+
 
 \end{document}
