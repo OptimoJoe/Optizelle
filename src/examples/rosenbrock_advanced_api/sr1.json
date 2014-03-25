@@ -7,12 +7,11 @@
       "history_reset" : 10,
       "iter_max" : 100,
       "eps_krylov" : 1e-16,
-      "eps_dx" : 1e-10,
-      "eps_grad" : 1e-10,
-      "delta" : 1e-2 
+      "eps_dx" : 1e-12,
+      "eps_grad" : 1e-10
    },
    "Naturals" : {
-      "iter" : 38 
+      "iter" : 32
    },
    "X_Vectors" : {
       "x" : [ 1.0, 1.0 ] 

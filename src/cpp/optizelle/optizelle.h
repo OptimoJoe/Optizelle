@@ -3240,6 +3240,8 @@ namespace Optizelle{
                 // In case we're using a line-search method
                 if(algorithm_class==AlgorithmClass::LineSearch) {
                     out.emplace_back(Utility::atos("LSIter"));
+                    out.emplace_back(Utility::atos("alpha0"));
+                    out.emplace_back(Utility::atos("alpha"));
                 }
 
                 // In case we're using a trust-region method 
@@ -3247,6 +3249,7 @@ namespace Optizelle{
                     out.emplace_back(Utility::atos("ared"));
                     out.emplace_back(Utility::atos("pred"));
                     out.emplace_back(Utility::atos("ared/pred"));
+                    out.emplace_back(Utility::atos("delta"));
                 }
             }
 
@@ -3280,9 +3283,11 @@ namespace Optizelle{
                 Real const & krylov_rel_err=state.krylov_rel_err;
                 KrylovStop::t const & krylov_stop=state.krylov_stop;
                 Natural const & linesearch_iter=state.linesearch_iter;
+                Real const & alpha0=state.alpha0;
+                Real const & alpha=state.alpha;
                 Real const & ared=state.ared;
                 Real const & pred=state.pred;
-                Real const & alpha=state.alpha;
+                Real const & delta=state.delta;
                 AlgorithmClass::t const & algorithm_class=state.algorithm_class;
                 LineSearchDirection::t const & dir=state.dir;
                 Natural const & rejected_trustregion=state.rejected_trustregion;
@@ -3321,7 +3326,7 @@ namespace Optizelle{
                 out.emplace_back(Utility::atos(norm_grad));
                 if(!opt_begin) {
                     if(algorithm_class==AlgorithmClass::LineSearch)
-                        out.emplace_back(Utility::atos(alpha*norm_dx));
+                        out.emplace_back(Utility::atos(Real(1.)/alpha*norm_dx));
                     else
                         out.emplace_back(Utility::atos(norm_dx));
                 } else
@@ -3342,10 +3347,13 @@ namespace Optizelle{
 
                 // In case we're using a line-search method
                 if(algorithm_class==AlgorithmClass::LineSearch) {
-                    if(!opt_begin)
+                    if(!opt_begin) {
                         out.emplace_back(Utility::atos(linesearch_iter));
-                    else 
-                        out.emplace_back(Utility::blankSeparator);
+                        out.emplace_back(Utility::atos(alpha0));
+                        out.emplace_back(Utility::atos(alpha));
+                    } else 
+                        for(Natural i=0;i<3;i++)
+                            out.emplace_back(Utility::blankSeparator);
                 }
                 
                 // In case we're using a trust-region method
@@ -3354,8 +3362,9 @@ namespace Optizelle{
                         out.emplace_back(Utility::atos(ared));
                         out.emplace_back(Utility::atos(pred));
                         out.emplace_back(Utility::atos(ared/pred));
+                        out.emplace_back(Utility::atos(delta));
                     } else  
-                        for(Natural i=0;i<3;i++)
+                        for(Natural i=0;i<4;i++)
                             out.emplace_back(Utility::blankSeparator);
                 }
 
@@ -3695,6 +3704,7 @@ namespace Optizelle{
                 std::list <X_Vector>& oldS=state.oldS; 
                 Natural & history_reset=state.history_reset;
                 Real & alpha = state.alpha;
+                Real & alpha0 = state.alpha0;
                 
                 // Allocate some memory for the scaled trial step and the
                 // trust-region center
@@ -3778,11 +3788,6 @@ namespace Optizelle{
                         / (std::numeric_limits <Real>::epsilon()+residual_err0);
                     krylov_iter_total += krylov_iter;
 
-                    // Set alpha=1 since we're taking a full step.  This helps
-                    // keep things consistent if we every switch to a
-                    // line-search method.
-                    alpha = Real(1.);
-
                     // Manipulate the state if required
                     smanip.eval(fns,state,
                         OptimizationLocation::BeforeActualVersusPredicted);
@@ -3819,6 +3824,13 @@ namespace Optizelle{
                         break;
                     }
                 } 
+                
+                // Set line-search parameters in such a way that they are
+                // consistent to what just happened in the trust-region
+                // method.  This helps keep this consistent if we ever switch
+                // to a line-search method.
+                alpha = Real(1.);
+                alpha0 = delta/Real(2.);
             }
         
             // Steepest descent search direction
@@ -4266,6 +4278,7 @@ namespace Optizelle{
                 Natural & krylov_iter=state.krylov_iter;
                 Natural & krylov_iter_total=state.krylov_iter_total;
                 KrylovStop::t& krylov_stop=state.krylov_stop;
+                Real & delta=state.delta;
                 
                 // Manipulate the state if required
                 smanip.eval(fns,state,OptimizationLocation::BeforeGetStep);
@@ -4475,6 +4488,12 @@ namespace Optizelle{
                 // Adjust the size of the step (apply the line-search 
                 // parameter.)
                 X::scal(alpha,dx);
+                
+                // Set trust-region parameters in such a way that they are
+                // consistent to what just happened in the line-search method 
+                // method.  This helps keep this consistent if we ever switch
+                // to a trust-region method.
+                delta = Real(2.)*alpha0;
             }
 
             // Finds a new trial step
