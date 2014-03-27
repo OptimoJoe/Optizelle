@@ -84,6 +84,8 @@
 % Used for labeling and referring to computer text 
 \newcommand{\textctlabel}[1]{\phantomsection\label{itm:#1}\textct{#1}}
 \newcommand{\textctref}[1]{\hyperref[itm:#1]{\textct{#1}}}
+\newcommand{\textctlabelalt}[1]{\phantomsection\label{alt:#1}\textct{#1}}
+\newcommand{\textctrefalt}[1]{\hyperref[alt:#1]{\textct{#1}}}
 
 % Setup a bolded list environment.
 \newenvironment{boldlist}
@@ -280,6 +282,42 @@
     \item[\mbox{Stair Step}] #2
     \item[\mbox{Predictor-Corrector}] #3}
 
+% Output items
+\newcommand{\outputitemraw}[4]{
+    \item[Name] #1  
+    \item[\mbox{State Param}] #2
+    \item[\mbox{Problem Class}] #3
+    \item[Description] #4
+    \item[]}
+
+\newcommand{\outputitem}[4]{
+   \outputitemraw
+        {\index{Outputs!\textct{#1}}{\textctlabelalt{#1}}}
+        {#2}
+        {#3}
+        {#4}}
+
+\newcommand{\outputitemu}[3]{
+    \outputitem
+        {#1}
+        {#2}
+        {Unconstrained, Equality Constrained, Inequality Constrained, Constrained}
+        {#3}}
+
+\newcommand{\outputiteme}[3]{
+    \outputitem
+        {#1}
+        {#2}
+        {Equality Constrained, Constrained}
+        {#3}}
+
+\newcommand{\outputitemi}[3]{
+    \outputitem
+        {#1}
+        {#2}
+        {Inequality Constrained, Constrained}
+        {#3}}
+
 % Change the figure numbering to be chap.sec.num
 \renewcommand{\thefigure}{\arabic{chapter}.\arabic{section}.\arabic{figure}}
         
@@ -357,7 +395,7 @@
 % Optizelle output
 \lstdefinestyle{OptizelleOutput}{
     morekeywords={Iter,f,x,merit,grad,dx,KryWhy,KryErr,KryIter,ared,pred,
-        ared/pred,mu,mu_est,g},
+        ared/pred,mu,mu_est,g,alpha,alpha0,delta},
     sensitive=false,
     literate=
 }
@@ -1127,6 +1165,8 @@ import Optizelle.Constrained.Functions
 import Optizelle.Constrained.Algorithms
 import Optizelle.Constrained.Restart
 import Optizelle.json.Constrained
+
+import Optizelle.json.Serialization
 \end{filecontents*}
 
 \begin{filecontents*}{import.m}
@@ -2117,7 +2157,8 @@ In Octave, this becomes
                 {$\|\eqGradLag{\textctref{x}}{\textctref{y}}\| \leq \textctref{eps_grad} \cdot \textctref{norm_gradtyp}$,}
                 {$\|\ineqGradLag{\textctref{x}}{\textctref{z}}\| \leq \textctref{eps_grad} \cdot \textctref{norm_gradtyp}$,}
                 {$\|\conGradLag{\textctref{x}}{\textctref{y}}{\textctref{z}}\| \leq \textctref{eps_grad} \cdot \textctref{norm_gradtyp}$.}
-        \end{boldlist}}
+        \end{boldlist}
+        At each iteration, we output the norm on the left of the inequality under the label \textctrefalt{||grad||}.}
     
     \paramitemu
         {eps_dx}
@@ -2144,7 +2185,7 @@ In Octave, this becomes
         {iter}
         {Natural}
         {No}
-        {Current optimiation iteration.}
+        {Current optimiation iteration.  We output \textctref{iter} at each iteration under the label \textctrefalt{Iter}.}
 
     \paramitemu
         {iter_max}
@@ -2175,7 +2216,7 @@ In Octave, this becomes
         {krylov_iter}
         {Natural}
         {No}
-        {Current number of iterations taken by the truncated Krylov methods, conjugate direction and MINRES, when solving the optimality conditions.} 
+        {Current number of iterations taken by the truncated Krylov methods, conjugate direction and MINRES, when solving the optimality conditions.  We output \textctref{krylov_iter} at each iteration under the label \textctrefalt{KryIter}.} 
     
     \paramitemu
         {krylov_iter_max}
@@ -2199,13 +2240,13 @@ In Octave, this becomes
         {krylov_stop}
         {KrylovStop}
         {No}
-        {Reason why the truncated Krylov solver, \textctref{krylov_solver}, exited when solving the optimality system.}
+        {Reason why the truncated Krylov solver, \textctref{krylov_solver}, exited when solving the optimality system.  We output \textctref{krylov_stop} at each iteration under the label \textctrefalt{KryStop}.}
     
     \paramitemu
         {krylov_rel_err}
         {Real}
         {No}
-        {Relative error in the solution returned by the truncated Krylov solver, \textctref{krylov_solver}, when solving the optimality system.}
+        {Relative error in the solution returned by the truncated Krylov solver, \textctref{krylov_solver}, when solving the optimality system.  We output \textctref{krylov_rel_err} at each iteration under the label \textctrefalt{KryErr}.}
     
     \paramitemu
         {eps_krylov}
@@ -2273,7 +2314,7 @@ In Octave, this becomes
         {dx}
         {X_Vector}
         {No}
-        {Optimization step.  Every iteration we set \textctref{x}=\textctref{x}+\textctref{dx}.}
+        {Optimization step.  Every iteration we set \textctref{x}=\textctref{x}+\textctref{dx}.  In addition, we output the norm of this vector at each iteration under the label \textctrefalt{||dx||}.}
     
     \paramitemu
         {x_old}
@@ -2317,7 +2358,7 @@ In Octave, this becomes
         {f_x}
         {Real}
         {No}
-        {Current value of the objective function, $f(\textctref{x})$.}
+        {Current value of the objective function, $f(\textctref{x})$.  We output \textctref{f_x} at each iteration under the label \textctrefalt{f(x)}.}
     
     \paramitemu
         {f_xpdx}
@@ -2335,7 +2376,7 @@ In Octave, this becomes
         {delta}
         {Real}
         {Yes}
-        {Trust region radius.  We use this as a starting value.  Later, we adjust the radius depending on the behavior of the algorithms.}
+        {Trust region radius.  We use this as a starting value.  Later, we adjust the radius depending on the behavior of the algorithms.  As a note, we output \textctref{delta} at each iteration under the label \textctrefalt{delta}.}
 
     \paramitemu
         {eta1}
@@ -2364,7 +2405,8 @@ In Octave, this becomes
                 {$\eqMerit{\textctref{x}}{\textctref{y}},$}
                 {$\ineqMerit{\textctref{x}},$}
                 {$\conMerit{\textctref{x}}{\textctref{y}}.$}
-        \end{boldlist}}
+        \end{boldlist}
+        As a note, we output the value of the merit function at each iteration under the label \textctrefalt{merit(x)} and \textctref{ared} under the label \textctrefalt{ared}.}
 
     \paramitemu
         {pred}
@@ -2397,7 +2439,8 @@ In Octave, this becomes
                     +\langle \conGradSchur{\textctref{x}}{\textctref{y}},\textctref{dx}\rangle\\
                     +\frac{1}{2}\langle \conHessVec{\textctref{x}}{\textctref{y}}{\textctref{z}},\textctref{dx}\rangle.
                 \end{array}$$}
-        \end{boldlist}}
+        \end{boldlist}
+        As a note, we output \textctref{pred} at each iteration under the label \textctrefalt{pred}.}
 
     \paramitemu
         {rejected_trustregion}
@@ -2409,13 +2452,13 @@ In Octave, this becomes
         {alpha0}
         {Real}
         {Yes}
-        {Base line-search step length.  Generally, our line-search methods search for a scaling $\textctref{alpha}\in[0,2\cdot\textctref{alpha0}]$.  Once we find \textctref{alpha}, we increase \textctref{alpha0} when our search always brackets to the right and decrease it when our search always brackets to the left.}
+        {Base line-search step length.  Generally, our line-search methods search for a scaling $\textctref{alpha}\in[0,2\cdot\textctref{alpha0}]$.  Once we find \textctref{alpha}, we increase \textctref{alpha0} when our search always brackets to the right and decrease it when our search always brackets to the left.  As a note, we output \textctref{alpha0} at each iteration under the label \textctrefalt{alpha0}.}
 
     \paramitemu
         {alpha}
         {Real}
         {No}
-        {Actual line-search step length.  After our line-search process completes, we modify our step $\textctref{dx}\leftarrow \textctref{alpha} \cdot \textctref{dx}$} 
+        {Actual line-search step length.  After our line-search process completes, we modify our step $\textctref{dx}\leftarrow \textctref{alpha} \cdot \textctref{dx}$.  As a note, we output \textctref{alpha} at each iteration under the label \textctrefalt{alpha}.} 
 
     \paramitemu
         {c1}
@@ -2434,7 +2477,7 @@ In Octave, this becomes
         {linesearch_iter}
         {Natural}
         {No}
-        {Current number of iterations used in the line search.  We use this to determine the amount of computational effort used by Optizelle during the last iteration.}
+        {Current number of iterations used in the line search.  We use this to determine the amount of computational effort used by Optizelle during the last iteration.   As a note, we output \textctref{linesearch_iter} at each iteration under the label \textctrefalt{LSIter}.}
 
     \paramitemu
         {linesearch_iter_max}
@@ -2622,7 +2665,7 @@ In Octave, this becomes
         {g_x}
         {Y_Vector}
         {No}
-        {Equality constraint evaluated a \textctref{x}, $g(\textctref{x})$.  We use this in the quasinormal step as well as in the computation of the linear Taylor series at \textctref{x} in the direciton \textctref{dx_n}.}
+        {Equality constraint evaluated a \textctref{x}, $g(\textctref{x})$.  We use this in the quasinormal step as well as in the computation of the linear Taylor series at \textctref{x} in the direciton \textctref{dx_n}.  As a note, we output the norm of this vector each iteration under the label \textctrefalt{||g(x)||}.}
 
     \paramiteme
         {norm_gxtyp}
@@ -2730,16 +2773,17 @@ In Octave, this becomes
         {mu}
         {Real}
         {No}
-        {Interior point parameter.  As the interior point method progresses, we drive this value toward zero.}
+        {Interior point parameter.  We use this as the target for the interior-point parameter estimate \textctref{mu_est}.  As the interior point method progresses, we drive this value toward zero.  As a note, we output \textctref{mu} at each iteration under the label \textctrefalt{mu}.}
 
     \paramitemi
         {mu_est}
         {Real}
         {No}
-        {Current interior point estimate.  We define this as
+        {Current interior-point estimate.  We define this as
         $$
                 \textctref{mu_est}\equiv\frac{\langle \textctref{z},\textctref{h_x} \rangle}{\langle e,e\rangle}.
-        $$}
+        $$
+        As a note, we output \textctref{mu_est} at each iteration under the label \textctrefalt{mu_est}.}
 
     \paramitemi
         {mu_typ}
@@ -2822,44 +2866,111 @@ In Octave, this becomes
 
 \chapter{Output}\label{ch:Output}
 
-        Optizelle generates a series of diagnostics while running that give information about the behavior and performance of the underlying algorithm.  This information is organized into columns that are exactly 10 characters wide.  Each column always has some sort of information, which makes the output easy to parse using standard Unix utilities such as \texttt{cut} or \texttt{awk}.  As far as the information in the columns themselves, we detail their meaning in the following table.
+        Optizelle generates a series of diagnostics while running that give information about the behavior and performance of the underlying algorithm.  This information is organized into columns that are exactly 12 characters wide.  When no information is available, we print a single dot, \textct{.}.  In this way, each column always has some sort of information, which makes the output easy to parse using standard Unix utilities such as \texttt{cut} or \texttt{awk}.  For example, to only print the iteration, objective value, and norm of the gradient on the Rosenbrock example, we use the following commands on POSIX compliant systems:
+\begin{center}\begin{verbatim}
+./rosenbrock tr_newton.json | awk '{printf "%-12s%-12s%-12s\n", $1,$2,$4}'
+\end{verbatim}\end{center}
+\noindent and
+\begin{center}\begin{verbatim}
+./rosenbrock tr_newton.json | cut -c1-12,13-24,37-48
+\end{verbatim}\end{center}
 
-\begin{longtable}{lp{0.8\textwidth}}
-\multicolumn{2}{p{\textwidth}}{\bf Output for: Unconstrained, Inequality Constrained, Equality Constrained, Constrained}\\
-Name & Description\\
-\texttt{Iter} & Current optimization iteration.  If the value of this entry is \texttt{*}, that means that a trust-region algorithm has rejected a step due to an unfavorable actual versus predicted reduction. \\
-\\
-\texttt{f(x)} & Value of the objective function at the start of the specified iteration.\\
-\\
-\texttt{merit(x)} & Value of the merit function at the start of the iteration.  For an unconstrained problem, this is simply $f(x)$.  For an inequality constrained problem, Optizelle returns $f(x)-\mu \textnormal{barr}(x)$ where $\textnormal{barr}(x)$ denotes the value of the barrier function from the inequality algebra.  For an equality constrained problem, Optizelle gives $f(x)-\langle y, g(x)\rangle + \rho \|g(x)\|^2$.  For a constrained problem, Optizelle defines this quantity as $f(x)-\langle y, g(x)\rangle + \rho \|g(x)\|^2 - \mu\textnormal{barr}(x)$.\\
-\\
-\texttt{||grad||} & Norm of the gradient of either the objective function or the Lagrangian.  In each case, this denotes the norm of the optimality conditions.  In the unconstrained case, Optizelle defines this quantity as $\|\nabla f(x)\|$.  In the inequality constrained case, this becomes $\|\ineqGradLag{x}{z}\|$.  In the equality constrained case, this is $\|\eqGradLag{x}{y}\|$.  In the fully constrained case, this quantity denotes $\|\conGradLag{x}{y}{z}\|$.\\\\
-\texttt{||dx||} & Norm of the step taken during the last iteration. \\
-\\
-\texttt{ared} & Actual reduction defined as $\textnormal{merit}(x_k)-\textnormal{merit}(x_{k+1})$ where $x_k$ denotes the iterate at the previous step and $x_{k+1}$ denotes the current iterate.\\
-\\
-\texttt{pred} & Predicted reduction defined as $\textnormal{merit}(x_k)-\textnormal{model}(\delta x)$ where $x_k$ denotes the iterate at the previous step and $\delta x$ denotes the current step.  Depending on the formulation, Optizelle uses a different model, but these models generally correspond to a quadratic approximation to the merit function.\\
-\\
-\texttt{ared/pred} & Actual versus predicted reduction.  For a perfect model, this ratio is 1.0.\\
-\\
-\texttt{KryIter} & Number of iterations used by truncated-CG or MINRES when solving the optimality system.\\
-\\
-\texttt{KryErr} & Error in truncated-CG or MINRES when solving the optimality system.  For truncated-CG, this is defined as $\|B(Ax-b)\|$ where we are solving the system $Ax=b$ with the preconditioner $B$.  For truncated-MINRES, this becomes $\|Ax-b\|_B$.\\
-\\
-\texttt{KryWhy} & Why the truncated-CG or MINRES solve terminated.  This value can be either \texttt{RelErrSml}, the relative error is small, \texttt{NegCurv}, detected negative curvature, \texttt{IterExcd}, number of iterations exceeded, \texttt{TrstReg}, step violates the trust-region, \texttt{Unstable}, loss of orthogonality in the system, or \texttt{InvldCnt}, an invalid center for the trust-region radius.\\
-\\
-\texttt{LSIter} & Number of iterations taken by the line search.\\
-\\
-\multicolumn{2}{p{\textwidth}}{\bf Output for: Inequality Constrained, Constrained}\\
-Name & Description\\
-\texttt{mu} & Interior point parameter used by the optimization.  In other words, the target interior point parameter.\\
-\\
-\texttt{mu\_est} & Current estimate of the interior point parameter defined as $\langle z,h(x) \rangle/\langle e,e\rangle$ where $z$ denotes the inequality multiplier and $e$ denotes the identity element for the inequality algebra.  For linear bound constraints, this is the vector of all ones, so $\langle e,e\rangle=m$ where $m$ denotes the number of variables.\\
-\\
-\multicolumn{2}{p{\textwidth}}{\bf Output for: Equality Constrained, Constrained}\\
-Name & Description\\
-\texttt{||g(x)||} & Norm of the equality constraint at the start of the optimization iteration.  This denotes the infeasibility of the current iterate with respect to the equality constraints. 
-\end{longtable}
+        As far as the information in the columns themselves, we detail their meaning in the following table:
+\begin{boldlist}
+    \outputitemu
+        {Iter}
+        {\textctref{iter}}
+        {Current optimization iteration.  If the value of this entry is \textct{*}, then either a trust-region algorithm has rejected a step due to an unfavorable actual versus predicted reduction or a line-search algorithm has rejected a step due to a lack of sufficient decrease.  In a trust-region method, we tune the rejection of steps with the parameter \textctref{eta1}.  In a line-search method, we tune the rejection of steps with the parameter \textctref{c1}.}
+
+    \outputitemu
+        {f(x)}
+        {\textctref{f_x}}
+        {Value of the objective function at the start of the specified iteration.}
+
+    \outputitemu
+        {merit(x)}
+        {None}
+        {Value of the merit function at the start of the specified iteration.  We specify the various merit functions in the description of the parameter \textctref{ared}.}
+
+    \outputitemraw
+        {\index{Outputs!\textct{"|"|grad"|"|}}{\textctlabelalt{||grad||}}}
+        {None}
+        {Unconstrained, Equality Constrained, Inequality Constrained, Constrained}
+        {Norm of the gradient of either the objective function or the Lagrangian, which we calculate in \textctref{eps_grad}.  We use this value within our gradient stopping condition described by the parameter \textctref{eps_grad}.}
+
+    \outputitemraw
+        {\index{Outputs!\textct{"|"|dx"|"|}}{\textctlabelalt{||dx||}}}
+        {None}
+        {Unconstrained, Equality Constrained, Inequality Constrained, Constrained}
+        {Norm of the step taken during the last iteration.  We calculate this value by taking the norm of the value found in \textctref{dx}.}
+
+    \outputitemu
+        {KryIter}
+        {\textctref{krylov_iter}}
+        {Number of iterations used by the truncated Krylov methods when solving the optimality system.   We tune the maximum number of Krylov iterations with the parameter \textctref{krylov_iter_max}.}
+
+    \outputitemu
+        {KryErr}
+        {\textctref{krylov_rel_err}}
+        {Error in the truncated Krylov method when solving the optimality system.  We control this error with the parameter \textctref{eps_krylov} and indirectly affect it with the parameter \textctref{krylov_orthog_max}.}
+
+    \outputitemu
+        {KryStop}
+        {\textctref{krylov_stop}}
+        {Why the truncated Krylov solver terminated.  Although we shorten the strings, we describe each possible outcome in the enumerated type \textctref{KrylovStop}.}
+        
+    \outputitemu
+        {ared}
+        {\textctref{ared}}
+        {Actual reduction in the merit function between the current iterate and the iterate after taking the trial step.} 
+
+    \outputitemu
+        {pred}
+        {\textctref{pred}}
+        {Predicted reduction in the merit function between the current iterate and the iterate after taking the trial step.} 
+
+    \outputitemu
+        {ared/pred}
+        {None}
+        {Actual versus predicted reduction.  Simply, we divide the outputs \textctrefalt{ared} and \textctrefalt{pred}.  For a perfect model, this ratio is $1.0$.}
+
+    \outputitemu
+        {delta}
+        {\textctref{delta}}
+        {Trust-region radius.} 
+
+    \outputitemu
+        {LSIter}
+        {\textctref{linesearch_iter}}
+        {Number of iterations taken by the line search.  We tune the maximum number of line-search iterations with the parameter \textctref{linesearch_iter_max} and indirectly control the number of iterations with the parameter \textctref{eps_ls}.}
+
+    \outputitemu
+        {alpha}
+        {\textctref{alpha}}
+        {Actual line-search step length.} 
+
+    \outputitemu
+        {alpha0}
+        {\textctref{alpha0}}
+        {Base line-search step length.}
+
+    \outputitemraw
+        {\index{Outputs!\textct{"|"|g(x)"|"|}}{\textctlabelalt{||g(x)||}}}
+        {None}
+        {Equality Constrained, Constrained}
+        {Norm of the equality constraint at the start of the optimization iteration, which we calculate in \textctref{g_x}.  We use this value within our equality constraint feasibility stopping condition described by the parameter \textctref{eps_constr}.}
+
+    \outputitemi
+        {mu}
+        {\textctref{mu}}
+        {Interior point parameter.} 
+
+    \outputitemi
+        {mu_est}
+        {\textctref{mu_est}}
+        {Current interior-point estimate.  We use this value within our complementary slackness stopping condition described by the parameter \textctref{eps_mu}.}
+
+\end{boldlist}
 
 \chapter{Advanced API}\label{ch:Advanced}
 
@@ -2867,9 +2978,47 @@ Name & Description\\
 
 \section{\secmessaging}\label{sec:messaging}
 
-        Optizelle messaging objects inherit from \texttt{Optizelle::Messaging}, which Optizelle defines as
-\input{messagingSpecification.tex}
-Hence, messaging objects have two functions, \texttt{print} and \texttt{error}, that both accept a string and print the result.  The only difference between \texttt{print} and \texttt{error} is that \texttt{error} must safely exit the program.  Within a larger program, it is common to modify the messaging object so that Optizelle's output goes directly to a specified file.
+        By default, we output messages and errors from Optizelle to \textct{stdout} and \textct{stderr}, respectively.  However, in some environments, we require different behavior.  For example, when using Optizelle in a program with a GUI, we may want to display the output to a separate window.  When using MPI in a distributed, parallel environment we likely want to restrict our output to only the rank 0 processor.  In these cases, we want to define a new messaging object.
+
+        Messaging objects require two functions, \textct{print} and \textct{error}.  Both functions accept a string and print it accordingly.  In addition, \textct{error} must gracefully exit the optimization.  In code, we specify this object as
+\begin{boldlist}
+    \apiitem
+        {C++}
+        {\textct{Optizelle::Messaging}}
+        {Inheritance}
+        {\lstinputlisting[style=C++,linerange={Optizelle0-Optizelle1,Messaging0-Messaging1,Optizelle2-Optizelle3}]{@OPTIZELLECPPPATH@/optizelle.h}}
+
+    \apiitem
+        {Python}
+        {\textct{Optizelle.Messaging}}
+        {Inheritance}
+        {\lstinputlisting[style=Python,linerange=Messaging0-Messaging1]{@OPTIZELLEPYTHONPATH@/__init__.py}}
+
+    \apiitem
+        {MATLAB/Octave}
+        {\textct{Optizelle.Messaging}}
+        {Members present}
+        {\lstinputlisting[style=Matlab,linerange=Messaging0-Messaging1]{@OPTIZELLEMATLABPATH@/setupOptizelle.m}}
+\end{boldlist}
+\noindent As a note, \textct{print} is a reserved keyword in Python 2.7.  Therefore, in order to define a custom messaging object, we require the import
+\begin{center}
+    \textct{from __future__ import print_function}
+\end{center}
+
+        As an example, we modify the messaging object in our Rosenbrock advanced API example:
+\begin{boldlist}
+    \exampleitem
+        {C++}
+        {\lstinputlisting[style=C++,linerange=Messaging0-Messaging1]{@ROSENBROCKADVANCEDAPIPATH@/rosenbrock_advanced_api.cpp}}
+
+    \exampleitem
+        {Python}
+        {\lstinputlisting[style=Python,linerange=Messaging0-Messaging1]{@ROSENBROCKADVANCEDAPIPATH@/rosenbrock_advanced_api.py}}
+
+    \exampleitem
+        {MATLAB/Octave}
+        {\lstinputlisting[style=Matlab,linerange=Messaging0-Messaging1]{@ROSENBROCKADVANCEDAPIPATH@/rosenbrock_advanced_api.m}}
+\end{boldlist}
         
 \section{Symmetric Cone Programming}        
         In the case of C++, we also provide a built-in vector space for semidefinite, second-order cone, and linear (SQL) programs:

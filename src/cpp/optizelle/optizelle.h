@@ -199,6 +199,7 @@ namespace Optizelle{
     };
     //---VectorValuedFunction1---
 
+    //---Messaging0---
     // Defines how we output messages to the user
     struct Messaging {
         // Prints a message
@@ -210,6 +211,7 @@ namespace Optizelle{
         // Allow a derived class to deallocate memory
         virtual ~Messaging();
     };
+    //---Messaging1---
 
     // Which algorithm class do we use
     namespace AlgorithmClass{
@@ -3234,7 +3236,7 @@ namespace Optizelle{
                 ){
                     out.emplace_back(Utility::atos("KryIter"));
                     out.emplace_back(Utility::atos("KryErr"));
-                    out.emplace_back(Utility::atos("KryWhy"));
+                    out.emplace_back(Utility::atos("KryStop"));
                 }
 
                 // In case we're using a line-search method

@@ -171,10 +171,12 @@ Optizelle.Operator = struct( ...
     'eval',@(state,x)err_op('eval'));
 %---Operator1---
 
+%---Messaging0---
 % Defines how we output messages to the user
 Optizelle.Messaging = struct( ...
     'print',@(x)fprintf('%s\n',x), ...
     'error',@(x)error(x));
+%---Messaging1---
 
 % A function that has free reign to manipulate or analyze the state.  This 
 % should be used cautiously. 
@@ -201,14 +203,18 @@ Optizelle.json.Serialization.serialize = @serialize;
 
 % Serializes a matlab column vector for the vector space Optizelle.Rm
 Optizelle.json.Serialization.serialize( ...
-    'register',@(x)strrep(mat2str(x'),' ',', '),@isvector);
+    'register', ...
+    @(x)strrep(mat2str(x'),' ',', '), ...
+    @(x)isvector(x) && isnumeric(x));
 
 % Converts a JSON formatted string to a vector 
 Optizelle.json.Serialization.deserialize = @deserialize;
 
 % Deserializes a matlab column vector for the vector space Optizelle.Rm
 Optizelle.json.Serialization.deserialize( ...
-    'register',@(x,x_json)str2num(x_json)',@isvector);
+    'register', ...
+    @(x,x_json)str2num(x_json)', ...
+    @(x)isvector(x) && isnumeric(x));
 
 %Creates an unconstrained state
 Optizelle.Unconstrained.State.t = @UnconstrainedStateCreate;

@@ -499,6 +499,7 @@ class Operator(object):
         _err(self,"eval")
 #---Operator1---
 
+#---Messaging0---
 class Messaging(object):
     """Defines how we output messages to the user"""
    
@@ -509,6 +510,7 @@ class Messaging(object):
     def error(self,msg):
         """Prints out error information"""
         sys.stderr.write("%s\n" %(msg))
+#---Messaging1---
 
 class StateManipulator(object):
     """A function that has free reign to manipulate or analyze the state.  This should be used cautiously."""

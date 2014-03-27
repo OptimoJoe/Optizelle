@@ -14,6 +14,7 @@
 // Grab Optizelle's Natural type
 using Optizelle::Natural;
 
+//---VectorSpace0---
 // Defines the vector space used for optimization.
 template <typename Real>
 struct MyVS { 
@@ -114,6 +115,7 @@ struct MyVS {
     // operator.
     static void symm(Vector & x) { }
 };
+//---VectorSpace1---
 
 // Squares its input
 template <typename Real>
@@ -170,6 +172,7 @@ public:
     }
 };
 
+//---Messaging0---
 // Define a custom messaging object
 struct MyMessaging : public Optizelle::Messaging {
     // Prints a message
@@ -183,7 +186,9 @@ struct MyMessaging : public Optizelle::Messaging {
         exit(EXIT_FAILURE);
     }
 };
+//---Messaging1---
 
+//---Serialization0---
 // Define serialization routines for MyVS
 namespace Optizelle {
     namespace json {
@@ -235,7 +240,9 @@ namespace Optizelle {
         };
     }
 }
+//---Serialization1---
 
+//---RestartManipulator0---
 // Define a state manipulator that writes out the optimization state at
 // each iteration.
 struct MyRestartManipulator
@@ -266,6 +273,7 @@ struct MyRestartManipulator
         }
     }
 };
+//---RestartManipulator1---
 
 int main(int argc,char* argv[]) {
     // Read in the name for the parameters and optional restart file 
@@ -284,15 +292,17 @@ int main(int argc,char* argv[]) {
 
     // Create an unconstrained state based on this vector
     Optizelle::Unconstrained <double,MyVS>::State::t state(x);
-    
+   
+    //---ReadRestart0---
     // If we have a restart file, read in the parameters 
     if(argc==3)
         Optizelle::json::Unconstrained <double,MyVS>::read_restart(
             MyMessaging(),rname,x,state);
 
-    // Read the parameters from file
+    // Read additional parameters from file
     Optizelle::json::Unconstrained <double,MyVS>
         ::read(MyMessaging(),pname,state);
+    //---ReadRestart1---
 
     // Create the bundle of functions 
     Optizelle::Unconstrained <double,MyVS>::Functions::t fns;
@@ -311,7 +321,9 @@ int main(int argc,char* argv[]) {
     std::cout << "The optimal point is: (" << state.x[0] << ','
 	<< state.x[1] << ')' << std::endl;
 
+    //---WriteRestart0---
     // Write out the final answer to file
     Optizelle::json::Unconstrained <double,MyVS>::write_restart(
         MyMessaging(),"solution.json",state);
+    //---WriteRestart1---
 }
