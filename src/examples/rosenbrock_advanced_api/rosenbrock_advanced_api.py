@@ -229,9 +229,11 @@ fns=Optizelle.Unconstrained.Functions.t()
 fns.f=Rosenbrock()
 fns.PH=RosenHInv()
 
+#---Solver0---
 # Solve the optimization problem
 Optizelle.Unconstrained.Algorithms.getMin(
     MyVS,MyMessaging(),MyRestartManipulator(),fns,state)
+#---Solver1---
 
 # Print out the reason for convergence
 print("The algorithm converged due to: %s" % (

@@ -1,5 +1,5 @@
 % Reads a json restart file 
-function state = ConstrainedRestartReadRestart(X,Z,msg,fname,x,z)
+function state = ConstrainedRestartReadRestart(X,Y,Z,msg,fname,x,y,z)
     % Check our arguments
     checkVectorSpace('X',X);
     checkVectorSpace('Y',Y);

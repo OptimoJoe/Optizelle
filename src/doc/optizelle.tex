@@ -96,6 +96,14 @@
             \textbf{##1}}}}
     {\vspace{-\dimexpr\baselineskip+2\itemsep}\end{list}}
 
+\newenvironment{boldlistwide}
+    {\begin{list}{}{
+        \labelwidth.20\textwidth
+        \leftmargin\dimexpr\leftmargin+.20\textwidth
+        \renewcommand\makelabel[1]{%
+            \textbf{##1}}}}
+    {\vspace{-\dimexpr\baselineskip+2\itemsep}\end{list}}
+
 % CMake items
 \newcommand{\cmakeitem}[7]{
     \item[Flag] \index{CMake Flags!\textct{#1}}{\textctlabel{#1}}
@@ -135,7 +143,7 @@
     \item[Code] #2
     \item[]}
 
-% Short example items.  Basically, the minipage stops page wrapping, so the example better be short.
+% Short example items.  Basically, the minipage stops page wrapping, so the example better be short.  We use this in order to gobble up space since a regular example item messes up the indendation.
 \newcommand{\shortexampleitem}[2]{
     \item[Language] #1
     \item[Code]\begin{minipage}[t]{\textwidth}\vspace{\dimexpr-\medskipamount-2ex}#2\end{minipage}
@@ -182,10 +190,16 @@
             \lstinputlisting[style=C++,linerange=#1 4-#1 5,widthgobble=3*4]{@OPTIZELLECPPPATH@/optizelle.h}
         \end{minipage}
     \item[]}
-\newcommand{\enumitemalt}[1]{
+\newcommand{\enumitemlinalg}[1]{
     \item[Type] \index{Enumerated Types!\textct{#1}}{\textctlabel{#1}}
     \item[Values]\begin{minipage}[t]{\textwidth}\vspace{\dimexpr-\medskipamount-2ex}
         \lstinputlisting[style=C++,linerange=#1 0-#1 1,widthgobble=3*4]{@OPTIZELLECPPPATH@/linalg.h}
+    \end{minipage}
+    \item[]}
+\newcommand{\enumitemvspace}[1]{
+    \item[Type] \index{Enumerated Types!\textct{#1}}{\textctlabel{#1}}
+    \item[Values]\begin{minipage}[t]{\textwidth}\vspace{\dimexpr-\medskipamount-2ex}
+        \lstinputlisting[style=C++,linerange=#1 0-#1 1,widthgobble=3*4]{@OPTIZELLECPPPATH@/vspaces.h}
     \end{minipage}
     \item[]}
 
@@ -283,40 +297,79 @@
     \item[\mbox{Predictor-Corrector}] #3}
 
 % Output items
-\newcommand{\outputitemraw}[4]{
+\newcommand{\outputitemraw}[5]{
     \item[Name] #1  
     \item[\mbox{State Param}] #2
     \item[\mbox{Problem Class}] #3
-    \item[Description] #4
+    \item[\mbox{Min \textctref{msg_level}}] #4
+    \item[Description] #5
     \item[]}
 
-\newcommand{\outputitem}[4]{
+\newcommand{\outputitem}[5]{
    \outputitemraw
         {\index{Outputs!\textct{#1}}{\textctlabelalt{#1}}}
         {#2}
         {#3}
-        {#4}}
+        {#4}
+        {#5}}
 
-\newcommand{\outputitemu}[3]{
+\newcommand{\outputitemu}[4]{
     \outputitem
         {#1}
         {#2}
         {Unconstrained, Equality Constrained, Inequality Constrained, Constrained}
-        {#3}}
+        {#3}
+        {#4}}
 
-\newcommand{\outputiteme}[3]{
+\newcommand{\outputiteme}[4]{
     \outputitem
         {#1}
         {#2}
         {Equality Constrained, Constrained}
-        {#3}}
+        {#3}
+        {#4}}
 
-\newcommand{\outputitemi}[3]{
+\newcommand{\outputitemi}[4]{
     \outputitem
         {#1}
         {#2}
         {Inequality Constrained, Constrained}
-        {#3}}
+        {#3}
+        {#4}}
+
+% Custom vector-space items 
+\newcommand{\customvsitem}[8]{
+    \item[Name] \index{Vector Space Operations!\textct{#1}}{\textctlabel{#1}}
+    \item[Definition]
+        \begin{boldlistwide}
+            \item[C++] \textct{#2}
+            \item[] #3
+            \item[Python] \textct{#4}
+            \item[] #5
+            \item[MATLAB/Octave] \textct{#6}
+            \item[] #7
+            \item[]
+        \end{boldlistwide}
+    \item[Description] #8
+    \item[]}
+
+% Custom vector-space wrapper items 
+\newcommand{\vswrapperitem}[3]{
+    \item[Language] #1
+    \item[Interface] #2
+    \item[Description] #3
+    \item []}
+
+% Restart type items 
+\newcommand{\simpletypeitem}[2]{
+    \item[Language] #1
+    \item[Type] \textct{#2}
+    \item[]}
+
+\newcommand{\rtypeitem}[2]{
+    \item[Type] \index{Restart Types!\textct{#1}}{\textctlabel{#1}}
+    \item[Description] #2
+    \item[]}
 
 % Change the figure numbering to be chap.sec.num
 \renewcommand{\thefigure}{\arabic{chapter}.\arabic{section}.\arabic{figure}}
@@ -443,9 +496,13 @@
 \newcommand{\secextract}{Extract the solution}
 \newcommand{\seccompilerun}{Compile/run the program}
 
-\newcommand{\chparams}{Optimization Parameters}
-\newcommand{\seccustomvector}{Vector spaces}
-\newcommand{\secmessaging}{Messaging objects}
+\newcommand{\chparams}{Optimization parameters}
+\newcommand{\choutput}{Output}
+\newcommand{\seccustomvector}{Customized vector spaces}
+\newcommand{\secmessaging}{User-defined messaging}
+\newcommand{\seccone}{Symmetric cone programming}
+\newcommand{\secsmanip}{State manipulation}
+\newcommand{\secrestart}{Restarts}
 
 \title{Optizelle v@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@.@CPACK_PACKAGE_VERSION_PATCH@}
 \author{OptimoJoe\\Joseph Young}
@@ -500,10 +557,10 @@
 \begin{itemize}
     \item {\bf State of the art algorithms}
         \begin{itemize}
-            \item Unconstrained -- Steepest Descent, Preconditioned Nonlinear-CG (Fletcher-Reeves, Polak-Ribiere, Hestenes-Stiefel), BFGS, Newton-CG, SR1, Trust-Region Newton (Truncated-CG and Truncated-MINRES), Barzilai-Borwein Two-Point Approximation.
-            \item Equality Constrained -- Inexact Composite Step SQP.
-            \item Inequality Constrained -- Primal-Dual Interior Point Method for Cone Constraints (Linear, Second-Order Cone, and Semidefinite), Log-Barrier Method for Cone Constraints.
-            \item Constrained -- Any combination of the above.
+            \item Unconstrained -- steepest descent, preconditioned nonlinear-CG (Fletcher-Reeves, Polak-Ribiere, Hestenes-Stiefel), BFGS, Newton-CG, SR1, trust-region Newton (truncated-CG and truncated-MINRES), Barzilai-Borwein two-point approximation.
+            \item Equality constrained -- inexact composite-step SQP.
+            \item Inequality constrained -- primal-dual interior point method for cone constraints (linear, second-order cone, and semidefinite), log-barrier method for cone constraints.
+            \item Constrained -- any combination of the above.
         \end{itemize}
     \item {\bf Open source}
         \begin{itemize}
@@ -517,7 +574,7 @@
     \item {\bf Robust computations and repeatibility}
         \begin{itemize}
             \item Can stop, archive, and restart the computation from any optimization iteration.
-            \item Combined with the multilanguage support, the optimization can be started in one language and migrated to another.  For example, archived optimization runs that started in MATLAB can be migrated and completed in C++.
+            \item Combined with the multilanguage support, the optimization can be started in one language and migrated to another.  For example, archived optimization runs that started in Python can be migrated and completed in C++.
         \end{itemize}
     \item {\bf User-defined parallelism}
         \begin{itemize}
@@ -558,6 +615,38 @@ $$
     \end{array}
 $$
 In order to optimize this function, we use the following code and parameters, which generates the subsequent output.
+
+\begin{filecontents*}{rosen_output.txt}
+Iter        f(x)        ||grad||    ||dx||      
+1           2.42e+01    2.33e+02    .           
+2           4.73e+00    4.64e+00    3.81e-01    
+*           4.73e+00    4.64e+00    1.00e+00    
+3           4.00e+00    1.74e+01    5.00e-01    
+4           3.34e+00    2.33e+01    5.00e-01    
+5           2.58e+00    8.77e+00    2.04e-01    
+*           2.58e+00    8.77e+00    4.91e-01    
+6           2.09e+00    8.48e+00    2.45e-01    
+7           1.75e+00    1.37e+01    3.06e-01    
+8           1.20e+00    2.99e+00    9.50e-02    
+*           1.20e+00    2.99e+00    4.15e-01    
+9           9.13e-01    7.24e+00    2.08e-01    
+10          6.17e-01    2.36e+00    1.23e-01    
+11          4.64e-01    8.01e+00    2.08e-01    
+12          2.69e-01    1.17e+00    1.23e-01    
+13          1.83e-01    6.37e+00    2.08e-01    
+14          9.23e-02    1.23e+00    1.30e-01    
+15          5.33e-02    5.17e+00    2.08e-01    
+16          1.85e-02    6.67e-01    1.03e-01    
+17          9.22e-03    3.68e+00    1.88e-01    
+18          6.89e-04    5.82e-02    4.05e-02    
+19          4.05e-05    2.78e-01    5.50e-02    
+20          1.62e-08    2.58e-04    2.83e-03    
+21          2.64e-14    7.13e-06    2.84e-04    
+22          6.98e-27    1.67e-13    7.27e-08    
+The algorithm converged due to: RelativeStepSmall
+The optimal point is: (1,1) 
+\end{filecontents*}
+
 \begin{boldlist}
     \exampleitem
         {C++}
@@ -577,7 +666,7 @@ In order to optimize this function, we use the following code and parameters, wh
 
     \exampleitem
         {Optizelle Output}
-        {\lstinputlisting[style=OptizelleOutput]{@OUTPUTPATH@/rosen_output.txt}}
+        {\lstinputlisting[style=OptizelleOutput]{rosen_output.txt}}
 \end{boldlist}
 
 \section{History}
@@ -1202,6 +1291,7 @@ setupOptizelle();
 Here, the spaces $X$, $Y$, and $Z$ denote {\it vector spaces}, more specifically, Hilbert spaces.  For most problems, these vector spaces just denote $\re^m$, but we also allow these vector spaces to be spaces of functions such as $L^2(\Omega)$ or matrices such as $\re^{m\times n}$ as long as they contain the necessary operations that we describe in the section \hyperref[sec:customvector]{\seccustomvector}.
 
         A vector space consists of two separate pieces: the actual vector and the operations required to compute on this vector.  In Optizelle, we maintain this separation.  For $\re^m$, we provide reasonable implementations that use the following:
+\phantomsection\label{itm:Rm}
 \begin{boldlist}
     \vsitem
         {C++}
@@ -1650,7 +1740,7 @@ state = Optizelle.Constrained.State.t(X,Y,Z,msg,x,y,z);
 \begin{boldlist}
     \shortexampleitem
         {C++}
-        {\lstinputlisting[style=C++,linerange=State0-State1,,widthgobble=1*4]{@ROSENBROCKPATH@/rosenbrock.cpp}}
+        {\lstinputlisting[style=C++,linerange=State0-State1,widthgobble=1*4]{@ROSENBROCKPATH@/rosenbrock.cpp}}
 
     \shortexampleitem
         {Python}
@@ -1903,7 +1993,7 @@ state = Optizelle.Constrained.Algorithms.getMin(X,Y,Z,msg,fns,state);
         {\lstinputlisting[style=Matlab]{solver.m}}
         {Use as is}
 \end{boldlist}
-\noindent As was in the case in the section \hyperref[sec:state]{\secstate}, \textct{XX}, \textct{YY}, and \text{ZZ} in C++ and \textct{X}, \textct{Y}, and \text{Z} in Python and MATLAB/Octave corresponds to the vector spaces $X$, $Y$, and $Z$ described in the section \hyperref[sec:importvs]{\secimportvs}.  Likely, they are just \textct{Optizelle::Rm} or \textct{Optizelle.Rm}.  Next, we call the function with a messaging object, \textct{msg}.  In the simple case, we can simply use \textct{Optizelle::Messaging()} in C++, \textct{Optizelle.Messaging()} in Python, and \textct{Optizelle.Messaging} in MATLAB/Octave.  For more complicated cases, see the section \hyperref[sec:messaging]{\secmessaging}.  Finally, we pass in the state and bundle of functions that we discussed in the sections \hyperref[sec:state]{\secstate} and \hyperref[sec:fns]{\secfns}, respectively.
+\noindent As was in the case in the section \hyperref[sec:state]{\secstate}, \textct{XX}, \textct{YY}, and \text{ZZ} in C++ and \textct{X}, \textct{Y}, and \text{Z} in Python and MATLAB/Octave corresponds to the vector spaces $X$, $Y$, and $Z$ described in the section \hyperref[sec:importvs]{\secimportvs}.  Likely, they are just \textct{Optizelle::Rm} or \textct{Optizelle.Rm}.  Next, we call the function with a \textctref{Messaging} object, \textct{msg}.  In the simple case, we can simply use \textct{Optizelle::Messaging()} in C++, \textct{Optizelle.Messaging()} in Python, and \textct{Optizelle.Messaging} in MATLAB/Octave.  For more complicated cases, see the section \hyperref[sec:messaging]{\secmessaging}.  Finally, we pass in the state and bundle of functions that we discussed in the sections \hyperref[sec:state]{\secstate} and \hyperref[sec:fns]{\secfns}, respectively.
         
         In our Rosenbrock example, we call Optizelle's solver with the code:
 \begin{boldlist}
@@ -2141,7 +2231,9 @@ In Octave, this becomes
     
     \enumitem {DiagnosticScheme}
     
-    \enumitemalt {KrylovStop}
+    \enumitemvspace {KrylovStop}
+    
+    \enumitemlinalg {Cone}
 \end{boldlist}
         
         Based on these types, we catalog the precise meaning of our parameters below.  As a note, the field \textbf{JSON Param} denotes whether or not we allow the parameter to be set in the JSON file described in the section \hyperref[sec:params]{\secparams}.  Generally, these settable pameters correspond to parameters that tune the behavior the algorithms.  The other parameters correspond to internal quantities that assist in diagnostics or advanced heuristics.
@@ -2167,7 +2259,8 @@ In Octave, this becomes
         {Relative tolerance for the step length stopping criteria reported in \textctref{opt_stop}.  We satisfy this stopping criteria when
         $$
             \|\textctref{dx}\| < \textctref{eps_dx}\cdot\textctref{norm_dxtyp}.
-        $$}
+        $$
+        At each iteration, we output the norm on the left of the inequality under the label \textctrefalt{||dx||}.}
     
     \paramitemu
         {stored_history}
@@ -2314,7 +2407,7 @@ In Octave, this becomes
         {dx}
         {X_Vector}
         {No}
-        {Optimization step.  Every iteration we set \textctref{x}=\textctref{x}+\textctref{dx}.  In addition, we output the norm of this vector at each iteration under the label \textctrefalt{||dx||}.}
+        {Step taken during the optimization iteration.  Every iteration we set \textctref{x}=\textctref{x}+\textctref{dx}.  In addition, we output the norm of this vector at each iteration under the label \textctrefalt{||dx||}.}
     
     \paramitemu
         {x_old}
@@ -2370,7 +2463,7 @@ In Octave, this becomes
         {msg_level}
         {Natural}
         {Yes}
-        {Messaging level.  To turn messages off, use $0$.  For normal messaging, set to $1$.}
+        {Messaging level.  To turn messages off, use $0$.  For normal messaging, set to $1$.  For more detailed information, set to $2$.  To see precise information about what information we display, refer to the chapter entitled \hyperref[ch:output]{\choutput}.}
 
     \paramitemu
         {delta}
@@ -2528,12 +2621,6 @@ In Octave, this becomes
         {Equality multiplier (dual variable or Lagrange multiplier.)}
 
     \paramiteme
-        {y}
-        {Y_Vector}
-        {No}
-        {Equality multiplier (dual variable or Lagrange multiplier.)}
-
-    \paramiteme
         {dy}
         {Y_Vector}
         {No}
@@ -2581,7 +2668,8 @@ In Octave, this becomes
         {Relative stopping tolerance for feasibility with respect to the equality constraint reported in \textctref{opt_stop}.  We satisfy this stopping criteria when
         $$
             \|g(\textctref{x})\| < \textctref{eps_constr}\cdot\textctref{norm_gxtyp}.
-        $$}
+        $$
+        At each iteration, we output the norm on the left of the inequality under the label \textctrefalt{||g(x)||}.  Note, since this value tunes a \textit{relative} stopping criteria, if we start with a feasible solution, we need to adjust this value to be something like \textct{1.0}.  This states that we do not seek relative improvement in the infeasibility.}
 
     \paramiteme
         {xi_qn}
@@ -2639,13 +2727,13 @@ In Octave, this becomes
 
     \paramiteme
         {PSchur_left_type}
-        {Operator}
+        {Operators}
         {Yes}
         {Left preconditioner for the augmented system.  For a full discussion of this preconditioner, see the section \hyperref[sec:preconditioners]{\secpreconditioners}.}
 
     \paramiteme
         {PSchur_right_type}
-        {Operator}
+        {Operators}
         {Yes}
         {Right preconditioner for the augmented system.  For a full discussion of this preconditioner, see the section \hyperref[sec:preconditioners]{\secpreconditioners}.}
 
@@ -2702,12 +2790,6 @@ In Octave, this becomes
         {X_Vector}
         {No}
         {Cauchy point for normal step.}
-
-    \paramiteme
-        {dx_t}
-        {X_Vector}
-        {No}
-        {(Corrected) tangential step.}
 
     \paramiteme
         {dx_t}
@@ -2783,7 +2865,7 @@ In Octave, this becomes
         $$
                 \textctref{mu_est}\equiv\frac{\langle \textctref{z},\textctref{h_x} \rangle}{\langle e,e\rangle}.
         $$
-        As a note, we output \textctref{mu_est} at each iteration under the label \textctrefalt{mu_est}.}
+        As a note, we output \textctref{mu_est} at each iteration under the label \textctrefalt{mu_est}.  Also note, we require this value to be small relative to \textctref{mu_typ} for convergence and control the relative decrease required with the parameter \textctref{eps_mu}.}
 
     \paramitemi
         {mu_typ}
@@ -2864,9 +2946,9 @@ In Octave, this becomes
         {Function diagnostics on $h$.}
 \end{boldlist}
 
-\chapter{Output}\label{ch:Output}
+\chapter{\choutput}\label{ch:output}
 
-        Optizelle generates a series of diagnostics while running that give information about the behavior and performance of the underlying algorithm.  This information is organized into columns that are exactly 12 characters wide.  When no information is available, we print a single dot, \textct{.}.  In this way, each column always has some sort of information, which makes the output easy to parse using standard Unix utilities such as \texttt{cut} or \texttt{awk}.  For example, to only print the iteration, objective value, and norm of the gradient on the Rosenbrock example, we use the following commands on POSIX compliant systems:
+        Optizelle generates a series of diagnostics while running that give information about the behavior and performance of the underlying algorithm.  This information is organized into columns that are exactly 12 characters wide.  When no information is available, we print a single dot, \textct{.}.  In this way, each column always has some sort of information, which makes the output easy to parse using standard Unix utilities such as \texttt{cut} or \texttt{awk}.  For example, to only print the iteration, objective value, and norm of the step on the Rosenbrock example, we use the following commands on POSIX compliant systems:
 \begin{center}\begin{verbatim}
 ./rosenbrock tr_newton.json | awk '{printf "%-12s%-12s%-12s\n", $1,$2,$4}'
 \end{verbatim}\end{center}
@@ -2874,102 +2956,119 @@ In Octave, this becomes
 \begin{center}\begin{verbatim}
 ./rosenbrock tr_newton.json | cut -c1-12,13-24,37-48
 \end{verbatim}\end{center}
-
-        As far as the information in the columns themselves, we detail their meaning in the following table:
+        
+        As far as the information in the columns themselves, we detail their meaning below.  In terms of convergence, we require the values \textctrefalt{||grad||}, \textctrefalt{||g(x)||}, and \textctrefalt{mu_est} be small relative to their starting value and control the relative decrease required with the parameters \textctref{eps_grad}, \textctref{eps_constr}, and \textctref{eps_mu}, respectively.  In addition, if the value \textctrefalt{||dx||} becomes too small relative to its starting value, we terminate the optimization.  We control the amount of relative decrease allowed in \textctrefalt{||dx||} with the parameter \textctref{eps_dx}.
 \begin{boldlist}
     \outputitemu
         {Iter}
         {\textctref{iter}}
+        {1}
         {Current optimization iteration.  If the value of this entry is \textct{*}, then either a trust-region algorithm has rejected a step due to an unfavorable actual versus predicted reduction or a line-search algorithm has rejected a step due to a lack of sufficient decrease.  In a trust-region method, we tune the rejection of steps with the parameter \textctref{eta1}.  In a line-search method, we tune the rejection of steps with the parameter \textctref{c1}.}
 
     \outputitemu
         {f(x)}
         {\textctref{f_x}}
+        {1}
         {Value of the objective function at the start of the specified iteration.}
-
-    \outputitemu
-        {merit(x)}
-        {None}
-        {Value of the merit function at the start of the specified iteration.  We specify the various merit functions in the description of the parameter \textctref{ared}.}
-
+    
     \outputitemraw
         {\index{Outputs!\textct{"|"|grad"|"|}}{\textctlabelalt{||grad||}}}
         {None}
         {Unconstrained, Equality Constrained, Inequality Constrained, Constrained}
-        {Norm of the gradient of either the objective function or the Lagrangian, which we calculate in \textctref{eps_grad}.  We use this value within our gradient stopping condition described by the parameter \textctref{eps_grad}.}
+        {1}
+        {Norm of the gradient of either the objective function or the Lagrangian, which we describe in the description of \textctref{eps_grad}.  We use this value within our gradient stopping condition described by the parameter \textctref{eps_grad}.  In general, we need this value to be small relative to the starting value for convergence.}
 
     \outputitemraw
         {\index{Outputs!\textct{"|"|dx"|"|}}{\textctlabelalt{||dx||}}}
         {None}
         {Unconstrained, Equality Constrained, Inequality Constrained, Constrained}
-        {Norm of the step taken during the last iteration.  We calculate this value by taking the norm of the value found in \textctref{dx}.}
+        {1}
+        {Norm of the step taken during the last iteration.  We calculate this value by taking the norm of the value found in \textctref{dx} and use this within our stopping condition controlled by \textctref{eps_dx}.  As a safeguard, we exit the optimization if this value becomes too small relative to the starting value.}
+    
+    \outputitemraw
+        {\index{Outputs!\textct{"|"|g(x)"|"|}}{\textctlabelalt{||g(x)||}}}
+        {None}
+        {Equality Constrained, Constrained}
+        {1}
+        {Norm of the equality constraint at the start of the optimization iteration, which we calculate in \textctref{g_x}.  We use this value within our equality constraint feasibility stopping condition described by the parameter \textctref{eps_constr}.  In short, we need this value to be small relative to the starting value for convergence.  If the starting value is already acceptably small, then we have started with a feasible solution.  In this case, we may need to adjust \textctref{eps_constr} to something like \textct{1.0}, which states that we do not seek relative improvement in the infeasibility.}
+
+    \outputitemi
+        {mu_est}
+        {\textctref{mu_est}}
+        {1}
+        {Current interior-point estimate.  We use this value within our complementary slackness stopping condition described by the parameter \textctref{eps_mu}.  In short, we need this value to be small relative to its starting value for convergence.  We control the relative decrease required with the parameter \textctref{eps_mu}.}
+
+    \outputitemu
+        {merit(x)}
+        {None}
+        {2}
+        {Value of the merit function at the start of the specified iteration.  We specify the various merit functions in the description of the parameter \textctref{ared}.}
 
     \outputitemu
         {KryIter}
         {\textctref{krylov_iter}}
+        {2}
         {Number of iterations used by the truncated Krylov methods when solving the optimality system.   We tune the maximum number of Krylov iterations with the parameter \textctref{krylov_iter_max}.}
 
     \outputitemu
         {KryErr}
         {\textctref{krylov_rel_err}}
+        {2}
         {Error in the truncated Krylov method when solving the optimality system.  We control this error with the parameter \textctref{eps_krylov} and indirectly affect it with the parameter \textctref{krylov_orthog_max}.}
 
     \outputitemu
         {KryStop}
         {\textctref{krylov_stop}}
+        {2}
         {Why the truncated Krylov solver terminated.  Although we shorten the strings, we describe each possible outcome in the enumerated type \textctref{KrylovStop}.}
         
     \outputitemu
         {ared}
         {\textctref{ared}}
+        {2}
         {Actual reduction in the merit function between the current iterate and the iterate after taking the trial step.} 
 
     \outputitemu
         {pred}
         {\textctref{pred}}
+        {2}
         {Predicted reduction in the merit function between the current iterate and the iterate after taking the trial step.} 
 
     \outputitemu
         {ared/pred}
         {None}
+        {2}
         {Actual versus predicted reduction.  Simply, we divide the outputs \textctrefalt{ared} and \textctrefalt{pred}.  For a perfect model, this ratio is $1.0$.}
 
     \outputitemu
         {delta}
         {\textctref{delta}}
+        {2}
         {Trust-region radius.} 
 
     \outputitemu
         {LSIter}
         {\textctref{linesearch_iter}}
+        {2}
         {Number of iterations taken by the line search.  We tune the maximum number of line-search iterations with the parameter \textctref{linesearch_iter_max} and indirectly control the number of iterations with the parameter \textctref{eps_ls}.}
 
     \outputitemu
         {alpha}
         {\textctref{alpha}}
+        {2}
         {Actual line-search step length.} 
 
     \outputitemu
         {alpha0}
         {\textctref{alpha0}}
+        {2}
         {Base line-search step length.}
-
-    \outputitemraw
-        {\index{Outputs!\textct{"|"|g(x)"|"|}}{\textctlabelalt{||g(x)||}}}
-        {None}
-        {Equality Constrained, Constrained}
-        {Norm of the equality constraint at the start of the optimization iteration, which we calculate in \textctref{g_x}.  We use this value within our equality constraint feasibility stopping condition described by the parameter \textctref{eps_constr}.}
 
     \outputitemi
         {mu}
         {\textctref{mu}}
+        {2}
         {Interior point parameter.} 
-
-    \outputitemi
-        {mu_est}
-        {\textctref{mu_est}}
-        {Current interior-point estimate.  We use this value within our complementary slackness stopping condition described by the parameter \textctref{eps_mu}.}
-
 \end{boldlist}
 
 \chapter{Advanced API}\label{ch:Advanced}
@@ -2978,9 +3077,15 @@ In Octave, this becomes
 
 \section{\secmessaging}\label{sec:messaging}
 
-        By default, we output messages and errors from Optizelle to \textct{stdout} and \textct{stderr}, respectively.  However, in some environments, we require different behavior.  For example, when using Optizelle in a program with a GUI, we may want to display the output to a separate window.  When using MPI in a distributed, parallel environment we likely want to restrict our output to only the rank 0 processor.  In these cases, we want to define a new messaging object.
+        By default, we output messages and errors from Optizelle to \textct{stdout} and \textct{stderr}, respectively.  However, in some environments, we require different behavior.  For example, 
+\begin{itemize}
+    \item When we use Optizelle in a program with a GUI, we may not to display the output to a separate window.
+    \item When using MPI in a distributed, parallel environment we likely want to restrict our output to only the rank 0 processor.
+\end{itemize}
+\noindent In these cases, we want to define a new messaging object.
 
         Messaging objects require two functions, \textct{print} and \textct{error}.  Both functions accept a string and print it accordingly.  In addition, \textct{error} must gracefully exit the optimization.  In code, we specify this object as
+\phantomsection\label{itm:Messaging}
 \begin{boldlist}
     \apiitem
         {C++}
@@ -3005,6 +3110,8 @@ In Octave, this becomes
     \textct{from __future__ import print_function}
 \end{center}
 
+        Once we define a custom messaging object, we are free to pass it to Optizelle.  This occurs in a few different places, but most notably when we call the optimization solver.  We describe this process in the section \hyperref[sec:solve]{\secsolve}.
+
         As an example, we modify the messaging object in our Rosenbrock advanced API example:
 \begin{boldlist}
     \exampleitem
@@ -3019,23 +3126,256 @@ In Octave, this becomes
         {MATLAB/Octave}
         {\lstinputlisting[style=Matlab,linerange=Messaging0-Messaging1]{@ROSENBROCKADVANCEDAPIPATH@/rosenbrock_advanced_api.m}}
 \end{boldlist}
-        
-\section{Symmetric Cone Programming}        
-        In the case of C++, we also provide a built-in vector space for semidefinite, second-order cone, and linear (SQL) programs:
+
+\section{\seccustomvector}\label{sec:customvector}
+
+        In continuous optimization, we most often optimize over a simple vector of numbers in $\re^m$.  If that's the case, we provide a reasonable implemenation of this vector space and describe it in section \hyperref[sec:importvs]{\secimportvs}.  However, in some situations we want to use a different space.
+\begin{itemize}
+    \item In PDE constrained optimization, we may want to optimize over a space of functions such as $L^2(\Omega)$.
+    \item In certain relaxations to discrete optimization problems, we must optimize over the space of symmetric, positive definite matrices.
+    \item When the variables in $\re^m$ have radically different scalings, we may need to alter the inner product to normalize our variables.
+    \item On large-scale problems with billions of variables, we must store the vectors in parallel and compute operations using a messaging system such as MPI.
+\end{itemize}
+\noindent In each of these cases, we need to define a custom vector space for our problem.
+
+        Each custom vector space requires us to define the following operations:
 \begin{boldlist}
-    \apiitem
-        {C++}
-        {\textct{Optizelle::SQL}}
-        {Use as is}
-        {\lstinputlisting[style=C++,linerange={Optizelle0-Optizelle1,Cone0-Cone1,SQL0,SQL1,Optizelle2-Optizelle3}]{@OPTIZELLECPPPATH@/vspaces.h}}
+    \customvsitem
+        {init}
+        {init(x)}
+        {$\textit{init}\leftarrow \xi(W)$ where $x\in W$}
+        {init(x)}
+        {$\textit{init}\leftarrow \xi(W)$ where $x\in W$}
+        {init(x)}
+        {$\textit{init}\leftarrow \xi(W)$ where $x\in W$}
+        {Initializes memory for a new vector.  Here, the function $\xi:\{X,Y,Z\}\rightarrow X\cup Y\cup Z$ denotes a choice function that selects an arbitrary element from the appropriate set.  Essentially, this states that we want a valid element in the vector space, but we dont care what the element is.}
+    
+    \customvsitem
+        {copy}
+        {copy(x,y)}
+        {$y\leftarrow x$}
+        {copy(x,y)}
+        {$y\leftarrow x$}
+        {copy(x)}
+        {$\textit{copy}\leftarrow x$}
+        {In C++ and Python, a shallow copy of the vector $x$ into the vector $y$.  In MATLAB/Octave, return the vector $x$}.
+    
+    \customvsitem
+        {scal}
+        {scal(alpha,x)}
+        {$x\leftarrow \alpha x$}
+        {scal(alpha,x)}
+        {$x\leftarrow \alpha x$}
+        {scal(alpha,x)}
+        {$\textit{scal}\leftarrow \alpha x$}
+        {In C++ and Python, overwrite $x$ with $\alpha x$.  In MATLAB/Octave, return $\alpha x$.} 
+    
+    \customvsitem
+        {axpy}
+        {axpy(alpha,x,y)}
+        {$y\leftarrow \alpha x + y$}
+        {axpy(alpha,x,y)}
+        {$y\leftarrow \alpha x + y$}
+        {axpy(alpha,x,y)}
+        {$\textit{axpy}\leftarrow \alpha x + y$}
+        {In C++ and Python, overwrite $y$ with $\alpha x+y$.  In MATLAB/Octave, return $\alpha x+y$.} 
+    
+    \customvsitem
+        {innr}
+        {innr(x,y)}
+        {$innr\leftarrow \langle x,y\rangle$}
+        {innr(x,y)}
+        {$innr\leftarrow \langle x,y\rangle$}
+        {innr(x,y)}
+        {$innr\leftarrow \langle x,y\rangle$}
+        {Return the inner product between $x$ and $y$.}
+    
+    \customvsitem
+        {zero}
+        {zero(x)}
+        {$x\leftarrow 0$} 
+        {zero(x)}
+        {$x\leftarrow 0$} 
+        {zero(x)}
+        {$\textit{zero}\leftarrow 0$} 
+        {In C++ and Python, overwrite $x$ with $0$.  In MATLAB/Octave, return $0$.  Note, this is not necessarily the same as \textct{scal(0.,x)} since, in practice, $x$ may contain NaNs and Infs.  As such, we consider \textctref{zero} to be a safe operation that returns $0.$ whereas \textctref{scal} may be an unsafe operation.}
+    
+    \customvsitem
+        {rand}
+        {rand(x)}
+        {$x\leftarrow \psi(W)$ where $x\in W$} 
+        {rand(x)}
+        {$x\leftarrow \psi(W)$ where $x\in W$} 
+        {rand(x)}
+        {$\textit{rand}\leftarrow \psi(W)$ where $x\in W$} 
+        {In C++ and Python, overwrite $x$ with a random vector.  In MATLAB/Octave, return a random vector.  Here, the function $\psi:\{X,Y,Z\}\rightarrow X\cup Y\cup Z$ denotes a stochastic choice function that randomly selects an element from the appropriate set.  Essentially, this states that we want a valid, random element in the vector space.  Primarily, we use these vectors for our diagnostic tests controlled by the parameters \textctref{f_diag}, \textctref{g_diag}, and \textctref{h_diag}.}
+\end{boldlist}
+\noindent In addition, the vector space associated with the codomain of the inequality constraints, $Z$, requires the following operations
+\begin{boldlist}
+    \customvsitem
+        {prod}
+        {prod(x,y,z)}
+        {$z\leftarrow x\circ y$}
+        {prod(x,y,z)}
+        {$z\leftarrow x\circ y$}
+        {prod(x,y)}
+        {$\textit{prod}\leftarrow x\circ y$}
+        {In C++ and Python, overwrite $z$ with $x\circ y$.  In MATLAB/Octave, return $x\circ y$.  Here, $\circ$ denotes a pseudo-Jordan product between two elements.  We say pseudo-Jordan in the sense that we do not require a full Euclidean-Jordan algebra.  Instead, we drop the requirement for commutativity.  Hence, for linear bound constraints, we define that
+$$
+        [x\circ y]_i = x_iy_i.
+$$
+Hence, the product denotes the pointwise or Hadamard product.  For second-order cone constraints, we define that
+$$
+        \begin{bmatrix}x_0\\\bar{x}\end{bmatrix} \circ \begin{bmatrix}y_0\\\bar{y}\end{bmatrix}=\begin{bmatrix} x_0y_0 + \bar{x}^T\bar{y}\\x_0 \bar{y} + y_0 \bar{x}\end{bmatrix}.
+$$
+For semidefinite programming, we have that
+$$
+        X\circ Y = XY.
+$$
+Alternatively, we can define that
+$$
+        X\circ Y = \frac{XY + YX}{2},
+$$
+but the inverse operation \textctref{linv} below becomes far less efficient.}
+ 
+    \customvsitem
+        {id}
+        {id(x)}
+        {$x\leftarrow e$}
+        {id(x)}
+        {$x\leftarrow e$}
+        {id(x)}
+        {$\textit{id}\leftarrow e$}
+        {In C++ and Python, overwrite $x$ with $e$.  In MATLAB/Octave, return $e$.  In this function, $e$ denotes the identity element for the Jordan algebra.  Hence, this function creates element $e$ so that $x\circ e=x$.   For linear bound constraints, $e$ denotes the vector of all ones.  For second-order cone constraints, $e=\begin{bmatrix} 1 & 0 & \dots & 0\end{bmatrix}^T$.  For semidefinite constraints, $e=I$}
+
+    \customvsitem
+        {linv}
+        {linv(x,y,z)}
+        {$z\leftarrow L(x)^{-1} y$}
+        {linv(x,y,z)}
+        {$z\leftarrow L(x)^{-1} y$}
+        {linv(x,y)}
+        {$\textit{linv}\leftarrow L(x)^{-1} y$}
+        {In C++ and Python, overwrite $z$ with $L(x)^{-1} y$.  In MATLAB/Octave, return $L(x)^{-1} y$.  Here, the function \textctref{linv} denotes the inverse operation to \textctref{prod}.  Note, $\textctref{prod}$ defines a bilinear operation so that there exists a linear operator $L(x)$ such that $x\circ y=L(x)y$.  The function \textctref{linv} computes the action of the {\it inverse} of $L(x)$ on a vector.  For linear bound constraints, $L(x)=\textnormal{Diag}(x)$, where $\textnormal{Diag}(x)$ denotes the diagonal matrix with $x$ on the diagonal.  For second-order cone constraints, $L(x)=\textnormal{Arw}(x)$ where we define $\textnormal{Arw}(x)$ as
+$$
+        \textnormal{Arw}\left(\begin{bmatrix}x_0\\\bar{x}\end{bmatrix}\right) =
+\begin{bmatrix}
+        x_0 & \bar{x}^T\\\bar{x} & x_0 I
+\end{bmatrix}.
+$$
+For semidefinite constraints, we can either define that $L(X)=X$ or that $L(X)=\frac{X\cdot + \cdot X}{2}$.  Generally, it is preferable to use the first definition since $L(X)^{-1}=X^{-1}$.  In the second case, we require the solution of the Sylvester equations.}
+    
+    \customvsitem
+        {barr}
+        {barr(x)}
+        {$\textit{barr}\leftarrow \phi(x)$ where $x\circ\nabla \phi(x)=e$}
+        {barr(x)}
+        {$\textit{barr}\leftarrow \phi(x)$ where $x\circ\nabla \phi(x)=e$}
+        {barr(x)}
+        {$\textit{barr}\leftarrow \phi(x)$ where $x\circ\nabla \phi(x)=e$}
+        {Return the result of the barrier function applied to a vector.  Here, the function $\phi:Z\rightarrow \re$ denotes the barrier function, which we require to satisfy 
+$$
+    x\circ \nabla \phi(x) = e.
+$$
+For linear bound constraints, this is simply the log-barrier function
+$$
+    \phi(x) = \sum\limits_{i=1}^m \log(x_i).
+$$
+For second-order cone constraints, we define this as
+$$
+    \phi\left(\begin{bmatrix}x_0\\\bar{x}\end{bmatrix}\right) = \frac{1}{2} \log(x_0^2-\langle \bar{x},\bar{x}\rangle).
+$$
+For semidefinite constraints, we define this as
+$$
+    \phi(X)=\log(\textnormal{det}(X))
+$$
+where $\textnormal{det}(X)$ denotes the determinant of $X$.}
+    
+    \customvsitem
+        {srch}
+        {srch(x,y)}
+        {$\textit{srch}\leftarrow \arg\max\{\alpha\in\re : \alpha x + y \succeq 0, \alpha\geq 0\}$}
+        {srch(x,y)}
+        {$\textit{srch}\leftarrow \arg\max\{\alpha\in\re : \alpha x + y \succeq 0, \alpha\geq 0\}$}
+        {srch(x,y)}
+        {$\textit{srch}\leftarrow \arg\max\{\alpha\in\re : \alpha x + y \succeq 0, \alpha\geq 0\}$}
+        {Return how far we can move in the direction $x$ from the point $y$ before violating nonnegativity.  In other words, the function \textctref{srch} denotes the search function used to maintain strict feasibility with respect to the inequality constraint.  We define this as
+$$
+    \arg\max\{\alpha\in\re : \alpha x + y \succeq 0, \alpha\geq 0\}
+$$
+where we assume $y\succ 0$.  Hence, $\alpha$ denotes the maximum distance we can move in the direction $x$ from $y$ so that $\alpha x + y$ remains feasible.  Note, sometimes this number is infinite.  If this is the case, we must return \textct{Inf}.}
+    
+    \customvsitem
+        {symm}
+        {symm(x)}
+        {$x\leftarrow \pi(x)$ where $\pi(x\circ y)=\pi(y\circ x)$}
+        {symm(x)}
+        {$x\leftarrow \pi(x)$ where $\pi(x\circ y)=\pi(y\circ x)$}
+        {symm(x)}
+        {$symm \leftarrow \pi(x)$ where $\pi(x\circ y)=\pi(y\circ x)$}
+        {In C++ and Python, overwrite $x$ with its symmetrization.  In MATLAB/Octave, return the symmetrization of $x$.  Here, the function $\pi:Z\rightarrow Z$ denotes the symmetrization operator.  We require this operator since we relax the commutativity requirement from the Euclidean-Jordan algebra.  For linear bound constraints and second-order cone constraints, this operation does nothing.  In addition, for semidefinite constraints where $X\circ Y=\frac{XY+YX}{2}$, this operation does nothing.  However, for semidefinite constraints where $X\circ Y=XY$, we may use symmetrization,
+$$
+    \pi(X)=\frac{X+X^T}{2},
+$$
+or more generally the \textit{similar symmetrization} operator,
+$$
+    \pi_P(X)=\frac{(PXP^{-1}+(PXP^{-1})^T}{2},
+$$
+where we require $P$ to be nonsingular.}
 \end{boldlist}
 
-\noindent Take special note of the constructor:
+        Next, we require these vector-space functions be encapsulated in the following structures
+\begin{boldlist}
+    \vswrapperitem
+        {C++}
+        {Templated struct with static members and a single typedef called \textct{Vector}}
+        {A vector space in C++ must be declared as a templated struct with static members.  As far as the template parameter, we template on our real scalar type and require that each of the functions that accept or return a scalar use this type.  This template parameter allows us to insure that each of the vector spaces uses the same real type, which is important for consistency.  Next, each of the above functions must be included and declared static.  This allows us to access the functions without instantiating the struct.  We also require a single typedef called \textct{Vector}.  This defines the vector type used by each of the vector-space functions.  In addition to the typedef, we require that this vector type implement move semantics, which includes both the move constructor as well as move semantics for the assignment operator.  Note, items in the standard library all properly implement move semantics.  As such, as long as we use \textct{std::vector}, \textct{std::unique_ptr}, or \textct{std::shared_ptr}, we satisfy this requirement.}
+    
+    \vswrapperitem
+        {Python}
+        {Class with static methods} 
+        {A vector space in Python must be declared as a class consisting entirely of static methods.  In other words, we require a class that implements all of the above vector-space functions where we decorate each function definition with the decorator \textct{@staticmethod}.}
 
+    \vswrapperitem
+        {MATLAB/Octave}
+        {Structure array} 
+        {A vector space in MATLAB/Octave must be declared as a structure array with all of the above methods present.} 
+\end{boldlist}
+        
+        As an example, we define and use a custom vector space for $\re^m$ in our Rosenbrock advanced API example:
+\begin{boldlist}
+    \exampleitem
+        {C++}
+        {\lstinputlisting[style=C++,linerange=VectorSpace0-VectorSpace1]{@ROSENBROCKADVANCEDAPIPATH@/rosenbrock_advanced_api.cpp}}
+
+    \exampleitem
+        {Python}
+        {\lstinputlisting[style=Python,linerange=VectorSpace0-VectorSpace1]{@ROSENBROCKADVANCEDAPIPATH@/rosenbrock_advanced_api.py}}
+
+    \exampleitem
+        {MATLAB/Octave}
+        {\lstinputlisting[style=Matlab,linerange=VectorSpace0-VectorSpace1]{@ROSENBROCKADVANCEDAPIPATH@/rosenbrock_advanced_api.m}}
+\end{boldlist}
+
+\section{\seccone}        
+
+        In the case of C++, we provide a built-in vector space for semidefinite, second-order cone, and linear (SQL) programs
+\phantomsection\label{itm:SQL}
+\begin{boldlist}
+    \vsitem
+        {C++}
+        {\textct{Optizelle::SQL::Vector}}
+        {\textct{Optizelle::SQL}}
+        {Use as is}
+\end{boldlist}
+
+        In order to create an \textct{SQL::Vector}, we use the following constructor
 \begin{flushleft}
-    \lstinputlisting[style=C++,linerange={SQLConstructor0-SQLConstructor1}]{@OPTIZELLECPPPATH@/vspaces.h}
+    \lstinputlisting[style=C++,linerange={Optizelle0-Optizelle1,SQL0-SQL1,SQLVector0-SQLVector1,SQLVector2-SQLVector3,SQLVector4-SQLVector5,SQL2-SQL3,Optizelle2-Optizelle3}]{@OPTIZELLECPPPATH@/vspaces.h}
 \end{flushleft}
-\noindent In order to construct an SQL vector, we must provide a vector of \textct{Cone::t}s that describe the cones and a vector of \textct{Natural}s that describe the sizes.  In order to access these elements on the vector \textct{x}, we use the following indexing functions
+Here, \textct{Cone::t} corresponds to the enumerated type \textctref{Cone} and \textct{Natural} refers to the architecture specific unsigned integer defined in \textct{Optizelle::Natural}.  The constructor creates an SQL variable with the specified types and sizes of cones.  Specifically, a linear cone of size $m$ denotes a vector in $\re^m$ that lies in the nonnegative orthant.  A quadratic cone of size $m$ denotes a vector in $\re^m$ that lies in the quadratic cone.  Finally, a semidefinite cone of size $m$ denotes a matrix in $\re^{m\times m}$ that lies in the cone of positive semidefinite matrices.  Note, even though we ultimately find a symmetric matrix, we compute with a full $m\times m$ matrix and not just the upper or lower half.  Using a full matrix affects how we define the derivatives of our inequality constraint $h$, so take care.
+
+        In order to access the elements of an SQL vector, \textct{x}, we use the following indexing functions
 \begin{center}\begin{tabular}{llll}
 Number of cones & Type of cone & Type of Indexing & Use\\\hline
 Single  & Quadradic/Linear & Specific element & \textct{x(i)}\\
@@ -3053,142 +3393,238 @@ Type of block & \textct{x.blkType(k)}\\
 Number of blocks & \textct{x.numblocks()}
 \end{tabular}\end{center}
 
-        Outside of Rm, we also allow these vector spaces of functions such as $L^2(\Omega)$ or martrices such as $\re^{m\times n}$ as long as these spaces provide sufficient vector-space operations.  Specifically, for $W\in\{X,Y,Z\}$, we require that $W$ provide the functions:
-\begin{center}\begin{tabular}{|lll|}\hline
-    \textbf{Name} & \textbf{Definition} & \textbf{Languages}\\\hline
-    \textct{init(x)} & $\textit{init}\leftarrow \xi(W)$ & C++, Python, MATLAB/Octave\\\hline
+        As an example, we setup and solve a simple second-order cone program in our simple quadratic cone example:
+\begin{boldlist}
+    \exampleitem
+        {C++}
+        {\lstinputlisting[style=C++]{@SIMPLEQUADRATICCONEPATH@/simple_quadratic_cone.cpp}}
+\end{boldlist}
+\noindent Similarly, we setup and solve a simple semidefinite program in our simple SDP cone example:
+\begin{boldlist}
+    \exampleitem
+        {C++}
+        {\lstinputlisting[style=C++]{@SIMPLESDPCONEPATH@/simple_sdp_cone.cpp}}
+\end{boldlist}
 
-    \textct{copy(x,y)} & $y\leftarrow x$ & C++, Python\\
-    \textct{copy(x)} & $\textit{copy}\leftarrow x$ & MATLAB/Octave\\\hline
+\section{\secsmanip}\label{sec:smanip}
 
-    \textct{scal(alpha,x)} & $x\leftarrow \alpha x$ & C++, Python\\
-    & $\textit{scal}\leftarrow \alpha x$ & MATLAB/Octave\\\hline
+        State manipulation is a process that allows us to insert arbitrary code into the optimization algorithms.  We use this to add new features such as the following.
+\begin{itemize}
+    \item Real-time optimal control systems require hard computational time limit.  After this time, we must exit the optimization cleanly and return our most current solution.
+    \item For a particular application, we may want to use a custom line-search, but not recode the rest of the optimization algorithms.
+    \item In signal processing, we may know our optimal solution does not have any frequencies above a certain threshold.  When this is difficult to formulate as a constraint, we can simply run a high-pass filter on the optimization variable at the end of each iteration.
+    \item When our algorithms perform poorly, we may want to run some custom diagnostics at the end of each optimization iteration.
+    \item In order to replicate our optimization runs, we need to write a restart file at the end of each optimization iteration.  We describe this process in the section \hyperref[sec:restart]{\secrestart}.
+    \item Internally, we use state manipulation to add algorithms such as the interior point method to the composite-step SQP method.
+\end{itemize}
+\noindent In each of these situations, we make use of the \textctref{StateManipulator}.
 
-    \textct{axpy(alpha,x,y)} & $y\leftarrow \alpha x+y$ & C++, Python\\
-    & $\textit{axpy}\leftarrow \alpha x+y$ & MATLAB/Octave\\\hline
+        In order to manpulate the state, we use an object called the \textctref{StateManipulator}.  During the optimization computation, we repeatedly call this object with the \hyperref[sec:fns]{bundle of functions}, \hyperref[sec:state]{optimization state}, and the \hyperref[itm:OptimizationLocation]{location}.  At this point, we may do any computation and modify the state as desired.  In C++ and Python, we implicitely return these changes to the state.  In MATLAB/Octave, we must return the state explicitely.
 
-    \textct{innr(x,y)} & $\textit{innr}\leftarrow \langle x,y\rangle$ & C++, Python, MATLAB/Octave\\\hline
-    
-    \textct{zero(x)} & $x\leftarrow 0$ & C++, Python\\
-    & $\textit{zero}\leftarrow 0$ & MATLAB/Octave\\\hline
-    
-    \textct{rand(x)} & $x\leftarrow \psi(W)$ & C++, Python\\
-    & $\textit{rand}\leftarrow \psi(W)$ & MATLAB/Octave\\\hline
-\end{tabular}\end{center}
-Here, the notation $x\leftarrow \alpha x$ means we assign the element $x$ the value $\alpha x$ whereas the notation $\textit{scal}\leftarrow \alpha x$ means we return the result $\alpha x$.  Next, $\xi,\psi:\mathcal{P}(W)\rightarrow W$ denote choice functions where $\xi$ and $\psi$ are typically deterministic and stochastic, respectfully.  In other words, $\xi$ and $\psi$ choose either fixed or random elements of $W$.  More specifically, we use \textct{init} to allocate memory and \textct{rand} to conduct diagnostic tests.
+        In code, we specify the \textctref{StateManipulator} as: 
+\phantomsection\label{itm:StateManipulator}
+\begin{boldlist}
+    \apiitem
+        {C++}
+        {\textct{Optizelle::StateManipulator}}
+        {Inheritance}
+        {\lstinputlisting[style=C++,linerange={Optizelle0-Optizelle1,StateManipulator0-StateManipulator1,Optizelle2-Optizelle3}]{@OPTIZELLECPPPATH@/optizelle.h}}
 
+    \apiitem
+        {Python}
+        {\textct{Optizelle.StateManipulator}}
+        {Inheritance}
+        {\lstinputlisting[style=Python,linerange=StateManipulator0-StateManipulator1]{@OPTIZELLEPYTHONPATH@/__init__.py}}
 
-\section{\seccustomvector}\label{sec:customvector}
+    \apiitem
+        {MATLAB/Octave}
+        {\textct{Optizelle.StateManipulator}}
+        {Members present}
+        {\lstinputlisting[style=Matlab,linerange=StateManipulator0-StateManipulator1]{@OPTIZELLEMATLABPATH@/setupOptizelle.m}}
+\end{boldlist}
+\noindent Once we define the \textctref{StateManipulator}, we call the optimization solver with one of the following four commands, which differs slightly from those defined in the section \hyperref[sec:solve]{\secsolve}.  In essence, we add the \textctref{StateManipulator} after the \textctref{Messaging} object.
+\begin{filecontents*}{smanip_solver.cpp}
+Optizelle::Unconstrained<Real,XX>::Algorithms::getMin(
+    msg,smanip,fns,state);
+Optizelle::EqualityConstrained<Real,XX,YY>::Algorithms::getMin(
+    msg,smanip,fns,state);
+Optizelle::InequalityConstrained<Real,XX,ZZ>::Algorithms::getMin(
+    msg,smanip,fns,state);
+Optizelle::Constrained<Real,XX,YY,ZZ>::Algorithms::getMin(
+    msg,smanip,fns,state);
+\end{filecontents*}
 
-        Optizelle allows the use of a custom vector space provided by the user.  This allows Optizelle to more easily work with programs that store their information in a custom format.  Simply, we define a new vector space rather than trying to convert the internal data into a \texttt{std::vector}.  The requirements for a new vector space are a structure of the form
-\input{vectorSpaceSpecification.tex}
-Note, the functions \texttt{prod}, \texttt{id}, \texttt{linv}, \texttt{barr}, \texttt{srch}, and \texttt{symm} are only required for the codomain of the inequality constraint.  We explain these functions below.
+\begin{filecontents*}{smanip_solver.py}
+Optizelle.Unconstrained.Algorithms.getMin(X,msg,smanip,fns,state)
+Optizelle.EqualityConstrained.Algorithms.getMin(X,Y,msg,smanip,fns,state)
+Optizelle.InequalityConstrained.Algorithms.getMin(X,Z,msg,smanip,fns,state)
+Optizelle.Constrained.Algorithms.getMin(X,Y,Z,msg,smanip,fns,state)
+\end{filecontents*}
 
-\subsection{typedef}
+\begin{filecontents*}{smanip_solver.m}
+state = Optizelle.Unconstrained.Algorithms.getMin(
+    X,msg,smanip,fns,state);
+state = Optizelle.EqualityConstrained.Algorithms.getMin(
+    X,Y,msg,smanip,fns,state);
+state = Optizelle.InequalityConstrained.Algorithms.getMin(
+    X,Z,msg,smanip,fns,state);
+state = Optizelle.Constrained.Algorithms.getMin(
+    X,Y,Z,msg,smanip,fns,state);
+\end{filecontents*}
 
-       Optizelle requires that the custom vector space contains a typedef called Vector.  The underlying storage for the vector can be any valid class as long as the class contains a default constructor that does nothing and a copy constructor that knows how to copy items created by the default constructor.  As far as allocating memory for this structure, this is does with the \texttt{init} command that we describe below.
+\begin{boldlist}
+    \apiitemshort
+        {C++}
+        {\lstinputlisting[style=C++]{smanip_solver.cpp}}
+        {Use as is}
+    \apiitemshort
+        {Python}
+        {\lstinputlisting[style=Python]{smanip_solver.py}}
+        {Use as is}
+    \apiitemshort
+        {MATLAB/Octave}
+        {\lstinputlisting[style=Matlab]{smanip_solver.m}}
+        {Use as is}
+\end{boldlist}
 
-\subsection{init}
+        As an example, we use the \textctref{StateManipulator} to add restarts to our Rosenbrock advanced API example.  We discuss restarts in the section entitled \hyperref[sec:restart]{\secrestart}. 
+\begin{boldlist}
+    \exampleitem
+        {C++}
+        {\lstinputlisting[style=C++,linerange=RestartManipulator0-RestartManipulator1]{@ROSENBROCKADVANCEDAPIPATH@/rosenbrock_advanced_api.cpp}}
 
-        Since allocating memory for a custom object may be complicated, Optizelle uses an \texttt{init} function that copies the structure of a vector from an already existing object.  Hence, this function can be seen as a deep copy from x to y.
+    \exampleitem
+        {Python}
+        {\lstinputlisting[style=Python,linerange=RestartManipulator0-RestartManipulator1]{@ROSENBROCKADVANCEDAPIPATH@/rosenbrock_advanced_api.py}}
 
-\subsection{copy}
+    \exampleitem
+        {MATLAB/Octave}
+        {\lstinputlisting[style=Matlab,linerange=RestartManipulator0-RestartManipulator1]{@ROSENBROCKADVANCEDAPIPATH@/rosenbrock_advanced_api.m}}
+\end{boldlist}
+\noindent In order to use this \textctref{StateManipulator}, we call Optizelle's solver with the code
+\begin{boldlist}
+    \shortexampleitem
+        {C++}
+        {\lstinputlisting[style=C++,linerange=Solver0-Solver1,widthgobble=1*4]{@ROSENBROCKADVANCEDAPIPATH@/rosenbrock_advanced_api.cpp}}
+
+    \shortexampleitem
+        {Python}
+        {\lstinputlisting[style=Python,linerange=Solver0-Solver1]{@ROSENBROCKADVANCEDAPIPATH@/rosenbrock_advanced_api.py}}
+
+    \shortexampleitem
+        {MATLAB/Octave}
+        {\lstinputlisting[style=Matlab,linerange=Solver0-Solver1,widthgobble=1*4]{@ROSENBROCKADVANCEDAPIPATH@/rosenbrock_advanced_api.m}}
+\end{boldlist}
         
-        The \texttt{copy} function copies the data from x to y using already initialized vectors.  Hence, it implements a shallow copy.
+\section{\secrestart}\label{sec:restart}
 
-\subsection{scal}
+        Restarts are a mechanism to read, write, and archive the progress and solution of an optimization algorithm.  In other words, restarts allow us to save the state of an optimization algorithm before it finishes computing.  We do this for several reasons.
+\begin{itemize}
+    \item In scientific or engineering tasks, we may need to replicate or reproduce our work.
 
-        The \text{scal} function computes and returns the scalar multiple of a vector.  The scalar argument has the same type as the template argument to the structure.
+    \item Large, computationally expensive problems typically require parallel computing clusters.  With thousands of computers working in concert, the chance that a hardware failure occurs increases.  One way to recover from these failures it to restart the computation after a crash.
 
-\subsection{zero}
+    \item Parallel computing clusters generally share their computing resources between several users.  In order to fairly divide use, batch jobs require us to specify the amount of time required to run a job.  If we guess this number poorly, restarts allow us to complete the computation later.
 
-        The \texttt{zero} function transforms a vector into the zero element for the vector space.  In other words, the additive identity element.  The reason that \texttt{zero} exists separately from \texttt{scal} is that if a vector contains NaN elements, the multiplication of zero by NaN is undefined.
+    \item For many problems, it's unclear what algorithm we should use.  Second-order methods such as Newton's method are only guaranteed to converge quadratically near the solution.  As such, we may be well served to start the computation with a first-order method and then switch to a second-order method as we approach optimality.  We can accomplish this by writing a restart file, modifying the specified algorithm, and then resuming the computation.
 
-\subsection{axpy}
+    \item Often an algorithm makes progress toward a solution, but then stagnates.  In order to diagnose why the algorithm stagnated, we may examine the restart file at the iteration of stagnation.  Furthermore, if we have insight into the underlying problem structure, we could modify the solution by hand or with an outside tool and then restart the computation.
+\end{itemize}
+\indent Each of these situations requires restarts.
 
-        Next, the function \texttt{axpy} computes the operator $\alpha x + y$ and then stores the result in $y$.
+        As long as we use our built-in vector spaces such as \textctref{Rm} and \textctref{SQL}, we can easily read and write restart files to disk.
 
-\subsection{innr}
+        At its core, restarts consist of two mechanisms: release and capture.  Release transforms the state into a collection of lists that contain all of the optimization information.  Capture reverses this process.  Generally, we do a release, write these lists containing the state information to file, and then capture the state.  The idea behind this process is that we don't expect ourselves to remember all of the optimization variables.  Certainly, this collection of variables changes whenenever we update the code or add new algorithms.  However, if we know how to write a list of variables to file, we can simply iterate over the list and take the appropriate action.
 
-        The inner product function \texttt{innr}, computes the inner product between two elements and then returns the result.  Recall, the inner product is a function $\langle \cdot,\cdot \rangle\rightarrow \re$ so that
-\begin{enumerate}
-    \item $\langle x,y\rangle = \langle y,x \rangle$,
-    \item $\langle \alpha x,y\rangle = \alpha \langle x,y\rangle$,
-    \item $\langle x+y,z\rangle = \langle x,z\rangle + \langle y,z\rangle$,
-    \item $\langle x,x\rangle\geq 0$ with equality only when $x=0$.
-\end{enumerate}
-Note, Optizelle restricts the formulations to real vector spaces.  Note, for $\ell^2$, the inner product can be defined simply as $\langle x,y\rangle=x^Ty$.
+       More specifically, the capture and release functions operate on lists of tuples.  As far as the type used for the lists, we have 
+\begin{boldlist}
+    \simpletypeitem
+        {C++}
+        {std::list}
+    
+    \simpletypeitem
+        {Python}
+        {list}
+    
+    \simpletypeitem
+        {MATLAB/Octave}
+        {cell}
+\end{boldlist}
+\noindent For the type used by the tuples, we have 
+\begin{boldlist}
+    \simpletypeitem
+        {C++}
+        {std::pair}
+    
+    \simpletypeitem
+        {Python}
+        {tuple}
+    
+    \simpletypeitem
+        {MATLAB/Octave}
+        {cell}
+\end{boldlist}
+\noindent In these tuples, we always use a string for the first element.  This represents the unique label for the item.  The second items depends on the type involved and we enumerate these possibilities below.
+\begin{boldlist}
+    \rtypeitem
+        {Reals}
+        {List of \textctref{Real} numbers and labels.}
+    
+    \rtypeitem
+        {Naturals}
+        {List of \textctref{Natural} numbers and labels.}
+    
+    \rtypeitem
+        {Params}
+        {List of strings and labels.  These strings correspond to the various \textctref{Enumerated} types that have been converted to strings using the \textct{to_string} function, which we also describe in the \textctref{Enumerated} type documentation.}
 
-\subsection{prod}
+    \rtypeitem
+        {X_Vectors}
+        {List of \textctref{X_Vector} vectors and labels.}
 
-        The function \texttt{prod} defines a pseudo-Jordan product between two elements.  We say pseudo-Jordan in the sense that we do not require a full Euclidean-Jordan algebra.  Instead, we drop the requirement for commutativity.  Hence, for linear bound constraints, we define that
-$$
-        [x\circ y]_i = x_iy_i.
-$$
-Hence, the product denotes the pointwise or Hadamard product.  For second-order cone constraints, we define that
-$$
-        \begin{bmatrix}x_0\\\bar{x}\end{bmatrix} \circ \begin{bmatrix}y_0\\\bar{y}\end{bmatrix}=\begin{bmatrix} x_0y_0 + \bar{x}^T\bar{y}\\x_0 \bar{y} + y_0 \bar{x}\end{bmatrix}.
-$$
-For semidefinite programming, we have that
-$$
-        X\circ Y = XY.
-$$
-Alternatively, we can define that
-$$
-        X\circ Y = \frac{XY + YX}{2},
-$$
-but the inverse operation we discuss below will be far more inefficient.
+    \rtypeitem
+        {Y_Vectors}
+        {List of \textctref{Y_Vector} vectors and labels.}
 
-\subsection{id} 
+    \rtypeitem
+        {Z_Vectors}
+        {List of \textctref{Z_Vector} vectors and labels.}
+\end{boldlist}
 
-       The function \texttt{id} transforms a vector into the identity element for the inequality algebra.  Hence, it returns an element $e$ so that $x\circ e=x$.   For linear bound constraints, $e$ denotes the vector of all ones.  For second-order cone constraints, $e=\begin{bmatrix} 1 & 0 & \dots & 0\end{bmatrix}^T$.  For semidefinite constraints, $e=I$.
+        Based on the above types, we release and capture the state with the following code.
+\begin{boldlist}
+    \shortexampleitem
+        {C++}
+        {
+        \lstinputlisting[style=C++,linerange={Release0-Release1,Capture0-Capture1},widthgobble=1*4]{@CAPTURERELEASEPATH@/unconstrained.cpp}
+        \lstinputlisting[style=C++,linerange={Release0-Release1,Capture0-Capture1},widthgobble=1*4]{@CAPTURERELEASEPATH@/equality_constrained.cpp}
+        \lstinputlisting[style=C++,linerange={Release0-Release1,Capture0-Capture1},widthgobble=1*4]{@CAPTURERELEASEPATH@/inequality_constrained.cpp}
+        \lstinputlisting[style=C++,linerange={Release0-Release1,Capture0-Capture1},widthgobble=1*4]{@CAPTURERELEASEPATH@/constrained.cpp}
+        }
+    
+    \shortexampleitem
+        {Python}
+        {
+        \lstinputlisting[style=Python,linerange={Release0-Release1,Capture0-Capture1}]{@CAPTURERELEASEPATH@/unconstrained.py}
+        \lstinputlisting[style=Python,linerange={Release0-Release1,Capture0-Capture1}]{@CAPTURERELEASEPATH@/equality_constrained.py}
+        \lstinputlisting[style=Python,linerange={Release0-Release1,Capture0-Capture1}]{@CAPTURERELEASEPATH@/inequality_constrained.py}
+        \lstinputlisting[style=Python,linerange={Release0-Release1,Capture0-Capture1}]{@CAPTURERELEASEPATH@/constrained.py}
+        }
+    
+    \shortexampleitem
+        {MATLAB/Octave}
+        {
+        \lstinputlisting[style=Matlab,linerange={Release0-Release1,Capture0-Capture1}]{@CAPTURERELEASEPATH@/unconstrained.m}
+        \lstinputlisting[style=Matlab,linerange={Release0-Release1,Capture0-Capture1}]{@CAPTURERELEASEPATH@/equality_constrained.m}
+        \lstinputlisting[style=Matlab,linerange={Release0-Release1,Capture0-Capture1}]{@CAPTURERELEASEPATH@/inequality_constrained.m}
+        \lstinputlisting[style=Matlab,linerange={Release0-Release1,Capture0-Capture1}]{@CAPTURERELEASEPATH@/constrained.m}
+        }
+\end{boldlist}
 
-\subsection{linv}
-
-        The function \texttt{linv} denotes the inverse operation to \texttt{prod}.  Note, $\texttt{prod}$ defines a bilinear operation so that there exists a linear operator $L(x)$ such that $x\circ y=L(x)y$.  The function \texttt{linv} computes the action of the {\it inverse} of $L(x)$ on a vector.  For linear bound constraints, $L(x)=\textnormal{Diag}(x)$, where $\textnormal{Diag}(x)$ denotes the diagonal matrix with $x$ on the diagonal.  For second-order cone constraints, $L(x)=\textnormal{Arw}(x)$ where we define $\textnormal{Arw}(x)$ as
-$$
-        \textnormal{Arw}\left(\begin{bmatrix}x_0\\\bar{x}\end{bmatrix}\right) =
-\begin{bmatrix}
-        x_0 & \bar{x}^T\\\bar{x} & x_0 I
-\end{bmatrix}.
-$$
-For semidefinite constraints, we can either define that $L(X)=X$ or that $L(X)=\frac{X\cdot + \cdot X}{2}$.  Generally, it is preferable to use the first definition since $L(X)^{-1}=X^{-1}$.  In the second case, Optizelle requires the solution of the Sylvester equations.
-
-\subsection{barr}
-
-        The function \texttt{barr} denotes the barrier function used by the merit function.  Optizelle requires a function so that
-$$
-    x\circ \nabla \textnormal{barr}(x) = e.
-$$
-For linear bound constraints, this is simply the log-barrier function
-$$
-    \textnormal{barr}(x) = \sum\limits_{i=1}^m \log(x_i).
-$$
-For second-order cone constraints, we define this as
-$$
-    \textnormal{barr}\left(\begin{bmatrix}x_0\\\bar{x}\end{bmatrix}\right) = \frac{1}{2} \log(x_0^2-\langle \bar{x},\bar{x}\rangle).
-$$
-For semidefinite constraints, we define this as
-$$
-    \textnormal{barr}(X)=\log(\textnormal{det}(X))
-$$
-where $\textnormal{det}(X)$ denotes the determinant of $X$.
-
-\subsection{srch}
-
-        The function \texttt{srch} denotes the search function used to maintain strict feasibility with respect to the inequality constraint.  We define this as
-$$
-    \textnormal{srch}(x,y)=\arg\max\limits_{\alpha\geq 0} \{ \alpha\in\re : \alpha x + y \succeq 0\}
-$$
-where we assume $y\succ 0$.  Hence, $\alpha$ denotes the maximum distance Optizelle can move in the direction $x$ from $y$ so that $\alpha x + y$ remains feasible.
-
-\subsection{symm}
-
-        The function \texttt{symm} denotes the symmetrization operator.  Optizelle requires this operator since we relax the commutativity requirement from the Euclidean-Jordan algebra.  For linear bound constraints and second-order cone constraints, this operation does nothing.  In addition, for semidefinite constraints where $X\circ Y=\frac{XY+YX}{2}$, this operation does nothing.  However, for semidefinite constraints where $X\circ Y=XY$, Optizelle requires $\textnormal{symm}(X)=\frac{X+X^T}{2}$.
+        Outside the use of capture and release, we can simplify the restart scheme further.  Specifically, as long as we 
 
 \clearpage
 \addcontentsline{toc}{chapter}{Index}
 \printindex
-
 
 \end{document}

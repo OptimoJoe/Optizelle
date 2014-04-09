@@ -512,11 +512,13 @@ class Messaging(object):
         sys.stderr.write("%s\n" %(msg))
 #---Messaging1---
 
+#---StateManipulator0---
 class StateManipulator(object):
-    """A function that has free reign to manipulate or analyze the state.  This should be used cautiously."""
+    """A function that has free reign to manipulate or analyze the state."""
     def eval(self,fns,state,loc):
         """Application"""
         pass
+#---StateManipulator1---
 
 class Rm(object):
     """Vector space for the nonnegative orthant.  For basic vectors in R^m, use this."""

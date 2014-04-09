@@ -1109,8 +1109,9 @@ namespace Optizelle{
         }
     }
 
+
+    //---StateManipulator0---
     // A function that has free reign to manipulate or analyze the state.
-    // This should be used cautiously.
     template <typename ProblemClass>
     struct StateManipulator {
         // Disallow constructors
@@ -1129,6 +1130,7 @@ namespace Optizelle{
         // Allow the derived class to deallocate memory
         virtual ~StateManipulator() {}
     };
+    //---StateManipulator1---
 
     // A state manipulator that does nothing
     template <typename ProblemClass>
@@ -1200,7 +1202,7 @@ namespace Optizelle{
                     // Get the headers 
                     std::list <std::string> out;
                     ProblemClass::Diagnostics::getStateHeader(state,out);
-                    if(msg_level >= 2)
+                    if(false && msg_level >= 3)
                         ProblemClass::Diagnostics::getKrylovHeader(state,out);
 
                     // Output the result
@@ -1230,7 +1232,8 @@ namespace Optizelle{
                             ::getState(fns,state,false,false,out);
 
                     // Print out blank Krylov information 
-                    ProblemClass::Diagnostics::getKrylov(state,true,out);
+                    if(false && msg_level >=3)
+                        ProblemClass::Diagnostics::getKrylov(state,true,out);
 
                     // Output the result
                     msg.print(std::accumulate (
@@ -1240,7 +1243,7 @@ namespace Optizelle{
 
             // Output information at the end of each Krylov iteration
             case OptimizationLocation::EndOfKrylovIteration:
-                if(msg_level >= 2) {
+                if(false && msg_level >= 3) {
                     // Get the diagonstic information
                     std::list <std::string> out;
 
@@ -3222,36 +3225,41 @@ namespace Optizelle{
                 // Create some shortcuts
                 AlgorithmClass::t const & algorithm_class=state.algorithm_class;
                 LineSearchDirection::t const & dir=state.dir;
+                Natural const & msg_level = state.msg_level;
 
                 // Basic information
                 out.emplace_back(Utility::atos("Iter"));
                 out.emplace_back(Utility::atos("f(x)"));
-                out.emplace_back(Utility::atos("merit(x)"));
                 out.emplace_back(Utility::atos("||grad||"));
                 out.emplace_back(Utility::atos("||dx||"));
+                
+                // More detailed information
+                if(msg_level >= 2) {
+                    out.emplace_back(Utility::atos("merit(x)"));
 
-                // In case we're using a Krylov method
-                if(    algorithm_class==AlgorithmClass::TrustRegion
-                    || dir==LineSearchDirection::NewtonCG
-                ){
-                    out.emplace_back(Utility::atos("KryIter"));
-                    out.emplace_back(Utility::atos("KryErr"));
-                    out.emplace_back(Utility::atos("KryStop"));
-                }
+                    // In case we're using a Krylov method
+                    if(    algorithm_class==AlgorithmClass::TrustRegion
+                        || dir==LineSearchDirection::NewtonCG
+                    ){
+                        out.emplace_back(Utility::atos("KryIter"));
+                        out.emplace_back(Utility::atos("KryErr"));
+                        out.emplace_back(Utility::atos("KryStop"));
+                    }
 
-                // In case we're using a line-search method
-                if(algorithm_class==AlgorithmClass::LineSearch) {
-                    out.emplace_back(Utility::atos("LSIter"));
-                    out.emplace_back(Utility::atos("alpha0"));
-                    out.emplace_back(Utility::atos("alpha"));
-                }
+                    // In case we're using a line-search method
+                    if(algorithm_class==AlgorithmClass::LineSearch) {
+                        out.emplace_back(Utility::atos("LSIter"));
+                        out.emplace_back(Utility::atos("alpha0"));
+                        out.emplace_back(Utility::atos("alpha"));
+                    }
 
-                // In case we're using a trust-region method 
-                if(algorithm_class==AlgorithmClass::TrustRegion) {
-                    out.emplace_back(Utility::atos("ared"));
-                    out.emplace_back(Utility::atos("pred"));
-                    out.emplace_back(Utility::atos("ared/pred"));
-                    out.emplace_back(Utility::atos("delta"));
+                    // In case we're using a trust-region method 
+                    if(algorithm_class==AlgorithmClass::TrustRegion) {
+                        out.emplace_back(Utility::atos("ared"));
+                        out.emplace_back(Utility::atos("pred"));
+                        out.emplace_back(Utility::atos("ared/pred"));
+                        out.emplace_back(Utility::atos("delta"));
+                    }
                 }
             }
 
@@ -3293,6 +3301,7 @@ namespace Optizelle{
                 AlgorithmClass::t const & algorithm_class=state.algorithm_class;
                 LineSearchDirection::t const & dir=state.dir;
                 Natural const & rejected_trustregion=state.rejected_trustregion;
+                Natural const & msg_level=state.msg_level;
 
                 // Figure out if we're at the absolute beginning of the
                 // optimization.  We have to be a little saavy about this
@@ -3313,7 +3322,6 @@ namespace Optizelle{
                     f_mod.grad_diag(x,grad,grad_diag);
                 Real norm_grad=sqrt(X::innr(grad_diag,grad_diag));
 
-
                 // Get a iterator to the last element prior to inserting
                 // elements
                 std::list <std::string>::iterator prior=out.end(); prior--;
@@ -3324,50 +3332,55 @@ namespace Optizelle{
                 else
                     out.emplace_back(Utility::atos("*"));
                 out.emplace_back(Utility::atos(f_x));
-                out.emplace_back(Utility::atos(merit_x));
                 out.emplace_back(Utility::atos(norm_grad));
                 if(!opt_begin) {
                     if(algorithm_class==AlgorithmClass::LineSearch)
-                        out.emplace_back(Utility::atos(Real(1.)/alpha*norm_dx));
+                        out.emplace_back(
+                            Utility::atos(Real(1.)/alpha*norm_dx));
                     else
                         out.emplace_back(Utility::atos(norm_dx));
                 } else
                     out.emplace_back(Utility::blankSeparator);
-
-                // In case we're using a Krylov method
-                if(    algorithm_class==AlgorithmClass::TrustRegion
-                    || dir==LineSearchDirection::NewtonCG
-                ){
-                    if(!opt_begin) {
-                        out.emplace_back(Utility::atos(krylov_iter));
-                        out.emplace_back(Utility::atos(krylov_rel_err));
-                        out.emplace_back(Utility::atos(krylov_stop));
-                    } else 
-                        for(Natural i=0;i<3;i++)
-                            out.emplace_back(Utility::blankSeparator);
-                }
-
-                // In case we're using a line-search method
-                if(algorithm_class==AlgorithmClass::LineSearch) {
-                    if(!opt_begin) {
-                        out.emplace_back(Utility::atos(linesearch_iter));
-                        out.emplace_back(Utility::atos(alpha0));
-                        out.emplace_back(Utility::atos(alpha));
-                    } else 
-                        for(Natural i=0;i<3;i++)
-                            out.emplace_back(Utility::blankSeparator);
-                }
                 
-                // In case we're using a trust-region method
-                if(algorithm_class==AlgorithmClass::TrustRegion) {
-                    if(!opt_begin) {
-                        out.emplace_back(Utility::atos(ared));
-                        out.emplace_back(Utility::atos(pred));
-                        out.emplace_back(Utility::atos(ared/pred));
-                        out.emplace_back(Utility::atos(delta));
-                    } else  
-                        for(Natural i=0;i<4;i++)
-                            out.emplace_back(Utility::blankSeparator);
+                // More detailed information 
+                if(msg_level >=2) {
+                    out.emplace_back(Utility::atos(merit_x));
+
+                    // In case we're using a Krylov method
+                    if(    algorithm_class==AlgorithmClass::TrustRegion
+                        || dir==LineSearchDirection::NewtonCG
+                    ){
+                        if(!opt_begin) {
+                            out.emplace_back(Utility::atos(krylov_iter));
+                            out.emplace_back(Utility::atos(krylov_rel_err));
+                            out.emplace_back(Utility::atos(krylov_stop));
+                        } else 
+                            for(Natural i=0;i<3;i++)
+                                out.emplace_back(Utility::blankSeparator);
+                    }
+
+                    // In case we're using a line-search method
+                    if(algorithm_class==AlgorithmClass::LineSearch) {
+                        if(!opt_begin) {
+                            out.emplace_back(Utility::atos(linesearch_iter));
+                            out.emplace_back(Utility::atos(alpha0));
+                            out.emplace_back(Utility::atos(alpha));
+                        } else 
+                            for(Natural i=0;i<3;i++)
+                                out.emplace_back(Utility::blankSeparator);
+                    }
+                    
+                    // In case we're using a trust-region method
+                    if(algorithm_class==AlgorithmClass::TrustRegion) {
+                        if(!opt_begin) {
+                            out.emplace_back(Utility::atos(ared));
+                            out.emplace_back(Utility::atos(pred));
+                            out.emplace_back(Utility::atos(ared/pred));
+                            out.emplace_back(Utility::atos(delta));
+                        } else  
+                            for(Natural i=0;i<4;i++)
+                                out.emplace_back(Utility::blankSeparator);
+                    }
                 }
 
                 // If we needed to do blank insertions, overwrite the elements
@@ -6057,18 +6070,25 @@ namespace Optizelle{
                 typename State::t const & state,
                 std::list <std::string> & out
             ) { 
+                // Create some shortcuts
+                Natural const & msg_level = state.msg_level; 
+
                 // Norm of the constrained 
                 out.emplace_back(Utility::atos("||g(x)||"));
-                    
-                // Trust-region information
-                out.emplace_back(Utility::atos("ared"));
-                out.emplace_back(Utility::atos("pred"));
-                out.emplace_back(Utility::atos("ared/pred"));
-                   
-                // Krylov method information
-                out.emplace_back(Utility::atos("KryIter"));
-                out.emplace_back(Utility::atos("KryErr"));
-                out.emplace_back(Utility::atos("KryWhy"));
+                
+                // More detailed information
+                if(msg_level>=2) {
+                    // Trust-region information
+                    out.emplace_back(Utility::atos("ared"));
+                    out.emplace_back(Utility::atos("pred"));
+                    out.emplace_back(Utility::atos("ared/pred"));
+                    out.emplace_back(Utility::atos("delta"));
+                       
+                    // Krylov method information
+                    out.emplace_back(Utility::atos("KryIter"));
+                    out.emplace_back(Utility::atos("KryErr"));
+                    out.emplace_back(Utility::atos("KryWhy"));
+                }
             }
             // Combines all of the state headers
             static void getStateHeader(
@@ -6097,6 +6117,8 @@ namespace Optizelle{
                 Natural const & rejected_trustregion=state.rejected_trustregion;
                 Real const & pred = state.pred;
                 Real const & ared = state.ared;
+                Real const & delta = state.delta;
+                Natural const & msg_level = state.msg_level;
 
                 // Figure out if we're at the absolute beginning of the
                 // optimization.  We have to be a little saavy about this
@@ -6114,23 +6136,27 @@ namespace Optizelle{
                 Real norm_gx = sqrt(Y::innr(g_x,g_x));
                 out.emplace_back(Utility::atos(norm_gx));
                     
-                // Actual vs. predicted reduction 
-                if(!opt_begin) {
-                    out.emplace_back(Utility::atos(ared));
-                    out.emplace_back(Utility::atos(pred));
-                    out.emplace_back(Utility::atos(ared/pred));
-                } else 
-                    for(Natural i=0;i<3;i++)
-                        out.emplace_back(Utility::blankSeparator);
-                
-                // Krylov method information
-                if(!opt_begin) {
-                    out.emplace_back(Utility::atos(krylov_iter));
-                    out.emplace_back(Utility::atos(krylov_rel_err));
-                    out.emplace_back(Utility::atos(krylov_stop));
-                } else 
-                    for(Natural i=0;i<3;i++)
-                        out.emplace_back(Utility::blankSeparator);
+                // More detailed information
+                if(msg_level >=2) {
+                    // Actual vs. predicted reduction 
+                    if(!opt_begin) {
+                        out.emplace_back(Utility::atos(ared));
+                        out.emplace_back(Utility::atos(pred));
+                        out.emplace_back(Utility::atos(ared/pred));
+                        out.emplace_back(Utility::atos(delta));
+                    } else 
+                        for(Natural i=0;i<4;i++)
+                            out.emplace_back(Utility::blankSeparator);
+                    
+                    // Krylov method information
+                    if(!opt_begin) {
+                        out.emplace_back(Utility::atos(krylov_iter));
+                        out.emplace_back(Utility::atos(krylov_rel_err));
+                        out.emplace_back(Utility::atos(krylov_stop));
+                    } else 
+                        for(Natural i=0;i<3;i++)
+                            out.emplace_back(Utility::blankSeparator);
+                }
 
                 // If we needed to do blank insertions, overwrite the elements
                 // with spaces 
@@ -8571,10 +8597,15 @@ namespace Optizelle{
                 typename State::t const & state,
                 std::list <std::string> & out
             ) {
-                // Print out the current interior point parameter and
-                // the estimate of the interior point parameter.
-                out.emplace_back(Utility::atos("mu"));
+                // Create some shortcuts
+                Natural const & msg_level = state.msg_level;
+
+                // Basic information
                 out.emplace_back(Utility::atos("mu_est"));
+
+                // More detailed information
+                if(msg_level >= 2)
+                    out.emplace_back(Utility::atos("mu"));
             }
 
             // Combines all of the state headers
@@ -8599,14 +8630,18 @@ namespace Optizelle{
                 // Create some shortcuts
                 Real const & mu=state.mu; 
                 Real const & mu_est=state.mu_est; 
+                Natural const & msg_level = state.msg_level;
 
                 // Get a iterator to the last element prior to inserting
                 // elements
                 std::list <std::string>::iterator prior=out.end(); prior--;
 
-                // Interior point information
-                out.emplace_back(Utility::atos(mu));
+                // Basic information
                 out.emplace_back(Utility::atos(mu_est));
+                
+                // More detailed information
+                if(msg_level >= 2) 
+                    out.emplace_back(Utility::atos(mu));
 
                 // If we needed to do blank insertions, overwrite the elements
                 // with spaces 

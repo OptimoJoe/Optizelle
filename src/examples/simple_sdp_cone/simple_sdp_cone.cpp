@@ -45,7 +45,8 @@ struct MyObj : public Optizelle::ScalarValuedFunction <double,Optizelle::Rm> {
 //          [ x 1 ]
 //
 struct MyIneq 
-    : public Optizelle::VectorValuedFunction <double,Optizelle::Rm,Optizelle::SQL> 
+    : public Optizelle::VectorValuedFunction
+        <double,Optizelle::Rm,Optizelle::SQL> 
 {
     typedef Optizelle::Rm <double> X;
     typedef Optizelle::SQL <double> Y;
@@ -80,7 +81,6 @@ struct MyIneq
         const Y::Vector& dy,
         X::Vector& z
     ) const {
-        //z[0]= Real(2.)*dy(1,1,2);
         z[0]= dy(1,1,2)+dy(1,2,1);
         z[1]= dy(1,1,1);
     }
@@ -120,7 +120,6 @@ int main(int argc,char* argv[]){
     std::vector <Optizelle::Cone::t> types(1);
         types[0]=Optizelle::Cone::Semidefinite;
     Z_Vector z(types,sizes);
-    Z::id(z);
 
     // Create an optimization state
     Optizelle::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>
@@ -147,7 +146,7 @@ int main(int argc,char* argv[]){
     // Print out the final answer
     std::cout << std::setprecision(16) << std::scientific 
         << "The optimal point is: (" << state.x[0] << ','
-	<< state.x[1] << ')' << std::endl;
+        << state.x[1] << ')' << std::endl;
 
     // Write out the final answer to file
     Optizelle::json::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>

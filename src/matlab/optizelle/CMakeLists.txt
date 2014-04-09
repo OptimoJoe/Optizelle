@@ -51,7 +51,6 @@ add_custom_command(
         $<TARGET_FILE_DIR:ConstrainedRestartReadRestart>/..)
 
 install(FILES
-    getStateManipulator.m
     serialize.m
     deserialize.m
     checkEnum.m

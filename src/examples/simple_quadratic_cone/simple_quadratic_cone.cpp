@@ -47,8 +47,8 @@ struct MyObj : public Optizelle::ScalarValuedFunction <double,Optizelle::Rm> {
 
 // Define a simple SOCP inequality 
 //
-// g(x,y) = [ y >= |x| ] 
-// g(x,y) =  (y,x) >=_Q 0
+// h(x,y) = [ y >= |x| ] 
+// h(x,y) =  (y,x) >=_Q 0
 //
 struct MyIneq :
     public Optizelle::VectorValuedFunction <double,Optizelle::Rm,Optizelle::SQL>
@@ -57,7 +57,7 @@ struct MyIneq :
     typedef Optizelle::SQL <double> Y;
     typedef double Real;
 
-    // y=f(x) 
+    // y=h(x) 
     void eval(
         const X::Vector& x,
         Y::Vector& y
@@ -66,7 +66,7 @@ struct MyIneq :
         y(1,2)=x[0];
     }
 
-    // y=f'(x)dx
+    // y=h'(x)dx
     void p(
         const X::Vector& x,
         const X::Vector& dx,
@@ -76,7 +76,7 @@ struct MyIneq :
         y(1,2)= dx[0];
     }
 
-    // z=f'(x)*dy
+    // z=h'(x)*dy
     void ps(
         const X::Vector& x,
         const Y::Vector& dy,
@@ -86,7 +86,7 @@ struct MyIneq :
         z[1]= dy(1,1);
     }
 
-    // z=(f''(x)dx)*dy
+    // z=(h''(x)dx)*dy
     void pps(
         const X::Vector& x,
         const X::Vector& dx,

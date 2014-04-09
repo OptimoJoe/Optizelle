@@ -4141,7 +4141,7 @@ namespace Optizelle {
                         
                         // Convert the restart information from Matlab 
                         fromMatlab::Vectors(x,mxxs,xs);
-                        fromMatlab::Vectors(y,mxxs,ys);
+                        fromMatlab::Vectors(y,mxys,ys);
                         fromMatlab::Vectors(z,mxzs,zs);
                         fromMatlab::Reals(mxreals,reals);
                         fromMatlab::Naturals(mxnats,nats);

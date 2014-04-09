@@ -191,9 +191,11 @@ function main(pname,rname)
     fns.f=Rosenbrock();
     fns.PH=RosenHInv();
 
+    %---Solver0---
     % Solve the optimization problem
     state=Optizelle.Unconstrained.Algorithms.getMin( ...
         MyVS(),MyMessaging(),MyRestartManipulator(),fns,state);
+    %---Solver1---
     
     % Print out the reason for convergence
     fprintf('The algorithm converged due to: %s\n', ...

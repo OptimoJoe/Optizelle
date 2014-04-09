@@ -309,9 +309,11 @@ int main(int argc,char* argv[]) {
     fns.f.reset(new Rosenbrock);
     fns.PH.reset(new RosenHInv(state.x));
     
+    //---Solver0---
     // Solve the optimization problem
     Optizelle::Unconstrained <double,MyVS>::Algorithms
         ::getMin(MyMessaging(),MyRestartManipulator(),fns,state);
+    //---Solver1---
 
     // Print out the reason for convergence
     std::cout << "The algorithm converged due to: " <<

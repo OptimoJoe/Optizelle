@@ -1,6 +1,17 @@
 project(capture_and_release)
 
 add_optizelle_unit_cpp(unconstrained)
+add_optizelle_test_python(unconstrained)
+add_optizelle_test_matlab(unconstrained)
+
 add_optizelle_unit_cpp(equality_constrained)
+add_optizelle_test_python(equality_constrained)
+add_optizelle_test_matlab(equality_constrained)
+
 add_optizelle_unit_cpp(inequality_constrained)
+add_optizelle_test_python(inequality_constrained)
+add_optizelle_test_matlab(inequality_constrained)
+
 add_optizelle_unit_cpp(constrained)
+add_optizelle_test_python(constrained)
+add_optizelle_test_matlab(constrained)

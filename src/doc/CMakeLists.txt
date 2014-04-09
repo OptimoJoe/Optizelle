@@ -14,19 +14,23 @@ endif()
 include(UseLATEX)
 
 # Set a couple of paths to source files
+set(OPTIZELLECPPPATH "${CMAKE_SOURCE_DIR}/src/cpp/optizelle/")
+set(OPTIZELLEPYTHONPATH "${CMAKE_SOURCE_DIR}/src/python/Optizelle/")
+set(OPTIZELLEMATLABPATH "${CMAKE_SOURCE_DIR}/src/matlab/")
 set(LICENSEPATH "${CMAKE_SOURCE_DIR}")
 set(ROSENBROCKPATH "${CMAKE_SOURCE_DIR}/src/examples/rosenbrock/")
 set(ROSENBROCKADVANCEDAPIPATH
     "${CMAKE_SOURCE_DIR}/src/examples/rosenbrock_advanced_api/")
 set(SIMPLEEQUALITYPATH "${CMAKE_SOURCE_DIR}/src/examples/simple_equality/")
-set(OUTPUTPATH "${CMAKE_CURRENT_SOURCE_DIR}")
-set(OPTIZELLECPPPATH "${CMAKE_SOURCE_DIR}/src/cpp/optizelle/")
-set(OPTIZELLEPYTHONPATH "${CMAKE_SOURCE_DIR}/src/python/Optizelle/")
-set(OPTIZELLEMATLABPATH "${CMAKE_SOURCE_DIR}/src/matlab/")
+set(SIMPLEQUADRATICCONEPATH
+    "${CMAKE_SOURCE_DIR}/src/examples/simple_quadratic_cone/")
+set(SIMPLESDPCONEPATH
+    "${CMAKE_SOURCE_DIR}/src/examples/simple_sdp_cone/")
+set(CAPTURERELEASEPATH
+    "${CMAKE_SOURCE_DIR}/src/unit/capture_and_release/")
 
 # Compile the manual
 add_latex_document(optizelle.tex DEFAULT_PDF
-    INPUTS vectorSpaceSpecification.tex
     CONFIGURE optizelle.tex
     USE_INDEX
 )

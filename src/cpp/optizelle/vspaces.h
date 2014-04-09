@@ -214,13 +214,14 @@ namespace Optizelle {
         };
     }
     
-    //---Cone0---
     // Different cones used in SQL problems
     namespace Cone {
         enum t {
+            //---Cone0---
             Linear,             // Nonnegative orthant
             Quadratic,          // Second order cone
             Semidefinite        // Cone of positive semidefinite matrices 
+            //---Cone1---
         };
 
         // Converts the cone to a string
@@ -232,19 +233,22 @@ namespace Optizelle {
         // Checks whether or not a string is valid
         bool is_valid(std::string const & name); 
     }
-    //---Cone1---
 
-    //---SQL0---
     // A vector spaces consisting of a finite product of semidefinite,
     // quadratic, and linear cones.  This uses the nonsymmetric product
     // for the SDP blocks where x o y = xy.  This is not a true Euclidean-Jordan
     // algebra, but is sufficient for our purposes.
+    //---SQL0---
     template <typename Real>
     struct SQL {
+    //---SQL1---
         // Disallow constructors
         NO_CONSTRUCTORS(SQL);
 
+        //---SQLVector0---
         struct Vector {
+        //---SQLVector1---
+
             // Overall variable data.
             std::vector <Real> data;
 
@@ -273,16 +277,17 @@ namespace Optizelle {
             // Eliminate constructors 
             NO_DEFAULT_COPY_ASSIGNMENT(Vector);
 
-            //---SQLConstructor0---
+            //---SQLVector2---
             // We require a vector of cone types and their sizes.
             Vector (
                 std::vector <Cone::t> const & types_,
                 std::vector <Natural> const & sizes_,
                 Messaging const msg = Optizelle::Messaging()
-            ) : data(), offsets(), types(types_), sizes(sizes_),
+            )
+            //---SQLVector3---
+            : data(), offsets(), types(types_), sizes(sizes_),
                 inverse(), inverse_offsets(), inverse_base(),
                 inverse_base_offsets()
-            //---SQLConstructor1---
             {
 
                 // Insure that the type of cones and their sizes lines up.
@@ -431,8 +436,9 @@ namespace Optizelle {
             Natural numBlocks() const {
                 return types.size();
             }
+        //---SQLVector4---
         };
-    //---SQL1---
+        //---SQLVector5---
 
         // Gets the matrix inverse of a block of the SQL vector.
         static void get_inverse(
@@ -1091,7 +1097,9 @@ namespace Optizelle {
                 } }
             }
         }
+    //---SQL2---
     };
+    //---SQL3---
 
     namespace json {
         // Serialization utility for the SQL vector space

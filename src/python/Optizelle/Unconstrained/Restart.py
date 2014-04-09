@@ -21,16 +21,17 @@ class Params(list):
     """Holds restart information for parameters"""
     pass
 
-def release(X,state,xs,reals,nats,params):
+def release(X,msg,state,xs,reals,nats,params):
     """Release the data into structures controlled by the user"""
 
     # Check the arguments
     Optizelle.checkVectorSpace("X",X)
+    Optizelle.checkMessaging("msg",msg)
     Optizelle.Unconstrained.State.checkT("state",state)
 
     # Release the information from the state
     Optizelle.Utility.UnconstrainedRestartRelease(
-        X,Optizelle.Messaging(),state,xs,reals,nats,params)
+        X,msg,state,xs,reals,nats,params)
 
     # Return nothing.  We've modified the passed in lists.
     return None 

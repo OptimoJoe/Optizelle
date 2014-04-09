@@ -178,9 +178,10 @@ Optizelle.Messaging = struct( ...
     'error',@(x)error(x));
 %---Messaging1---
 
-% A function that has free reign to manipulate or analyze the state.  This 
-% should be used cautiously. 
-Optizelle.StateManipulator = getStateManipulator();
+%---StateManipulator0---
+% A function that has free reign to manipulate or analyze the state.
+Optizelle.StateManipulator = struct('eval',@(fns,state,loc)state);
+%---StateManipulator1---
 
 % Vector space for the nonnegative orthant.  For basic vectors in R^m, use this.
 Optizelle.Rm = struct( ...
@@ -227,6 +228,12 @@ Optizelle.Unconstrained.Functions.t= struct( ...
 % Solves an unconstrained optimization problem
 Optizelle.Unconstrained.Algorithms.getMin = @UnconstrainedAlgorithmsGetMin;
 
+% Holds restart information
+Optizelle.Unconstrained.Restart.X_Vectors = {};
+Optizelle.Unconstrained.Restart.Reals = {};
+Optizelle.Unconstrained.Restart.Naturals = {};
+Optizelle.Unconstrained.Restart.Params = {};
+
 % Release the state in an unconstrained optimization problem 
 Optizelle.Unconstrained.Restart.release = @UnconstrainedRestartRelease;
 
@@ -256,6 +263,13 @@ Optizelle.EqualityConstrained.Functions.t= mergeStruct( ...
 % Solves an equality constrained optimization problem
 Optizelle.EqualityConstrained.Algorithms.getMin = ...
     @EqualityConstrainedAlgorithmsGetMin;
+
+% Holds restart information
+Optizelle.EqualityConstrained.Restart.X_Vectors = {};
+Optizelle.EqualityConstrained.Restart.Y_Vectors = {};
+Optizelle.EqualityConstrained.Restart.Reals = {};
+Optizelle.EqualityConstrained.Restart.Naturals = {};
+Optizelle.EqualityConstrained.Restart.Params = {};
 
 % Release the state in an equality constrained optimization problem 
 Optizelle.EqualityConstrained.Restart.release = ...
@@ -289,6 +303,13 @@ Optizelle.InequalityConstrained.Functions.t= mergeStruct( ...
 Optizelle.InequalityConstrained.Algorithms.getMin = ...
     @InequalityConstrainedAlgorithmsGetMin;
 
+% Holds restart information
+Optizelle.InequalityConstrained.Restart.X_Vectors = {};
+Optizelle.InequalityConstrained.Restart.Z_Vectors = {};
+Optizelle.InequalityConstrained.Restart.Reals = {};
+Optizelle.InequalityConstrained.Restart.Naturals = {};
+Optizelle.InequalityConstrained.Restart.Params = {};
+
 % Release the state in an inequality constrained optimization problem 
 Optizelle.InequalityConstrained.Restart.release = ...
     @InequalityConstrainedRestartRelease;
@@ -321,6 +342,14 @@ Optizelle.Constrained.Functions.t= ...
 
 % Solves a constrained optimization problem
 Optizelle.Constrained.Algorithms.getMin = @ConstrainedAlgorithmsGetMin;
+
+% Holds restart information
+Optizelle.Constrained.Restart.X_Vectors = {};
+Optizelle.Constrained.Restart.Y_Vectors = {};
+Optizelle.Constrained.Restart.Z_Vectors = {};
+Optizelle.Constrained.Restart.Reals = {};
+Optizelle.Constrained.Restart.Naturals = {};
+Optizelle.Constrained.Restart.Params = {};
 
 % Release the state in a constrained optimization problem 
 Optizelle.Constrained.Restart.release = @ConstrainedRestartRelease;
