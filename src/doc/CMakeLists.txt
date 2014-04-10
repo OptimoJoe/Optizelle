@@ -22,12 +22,14 @@ set(ROSENBROCKPATH "${CMAKE_SOURCE_DIR}/src/examples/rosenbrock/")
 set(ROSENBROCKADVANCEDAPIPATH
     "${CMAKE_SOURCE_DIR}/src/examples/rosenbrock_advanced_api/")
 set(SIMPLEEQUALITYPATH "${CMAKE_SOURCE_DIR}/src/examples/simple_equality/")
+set(SIMPLEINEQUALITYPATH "${CMAKE_SOURCE_DIR}/src/examples/simple_inequality/")
+set(SIMPLECONSTRAINEDPATH "${CMAKE_SOURCE_DIR}/src/examples/simple_constrained/")
 set(SIMPLEQUADRATICCONEPATH
     "${CMAKE_SOURCE_DIR}/src/examples/simple_quadratic_cone/")
 set(SIMPLESDPCONEPATH
     "${CMAKE_SOURCE_DIR}/src/examples/simple_sdp_cone/")
-set(CAPTURERELEASEPATH
-    "${CMAKE_SOURCE_DIR}/src/unit/capture_and_release/")
+set(RESTARTPATH
+    "${CMAKE_SOURCE_DIR}/src/unit/restart/")
 
 # Compile the manual
 add_latex_document(optizelle.tex DEFAULT_PDF

@@ -39,16 +39,20 @@ add_optizelle_mex(ConstrainedRestartReadRestart)
 
 
 # Copy in the rest of the Matlab files for the unit tests. 
-add_custom_command(
-    TARGET ConstrainedRestartReadRestart POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_SOURCE_DIR}/src/matlab/optizelle
-        $<TARGET_FILE_DIR:ConstrainedRestartReadRestart>)
-add_custom_command(
-    TARGET ConstrainedRestartReadRestart POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy
-        ${CMAKE_SOURCE_DIR}/src/matlab/setupOptizelle.m
-        $<TARGET_FILE_DIR:ConstrainedRestartReadRestart>/..)
+if(ENABLE_MATLAB_UNIT)
+    add_custom_target(
+        matlab_files
+        ALL
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/src/matlab/optizelle
+            ${CMAKE_BINARY_DIR}/src/matlab/optizelle)
+    add_custom_target(
+        matlab_setup
+        ALL
+        COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_SOURCE_DIR}/src/matlab/setupOptizelle.m
+            ${CMAKE_BINARY_DIR}/src/matlab)
+endif()
 
 install(FILES
     serialize.m

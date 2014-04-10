@@ -1,19 +1,54 @@
 % This tests our ability to capture and release from the optimization state
 function unconstrained()
 
+%---Import0---
 global Optizelle
 setupOptizelle();
+%---Import1---
 
 % Create some type shortcuts
 XX = Optizelle.Rm;
 msg = Optizelle.Messaging;
+
+serialize=@(x)'';
+deserialize=@(x,y)[];
+check=@(x)0;
+%---Serialization0---
+Optizelle.json.Serialization.serialize('register',serialize,check); 
+Optizelle.json.Serialization.deserialize('register',deserialize,check);
+%---Serialization1---
     
 % Create some arbitrary vector in R^2
 x = [1.2;2.3];
 x0 = [2.3;1.2];
 
 % Create a state based on this vector
-state=Optizelle.Unconstrained.State.t(XX,msg,x);
+%---State0---
+state = Optizelle.Unconstrained.State.t(XX,msg,x);
+%---State1---
+
+% Read in some parameters
+fname = 'blank.json';
+%---ReadJson0--- 
+state = Optizelle.json.Unconstrained.read(XX,msg,fname,state);
+%---ReadJson1--- 
+   
+% Create a bundle of functions
+%---Functions0---
+fns = Optizelle.Unconstrained.Functions.t;
+%---Functions1---
+
+% Do a null optimization
+%---Solver0---
+state = Optizelle.Unconstrained.Algorithms.getMin(XX,msg,fns,state);
+%---Solver1---
+
+% Do a null optimization with a state manipulator 
+smanip = Optizelle.StateManipulator;
+%---SmanipSolver0---
+state = Optizelle.Unconstrained.Algorithms.getMin( ...
+    XX,msg,smanip,fns,state);
+%---SmanipSolver1---
     
 % Read and write the state to file
 fname = 'restart.json';

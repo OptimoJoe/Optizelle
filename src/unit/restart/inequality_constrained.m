@@ -18,7 +18,32 @@ z = [6.7;7.8;8.9;9.10];
 z0 =[9.10;8.9;7.8;6.7];
 
 % Create a state based on this vector
-state=Optizelle.InequalityConstrained.State.t(XX,ZZ,msg,x,z);
+%---State0---
+state = Optizelle.InequalityConstrained.State.t(XX,ZZ,msg,x,z);
+%---State1---
+
+% Read in some parameters
+fname = 'blank.json';
+%---ReadJson0--- 
+state = Optizelle.json.InequalityConstrained.read(XX,ZZ,msg,fname,state);
+%---ReadJson1--- 
+   
+% Create a bundle of functions
+%---Functions0---
+fns = Optizelle.InequalityConstrained.Functions.t;
+%---Functions1---
+
+% Do a null optimization
+%---Solver0---
+state = Optizelle.InequalityConstrained.Algorithms.getMin(XX,ZZ,msg,fns,state);
+%---Solver1---
+
+% Do a null optimization with a state manipulator 
+smanip = Optizelle.StateManipulator;
+%---SmanipSolver0---
+state = Optizelle.InequalityConstrained.Algorithms.getMin( ...
+    XX,ZZ,msg,smanip,fns,state);
+%---SmanipSolver1---
     
 % Read and write the state to file
 fname = 'restart.json';

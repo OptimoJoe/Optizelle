@@ -2,7 +2,7 @@
 macro(add_optizelle_example_supporting name)
 
     # Make sure that examples are enabled 
-    if(ENABLE_CPP_EXAMPLES)
+    if(ENABLE_CPP_EXAMPLES OR ENABLE_PYTHON_EXAMPLES OR ENABLE_MATLAB_EXAMPLES)
 
         # Grab the file list 
         set(files "${ARGN}")

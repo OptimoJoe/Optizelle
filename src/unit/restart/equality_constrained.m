@@ -18,7 +18,32 @@ y = [3.4;4.5;5.6];
 y0 = [5.6;4.5;3.4];
 
 % Create a state based on this vector
-state=Optizelle.EqualityConstrained.State.t(XX,YY,msg,x,y);
+%---State0---
+state = Optizelle.EqualityConstrained.State.t(XX,YY,msg,x,y);
+%---State1---
+
+% Read in some parameters
+fname = 'blank.json';
+%---ReadJson0--- 
+state = Optizelle.json.EqualityConstrained.read(XX,YY,msg,fname,state);
+%---ReadJson1--- 
+   
+% Create a bundle of functions
+%---Functions0---
+fns = Optizelle.EqualityConstrained.Functions.t;
+%---Functions1---
+
+% Do a null optimization
+%---Solver0---
+state = Optizelle.EqualityConstrained.Algorithms.getMin(XX,YY,msg,fns,state);
+%---Solver1---
+
+% Do a null optimization with a state manipulator 
+smanip = Optizelle.StateManipulator;
+%---SmanipSolver0---
+state = Optizelle.EqualityConstrained.Algorithms.getMin( ...
+    XX,YY,msg,smanip,fns,state);
+%---SmanipSolver1---
     
 % Read and write the state to file
 fname = 'restart.json';

@@ -19,8 +19,8 @@ function x_json = serialize(varargin)
 
         % Check the arguments
         checkString('mode',mode);
-        checkFunction('sfn',sfn);
-        checkFunction('scheck',scheck);
+        checkFunction('serialize',sfn);
+        checkFunction('check',scheck);
 
         % Check that we're actually registering
         if ~strcmp(mode,'register')

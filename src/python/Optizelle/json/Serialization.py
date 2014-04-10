@@ -13,16 +13,16 @@ class Extendable(object):
         self.fns = {}
         self.fn = fn
 
-    def register(self,fn,arg_type):
+    def register(self,fn,vector_type):
         """Extends the current function with fn.  This function will only be 
-        called if the first argument matches arg_type."""
+        called if the first argument matches vector_type."""
 
         # Check our arguments
-        Optizelle.checkFunction("fn",fn)
-        Optizelle.checkType("arg_type",arg_type)
+        Optizelle.checkFunction("(de)serialize",fn)
+        Optizelle.checkType("vector_type",vector_type)
 
         # Register the function
-        self.fns[arg_type]=fn
+        self.fns[vector_type]=fn
 
     def __call__(self,*args):
         try:

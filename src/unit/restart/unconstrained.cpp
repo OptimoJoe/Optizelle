@@ -6,32 +6,26 @@
 #include "optizelle/json.h"
 //---Import1---
 #include "unit.h"
+#include "restart.h"
 
-// Create some type shortcuts
-typedef double Real;
-template <typename Real> using XX = Optizelle::Rm <Real>;
+template <typename Real> using WW = Optizelle::Rm <Real>;
 
-// There's some irritating bug in GCC that forces us to do this 
+//---Serialization0---
 namespace Optizelle {
     namespace json {
-        template <typename Real>
-        struct Serialization <Real,XX> {
+        template <>
+        struct Serialization <Real,WW> {
             static std::string serialize(
-                typename XX <Real>::Vector const & x
-            ) {
-                return Optizelle::json::Serialization
-                    <Real,Optizelle::Rm>::serialize(x);
-            }
-            static typename XX <Real>::Vector deserialize(
-                typename XX <Real>::Vector const & x,
+                typename WW <Real>::Vector const & x
+            ) { }
+            static typename WW <Real>::Vector deserialize(
+                typename WW <Real>::Vector const & x,
                 std::string const & x_json
-            ) {
-                return std::move(Optizelle::json::Serialization
-                    <Real,Optizelle::Rm>::deserialize(x,x_json));
-            }
+            ) { }
         };
     }
 }
+//---Serialization1---
 
 int main() {
 
@@ -43,10 +37,37 @@ int main() {
     std::vector <Real> x0 = {2.3,1.2};
 
     // Create an unconstrained state based on this vector
+    //---State0---
     Optizelle::Unconstrained <Real,XX>::State::t state(x);
+    //---State1---
+
+    // Read in some parameters
+    std::string fname("blank.json");
+    //---ReadJson0--- 
+    Optizelle::json::Unconstrained <Real,XX>::read(msg,fname,state);
+    //---ReadJson1--- 
+   
+    // Create a bundle of functions
+    //---Functions0---
+    Optizelle::Unconstrained <Real,XX>::Functions::t fns;
+    //---Functions1---
+    fns.f.reset(new F);
+
+    // Do a null optimization
+    //---Solver0---
+    Optizelle::Unconstrained<Real,XX>::Algorithms::getMin(
+        msg,fns,state);
+    //---Solver1---
+
+    // Do a null optimization with a state manipulator 
+    BlankManipulator <Optizelle::Unconstrained<Real,XX> > smanip;
+    //---SmanipSolver0---
+    Optizelle::Unconstrained<Real,XX>::Algorithms::getMin(
+        msg,smanip,fns,state);
+    //---SmanipSolver1---
 
     // Read and write the state to file
-    std::string fname("restart.json");
+    fname = "restart.json";
     //---WriteReadRestart0---
     Optizelle::json::Unconstrained <Real,XX>::write_restart(
         msg,fname,state);

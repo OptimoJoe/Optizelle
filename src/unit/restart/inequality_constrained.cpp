@@ -4,50 +4,7 @@
 #include "optizelle/vspaces.h"
 #include "optizelle/json.h"
 #include "unit.h"
-
-// Create some type shortcuts
-typedef double Real;
-template <typename Real> using XX = Optizelle::Rm <Real>;
-template <typename Real> using ZZ = Optizelle::Rm <Real>;
-
-// There's some irritating bug in GCC that forces us to do this 
-namespace Optizelle {
-    namespace json {
-        template <typename Real>
-        struct Serialization <Real,XX> {
-            static std::string serialize(
-                typename XX <Real>::Vector const & x
-            ) {
-                return Optizelle::json::Serialization
-                    <Real,Optizelle::Rm>::serialize(x);
-            }
-            static typename XX <Real>::Vector deserialize(
-                typename XX <Real>::Vector const & x,
-                std::string const & x_json
-            ) {
-                return std::move(Optizelle::json::Serialization
-                    <Real,Optizelle::Rm>::deserialize(x,x_json));
-            }
-        };
-        
-        template <typename Real>
-        struct Serialization <Real,ZZ> {
-            static std::string serialize(
-                typename ZZ <Real>::Vector const & x
-            ) {
-                return Optizelle::json::Serialization
-                    <Real,Optizelle::Rm>::serialize(x);
-            }
-            static typename ZZ <Real>::Vector deserialize(
-                typename ZZ <Real>::Vector const & x,
-                std::string const & x_json
-            ) {
-                return std::move(Optizelle::json::Serialization
-                    <Real,Optizelle::Rm>::deserialize(x,x_json));
-            }
-        };
-    }
-}
+#include "restart.h"
 
 int main() {
 
@@ -63,10 +20,38 @@ int main() {
     std::vector <Real> z0 = {9.10,8.9,7.8,6.7};
 
     // Create a state based on this vector
+    //---State0---
     Optizelle::InequalityConstrained <Real,XX,ZZ>::State::t state(x,z);
+    //---State1---
+
+    // Read in some parameters
+    std::string fname("blank.json");
+    //---ReadJson0--- 
+    Optizelle::json::InequalityConstrained <Real,XX,ZZ>::read(msg,fname,state);
+    //---ReadJson1--- 
+   
+    // Create a bundle of functions
+    //---Functions0---
+    Optizelle::InequalityConstrained <Real,XX,ZZ>::Functions::t fns;
+    //---Functions1---
+    fns.f.reset(new F);
+    fns.h.reset(new H);
+
+    // Do a null optimization
+    //---Solver0---
+    Optizelle::InequalityConstrained<Real,XX,ZZ>::Algorithms::getMin(
+        msg,fns,state);
+    //---Solver1---
+
+    // Do a null optimization with a state manipulator 
+    BlankManipulator <Optizelle::InequalityConstrained<Real,XX,ZZ> > smanip;
+    //---SmanipSolver0---
+    Optizelle::InequalityConstrained<Real,XX,ZZ>::Algorithms::getMin(
+        msg,smanip,fns,state);
+    //---SmanipSolver1---
 
     // Read and write the state to file
-    std::string fname("restart.json");
+    fname = "restart.json";
     //---WriteReadRestart0---
     Optizelle::json::InequalityConstrained <Real,XX,ZZ>::write_restart(
         msg,fname,state);

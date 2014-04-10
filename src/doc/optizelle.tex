@@ -130,11 +130,10 @@
     \item[]}
 
 % Describing the vector space
-\newcommand{\vsitem}[4]{
+\newcommand{\vsitem}[3]{
     \item[Language] #1
     \item[Vector]  #2
     \item[Operations]  #3
-    \item[Interface] #4
     \item[]}
 
 % Example items 
@@ -371,6 +370,25 @@
     \item[Description] #2
     \item[]}
 
+\newcommand{\restartitem}[5]{
+    \item[Language] #1
+    \item[Code]
+        \begin{minipage}[t]{\textwidth}\vspace{\dimexpr-\medskipamount-2ex}
+            \lstinputlisting[style=#2,linerange={#3},widthgobble=#4*4]{@RESTARTPATH@/unconstrained.#5}
+            \lstinputlisting[style=#2,linerange={#3},widthgobble=#4*4]{@RESTARTPATH@/equality_constrained.#5}
+            \lstinputlisting[style=#2,linerange={#3},widthgobble=#4*4]{@RESTARTPATH@/inequality_constrained.#5}
+            \lstinputlisting[style=#2,linerange={#3},widthgobble=#4*4]{@RESTARTPATH@/constrained.#5}
+        \end{minipage}
+    \item[]}
+
+\newcommand{\restartitemalt}[5]{
+    \item[Language] #1
+    \item[Code]
+        \begin{minipage}[t]{\textwidth}\vspace{\dimexpr-\medskipamount-2ex}
+            \lstinputlisting[style=#2,linerange={#3},widthgobble=#4*4]{@RESTARTPATH@/unconstrained.#5}
+        \end{minipage}
+    \item[]}
+
 % Change the figure numbering to be chap.sec.num
 \renewcommand{\thefigure}{\arabic{chapter}.\arabic{section}.\arabic{figure}}
         
@@ -498,11 +516,24 @@
 
 \newcommand{\chparams}{Optimization parameters}
 \newcommand{\choutput}{Output}
+\newcommand{\chadvanced}{Advanced API}
 \newcommand{\seccustomvector}{Customized vector spaces}
 \newcommand{\secmessaging}{User-defined messaging}
 \newcommand{\seccone}{Symmetric cone programming}
 \newcommand{\secsmanip}{State manipulation}
 \newcommand{\secrestart}{Restarts}
+\newcommand{\chexamples}{Additional examples}
+\newcommand{\secequality}{Simple equality constrained}
+\newcommand{\secinequality}{Simple inequality constrained}
+\newcommand{\secconstrained}{Simple constrained}
+\newcommand{\secrosenbrockadvancedapi}{Rosenbrock advanced API}
+\newcommand{\secrosenbrock}{Rosenbrock}
+\newcommand{\secquadratic}{Simple SOCP}
+\newcommand{\secsdp}{Simple SDP}
+
+% A couple of macros to help with indexing our examples
+\newcommand{\exampleref}[2]{\index{Examples!#1}\hyperref[#2]{#1}}
+\newcommand{\examplelabel}[2]{\index{Examples!#1}\label{#2}}
 
 \title{Optizelle v@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@.@CPACK_PACKAGE_VERSION_PATCH@}
 \author{OptimoJoe\\Joseph Young}
@@ -606,7 +637,7 @@ In short, Optizelle is free to use in both open and closed sourced codes.  If yo
 \end{center}
 If you are interested in paid support and consulting, please contact us at \mbox{\href{mailto:contact@optimojoe.com}{contact@optimojoe.com}}.
 
-\section{Brief Example}
+\section{Brief example}\examplelabel{\secrosenbrock}{sec:rosenbrock}
 
         In order to see a short example of Optizelle in action, consider the unconstrained minimization of the Rosenbrock function
 $$
@@ -758,7 +789,7 @@ On Windows, if not using Cygwin, execute the following commands:
 
 \section{Configuring}
 
-        Optizelle provides several different options within CMake in order to customize the build.  We describe these flags in the table below.          
+        Optizelle provides several different options within CMake in order to customize the build.  We describe these flags in the table below:
 \begin{boldlist}
     \cmakeitem
         {CMAKE_INSTALL_PREFIX}
@@ -1222,57 +1253,27 @@ We discuss how to implement each of the above steps below.
 \section{\secimport}\label{sec:import}
 
         Each interface uses its own method to import Optizelle:
-\begin{filecontents*}{import.cpp}
-#include "optizelle/optizelle.h"
-#include "optizelle/vspaces.h"
-#include "optizelle/json.h"
-\end{filecontents*}
-
-\begin{filecontents*}{import.py}
-import Optizelle 
-
-import Optizelle.Unconstrained.State
-import Optizelle.Unconstrained.Functions
-import Optizelle.Unconstrained.Algorithms
-import Optizelle.Unconstrained.Restart
-import Optizelle.json.Unconstrained
-
-import Optizelle.EqualityConstrained.State
-import Optizelle.EqualityConstrained.Functions
-import Optizelle.EqualityConstrained.Algorithms
-import Optizelle.EqualityConstrained.Restart
-import Optizelle.json.EqualityConstrained
-
-import Optizelle.InequalityConstrained.State
-import Optizelle.InequalityConstrained.Functions
-import Optizelle.InequalityConstrained.Algorithms
-import Optizelle.InequalityConstrained.Restart
-import Optizelle.json.InequalityConstrained
-
-import Optizelle.Constrained.State
-import Optizelle.Constrained.Functions
-import Optizelle.Constrained.Algorithms
-import Optizelle.Constrained.Restart
-import Optizelle.json.Constrained
-
-import Optizelle.json.Serialization
-\end{filecontents*}
-
-\begin{filecontents*}{import.m}
-global Optizelle;
-setupOptizelle();
-\end{filecontents*}
-
 \begin{boldlist}
-    \exampleitem
+    \restartitemalt
         {C++}
-        {\lstinputlisting[style=C++]{import.cpp}}
-    \exampleitem
+        {C++}
+        {Import0-Import1}
+        {0}
+        {cpp}
+    
+    \restartitem
         {Python}
-        {\lstinputlisting[style=Python]{import.py}}
-    \exampleitem
+        {Python}
+        {Import0-Import1}
+        {0}
+        {py}
+
+    \restartitemalt
         {MATLAB/Octave}
-        {\lstinputlisting[style=Matlab]{import.m}}
+        {Matlab}
+        {Import0-Import1}
+        {0}
+        {m}
 \end{boldlist}
 
 \noindent In C++, we always require \textct{optizelle/optizelle.h}, but only require \textct{optizelle/json.h} when working with JSON and \textct{optizelle/vspaces.h} when using our default vector spaces such as \textct{Optizelle::Rm} and \textct{Optizelle::SQL}.  In Python, the module required by the structures below can be determined by the element in \textbf{Structure}.  For example, the structure \textct{Optizelle.Unconstrained.State.t} requires the module \textct{Optizelle.Unconstrained.State}.  Finally, in MATLAB/Octave, we encapsulate all of the required functions in the global variable \textct{Optizelle}.
@@ -1297,17 +1298,14 @@ Here, the spaces $X$, $Y$, and $Z$ denote {\it vector spaces}, more specifically
         {C++}
         {\textct{std::vector}}
         {\textct{Optizelle::Rm}}
-        {Use as is}
     \vsitem
         {C++}
         {\textct{numpy.array}}
         {\textct{Optizelle.Rm}}
-        {Use as is}
     \vsitem
         {MATLAB/Octave}
         {\textct{[]} (column vector)}
         {\textct{Optizelle.Rm}}
-        {Use as is}
 \end{boldlist}
 \noindent To be precise, each of these vector spaces uses the inner product $\langle x,y\rangle=x^Ty$ and defines inequalities pointwise, $x\succeq y \Longleftrightarrow x_i \geq y_i$ for all $1\leq i\leq m$.  Note, we don't require users to use these vector operations in their code.  Simply, if we're happy with using the above vectors, we can use these operations exclusively in Optizelle and forget their details. 
 
@@ -1337,7 +1335,7 @@ Then, we have that
         \end{bmatrix}\delta x.
 \end{align*}
         
-        In code, we specify this function as
+        In code, we specify this function as:
 \begin{boldlist}
     \apiitem
         {C++}
@@ -1359,7 +1357,7 @@ Then, we have that
 \end{boldlist}
 \noindent Note, we require that the Hessian-vector product always be present.  If one is not available, we simply return zero.
         
-        As an example, the Rosenbrock function is the function $f:\re^2\rightarrow \re$ where 
+        As an example, in our \exampleref{\secrosenbrock}{sec:rosenbrock} example, we minimize the function $f:\re^2\rightarrow \re$ where 
 $$
         f(x)=(1-x_1)^2+100(x_2-x_1^2)^2.
 $$
@@ -1378,7 +1376,7 @@ $$
             -400x_1 & 200
         \end{bmatrix}\delta x.
 $$
-Using Optizelle's internal vector spaces, we implement these functions as 
+Using Optizelle's internal vector spaces, we implement these functions as:
 \begin{boldlist}
     \exampleitem
         {C++}
@@ -1393,7 +1391,7 @@ Using Optizelle's internal vector spaces, we implement these functions as
         {\lstinputlisting[style=Matlab,linerange=Objective0-Objective1]{@ROSENBROCKPATH@/rosenbrock.m}}
 \end{boldlist}
 
-        In our simple equality example, we have an objective $f:\re^2\rightarrow \re$ where 
+        In our \exampleref{\secequality}{sec:equality} example, we have an objective $f:\re^2\rightarrow \re$ where 
 $$
         f(x)=x_1^2+x_2^2
 $$
@@ -1479,7 +1477,7 @@ This means that we have
     (g^{\prime\prime}(x)\delta x)^*\delta y =& \sum_{i=1}^n \delta y_i \nabla^2 g_i(x) \delta x.
 \end{align*}
 
-        In code, this becomes
+        In code, this becomes:
 \begin{boldlist}
     \apiitem
         {C++}
@@ -1502,7 +1500,7 @@ This means that we have
 \noindent Note, we require that the second derivative always be present.  If one is not available, we simply return zero.
 
 
-        For example, we define a simple equality constraint as 
+        For example, in our \exampleref{\secequality}{sec:equality} example, we define a simple equality constraint as 
 $$
     g(x)=\begin{bmatrix}
         (x_1-2)^2 + (x_2-2)^2 - 1
@@ -1524,7 +1522,7 @@ Then, we have that
             0 & 2
         \end{bmatrix}\delta x
 \end{align*}
-Using Optizelle's internal vector spaces, we implement these functions as 
+Using Optizelle's internal vector spaces, we implement these functions as:
 \begin{boldlist}
     \exampleitem
         {C++}
@@ -1596,7 +1594,7 @@ This gives us the preconditioners
 \end{align*}
 In theory, we can use a Choleski factorization to solve this system.  The problem with this approach is that the Choleski factorization will fail when $g^\prime(x)$ is not full rank.  Generally, we find it easier to fix a failing forward or back solve, as is the case with a QR or LU factorization, than to fix a failing factorization.
 
-        In code, we represent preconditioners as a generic linear operator
+        In code, we represent preconditioners as a generic linear operator:
 \begin{boldlist}
     \apiitem
         {C++}
@@ -1620,7 +1618,7 @@ As we can see, there is a slight difference when we compare C++ to Python and MA
 
         As another important note, Optizelle can not optimize user defined factorizations.  Meaning, during the course of an optimization iteration, we call these preconditioners several different times at the same optimization iterate, $x$.  As such, if we factorize $\nabla^2 f(x)$ or $g^\prime(x)g^\prime(x)^*$, it is critical to our performance that we cache these factorizations.  The easiest way to tell when a new factorization is needed is to monitor the variable \textct{x} inside of \textct{state}.  This variable represents the current optimization iterate and it does not change until we take a new step in the optimiation algorithms.
 
-        Recall, in our Rosenbrock example, we have a Hessian-vector product of
+        Recall, in our \exampleref{\secrosenbrock}{sec:rosenbrock} example, we have a Hessian-vector product of
 $$
         \nabla^2 f(x)\delta x=
         \begin{bmatrix}
@@ -1637,7 +1635,7 @@ $$
             400x_1 & 1200x_1^2-400x_2+2
         \end{bmatrix}\delta x.
 $$
-Generally, we claim using Cramer's rule is a bad idea when compared to an LU fractorization, but it works fine on this small example.  Using this formulation, we define our preconditioner to the Hessian with the code 
+Generally, we claim using Cramer's rule is a bad idea when compared to an LU fractorization, but it works fine on this small example.  Using this formulation, we define our preconditioner to the Hessian with the code:
 \begin{boldlist}
     \exampleitem
         {C++}
@@ -1677,7 +1675,7 @@ and we have a perfect preconditioner
 $$
         (g^\prime(x)g^\prime(x)^*)^{-1}\delta y=\frac{1}{4(x_1-2)^2+4(x_2-2)^2}\delta y.
 $$
-We implement this in our simple equality example with the code
+We implement this in our \exampleref{\secequality}{sec:equality} example with the code:
 \begin{boldlist}
     \exampleitem
         {C++}
@@ -1696,47 +1694,34 @@ We implement this in our simple equality example with the code
 
         In Optizelle, the optimization state contains an entire description of the current state of the optimization algorithm.  This is unique to the particular optimization formulation, but all algorithms in a particular formulations share the same state.  Most algorithms do not require information about all of these pieces, but they are present to make it easier to switch from one algorithm to another.  For example, trust-region and line-search algorithms share several components, but the trust-region radius is unique to trust-region algorithms and the line-search step length is unique to line-search algorithms.  Nevertheless, we may want to switch from one algorithm to another, so they share the same components.
 
-        In order to define an optimization state, we instantiate the state class within the particular class of formulation we require.  The syntax is
-
-\begin{filecontents*}{state.cpp}
-Optizelle::Unconstrained <Real,XX>::State::t state(x);
-Optizelle::EqualityConstrained <Real,XX,YY>::State::t state(x,y);
-Optizelle::InequalityConstrained <Real,XX,ZZ>::State::t state(x,z);
-Optizelle::Constrained <Real,XX,ZZ>::State::t state(x,y,z);
-\end{filecontents*}
-
-\begin{filecontents*}{state.py}
-state = Optizelle.Unconstrained.State.t(X,msg,x)
-state = Optizelle.EqualityConstrained.State.t(X,Y,msg,x,y)
-state = Optizelle.InequalityConstrained.State.t(X,Y,msg,x,z)
-state = Optizelle.Constrained.State.t(X,Y,Z,msg,x,y,z)
-\end{filecontents*}
-
-\begin{filecontents*}{state.m}
-state = Optizelle.Unconstrained.State.t(X,msg,x);
-state = Optizelle.EqualityConstrained.State.t(X,Y,msg,x,y);
-state = Optizelle.InequalityConstrained.State.t(X,Y,msg,x,z);
-state = Optizelle.Constrained.State.t(X,Y,Z,msg,x,y,z);
-\end{filecontents*}
-
+        In order to define an optimization state, we instantiate the state class within the particular class of formulation we require.  The syntax is:
+\phantomsection\label{itm:State}
 \begin{boldlist}
-    \apiitemshort
+    \restartitem
         {C++}
-        {\lstinputlisting[style=C++]{state.cpp}}
-        {Use as is}
-    \apiitemshort
+        {C++}
+        {State0-State1}
+        {1}
+        {cpp}
+    
+    \restartitem
         {Python}
-        {\lstinputlisting[style=Python]{state.py}}
-        {Use as is}
-    \apiitemshort
+        {Python}
+        {State0-State1}
+        {0}
+        {py}
+    
+    \restartitem
         {MATLAB/Octave}
-        {\lstinputlisting[style=Matlab]{state.m}}
-        {Use as is}
+        {Matlab}
+        {State0-State1}
+        {0}
+        {m}
 \end{boldlist}
 
-\noindent Here, \textct{XX}, \textct{YY}, and \text{ZZ} in C++ and \textct{X}, \textct{Y}, and \text{Z} in Python and MATLAB/Octave corresponds to the vector spaces $X$, $Y$, and $Z$ described in the section \hyperref[sec:importvs]{\secimportvs}.  Likely, they are just \textct{Optizelle::Rm} or \textct{Optizelle.Rm}.  As a note, We use double letters in C++ to remind us that these spaces denote templates and not objects.  Next, the variable \textct{x} denotes an initial guess for the optimizzation problem.  This guess is very important to the performance of the algorithms, so choose wisely.  The variables \textct{y} and \textct{z} represent arbitrary elements in the codomain of $g$ and $h$, respectively.  We do not use the values of these variables, so any properly allocated vector works fine.  Finally, in Python and MATLAB/Octave, we require a messaging object \textct{msg}.  In the simple case, we can simply use \textct{Optizelle.Messaging}.  For more complicated cases, see the section \hyperref[sec:messaging]{\secmessaging}.
+\noindent Here, \textct{XX}, \textct{YY}, and \text{ZZ} correspond to the vector spaces $X$, $Y$, and $Z$ described in the section \hyperref[sec:importvs]{\secimportvs}.  Likely, they are just \textct{Optizelle::Rm} or \textct{Optizelle.Rm}.  As a note, We use double letters in C++ to remind us that these spaces denote templates and not objects.  Next, the variable \textct{x} denotes an initial guess for the optimizzation problem.  This guess is very important to the performance of the algorithms, so choose wisely.  The variables \textct{y} and \textct{z} represent arbitrary elements in the codomain of $g$ and $h$, respectively.  We do not use the values of these variables, so any properly allocated vector works fine.  Finally, in Python and MATLAB/Octave, we require a \textctref{Messaging} object \textct{msg}.  In the simple case, we can simply use \textct{Optizelle.Messaging}.  For more complicated cases, see the section \hyperref[sec:messaging]{\secmessaging}.
 
-        As an example, we create the optimization state in the Rosenbrock example with the following code:
+        As an example, we create the optimization state in the \exampleref{\secrosenbrock}{sec:rosenbrock} example with the following code:
 \begin{boldlist}
     \shortexampleitem
         {C++}
@@ -1750,7 +1735,7 @@ state = Optizelle.Constrained.State.t(X,Y,Z,msg,x,y,z);
         {MATLAB/Octave}
         {\lstinputlisting[style=Matlab,linerange=State0-State1,widthgobble=1*4]{@ROSENBROCKPATH@/rosenbrock.m}}
 \end{boldlist}
-In our simple equality example, we have:
+In our \exampleref{\secequality}{sec:equality} example, we have:
 \begin{boldlist}
     \shortexampleitem
         {C++}
@@ -1767,49 +1752,32 @@ In our simple equality example, we have:
 
 \section{\secparams}\label{sec:params}
 
-        For each optimization problem, the parameters required for an efficient optimization solve can vary wildly.  Nevertheless, the parameters that guide this process reside within the state object.  There are two mechanisms for modifying these entries.  First, the state object created in the section \hyperref[sec:state]{\secstate} is simply an object with a variety of elements that can be modified directly.  Alternatively, and preferably, we can use the JSON reader.  The syntax for reading a parameter file in JSON format from file is
-\begin{filecontents*}{json.cpp}
-Optizelle::json::Unconstrained <Real,XX>
-    ::read(Optizelle::Messaging(),fname,state);
-Optizelle::json::EqualityConstrained <Real,XX,YY>
-    ::read(Optizelle::Messaging(),fname,state);
-Optizelle::json::InequalityConstrained <Real,XX,ZZ>
-    ::read(Optizelle::Messaging(),fname,state);
-Optizelle::json::Constrained <Real,XX,YY,ZZ>
-    ::read(Optizelle::Messaging(),fname,state)
-\end{filecontents*}
-
-\begin{filecontents*}{json.py}
-Optizelle.json.Unconstrained.read(X,msg,fname,state)
-Optizelle.json.EqualityConstrained.read(X,Y,msg,fname,state)
-Optizelle.json.InequalityConstrained.read(X,Z,msg,fname,state)
-Optizelle.json.Constrained.read(X,Y,Z,msg,fname,state)
-\end{filecontents*}
-
-\begin{filecontents*}{json.m}
-state = Optizelle.json.Unconstrained.read(X,msg,fname,state)
-state = Optizelle.json.EqualityConstrained.read(X,Y,msg,fname,state)
-state = Optizelle.json.InequalityConstrained.read(X,Z,msg,fname,state)
-state = Optizelle.json.Constrained.read(X,Y,Z,msg,fname,state)
-\end{filecontents*}
-
+        For each optimization problem, the parameters required for an efficient optimization solve can vary wildly.  Nevertheless, the parameters that guide this process reside within the state object.  There are two mechanisms for modifying these entries.  First, the state object created in the section \hyperref[sec:state]{\secstate} is simply an object with a variety of elements that can be modified directly.  Alternatively, and preferably, we can use the JSON reader.  The syntax for reading a parameter file in JSON format from file is:
 \begin{boldlist}
-    \apiitemshort
+    \restartitem
         {C++}
-        {\lstinputlisting[style=C++]{json.cpp}}
-        {Use as is}
-    \apiitemshort
+        {C++}
+        {ReadJson0-ReadJson1}
+        {1}
+        {cpp}
+    
+    \restartitem
         {Python}
-        {\lstinputlisting[style=Python]{json.py}}
-        {Use as is}
-    \apiitemshort
+        {Python}
+        {ReadJson0-ReadJson1}
+        {0}
+        {py}
+
+    \restartitem
         {MATLAB/Octave}
-        {\lstinputlisting[style=Matlab]{json.m}}
-        {Use as is}
+        {Matlab}
+        {ReadJson0-ReadJson1}
+        {0}
+        {m}
 \end{boldlist}
 Here, most of the parameters required are identical to those required in the section \hyperref[sec:state]{\secstate}.  The lone, new parameter is \textct{fname}, which corresponds to a string of the file name where we read the JSON formatted parameters.  As to what these parameters are, we discuss that in the chapter \hyperref[ch:params]{\chparams}.
 
-        In our Rosenbrock example, we use the following code to read the optimizzation parameters:
+        In our \exampleref{\secrosenbrock}{sec:rosenbrock} example, we use the following code to read the optimizzation parameters:
 \begin{boldlist}
     \shortexampleitem
         {C++}
@@ -1823,7 +1791,7 @@ Here, most of the parameters required are identical to those required in the sec
         {MATLAB/Octave}
         {\lstinputlisting[style=Matlab,linerange=Parameters0-Parameters1,widthgobble=1*4]{@ROSENBROCKPATH@/rosenbrock.m}}
 \end{boldlist}
-This becomes the following in our simple equality example: 
+This becomes the following in our \exampleref{\secequality}{sec:equality} example: 
 \begin{boldlist}
     \shortexampleitem
         {C++}
@@ -1840,46 +1808,32 @@ This becomes the following in our simple equality example:
 
 \section{\secfns}\label{sec:fns}
 
-        In order to pass the functions used in the optimization to Optizelle, we accumulate each of them into a bundle of functions.  These bundles are simple structures that contain the appropriate function.  The syntax for creating these objects is
-
-\begin{filecontents*}{functions.cpp}
-Optizelle::Unconstrained <Real,XX>::Functions::t fns;
-Optizelle::EqualityConstrained <Real,XX,YY>::Functions::t fns;
-Optizelle::InequalityConstrained <Real,XX,ZZ>::Functions::t fns;
-Optizelle::Constrained <Real,XX,ZZ>::Functions::t fns;
-\end{filecontents*}
-
-\begin{filecontents*}{functions.py}
-fns = Optizelle.Unconstrained.Functions.t()
-fns = Optizelle.EqualityConstrained.Functions.t()
-fns = Optizelle.InequalityConstrained.Functions.t()
-fns = Optizelle.Constrained.Functions.t()
-\end{filecontents*}
-
-\begin{filecontents*}{functions.m}
-fns = Optizelle.Unconstrained.Functions.t;
-fns = Optizelle.EqualityConstrained.Functions.t;
-fns = Optizelle.InequalityConstrained.Functions.t;
-fns = Optizelle.Constrained.Functions.t;
-\end{filecontents*}
-
+        In order to pass the functions used in the optimization to Optizelle, we accumulate each of them into a bundle of functions.  These bundles are simple structures that contain the appropriate function.  The syntax for creating these objects is:
 \begin{boldlist}
-    \apiitemshort
+    \restartitem
         {C++}
-        {\lstinputlisting[style=C++]{functions.cpp}}
-        {Use as is}
-    \apiitemshort
+        {C++}
+        {Functions0-Functions1}
+        {1}
+        {cpp}
+    
+    \restartitem
         {Python}
-        {\lstinputlisting[style=Python]{functions.py}}
-        {Use as is}
-    \apiitemshort
+        {Python}
+        {Functions0-Functions1}
+        {0}
+        {py}
+    
+    \restartitem
         {MATLAB/Octave}
-        {\lstinputlisting[style=Matlab]{functions.m}}
-        {Use as is}
+        {Matlab}
+        {Functions0-Functions1}
+        {0}
+        {m}
 \end{boldlist}
-\noindent As was in the case in the section \hyperref[sec:state]{\secstate}, \textct{XX}, \textct{YY}, and \text{ZZ} in C++ and \textct{X}, \textct{Y}, and \text{Z} in Python and MATLAB/Octave corresponds to the vector spaces $X$, $Y$, and $Z$ described in the section \hyperref[sec:importvs]{\secimportvs}.  Likely, they are just \textct{Optizelle::Rm} or \textct{Optizelle.Rm}.  
+\noindent As was the case in the section \hyperref[sec:state]{\secstate}, \textct{XX}, \textct{YY}, and \text{ZZ} correspond to the vector spaces $X$, $Y$, and $Z$ described in the section \hyperref[sec:importvs]{\secimportvs}.  Likely, they are just \textct{Optizelle::Rm} or \textct{Optizelle.Rm}.  
 
-        Now, each of structures contains a number of required and optional elements.  We summarize these elements as follows.
+        Now, each of structures contains a number of required and optional elements.  We summarize these elements as follows:
 \begin{boldlist}
     \functionitem
         {\textct{f}}
@@ -1925,7 +1879,7 @@ fns = Optizelle.Constrained.Functions.t;
 \end{boldlist}
 \noindent In C++, we represent each of the these elements as a \textct{std::unique_ptr} using the type specified above.  In Python, we use simple class elements.  In MATLAB/Octave, we use a structure array.  As a final note, since they are optional, we do \textbf{not} utilize \textct{PH}, \textct{PSchur_left}, or \textct{PSchur_right} by default even when they are defined.  In order to active these functions, we must modify the \textct{PH_type}, \textct{PSchur_left_type}, and \textct{PSchur_right_type} elements in the state, respectively.  We describe these variables in the chapter \hyperref[ch:params]{\chparams}.
 
-        In our Rosenbrock example, we accumlate our functions with the following code
+        In our \exampleref{\secrosenbrock}{sec:rosenbrock} example, we accumlate our functions with the following code:
 \begin{boldlist}
     \shortexampleitem
         {C++}
@@ -1939,7 +1893,7 @@ fns = Optizelle.Constrained.Functions.t;
         {MATLAB/Octave}
         {\lstinputlisting[style=Matlab,linerange=Functions0-Functions1,widthgobble=1*4]{@ROSENBROCKPATH@/rosenbrock.m}}
 \end{boldlist}
-\noindent As another example, we accomplish the same task in our simple equality example with the code
+\noindent As another example, we accomplish the same task in our \exampleref{\secequality}{sec:equality} example with the code:
 \begin{boldlist}
     \shortexampleitem
         {C++}
@@ -1957,45 +1911,32 @@ fns = Optizelle.Constrained.Functions.t;
 
 \section{\secsolve}\label{sec:solve}
 
-       Once the state, parameters, and functions are set, calling the optimization solver is straightforward.  Simply, we call one of the four commands
-\begin{filecontents*}{solver.cpp}
-Optizelle::Unconstrained<Real,XX>::Algorithms::getMin(msg,fns,state);
-Optizelle::EqualityConstrained<Real,XX,YY>::Algorithms::getMin(msg,fns,state);
-Optizelle::InequalityConstrained<Real,XX,ZZ>::Algorithms::getMin(msg,fns,state);
-Optizelle::Constrained<Real,XX,YY,ZZ>::Algorithms::getMin(msg,fns,state);
-\end{filecontents*}
-
-\begin{filecontents*}{solver.py}
-Optizelle.Unconstrained.Algorithms.getMin(X,msg,fns,state)
-Optizelle.EqualityConstrained.Algorithms.getMin(X,Y,msg,fns,state)
-Optizelle.InequalityConstrained.Algorithms.getMin(X,Z,msg,fns,state)
-Optizelle.Constrained.Algorithms.getMin(X,Y,Z,msg,fns,state)
-\end{filecontents*}
-
-\begin{filecontents*}{solver.m}
-state = Optizelle.Unconstrained.Algorithms.getMin(X,msg,fns,state);
-state = Optizelle.EqualityConstrained.Algorithms.getMin(X,Y,msg,fns,state);
-state = Optizelle.InequalityConstrained.Algorithms.getMin(X,Z,msg,fns,state);
-state = Optizelle.Constrained.Algorithms.getMin(X,Y,Z,msg,fns,state);
-\end{filecontents*}
-
+       Once the state, parameters, and functions are set, calling the optimization solver is straightforward.  Simply, we call one of the four commands:
 \begin{boldlist}
-    \apiitemshort
+    \restartitem
         {C++}
-        {\lstinputlisting[style=C++]{solver.cpp}}
-        {Use as is}
-    \apiitemshort
+        {C++}
+        {Solver0-Solver1}
+        {1}
+        {cpp}
+    
+    \restartitem
         {Python}
-        {\lstinputlisting[style=Python]{solver.py}}
-        {Use as is}
-    \apiitemshort
+        {Python}
+        {Solver0-Solver1}
+        {0}
+        {py}
+    
+    \restartitem
         {MATLAB/Octave}
-        {\lstinputlisting[style=Matlab]{solver.m}}
-        {Use as is}
+        {Matlab}
+        {Solver0-Solver1}
+        {0}
+        {m}
 \end{boldlist}
-\noindent As was in the case in the section \hyperref[sec:state]{\secstate}, \textct{XX}, \textct{YY}, and \text{ZZ} in C++ and \textct{X}, \textct{Y}, and \text{Z} in Python and MATLAB/Octave corresponds to the vector spaces $X$, $Y$, and $Z$ described in the section \hyperref[sec:importvs]{\secimportvs}.  Likely, they are just \textct{Optizelle::Rm} or \textct{Optizelle.Rm}.  Next, we call the function with a \textctref{Messaging} object, \textct{msg}.  In the simple case, we can simply use \textct{Optizelle::Messaging()} in C++, \textct{Optizelle.Messaging()} in Python, and \textct{Optizelle.Messaging} in MATLAB/Octave.  For more complicated cases, see the section \hyperref[sec:messaging]{\secmessaging}.  Finally, we pass in the state and bundle of functions that we discussed in the sections \hyperref[sec:state]{\secstate} and \hyperref[sec:fns]{\secfns}, respectively.
+\noindent As was the case in the section \hyperref[sec:state]{\secstate}, \textct{XX}, \textct{YY}, and \text{ZZ} correspond to the vector spaces $X$, $Y$, and $Z$ described in the section \hyperref[sec:importvs]{\secimportvs}.  Likely, they are just \textct{Optizelle::Rm} or \textct{Optizelle.Rm}.  Next, we call the function with a \textctref{Messaging} object, \textct{msg}.  In the simple case, we can simply use \textct{Optizelle::Messaging()} in C++, \textct{Optizelle.Messaging()} in Python, and \textct{Optizelle.Messaging} in MATLAB/Octave.  For more complicated cases, see the section \hyperref[sec:messaging]{\secmessaging}.  Finally, we pass in the state and bundle of functions that we discussed in the sections \hyperref[sec:state]{\secstate} and \hyperref[sec:fns]{\secfns}, respectively.
         
-        In our Rosenbrock example, we call Optizelle's solver with the code:
+        In our \exampleref{\secrosenbrock}{sec:rosenbrock} example, we call Optizelle's solver with the code:
 \begin{boldlist}
     \shortexampleitem
         {C++}
@@ -2009,7 +1950,7 @@ state = Optizelle.Constrained.Algorithms.getMin(X,Y,Z,msg,fns,state);
         {MATLAB/Octave}
         {\lstinputlisting[style=Matlab,linerange=Solver0-Solver1,widthgobble=1*4]{@ROSENBROCKPATH@/rosenbrock.m}}
 \end{boldlist}
-\noindent With the simple equality example, this becomes: 
+\noindent With the \exampleref{\secequality}{sec:equality} example, this becomes: 
 \begin{boldlist}
     \shortexampleitem
         {C++}
@@ -2028,7 +1969,7 @@ state = Optizelle.Constrained.Algorithms.getMin(X,Y,Z,msg,fns,state);
 
         After the optimization routine concludes, the solution resides inside of the optimization state in a variable called \textctref{x} and the reason we stopped the optimization resides in a variable called \textctref{opt_stop}.  At this point, we can examine our solution and run any post optimization diagnostics we require.
 
-        In our Rosenbrock example, we print out the final solution with the code: 
+        In our \exampleref{\secrosenbrock}{sec:rosenbrock} example, we print out the final solution with the code: 
 \begin{boldlist}
     \shortexampleitem
         {C++}
@@ -2042,7 +1983,7 @@ state = Optizelle.Constrained.Algorithms.getMin(X,Y,Z,msg,fns,state);
         {MATLAB/Octave}
         {\lstinputlisting[style=Matlab,linerange=Extract0-Extract1,widthgobble=1*4]{@ROSENBROCKPATH@/rosenbrock.m}}
 \end{boldlist}
-\noindent In our simple equality example, this becomes: 
+\noindent In our \exampleref{\secequality}{sec:equality} example, this becomes: 
 \begin{boldlist}
     \shortexampleitem
         {C++}
@@ -3071,7 +3012,7 @@ In Octave, this becomes
         {Interior point parameter.} 
 \end{boldlist}
 
-\chapter{Advanced API}\label{ch:Advanced}
+\chapter{\chadvanced}\label{ch:advanced}
 
         Optizelle contains many additional features such as customizing the output and defining custom vector spaces.  We detail these features below.
 
@@ -3084,7 +3025,7 @@ In Octave, this becomes
 \end{itemize}
 \noindent In these cases, we want to define a new messaging object.
 
-        Messaging objects require two functions, \textct{print} and \textct{error}.  Both functions accept a string and print it accordingly.  In addition, \textct{error} must gracefully exit the optimization.  In code, we specify this object as
+        Messaging objects require two functions, \textct{print} and \textct{error}.  Both functions accept a string and print it accordingly.  In addition, \textct{error} must gracefully exit the optimization.  In code, we specify this object as:
 \phantomsection\label{itm:Messaging}
 \begin{boldlist}
     \apiitem
@@ -3112,7 +3053,7 @@ In Octave, this becomes
 
         Once we define a custom messaging object, we are free to pass it to Optizelle.  This occurs in a few different places, but most notably when we call the optimization solver.  We describe this process in the section \hyperref[sec:solve]{\secsolve}.
 
-        As an example, we modify the messaging object in our Rosenbrock advanced API example:
+        As an example, we modify the messaging object in our \exampleref{\secrosenbrockadvancedapi}{sec:rosenbrockadvancedapi} example:
 \begin{boldlist}
     \exampleitem
         {C++}
@@ -3210,7 +3151,7 @@ In Octave, this becomes
         {$\textit{rand}\leftarrow \psi(W)$ where $x\in W$} 
         {In C++ and Python, overwrite $x$ with a random vector.  In MATLAB/Octave, return a random vector.  Here, the function $\psi:\{X,Y,Z\}\rightarrow X\cup Y\cup Z$ denotes a stochastic choice function that randomly selects an element from the appropriate set.  Essentially, this states that we want a valid, random element in the vector space.  Primarily, we use these vectors for our diagnostic tests controlled by the parameters \textctref{f_diag}, \textctref{g_diag}, and \textctref{h_diag}.}
 \end{boldlist}
-\noindent In addition, the vector space associated with the codomain of the inequality constraints, $Z$, requires the following operations
+\noindent In addition, the vector space associated with the codomain of the inequality constraints, $Z$, requires the following operations:
 \begin{boldlist}
     \customvsitem
         {prod}
@@ -3324,7 +3265,7 @@ $$
 where we require $P$ to be nonsingular.}
 \end{boldlist}
 
-        Next, we require these vector-space functions be encapsulated in the following structures
+        Next, we require these vector-space functions be encapsulated in the following structures:
 \begin{boldlist}
     \vswrapperitem
         {C++}
@@ -3342,7 +3283,7 @@ where we require $P$ to be nonsingular.}
         {A vector space in MATLAB/Octave must be declared as a structure array with all of the above methods present.} 
 \end{boldlist}
         
-        As an example, we define and use a custom vector space for $\re^m$ in our Rosenbrock advanced API example:
+        As an example, we define and use a custom vector space for $\re^m$ in our \exampleref{\secrosenbrockadvancedapi}{sec:rosenbrockadvancedapi} example:
 \begin{boldlist}
     \exampleitem
         {C++}
@@ -3359,14 +3300,13 @@ where we require $P$ to be nonsingular.}
 
 \section{\seccone}        
 
-        In the case of C++, we provide a built-in vector space for semidefinite, second-order cone, and linear (SQL) programs
+        In the case of C++, we provide a built-in vector space for semidefinite, second-order cone, and linear (SQL) programs:
 \phantomsection\label{itm:SQL}
 \begin{boldlist}
     \vsitem
         {C++}
         {\textct{Optizelle::SQL::Vector}}
         {\textct{Optizelle::SQL}}
-        {Use as is}
 \end{boldlist}
 
         In order to create an \textct{SQL::Vector}, we use the following constructor
@@ -3394,12 +3334,14 @@ Number of blocks & \textct{x.numblocks()}
 \end{tabular}\end{center}
 
         As an example, we setup and solve a simple second-order cone program in our simple quadratic cone example:
+\examplelabel{\secquadratic}{sec:quadratic}
 \begin{boldlist}
     \exampleitem
         {C++}
         {\lstinputlisting[style=C++]{@SIMPLEQUADRATICCONEPATH@/simple_quadratic_cone.cpp}}
 \end{boldlist}
 \noindent Similarly, we setup and solve a simple semidefinite program in our simple SDP cone example:
+\examplelabel{\secsdp}{sec:sdp}
 \begin{boldlist}
     \exampleitem
         {C++}
@@ -3443,51 +3385,31 @@ Number of blocks & \textct{x.numblocks()}
         {\lstinputlisting[style=Matlab,linerange=StateManipulator0-StateManipulator1]{@OPTIZELLEMATLABPATH@/setupOptizelle.m}}
 \end{boldlist}
 \noindent Once we define the \textctref{StateManipulator}, we call the optimization solver with one of the following four commands, which differs slightly from those defined in the section \hyperref[sec:solve]{\secsolve}.  In essence, we add the \textctref{StateManipulator} after the \textctref{Messaging} object.
-\begin{filecontents*}{smanip_solver.cpp}
-Optizelle::Unconstrained<Real,XX>::Algorithms::getMin(
-    msg,smanip,fns,state);
-Optizelle::EqualityConstrained<Real,XX,YY>::Algorithms::getMin(
-    msg,smanip,fns,state);
-Optizelle::InequalityConstrained<Real,XX,ZZ>::Algorithms::getMin(
-    msg,smanip,fns,state);
-Optizelle::Constrained<Real,XX,YY,ZZ>::Algorithms::getMin(
-    msg,smanip,fns,state);
-\end{filecontents*}
-
-\begin{filecontents*}{smanip_solver.py}
-Optizelle.Unconstrained.Algorithms.getMin(X,msg,smanip,fns,state)
-Optizelle.EqualityConstrained.Algorithms.getMin(X,Y,msg,smanip,fns,state)
-Optizelle.InequalityConstrained.Algorithms.getMin(X,Z,msg,smanip,fns,state)
-Optizelle.Constrained.Algorithms.getMin(X,Y,Z,msg,smanip,fns,state)
-\end{filecontents*}
-
-\begin{filecontents*}{smanip_solver.m}
-state = Optizelle.Unconstrained.Algorithms.getMin(
-    X,msg,smanip,fns,state);
-state = Optizelle.EqualityConstrained.Algorithms.getMin(
-    X,Y,msg,smanip,fns,state);
-state = Optizelle.InequalityConstrained.Algorithms.getMin(
-    X,Z,msg,smanip,fns,state);
-state = Optizelle.Constrained.Algorithms.getMin(
-    X,Y,Z,msg,smanip,fns,state);
-\end{filecontents*}
-
 \begin{boldlist}
-    \apiitemshort
+    \restartitem
         {C++}
-        {\lstinputlisting[style=C++]{smanip_solver.cpp}}
-        {Use as is}
-    \apiitemshort
+        {C++}
+        {SmanipSolver0-SmanipSolver1}
+        {1}
+        {cpp}
+    
+    \restartitem
         {Python}
-        {\lstinputlisting[style=Python]{smanip_solver.py}}
-        {Use as is}
-    \apiitemshort
+        {Python}
+        {SmanipSolver0-SmanipSolver1}
+        {0}
+        {py}
+    
+    \restartitem
         {MATLAB/Octave}
-        {\lstinputlisting[style=Matlab]{smanip_solver.m}}
-        {Use as is}
+        {Matlab}
+        {SmanipSolver0-SmanipSolver1}
+        {0}
+        {m}
 \end{boldlist}
 
-        As an example, we use the \textctref{StateManipulator} to add restarts to our Rosenbrock advanced API example.  We discuss restarts in the section entitled \hyperref[sec:restart]{\secrestart}. 
+        As an example, we use the \textctref{StateManipulator} to add restarts to our \exampleref{\secrosenbrockadvancedapi}{sec:rosenbrockadvancedapi} example.  We discuss restarts in the section entitled \hyperref[sec:restart]{\secrestart}. 
+\phantomsection\label{itm:StateManipulatorExample}
 \begin{boldlist}
     \exampleitem
         {C++}
@@ -3501,7 +3423,7 @@ state = Optizelle.Constrained.Algorithms.getMin(
         {MATLAB/Octave}
         {\lstinputlisting[style=Matlab,linerange=RestartManipulator0-RestartManipulator1]{@ROSENBROCKADVANCEDAPIPATH@/rosenbrock_advanced_api.m}}
 \end{boldlist}
-\noindent In order to use this \textctref{StateManipulator}, we call Optizelle's solver with the code
+\noindent In order to use this \textctref{StateManipulator}, we call Optizelle's solver with the code:
 \begin{boldlist}
     \shortexampleitem
         {C++}
@@ -3518,7 +3440,7 @@ state = Optizelle.Constrained.Algorithms.getMin(
         
 \section{\secrestart}\label{sec:restart}
 
-        Restarts are a mechanism to read, write, and archive the progress and solution of an optimization algorithm.  In other words, restarts allow us to save the state of an optimization algorithm before it finishes computing.  We do this for several reasons.
+        Restarts are a mechanism to read, write, and archive the progress and solution of an optimization algorithm.  In other words, restarts allow us to save the state of an optimization algorithm before it finishes computing.  We do this for several reasons:
 \begin{itemize}
     \item In scientific or engineering tasks, we may need to replicate or reproduce our work.
 
@@ -3532,11 +3454,96 @@ state = Optizelle.Constrained.Algorithms.getMin(
 \end{itemize}
 \indent Each of these situations requires restarts.
 
-        As long as we use our built-in vector spaces such as \textctref{Rm} and \textctref{SQL}, we can easily read and write restart files to disk.
+        As long as we use our built-in vector spaces such as \textctref{Rm} and \textctref{SQL}, we can easily read and write the state to a JSON formatted file with the commands:
+\phantomsection\label{itm:write_restart}
+\phantomsection\label{itm:read_restart}
+\begin{boldlist}
+    \restartitem
+        {C++}
+        {C++}
+        {WriteReadRestart0-WriteReadRestart1}
+        {1}
+        {cpp}
+    
+    \restartitem
+        {Python}
+        {Python}
+        {WriteReadRestart0-WriteReadRestart1}
+        {0}
+        {py}
+    
+    \restartitem
+        {MATLAB/Octave}
+        {Matlab}
+        {WriteReadRestart0-WriteReadRestart1}
+        {0}
+        {m}
+\end{boldlist}
+\noindent As was the case before, \textct{XX}, \textct{YY}, and \text{ZZ} correspond to the vector spaces $X$, $Y$, and $Z$ described in the section \hyperref[sec:importvs]{\secimportvs}.  Likely, they are just \textctref{Rm} or \textctref{SQL}.  Next, we call the function with a \textctref{Messaging} object, \textct{msg}.  Third, the string \textct{fname} denotes the file name that we read or write the restart.  Next, the variable \textct{state} denotes a \textctref{State} object.  During a write, we write the provided state to file.  During a read, we read the restart file into the specified state.  Finally, the variables \textct{x}, \textct{y}, and \textct{z} denote variables in the spaces \textct{XX}, \textct{YY}, and \textct{ZZ}, respectively.  We only use them to initialize memory, so any valid vector works.
 
+        As an example, we return to our \exampleref{\secrosenbrockadvancedapi}{sec:rosenbrockadvancedapi} example.  We already showed how to write a restart file at the end of each optimization iteration in our discussion of \textctref{StateManipulator}s.  Specifically, we used the \textctref{write_restart} command in our \textctref{StateManipulator} \hyperref[itm:StateManipulatorExample]{example}.  To compliment that code, we read an optional restart file prior to optimization with the code:
+\begin{boldlist}
+    \exampleitem
+        {C++}
+        {\lstinputlisting[style=C++,linerange=ReadRestart0-ReadRestart1]{@ROSENBROCKADVANCEDAPIPATH@/rosenbrock_advanced_api.cpp}}
+
+    \exampleitem
+        {Python}
+        {\lstinputlisting[style=Python,linerange=ReadRestart0-ReadRestart1]{@ROSENBROCKADVANCEDAPIPATH@/rosenbrock_advanced_api.py}}
+
+    \exampleitem
+        {MATLAB/Octave}
+        {\lstinputlisting[style=Matlab,linerange=ReadRestart0-ReadRestart1]{@ROSENBROCKADVANCEDAPIPATH@/rosenbrock_advanced_api.m}}
+\end{boldlist}
+\noindent As a note, we call the \hyperref[sec:params]{JSON reader} after we read the restart file.  If we do this in the reverse order, the restart read process overwrites all of our parameters. 
+
+        For \textctref{Rm} and \textctref{SQL}, the above process works seemlessly.  In fact, C++, Python, and MATLAB/Octave all use the same format for \textct{Rm}, which means we can write a restart file in one language and then read the same restart file in a different language.  However, for \hyperref[sec:customvector]{customized vector spaces}, we must provide Optizelle information on how to translate a vector to a JSON formatted file using the following commands:
+\phantomsection\label{itm:serialize}
+\phantomsection\label{itm:deserialize}
+\begin{boldlist}
+    \restartitemalt
+        {C++}
+        {C++}
+        {Serialization0-Serialization1}
+        {0}
+        {cpp}
+    
+    \restartitemalt
+        {Python}
+        {Python}
+        {Serialization0-Serialization1}
+        {0}
+        {py}
+
+    \restartitemalt
+        {MATLAB/Octave}
+        {Matlab}
+        {Serialization0-Serialization1}
+        {0}
+        {m}
+\end{boldlist}
+\noindent In each command, the \textctref{serialize} and \textctref{deserialize} functions work in a similar manner.  The \textctref{serialize} function accepts a vector and then returns a valid JSON structure corresponding to this vector.  For \textctref{Rm}, we use simple JSON vector notation such as \textct{[1.2, 2.3, 3.4]}, but this can be significantly more complicated.  In fact, for large-scale optimization problems, we suggest storing the vector in a separate binary file and returning a JSON structure that denotes the name of the file and the byte where the information begins.  Next, the \textctref{deserialize} function accepts two arguments and returns a vector.  The first argument denotes a vector in the same vector space as the vector we need translated.  The second argument denotes a JSON formatted string of the vector we need to translate.  Generally, we use the first argument to initialize memory for the vector we eventually return.  Then, we use the JSON formatted string to fill in the appropriate information.  In C++, we accomplish this process through template specialization.  In Python, we call the \textct{serialize} and \textctref{deserialize} functions in the \hyperref[sec:import]{\textctref{Optizelle.json.Serialization}} module with the \textct{"registration"} string.  Then, we provide our custom \textctref{serialize} and \textctref{deserialize} routines along with the type of the vector that we want to serialize in the variable \textct{vector_type}.  We obtain this information with the \textct{type} command and require it in order to disambiguate multiple serialization routines.  In MATLAB/Octave, we call the \textctref{serialize} and \textctref{deserialize} functions in the \hyperref[sec:import]{\textctref{Optizelle.json.Serialization}} structure with the \textct{'registration'} string.  Then, similar to Python, we provide our custom \textctref{serialize} and \textctref{deserialize} routines along with a function \textct{check}.  The function \textct{check} accepts a single argument and returns \textct{1} when called with the kind of vector we want to serialize and \textct{0} otherwise.  We require the \textct{check} function to disambiguate the different serialization functions, so we try to make it as specific as possible. 
+
+        As an example, we return to our \exampleref{\secrosenbrockadvancedapi}{sec:rosenbrockadvancedapi} example.  There, we define custom serialization routines with the code:
+\begin{boldlist}
+    \exampleitem
+        {C++}
+        {\lstinputlisting[style=C++,linerange=Serialization0-Serialization1]{@ROSENBROCKADVANCEDAPIPATH@/rosenbrock_advanced_api.cpp}}
+
+    \exampleitem
+        {Python}
+        {\lstinputlisting[style=Python,linerange=Serialization0-Serialization1]{@ROSENBROCKADVANCEDAPIPATH@/rosenbrock_advanced_api.py}}
+
+    \exampleitem
+        {MATLAB/Octave}
+        {\lstinputlisting[style=Matlab,linerange=Serialization0-Serialization1]{@ROSENBROCKADVANCEDAPIPATH@/rosenbrock_advanced_api.m}}
+\end{boldlist}
+
+        In some situations, we want to avoid using JSON all together.  Generally, this occurs when integrating Optizelle into an existing application with rigid I/O requirements.  In this case, we provide an alternative mechanism to generate restarts.
+        
         At its core, restarts consist of two mechanisms: release and capture.  Release transforms the state into a collection of lists that contain all of the optimization information.  Capture reverses this process.  Generally, we do a release, write these lists containing the state information to file, and then capture the state.  The idea behind this process is that we don't expect ourselves to remember all of the optimization variables.  Certainly, this collection of variables changes whenenever we update the code or add new algorithms.  However, if we know how to write a list of variables to file, we can simply iterate over the list and take the appropriate action.
 
-       More specifically, the capture and release functions operate on lists of tuples.  As far as the type used for the lists, we have 
+       More specifically, the capture and release functions operate on lists of tuples.  As far as the type used for the lists, we have:
 \begin{boldlist}
     \simpletypeitem
         {C++}
@@ -3564,7 +3571,7 @@ state = Optizelle.Constrained.Algorithms.getMin(
         {MATLAB/Octave}
         {cell}
 \end{boldlist}
-\noindent In these tuples, we always use a string for the first element.  This represents the unique label for the item.  The second items depends on the type involved and we enumerate these possibilities below.
+\noindent In these tuples, we always use a string for the first element.  This represents the unique label for the item.  The second items depends on the type involved and we enumerate these possibilities below:
 \begin{boldlist}
     \rtypeitem
         {Reals}
@@ -3590,38 +3597,131 @@ state = Optizelle.Constrained.Algorithms.getMin(
         {Z_Vectors}
         {List of \textctref{Z_Vector} vectors and labels.}
 \end{boldlist}
-
-        Based on the above types, we release and capture the state with the following code.
+\noindent Based on the above types, we release and capture the state with the following code:
 \begin{boldlist}
-    \shortexampleitem
+    \restartitem
         {C++}
-        {
-        \lstinputlisting[style=C++,linerange={Release0-Release1,Capture0-Capture1},widthgobble=1*4]{@CAPTURERELEASEPATH@/unconstrained.cpp}
-        \lstinputlisting[style=C++,linerange={Release0-Release1,Capture0-Capture1},widthgobble=1*4]{@CAPTURERELEASEPATH@/equality_constrained.cpp}
-        \lstinputlisting[style=C++,linerange={Release0-Release1,Capture0-Capture1},widthgobble=1*4]{@CAPTURERELEASEPATH@/inequality_constrained.cpp}
-        \lstinputlisting[style=C++,linerange={Release0-Release1,Capture0-Capture1},widthgobble=1*4]{@CAPTURERELEASEPATH@/constrained.cpp}
-        }
+        {C++}
+        {Release0-Release1,Capture0-Capture1}
+        {1}
+        {cpp}
     
-    \shortexampleitem
+    \restartitem
         {Python}
-        {
-        \lstinputlisting[style=Python,linerange={Release0-Release1,Capture0-Capture1}]{@CAPTURERELEASEPATH@/unconstrained.py}
-        \lstinputlisting[style=Python,linerange={Release0-Release1,Capture0-Capture1}]{@CAPTURERELEASEPATH@/equality_constrained.py}
-        \lstinputlisting[style=Python,linerange={Release0-Release1,Capture0-Capture1}]{@CAPTURERELEASEPATH@/inequality_constrained.py}
-        \lstinputlisting[style=Python,linerange={Release0-Release1,Capture0-Capture1}]{@CAPTURERELEASEPATH@/constrained.py}
-        }
+        {Python}
+        {Release0-Release1,Capture0-Capture1}
+        {0}
+        {py}
     
-    \shortexampleitem
+    \restartitem
         {MATLAB/Octave}
-        {
-        \lstinputlisting[style=Matlab,linerange={Release0-Release1,Capture0-Capture1}]{@CAPTURERELEASEPATH@/unconstrained.m}
-        \lstinputlisting[style=Matlab,linerange={Release0-Release1,Capture0-Capture1}]{@CAPTURERELEASEPATH@/equality_constrained.m}
-        \lstinputlisting[style=Matlab,linerange={Release0-Release1,Capture0-Capture1}]{@CAPTURERELEASEPATH@/inequality_constrained.m}
-        \lstinputlisting[style=Matlab,linerange={Release0-Release1,Capture0-Capture1}]{@CAPTURERELEASEPATH@/constrained.m}
-        }
+        {Matlab}
+        {Release0-Release1,Capture0-Capture1}
+        {0}
+        {m}
+\end{boldlist}
+\noindent As with \textctref{read_restart} and \textctref{write_restart}, we most likely use this functions within a \textctref{StateManipulator}.  However, when possible, we are likely better off just using the JSON formatted restart mechanisms within \textctref{read_restart} and \textctref{write_restart}.
+
+\chapter{\chexamples}\label{ch:examples}
+
+        During the configure process, we compile and install a variety of examples whenever the \textctref{ENABLE_CPP_EXAMPLES}, \textctref{ENABLE_PYTHON_EXAMPLES}, or \textctref{ENABLE_MATLAB_EXAMPLES} are turned to \textct{ON}.  For reference, we include some of these examples here.
+
+\section{\secequality}\examplelabel{\secequality}{sec:equality}
+
+        In our \exampleref{\secequality}{sec:equality} example, we optimize the formulation
+$$
+    \begin{array}{rcl}
+        \min\limits_{x\in\re^2} && x^2+y^2\\
+        \st && (x-2)^2 + (y-2)^2 = 1
+    \end{array}
+$$
+with the code:
+\begin{boldlist}
+    \exampleitem
+        {C++}
+        {\lstinputlisting[style=C++]{@SIMPLEEQUALITYPATH@/simple_equality.cpp}}
+
+    \exampleitem
+        {Python}
+        {\lstinputlisting[style=Python]{@SIMPLEEQUALITYPATH@/simple_equality.py}}
+
+    \exampleitem
+        {MATLAB/Octave}
+        {\lstinputlisting[style=MATLAB]{@SIMPLEEQUALITYPATH@/simple_equality.m}}
 \end{boldlist}
 
-        Outside the use of capture and release, we can simplify the restart scheme further.  Specifically, as long as we 
+\section{\secinequality}\examplelabel{\secinequality}{sec:inequality}
+
+        In our \exampleref{\secinequality}{sec:inequality} example, we optimize the formulation
+$$
+    \begin{array}{rcl}
+        \min\limits_{x\in\re^2} && (x+1)^2+(y+1)^2\\
+        \st && x + 2y \geq 1\\
+            && 2x + y \geq 1
+    \end{array}
+$$
+with the code:
+\begin{boldlist}
+    \exampleitem
+        {C++}
+        {\lstinputlisting[style=C++]{@SIMPLEINEQUALITYPATH@/simple_inequality.cpp}}
+
+    \exampleitem
+        {Python}
+        {\lstinputlisting[style=Python]{@SIMPLEINEQUALITYPATH@/simple_inequality.py}}
+
+    \exampleitem
+        {MATLAB/Octave}
+        {\lstinputlisting[style=MATLAB]{@SIMPLEINEQUALITYPATH@/simple_inequality.m}}
+\end{boldlist}
+
+\section{\secconstrained}\examplelabel{\secconstrained}{sec:constrained}
+
+        In our \exampleref{\secconstrained}{sec:constrained} example, we optimize the formulation
+$$
+    \begin{array}{rcl}
+        \min\limits_{x\in\re^2} && (x+1)^2+(y+1)^2\\
+        \st && x + 2y = 1\\
+            && 2x + y \geq 1
+    \end{array}
+$$
+with the code:
+\begin{boldlist}
+    \exampleitem
+        {C++}
+        {\lstinputlisting[style=C++]{@SIMPLECONSTRAINEDPATH@/simple_constrained.cpp}}
+
+    \exampleitem
+        {Python}
+        {\lstinputlisting[style=Python]{@SIMPLECONSTRAINEDPATH@/simple_constrained.py}}
+
+    \exampleitem
+        {MATLAB/Octave}
+        {\lstinputlisting[style=MATLAB]{@SIMPLECONSTRAINEDPATH@/simple_constrained.m}}
+\end{boldlist}
+
+\section{\secrosenbrockadvancedapi}\examplelabel{\secrosenbrockadvancedapi}{sec:rosenbrockadvancedapi}
+
+        In our \exampleref{\secrosenbrockadvancedapi}{sec:rosenbrockadvancedapi} example, we optimize the formulation
+$$
+    \begin{array}{rcl}
+        \min\limits_{x\in\re^2} && (1-x_1)^2+100(x_2-x_1^2)^2.
+    \end{array}
+$$
+using the features described in our chapter \hyperref[ch:advanced]{\chadvanced}.  We accomplish this with the code:
+\begin{boldlist}
+    \exampleitem
+        {C++}
+        {\lstinputlisting[style=C++]{@ROSENBROCKADVANCEDAPIPATH@/rosenbrock_advanced_api.cpp}}
+
+    \exampleitem
+        {Python}
+        {\lstinputlisting[style=Python]{@ROSENBROCKADVANCEDAPIPATH@/rosenbrock_advanced_api.py}}
+
+    \exampleitem
+        {MATLAB/Octave}
+        {\lstinputlisting[style=MATLAB]{@ROSENBROCKADVANCEDAPIPATH@/rosenbrock_advanced_api.m}}
+\end{boldlist}
 
 \clearpage
 \addcontentsline{toc}{chapter}{Index}

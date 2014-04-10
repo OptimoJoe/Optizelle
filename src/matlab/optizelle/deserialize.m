@@ -19,8 +19,8 @@ function x_out = deserialize(varargin)
 
         % Check the arguments
         checkString('mode',mode);
-        checkFunction('sfn',sfn);
-        checkFunction('scheck',scheck);
+        checkFunction('deserialize',sfn);
+        checkFunction('check',scheck);
 
         % Check that we're actually registering
         if ~strcmp(mode,'register')

@@ -14,7 +14,7 @@ if(ENABLE_MATLAB)
 endif()
 
 # Basic unit tests and utility functions
-add_subdirectory(capture_and_release)
+add_subdirectory(restart)
 add_subdirectory(linear_algebra)
 add_subdirectory(utility)
 
