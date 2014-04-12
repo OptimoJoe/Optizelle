@@ -13,7 +13,7 @@ function self=EqualityConstrainedAlgorithmsGetMin(varargin)
     if nargin==5
         fns = varargin{4};
         state = varargin{5};
-        smanip = getStateManipulator(); 
+        smanip = struct('eval',@(fns,state,loc)state);
     else
         fns = varargin{5};
         state = varargin{6};

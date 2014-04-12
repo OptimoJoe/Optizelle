@@ -14,7 +14,7 @@ function self=ConstrainedAlgorithmsGetMin(varargin)
     if nargin==6
         fns = varargin{5};
         state = varargin{6};
-        smanip = getStateManipulator(); 
+        smanip = struct('eval',@(fns,state,loc)state);
     else
         fns = varargin{6};
         state = varargin{7};

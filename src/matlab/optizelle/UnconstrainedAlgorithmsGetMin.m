@@ -12,7 +12,7 @@ function self=UnconstrainedAlgorithmsGetMin(varargin)
     if nargin==4
         fns = varargin{3};
         state = varargin{4};
-        smanip = getStateManipulator(); 
+        smanip = struct('eval',@(fns,state,loc)state);
     else
         fns = varargin{4};
         state = varargin{5};
