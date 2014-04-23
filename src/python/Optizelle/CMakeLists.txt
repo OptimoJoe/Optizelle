@@ -9,11 +9,13 @@ include_directories(${PYTHON_INCLUDE_DIRS})
 include_directories(${OPTIZELLE_PYTHON_INCLUDE_DIRS})
 add_library(optizelle_python SHARED ${optizelle_python_srcs})
 target_link_libraries(optizelle_python
-    optizelle_shared)
-set_target_properties(optizelle_python
-    PROPERTIES OUTPUT_NAME Utility)
-set_target_properties(optizelle_python
-    PROPERTIES PREFIX "") 
+    optizelle_shared
+    ${PYTHON_LIBRARIES})
+set_target_properties(optizelle_python PROPERTIES OUTPUT_NAME Utility)
+set_target_properties(optizelle_python PROPERTIES PREFIX "")
+if(APPLE)
+    set_target_properties(optizelle_python PROPERTIES SUFFIX ".so") 
+endif()
 
 # Copy in the rest of the Python files for the unit tests.  Otherwise, we
 # end of dirtying our source tree.

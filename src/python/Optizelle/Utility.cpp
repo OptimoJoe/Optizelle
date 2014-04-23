@@ -85,6 +85,8 @@ namespace Optizelle {
                 return InteriorPointInstability;
             else if(m==Python::enumToNatural("StoppingCondition","UserDefined"))
                 return UserDefined;
+            else
+                throw;
         }
     }
     
@@ -134,6 +136,8 @@ namespace Optizelle {
                 "KrylovStop","InvalidTrustRegionCenter")
             )
                 return InvalidTrustRegionCenter;
+            else
+                throw;
         }
     }
     
@@ -164,6 +168,8 @@ namespace Optizelle {
                 return ConjugateDirection;
             else if(m==Python::enumToNatural("KrylovSolverTruncated","MINRES"))
                 return MINRES;
+            else
+                throw;
         }
     }
 
@@ -194,6 +200,8 @@ namespace Optizelle {
                 return LineSearch;
             else if(m==Python::enumToNatural("AlgorithmClass","UserDefined"))
                 return UserDefined;
+            else
+                throw;
         }
     }
 
@@ -240,6 +248,8 @@ namespace Optizelle {
                 return InvSR1;
             else if(m==Python::enumToNatural("Operators","UserDefined"))
                 return UserDefined;
+            else
+                throw;
         }
     }
 
@@ -294,6 +304,8 @@ namespace Optizelle {
                 return BFGS;
             else if(m==Python::enumToNatural("LineSearchDirection","NewtonCG"))
                 return NewtonCG;
+            else
+                throw;
         }
     }
 
@@ -332,6 +344,8 @@ namespace Optizelle {
                 return TwoPointA;
             else if(m==Python::enumToNatural("LineSearchKind","TwoPointB"))
                 return TwoPointB;
+            else
+                throw;
         }
     }
 
@@ -469,6 +483,8 @@ namespace Optizelle {
             else if(m==Python::enumToNatural(
                 "OptimizationLocation","EndOfOptimization"))
                 return EndOfOptimization;
+            else
+                throw;
         }
     }
 
@@ -506,6 +522,8 @@ namespace Optizelle {
                 "LogBarrier")
             )
                 return LogBarrier;
+            else
+                throw;
         }
     }
 
@@ -539,6 +557,8 @@ namespace Optizelle {
                 "PredictorCorrector")
             )
                 return PredictorCorrector;
+            else
+                throw;
         }
     }
 
@@ -576,6 +596,8 @@ namespace Optizelle {
                 "SecondOrder")
             )
                 return SecondOrder;
+            else
+                throw;
         }
     }
 
@@ -612,6 +634,8 @@ namespace Optizelle {
                 "EveryIteration")
             )
                 return EveryIteration;
+            else
+                throw;
         }
     }
 
@@ -692,6 +716,11 @@ namespace Optizelle {
     }
 
     namespace Python {
+        // Converts Py_ssize_t to Natural
+        Natural Py_ssize_t_to_Natural(Py_ssize_t const & x) {
+            return x < 0 ? 0 : x;
+        }
+
         // A function to alter the behavior of PyTuple_SetItem so that we don't
         // have to hand increment the reference to the object since SetItem
         // takes control of its arguments.
@@ -1625,7 +1654,10 @@ namespace Optizelle {
                 // Loop over all the elements in items and insert them one
                 // at a time into values
                 values.clear();
-                for(Optizelle::Natural i=0;i<PyList_Size(items.get());i++) {
+                for(Optizelle::Natural i=0;
+                    i<Py_ssize_t_to_Natural(PyList_Size(items.get()));
+                    i++
+                ) {
                     // Grab the current item from Python
                     PyObject * item(PyList_GetItem(items.get(),i));
 
@@ -1679,7 +1711,10 @@ namespace Optizelle {
                 // Loop over all the elements in pyvalues and insert them one
                 // at a time into values
                 values.clear();
-                for(Optizelle::Natural i=0;i<PyList_Size(pyvalues);i++) {
+                for(Optizelle::Natural i=0;
+                    i<Py_ssize_t_to_Natural(PyList_Size(pyvalues));
+                    i++
+                ) {
                     // Grab the current item from Python
                     PyObject * pyvalue(PyList_GetItem(pyvalues,i));
 
@@ -1701,7 +1736,10 @@ namespace Optizelle {
                 // Loop over all the elements in pyvalues and insert them one
                 // at a time into values
                 values.clear();
-                for(Optizelle::Natural i=0;i<PyList_Size(pyvalues);i++) {
+                for(Optizelle::Natural i=0;
+                    i<Py_ssize_t_to_Natural(PyList_Size(pyvalues));
+                    i++
+                ) {
                     // Grab the current item from Python
                     PyObject * pyvalue(PyList_GetItem(pyvalues,i));
                     
@@ -1720,7 +1758,10 @@ namespace Optizelle {
                 // Loop over all the elements in pyvalues and insert them one
                 // at a time into values
                 values.clear();
-                for(Optizelle::Natural i=0;i<PyList_Size(pyvalues);i++) {
+                for(Optizelle::Natural i=0;
+                    i<Py_ssize_t_to_Natural(PyList_Size(pyvalues));
+                    i++
+                ) {
                     // Grab the current item from Python
                     PyObject * pyvalue(PyList_GetItem(pyvalues,i));
                     
@@ -1739,7 +1780,10 @@ namespace Optizelle {
                 // Loop over all the elements in pyvalues and insert them one
                 // at a time into values
                 values.clear();
-                for(Optizelle::Natural i=0;i<PyList_Size(pyvalues);i++) {
+                for(Optizelle::Natural i=0;
+                    i<Py_ssize_t_to_Natural(PyList_Size(pyvalues));
+                    i++
+                ) {
                     // Grab the current item from Python
                     PyObject * pyvalue(PyList_GetItem(pyvalues,i));
                     

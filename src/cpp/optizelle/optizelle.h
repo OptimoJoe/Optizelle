@@ -85,7 +85,7 @@ namespace Optizelle{
         typedef typename X::Vector Vector;
 
         // Disallow constructors
-        NO_COPY_ASSIGNMENT(ScalarValuedFunctionModifications); 
+        NO_COPY_ASSIGNMENT(ScalarValuedFunctionModifications)
 
         // Use an empty default constructor
         ScalarValuedFunctionModifications() {}
@@ -455,7 +455,7 @@ namespace Optizelle{
 
         // Checks whether or not a string is valid
         bool is_valid(std::string const & name);
-    };
+    }
     
     
     // Different kinds of interior point methods
@@ -733,8 +733,6 @@ namespace Optizelle{
             // Create some type shortcuts
             typedef XX <Real> X;
             typedef typename X::Vector X_Vector;
-            typedef YY <Real> Y;
-            typedef typename Y::Vector Y_Vector;
 
             // Create an element for x+eps dx, x-eps dx, etc. 
             X_Vector x_op_dx(X::init(x));
@@ -945,8 +943,6 @@ namespace Optizelle{
             std::string const & name
         ) {
             // Create some type shortcuts
-            typedef XX <Real> X;
-            typedef typename X::Vector X_Vector;
             typedef YY <Real> Y;
             typedef typename Y::Vector Y_Vector;
 
@@ -1064,8 +1060,6 @@ namespace Optizelle{
             // Create some type shortcuts
             typedef XX <Real> X;
             typedef typename X::Vector X_Vector;
-            typedef YY <Real> Y;
-            typedef typename Y::Vector Y_Vector;
 
             // Create an element for the residual between the directional 
             // derivative and the true derivative.
@@ -1115,7 +1109,7 @@ namespace Optizelle{
     template <typename ProblemClass>
     struct StateManipulator {
         // Disallow constructors
-        NO_COPY_ASSIGNMENT(StateManipulator);
+        NO_COPY_ASSIGNMENT(StateManipulator)
 
         // Give an empty default constructor
         StateManipulator() {} 
@@ -1136,7 +1130,7 @@ namespace Optizelle{
     template <typename ProblemClass>
     struct EmptyManipulator : public StateManipulator <ProblemClass> {
         // Disallow constructors
-        NO_COPY_ASSIGNMENT(EmptyManipulator);
+        NO_COPY_ASSIGNMENT(EmptyManipulator)
 
         // Give an empty default constructor
         EmptyManipulator() {}
@@ -1162,7 +1156,7 @@ namespace Optizelle{
 
     public:
         // Disallow constructors
-        NO_COPY_ASSIGNMENT(DiagnosticManipulator);
+        NO_COPY_ASSIGNMENT(DiagnosticManipulator)
 
         // Create a reference to an existing manipulator 
         explicit DiagnosticManipulator(
@@ -1277,7 +1271,7 @@ namespace Optizelle{
 
     public:
         // Disallow constructors
-        NO_COPY_ASSIGNMENT(ConversionManipulator);
+        NO_COPY_ASSIGNMENT(ConversionManipulator)
 
         // Grab a copy of the internal manipulator
         explicit ConversionManipulator(
@@ -1384,13 +1378,13 @@ namespace Optizelle{
         typedef typename X::Vector X_Vector;
         
         // Disallow constructors
-        NO_CONSTRUCTORS(Unconstrained);
+        NO_CONSTRUCTORS(Unconstrained)
 
         // Routines that manipulate the internal state of the optimization 
         // algorithm.
         struct State {
             // Disallow constructors
-            NO_CONSTRUCTORS(State);
+            NO_CONSTRUCTORS(State)
                 
             // Internal state of the optimization
             struct t {
@@ -1399,7 +1393,7 @@ namespace Optizelle{
                 // of memory and the safe way to move this memory around
                 // is through the use of the capture and release methodology
                 // inside of the restart section.
-                NO_DEFAULT_COPY_ASSIGNMENT(t);
+                NO_DEFAULT_COPY_ASSIGNMENT(t)
 
                 // ------------- GENERIC ------------- 
 
@@ -2137,7 +2131,7 @@ namespace Optizelle{
         // Utilities for restarting the optimization
         struct Restart {
             // Disallow constructors
-            NO_CONSTRUCTORS(Restart);
+            NO_CONSTRUCTORS(Restart)
 
             // Create some type shortcuts 
             typedef typename RestartPackage <Real>::t Reals;
@@ -2575,7 +2569,7 @@ namespace Optizelle{
         // routine owns the memory for these operations.  
         struct Functions {
             // Disallow constructors
-            NO_CONSTRUCTORS(Functions);
+            NO_CONSTRUCTORS(Functions)
 
             // Actual storage of the functions required
             struct t{
@@ -2583,7 +2577,7 @@ namespace Optizelle{
                 // operator.  Since this class holds a number of unique_ptrs
                 // to different functions, it is not safe to allow them to
                 // be copied.
-                NO_COPY_ASSIGNMENT(t);
+                NO_COPY_ASSIGNMENT(t)
                 
                 // Objective function
                 std::unique_ptr <ScalarValuedFunction <Real,XX> > f;
@@ -2690,7 +2684,7 @@ namespace Optizelle{
 
                     // Allocate memory for work
                     std::list <X_Vector> work;
-                    for(int i=0;i<oldY.size();i++)
+                    for(Natural i=0;i<oldY.size();i++)
                         work.emplace_back(std::move(X::init(dx)));
 
                     // If we have no vectors in our history, we return the
@@ -2844,7 +2838,7 @@ namespace Optizelle{
 
                     // Allocate memory for work
                     std::list <X_Vector> work;
-                    for(int i=0;i<oldY.size();i++)
+                    for(Natural i=0;i<oldY.size();i++)
                         work.emplace_back(std::move(X::init(dx)));
 
                     // If we have no vectors in our history, we return the 
@@ -3085,7 +3079,7 @@ namespace Optizelle{
 
             public:
                 // Prevent constructors 
-                NO_DEFAULT_COPY_ASSIGNMENT(HessianAdjustedFunction);
+                NO_DEFAULT_COPY_ASSIGNMENT(HessianAdjustedFunction)
 
                 // The constructor determines whether we really need to build
                 // a Hessian-vector product or if we use an internal
@@ -3214,7 +3208,7 @@ namespace Optizelle{
         // Contains functions that assist in creating an output for diagonstics
         struct Diagnostics {
             // Disallow constructors
-            NO_CONSTRUCTORS(Diagnostics);
+            NO_CONSTRUCTORS(Diagnostics)
 
             // Gets the header for the state information
             static void getStateHeader_(
@@ -3521,7 +3515,7 @@ namespace Optizelle{
         // This contains the different algorithms used for optimization 
         struct Algorithms {
             // Disallow constructors
-            NO_CONSTRUCTORS(Algorithms);
+            NO_CONSTRUCTORS(Algorithms)
 
             // Checks a set of stopping conditions
             static StoppingCondition::t checkStop(
@@ -4769,7 +4763,7 @@ namespace Optizelle{
     > 
     struct EqualityConstrained {
         // Disallow constructors
-        NO_CONSTRUCTORS(EqualityConstrained);
+        NO_CONSTRUCTORS(EqualityConstrained)
 
         // Create some shortcuts for some type names
         typedef XX <Real> X;
@@ -4825,7 +4819,7 @@ namespace Optizelle{
         // algorithm.
         struct State {
             // Disallow constructors
-            NO_CONSTRUCTORS(State);
+            NO_CONSTRUCTORS(State)
 
             // Internal state of the optimization
             struct t: public virtual Unconstrained <Real,XX>::State::t {
@@ -4834,7 +4828,7 @@ namespace Optizelle{
                 // of memory and the safe way to move this memory around
                 // is through the use of the capture and release methodology
                 // inside of the restart section.
-                NO_DEFAULT_COPY_ASSIGNMENT(t);
+                NO_DEFAULT_COPY_ASSIGNMENT(t)
 
                 // Equality multiplier (dual variable or Lagrange multiplier)
                 Y_Vector y;
@@ -5412,7 +5406,7 @@ namespace Optizelle{
         // Utilities for restarting the optimization
         struct Restart {
             // Disallow constructors
-            NO_CONSTRUCTORS(Restart);
+            NO_CONSTRUCTORS(Restart)
        
             // Create some type shortcuts 
             typedef typename RestartPackage <Real>::t Reals;
@@ -5774,7 +5768,7 @@ namespace Optizelle{
         // routine owns the memory for these operations.  
         struct Functions {
             // Disallow constructors
-            NO_CONSTRUCTORS(Functions);
+            NO_CONSTRUCTORS(Functions)
             
             // Actual storage of the functions required
             struct t: public virtual Unconstrained <Real,XX>::Functions::t {
@@ -5782,7 +5776,7 @@ namespace Optizelle{
                 // operator.  Since this class holds a number of unique_ptrs
                 // to different functions, it is not safe to allow them to
                 // be copied.
-                NO_COPY_ASSIGNMENT(t);
+                NO_COPY_ASSIGNMENT(t)
 
                 // Equality constraints 
                 std::unique_ptr <VectorValuedFunction <Real,XX,YY> > g;
@@ -5803,7 +5797,7 @@ namespace Optizelle{
             {
             public:
                 // Disallow constructors
-                NO_COPY_ASSIGNMENT(EqualityModifications); 
+                NO_COPY_ASSIGNMENT(EqualityModifications)
 
             private:
                 // Underlying modification.  This takes control of the memory
@@ -6063,7 +6057,7 @@ namespace Optizelle{
         // Contains functions that assist in creating an output for diagonstics
         struct Diagnostics {
             // Disallow constructors
-            NO_CONSTRUCTORS(Diagnostics);
+            NO_CONSTRUCTORS(Diagnostics)
 
             // Gets the header for the state information
             static void getStateHeader_(
@@ -6274,7 +6268,7 @@ namespace Optizelle{
         // This contains the different algorithms used for optimization 
         struct Algorithms {
             // Disallow constructors
-            NO_CONSTRUCTORS(Algorithms);
+            NO_CONSTRUCTORS(Algorithms)
 
             // The operator for the augmented system,
             //
@@ -6348,7 +6342,7 @@ namespace Optizelle{
                 typename Functions::t const & fns;
             public:
                 // Disallow constructors
-                NO_DEFAULT_COPY_ASSIGNMENT(QNManipulator);
+                NO_DEFAULT_COPY_ASSIGNMENT(QNManipulator)
 
                 // Grab the states and fns on construction
                 explicit QNManipulator(
@@ -6522,7 +6516,7 @@ namespace Optizelle{
             public:
                 // Disallow constructors
                 NO_DEFAULT_COPY_ASSIGNMENT(
-                    NullspaceProjForGradLagPlusHdxnManipulator);
+                    NullspaceProjForGradLagPlusHdxnManipulator)
 
                 // Grab the states and fns on construction
                 NullspaceProjForGradLagPlusHdxnManipulator(
@@ -6649,7 +6643,7 @@ namespace Optizelle{
             public:
                 // Disallow constructors
                 NO_DEFAULT_COPY_ASSIGNMENT(
-                    NullspaceProjForKrylovMethodManipulator);
+                    NullspaceProjForKrylovMethodManipulator)
 
                 // Grab the states and fns on construction
                 explicit NullspaceProjForKrylovMethodManipulator (
@@ -6861,7 +6855,7 @@ namespace Optizelle{
                 typename Functions::t const & fns;
             public: 
                 // Disallow constructors
-                NO_DEFAULT_COPY_ASSIGNMENT(TangentialStepManipulator);
+                NO_DEFAULT_COPY_ASSIGNMENT(TangentialStepManipulator)
 
                 // Grab the states and fns on construction
                 TangentialStepManipulator (
@@ -6955,7 +6949,7 @@ namespace Optizelle{
                 typename Functions::t const & fns;
             public:
                 // Disallow constructors
-                NO_DEFAULT_COPY_ASSIGNMENT(LagrangeMultiplierStepManipulator);
+                NO_DEFAULT_COPY_ASSIGNMENT(LagrangeMultiplierStepManipulator)
 
                 // Grab the states and fns on construction
                 LagrangeMultiplierStepManipulator(
@@ -7813,7 +7807,7 @@ namespace Optizelle{
     > 
     struct InequalityConstrained {
         // Disallow constructors
-        NO_CONSTRUCTORS(InequalityConstrained);
+        NO_CONSTRUCTORS(InequalityConstrained)
 
         // Create some shortcuts for some type names
         typedef XX <Real> X;
@@ -7825,7 +7819,7 @@ namespace Optizelle{
         // algorithm.
         struct State {
             // Disallow constructors
-            NO_CONSTRUCTORS(State);
+            NO_CONSTRUCTORS(State)
 
             // Internal state of the optimization
             struct t: public virtual Unconstrained <Real,XX>::State::t {
@@ -7834,7 +7828,7 @@ namespace Optizelle{
                 // of memory and the safe way to move this memory around
                 // is through the use of the capture and release methodology
                 // inside of the restart section.
-                NO_DEFAULT_COPY_ASSIGNMENT(t);
+                NO_DEFAULT_COPY_ASSIGNMENT(t)
 
                 // Inequality multiplier (dual variable or Lagrange multiplier)
                 Z_Vector z;
@@ -7970,7 +7964,7 @@ namespace Optizelle{
                 if(!(
                     //---mu_valid0---
                     (state.iter > 1 && state.mu > Real(0.)) ||
-                    (state.iter == 1 & state.mu != state.mu)
+                    (state.iter == 1 && state.mu != state.mu)
                     //---mu_valid1---
                 )) 
                     ss << "The interior point parameter must be positive: " 
@@ -7981,7 +7975,7 @@ namespace Optizelle{
                 else if(!(
                     //---mu_est_valid0---
                     state.iter > 1  ||
-                    (state.iter == 1 & state.mu != state.mu)
+                    (state.iter == 1 && state.mu != state.mu)
                     //---mu_est_valid1---
                 )) 
                     ss << "The estimated interior point parameter must be "
@@ -8049,7 +8043,7 @@ namespace Optizelle{
         // Utilities for restarting the optimization
         struct Restart {
             // Disallow constructors
-            NO_CONSTRUCTORS(Restart);
+            NO_CONSTRUCTORS(Restart)
        
             // Create some type shortcuts 
             typedef typename RestartPackage <Real>::t Reals;
@@ -8298,7 +8292,7 @@ namespace Optizelle{
         // routine owns the memory for these operations.  
         struct Functions {
             // Disallow constructors
-            NO_CONSTRUCTORS(Functions);
+            NO_CONSTRUCTORS(Functions)
 
             // Actual storage of the functions required
             struct t: public virtual Unconstrained <Real,XX>::Functions::t {
@@ -8306,7 +8300,7 @@ namespace Optizelle{
                 // operator.  Since this class holds a number of unique_ptrs
                 // to different functions, it is not safe to allow them to
                 // be copied.
-                NO_COPY_ASSIGNMENT(t);
+                NO_COPY_ASSIGNMENT(t)
 
                 // Inequality constraints 
                 std::unique_ptr <VectorValuedFunction <Real,XX,ZZ> > h;
@@ -8320,7 +8314,7 @@ namespace Optizelle{
             {
             public:
                 // Disallow constructors
-                NO_COPY_ASSIGNMENT(InequalityModifications); 
+                NO_COPY_ASSIGNMENT(InequalityModifications)
 
             private:
                 // Underlying modification.  This takes control of the memory
@@ -8590,7 +8584,7 @@ namespace Optizelle{
         // Contains functions that assist in creating an output for diagonstics
         struct Diagnostics {
             // Disallow constructors
-            NO_CONSTRUCTORS(Diagnostics);
+            NO_CONSTRUCTORS(Diagnostics)
 
             // Gets the header for the state information
             static void getStateHeader_(
@@ -8758,7 +8752,7 @@ namespace Optizelle{
         // This contains the different algorithms used for optimization 
         struct Algorithms {
             // Disallow constructors
-            NO_CONSTRUCTORS(Algorithms);
+            NO_CONSTRUCTORS(Algorithms)
 
             // An operator to reshape the trust-region radius and, hopefully,
             // keep us away from the boundary.
@@ -9513,7 +9507,7 @@ namespace Optizelle{
     > 
     struct Constrained {
         // Disallow constructors
-        NO_CONSTRUCTORS(Constrained);
+        NO_CONSTRUCTORS(Constrained)
 
         // Create some shortcuts for some type names
         typedef XX <Real> X;
@@ -9527,7 +9521,7 @@ namespace Optizelle{
         // algorithm.
         struct State {
             // Disallow constructors
-            NO_CONSTRUCTORS(State);
+            NO_CONSTRUCTORS(State)
             
             // Internal state of the optimization
             struct t: 
@@ -9539,7 +9533,7 @@ namespace Optizelle{
                 // of memory and the safe way to move this memory around
                 // is through the use of the capture and release methodology
                 // inside of the restart section.
-                NO_DEFAULT_COPY_ASSIGNMENT(t);
+                NO_DEFAULT_COPY_ASSIGNMENT(t)
 
                 // Initialization constructors
                 explicit t(
@@ -9561,7 +9555,7 @@ namespace Optizelle{
         // Utilities for restarting the optimization
         struct Restart {
             // Disallow constructors
-            NO_CONSTRUCTORS(Restart);
+            NO_CONSTRUCTORS(Restart)
        
             // Create some type shortcuts 
             typedef typename RestartPackage <Real>::t Reals;
@@ -9729,7 +9723,7 @@ namespace Optizelle{
         // routine owns the memory for these operations.  
         struct Functions {
             // Disallow constructors
-            NO_CONSTRUCTORS(Functions);
+            NO_CONSTRUCTORS(Functions)
 
             // Actual storage of the functions required
             struct t: 
@@ -9740,7 +9734,7 @@ namespace Optizelle{
                 // operator.  Since this class holds a number of unique_ptrs
                 // to different functions, it is not safe to allow them to
                 // be copied.
-                NO_COPY_ASSIGNMENT(t);
+                NO_COPY_ASSIGNMENT(t)
 
                 // Initialize all of the pointers to null
                 t() : EqualityConstrained <Real,XX,YY>::Functions::t(), 
@@ -9771,7 +9765,7 @@ namespace Optizelle{
         // Contains functions that assist in creating an output for diagonstics
         struct Diagnostics {
             // Disallow constructors
-            NO_CONSTRUCTORS(Diagnostics);
+            NO_CONSTRUCTORS(Diagnostics)
 
             // Gets the header for the state information
             static void getStateHeader_(
@@ -9853,7 +9847,7 @@ namespace Optizelle{
         // This contains the different algorithms used for optimization 
         struct Algorithms {
             // Disallow constructors
-            NO_CONSTRUCTORS(Algorithms);
+            NO_CONSTRUCTORS(Algorithms)
 
             // Solves an optimization problem where the user doesn't know about
             // the state manipulator

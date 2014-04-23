@@ -105,6 +105,9 @@ namespace Optizelle {
                 // Anything else is an error
                 } else
                     msg.error(err_msg);
+
+                // We should not hit this point
+                throw;
             }
             
             // Read a string 
@@ -124,6 +127,9 @@ namespace Optizelle {
                 // Anything else is an error
                 else
                     msg.error(err_msg);
+
+                // We should not hit this point
+                throw;
             }
         }
 

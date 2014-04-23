@@ -5,7 +5,12 @@ include_directories(${MATLAB_INCLUDE_DIRS})
 
 # Compile our core Matlab functionality
 set(optizelle_matlab_srcs "optizelle.cpp")
-add_library(optizelle_matlab OBJECT ${optizelle_matlab_srcs})
+add_library(optizelle_matlab SHARED ${optizelle_matlab_srcs})
+set_target_properties(optizelle_matlab PROPERTIES OUTPUT_NAME optizelle_matlab)
+target_link_libraries(optizelle_matlab 
+    optizelle_shared
+    ${MATLAB_LIBRARIES})
+install(TARGETS optizelle_matlab DESTINATION lib)    
 
 # Compile individual mex files
 add_optizelle_mex(UnconstrainedStateCreate)

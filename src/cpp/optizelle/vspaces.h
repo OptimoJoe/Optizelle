@@ -48,7 +48,7 @@ namespace Optizelle {
     template <typename Real>
     struct Rm { 
         // Disallow constructors
-        NO_CONSTRUCTORS(Rm);
+        NO_CONSTRUCTORS(Rm)
 
         // Use std::vector as our vector storage
         typedef std::vector <Real> Vector;
@@ -243,7 +243,7 @@ namespace Optizelle {
     struct SQL {
     //---SQL1---
         // Disallow constructors
-        NO_CONSTRUCTORS(SQL);
+        NO_CONSTRUCTORS(SQL)
 
         //---SQLVector0---
         struct Vector {
@@ -275,7 +275,7 @@ namespace Optizelle {
             std::vector <Natural> inverse_base_offsets;
 
             // Eliminate constructors 
-            NO_DEFAULT_COPY_ASSIGNMENT(Vector);
+            NO_DEFAULT_COPY_ASSIGNMENT(Vector)
 
             //---SQLVector2---
             // We require a vector of cone types and their sizes.

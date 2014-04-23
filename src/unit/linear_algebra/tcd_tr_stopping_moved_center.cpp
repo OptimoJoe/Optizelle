@@ -17,7 +17,6 @@
 int main() {
     // Create a type shortcut
     typedef Optizelle::Rm <double> X;
-    typedef X::Vector X_Vector;
 
     // Set the size of the problem
     Natural m = 2;

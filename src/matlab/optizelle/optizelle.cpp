@@ -36,7 +36,7 @@ namespace Optizelle {
     // reason Octave keeps moving around this memory.  As such, rather than
     // having it be static, I made it global and then grab the correct pointer
     // each time we enter these routines.
-    mxArray * optizelle;
+    static std::list<mxArray *> optizelle;
 
     namespace StoppingCondition { 
         // Converts t to a Matlab enumerated type
@@ -91,6 +91,8 @@ namespace Optizelle {
                 return InteriorPointInstability;
             else if(m==Matlab::enumToNatural("StoppingCondition","UserDefined"))
                 return UserDefined;
+            else
+                throw;
         }
     }
     
@@ -140,6 +142,8 @@ namespace Optizelle {
                 "KrylovStop","InvalidTrustRegionCenter")
             )
                 return InvalidTrustRegionCenter;
+            else
+                throw;
         }
     }
     
@@ -170,6 +174,8 @@ namespace Optizelle {
                 return ConjugateDirection;
             else if(m==Matlab::enumToNatural("KrylovSolverTruncated","MINRES"))
                 return MINRES;
+            else
+                throw;
         }
     }
 
@@ -200,6 +206,8 @@ namespace Optizelle {
                 return LineSearch;
             else if(m==Matlab::enumToNatural("AlgorithmClass","UserDefined"))
                 return UserDefined;
+            else
+                throw;
         }
     }
 
@@ -246,6 +254,8 @@ namespace Optizelle {
                 return InvSR1;
             else if(m==Matlab::enumToNatural("Operators","UserDefined"))
                 return UserDefined;
+            else
+                throw;
         }
     }
 
@@ -300,6 +310,8 @@ namespace Optizelle {
                 return BFGS;
             else if(m==Matlab::enumToNatural("LineSearchDirection","NewtonCG"))
                 return NewtonCG;
+            else
+                throw;
         }
     }
 
@@ -338,6 +350,8 @@ namespace Optizelle {
                 return TwoPointA;
             else if(m==Matlab::enumToNatural("LineSearchKind","TwoPointB"))
                 return TwoPointB;
+            else
+                throw;
         }
     }
 
@@ -475,6 +489,8 @@ namespace Optizelle {
             else if(m==Matlab::enumToNatural(
                 "OptimizationLocation","EndOfOptimization"))
                 return EndOfOptimization;
+            else
+                throw;
         }
     }
 
@@ -512,6 +528,8 @@ namespace Optizelle {
                 "LogBarrier")
             )
                 return LogBarrier;
+            else
+                throw;
         }
     }
 
@@ -545,6 +563,8 @@ namespace Optizelle {
                 "PredictorCorrector")
             )
                 return PredictorCorrector;
+            else
+                throw;
         }
     }
 
@@ -582,6 +602,8 @@ namespace Optizelle {
                 "SecondOrder")
             )
                 return SecondOrder;
+            else
+                throw;
         }
     }
 
@@ -618,6 +640,8 @@ namespace Optizelle {
                 "EveryIteration")
             )
                 return EveryIteration;
+            else
+                throw;
         }
     }
 
@@ -747,7 +771,7 @@ namespace Optizelle {
             std::string const & member_
         ) {
             // Grab the type 
-            mxArray * type = mxGetField(optizelle,0,type_.c_str());
+            mxArray * type = mxGetField(optizelle.back(),0,type_.c_str());
 
             // Grab the member
             mxArray * member = mxGetField(type,0,member_.c_str());
@@ -2097,7 +2121,7 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 ){
                     // Grab Optizelle
-                    optizelle = mexGetVariable("global","Optizelle");
+                    optizelle.push_back(mexGetVariable("global","Optizelle"));
 
                     // Calling convention should be (X,msg,x) -> (mxstate_out)
                     mxArray *X=pInput[0],
@@ -2120,6 +2144,9 @@ namespace Optizelle {
 
                         // Convert the state to a Matlab state
                         mxstate_out.toMatlab(state);
+                       
+                        // Cleanup Optizelle
+                        optizelle.pop_back();
 
                         // Return nothing 
                         return; 
@@ -2134,7 +2161,7 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 ) {
                     // Grab Optizelle
-                    optizelle = mexGetVariable("global","Optizelle");
+                    optizelle.push_back(mexGetVariable("global","Optizelle"));
 
                     // Calling convention should be (X,msg,fname,mxstate)
                     // -> (mxstate_out)
@@ -2175,6 +2202,9 @@ namespace Optizelle {
 
                         // Convert the C++ state to a Matlab state
                         mxstate_out.toMatlab(state);
+                       
+                        // Cleanup Optizelle
+                        optizelle.pop_back();
                                 
                         // Return nothing 
                         return; 
@@ -2207,7 +2237,7 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 ) {
                     // Grab Optizelle
-                    optizelle = mexGetVariable("global","Optizelle");
+                    optizelle.push_back(mexGetVariable("global","Optizelle"));
 
                     // Calling convention should be
                     // (X,msg,smanip,mxfns,mxstate) -> (mxstate_out)
@@ -2269,6 +2299,9 @@ namespace Optizelle {
                         
                         // Convert the C++ state to a Matlab state
                         mxstate_out.toMatlab(state);
+                       
+                        // Cleanup Optizelle
+                        optizelle.pop_back();
 
                         // Return nothing 
                         return; 
@@ -2286,7 +2319,7 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 ) {
                     // Grab Optizelle
-                    optizelle = mexGetVariable("global","Optizelle");
+                    optizelle.push_back(mexGetVariable("global","Optizelle"));
 
                     // Calling convention should be
                     // (X,msg,mxstate) -> (xs,reals,nats,params)
@@ -2339,6 +2372,9 @@ namespace Optizelle {
                         pOutput[1]=mxreals;
                         pOutput[2]=mxnats;
                         pOutput[3]=mxparams;
+                       
+                        // Cleanup Optizelle
+                        optizelle.pop_back();
 
                         // Return nothing 
                         return; 
@@ -2353,7 +2389,7 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 ) {
                     // Grab Optizelle
-                    optizelle = mexGetVariable("global","Optizelle");
+                    optizelle.push_back(mexGetVariable("global","Optizelle"));
 
                     // Calling convention should be
                     // (X,msg,mxstate,mxxs,mxreals,mxnats,mxparams)
@@ -2405,6 +2441,9 @@ namespace Optizelle {
 
                         // Convert the C++ state to a Matlab state
                         mxstate_out.toMatlab(state);
+                       
+                        // Cleanup Optizelle
+                        optizelle.pop_back();
 
                         // Return nothing 
                         return; 
@@ -2419,7 +2458,7 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 ) {
                     // Grab Optizelle
-                    optizelle = mexGetVariable("global","Optizelle");
+                    optizelle.push_back(mexGetVariable("global","Optizelle"));
 
                     // Calling convention should be (X,msg,fname,state) -> ()
                     mxArray *X=pInput[0],
@@ -2452,6 +2491,9 @@ namespace Optizelle {
 
                         // Write the restart file
                         MxJsonUnconstrained::write_restart(msg,fname,state);
+                       
+                        // Cleanup Optizelle
+                        optizelle.pop_back();
                         
                         // Return nothing 
                         return; 
@@ -2466,7 +2508,7 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 ) {
                     // Grab Optizelle
-                    optizelle = mexGetVariable("global","Optizelle");
+                    optizelle.push_back(mexGetVariable("global","Optizelle"));
 
                     // Calling convention should be (X,msg,fname,x) -> (mxstate)
                     mxArray *X=pInput[0],
@@ -2500,6 +2542,9 @@ namespace Optizelle {
                         
                         // Convert the C++ state to a Matlab state
                         mxstate_out.toMatlab(state);
+                       
+                        // Cleanup Optizelle
+                        optizelle.pop_back();
 
                         // Return nothing 
                         return; 
@@ -2715,7 +2760,7 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 ){
                     // Grab Optizelle
-                    optizelle = mexGetVariable("global","Optizelle");
+                    optizelle.push_back(mexGetVariable("global","Optizelle"));
 
                     // Calling convention should be (X,Y,msg,x,y)->(mxstate_out)
                     mxArray *X=pInput[0],
@@ -2741,6 +2786,9 @@ namespace Optizelle {
 
                         // Convert the state to a Matlab state
                         mxstate_out.toMatlab(state);
+                       
+                        // Cleanup Optizelle
+                        optizelle.pop_back();
 
                         // Return nothing 
                         return; 
@@ -2755,7 +2803,7 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 ) {
                     // Grab Optizelle
-                    optizelle = mexGetVariable("global","Optizelle");
+                    optizelle.push_back(mexGetVariable("global","Optizelle"));
 
                     // Calling convention should be (X,Y,msg,fname,mxstate)
                     // -> (mxstate_out)
@@ -2799,6 +2847,9 @@ namespace Optizelle {
 
                         // Convert the C++ state to a Matlab state
                         mxstate_out.toMatlab(state);
+                       
+                        // Cleanup Optizelle
+                        optizelle.pop_back();
                                 
                         // Return nothing 
                         return; 
@@ -2833,7 +2884,7 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 ) {
                     // Grab Optizelle
-                    optizelle = mexGetVariable("global","Optizelle");
+                    optizelle.push_back(mexGetVariable("global","Optizelle"));
 
                     // Calling convention should be
                     // (X,Y,msg,smanip,mxfns,mxstate) -> (mxstate_out)
@@ -2898,6 +2949,9 @@ namespace Optizelle {
                         
                         // Convert the C++ state to a Matlab state
                         mxstate_out.toMatlab(state);
+                       
+                        // Cleanup Optizelle
+                        optizelle.pop_back();
 
                         // Return nothing 
                         return; 
@@ -2915,7 +2969,7 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 ) {
                     // Grab Optizelle
-                    optizelle = mexGetVariable("global","Optizelle");
+                    optizelle.push_back(mexGetVariable("global","Optizelle"));
 
                     // Calling convention should be
                     // (X,Y,msg,mxstate) -> (xs,ys,reals,nats,params)
@@ -2976,6 +3030,9 @@ namespace Optizelle {
                         pOutput[2]=mxreals;
                         pOutput[3]=mxnats;
                         pOutput[4]=mxparams;
+                       
+                        // Cleanup Optizelle
+                        optizelle.pop_back();
 
                         // Return nothing 
                         return; 
@@ -2990,7 +3047,7 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 ) {
                     // Grab Optizelle
-                    optizelle = mexGetVariable("global","Optizelle");
+                    optizelle.push_back(mexGetVariable("global","Optizelle"));
 
                     // Calling convention should be
                     // (X,Y,msg,mxstate,mxxs,mxys,mxreals,mxnats,mxparams)
@@ -3048,6 +3105,9 @@ namespace Optizelle {
 
                         // Convert the C++ state to a Matlab state
                         mxstate_out.toMatlab(state);
+                       
+                        // Cleanup Optizelle
+                        optizelle.pop_back();
 
                         // Return nothing 
                         return; 
@@ -3062,7 +3122,7 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 ) {
                     // Grab Optizelle
-                    optizelle = mexGetVariable("global","Optizelle");
+                    optizelle.push_back(mexGetVariable("global","Optizelle"));
 
                     // Calling convention should be (X,Y,msg,fname,state) -> ()
                     mxArray *X=pInput[0],
@@ -3099,6 +3159,9 @@ namespace Optizelle {
                         // Write the restart file
                         MxJsonEqualityConstrained::write_restart(
                             msg,fname,state);
+                       
+                        // Cleanup Optizelle
+                        optizelle.pop_back();
                         
                         // Return nothing 
                         return; 
@@ -3113,7 +3176,7 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 ) {
                     // Grab Optizelle
-                    optizelle = mexGetVariable("global","Optizelle");
+                    optizelle.push_back(mexGetVariable("global","Optizelle"));
 
                     // Calling convention should be
                     // (X,Y,msg,fname,x,y) -> (mxstate)
@@ -3152,6 +3215,9 @@ namespace Optizelle {
                         
                         // Convert the C++ state to a Matlab state
                         mxstate_out.toMatlab(state);
+                       
+                        // Cleanup Optizelle
+                        optizelle.pop_back();
 
                         // Return nothing 
                         return; 
@@ -3289,7 +3355,7 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 ){
                     // Grab Optizelle
-                    optizelle = mexGetVariable("global","Optizelle");
+                    optizelle.push_back(mexGetVariable("global","Optizelle"));
 
                     // Calling convention should be (X,Z,msg,x,z)->(mxstate_out)
                     mxArray *X=pInput[0],
@@ -3315,6 +3381,9 @@ namespace Optizelle {
 
                         // Convert the state to a Matlab state
                         mxstate_out.toMatlab(state);
+                       
+                        // Cleanup Optizelle
+                        optizelle.pop_back();
 
                         // Return nothing 
                         return; 
@@ -3329,7 +3398,7 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 ) {
                     // Grab Optizelle
-                    optizelle = mexGetVariable("global","Optizelle");
+                    optizelle.push_back(mexGetVariable("global","Optizelle"));
 
                     // Calling convention should be (X,Z,msg,fname,mxstate)
                     // -> (mxstate_out)
@@ -3373,6 +3442,9 @@ namespace Optizelle {
 
                         // Convert the C++ state to a Matlab state
                         mxstate_out.toMatlab(state);
+                       
+                        // Cleanup Optizelle
+                        optizelle.pop_back();
                                 
                         // Return nothing 
                         return; 
@@ -3407,7 +3479,7 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 ) {
                     // Grab Optizelle
-                    optizelle = mexGetVariable("global","Optizelle");
+                    optizelle.push_back(mexGetVariable("global","Optizelle"));
 
                     // Calling convention should be
                     // (X,Z,msg,smanip,mxfns,mxstate) -> (mxstate_out)
@@ -3472,6 +3544,9 @@ namespace Optizelle {
                         
                         // Convert the C++ state to a Matlab state
                         mxstate_out.toMatlab(state);
+                       
+                        // Cleanup Optizelle
+                        optizelle.pop_back();
 
                         // Return nothing 
                         return; 
@@ -3489,7 +3564,7 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 ) {
                     // Grab Optizelle
-                    optizelle = mexGetVariable("global","Optizelle");
+                    optizelle.push_back(mexGetVariable("global","Optizelle"));
 
                     // Calling convention should be
                     // (X,Z,msg,mxstate) -> (xs,zs,reals,nats,params)
@@ -3550,6 +3625,9 @@ namespace Optizelle {
                         pOutput[2]=mxreals;
                         pOutput[3]=mxnats;
                         pOutput[4]=mxparams;
+                       
+                        // Cleanup Optizelle
+                        optizelle.pop_back();
 
                         // Return nothing 
                         return; 
@@ -3564,7 +3642,7 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 ) {
                     // Grab Optizelle
-                    optizelle = mexGetVariable("global","Optizelle");
+                    optizelle.push_back(mexGetVariable("global","Optizelle"));
 
                     // Calling convention should be
                     // (X,Z,msg,mxstate,mxxs,mxzs,mxreals,mxnats,mxparams)
@@ -3622,6 +3700,9 @@ namespace Optizelle {
 
                         // Convert the C++ state to a Matlab state
                         mxstate_out.toMatlab(state);
+                       
+                        // Cleanup Optizelle
+                        optizelle.pop_back();
 
                         // Return nothing 
                         return; 
@@ -3636,7 +3717,7 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 ) {
                     // Grab Optizelle
-                    optizelle = mexGetVariable("global","Optizelle");
+                    optizelle.push_back(mexGetVariable("global","Optizelle"));
 
                     // Calling convention should be (X,Z,msg,fname,state) -> ()
                     mxArray *X=pInput[0],
@@ -3673,6 +3754,9 @@ namespace Optizelle {
                         // Write the restart file
                         MxJsonInequalityConstrained::write_restart(
                             msg,fname,state);
+                       
+                        // Cleanup Optizelle
+                        optizelle.pop_back();
                         
                         // Return nothing 
                         return; 
@@ -3687,7 +3771,7 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 ) {
                     // Grab Optizelle
-                    optizelle = mexGetVariable("global","Optizelle");
+                    optizelle.push_back(mexGetVariable("global","Optizelle"));
 
                     // Calling convention should be
                     // (X,Z,msg,fname,x,z) -> (mxstate)
@@ -3726,6 +3810,9 @@ namespace Optizelle {
                         
                         // Convert the C++ state to a Matlab state
                         mxstate_out.toMatlab(state);
+                       
+                        // Cleanup Optizelle
+                        optizelle.pop_back();
 
                         // Return nothing 
                         return; 
@@ -3794,7 +3881,7 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 ){
                     // Grab Optizelle
-                    optizelle = mexGetVariable("global","Optizelle");
+                    optizelle.push_back(mexGetVariable("global","Optizelle"));
 
                     // Calling convention should be
                     // (X,Y,Z,msg,x,y,z)->(mxstate_out)
@@ -3824,6 +3911,9 @@ namespace Optizelle {
 
                         // Convert the state to a Matlab state
                         mxstate_out.toMatlab(state);
+                       
+                        // Cleanup Optizelle
+                        optizelle.pop_back();
 
                         // Return nothing 
                         return; 
@@ -3838,7 +3928,7 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 ) {
                     // Grab Optizelle
-                    optizelle = mexGetVariable("global","Optizelle");
+                    optizelle.push_back(mexGetVariable("global","Optizelle"));
 
                     // Calling convention should be (X,Y,Z,msg,fname,mxstate)
                     // -> (mxstate_out)
@@ -3885,6 +3975,9 @@ namespace Optizelle {
 
                         // Convert the C++ state to a Matlab state
                         mxstate_out.toMatlab(state);
+                       
+                        // Cleanup Optizelle
+                        optizelle.pop_back();
                                 
                         // Return nothing 
                         return; 
@@ -3921,7 +4014,7 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 ) {
                     // Grab Optizelle
-                    optizelle = mexGetVariable("global","Optizelle");
+                    optizelle.push_back(mexGetVariable("global","Optizelle"));
 
                     // Calling convention should be
                     // (X,Z,msg,smanip,mxfns,mxstate) -> (mxstate_out)
@@ -3989,6 +4082,9 @@ namespace Optizelle {
                         
                         // Convert the C++ state to a Matlab state
                         mxstate_out.toMatlab(state);
+                       
+                        // Cleanup Optizelle
+                        optizelle.pop_back();
 
                         // Return nothing 
                         return; 
@@ -4006,7 +4102,7 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 ) {
                     // Grab Optizelle
-                    optizelle = mexGetVariable("global","Optizelle");
+                    optizelle.push_back(mexGetVariable("global","Optizelle"));
 
                     // Calling convention should be
                     // (X,Y,Z,msg,mxstate) -> (xs,ys,zs,reals,nats,params)
@@ -4075,6 +4171,9 @@ namespace Optizelle {
                         pOutput[3]=mxreals;
                         pOutput[4]=mxnats;
                         pOutput[5]=mxparams;
+                       
+                        // Cleanup Optizelle
+                        optizelle.pop_back();
 
                         // Return nothing 
                         return; 
@@ -4089,7 +4188,7 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 ) {
                     // Grab Optizelle
-                    optizelle = mexGetVariable("global","Optizelle");
+                    optizelle.push_back(mexGetVariable("global","Optizelle"));
 
                     // Calling convention should be
                     //(X,Y,Z,msg,mxstate,mxxs,mxys,mxzs,mxreals,mxnats,mxparams)
@@ -4153,6 +4252,9 @@ namespace Optizelle {
 
                         // Convert the C++ state to a Matlab state
                         mxstate_out.toMatlab(state);
+                       
+                        // Cleanup Optizelle
+                        optizelle.pop_back();
 
                         // Return nothing 
                         return; 
@@ -4167,7 +4269,7 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 ) {
                     // Grab Optizelle
-                    optizelle = mexGetVariable("global","Optizelle");
+                    optizelle.push_back(mexGetVariable("global","Optizelle"));
 
                     // Calling convention should be (X,Y,Z,msg,fname,state)-> ()
                     mxArray *X=pInput[0],
@@ -4207,6 +4309,9 @@ namespace Optizelle {
                         // Write the restart file
                         MxJsonConstrained::write_restart(
                             msg,fname,state);
+                       
+                        // Cleanup Optizelle
+                        optizelle.pop_back();
                         
                         // Return nothing 
                         return; 
@@ -4221,7 +4326,7 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 ) {
                     // Grab Optizelle
-                    optizelle = mexGetVariable("global","Optizelle");
+                    optizelle.push_back(mexGetVariable("global","Optizelle"));
 
                     // Calling convention should be
                     // (X,Y,Z,msg,fname,x,y,z) -> (mxstate)
@@ -4263,6 +4368,9 @@ namespace Optizelle {
                         
                         // Convert the C++ state to a Matlab state
                         mxstate_out.toMatlab(state);
+                       
+                        // Cleanup Optizelle
+                        optizelle.pop_back();
 
                         // Return nothing 
                         return; 

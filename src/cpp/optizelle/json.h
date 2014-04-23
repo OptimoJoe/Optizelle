@@ -88,6 +88,9 @@ namespace Optizelle {
                 // Anything else is an error
                 else
                     msg.error(err_msg);
+                
+                // We should not hit this point
+                throw;
             }
 
             // Read a natural 
@@ -127,6 +130,9 @@ namespace Optizelle {
                 // If we don't start with a string, raise an error
                 } else
                     msg.error(err_msg);
+                
+                // We should not hit this point
+                throw;
             }
 
             // Read a string 
@@ -275,11 +281,6 @@ namespace Optizelle {
                 typename XX <Real>::Vector const & x,
                 typename RestartPackage<typename XX<Real>::Vector>::t & xs
             ) {
-                // Create some type shortcuts
-                typedef XX <Real> X;
-                typedef typename X::Vector X_Vector;
-                typedef typename RestartPackage <X_Vector>::t X_Vectors;
-                
                 // Create a writer so that we can tranlate json objects into
                 // strings
                 Json::StyledWriter writer;
@@ -370,25 +371,32 @@ namespace Optizelle {
                 state.stored_history=read::natural(
                     msg,
                     root["Optizelle"].get(
-                        "stored_history",state.stored_history),
+                        "stored_history",
+                        Json::Value::UInt64(state.stored_history)),
                     "stored_history");
                 state.history_reset=read::natural(
                     msg,
-                    root["Optizelle"].get("history_reset",state.history_reset),
+                    root["Optizelle"].get(
+                        "history_reset",
+                        Json::Value::UInt64(state.history_reset)),
                     "history_reset");
                 state.iter_max=read::natural(
                     msg,
-                    root["Optizelle"].get("iter_max",state.iter_max),
+                    root["Optizelle"].get(
+                        "iter_max",
+                        Json::Value::UInt64(state.iter_max)),
                     "iter_max");
                 state.krylov_iter_max=read::natural(
                     msg,
                     root["Optizelle"].get(
-                        "krylov_iter_max",state.krylov_iter_max),
+                        "krylov_iter_max",
+                        Json::Value::UInt64(state.krylov_iter_max)),
                     "krylov_iter_max");
                 state.krylov_orthog_max=read::natural(
                     msg,
                     root["Optizelle"].get(
-                        "krylov_orthog_max",state.krylov_orthog_max),
+                        "krylov_orthog_max",
+                        Json::Value::UInt64(state.krylov_orthog_max)),
                     "krylov_orthog_max");
                 state.eps_krylov=read::real <Real> (
                     msg,
@@ -424,7 +432,9 @@ namespace Optizelle {
                     "H_type");
                 state.msg_level=read::natural(
                     msg,
-                    root["Optizelle"].get("msg_level",state.msg_level),
+                    root["Optizelle"].get(
+                        "msg_level",
+                        Json::Value::UInt64(state.msg_level)),
                     "msg_level");
                 state.delta=read::real <Real> (
                     msg,
@@ -449,7 +459,8 @@ namespace Optizelle {
                 state.linesearch_iter_max=read::natural(
                     msg,
                     root["Optizelle"].get(
-                        "linesearch_iter_max",state.linesearch_iter_max),
+                        "linesearch_iter_max",
+                        Json::Value::UInt64(state.linesearch_iter_max)),
                     "linesearch_iter_max");
                 state.eps_ls=read::real <Real> (
                     msg,
@@ -697,12 +708,14 @@ namespace Optizelle {
                 state.augsys_iter_max=read::natural(
                     msg,
                     root["Optizelle"].get(
-                        "augsys_iter_max",state.augsys_iter_max),
+                        "augsys_iter_max",
+                        Json::Value::UInt64(state.augsys_iter_max)),
                     "augsys_iter_max");
                 state.augsys_rst_freq=read::natural(
                     msg,
                     root["Optizelle"].get(
-                        "augsys_rst_freq",state.augsys_rst_freq),
+                        "augsys_rst_freq",
+                        Json::Value::UInt64(state.augsys_rst_freq)),
                     "augsys_rst_freq");
                 state.PSchur_left_type=read::param <Operators::t> (
                     msg,

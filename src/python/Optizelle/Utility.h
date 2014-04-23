@@ -142,6 +142,8 @@ namespace Optizelle {
     }
 
     namespace Python {
+        // Converts Py_ssize_t to Natural
+        Natural Py_ssize_t_to_Natural(Py_ssize_t const & x);
         
         // A function to alter the behavior of PyTuple_SetItem so that we don't
         // have to hand increment the reference to the object since SetItem
@@ -201,7 +203,7 @@ namespace Optizelle {
             
         public:
             // Disallow constructors 
-            NO_DEFAULT_COPY_ASSIGNMENT(PyObjectPtr);
+            NO_DEFAULT_COPY_ASSIGNMENT(PyObjectPtr)
 
             // On construction, initialize the pointer and figure out if
             // we're capturing the pointer or attaching to it
@@ -239,7 +241,7 @@ namespace Optizelle {
         // A messaging utility that hooks directly into Python 
         struct Messaging : public Optizelle::Messaging, public PyObjectPtr {
             // Disallow constructors
-            NO_DEFAULT_COPY_ASSIGNMENT(Messaging);
+            NO_DEFAULT_COPY_ASSIGNMENT(Messaging)
 
             // On construction, we just grab the pointer to the messaging object
             explicit Messaging(
@@ -276,7 +278,7 @@ namespace Optizelle {
 
         public:
             // Prevent constructors 
-            NO_DEFAULT_COPY_ASSIGNMENT(Vector);
+            NO_DEFAULT_COPY_ASSIGNMENT(Vector)
 
             // Create a vector with the appropriate messaging and vector space 
             explicit Vector(
@@ -347,7 +349,7 @@ namespace Optizelle {
         template <typename ProblemClass>
         struct State : public PyObjectPtr {
             // Disallow constructors
-            NO_DEFAULT_COPY_ASSIGNMENT(State);
+            NO_DEFAULT_COPY_ASSIGNMENT(State)
 
             // On construction, we just grab the pointer to the state object
             explicit State(
@@ -376,7 +378,7 @@ namespace Optizelle {
             
         public:
             // Disallow constructors
-            NO_DEFAULT_COPY_ASSIGNMENT(Functions);
+            NO_DEFAULT_COPY_ASSIGNMENT(Functions)
 
             // On construction, we just grab the pointer to the bundle object
             explicit Functions(
@@ -417,7 +419,7 @@ namespace Optizelle {
 
         public:
             // Disallow constructors
-            NO_DEFAULT_COPY_ASSIGNMENT(StateManipulator);
+            NO_DEFAULT_COPY_ASSIGNMENT(StateManipulator)
 
             // We need the Python state manipulator, a copy of a Python state
             // to pass information, and a copy of the Python functions.
@@ -469,7 +471,7 @@ namespace Optizelle {
         template <typename Real=double> 
         struct PythonVS { 
             // Prevent constructors 
-            NO_CONSTRUCTORS(PythonVS);
+            NO_CONSTRUCTORS(PythonVS)
 
             // Setup the vector 
             typedef Optizelle::Python::Vector Vector; 
@@ -586,7 +588,7 @@ namespace Optizelle {
 
         public:
             // Prevent constructors 
-            NO_DEFAULT_COPY_ASSIGNMENT(ScalarValuedFunction);
+            NO_DEFAULT_COPY_ASSIGNMENT(ScalarValuedFunction)
 
             // Create a function 
             explicit ScalarValuedFunction(
@@ -622,7 +624,7 @@ namespace Optizelle {
 
         public:
             // Prevent constructors 
-            NO_DEFAULT_COPY_ASSIGNMENT(VectorValuedFunction);
+            NO_DEFAULT_COPY_ASSIGNMENT(VectorValuedFunction)
 
             // Create a function 
             explicit VectorValuedFunction(
@@ -681,7 +683,7 @@ namespace Optizelle {
 
         public:
             // Prevent constructors
-            NO_DEFAULT_COPY_ASSIGNMENT(Operator);
+            NO_DEFAULT_COPY_ASSIGNMENT(Operator)
 
             // Create an operator 
             explicit Operator(

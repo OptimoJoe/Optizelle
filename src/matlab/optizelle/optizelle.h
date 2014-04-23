@@ -37,12 +37,6 @@ Author: Joseph Young (joe@optimojoe.com)
 #include "optizelle/json.h"
 
 namespace Optizelle {
-    // In theory, I'd like to keep this variable local, but for some strange
-    // reason Octave keeps moving around this memory.  As such, rather than
-    // having it be static, I made it global and then grab the correct pointer
-    // each time we enter these routines.
-    extern mxArray * optizelle;
-
     namespace StoppingCondition { 
         // Converts t to a Matlab enumerated type
         mxArray * toMatlab(t const & opt_stop);
@@ -213,7 +207,7 @@ namespace Optizelle {
             
         public:
             // Disallow constructors 
-            NO_DEFAULT_COPY_ASSIGNMENT(mxArrayPtr);
+            NO_DEFAULT_COPY_ASSIGNMENT(mxArrayPtr)
 
             // On construction, initialize the pointer and figure out if
             // we're capturing the pointer or attaching to it
@@ -249,7 +243,7 @@ namespace Optizelle {
         // A messaging utility that hooks directly into Matlab 
         struct Messaging : public Optizelle::Messaging, public mxArrayPtr {
             // Disallow constructors
-            NO_DEFAULT_COPY_ASSIGNMENT(Messaging);
+            NO_DEFAULT_COPY_ASSIGNMENT(Messaging)
 
             // On construction, we just grab the pointer to the messaging object
             explicit Messaging(
@@ -286,7 +280,7 @@ namespace Optizelle {
 
         public:
             // Prevent constructors 
-            NO_DEFAULT_COPY_ASSIGNMENT(Vector);
+            NO_DEFAULT_COPY_ASSIGNMENT(Vector)
 
             // Create a vector with the appropriate messaging and vector space 
             explicit Vector(
@@ -356,7 +350,7 @@ namespace Optizelle {
         template <typename ProblemClass>
         struct State : public mxArrayPtr {
             // Disallow constructors
-            NO_DEFAULT_COPY_ASSIGNMENT(State);
+            NO_DEFAULT_COPY_ASSIGNMENT(State)
 
             // On construction, we just grab the pointer to the state object
             explicit State(
@@ -385,7 +379,7 @@ namespace Optizelle {
             
         public:
             // Disallow constructors
-            NO_DEFAULT_COPY_ASSIGNMENT(Functions);
+            NO_DEFAULT_COPY_ASSIGNMENT(Functions)
 
             // On construction, we just grab the pointer to the bundle object
             explicit Functions(
@@ -426,7 +420,7 @@ namespace Optizelle {
 
         public:
             // Disallow constructors
-            NO_DEFAULT_COPY_ASSIGNMENT(StateManipulator);
+            NO_DEFAULT_COPY_ASSIGNMENT(StateManipulator)
 
             // We need the Matlab state manipulator, a copy of a Matlab state
             // to pass information, and a copy of the Matlab functions.
@@ -468,6 +462,7 @@ namespace Optizelle {
                 if(ret_err.second)
                     msg.error("Evaluation of the StateManipulator object "
                         "failed.");
+
                 // Convert the returned state to the C++ state 
                 mxstate.reset(ret_err.first);
                 mxstate.fromMatlab(state);
@@ -478,7 +473,7 @@ namespace Optizelle {
         template <typename Real=double> 
         struct MatlabVS { 
             // Prevent constructors 
-            NO_CONSTRUCTORS(MatlabVS);
+            NO_CONSTRUCTORS(MatlabVS)
 
             // Setup the vector 
             typedef Optizelle::Matlab::Vector Vector; 
@@ -595,7 +590,7 @@ namespace Optizelle {
 
         public:
             // Prevent constructors 
-            NO_DEFAULT_COPY_ASSIGNMENT(ScalarValuedFunction);
+            NO_DEFAULT_COPY_ASSIGNMENT(ScalarValuedFunction)
 
             // Create a function 
             explicit ScalarValuedFunction(
@@ -631,7 +626,7 @@ namespace Optizelle {
 
         public:
             // Prevent constructors 
-            NO_DEFAULT_COPY_ASSIGNMENT(VectorValuedFunction);
+            NO_DEFAULT_COPY_ASSIGNMENT(VectorValuedFunction)
 
             // Create a function 
             explicit VectorValuedFunction(
@@ -690,7 +685,7 @@ namespace Optizelle {
 
         public:
             // Prevent constructors
-            NO_DEFAULT_COPY_ASSIGNMENT(Operator);
+            NO_DEFAULT_COPY_ASSIGNMENT(Operator)
 
             // Create an operator 
             explicit Operator(

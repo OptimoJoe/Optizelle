@@ -1800,7 +1800,6 @@ namespace Optizelle {
     ){
         // Create some type shortcuts
         typedef XX <Real> X;
-        typedef typename X::Vector X_Vector;
 
         // Apply the left preconditioner to the true residual.  This
         // completes #1
@@ -1836,7 +1835,7 @@ namespace Optizelle {
     >
     struct GMRESManipulator {
         // Disallow constructors
-        NO_COPY_ASSIGNMENT(GMRESManipulator);
+        NO_COPY_ASSIGNMENT(GMRESManipulator)
        
         // Give an empty default constructor
         GMRESManipulator() {}
@@ -1860,7 +1859,7 @@ namespace Optizelle {
     >
     struct EmptyGMRESManipulator : public GMRESManipulator <Real,XX> {
         // Disallow constructors
-        NO_COPY_ASSIGNMENT(EmptyGMRESManipulator);
+        NO_COPY_ASSIGNMENT(EmptyGMRESManipulator)
        
         // Give an empty default constructor
         EmptyGMRESManipulator() {}

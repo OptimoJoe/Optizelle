@@ -87,7 +87,7 @@ struct F : public Optizelle::ScalarValuedFunction <Real,XX> {
     typedef typename X::Vector Vector;
 
     // <- f(x) 
-    Real eval(Vector const & x) const {}
+    Real eval(Vector const & x) const { throw; }
 
     // grad = grad f(x) 
     void grad(Vector const & x,Vector & grad) const {}

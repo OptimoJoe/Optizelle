@@ -17,11 +17,11 @@ namespace Optizelle {
         struct Serialization <Real,WW> {
             static std::string serialize(
                 typename WW <Real>::Vector const & x
-            ) { }
+            ) { throw; }
             static typename WW <Real>::Vector deserialize(
                 typename WW <Real>::Vector const & x,
                 std::string const & x_json
-            ) { }
+            ) { throw; }
         };
     }
 }
