@@ -40,6 +40,12 @@
 \usepackage{makeidx}
 \makeindex
 
+% In document bibliography.  Note, we include natbib before bibentry because
+% we use the hyperref package.  For whatever reason, we fail to build without
+% it.
+\usepackage{natbib}
+\usepackage{bibentry}
+
 % Define a computer text environment.  This is monospaced and allows
 % underscores.  Code found at:
 % https://tex.stackexchange.com/questions/20890/define-an-escape-underscore-environment
@@ -389,6 +395,24 @@
         \end{minipage}
     \item[]}
 
+\newcommand{\languageitem}[3]{
+    \item[Linux/Unix] #1
+    \item[\mbox{OS X}] #2
+    \item[Windows] #3
+    \item[]}
+
+\newcommand{\libraryitem}[8]{
+    \item[Core] Add #1 to #2
+    \item[Python] Add #3 to #4
+    \item[MATLAB] Add #5 to #6
+    \item[Octave] Add #7 to #8
+    \item[]}
+
+\newcommand{\algorithmitem}[2]{
+    \item[Algorithm] \index{Algorithmic discussion!#1}{#1}
+    \item[Description] #2 
+    \item[]}
+
 % Change the figure numbering to be chap.sec.num
 \renewcommand{\thefigure}{\arabic{chapter}.\arabic{section}.\arabic{figure}}
         
@@ -502,6 +526,7 @@
 \newsavebox{\boxImport}
 
 % Labels for some sections
+\newcommand{\secinstalling}{Installing}
 \newcommand{\secimport}{Import Optizelle}
 \newcommand{\secimportvs}{Import or define the appropriate vector spaces}
 \newcommand{\secobjective}{Define the objective function}
@@ -538,6 +563,10 @@
 \title{Optizelle v@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@.@CPACK_PACKAGE_VERSION_PATCH@}
 \author{OptimoJoe\\Joseph Young}
 \begin{document}
+
+% Setup the bibliography
+\nobibliography{optizelle}
+\bibliographystyle{plain}
 
 \maketitle
 \tableofcontents
@@ -588,34 +617,34 @@
 \begin{itemize}
     \item {\bf State of the art algorithms}
         \begin{itemize}
-            \item Unconstrained -- steepest descent, preconditioned nonlinear-CG (Fletcher-Reeves, Polak-Ribiere, Hestenes-Stiefel), BFGS, Newton-CG, SR1, trust-region Newton (truncated-CG and truncated-MINRES), Barzilai-Borwein two-point approximation.
+            \item Unconstrained -- steepest descent, preconditioned nonlinear-CG (Fletcher-Reeves, Polak-Ribiere, Hestenes-Stiefel), BFGS, Newton-CG, SR1, trust-region Newton (truncated-CG and truncated-MINRES), Barzilai-Borwein two-point approximation
             \item Equality constrained -- inexact composite-step SQP.
-            \item Inequality constrained -- primal-dual interior point method for cone constraints (linear, second-order cone, and semidefinite), log-barrier method for cone constraints.
-            \item Constrained -- any combination of the above.
+            \item Inequality constrained -- primal-dual interior point method for cone constraints (linear, second-order cone, and semidefinite), log-barrier method for cone constraints
+            \item Constrained -- any combination of the above
         \end{itemize}
     \item {\bf Open source}
         \begin{itemize}
-            \item Released under the 2-Clause BSD License.
-            \item Free and ready to use with both open and closed sourced commericial codes.
+            \item Released under the 2-Clause BSD License
+            \item Free and ready to use with both open and closed sourced commericial codes
         \end{itemize}
     \item {\bf Multilanguage support}
         \begin{itemize}
-            \item Interfaces to C++, MATLAB/Octave, and Python.
+            \item Interfaces to C++, MATLAB/Octave, and Python
         \end{itemize}
     \item {\bf Robust computations and repeatibility}
         \begin{itemize}
-            \item Can stop, archive, and restart the computation from any optimization iteration.
+            \item Can stop, archive, and restart the computation from any optimization iteration
             \item Combined with the multilanguage support, the optimization can be started in one language and migrated to another.  For example, archived optimization runs that started in Python can be migrated and completed in C++.
         \end{itemize}
     \item {\bf User-defined parallelism}
         \begin{itemize}
-            \item Fully compatible with OpenMP, MPI, or GPUs.
+            \item Fully compatible with OpenMP, MPI, or GPUs
         \end{itemize}
     \item {\bf Extensible linear algebra}
         \begin{itemize}
-            \item Supports user-defined vector algebra and preconditioners.
-            \item Enables sparse, dense, and matrix-free computations.
-            \item Ability to define custom inner products and compatibility with preconditioners such as algebraic multigrid make Optizelle well-suited for PDE constrained optimization.
+            \item Supports user-defined vector algebra and preconditioners
+            \item Enables sparse, dense, and matrix-free computations
+            \item Ability to define custom inner products and compatibility with preconditioners such as algebraic multigrid make Optizelle well-suited for PDE constrained optimization
         \end{itemize}
     \item {\bf Sophisticated Control of the Optimization Algorithms}
         \begin{itemize}
@@ -1146,7 +1175,7 @@ On Windows, if not using Cygwin, execute the following commands:
         tests by running \textct{ctest} in the CMake build directory.}
 \end{boldlist}
 
-\section{Installing}\label{sec:installing}
+\section{\secinstalling}\label{sec:installing}
 
     After building Optizelle, installation is as simple as executing
 \begin{center}
@@ -1166,6 +1195,7 @@ located in the CMake build directory.
         .3 liboptizelle.a.
         .3 optizelle.lib.
         .3 liboptizelle.so.
+        .3 liboptizelle.dylib.
         .3 optizelle.dll.
         .2 include.
         .3 optizelle.
@@ -1189,7 +1219,10 @@ If the \textctref{ENABLE_BUILD_JSONCPP} variable is set to \textct{ON}, then we 
         .1 \$\{\textctref{CMAKE_INSTALL_PREFIX}\}.
         .2 lib.
         .3 libjson.a.
+        .3 json.lib.
         .3 libjson.so.
+        .3 libjson.dylib.
+        .3 json.dll.
         .2 include.
         .3 json.
         .4 json.h.
@@ -1201,9 +1234,50 @@ Finally, if the \textctref{ENABLE_BUILD_BLAS_AND_LAPACK} variable is set to \tex
         .1 \$\{\textctref{CMAKE_INSTALL_PREFIX}\}.
         .2 lib.
         .3 libblas.so.
+        .3 libblas.dylib.
+        .3 blas.dll.
         .3 liblapack.so.
+        .3 liblapack.dylib.
+        .3 lapack.dll.
     }
 \end{minipage}\end{center}
+
+\phantomsection\label{itm:environmentvariables}
+        Next, we must set several environment variables so that applications dependent on Optizelle can find the necessary libraries.  Each operating system uses a slightly different way to accomplish this, but the most common use cases are:
+\begin{boldlist}
+    \languageitem
+        {When using a Bash shell, modify \textct{.profile}, \textct{.bashrc}, \textct{.bash_profile} or the appropriate startup file.  Add the line
+\begin{center}
+        \textct{export SOMEVARIABLE=}\$\textct{SOMEVARIABLE:NEWPATH}
+\end{center}
+where \textct{SOMEVARIABLE} denotes one of the environment variables we discuss below and \textct{NEWPATH} denotes the added path.}
+        {Same as Linux/Unix}
+        {Modify \textct{SOMEVARIABLE} via the sequence My Computer $\rightarrow$ Properties $\rightarrow$ Advanced System Settings $\rightarrow$ System Properties $\rightarrow$ Environment Variables.  When modifying a variable, we separate each path with a semicolon.}
+\end{boldlist}
+On Linux, Unix, and OS X, most shells allow us to set this environment variable at runtime with syntax such as
+\begin{center}
+        \textct{SOMEVARIABLE1=}\$\textct{SOMEVARIABLE1:NEWPATH1 SOMEVARIABLE2=}\$\textct{SOMEVARIABLE2:NEWPATH2 myprog}
+\end{center}
+where \textct{myprog} denotes the program we want to run.
+        
+        As to the specific environment variables, we must:
+\begin{boldlist}
+    \libraryitem
+        {\$\{\textctref{CMAKE_INSTALL_PREFIX}\}\textct{/lib}}
+        {\begin{boldlist}
+            \languageitem
+                {\textct{LD_LIBRARY_PATH}}
+                {\textct{DYLD_LIBRARY_PATH} or \textct{DYLD_FALLBACK_LIBRARY_PATH}.  If we compile our own BLAS and LAPACK, these libraries may conflict with the versions found within the vecLib system library.  In this case, we may be required to use \textct{DYLD_FALLBACK_LIBRARY_PATH}.}
+                {\textct{PATH}}
+            \end{boldlist}}
+        {\$\{\textctref{CMAKE_INSTALL_PREFIX}\}\textct{/share/optizelle/python}}
+        {\textct{PYTHONPATH}}
+        {\$\{\textctref{CMAKE_INSTALL_PREFIX}\}\textct{/share/optizelle/matlab}}
+        {\textct{MATLABPATH}}
+        {\$\{\textctref{CMAKE_INSTALL_PREFIX}\}\textct{/share/optizelle/matlab}}
+        {\textct{OCTAVE_PATH}}
+\end{boldlist}
+Note, when we say \$\{\textctref{CMAKE_INSTALL_PREFIX}\}, we mean the actual text stored in the CMake variable and not the literal string.
 
 \section{Uninstalling}
 
@@ -1236,17 +1310,17 @@ in the build directory.  This encapsulates Optizelle as well as JsonCpp, BLAS, a
 \noindent Since these formulations necessitate different algorithms, we segregate the overall structure of Optizelle and the algorithms themselves into these categories.  
         In order to optimize these formulations, we follow the general procedure:
 \begin{enumerate}
-    \item \hyperref[sec:import]{\secimport},
-    \item \hyperref[sec:importvs]{\secimportvs},
-    \item \hyperref[sec:objective]{\secobjective},
-    \item \hyperref[sec:constraints]{\secconstraints},
-    \item \hyperref[sec:preconditioners]{\secpreconditioners},
-    \item \hyperref[sec:state]{\secstate},
-    \item \hyperref[sec:params]{\secparams},
-    \item \hyperref[sec:fns]{\secfns},
-    \item \hyperref[sec:solve]{\secsolve},
-    \item \hyperref[sec:extract]{\secextract},
-    \item \hyperref[sec:compilerun]{\seccompilerun}.
+    \item \hyperref[sec:import]{\secimport}
+    \item \hyperref[sec:importvs]{\secimportvs}
+    \item \hyperref[sec:objective]{\secobjective}
+    \item \hyperref[sec:constraints]{\secconstraints}
+    \item \hyperref[sec:preconditioners]{\secpreconditioners}
+    \item \hyperref[sec:state]{\secstate}
+    \item \hyperref[sec:params]{\secparams}
+    \item \hyperref[sec:fns]{\secfns}
+    \item \hyperref[sec:solve]{\secsolve}
+    \item \hyperref[sec:extract]{\secextract}
+    \item \hyperref[sec:compilerun]{\seccompilerun}
 \end{enumerate}
 We discuss how to implement each of the above steps below. 
 
@@ -1276,7 +1350,7 @@ We discuss how to implement each of the above steps below.
         {m}
 \end{boldlist}
 
-\noindent In C++, we always require \textct{optizelle/optizelle.h}, but only require \textct{optizelle/json.h} when working with JSON and \textct{optizelle/vspaces.h} when using our default vector spaces such as \textct{Optizelle::Rm} and \textct{Optizelle::SQL}.  In Python, the module required by the structures below can be determined by the element in \textbf{Structure}.  For example, the structure \textct{Optizelle.Unconstrained.State.t} requires the module \textct{Optizelle.Unconstrained.State}.  Finally, in MATLAB/Octave, we encapsulate all of the required functions in the global variable \textct{Optizelle}.
+\noindent In C++, we always require \textct{optizelle/optizelle.h}, but only require \textct{optizelle/json.h} when working with JSON and \textct{optizelle/vspaces.h} when using our default vector spaces such as \hyperref[itm:Rm]{\textct{Rm}} and \hyperref[itm:SQL]{\textct{SQL}}.  In Python, the module required by the structures below can be determined by the element in \textbf{Structure}.  For example, the structure \textct{Optizelle.Unconstrained.State.t} requires the module \textct{Optizelle.Unconstrained.State}.  Finally, in MATLAB/Octave, we encapsulate all of the required functions in the global variable \textct{Optizelle}.
 
 \section{\secimportvs}\label{sec:importvs}
         In the optimization problems
@@ -1552,7 +1626,7 @@ $$
         
         In the objective function, we use a preconditioner for the Hessian in several different places.  Foremost, we use it to precondition linear systems related to second-order algorithms such as Newton's method.  In addition, we use it within first-order algorithms such as nonlinear-CG.  Certainly, $\nabla^2 f(x)^{-1}$ represents the best such preconditioner, but the Hessian may become singular during the course of optimization, so we must take care in how we generate this preconditioner.  As such, even though $\nabla^2 f(x)$ is self-adjoint, the LU factorization provides a simple, effective manner to factorize the Hessian.  In other words, we find operators $L$ and $U$ such that
 $$
-        LU=\nabla^2 f(x)
+        LU=\nabla^2 f(x).
 $$
 Then, our preconditioner $P_H:X\rightarrow X$ approximates 
 $$
@@ -2000,7 +2074,7 @@ This becomes the following in our \exampleref{\secequality}{sec:equality} exampl
         
 \section{\seccompilerun}\label{sec:compilerun}
 
-        As a final step, we need to either compile or run the program.  Each language has its own nuances that we describe below
+        As a final step, we need to either compile or run the program.  Each language has its own nuances that we describe below.
 
 \subsection{C++}
 
@@ -2012,6 +2086,7 @@ This becomes the following in our \exampleref{\secequality}{sec:equality} exampl
         .3 liboptizelle.a.
         .3 optizelle.lib.
         .3 liboptizelle.so.
+        .3 liboptizelle.dylib.
         .3 optizelle.dll.
         .2 include.
         .3 optizelle.
@@ -2028,7 +2103,7 @@ to the list of include directories and
 \begin{center}
         \$\{\textctref{CMAKE_INSTALL_PREFIX}\}\textct{/lib}
 \end{center}
-to the list of library directories.  For the static library, we link either \textct{liboptizelle.a} or \textct{optizelle.lib}.  For the dynamic library, we link either \textct{liboptizelle.so} or \textct{optizelle.dll}.
+to the list of library directories.  For the static library, we link either \textct{liboptizelle.a} or \textct{optizelle.lib}.  For the dynamic library, we link either \textct{liboptizelle.so}, \textct{liboptizelle.dylib}, or \textct{optizelle.dll}.
 
         Note, Optizelle depends on JsonCpp, BLAS, and LAPACK as well.  Therfore, these headers and libraries must be included in any compilation command as well.  For example, in GCC, we may have the following set of build flags
 \begin{center}
@@ -2036,46 +2111,11 @@ to the list of library directories.  For the static library, we link either \tex
 \end{center}
 where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
 
-\subsection{Python}
+        In order to run a program, we must ensure that we set the necessary \hyperref[itm:environmentvariables]{environment variables} that we discuss in the \hyperref[sec:installing]{\secinstalling} section.
 
-        In Python, we install the relevant Python files to the following directory tree:
-\begin{center}\begin{minipage}[t]{1\columnwidth}
-    \dirtree{%
-        .1 \$\{\textctref{CMAKE_INSTALL_PREFIX}\}.
-        .2 share.
-        .3 optizelle.
-        .4 python.
-    }
-\end{minipage}\end{center}
-In order to use Optizelle, we must add this directory to the Python path.  We accomplish this with a command such as
-\begin{center}
-        \textct{PYTHONPATH=/usr/share/optizelle/python python}
-\end{center}
-where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
+\subsection{Python/MATLAB/Octave}
 
-\subsection{MATLAB/Octave}
-
-        For MATLAB/Octave, we install Optizelle to the following directory tree:
-\begin{center}\begin{minipage}[t]{1\columnwidth}
-    \dirtree{%
-        .1 \$\{\textctref{CMAKE_INSTALL_PREFIX}\}.
-        .2 share.
-        .3 optizelle.
-        .4 matlab.
-    }
-\end{minipage}\end{center}
-Then, for example, we add this to our path with the command
-\begin{center}
-        \textct{addpath('/usr/share/optizelle/matlab')}
-\end{center}
-where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.  Alternatively, in MATLAB, we can add the path at runtime with the command
-\begin{center}
-        \textct{MATLABPATH=/usr/share/optizelle/matlab matlab}
-\end{center}
-In Octave, this becomes
-\begin{center}
-        \textct{OCTAVE_PATH=/usr/share/optizelle/matlab octave}
-\end{center}
+        We require no compilation, but we must ensure that we set the necessary \hyperref[itm:environmentvariables]{environment variables} that we discuss in the \hyperref[sec:installing]{\secinstalling} section.
 
 \chapter{\chparams}\label{ch:params}
         
@@ -3522,7 +3562,7 @@ Number of blocks & \textct{x.numblocks()}
         {0}
         {m}
 \end{boldlist}
-\noindent In each command, the \textctref{serialize} and \textctref{deserialize} functions work in a similar manner.  The \textctref{serialize} function accepts a vector and then returns a valid JSON structure corresponding to this vector.  For \textctref{Rm}, we use simple JSON vector notation such as \textct{[1.2, 2.3, 3.4]}, but this can be significantly more complicated.  In fact, for large-scale optimization problems, we suggest storing the vector in a separate binary file and returning a JSON structure that denotes the name of the file and the byte where the information begins.  Next, the \textctref{deserialize} function accepts two arguments and returns a vector.  The first argument denotes a vector in the same vector space as the vector we need translated.  The second argument denotes a JSON formatted string of the vector we need to translate.  Generally, we use the first argument to initialize memory for the vector we eventually return.  Then, we use the JSON formatted string to fill in the appropriate information.  In C++, we accomplish this process through template specialization.  In Python, we call the \textct{serialize} and \textctref{deserialize} functions in the \hyperref[sec:import]{\textctref{Optizelle.json.Serialization}} module with the \textct{"registration"} string.  Then, we provide our custom \textctref{serialize} and \textctref{deserialize} routines along with the type of the vector that we want to serialize in the variable \textct{vector_type}.  We obtain this information with the \textct{type} command and require it in order to disambiguate multiple serialization routines.  In MATLAB/Octave, we call the \textctref{serialize} and \textctref{deserialize} functions in the \hyperref[sec:import]{\textctref{Optizelle.json.Serialization}} structure with the \textct{'registration'} string.  Then, similar to Python, we provide our custom \textctref{serialize} and \textctref{deserialize} routines along with a function \textct{check}.  The function \textct{check} accepts a single argument and returns \textct{1} when called with the kind of vector we want to serialize and \textct{0} otherwise.  We require the \textct{check} function to disambiguate the different serialization functions, so we try to make it as specific as possible. 
+\noindent In each command, the \textctref{serialize} and \textctref{deserialize} functions work in a similar manner.  The \textctref{serialize} function accepts a vector and then returns a valid JSON structure corresponding to this vector.  For \textctref{Rm}, we use simple JSON vector notation such as \textct{[1.2, 2.3, 3.4]}, but this can be significantly more complicated.  In fact, for large-scale optimization problems, we suggest storing the vector in a separate binary file and returning a JSON structure that denotes the name of the file and the byte where the information begins.  Next, the \textctref{deserialize} function accepts two arguments and returns a vector.  The first argument denotes a vector in the same vector space as the vector we need translated.  The second argument denotes a JSON formatted string of the vector we need to translate.  Generally, we use the first argument to initialize memory for the vector we eventually return.  Then, we use the JSON formatted string to fill in the appropriate information.  In C++, we accomplish this process through template specialization.  In Python, we call the \textct{serialize} and \textctref{deserialize} functions in the \hyperref[sec:import]{\textct{Optizelle.json.Serialization}} module with the \textct{"registration"} string.  Then, we provide our custom \textctref{serialize} and \textctref{deserialize} routines along with the type of the vector that we want to serialize in the variable \textct{vector_type}.  We obtain this information with the \textct{type} command and require it in order to disambiguate multiple serialization routines.  In MATLAB/Octave, we call the \textctref{serialize} and \textctref{deserialize} functions in the \hyperref[sec:import]{\textct{Optizelle.json.Serialization}} structure with the \textct{'registration'} string.  Then, similar to Python, we provide our custom \textctref{serialize} and \textctref{deserialize} routines along with a function \textct{check}.  The function \textct{check} accepts a single argument and returns \textct{1} when called with the kind of vector we want to serialize and \textct{0} otherwise.  We require the \textct{check} function to disambiguate the different serialization functions, so we try to make it as specific as possible. 
 
         As an example, we return to our \exampleref{\secrosenbrockadvancedapi}{sec:rosenbrockadvancedapi} example.  There, we define custom serialization routines with the code:
 \begin{boldlist}
@@ -3721,6 +3761,193 @@ using the features described in our chapter \hyperref[ch:advanced]{\chadvanced}.
     \exampleitem
         {MATLAB/Octave}
         {\lstinputlisting[style=MATLAB]{@ROSENBROCKADVANCEDAPIPATH@/rosenbrock_advanced_api.m}}
+\end{boldlist}
+
+\chapter{Algorithmic discussion}
+
+        In the following chapter, we give a brief discussion of the algorithms we include within Optizelle and references to more detailed descriptions.
+
+\begin{boldlist}
+    \algorithmitem
+        {Barzilai-Borwein}
+        {We implement the Barzilai-Borwein algorithm by setting \textctref{dir} to \hyperref[itm:LineSearchDirection]{\textct{SteepestDescent}} and \textctref{kind} to either \hyperref[itm:LineSearchKind]{\textct{TwoPointA}} or \hyperref[itm:LineSearchKind]{\textct{TwoPointB}}.  Specifically, \hyperref[itm:LineSearchKind]{\textct{TwoPointA}} and \hyperref[itm:LineSearchKind]{\textct{TwoPointB}} refer to the algorithms generated by equation (5) and (6) in Barzilai and Borwein's paper, respectively.  Since this algorithm requires two points before it may commence, we use a \hyperref[itm:LineSearchKind]{\textct{GoldenSection}} search on the first iteration.
+    \begin{itemize}
+        \item \bibentry{barzilai1988two_point}.
+    \end{itemize}}
+
+    \algorithmitem{Golden-section search}
+        {We implement a straightforward golden-section search.  For historical significance, we refer to Kiefer's paper, but a much more complete description can be found in Bazaraa, Sherali, and Shetty's book. 
+    \begin{itemize}
+        \item \bibentry{kiefer1953fibonacci_golden_section_search}.
+        \item \bibentry{bazaraa2006nonlinear_programming}.
+    \end{itemize}}
+
+    \algorithmitem
+        {BFGS}
+        {Our BFGS implementation uses a limited-memory, iterative reformulation of the algorithm based on a generic inner product.  Our limited-memory implementation differs from that of Byrd, Nocedal, and Schnabel's because we do not form a compact representation, but instead use a stratch space whose size is equal to storedhistory.  In addition, since we do not check the Wolfe conditions, we do a hard check to insure that BFGS operator remains positive definite.  We refer to the collection of 1970s papers for historical significance, but note that a much better presentation of the algorithm can be found in Nocedal and Wright's book.
+    \begin{itemize}
+        \item \bibentry{broyden1970bfgs}.
+        \item \bibentry{fletcher1970bfgs}.
+        \item \bibentry{goldfarb1970variable_metric_methods}.
+        \item \bibentry{shanno1970bfgs}.
+        \item \bibentry{byrd1994limited_memory_quasi_newton}.
+        \item \bibentry{nocedal2006numerical_optimization}.
+    \end{itemize}}
+
+    \algorithmitem
+        {SR1}
+        {Similar to BFGS, our SR1 implementation uses a limited-memory, iterative reformulation of the algorithm based on a generic inner product.  As before, our limited-memory implementation differs from that of Byrd, Nocedal, and Schnabel's because we do not form a compact representation, but instead use a stratch space whose size is equal to storedhistory.  We refer to Broyden's paper for historical significance, but note that a much better presentation of the algorithm can be found in Nocedal and Wright's book.
+    \begin{itemize}
+        \item \bibentry{broyden1967quasi_newton}.
+        \item \bibentry{byrd1994limited_memory_quasi_newton}.
+        \item \bibentry{nocedal2006numerical_optimization}.
+    \end{itemize}}
+
+    \algorithmitem
+        {Nonlinear-CG}
+        {We use a standard implementation of nonlinear-CG.  On the first iteration, we move in the steepest descent direction, but use the specified nonlinear-CG direction on subsequent iterations.  Since we do not check the strong-Wolfe condition, we do a hard check to insure a descent direction.  If we do not, we negate the search direction.  Although we reference the original papers from Hestenes and Stiefel, Fletcher and Reeves, and Polak and Ribiere, Nocedal and Wright give a nicer presentation.  In addition, Hager and Zhang present a nice overview of the different nonlinear-CG variations in their survey paper.
+    \begin{itemize}
+        \item \bibentry{hestenes1952conjugate_gradient}.
+        \item \bibentry{fletcher1963nonlinear_conjugate_gradient}.
+        \item \bibentry{polak1969nonlinear_conjugate_gradient}.
+        \item \bibentry{nocedal2006numerical_optimization}.
+        \item \bibentry{hager2006nonlinear_cg}.
+    \end{itemize}}
+
+    \algorithmitem
+        {Trust-region Newton}
+        {Our trust-region Newton implementation uses a truncated-Krylov method in order to solve the trust-region subproblem.  Both Conn, Gould, and Toint's as well as Nocedal and Wright's book give good descriptions of the algorithm.
+    \begin{itemize}
+        \item \bibentry{conn2000trust_region_methods}.
+        \item \bibentry{nocedal2006numerical_optimization}.
+    \end{itemize}}
+
+    \algorithmitem
+        {Newton-CG}
+        {We base our Newton-CG algorithm on a truncated-Krylov method and not a Hessian modification.  Nocedal and Wright's book describes this algorithm.
+    \begin{itemize}
+        \item \bibentry{nocedal2006numerical_optimization}.
+    \end{itemize}}
+
+    \algorithmitem
+        {Truncated-Krylov methods}
+        {By truncated-Krylov method, we refer to both truncated-CG as well as truncated-MINRES.  Our version of truncated-CG actually implements the conjugate direction algorithm, but it reduces to truncated-CG when we set krylovorthogmax to 1.  In the case of truncated-MINRES, we can not guarnatee a descent direction unless the Hessian approximation is positive-definite.  Therefore, we do a hard check on the direction of descent and negate it when necessary.  Historically, Toint and Steihaug give a description of truncated-CG in their respective papers.  For a modern treatment of truncated-CG see Conn, Gould, and Toint's book.  For a description of the truncated-MINRES algorithm, see Fong's Ph.D. thesis.
+    \begin{itemize}
+        \item \bibentry{toint1981truncated_cg}.
+        \item \bibentry{steihaug1983truncated_cg}.
+        \item \bibentry{fong2011minres_optimization}.
+        \item \bibentry{conn2000trust_region_methods}.
+    \end{itemize}}
+
+    \algorithmitem
+        {Interior-point method}
+        {Our interior point method is based on a new derivation of the primal-dual interior point equations based on pseduo-Euclidean-Jordan algebras.  We say {\it pseudo} because we do not require commutivity in the Jordan product.  Specifically, our derivation begins from the optimality conditions
+    \begin{align*} 
+        \nabla f(x) - h^\prime(x)^*z =& 0,\\
+        h(x)\succeq & 0,\\
+        z \succeq & 0,\\
+        h(x) \circ z = & 0
+    \end{align*} 
+    in the case of inequality constrained problems and
+    \begin{align*} 
+        \nabla f(x) + g^\prime(x)^*y - h^\prime(x)^*z =& 0,\\
+        g(x) = & 0,\\
+        h(x)\succeq & 0,\\
+        z \succeq & 0,\\
+        h(x) \circ z = & 0
+    \end{align*} 
+    in the case of constrained problems.  Here, $\circ$ denotes the Jordan product that we refer to as \textctref{prod}.  Since we use a composite-step SQP method for constrained problems, we ignore the feasibility condition, $g(x)=0$, in the constrained problem.  Simply, we handle feasiblity with respect to this constraint with the quasi-normal step.  This allows us to reduce both sets of optimality conditions to
+    \begin{align*} 
+        \textnormal{grad}(x,y) - h^\prime(x)^*z =& 0,\\
+        h(x)\succeq & 0,\\
+        z \succeq & 0,\\
+        h(x) \circ z = & 0
+    \end{align*} 
+    where
+    $$
+        \textnormal{grad}(x,y) = \left\{
+            \begin{array}{ll}
+                \nabla f(x) & \textnormal{Inequality constrained problems,}\\
+                \nabla f(x) + g^\prime(x)^*y & \textnormal{Constrained problems.}
+            \end{array}\right.
+    $$
+    Then, using a standard interior-point formulation, we perturb the optimality conditions into
+    \begin{align*} 
+        \textnormal{grad}(x,y) - h^\prime(x)^*z =& 0\\
+        h(x)\succ & 0\\
+        z \succ & 0\\
+        h(x) \circ z = & \mu e.
+    \end{align*} 
+    where $e$ denotes the identity element in the pseudo-Euclidean-Jordan algebra, which we refer to as \textctref{id}.  Next, we apply Newton's method to the nonlinear system of equations
+    \begin{align*} 
+        \textnormal{grad}(x,y) - h^\prime(x)^*z =& 0,\\
+        h(x) \circ z = & \mu e,
+    \end{align*}
+    which yields the system
+    $$
+        \begin{bmatrix}
+            \textnormal{hess}(x,y) & - h^\prime(x)^*\\
+            h^\prime(x) \cdot \circ z  & h(x)\circ \cdot
+        \end{bmatrix}
+        \begin{bmatrix}
+            \delta x\\
+            \delta z
+        \end{bmatrix}
+        =
+        \begin{bmatrix}
+            -\textnormal{grad}(x,y) + h^\prime(x)^*z\\
+            -h(x) \circ z + \mu e
+        \end{bmatrix}
+    $$
+    where
+    $$
+        \textnormal{hess}(x,y) = \left\{
+            \begin{array}{ll}
+                \nabla^2 f(x) & \textnormal{Inequality constrained problems,}\\
+                \nabla^2 f(x) + (g^{\prime\prime}(x)\cdot)^*y & \textnormal{Constrained problems.}
+            \end{array}\right.
+    $$
+    Using the second equation in the Newton system, we solve for $\delta z$ and find that
+    $$
+        \delta z =  -z + L(h(x))^{-1} (-h^\prime(x) \delta x \circ z + \mu e)
+    $$
+where $L(h(x))^{-1}$ denotes the inverse of the linear operator induced by the Jordan product, $\circ$, which we refer to as \textctref{linv}.  In other words, $h(x)\circ z=L(h(x))z$.  Then, we plug this equation into the first equation and reduce our Newton system to
+    $$
+        [\textnormal{hess}(x,y) + h^\prime(x)^* (L(h(x))^{-1} (h^\prime(x) \cdot \circ z)) ] \delta x =  -\textnormal{grad}(x,y) + \mu h^\prime(x)^* (L(h(x))^{-1} e).
+    $$
+    At this point, we solve the Newton system using our truncated-Krylov methods.
+
+        In order to maintain strict feasiblity of $h(x)$ and $z$ we conduct a positivity line search before the algorithm's globalization routines, which we refer to as \textctref{srch}.  In a trust-region method, this occurs before we check the actual versus predicted reduction.  In a line-search method, this occurs before the line search.  Based on the results of our positivity line search, we truncate the step.  In our \textctref{Rm} and \textctref{SQL} vector spaces, we use a closed form formula for linear and second-order cones and the Arnoldi algorithm for semidefinite cones.  Next, when we set \textctref{ipm} to \hyperref[itm:InteriorPointMethod]{\textct{PrimalDual}}, we conduct the line-search on both $\delta x$ and $\delta z$.  When we set \textctref{ipm} to \hyperref[itm:InteriorPointMethod]{\textct{Linked}}, we conduct a line-search on $\delta x$ that insures that both $x+\alpha \delta x$ and $-h^\prime(x) (\alpha \delta x) \circ z + \mu e$ remain positive.  Then, we set $z =  L(h(x))^{-1} (-h^\prime(x) \delta x \circ z + \mu e)$.  Finally, when we set \textctref{ipm} to \hyperref[itm:InteriorPointMethod]{\textct{LogBarrier}}, we conduct a line-search on $\delta x$ and set $z =  L(h(x))^{-1} e$.  
+
+        For globalization, in both trust-region and line-search methods, we modify our merit function with the addition of a barrier function, which we refer to as \textctref{barr}.  Specifically, we allow any barrier function such that $x\circ\nabla\textctref{barr}(x)=e$.  In our \textctref{Rm} and \textctref{SQL} vector spaces, we use the log-barrier functions:
+        $$\begin{array}{ll}
+            \textnormal{Linear} & \langle \log(x),e\rangle,\\
+            \textnormal{Quadratic} & \frac{1}{2} \log(x_0^2-\langle\bar{x},\bar{x}\rangle),\\
+            \textnormal{Semidefinite} & \log(\det(x)).
+        \end{array}$$
+where $\langle\cdot,\cdot\rangle$ refers to the $\ell^2$ inner product.  In order to compute the semidefinite barrier function, we Cholseki factor $x$ into $u^Tu$ since
+$$
+\log(\det(x)) = \log(\det(u^Tu)) = \log(\det(u^T)\det(u)) = \log(\det(u)^2) = 2 \log(\det(u))
+$$
+and the determinant of an upper triangular matrix can be calculated quickly.
+
+        As our final step, since we don't require our Jordan product to be commutative, we forcably symmetrize both $\delta x$ and $\delta z$ using the \textctref{symm} operator in our vector space. 
+
+        Historically, we are not the first to use Euclidan-Jordan algebras in an inerior point algorithm.  Alizadeh and Schmieta describe their use for semidefinite programming and Alizadeh and Goldfarb describe their use in second-order cone programming.  Nevertheless, we drop the communtivity requirement in our algorithm.  Part of the reason we drop the commutivity requirement is that in the SDP case we essentially generate the same optimality conditions as equation (4.10) in Helmberg, Rendl, Vanderbei, and Wolkowicz's SDP paper.  In fact, our symmetrization in the SQL vector space is identical to equation (4.30) in the same paper, which later became known as the HKM search direction.  Beyond the HKM symmetrization, we allow any similar symmetrization operator, which Zhang describes in his paper.
+    \begin{itemize} 
+        \item \bibentry{alizadeh2000sdp_euclidean_jordan}.
+        \item \bibentry{alizadeh2003socp}.
+        \item \bibentry{helmberg1996interior_point_sdp}.
+        \item \bibentry{zhang1998sdp_symmetrization}.
+    \end{itemize}}
+
+    \algorithmitem
+        {Inexact composite-step SQP}
+        {We implement a modified version of inexact composite-step SQP method that Ridzal devised in his Ph.D. thesis and later refined in a technical report by Ridzal, Aguil\'{o}, and Heinkenschloss.  Our implementation adds several safe-guards in order to more directly account for round-off error within the algorithm, which generally affects the augmented system solves.  As one example, when solving the augmented system for the quasi-normal step, if the Cauchy point brings us to optimality, GMRES may not be able to practically satisfy the tolerances the algorithm specifies.  Therefore, we detect this case directly and terminate the augmented system solve.
+    \begin{itemize}
+        \item \bibentry{ridzal2006trust_region_sqp}.
+        \item \bibentry{ridzal2011inexact_sqp}.
+    \end{itemize}}
 \end{boldlist}
 
 \clearpage

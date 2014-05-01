@@ -797,7 +797,7 @@ namespace Optizelle {
                         z+=log(x(blk,i));
                     break;
 
-                // z += 0.5 * log(x0^2-<xbar,xbar))
+                // z += 0.5 * log(x0^2-<xbar,xbar>)
                 case Cone::Quadratic: {
                     // Get the size of the bar part.
                     Natural mbar=m-1;

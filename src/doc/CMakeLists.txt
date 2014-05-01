@@ -35,6 +35,7 @@ set(RESTARTPATH
 add_latex_document(optizelle.tex DEFAULT_PDF
     CONFIGURE optizelle.tex
     USE_INDEX
+    BIBFILES optizelle.bib
 )
 install(
     FILES ${CMAKE_CURRENT_BINARY_DIR}/optizelle.pdf
