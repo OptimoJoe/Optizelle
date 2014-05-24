@@ -1350,7 +1350,7 @@ We discuss how to implement each of the above steps below.
         {m}
 \end{boldlist}
 
-\noindent In C++, we always require \textct{optizelle/optizelle.h}, but only require \textct{optizelle/json.h} when working with JSON and \textct{optizelle/vspaces.h} when using our default vector spaces such as \hyperref[itm:Rm]{\textct{Rm}} and \hyperref[itm:SQL]{\textct{SQL}}.  In Python, the module required by the structures below can be determined by the element in \textbf{Structure}.  For example, the structure \textct{Optizelle.Unconstrained.State.t} requires the module \textct{Optizelle.Unconstrained.State}.  Finally, in MATLAB/Octave, we encapsulate all of the required functions in the global variable \textct{Optizelle}.
+\noindent In C++, we always require \textct{optizelle/optizelle.h}, but only require \textct{optizelle/json.h} when working with JSON and \textct{optizelle/vspaces.h} when using our default vector spaces such as \textctref{Optizelle::Rm} and \textctref{Optizelle::SQL}.  In Python, the module required by the structures below can be determined by the element in \textbf{Structure}.  For example, the structure \textct{Optizelle.Unconstrained.State.t} requires the module \textct{Optizelle.Unconstrained.State}.  Finally, in MATLAB/Octave, we encapsulate all of the required functions in the global variable \textct{Optizelle}.
 
 \section{\secimportvs}\label{sec:importvs}
         In the optimization problems
@@ -1367,6 +1367,8 @@ Here, the spaces $X$, $Y$, and $Z$ denote {\it vector spaces}, more specifically
 
         A vector space consists of two separate pieces: the actual vector and the operations required to compute on this vector.  In Optizelle, we maintain this separation.  For $\re^m$, we provide reasonable implementations that use the following:
 \phantomsection\label{itm:Rm}
+\phantomsection\label{itm:Optizelle::Rm}
+\phantomsection\label{itm:Optizelle.Rm}
 \begin{boldlist}
     \vsitem
         {C++}
@@ -1793,7 +1795,7 @@ We implement this in our \exampleref{\secequality}{sec:equality} example with th
         {m}
 \end{boldlist}
 
-\noindent Here, \textct{XX}, \textct{YY}, and \text{ZZ} correspond to the vector spaces $X$, $Y$, and $Z$ described in the section \hyperref[sec:importvs]{\secimportvs}.  Likely, they are just \textct{Optizelle::Rm} or \textct{Optizelle.Rm}.  As a note, We use double letters in C++ to remind us that these spaces denote templates and not objects.  Next, the variable \textct{x} denotes an initial guess for the optimizzation problem.  This guess is very important to the performance of the algorithms, so choose wisely.  The variables \textct{y} and \textct{z} represent arbitrary elements in the codomain of $g$ and $h$, respectively.  We do not use the values of these variables, so any properly allocated vector works fine.  Finally, in Python and MATLAB/Octave, we require a \textctref{Messaging} object \textct{msg}.  In the simple case, we can simply use \textct{Optizelle.Messaging}.  For more complicated cases, see the section \hyperref[sec:messaging]{\secmessaging}.
+\noindent Here, \textct{XX}, \textct{YY}, and \text{ZZ} correspond to the vector spaces $X$, $Y$, and $Z$ described in the section \hyperref[sec:importvs]{\secimportvs}.  Likely, they are just \textctref{Optizelle::Rm} or \textctref{Optizelle.Rm}.  Next, the variable \textct{x} denotes an initial guess for the optimizzation problem.  This guess is very important to the performance of the algorithms, so choose wisely.  The variables \textct{y} and \textct{z} represent arbitrary elements in the codomain of $g$ and $h$, respectively.  We do not use the values of these variables, so any properly allocated vector works fine.  Finally, in Python and MATLAB/Octave, we require a \textctref{Messaging} object \textct{msg}.  In the simple case, we can simply use \textctref{Optizelle.Messaging()} in Python and \textctref{Optizelle.Messaging} in MATLAB/Octave.  For more complicated cases, see the section \hyperref[sec:messaging]{\secmessaging}.
 
         As an example, we create the optimization state in the \exampleref{\secrosenbrock}{sec:rosenbrock} example with the following code:
 \begin{boldlist}
@@ -1905,7 +1907,7 @@ This becomes the following in our \exampleref{\secequality}{sec:equality} exampl
         {0}
         {m}
 \end{boldlist}
-\noindent As was the case in the section \hyperref[sec:state]{\secstate}, \textct{XX}, \textct{YY}, and \text{ZZ} correspond to the vector spaces $X$, $Y$, and $Z$ described in the section \hyperref[sec:importvs]{\secimportvs}.  Likely, they are just \textct{Optizelle::Rm} or \textct{Optizelle.Rm}.  
+\noindent As was the case in the section \hyperref[sec:state]{\secstate}, \textct{XX}, \textct{YY}, and \text{ZZ} correspond to the vector spaces $X$, $Y$, and $Z$ described in the section \hyperref[sec:importvs]{\secimportvs}.  Likely, they are just \textctref{Optizelle::Rm} or \textctref{Optizelle.Rm}.
 
         Now, each of structures contains a number of required and optional elements.  We summarize these elements as follows:
 \begin{boldlist}
@@ -2008,7 +2010,7 @@ This becomes the following in our \exampleref{\secequality}{sec:equality} exampl
         {0}
         {m}
 \end{boldlist}
-\noindent As was the case in the section \hyperref[sec:state]{\secstate}, \textct{XX}, \textct{YY}, and \text{ZZ} correspond to the vector spaces $X$, $Y$, and $Z$ described in the section \hyperref[sec:importvs]{\secimportvs}.  Likely, they are just \textct{Optizelle::Rm} or \textct{Optizelle.Rm}.  Next, we call the function with a \textctref{Messaging} object, \textct{msg}.  In the simple case, we can simply use \textct{Optizelle::Messaging()} in C++, \textct{Optizelle.Messaging()} in Python, and \textct{Optizelle.Messaging} in MATLAB/Octave.  For more complicated cases, see the section \hyperref[sec:messaging]{\secmessaging}.  Finally, we pass in the state and bundle of functions that we discussed in the sections \hyperref[sec:state]{\secstate} and \hyperref[sec:fns]{\secfns}, respectively.
+\noindent As was the case in the section \hyperref[sec:state]{\secstate}, \textct{XX}, \textct{YY}, and \text{ZZ} correspond to the vector spaces $X$, $Y$, and $Z$ described in the section \hyperref[sec:importvs]{\secimportvs}.  Likely, they are just \textctref{Optizelle::Rm} or \textctref{Optizelle.Rm}.  Next, we call the function with a \textctref{Messaging} object, \textct{msg}.  In the simple case, we can simply use \textctref{Optizelle::Messaging()} in C++, \textctref{Optizelle.Messaging()} in Python, and \textctref{Optizelle.Messaging} in MATLAB/Octave.  For more complicated cases, see the section \hyperref[sec:messaging]{\secmessaging}.  Finally, we pass in the state and bundle of functions that we discussed in the sections \hyperref[sec:state]{\secstate} and \hyperref[sec:fns]{\secfns}, respectively.
         
         In our \exampleref{\secrosenbrock}{sec:rosenbrock} example, we call Optizelle's solver with the code:
 \begin{boldlist}
@@ -3067,6 +3069,10 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
 
         Messaging objects require two functions, \textct{print} and \textct{error}.  Both functions accept a string and print it accordingly.  In addition, \textct{error} must gracefully exit the optimization.  In code, we specify this object as:
 \phantomsection\label{itm:Messaging}
+\phantomsection\label{itm:Optizelle::Messaging}
+\phantomsection\label{itm:Optizelle::Messaging()}
+\phantomsection\label{itm:Optizelle.Messaging}
+\phantomsection\label{itm:Optizelle.Messaging()}
 \begin{boldlist}
     \apiitem
         {C++}
@@ -3342,6 +3348,7 @@ where we require $P$ to be nonsingular.}
 
         In the case of C++, we provide a built-in vector space for semidefinite, second-order cone, and linear (SQL) programs:
 \phantomsection\label{itm:SQL}
+\phantomsection\label{itm:Optizelle::SQL}
 \begin{boldlist}
     \vsitem
         {C++}
