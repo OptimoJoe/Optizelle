@@ -25,9 +25,9 @@ def getMin(*args):
     Y=args[1]
     Z=args[2]
     msg=args[3]
-    fns = args[4] if len(args)==6 else args[5]
-    state = args[5] if len(args)==6 else args[6]
-    smanip = Optizelle.StateManipulator() if len(args)==6 else args[4]
+    fns = args[4] 
+    state = args[5] 
+    smanip = Optizelle.StateManipulator() if len(args)==6 else args[6]
 
     # Check the arguments
     Optizelle.checkVectorSpace("X",X)
@@ -39,4 +39,4 @@ def getMin(*args):
     Optizelle.checkStateManipulator("smanip",smanip)
 
     # Call the optimization
-    Optizelle.Utility.ConstrainedAlgorithmsGetMin(X,Y,Z,msg,smanip,fns,state)
+    Optizelle.Utility.ConstrainedAlgorithmsGetMin(X,Y,Z,msg,fns,state,smanip)

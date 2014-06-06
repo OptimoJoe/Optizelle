@@ -48,7 +48,7 @@ Optizelle.InequalityConstrained.Algorithms.getMin(XX,ZZ,msg,fns,state)
 # Do a null optimization with a state manipulator 
 smanip = Optizelle.StateManipulator()
 #---SmanipSolver0---
-Optizelle.InequalityConstrained.Algorithms.getMin(XX,ZZ,msg,smanip,fns,state)
+Optizelle.InequalityConstrained.Algorithms.getMin(XX,ZZ,msg,fns,state,smanip)
 #---SmanipSolver1---
 
 # Read and write the state to file
