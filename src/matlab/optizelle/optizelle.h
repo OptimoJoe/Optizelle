@@ -1,5 +1,5 @@
 /*
-Copyright 2013 OptimoJoe.
+Copyright 2013-2014 OptimoJoe.
 
 For the full copyright notice, see LICENSE.
 
