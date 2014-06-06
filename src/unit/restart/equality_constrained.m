@@ -42,7 +42,7 @@ state = Optizelle.EqualityConstrained.Algorithms.getMin(XX,YY,msg,fns,state);
 smanip = Optizelle.StateManipulator;
 %---SmanipSolver0---
 state = Optizelle.EqualityConstrained.Algorithms.getMin( ...
-    XX,YY,msg,smanip,fns,state);
+    XX,YY,msg,fns,state,smanip);
 %---SmanipSolver1---
     
 % Read and write the state to file

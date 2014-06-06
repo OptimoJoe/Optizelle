@@ -232,7 +232,7 @@ fns.PH=RosenHInv()
 #---Solver0---
 # Solve the optimization problem
 Optizelle.Unconstrained.Algorithms.getMin(
-    MyVS,MyMessaging(),MyRestartManipulator(),fns,state)
+    MyVS,MyMessaging(),fns,state,MyRestartManipulator())
 #---Solver1---
 
 # Print out the reason for convergence

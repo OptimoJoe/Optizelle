@@ -12,7 +12,7 @@ import Optizelle.Unconstrained.Functions
 def getMin(*args):
     """Solves an unconstrained optimization problem
     Basic solve: getMin(X,msg,fns,state) 
-    Solve with a state manipulator: getMin(X,msg,smanip,fns,state)
+    Solve with a state manipulator: getMin(X,msg,fns,state,smanip)
     """
 
     # Check the number of arguments
@@ -23,9 +23,9 @@ def getMin(*args):
     # Extract the arguments
     X=args[0]
     msg=args[1]
-    fns = args[2] if len(args)==4 else args[3]
-    state = args[3] if len(args)==4 else args[4]
-    smanip = Optizelle.StateManipulator() if len(args)==4 else args[2]
+    fns = args[2] 
+    state = args[3] 
+    smanip = Optizelle.StateManipulator() if len(args)==4 else args[4]
 
     # Check the arguments
     Optizelle.checkVectorSpace("X",X)
@@ -35,4 +35,4 @@ def getMin(*args):
     Optizelle.checkStateManipulator("smanip",smanip)
 
     # Call the optimization
-    Optizelle.Utility.UnconstrainedAlgorithmsGetMin(X,msg,smanip,fns,state)
+    Optizelle.Utility.UnconstrainedAlgorithmsGetMin(X,msg,fns,state,smanip)

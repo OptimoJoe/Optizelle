@@ -55,7 +55,7 @@ Optizelle.Unconstrained.Algorithms.getMin(XX,msg,fns,state)
 # Do a null optimization with a state manipulator 
 smanip = Optizelle.StateManipulator()
 #---SmanipSolver0---
-Optizelle.Unconstrained.Algorithms.getMin(XX,msg,smanip,fns,state)
+Optizelle.Unconstrained.Algorithms.getMin(XX,msg,fns,state,smanip)
 #---SmanipSolver1---
 
 # Read and write the state to file
