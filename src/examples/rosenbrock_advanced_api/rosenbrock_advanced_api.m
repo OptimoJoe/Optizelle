@@ -194,7 +194,7 @@ function main(pname,rname)
     %---Solver0---
     % Solve the optimization problem
     state=Optizelle.Unconstrained.Algorithms.getMin( ...
-        MyVS(),MyMessaging(),MyRestartManipulator(),fns,state);
+        MyVS(),MyMessaging(),fns,state,MyRestartManipulator());
     %---Solver1---
     
     % Print out the reason for convergence

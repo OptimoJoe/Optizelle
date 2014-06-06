@@ -12,7 +12,7 @@ import Optizelle.InequalityConstrained.Functions
 def getMin(*args):
     """Solves an inequality constrained optimization problem
     Basic solve: getMin(X,Z,msg,fns,state) 
-    Solve with a state manipulator: getMin(X,Z,msg,smanip,fns,state)
+    Solve with a state manipulator: getMin(X,Z,msg,fns,state,smanip)
     """
 
     # Check the number of arguments
@@ -24,9 +24,9 @@ def getMin(*args):
     X=args[0]
     Z=args[1]
     msg=args[2]
-    fns = args[3] if len(args)==5 else args[4]
-    state = args[4] if len(args)==5 else args[5]
-    smanip = Optizelle.StateManipulator() if len(args)==5 else args[3]
+    fns = args[3] 
+    state = args[4] 
+    smanip = Optizelle.StateManipulator() if len(args)==5 else args[5]
 
     # Check the arguments
     Optizelle.checkVectorSpace("X",X)
@@ -38,4 +38,4 @@ def getMin(*args):
 
     # Call the optimization
     Optizelle.Utility.InequalityConstrainedAlgorithmsGetMin(
-        X,Z,msg,smanip,fns,state)
+        X,Z,msg,fns,state,smanip)

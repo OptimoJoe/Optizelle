@@ -4724,16 +4724,16 @@ namespace Optizelle{
                 EmptyManipulator <Unconstrained <Real,XX> > smanip;
 
                 // Minimize the problem
-                getMin(msg,smanip,fns,state);
+                getMin(msg,fns,state,smanip);
             }
             
             // Initializes remaining functions then solves an optimization
             // problem
             static void getMin(
                 Messaging const & msg,
-                StateManipulator <Unconstrained <Real,XX> > const & smanip,
                 typename Functions::t & fns,
-                typename State::t & state
+                typename State::t & state,
+                StateManipulator <Unconstrained <Real,XX> > const & smanip
             ){
                 // Initialize any remaining functions required for optimization 
                 Functions::init(msg,state,fns);
@@ -7756,17 +7756,17 @@ namespace Optizelle{
                 EmptyManipulator <EqualityConstrained <Real,XX,YY> > smanip;
 
                 // Minimize the problem
-                getMin(msg,smanip,fns,state);
+                getMin(msg,fns,state,smanip);
             }
             
             // Initializes remaining functions then solves an optimization
             // problem
             static void getMin(
                 Messaging const & msg,
-                StateManipulator <EqualityConstrained <Real,XX,YY> > const &
-                    smanip,
                 typename Functions::t & fns,
-                typename State::t & state
+                typename State::t & state,
+                StateManipulator <EqualityConstrained <Real,XX,YY> > const &
+                    smanip
             ){
                 
                 // Adds the output pieces to the state manipulator 
@@ -9455,17 +9455,17 @@ namespace Optizelle{
                 EmptyManipulator <InequalityConstrained <Real,XX,ZZ> > smanip;
 
                 // Minimize the problem
-                getMin(msg,smanip,fns,state);
+                getMin(msg,fns,state,smanip);
             }
             
             // Initializes remaining functions then solves an optimization
             // problem
             static void getMin(
                 Messaging const & msg,
-                StateManipulator <InequalityConstrained <Real,XX,ZZ> > const &
-                    smanip,
                 typename Functions::t & fns,
-                typename State::t & state
+                typename State::t & state,
+                StateManipulator <InequalityConstrained <Real,XX,ZZ> > const &
+                    smanip
             ){
                 // Adds the output pieces to the state manipulator 
                 DiagnosticManipulator <InequalityConstrained <Real,XX,ZZ> >
@@ -9860,16 +9860,16 @@ namespace Optizelle{
                 EmptyManipulator <Constrained <Real,XX,YY,ZZ> > smanip;
 
                 // Minimize the problem
-                getMin(msg,smanip,fns,state);
+                getMin(msg,fns,state,smanip);
             }
             
             // Initializes remaining functions then solves an optimization
             // problem
             static void getMin(
                 Messaging const & msg,
-                StateManipulator <Constrained <Real,XX,YY,ZZ> > const & smanip,
                 typename Functions::t & fns,
-                typename State::t & state
+                typename State::t & state,
+                StateManipulator <Constrained <Real,XX,YY,ZZ> > const & smanip
             ){
                 // Adds the output pieces to the state manipulator 
                 DiagnosticManipulator <Constrained <Real,XX,YY,ZZ> >

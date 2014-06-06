@@ -2240,12 +2240,12 @@ namespace Optizelle {
                     optizelle.push_back(mexGetVariable("global","Optizelle"));
 
                     // Calling convention should be
-                    // (X,msg,smanip,mxfns,mxstate) -> (mxstate_out)
+                    // (X,msg,mxfns,mxstate,smanip) -> (mxstate_out)
                     mxArray *X=pInput[0],
                             *msg_=pInput[1],
-                            *smanip_=pInput[2],
-                            *mxfns_=pInput[3],
-                            *mxstate_=pInput[4];
+                            *mxfns_=pInput[2],
+                            *mxstate_=pInput[3],
+                            *smanip_=pInput[4];
                     pOutput[0] = Unconstrained::State::mxCreate();
                     mxArray *mxstate_out_=pOutput[0];
 
@@ -2295,7 +2295,7 @@ namespace Optizelle {
                        
                         // Minimize
                         MxUnconstrained::Algorithms::getMin(
-                            msg,smanip,fns,state);
+                            msg,fns,state,smanip);
                         
                         // Convert the C++ state to a Matlab state
                         mxstate_out.toMatlab(state);
@@ -2887,13 +2887,13 @@ namespace Optizelle {
                     optizelle.push_back(mexGetVariable("global","Optizelle"));
 
                     // Calling convention should be
-                    // (X,Y,msg,smanip,mxfns,mxstate) -> (mxstate_out)
+                    // (X,Y,msg,mxfns,mxstate,smanip) -> (mxstate_out)
                     mxArray *X=pInput[0],
                             *Y=pInput[1],
                             *msg_=pInput[2],
-                            *smanip_=pInput[3],
-                            *mxfns_=pInput[4],
-                            *mxstate_=pInput[5];
+                            *mxfns_=pInput[3],
+                            *mxstate_=pInput[4],
+                            *smanip_=pInput[5];
                     pOutput[0] = EqualityConstrained::State::mxCreate();
                     mxArray *mxstate_out_=pOutput[0];
 
@@ -2945,7 +2945,7 @@ namespace Optizelle {
                        
                         // Minimize
                         MxEqualityConstrained::Algorithms::getMin(
-                            msg,smanip,fns,state);
+                            msg,fns,state,smanip);
                         
                         // Convert the C++ state to a Matlab state
                         mxstate_out.toMatlab(state);
@@ -3482,13 +3482,13 @@ namespace Optizelle {
                     optizelle.push_back(mexGetVariable("global","Optizelle"));
 
                     // Calling convention should be
-                    // (X,Z,msg,smanip,mxfns,mxstate) -> (mxstate_out)
+                    // (X,Z,msg,mxfns,mxstate,smanip) -> (mxstate_out)
                     mxArray *X=pInput[0],
                             *Z=pInput[1],
                             *msg_=pInput[2],
-                            *smanip_=pInput[3],
-                            *mxfns_=pInput[4],
-                            *mxstate_=pInput[5];
+                            *mxfns_=pInput[3],
+                            *mxstate_=pInput[4],
+                            *smanip_=pInput[5];
                     pOutput[0] = InequalityConstrained::State::mxCreate();
                     mxArray *mxstate_out_=pOutput[0];
 
@@ -3540,7 +3540,7 @@ namespace Optizelle {
                        
                         // Minimize
                         MxInequalityConstrained::Algorithms::getMin(
-                            msg,smanip,fns,state);
+                            msg,fns,state,smanip);
                         
                         // Convert the C++ state to a Matlab state
                         mxstate_out.toMatlab(state);
@@ -4017,14 +4017,14 @@ namespace Optizelle {
                     optizelle.push_back(mexGetVariable("global","Optizelle"));
 
                     // Calling convention should be
-                    // (X,Z,msg,smanip,mxfns,mxstate) -> (mxstate_out)
+                    // (X,Z,msg,mxfns,mxstate,smanip) -> (mxstate_out)
                     mxArray *X=pInput[0],
                             *Y=pInput[1],
                             *Z=pInput[2],
                             *msg_=pInput[3],
-                            *smanip_=pInput[4],
-                            *mxfns_=pInput[5],
-                            *mxstate_=pInput[6];
+                            *mxfns_=pInput[4],
+                            *mxstate_=pInput[5],
+                            *smanip_=pInput[6];
                     pOutput[0] = Constrained::State::mxCreate();
                     mxArray *mxstate_out_=pOutput[0];
 
@@ -4078,7 +4078,7 @@ namespace Optizelle {
                        
                         // Minimize
                         MxConstrained::Algorithms::getMin(
-                            msg,smanip,fns,state);
+                            msg,fns,state,smanip);
                         
                         // Convert the C++ state to a Matlab state
                         mxstate_out.toMatlab(state);

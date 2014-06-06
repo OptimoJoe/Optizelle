@@ -47,7 +47,7 @@ int main() {
     BlankManipulator <Optizelle::EqualityConstrained<Real,XX,YY> > smanip;
     //---SmanipSolver0---
     Optizelle::EqualityConstrained<Real,XX,YY>::Algorithms::getMin(
-        msg,smanip,fns,state);
+        msg,fns,state,smanip);
     //---SmanipSolver1---
 
     // Read and write the state to file

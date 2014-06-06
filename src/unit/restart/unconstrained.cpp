@@ -63,7 +63,7 @@ int main() {
     BlankManipulator <Optizelle::Unconstrained<Real,XX> > smanip;
     //---SmanipSolver0---
     Optizelle::Unconstrained<Real,XX>::Algorithms::getMin(
-        msg,smanip,fns,state);
+        msg,fns,state,smanip);
     //---SmanipSolver1---
 
     // Read and write the state to file

@@ -11,14 +11,12 @@ function self=ConstrainedAlgorithmsGetMin(varargin)
     Y=varargin{2};
     Z=varargin{3};
     msg=varargin{4};
+    fns = varargin{5};
+    state = varargin{6};
     if nargin==6
-        fns = varargin{5};
-        state = varargin{6};
         smanip = struct('eval',@(fns,state,loc)state);
     else
-        fns = varargin{6};
-        state = varargin{7};
-        smanip = varargin{5};
+        smanip = varargin{7};
     end
 
     % Check our arguments
@@ -26,9 +24,9 @@ function self=ConstrainedAlgorithmsGetMin(varargin)
     checkVectorSpace('Y',Y);
     checkVectorSpace('Z',Z);
     checkMessaging('msg',msg);
-    checkStateManipulator('smanip',smanip);
     checkConstrainedFunctionsT('fns',fns);
     checkConstrainedStateT('state',state);
+    checkStateManipulator('smanip',smanip);
 
     % Solve the optimization problem 
-    self=ConstrainedAlgorithmsGetMin_(X,Y,Z,msg,smanip,fns,state);
+    self=ConstrainedAlgorithmsGetMin_(X,Y,Z,msg,fns,state,smanip);
