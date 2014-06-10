@@ -32,24 +32,41 @@ macro(add_optizelle_json_test_matlab files executable)
 
             # Grab the particular unit test
             list(GET units ${index} unit)
+                
+            # Figure out whether we have MATLAB or Octave.  If is_matlab is
+            # negative we have Octave, otherwise we have MATLAB. 
+            string(TOLOWER ${MATLAB_EXECUTABLE} prog)
+            string(FIND ${prog} "matlab" is_matlab)
 
             # Run the optimization
             if (${num_extra_args} EQUAL 0)
-                add_test( "Execution_of_matlab_${unit}"
-                    ${MATLAB_EXECUTABLE} ${MATLAB_RUN_FLAG} 
-                    "${executable}('${unit}')")
+                if(${is_matlab} LESS 0)
+                    add_test( "Execution_of_matlab_${unit}"
+                        ${MATLAB_EXECUTABLE} "--eval" 
+                        "${executable}('${unit}'),exit")
+                else()
+                    add_test( "Execution_of_matlab_${unit}"
+                        ${MATLAB_EXECUTABLE} "-nosplash" "-nodesktop" "-r"
+                        "\"${executable}('${unit}'),exit\"")
+                endif()
             else()
                 list(GET extra_macro_args 0 optional_arg)
-                add_test( "Execution_of_matlab_${unit}"
-                    ${MATLAB_EXECUTABLE} ${MATLAB_RUN_FLAG} 
-                    "${executable}('${unit}','${optional_arg}')")
+                if(${is_matlab} LESS 0)
+                    add_test( "Execution_of_matlab_${unit}"
+                        ${MATLAB_EXECUTABLE} "--eval" 
+                        "${executable}('${unit}','${optional_arg}'),exit")
+                else()
+                    add_test( "Execution_of_matlab_${unit}"
+                        ${MATLAB_EXECUTABLE} "-nosplash -nodesktop -r"
+                        "\"${executable}('${unit}','${optional_arg}'),exit\"")
+                endif()
             endif()
 
             set_tests_properties("Execution_of_matlab_${unit}"
                 PROPERTIES ENVIRONMENT
                     "MATLABPATH=${CMAKE_BINARY_DIR}/src/matlab:${CMAKE_CURRENT_SOURCE_DIR}")
-            set_tests_properties("Execution_of_matlab_${unit}"
-                PROPERTIES ENVIRONMENT
+            set_property(TEST "Execution_of_matlab_${unit}"
+                APPEND PROPERTY ENVIRONMENT
                     "OCTAVE_PATH=${CMAKE_BINARY_DIR}/src/matlab:${CMAKE_CURRENT_SOURCE_DIR}")
 
             # Diff the result of the optimization against the known solution

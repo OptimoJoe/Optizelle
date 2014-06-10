@@ -156,7 +156,7 @@ function self = MyObj()
         H_dx = zeros(5,1);
         for i = 1:5 
             for j = 1:5 
-                H_dx(i) += H(ijtokp(i,j))*dx(j);
+                H_dx(i) = H_dx(i) + H(ijtokp(i,j))*dx(j);
             end
         end
     end
@@ -225,7 +225,8 @@ function self = MyEq()
         for i = 1:3,
             for j = 1:5,
                 for k = 1:5,
-                    z(itok(k)) += D(ijktol(i,j,k,3,5))*dx(itok(j))*dy(itok(i));
+                    z(itok(k)) = z(itok(k)) + ...
+                        D(ijktol(i,j,k,3,5))*dx(itok(j))*dy(itok(i));
                 end
             end
         end
