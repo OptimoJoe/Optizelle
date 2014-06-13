@@ -45,15 +45,3 @@ if(MATLAB_EXECUTABLE STREQUAL MATLAB_EXECUTABLE_UNDEFINED)
         "The MATLAB executable with full path must be defined in the variable MATLAB_EXECUTABLE.")
 endif()
 mark_as_advanced(FORCE MATLAB_EXECUTABLE)
-
-# Find the MATLAB executable 
-set(MATLAB_RUN_FLAG_UNDEFINED "MATLAB_RUN_FLAG-UNDEFINED")
-set(MATLAB_RUN_FLAG ${MATLAB_RUN_FLAG_UNDEFINED} CACHE STRING
-    "MATLAB command line flag to run a script (-r in MATLAB and --eval in Octave).")
-# Make sure that it is defined and throw an error message if it is not
-if(MATLAB_RUN_FLAG STREQUAL MATLAB_RUN_FLAG_UNDEFINED) 
-    mark_as_advanced(CLEAR MATLAB_RUN_FLAG)
-    message(FATAL_ERROR
-        "The MATLAB command line flag to run a script (-r in MATLAB and --eval in Octave) must be defined in the variable MATLAB_RUN_FLAG.")
-endif()
-mark_as_advanced(FORCE MATLAB_RUN_FLAG)

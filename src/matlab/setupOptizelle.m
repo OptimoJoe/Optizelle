@@ -19,18 +19,10 @@ dir = dir(1:end-15);
 dir = sprintf('%s/optizelle',dir);
 addpath(dir);
 
-% Flattens a cell array
-flattenCell=@(x)x{:};
-
 % Creates an enumerated type from a cell list of names
-createEnum = @(x)struct(flattenCell( ...
-    {x{:};flattenCell(num2cell(1:length(x)))}), ...
-    'to_string',@(i)x{i});
-
-% Merges two structures
-mergeStruct = @(s1,s2) struct(flattenCell(... 
-    {flattenCell(feval(@(x,y){x{:},y{:}},fieldnames(s1),fieldnames(s2)));...
-     flattenCell(feval(@(x,y){x{:},y{:}},struct2cell(s1),struct2cell(s2)))}));
+createEnum = @(x) cell2struct( ...
+    [num2cell(1:length(x)) {@(i)x{i}}], ...
+    [x,{'to_string'}],2);
 
 % Reasons we stop the Krylov method
 Optizelle.KrylovStop = createEnum( { ...
@@ -157,9 +149,9 @@ Optizelle.ScalarValuedFunction = struct( ...
 err_vvf=@(x)error(sprintf( ...
     'The %s function is not defined in a VectorValuedFunction.',x));
 Optizelle.VectorValuedFunction = struct( ...
-    'eval',@(x)err_vvf('eval'),
-    'p',@(x,dx)err_vvf('p'),
-    'ps',@(x,dy)err_vvf('ps'),
+    'eval',@(x)err_vvf('eval'), ...
+    'p',@(x,dx)err_vvf('p'), ...
+    'ps',@(x,dy)err_vvf('ps'), ...
     'pps',@(x,dx,dy)err_vvf('pps'));
 %---VectorValuedFunction1---
 
@@ -365,4 +357,19 @@ Optizelle.json.Constrained.write_restart = @ConstrainedRestartWriteRestart;
 
 % Reads a json restart file
 Optizelle.json.Constrained.read_restart = @ConstrainedRestartReadRestart;
+end
+
+end
+
+% Merges two structures
+function ret=mergeStruct(s1,s2)
+    % Find the field names and data 
+    data = [struct2cell(s1)' struct2cell(s2)'];
+    fields = [fieldnames(s1)' fieldnames(s2)'];
+
+    % Figure out the unique elements
+    [fields i] = unique(fields);
+
+    % Merge the unique elements
+    ret=cell2struct(data(i),fields,2);
 end

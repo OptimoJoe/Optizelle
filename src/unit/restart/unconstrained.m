@@ -71,7 +71,7 @@ params = Optizelle.Unconstrained.Restart.Params;
 
 % Check that we have the correct number of vectors
 if length(xs) ~= 6
-    msg.error("The list xs contains the wrong number of vectors.");
+    msg.error('The list xs contains the wrong number of vectors.');
 end
 
 % Modify some vectors 
