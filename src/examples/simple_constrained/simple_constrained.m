@@ -110,7 +110,7 @@ function main(fname)
     fns.h = MyIneq();
 
     % Solve the optimization problem
-    state = Optizelle.Constrained.Algorithms.getMin(
+    state = Optizelle.Constrained.Algorithms.getMin( ...
         Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,fns,state);
 
     % Print out the reason for convergence
