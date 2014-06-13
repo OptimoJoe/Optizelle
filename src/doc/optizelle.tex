@@ -1118,9 +1118,13 @@ On Windows, if not using Cygwin, execute the following commands:
         {\textctref{ENABLE_MATLAB}}
         {None}
         {Yes }
-        {Path that indicates where the MATLAB/Octave header
-        \textct{mex.h} has been installed.  We do not prefix these 
-        headers, so we look directly in the directory provided here.}
+        {Path that indicates where the MATLAB/Octave header \textct{mex.h} has
+        been installed.  We do not prefix these headers, so we look directly in
+        the directory provided here.  In MATLAB, this is generally the
+        \textct{extern/include} directory inside the primary MATLAB directory.
+        In Octave, this is the folder called \textct{octave-x.x.x/octave}
+        inside the system \textct{include} directory where \textct{x.x.x}
+        denotes the version number.}
 
     \cmakeitem
         {MATLAB_LIBRARY}
@@ -1129,8 +1133,15 @@ On Windows, if not using Cygwin, execute the following commands:
         {\textctref{ENABLE_MATLAB}}
         {None}
         {Yes}
-        {Complete path and library for MATLAB/Octave (\textct{mex}
-        for MATLAB and \textct{octinterp} for Octave.)}
+        {Complete path and library for MATLAB/Octave.  Generally, this is
+        \textct{mex} for MATLAB and \textct{octinterp} for Octave.  Sometimes
+        on Windows, we have to include the \textct{mx} library as well.  If
+        compilation fails and there are several undefined symbols with prefixed
+        with mx, then add the \textct{mx} library and separate it from
+        \texct{mex} with a semicolon.  For MATLAB, these libraries are
+        generally found nested within the \textct{bin} directory in the primary
+        MATLAB folder.  In Octave, these libraries are found nested within the
+        \textct{octave} directory inside the system \textct{lib} directory.}
 
     \cmakeitem
         {MATLAB_EXECUTABLE}
