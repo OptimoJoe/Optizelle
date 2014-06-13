@@ -46,7 +46,7 @@ macro(add_optizelle_json_test_matlab files executable)
                         "${executable}('${unit}'),exit")
                 else()
                     add_test( "Execution_of_matlab_${unit}"
-                        ${MATLAB_EXECUTABLE} "-nosplash" "-nodesktop" "-r"
+                        ${MATLAB_EXECUTABLE} "-nosplash -nodesktop -r"
                         "\"${executable}('${unit}'),exit\"")
                 endif()
             else()
