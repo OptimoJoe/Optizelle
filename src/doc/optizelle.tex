@@ -156,8 +156,8 @@
 
 % Function bundle items
 \newcommand{\functionitem}[5]{
-    \item[Element] #1
-    \item[Type] #2
+    \item[Element] \index{Functions, User Defined!\textct{#1}}{\textctlabel{#1}}
+    \item[Type] \textctref{#2}
     \item[\mbox{Problem Class}] #3
     \item[Required] #4
     \item[Description] #5
@@ -387,6 +387,32 @@
         \end{minipage}
     \item[]}
 
+\newcommand{\restartitemlong}[5]{
+    \item[Language] #1
+    \item[Code]
+        \begin{minipage}[t]{\textwidth}\vspace{\dimexpr-\medskipamount-2ex}
+            \lstinputlisting[style=#2,linerange={#3},widthgobble=#4*4]{@RESTARTPATH@/unconstrained.#5}
+        \end{minipage}
+
+        \bigskip
+
+        \begin{minipage}[t]{\textwidth}\vspace{\dimexpr-\medskipamount-2ex}
+            \lstinputlisting[style=#2,linerange={#3},widthgobble=#4*4]{@RESTARTPATH@/equality_constrained.#5}
+        \end{minipage}
+
+        \bigskip
+
+        \begin{minipage}[t]{\textwidth}\vspace{\dimexpr-\medskipamount-2ex}
+            \lstinputlisting[style=#2,linerange={#3},widthgobble=#4*4]{@RESTARTPATH@/inequality_constrained.#5}
+        \end{minipage}
+
+        \bigskip
+
+        \begin{minipage}[t]{\textwidth}\vspace{\dimexpr-\medskipamount-2ex}
+            \lstinputlisting[style=#2,linerange={#3},widthgobble=#4*4]{@RESTARTPATH@/constrained.#5}
+        \end{minipage}
+    \item[]}
+
 \newcommand{\restartitemalt}[5]{
     \item[Language] #1
     \item[Code]
@@ -503,7 +529,7 @@
 \newcommand{\uncGradLag}[1]{\nabla f(#1)}
 \newcommand{\uncHessVec}[1]{\hyperref[itm:H_type]{H}(#1)\textctref{dx}}
 
-\newcommand{\ineqMerit}[1]{f(#1) - \textctref{mu} \cdot \textct{Z::barr}(h(#1))}
+\newcommand{\ineqMerit}[1]{f(#1) - \textctref{mu} \cdot \textctref{barr}(h(#1))}
 \newcommand{\ineqGradLag}[2]{\nabla f(#1)-h^\prime(#1)^*#2}
 \newcommand{\ineqGradSchur}[1]{\nabla f(#1)-\textctref{mu}\cdot h^\prime(#1)^*L(h(#1))^{-1}e}
 \newcommand{\ineqHessVec}[2]{\hyperref[itm:H_type]{H}(#1)\textctref{dx}+h^\prime(#1)^*L(h(#1))^{-1} (h^\prime(#1) \textctref{dx} \circ #2)}
@@ -512,7 +538,7 @@
 \newcommand{\eqGradLag}[2]{\nabla f(#1)+g^\prime(#1)^*#2}
 \newcommand{\eqHessVec}[2]{\hyperref[itm:H_type]{H}(#1)\textctref{dx}+(g^{\prime\prime}(#1)\textctref{dx})^*#2}
 
-\newcommand{\conMerit}[2]{f(#1) + \langle #2,g(#1) \rangle + \textctref{rho} || g(#1) ||^2 - \textctref{mu} \cdot \textct{Z::barr}(h(#1))}
+\newcommand{\conMerit}[2]{f(#1) + \langle #2,g(#1) \rangle + \textctref{rho} || g(#1) ||^2 - \textctref{mu} \cdot \textctref{barr}(h(#1))}
 \newcommand{\conGradLag}[3]{\nabla f(#1)+g^\prime(#1)^*#2-h^\prime(#1)^*#3}
 \newcommand{\conGradSchur}[2]{\nabla f(#1)+g^\prime(#1)^*#2-\textctref{mu}\cdot h^\prime(#1)^*L(h(#1))^{-1}e}
 \newcommand{\conHessVec}[3]{\hyperref[itm:H_type]{H}(#1)\textctref{dx}+(g^{\prime\prime}(#1)\textctref{dx})^*#2+h^\prime(#1)^*L(h(#1))^{-1} (h^\prime(#1) \textctref{dx} \circ #3)}
@@ -660,11 +686,15 @@ In short, Optizelle is free to use in both open and closed sourced codes.  If yo
 
 \section{Support}
         
-        News, updates, download information, and support forums for Optizelle can be found at
+        News, updates, and download information for Optizelle can be found at
 \begin{center}
-    \mbox{\url{http://www.optimojoe.com/optizelle}}
+    \mbox{\url{http://www.optimojoe.com/products/optizelle}}
 \end{center}
-If you are interested in paid support and consulting, please contact us at \mbox{\href{mailto:contact@optimojoe.com}{contact@optimojoe.com}}.
+Our user forum can be found at
+\begin{center}
+    \mbox{\url{http://forum.optimojoe.com}}
+\end{center}
+Finally, if you are interested in paid support and consulting, please contact us at \mbox{\href{mailto:contact@optimojoe.com}{contact@optimojoe.com}}.
 
 \section{Brief example}\examplelabel{\secrosenbrock}{sec:rosenbrock}
 
@@ -741,7 +771,7 @@ The optimal point is: (1,1)
 
         Optizelle can be downloaded from
 \begin{center}
-    \mbox{\url{http://www.optimojoe.com/optizelle}}
+    \mbox{\url{http://www.optimojoe.com/products/optizelle}}
 \end{center}
 as a zipped archive.  Here, we also provide direct access to our source code repository.
 
@@ -980,8 +1010,9 @@ On Windows, if not using Cygwin, execute the following commands:
         order to successfully compile a LAPACK dependent application.
         For example, using ATLAS LAPACK, one possible entry is:
         \begin{center}
-            \textct{/usr/lib/liblapack.a;/usr/lib/libgfortran.so.3}
-        \end{center}}
+            \textct{/usr/lib/liblapack.a;/usr/lib/libgfortran.a}
+        \end{center}
+        Note, this example assumes that we include \textct{libatlas.a} in our \textctref{BLAS_LIBRARY} filepath.}
 
     \cmakeitem
         {JSONCPP_INCLUDE_DIR}
@@ -1095,7 +1126,7 @@ On Windows, if not using Cygwin, execute the following commands:
         {\textctref{MATLAB_MEX_EXTENSION},
             \textctref{MATLAB_INCLUDE_DIR},
             \textctref{MATLAB_LIBRARY},
-            \textctref{MATLAB_EXECUTABLE},
+            \textctref{MATLAB_EXECUTABLE},\linebreak
             \textctref{ENABLE_MATLAB_EXAMPLES},
             \textctref{ENABLE_MATLAB_UNIT}}
         {No}
@@ -1135,10 +1166,10 @@ On Windows, if not using Cygwin, execute the following commands:
         {Yes}
         {Complete path and library for MATLAB/Octave.  Generally, this is
         \textct{mex} for MATLAB and \textct{octinterp} for Octave.  Sometimes
-        on Windows, we have to include the \textct{mx} library as well.  If
+        on MATLAB, we have to include the \textct{mx} library as well.  If
         compilation fails and there are several undefined symbols with prefixed
         with mx, then add the \textct{mx} library and separate it from
-        \texct{mex} with a semicolon.  For MATLAB, these libraries are
+        \textct{mex} with a semicolon.  For MATLAB, these libraries are
         generally found nested within the \textct{bin} directory in the primary
         MATLAB folder.  In Octave, these libraries are found nested within the
         \textct{octave} directory inside the system \textct{lib} directory.}
@@ -1285,7 +1316,7 @@ Note, when we say \$\{\textctref{CMAKE_INSTALL_PREFIX}\}, we mean the actual tex
 \begin{center}
     \textct{xargs rm < install_manifest.txt}
 \end{center}
-from the CMake build directory. 
+from the CMake build directory.  On Windows, just delete the directory specified in the \textctref{CMAKE_INSTALL_PREFIX} variable, unless you share this directory with other utilities that respect the POSIX directory structure.  If this is the case, delete the files and directories found in the \textct{install_manifest.txt} file by hand.  Finally, on all platforms, remove any environment variables added by hand, which we describe in the section \hyperref[sec:installing]{Installing}.
 
 \section{Distributing}
 
@@ -1365,7 +1396,7 @@ We discuss how to implement each of the above steps below.
 \end{align*}
 Here, the spaces $X$, $Y$, and $Z$ denote {\it vector spaces}, more specifically, Hilbert spaces.  For most problems, these vector spaces just denote $\re^m$, but we also allow these vector spaces to be spaces of functions such as $L^2(\Omega)$ or matrices such as $\re^{m\times n}$ as long as they contain the necessary operations that we describe in the section \hyperref[sec:customvector]{\seccustomvector}.
 
-        A vector space consists of two separate pieces: the actual vector and the operations required to compute on this vector.  In Optizelle, we maintain this separation.  For $\re^m$, we provide reasonable implementations that use the following:
+        A vector space consists of two separate pieces: the actual vector and the operations required to compute on this vector.  In Optizelle, we maintain this separation.  For $\re^m$, we provide a reasonable implementation of the vector space with the following: 
 \phantomsection\label{itm:Rm}
 \phantomsection\label{itm:Optizelle::Rm}
 \phantomsection\label{itm:Optizelle.Rm}
@@ -1383,7 +1414,7 @@ Here, the spaces $X$, $Y$, and $Z$ denote {\it vector spaces}, more specifically
         {\textct{[]} (column vector)}
         {\textct{Optizelle.Rm}}
 \end{boldlist}
-\noindent To be precise, each of these vector spaces uses the inner product $\langle x,y\rangle=x^Ty$ and defines inequalities pointwise, $x\succeq y \Longleftrightarrow x_i \geq y_i$ for all $1\leq i\leq m$.  Note, we don't require users to use these vector operations in their code.  Simply, if we're happy with using the above vectors, we can use these operations exclusively in Optizelle and forget their details. 
+\noindent To be precise, each of these vector spaces uses the inner product $\langle x,y\rangle=x^Ty$ and defines inequalities pointwise, $x\succeq y \Longleftrightarrow x_i \geq y_i$ for all $1\leq i\leq m$.  Note, we don't require users to use these vector operations in their code.  Simply, if we're happy using the above vectors, we can use these operations exclusively in Optizelle and forget their details. 
 
 \section{\secobjective}\label{sec:objective}
 
@@ -1412,6 +1443,7 @@ Then, we have that
 \end{align*}
         
         In code, we specify this function as:
+\phantomsection\label{itm:ScalarValuedFunction}
 \begin{boldlist}
     \apiitem
         {C++}
@@ -1506,9 +1538,9 @@ We implement this function with the code:
 \begin{center}
     \usebox{\boxOptimizationTypes}
 \end{center}
-\noindent the vector-valued functions $g:X\rightarrow Y$ and $h:X\rightarrow Z$ denote the \textit{equality} and \textit{inequality constraints}, respectfully.
+\noindent the vector-valued functions $g:X\rightarrow Y$ and $h:X\rightarrow Z$ denote the \textit{equality} and \textit{inequality constraints}, respectfully.  Here, we allow the equality constraints to be nonlinear, but require that the inequality constraints be affine.  Recall, an affine function is one where $h(\alpha x+(1-\alpha)x)=\alpha h(x)+(1-\alpha)h(y)$ for all $\alpha\in\re$ or equivalently where $h^{\prime\prime}(x)=0$.  We require affine inequality constraints in order to simplify the line search that maintains the nonnegativity of the inequality constraints.
 
-        Here, we allow the equality constraints to be nonlinear, but require that the inequality constraints be affine.  Recall, an affine function is one where $h(\alpha x+(1-\alpha)x)=\alpha h(x)+(1-\alpha)h(y)$ for all $\alpha\in\re$ or equivalently where $h^{\prime\prime}(x)=0$.  Note, we require affine inequality constraints in order to simplify the line search that maintains the nonnegativity of the inequality constraints.  In case we have a nonlinear inequality constraint, we must reformulate the problem in order to make it affine.  The easiest method for doing so is through the reformulations 
+        In case we have a nonlinear inequality constraint, we must reformulate the problem in order to make it affine.  The easiest method for doing so is through the reformulations 
 $$\left.\begin{array}{rcl}
         \min\limits_{x\in X} && f(x)\\
         \st && h(x)\succeq 0
@@ -1532,7 +1564,7 @@ $$\left.\begin{array}{rcl}
             && z\succeq 0.
 \end{array}\right.$$
 
-        Similar to the objective function, we require derivative information in order optimize effectively.  Specifically, we require the evaluation, $g(x)$, Fr\'{e}chet (total) derivative applied to a vector, $g^\prime(x)\delta x$, and the adjoint of the Fr\'{e}chet derivative applied to a vector, $g^\prime(x)^*\delta y$.  In order to use second order algorithms, we also require the second derivative operation $(g^{\prime\prime}(x)\delta x)^*\delta y$.  Note, we require the same operations from $h$, but since $h$ is affine, $(h^{\prime\prime}(x)\delta x)^*\delta z=0$.  In the case that $g:\re^m\rightarrow\re^n$, the derivation of these derivatives is quite simple.  Here, we write $g$ as
+        Similar to the objective function, we require derivative information in order optimize effectively.  Specifically, we require the evaluation, $g(x)$, Fr\'{e}chet (total) derivative applied to a vector, $g^\prime(x)\delta x$, and the adjoint of the Fr\'{e}chet derivative applied to a vector, $g^\prime(x)^*\delta y$.  In order to use second order algorithms, we also require the second derivative operation $(g^{\prime\prime}(x)\delta x)^*\delta y$.  Note, we require the same operations from $h$, but since $h$ is affine, $(h^{\prime\prime}(x)\delta x)^*\delta z=0$.  In the case that $g:\re^m\rightarrow\re^n$ and we use the inner product $\langle x,y\rangle=x^Ty$ for both $\re^m$ and $\re^n$, the derivation of these derivatives is quite simple.  Here, we write $g$ as
 $$
     g(x)=\begin{bmatrix}
         g_1(x)\\
@@ -1553,7 +1585,8 @@ This means that we have
     (g^{\prime\prime}(x)\delta x)^*\delta y =& \sum_{i=1}^n \delta y_i \nabla^2 g_i(x) \delta x.
 \end{align*}
 
-        In code, this becomes:
+        In code, these derivatives become:
+\phantomsection\label{itm:VectorValuedFunction}
 \begin{boldlist}
     \apiitem
         {C++}
@@ -1641,7 +1674,7 @@ $$\begin{bmatrix}
         I & g^\prime(x)^*\\
         g^\prime(x) & 0
 \end{bmatrix}.$$
-As it happens, if $g\prime(x)$ is full-rank, the preconditioner
+As it happens, if $g^\prime(x)$ is full-rank, the preconditioner
 $$\begin{bmatrix}
         I & 0\\ 
         0 & (g^\prime(x)g^\prime(x)^*)^{-1} 
@@ -1671,6 +1704,7 @@ This gives us the preconditioners
 In theory, we can use a Choleski factorization to solve this system.  The problem with this approach is that the Choleski factorization will fail when $g^\prime(x)$ is not full rank.  Generally, we find it easier to fix a failing forward or back solve, as is the case with a QR or LU factorization, than to fix a failing factorization.
 
         In code, we represent preconditioners as a generic linear operator:
+\phantomsection\label{itm:Operator}
 \begin{boldlist}
     \apiitem
         {C++}
@@ -1912,48 +1946,48 @@ This becomes the following in our \exampleref{\secequality}{sec:equality} exampl
         Now, each of structures contains a number of required and optional elements.  We summarize these elements as follows:
 \begin{boldlist}
     \functionitem
-        {\textct{f}}
-        {\textct{ScalarValuedFunction}}
+        {f}
+        {ScalarValuedFunction}
         {Unconstrained, Equality Constrained, Inequality Constrained, Constrained}
         {Yes}
         {Objective function.}
 
     \functionitem
-        {\textct{PH}}
-        {\textct{Operator}}
+        {PH}
+        {Operator}
         {Unconstrained, Equality Constrained, Inequality Constrained, Constrained}
         {No}
         {Preconditioner for the Hessian of the objective function, $\nabla^2 f(x)$.}
 
     \functionitem
-        {\textct{g}}
-        {\textct{VectorValuedFunction}}
+        {g}
+        {VectorValuedFunction}
         {Equality Constrained, Constrained}
         {Yes}
         {Equality constraint.}
 
     \functionitem
-        {\textct{PSchur_left}}
-        {\textct{Operator}}
+        {PSchur_left}
+        {Operator}
         {Equality Constrained, Constrained}
         {No}
         {Left Schur preconditioner for derivative of the equality constraint, $g^\prime(x)g^\prime(x)^*$.}
 
     \functionitem
-        {\textct{PSchur_right}}
-        {\textct{Operator}}
+        {PSchur_right}
+        {Operator}
         {Equality Constrained, Constrained}
         {No}
         {Right Schur preconditioner for derivative of the equality constraint, $g^\prime(x)g^\prime(x)^*$.}
 
     \functionitem
-        {\textct{h}}
-        {\textct{VectorValuedFunction}}
+        {h}
+        {VectorValuedFunction}
         {Inequality Constrained, Constrained}
         {Yes}
         {Inequality constraint.}
 \end{boldlist}
-\noindent In C++, we represent each of the these elements as a \textct{std::unique_ptr} using the type specified above.  In Python, we use simple class elements.  In MATLAB/Octave, we use a structure array.  As a final note, since they are optional, we do \textbf{not} utilize \textct{PH}, \textct{PSchur_left}, or \textct{PSchur_right} by default even when they are defined.  In order to active these functions, we must modify the \textct{PH_type}, \textct{PSchur_left_type}, and \textct{PSchur_right_type} elements in the state, respectively.  We describe these variables in the chapter \hyperref[ch:params]{\chparams}.
+\noindent In C++, we represent each of the these elements as a \textct{std::unique_ptr} using the type specified above.  In Python, we use simple class elements.  In MATLAB/Octave, we use a structure array.  As a final note, since they are optional, we do \textbf{not} utilize \textctref{PH}, \textctref{PSchur_left}, or \textctref{PSchur_right} by default even when they are defined.  In order to active these functions, we must modify the \textctref{PH_type}, \textctref{PSchur_left_type}, and \textctref{PSchur_right_type} elements in the state, respectively.  We describe these variables in the chapter \hyperref[ch:params]{\chparams}.
 
         In our \exampleref{\secrosenbrock}{sec:rosenbrock} example, we accumulate our functions with the following code:
 \begin{boldlist}
@@ -2137,23 +2171,23 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
 
     \typeitem
         {Enumerated}
-        {Enumerated type.  In C++, we use an \textct{enum} type called \textct{t} wrapped inside a namespace that we type explicitly to \textct{Natural}.  For example, we refer to the algorithm class as \textctref{AlgorithmClass} and define its type as \textct{AlgorithmClass::t}.  Then, we refer to the enumerated values as 
+        {Enumerated type.  In C++, we use an \textct{enum} type called \textct{t} wrapped inside a namespace that we type explicitly to \textct{Natural}.  For example, we refer to the algorithm class as \textctref{AlgorithmClass} and define its type as \textct{AlgorithmClass::t}.  Then, we refer to the enumerated values as:
         \begin{itemize}
-            \item \textct{AlgorithmClass::TrustRegion},
-            \item \textct{AlgorithmClass::LineSearch},
-            \item \textct{AlgorithmClass::UserDefined}.
+            \item \textct{AlgorithmClass::TrustRegion}
+            \item \textct{AlgorithmClass::LineSearch}
+            \item \textct{AlgorithmClass::UserDefined}
         \end{itemize}
-        In Python, we use integers, which we wrap inside of a class.  For example, the class \textct{AlgorithmClass} contains three integer values that we access with
+        In Python, we use integers, which we wrap inside of a class.  For example, the class \textct{AlgorithmClass} contains three integer values that we access with:
         \begin{itemize} 
-            \item \textct{AlgorithmClass.TrustRegion},
-            \item \textct{AlgorithmClass.LineSearch},
-            \item \textct{AlgorithmClass.UserDefined}.
+            \item \textct{AlgorithmClass.TrustRegion}
+            \item \textct{AlgorithmClass.LineSearch}
+            \item \textct{AlgorithmClass.UserDefined}
         \end{itemize}
-        In MATLAB/Octave, we use floating point numbers, which we wrap inside of a structured array.  For example, the structure array \textct{AlgorithmClass} contains three floating point values that we designate as
+        In MATLAB/Octave, we use floating point numbers, which we wrap inside of a structured array.  For example, the structure array \textct{AlgorithmClass} contains three floating point values that we designate as:
         \begin{itemize} 
-            \item \textct{AlgorithmClass.TrustRegion},
-            \item \textct{AlgorithmClass.LineSearch},
-            \item \textct{AlgorithmClass.UserDefined}.
+            \item \textct{AlgorithmClass.TrustRegion}
+            \item \textct{AlgorithmClass.LineSearch}
+            \item \textct{AlgorithmClass.UserDefined}
         \end{itemize}
         In all cases, we also provide a function called \textct{to_string} in the class or namespace that converts the enumerated type to a string with the name of the enumerated element.  Using our previous example of \textctref{AlgorithmClass}, in C++ we use
         \begin{center}
@@ -2214,9 +2248,9 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
     
     \enumitem {DiagnosticScheme}
     
-    \enumitemvspace {KrylovStop}
+    \enumitemlinalg {KrylovStop}
     
-    \enumitemlinalg {Cone}
+    \enumitemvspace {Cone}
 \end{boldlist}
         
         Based on these types, we catalog the precise meaning of our parameters below.  As a note, the field \textbf{JSON Param} denotes whether or not we allow the parameter to be set in the JSON file described in the section \hyperref[sec:params]{\secparams}.  Generally, these settable parameters correspond to parameters that tune the behavior the algorithms.  The other parameters correspond to internal quantities that assist in diagnostics or advanced heuristics.
@@ -2292,7 +2326,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {krylov_iter}
         {Natural}
         {No}
-        {Current number of iterations taken by the truncated Krylov methods, conjugate direction and MINRES, when solving the optimality conditions.  We output \textctref{krylov_iter} at each iteration under the label \textctrefalt{KryIter}.} 
+        {Current number of iterations taken by the truncated Krylov solver, \textctref{krylov_solver}, when solving the optimality conditions.  We output \textctref{krylov_iter} at each iteration under the label \textctrefalt{KryIter}.} 
     
     \paramitemu
         {krylov_iter_max}
@@ -2482,7 +2516,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
                 {$\ineqMerit{\textctref{x}},$}
                 {$\conMerit{\textctref{x}}{\textctref{y}}.$}
         \end{boldlist}
-        As a note, we output the value of the merit function at each iteration under the label \textctrefalt{merit(x)} and \textctref{ared} under the label \textctrefalt{ared}.}
+        Here, \textctref{barr} refers to the barrier function, which we describe in the section \hyperref[sec:customvector]{\seccustomvector}.  As a note, we output the value of the merit function at each iteration under the label \textctrefalt{merit(x)} and \textctref{ared} under the label \textctrefalt{ared}.}
 
     \paramitemu
         {pred}
@@ -2516,7 +2550,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
                     +\frac{1}{2}\langle \conHessVec{\textctref{x}}{\textctref{y}}{\textctref{z}},\textctref{dx}\rangle.
                 \end{array}$$}
         \end{boldlist}
-        As a note, we output \textctref{pred} at each iteration under the label \textctrefalt{pred}.}
+        Here, $\circ$ denotes the Jordan product, \textctref{prod}; $L(h(x))^{-1}$ denotes the inverse of the linear operator induced by the Jordan product, \textctref{linv}; $e$ denotes the identity element in the pseudo-Euclidean-Jordan algebra, \textctref{id}; and \textctref{barr} denotes the barrier function.  We describe each of these operations further in the section \hyperref[sec:customvector]{\seccustomvector}.  As a note, we output \textctref{pred} at each iteration under the label \textctrefalt{pred}.}
 
     \paramitemu
         {rejected_trustregion}
@@ -2540,14 +2574,15 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {c1}
         {Real}
         {Yes}
-        {Sufficient decrease parameter.  We only take a step when $\hyperref[itm:ared]{\textct{merit}}(\textctref{x}+\textctref{alpha}\cdot\textctref{dx}) < \hyperref[itm:ared]{\textct{merit}}(\textctref{x})+\textctref{c1}\cdot\textctref{alpha}\langle\tilde{x},\textctref{dx}\rangle$ where we define $\tilde{x}$ as
+        {Sufficient decrease parameter.  When we set \textctref{algorithm_class} to \hyperref[itm:AlgorithmClass]{LineSearch}, we only take a step when $\hyperref[itm:ared]{\textct{merit}}(\textctref{x}+\textctref{alpha}\cdot\textctref{dx}) < \hyperref[itm:ared]{\textct{merit}}(\textctref{x})+\textctref{c1}\cdot\textctref{alpha}\langle\tilde{x},\textctref{dx}\rangle$ where we define $\tilde{x}$ as
         \begin{boldlist}
             \formitem
                 {$\uncGradLag{\textctref{x}},$}
                 {$\eqGradLag{\textctref{x}}{\textctref{y}},$}
                 {$\ineqGradSchur{\textctref{x}},$}
                 {$\conGradSchur{\textctref{x}}{\textctref{y}}.$}
-        \end{boldlist}}
+        \end{boldlist}
+        Here, $L(h(x))^{-1}$ denotes the inverse of the linear operator induced by the Jordan product, \textctref{linv}; and $e$ denotes the identity element in the pseudo-Euclidean-Jordan algebra, \textctref{id}.  We describe each of these operations further in the section \hyperref[sec:customvector]{\seccustomvector}.}
 
     \paramitemu
         {linesearch_iter}
@@ -2630,7 +2665,8 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
             \formiteme
                 {$\eqMerit{\textctref{x}}{\textctref{y}},$}
                 {$\conMerit{\textctref{x}}{\textctref{y}}.$}
-        \end{boldlist}}
+        \end{boldlist}
+        Here, \textctref{barr} refers to the barrier function, which we describe in the section \hyperref[sec:customvector]{\seccustomvector}.}
 
     \paramiteme
         {rho_old}
@@ -2862,7 +2898,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {Yes}
         {Relative stopping tolerance for satisfying the complementary slackness condition for the inequality constraint.  We satisfy this stopping criteria when
         $$
-                \textctref{mu_est} \leq \textctref{eps_mu}\cdot\textctref{mu_typ}
+                \textctref{mu_est} \leq \textctref{eps_mu}\cdot\textctref{mu_typ}.
         $$}
     
     \paramitemi
@@ -2894,7 +2930,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
                     \textctref{mu} \cdot L(h(\textctref{x}))^{-1} e.
                 $$}
         \end{boldlist}
-        Implicitly, these choices affect the Hessian modification that we apply during the course of the interior point method.  Nevertheless, in almost all cases, we're better off using the primal-dual interior point method.}
+        Here, $\circ$ denotes the Jordan product, \textctref{prod}; $L(h(x))^{-1}$ denotes the inverse of the linear operator induced by the Jordan product, \textctref{linv}; and $e$ denotes the identity element in the pseudo-Euclidean-Jordan algebra, \textctref{id}.  We describe each of these operations further in the section \hyperref[sec:customvector]{\seccustomvector}.  Implicitly, these choices affect the Hessian modification that we apply during the course of the interior point method.  Nevertheless, in almost all cases, we're better off using the primal-dual interior point method.}
     
     \paramitemi
         {cstrat}
@@ -2904,7 +2940,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         $$
                 \textctref{x}\circ\textctref{z} = \textctref{mu} \cdot e.
         $$
-        Then, we drive \textctref{mu} toward zero.  How we drive \textctref{mu} toward zero depends on this parameter.  Precisely,
+        Here, $\circ$ denotes the Jordan product, \textctref{prod}; and $e$ denotes the identity element in the pseudo-Euclidean-Jordan algebra, \textctref{id}.  We describe each of these operations further in the section \hyperref[sec:customvector]{\seccustomvector}.  Then, we drive \textctref{mu} toward zero.  How we drive \textctref{mu} toward zero depends on this parameter.  Precisely,
         \begin{boldlist}
         \cstratitem
             {Set $\textctref{mu}=\textctref{sigma}\cdot\textctref{mu_est}$}
@@ -3116,7 +3152,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
 
 \section{\seccustomvector}\label{sec:customvector}
 
-        In continuous optimization, we most often optimize over a simple vector of numbers in $\re^m$.  If that's the case, we provide a reasonable implementation of this vector space and describe it in section \hyperref[sec:importvs]{\secimportvs}.  However, in some situations we want to use a different space.
+        In continuous optimization, we most often optimize over a simple vector of numbers in $\re^m$.  If that's the case, we provide a reasonable implementation of this vector space and describe it in section \hyperref[sec:importvs]{\secimportvs}.  However, in some situations we want to use a different space.  For example:
 \begin{itemize}
     \item In PDE constrained optimization, we may want to optimize over a space of functions such as $L^2(\Omega)$.
     \item In certain relaxations to discrete optimization problems, we must optimize over the space of symmetric, positive definite matrices.
@@ -3397,7 +3433,7 @@ Number of blocks & \textct{x.numblocks()}
 
 \section{\secsmanip}\label{sec:smanip}
 
-        State manipulation is a process that allows us to insert arbitrary code into the optimization algorithms.  We use this to add new features such as the following.
+        State manipulation is a process that allows us to insert arbitrary code into the optimization algorithms.  We use this to add new features such as the following:
 \begin{itemize}
     \item Real-time optimal control systems require hard computational time limit.  After this time, we must exit the optimization cleanly and return our most current solution.
     \item For a particular application, we may want to use a custom line-search, but not recode the rest of the optimization algorithms.
@@ -3431,7 +3467,7 @@ Number of blocks & \textct{x.numblocks()}
         {Members present}
         {\lstinputlisting[style=Matlab,linerange=StateManipulator0-StateManipulator1]{@OPTIZELLEMATLABPATH@/setupOptizelle.m}}
 \end{boldlist}
-\noindent Once we define the \textctref{StateManipulator}, we call the optimization solver with one of the following four commands, which differs slightly from those defined in the section \hyperref[sec:solve]{\secsolve}.  In essence, we add the \textctref{StateManipulator} after the \textctref{Messaging} object.
+\noindent Once we define the \textctref{StateManipulator}, we call the optimization solver with one of the following four commands, which differs slightly from those defined in the section \hyperref[sec:solve]{\secsolve}.  In essence, we add the \textctref{StateManipulator} as the last argument to \textct{getMin}:
 \begin{boldlist}
     \restartitem
         {C++}
@@ -3646,21 +3682,21 @@ Number of blocks & \textct{x.numblocks()}
 \end{boldlist}
 \noindent Based on the above types, we release and capture the state with the following code:
 \begin{boldlist}
-    \restartitem
+    \restartitemlong
         {C++}
         {C++}
         {Release0-Release1,Capture0-Capture1}
         {1}
         {cpp}
     
-    \restartitem
+    \restartitemlong
         {Python}
         {Python}
         {Release0-Release1,Capture0-Capture1}
         {0}
         {py}
     
-    \restartitem
+    \restartitemlong
         {MATLAB/Octave}
         {Matlab}
         {Release0-Release1,Capture0-Capture1}

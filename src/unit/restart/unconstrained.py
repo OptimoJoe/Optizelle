@@ -33,7 +33,7 @@ x0 = numpy.array([2.3,1.2])
 
 # Create an unconstrained state based on this vector
 #---State0---
-state=Optizelle.Unconstrained.State.t(XX,msg,x)
+state = Optizelle.Unconstrained.State.t(XX,msg,x)
 #---State1---
     
 # Read in some parameters
