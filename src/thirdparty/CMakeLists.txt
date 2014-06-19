@@ -98,6 +98,22 @@ if(ENABLE_BUILD_BLAS_AND_LAPACK)
             -DCMAKE_STRIP:FILEPATH=${CMAKE_STRIP}
     )
 
+    # On Windows, the necessary dlls get installed into the bin directory and
+    # not lib.  This is the default behavior on CMake and I'm not sure how to
+    # overwrite.  As such, we just forcefully move the files, so that the rest
+    # of the scripts don't get messed up.
+    add_custom_target(
+        fix_lapack_install_copy_bin
+        ALL
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_BINARY_DIR}/installed/bin
+            ${CMAKE_BINARY_DIR}/installed/lib)
+    add_custom_target(
+        fix_lapack_install_remove_bin
+        ALL
+        COMMAND ${CMAKE_COMMAND} -E remove_directory
+            ${CMAKE_BINARY_DIR}/installed/bin)
+
     # Set the location of BLAS and LAPACK 
     set(BLAS_LIBRARY
         "${CMAKE_BINARY_DIR}/thirdparty/lib/${CMAKE_SHARED_LIBRARY_PREFIX}blas${CMAKE_SHARED_LIBRARY_SUFFIX}"
