@@ -178,17 +178,17 @@ class DiagnosticScheme(EnumeratedType):
 
 def checkFloat(name,value):
     """Checks that an input is a floating-point number"""
-    if type(value)!=float:
+    if not isinstance(value,float): 
         raise TypeError("The %s member must be a floating point." % name)
 
 def checkNatural(name,value):
     """Checks that an input is a natural number"""
-    if type(value)!=int or value < 0:
+    if not isinstance(value,(int,long)) or value < 0: 
         raise TypeError("The %s member must be a natural number." % name)
 
 def checkEnum(name,value):
     """Checks that an input is an enumerated type """
-    if type(value)!=int or value < 0:
+    if not isinstance(value,(int,long)) or value < 0: 
         raise TypeError("The %s member must be an enumerated type (natural.)"
             % name)
 
@@ -200,7 +200,7 @@ def checkEnumRange(name,enum,value):
 
 def checkVectorList(name,value):
     """Checks that an input is a list"""
-    if not type(value)==list:
+    if not isinstance(value,list): 
         raise TypeError("The %s member must be a list of vectors." % name)
 
 def checkFunction(name,value):
@@ -262,7 +262,7 @@ def checkMessaging(name,value):
 
 def checkString(name,value):
     """Check that we have a string object"""
-    if type(value)!=str:
+    if not isinstance(value,str): 
         raise TypeError("The %s argument must be a string." % (name))
 
 def checkStateManipulator(name,value):

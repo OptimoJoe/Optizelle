@@ -1550,7 +1550,7 @@ namespace Optizelle{
                 DiagnosticScheme::t dscheme;
 
                 // Initialization constructors
-                explicit t(X_Vector const & x_) :
+                explicit t(X_Vector const & x_user) :
                     eps_grad(
                         //---eps_grad0---
                         1e-8
@@ -1578,7 +1578,7 @@ namespace Optizelle{
                     ),
                     iter_max(
                         //---iter_max0---
-                        10
+                        std::numeric_limits <Natural>::max() 
                         //---iter_max1---
                     ),
                     opt_stop(
@@ -1651,30 +1651,30 @@ namespace Optizelle{
                         std::numeric_limits<Real>::quiet_NaN()
                         //---norm_dxtyp1---
                     ),
-                    x(X::init(x_)),
+                    x(X::init(x_user)),
                     grad(
                         //---grad0---
-                        X::init(x_)
+                        X::init(x_user)
                         //---grad1---
                     ),
                     dx(
                         //---dx0---
-                        X::init(x_)
+                        X::init(x_user)
                         //---dx1---
                     ),
                     x_old(
                         //---x_old0---
-                        X::init(x_)
+                        X::init(x_user)
                         //---x_old1---
                     ),
                     grad_old(
                         //---grad_old0---
-                        X::init(x_)
+                        X::init(x_user)
                         //---grad_old1---
                     ),
                     dx_old(
                         //---dx_old0---
-                        X::init(x_)
+                        X::init(x_user)
                         //---dx_old1---
                     ),
                     oldY(
@@ -1789,7 +1789,7 @@ namespace Optizelle{
                     )
                 {
                         //---x0---
-                        X::copy(x_,x);
+                        X::copy(x_user,x);
                         //---x1---
                 }
                 
@@ -1992,9 +1992,9 @@ namespace Optizelle{
                     ss << "The objective value at the trial step must be a "
                         "number: f_xpdx = " << state.f_xpdx;
                     
-                    //---msg_level0---
+                    //---msg_level_valid0---
                     // Any 
-                    //---msg_level1---
+                    //---msg_level_valid1---
 
                 // Check that the trust-region radius is nonnegative 
                 else if(!(
@@ -2116,9 +2116,13 @@ namespace Optizelle{
                         "be set to SteepestDescent: dir = "
                         << LineSearchDirection::to_string(state.dir);
                 }
-                    //---f_diag0---
+                    //---f_diag_valid0---
                     // Any 
-                    //---f_diag1---
+                    //---f_diag_valid1---
+                    
+                    //---dscheme_valid0---
+                    // Any 
+                    //---dscheme_valid1---
 
                 // If there's an error, print it
                 if(ss.str()!="") msg.error(ss.str());
@@ -4951,12 +4955,12 @@ namespace Optizelle{
                 FunctionDiagnostics::t g_diag;
                 
                 // Initialization constructors
-                explicit t(X_Vector const & x_,Y_Vector const & y_) : 
-                    Unconstrained <Real,XX>::State::t(x_),
-                    y(Y::init(y_)),
+                explicit t(X_Vector const & x_user,Y_Vector const & y_user) : 
+                    Unconstrained <Real,XX>::State::t(x_user),
+                    y(Y::init(y_user)),
                     dy(
                         //---dy0---
-                        Y::init(y_)
+                        Y::init(y_user)
                         //---dy1---
                     ),
                     zeta(
@@ -5056,7 +5060,7 @@ namespace Optizelle{
                     ),
                     g_x(
                         //---g_x0---
-                        Y::init(y_)
+                        Y::init(y_user)
                         //---g_x1---
                     ),
                     norm_gxtyp(
@@ -5066,12 +5070,12 @@ namespace Optizelle{
                     ),
                     gpxdxn_p_gx(
                         //---gpxdxn_p_gx0---
-                        Y::init(y_)
+                        Y::init(y_user)
                         //---gpxdxn_p_gx1---
                     ),
                     gpxdxt(
                         //---gpxdxt0---
-                        Y::init(y_)
+                        Y::init(y_user)
                         //---gpxdxt1---
                     ),
                     norm_gpxdxnpgx(
@@ -5081,42 +5085,42 @@ namespace Optizelle{
                     ),
                     dx_n(
                         //---dx_n0---
-                        X::init(x_)
+                        X::init(x_user)
                         //---dx_n1---
                     ),
                     dx_ncp(
                         //---dx_ncp0---
-                        X::init(x_)
+                        X::init(x_user)
                         //---dx_ncp1---
                     ),
                     dx_t(
                         //---dx_t0---
-                        X::init(x_)
+                        X::init(x_user)
                         //---dx_t1---
                     ),
                     dx_t_uncorrected(
                         //---dx_t_uncorrected0---
-                        X::init(x_)
+                        X::init(x_user)
                         //---dx_t_uncorrected1---
                     ),
                     dx_tcp_uncorrected(
                         //---dx_tcp_uncorrected0---
-                        X::init(x_)
+                        X::init(x_user)
                         //---dx_tcp_uncorrected1---
                     ),
                     H_dxn(
                         //---H_dxn0---
-                        X::init(x_)
+                        X::init(x_user)
                         //---H_dxn1---
                     ),
                     W_gradpHdxn(
                         //---W_gradpHdxn0---
-                        X::init(x_)
+                        X::init(x_user)
                         //---W_gradpHdxn1---
                     ),
                     H_dxtuncorrected(
                         //---H_dxtuncorrected0---
-                        X::init(x_)
+                        X::init(x_user)
                         //---H_dxtuncorrected1---
                     ),
                     g_diag(
@@ -5126,7 +5130,7 @@ namespace Optizelle{
                     )
                 {
                         //---y0---
-                        Y::copy(y_,y);
+                        Y::copy(y_user,y);
                         //---y1---
                 }
             };
@@ -7874,17 +7878,17 @@ namespace Optizelle{
                 FunctionDiagnostics::t h_diag;
 
                 // Initialization constructors
-                t(X_Vector const & x_,Z_Vector const & z_) :
-                    Unconstrained <Real,XX>::State::t(x_),
-                    z(Z::init(z_)),
+                t(X_Vector const & x_user,Z_Vector const & z_user) :
+                    Unconstrained <Real,XX>::State::t(x_user),
+                    z(Z::init(z_user)),
                     dz(
                         //---dz0---
-                        Z::init(z_)
+                        Z::init(z_user)
                         //---dz1---
                     ),
                     h_x(
                         //---h_x0---
-                        Z::init(z_)
+                        Z::init(z_user)
                         //---h_x1---
                     ),
                     mu(
@@ -7934,7 +7938,7 @@ namespace Optizelle{
                     )
                 {
                         //---z0---
-                        Z::copy(z_,z);
+                        Z::copy(z_user,z);
                         //---z1---
                 }
                 
@@ -8028,9 +8032,9 @@ namespace Optizelle{
                     // Any
                     //---cstrat_valid1---
                     
-                    //---hdiag_valid0---
+                    //---h_diag_valid0---
                     // Any
-                    //---hdiag_valid1---
+                    //---h_diag_valid1---
 
                 // If there's an error, print it
                 if(ss.str()!="") msg.error(ss.str());

@@ -26,7 +26,7 @@ z0 = numpy.array([9.10,8.9,7.8,6.7])
 
 # Create a state based on this vector
 #---State0---
-state=Optizelle.InequalityConstrained.State.t(XX,ZZ,msg,x,z)
+state = Optizelle.InequalityConstrained.State.t(XX,ZZ,msg,x,z)
 #---State1---
 
 # Read in some parameters
