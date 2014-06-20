@@ -40,7 +40,7 @@
 
 # Download
 
-For the most current version of Optizelle, please download a [zipped archived](http://www.optimojoe.com) of our code.  For power users, we provide public access to our git repository on our [Github page](https://github.com/OptimoJoe/Optizelle).  In order to clone the Optizelle repository, use the command
+For the most current version of Optizelle, please download a [zipped archived](https://github.com/OptimoJoe/Optizelle/archive/master.zip) of our code.  For power users, we provide public access to our git repository on our [Github page](https://github.com/OptimoJoe/Optizelle).  In order to clone the Optizelle repository, use the command
 
 ```
 git clone https://github.com/OptimoJoe/Optizelle.git
