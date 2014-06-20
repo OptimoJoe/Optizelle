@@ -48,16 +48,16 @@ git clone https://github.com/OptimoJoe/Optizelle.git
 
 # Documentation
 
-We provide a full set of instructions for building, installing, and using Optizelle in our manual ([letter](http://www.optimojoe.com/wp-content/uploads/2014/06/Optizelle-1.1.0-letter.pdf),[a4](http://www.optimojoe.com/wp-content/uploads/2014/06/Optizelle-1.1.0-a4.pdf).)
+We provide a full set of instructions for building, installing, and using Optizelle in our manual ([letter](http://www.optimojoe.com/wp-content/uploads/2014/06/Optizelle-1.1.2-letter.pdf),[a4](http://www.optimojoe.com/wp-content/uploads/2014/06/Optizelle-1.1.2-a4.pdf).)
 
 # Installation
 
-For a full set of installation instructions, please see our manual ([letter](http://www.optimojoe.com/wp-content/uploads/2014/06/Optizelle-1.1.0-letter.pdf),[a4](http://www.optimojoe.com/wp-content/uploads/2014/06/Optizelle-1.1.0-a4.pdf).)  For power users, installation may be as simple as executing the following commands from the base Optizelle directory:
+For a full set of installation instructions, please see our manual ([letter](http://www.optimojoe.com/wp-content/uploads/2014/06/Optizelle-1.1.2-letter.pdf),[a4](http://www.optimojoe.com/wp-content/uploads/2014/06/Optizelle-1.1.2-a4.pdf).)  For power users, installation may be as simple as executing the following commands from the base Optizelle directory:
 
 1. `mkdir build`
 1. `cd build`
 1. `ccmake ..`
-1. Configure the build.
+1. Configure the build
 1. `make install`
 
 # Support
