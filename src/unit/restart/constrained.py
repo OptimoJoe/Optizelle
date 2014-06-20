@@ -31,7 +31,7 @@ z0 = numpy.array([9.10,8.9,7.8,6.7])
 
 # Create a state based on this vector
 #---State0---
-state=Optizelle.Constrained.State.t(XX,YY,ZZ,msg,x,y,z)
+state = Optizelle.Constrained.State.t(XX,YY,ZZ,msg,x,y,z)
 #---State1---
 
 # Read in some parameters
@@ -53,7 +53,7 @@ Optizelle.Constrained.Algorithms.getMin(XX,YY,ZZ,msg,fns,state)
 # Do a null optimization with a state manipulator 
 smanip = Optizelle.StateManipulator()
 #---SmanipSolver0---
-Optizelle.Constrained.Algorithms.getMin(XX,YY,ZZ,msg,smanip,fns,state)
+Optizelle.Constrained.Algorithms.getMin(XX,YY,ZZ,msg,fns,state,smanip)
 #---SmanipSolver1---
 
 # Read and write the state to file

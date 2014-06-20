@@ -178,7 +178,7 @@ function main(pname,rname)
     % If we have a restart file, read in the parameters 
     if(nargin==2)
         state = Optizelle.json.Unconstrained.read_restart( ...
-            MyVS(),MyMessaging(),rname,x,state);
+            MyVS(),MyMessaging(),rname,x);
     end
     
     % Read additional parameters from file
@@ -194,7 +194,7 @@ function main(pname,rname)
     %---Solver0---
     % Solve the optimization problem
     state=Optizelle.Unconstrained.Algorithms.getMin( ...
-        MyVS(),MyMessaging(),MyRestartManipulator(),fns,state);
+        MyVS(),MyMessaging(),fns,state,MyRestartManipulator());
     %---Solver1---
     
     % Print out the reason for convergence

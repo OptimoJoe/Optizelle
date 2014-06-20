@@ -10,23 +10,21 @@ function self=InequalityConstrainedAlgorithmsGetMin(varargin)
     X=varargin{1};
     Z=varargin{2};
     msg=varargin{3};
+    fns = varargin{4};
+    state = varargin{5};
     if nargin==5
-        fns = varargin{4};
-        state = varargin{5};
         smanip = struct('eval',@(fns,state,loc)state);
     else
-        fns = varargin{5};
-        state = varargin{6};
-        smanip = varargin{4};
+        smanip = varargin{6};
     end
 
     % Check our arguments
     checkVectorSpace('X',X);
     checkVectorSpace('Z',Z);
     checkMessaging('msg',msg);
-    checkStateManipulator('smanip',smanip);
     checkInequalityConstrainedFunctionsT('fns',fns);
     checkInequalityConstrainedStateT('state',state);
+    checkStateManipulator('smanip',smanip);
 
     % Solve the optimization problem 
-    self=InequalityConstrainedAlgorithmsGetMin_(X,Z,msg,smanip,fns,state);
+    self=InequalityConstrainedAlgorithmsGetMin_(X,Z,msg,fns,state,smanip);

@@ -12,7 +12,7 @@ import Optizelle.EqualityConstrained.Functions
 def getMin(*args):
     """Solves an equality constrained optimization problem
     Basic solve: getMin(X,Y,msg,fns,state) 
-    Solve with a state manipulator: getMin(X,Y,msg,smanip,fns,state)
+    Solve with a state manipulator: getMin(X,Y,msg,fns,state,smanip)
     """
 
     # Check the number of arguments
@@ -24,9 +24,9 @@ def getMin(*args):
     X=args[0]
     Y=args[1]
     msg=args[2]
-    fns = args[3] if len(args)==5 else args[4]
-    state = args[4] if len(args)==5 else args[5]
-    smanip = Optizelle.StateManipulator() if len(args)==5 else args[3]
+    fns = args[3] 
+    state = args[4] 
+    smanip = Optizelle.StateManipulator() if len(args)==5 else args[5]
 
     # Check the arguments
     Optizelle.checkVectorSpace("X",X)
@@ -38,4 +38,4 @@ def getMin(*args):
 
     # Call the optimization
     Optizelle.Utility.EqualityConstrainedAlgorithmsGetMin(
-        X,Y,msg,smanip,fns,state)
+        X,Y,msg,fns,state,smanip)

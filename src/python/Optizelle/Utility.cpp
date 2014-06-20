@@ -1,5 +1,5 @@
 /*
-Copyright 2013 OptimoJoe.
+Copyright 2013-2014 OptimoJoe.
 
 For the full copyright notice, see LICENSE.
 
@@ -2139,10 +2139,10 @@ namespace Optizelle {
                     PyObject * args
                 ) {
                     // Calling convention should be
-                    // (X,msg,smanip,fns,state)
-                    PyObject *X,*msg_,*smanip_,*pyfns_,*pystate_;
+                    // (X,msg,fns,state,smanip)
+                    PyObject *X,*msg_,*pyfns_,*pystate_,*smanip_;
                     if(!PyArg_ParseTuple(args,"OOOOO",
-                        &X,&msg_,&smanip_,&pyfns_,&pystate_)
+                        &X,&msg_,&pyfns_,&pystate_,&smanip_)
                     )
                         return nullptr; 
 
@@ -2190,7 +2190,7 @@ namespace Optizelle {
                        
                         // Minimize
                         PyUnconstrained::Algorithms::getMin(
-                            msg,smanip,fns,state);
+                            msg,fns,state,smanip);
                         
                         // Convert the C++ state to a Python state
                         pystate.toPython(state);
@@ -2670,10 +2670,10 @@ namespace Optizelle {
                     PyObject * args
                 ) {
                     // Calling convention should be
-                    // (X,Y,msg,smanip,fns,state)
-                    PyObject *X,*Y,*msg_,*smanip_,*pyfns_,*pystate_;
+                    // (X,Y,msg,fns,state,smanip)
+                    PyObject *X,*Y,*msg_,*pyfns_,*pystate_,*smanip_;
                     if(!PyArg_ParseTuple(args,"OOOOOO",
-                        &X,&Y,&msg_,&smanip_,&pyfns_,&pystate_)
+                        &X,&Y,&msg_,&pyfns_,&pystate_,&smanip_)
                     )
                         return nullptr; 
 
@@ -2723,7 +2723,7 @@ namespace Optizelle {
                        
                         // Minimize
                         PyEqualityConstrained::Algorithms::getMin(
-                            msg,smanip,fns,state);
+                            msg,fns,state,smanip);
                         
                         // Convert the C++ state to a Python state
                         pystate.toPython(state);
@@ -3162,10 +3162,10 @@ namespace Optizelle {
                     PyObject * args
                 ) {
                     // Calling convention should be
-                    // (X,Z,msg,smanip,fns,state)
-                    PyObject *X,*Z,*msg_,*smanip_,*pyfns_,*pystate_;
+                    // (X,Z,msg,fns,state,smanip)
+                    PyObject *X,*Z,*msg_,*pyfns_,*pystate_,*smanip_;
                     if(!PyArg_ParseTuple(args,"OOOOOO",
-                        &X,&Z,&msg_,&smanip_,&pyfns_,&pystate_)
+                        &X,&Z,&msg_,&pyfns_,&pystate_,&smanip_)
                     )
                         return nullptr; 
 
@@ -3215,7 +3215,7 @@ namespace Optizelle {
                        
                         // Minimize
                         PyInequalityConstrained::Algorithms::getMin(
-                            msg,smanip,fns,state);
+                            msg,fns,state,smanip);
                         
                         // Convert the C++ state to a Python state
                         pystate.toPython(state);
@@ -3604,10 +3604,10 @@ namespace Optizelle {
                     PyObject * args
                 ) {
                     // Calling convention should be
-                    // (X,Y,Z,msg,smanip,fns,state)
-                    PyObject *X,*Y,*Z,*msg_,*smanip_,*pyfns_,*pystate_;
+                    // (X,Y,Z,msg,fns,state,smanip)
+                    PyObject *X,*Y,*Z,*msg_,*pyfns_,*pystate_,*smanip_;
                     if(!PyArg_ParseTuple(args,"OOOOOOO",
-                        &X,&Y,&Z,&msg_,&smanip_,&pyfns_,&pystate_)
+                        &X,&Y,&Z,&msg_,&pyfns_,&pystate_,&smanip_)
                     )
                         return nullptr; 
 
@@ -3659,7 +3659,7 @@ namespace Optizelle {
                        
                         // Minimize
                         PyConstrained::Algorithms::getMin(
-                            msg,smanip,fns,state);
+                            msg,fns,state,smanip);
                         
                         // Convert the C++ state to a Python state
                         pystate.toPython(state);

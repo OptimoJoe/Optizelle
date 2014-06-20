@@ -312,7 +312,7 @@ int main(int argc,char* argv[]) {
     //---Solver0---
     // Solve the optimization problem
     Optizelle::Unconstrained <double,MyVS>::Algorithms
-        ::getMin(MyMessaging(),MyRestartManipulator(),fns,state);
+        ::getMin(MyMessaging(),fns,state,MyRestartManipulator());
     //---Solver1---
 
     // Print out the reason for convergence

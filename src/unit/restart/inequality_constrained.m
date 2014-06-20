@@ -42,7 +42,7 @@ state = Optizelle.InequalityConstrained.Algorithms.getMin(XX,ZZ,msg,fns,state);
 smanip = Optizelle.StateManipulator;
 %---SmanipSolver0---
 state = Optizelle.InequalityConstrained.Algorithms.getMin( ...
-    XX,ZZ,msg,smanip,fns,state);
+    XX,ZZ,msg,fns,state,smanip);
 %---SmanipSolver1---
     
 % Read and write the state to file
@@ -62,7 +62,7 @@ reals = Optizelle.InequalityConstrained.Restart.Reals;
 nats = Optizelle.InequalityConstrained.Restart.Naturals;
 params = Optizelle.InequalityConstrained.Restart.Params;
 [xs zs reals nats params] = Optizelle.InequalityConstrained.Restart.release( ...
-    XX,ZZ,msg,state,xs,zs,reals,nats,params);
+    XX,ZZ,msg,state);
 %---Release1---
 
 % Check that we have the correct number of vectors

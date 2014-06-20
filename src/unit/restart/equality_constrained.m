@@ -42,7 +42,7 @@ state = Optizelle.EqualityConstrained.Algorithms.getMin(XX,YY,msg,fns,state);
 smanip = Optizelle.StateManipulator;
 %---SmanipSolver0---
 state = Optizelle.EqualityConstrained.Algorithms.getMin( ...
-    XX,YY,msg,smanip,fns,state);
+    XX,YY,msg,fns,state,smanip);
 %---SmanipSolver1---
     
 % Read and write the state to file
@@ -62,7 +62,7 @@ reals = Optizelle.EqualityConstrained.Restart.Reals;
 nats = Optizelle.EqualityConstrained.Restart.Naturals;
 params = Optizelle.EqualityConstrained.Restart.Params;
 [xs ys reals nats params] = Optizelle.EqualityConstrained.Restart.release( ...
-    XX,YY,msg,state,xs,ys,reals,nats,params);
+    XX,YY,msg,state);
 %---Release1---
 
 % Check that we have the correct number of vectors

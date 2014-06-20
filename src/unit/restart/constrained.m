@@ -28,7 +28,7 @@ state = Optizelle.Constrained.State.t(XX,YY,ZZ,msg,x,y,z);
 %---State1---
 
 % Read in some parameters
-fname = 'blank.json'
+fname = 'blank.json';
 %---ReadJson0--- 
 state = Optizelle.json.Constrained.read(XX,YY,ZZ,msg,fname,state);
 %---ReadJson1--- 
@@ -47,7 +47,7 @@ state = Optizelle.Constrained.Algorithms.getMin(XX,YY,ZZ,msg,fns,state);
 smanip = Optizelle.StateManipulator;
 %---SmanipSolver0---
 state = Optizelle.Constrained.Algorithms.getMin( ...
-    XX,YY,ZZ,msg,smanip,fns,state);
+    XX,YY,ZZ,msg,fns,state,smanip);
 %---SmanipSolver1---
 
 % Read and write the state to file
@@ -68,7 +68,7 @@ reals = Optizelle.Constrained.Restart.Reals;
 nats = Optizelle.Constrained.Restart.Naturals;
 params = Optizelle.Constrained.Restart.Params;
 [xs ys zs reals nats params] = Optizelle.Constrained.Restart.release( ...
-    XX,YY,ZZ,msg,state,xs,zs,reals,nats,params);
+    XX,YY,ZZ,msg,state);
 %---Release1---
 
 % Check that we have the correct number of vectors

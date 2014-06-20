@@ -99,6 +99,6 @@ function main(fname)
     fprintf('The optimal point is: (%e,%e)\n',state.x(1),state.x(2));
     
     % Write out the final answer to file
-    Optizelle.json.InequalityConstrained.write_restart(
+    Optizelle.json.InequalityConstrained.write_restart( ...
         Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,'solution.json',state);
 end
