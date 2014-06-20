@@ -52,7 +52,7 @@ We provide a full set of instructions for building, installing, and using Optize
 
 # Installation
 
-For a full set of installation instructions, please see our [manual](http://www.optimojoe.com).  For power users, installation may be as simple as executing the following commands from the base Optizelle directory:
+For a full set of installation instructions, please see our manual ([letter](http://www.optimojoe.com/wp-content/uploads/2014/06/Optizelle-1.1.0-letter.pdf),[a4](http://www.optimojoe.com/wp-content/uploads/2014/06/Optizelle-1.1.0-a4.pdf).)  For power users, installation may be as simple as executing the following commands from the base Optizelle directory:
 
 1. `mkdir build`
 1. `cd build`
