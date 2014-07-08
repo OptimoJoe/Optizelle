@@ -9342,15 +9342,44 @@ namespace Optizelle{
                     Real & mu_typ = state.mu_typ;
 
                     switch(loc){
-                    case OptimizationLocation::BeforeInitialFuncAndGrad:
+                    case OptimizationLocation::BeforeInitialFuncAndGrad: {
 
                         // Initialize the value h(x)
                         h.eval(x,h_x);
-                
+
+                        #if 1
+                        // Set z to be
+                        // 
+                        // ( || h(x) || / || inv(L(h(x))) e || ) inv(L(h(x))) e
+                        // 
+                        // In this way,
+                        // 
+                        // || z || = || h(x) || and 
+                        // mu_est = <h(x),z> / <e,e>
+                        //        = || h(x) || / || inv(L(h(x))) e ||
+
+                        // z_tmp1 <- e 
+                        Z_Vector z_tmp1(Z::init(z));
+                            Z::id(z_tmp1);
+
+                        // z <- inv(L(h(x))) e 
+                        Z::linv(h_x,z_tmp1,z);
+
+                        // norm_h = || h(x) ||
+                        Real norm_h = sqrt(Z::innr(h_x,h_x));
+
+                        // norm_linv_hx_e = || inv(L(h(x))) e ||
+                        Real norm_linv_hx_e = sqrt(Z::innr(z,z));
+
+                        // z <- ( ||h(x)|| / ||inv(L(h(x))) e|| ) inv(L(h(x))) e
+                        Z::scal(norm_h/norm_linv_hx_e,z);
+               
+                        #else
                         // Set z to be m / <h(x),e> e.  In this way,
                         // mu_est = <h(x),z> / m = 1.
                         Z::id(z);
                         Z::scal(Z::innr(z,z)/Z::innr(h_x,z),z);
+                        #endif
 
                         // Estimate the interior point parameter
                         estimateInteriorPointParameter(fns,state);
@@ -9368,7 +9397,7 @@ namespace Optizelle{
                         break;
 
                     // Adjust our step or potential step to preserve positivity
-                    case OptimizationLocation::BeforeLineSearch:
+                    } case OptimizationLocation::BeforeLineSearch:
                     case OptimizationLocation::BeforeActualVersusPredicted:
                         // Do the linesearch
                         switch(ipm){
