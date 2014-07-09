@@ -2039,13 +2039,13 @@ namespace Optizelle{
                     // Any 
                     //---rejected_trustregion_valid1---
 
-                // Check that the base line-search step length is positive 
+                // Check that the base line-search step length is nonnegative 
                 else if(!(
                     //---alpha0_valid0---
-                    state.alpha0 > Real(0.)
+                    state.alpha0 >= Real(0.)
                     //---alpha0_valid1---
                 ))
-                    ss << "The base line-search step length must be positive: "
+                    ss<<"The base line-search step length must be nonnegative: "
                         "alpha0 = " << state.alpha0;
                     
                     //---alpha_valid0---
@@ -9354,7 +9354,10 @@ namespace Optizelle{
                         // 
                         // In this way,
                         // 
-                        // || z || = || h(x) || and 
+                        // || z || = || h(x) ||
+                        //
+                        // h(x) o z = ( || h(x) || / || inv(L(h(x))) e || ) e
+                        // 
                         // mu_est = <h(x),z> / <e,e>
                         //        = || h(x) || / || inv(L(h(x))) e ||
 
