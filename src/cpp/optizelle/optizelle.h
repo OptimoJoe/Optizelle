@@ -2844,6 +2844,7 @@ namespace Optizelle{
                     std::list <X_Vector> work;
                     for(Natural i=0;i<oldY.size();i++)
                         work.emplace_back(std::move(X::init(dx)));
+                    X_Vector yi_m_Bisi(X::init(dx));
 
                     // If we have no vectors in our history, we return the 
                     // direction
@@ -2881,22 +2882,19 @@ namespace Optizelle{
                         X_Vector const & yi=*yi_iter;
                         X_Vector const & Bisi=*Bisi_iter;
 
-                        // Determine <yi,dx>
-                        Real inner_yi_dx=X::innr(yi,dx);
+                        // Determine yi-Bisi
+                        X::copy(yi,yi_m_Bisi);
+                        X::axpy(Real(-1.),Bisi,yi_m_Bisi);
+                        
+                        // Determine <yi-Bisi,dx>
+                        Real inner_yimBisi_dx(X::innr(yi_m_Bisi,dx));
 
-                        // Determine <Bisi,dx>
-                        Real inner_Bisi_dx=X::innr(Bisi,dx);
+                        // Determine <yi-Bisi,si>
+                        Real inner_yimBisi_si(X::innr(yi_m_Bisi,si));
 
-                        // Determine <yi,si>
-                        Real inner_yi_si=X::innr(yi,si);
-
-                        // Determine <Bisi,si>
-                        Real inner_Bisi_si=X::innr(Bisi,si);
-
-                        // Determine (<yi,p>-<Bisi,dx>) / (<y_i,s_i>-<Bisi,si>).
+                        // Determine <yi-Bisi,dx>/<y_i-Bisi,si>.
                         // Store in alpha
-                        Real alpha=(inner_yi_dx-inner_Bisi_dx)
-                            / (inner_yi_si-inner_Bisi_si);
+                        Real alpha=inner_yimBisi_dx/inner_yimBisi_si;
 
                         // Determine alpha y_i + Bi dx.  Store in result (which
                         // accumulate Bi dx).
@@ -2915,19 +2913,14 @@ namespace Optizelle{
                             X_Vector const & sj=*sj_iter;
                             X_Vector & Bisj=*Bisj_iter;
 
-                            // Determine <yi,sj>
-                            Real inner_yi_sj=X::innr(yi,sj);
+                            // Determine <yi-Bisi,sj>
+                            Real inner_yimBisi_sj(X::innr(yi_m_Bisi,sj));
 
-                            // Determine <Bisi,sj>
-                            Real inner_Bisi_sj=X::innr(Bisi,sj);
-
-                            // Determine
-                            // (<yi,dx>-<Bisi,dx>) / (<yi,si>-<Bisi,si>).
+                            // Determine <yi-Bisj,sj> / <yi-Bisi,si>.
                             // Store in beta.
                             //
                             // CHECK THIS FORMULA
-                            Real beta = (inner_yi_sj-inner_Bisi_sj) /
-                                (inner_yi_si-inner_Bisi_si);
+                            Real beta = inner_yimBisi_sj / inner_yimBisi_si;
                         
                             // Determine beta y_i + Bisj.  Store in Bisj. 
                             X::axpy(beta,yi,Bisj);
@@ -4535,6 +4528,7 @@ namespace Optizelle{
 
             // Updates the quasi-Newton information
             static void updateQuasi(
+                Messaging const & msg,
                 typename Functions::t const & fns,
                 typename State::t & state
             ){
@@ -4578,6 +4572,80 @@ namespace Optizelle{
                     dir==LineSearchDirection::BFGS)
                     && X::innr(y,s) <= Real(0.))
                     return;
+
+                // If we're using SR1, check that
+                // 
+                // | s'(y-Bs) | > epsilson max_i | si'(yi-Bsi) |
+                //
+                // and
+                //
+                // | s'(y-Bs) | > epsilon ||s|| ||y - Bs||
+                //
+                // where we choose epsilon to be the square root of machine
+                // precision.
+                if( PH_type==Operators::InvSR1 ||
+                    H_type==Operators::SR1
+                ) {
+                    // Bs <- B s
+                    X_Vector Bs(X::init(x));
+                        typename Functions::SR1(msg,state).eval(s,Bs);
+
+                    // y_m_Bs <- y-Bs
+                    X_Vector y_m_Bs(X::init(x));
+                        X::copy(y,y_m_Bs);
+                        X::axpy(Real(-1.),Bs,y_m_Bs);
+
+                    // norm_s_2 = || s ||^2
+                    Real norm_s_2(X::innr(s,s));
+
+                    // norm_ymBs_2 = || y - Bs ||^2
+                    Real norm_ymBs_2(X::innr(y_m_Bs,y_m_Bs));
+
+                    // Compute a measure of how much interesting new information
+                    // we'll add to the SR1 operator
+                    Real innr_s_ymBs(fabs(X::innr(s,y_m_Bs)));
+
+                    // Repeat the above step for the existing vectors
+                    std::list <X_Vector> oldSS;
+                    std::list <X_Vector> oldYY;
+                    Real innr_si_ymBsi(0.);
+                    Natural m=oldS.size();
+                    for(int i=0;i<m;i++) {
+                        // Remove the last vector in quasi-Newton information
+                        oldSS.splice(oldSS.end(),oldS,oldS.begin());
+                        oldYY.splice(oldYY.end(),oldY,oldY.begin());
+
+                        // Bs <- B si
+                        typename Functions::SR1(msg,state).eval(
+                            oldSS.back(),Bs);
+
+                        // y_m_Bs
+                        X::copy(oldYY.back(),y_m_Bs);
+                        X::axpy(Real(-1.),Bs,y_m_Bs);
+                    
+                        // Compute a measure of how much interesting new
+                        // information we've already added
+                        Real tmp(fabs(X::innr(oldSS.back(),y_m_Bs)));
+                        innr_si_ymBsi =
+                            tmp > innr_si_ymBsi ? tmp : innr_si_ymBsi;
+                    }
+
+                    // Put all the vectors back.  I'm sure there's a better
+                    // way to cache this information.
+                    oldS.splice(oldS.begin(),oldSS);
+                    oldY.splice(oldY.begin(),oldYY);
+
+                    // If the new vector doesn't add much, ignore it
+                    if( innr_s_ymBs <=
+                            sqrt(std::numeric_limits <Real>::epsilon())
+                                *innr_si_ymBsi || 
+                        innr_s_ymBs <= sqrt( 
+                            std::numeric_limits <Real>::epsilon() *
+                            norm_s_2 *
+                            norm_ymBs_2)
+                    )
+                        return;
+                }
 
                 // Insert these into the quasi-Newton storage
                 oldS.emplace_front(std::move(s));
@@ -4697,7 +4765,7 @@ namespace Optizelle{
                     smanip.eval(fns,state,OptimizationLocation::BeforeQuasi);
 
                     // Update the quasi-Newton information
-                    updateQuasi(fns,state);
+                    updateQuasi(msg,fns,state);
                     
                     // Manipulate the state if required
                     smanip.eval(fns,state,OptimizationLocation::AfterQuasi);
