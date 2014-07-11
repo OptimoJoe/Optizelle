@@ -11,10 +11,10 @@
       "eps_mu" : 1e-7,
       "delta" : 100,
       "sigma" : 0.1,
-      "gamma" : 0.995
+      "gamma" : 0.95
    },
    "Naturals" : {
-      "iter" : 5 
+      "iter" :  11 
    },
    "X_Vectors" : {
       "x" : [ 0.33333333, 0.33333333 ] 

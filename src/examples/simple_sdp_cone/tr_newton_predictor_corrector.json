@@ -5,12 +5,13 @@
       "iter_max" : 50,
       "eps_krylov" : 1e-10,
       "eps_dx" : 1e-16,
-      "gamma" : 0.9,
+      "gamma" : 0.81,
+      "eps_mu" : 1e-7,
       "delta" : 100,
       "cstrat" : "PredictorCorrector"
    },
    "Naturals" : {
-      "iter" : 17 
+      "iter" : 21 
    },
    "X_Vectors" : {
       "x" : [ 0.5, 0.25] 
