@@ -6,11 +6,11 @@
       "eps_krylov" : 1e-10,
       "eps_dx" : 1e-16,
       "eps_mu" : 1e-9,
-      "gamma" : 0.995,
+      "gamma" : 0.99,
       "cstrat" : "PredictorCorrector"
    },
    "Naturals" : {
-      "iter" : 19 
+      "iter" : 15
    },
    "X_Vectors" : {
       "x" : [ 0.33333333, 0.33333333 ] 
