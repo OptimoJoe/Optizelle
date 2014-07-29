@@ -5039,6 +5039,13 @@ namespace Optizelle{
                 explicit t(X_Vector const & x_user,Y_Vector const & y_user) : 
                     Unconstrained <Real,XX>::State::t(x_user),
                     y(Y::init(y_user)),
+                        //---y0---
+                        // Equality constrained
+                        // argmin_y || grad f(x) + g'(x)*y ||
+                        //
+                        // Constrained
+                        // argmin_y || grad f(x) + g'(x)*y - h'(x)*z ||
+                        //---y1---
                     dy(
                         //---dy0---
                         Y::init(y_user)
@@ -5210,9 +5217,7 @@ namespace Optizelle{
                         //---g_diag1---
                     )
                 {
-                        //---y0---
                         Y::copy(y_user,y);
-                        //---y1---
                 }
             };
             
@@ -7961,6 +7966,9 @@ namespace Optizelle{
                 // Initialization constructors
                 t(X_Vector const & x_user,Z_Vector const & z_user) :
                     Unconstrained <Real,XX>::State::t(x_user),
+                        //---z0---
+                        // ( || h(x) || / || inv(L(h(x))) e || ) inv(L(h(x))) e
+                        //---z1---
                     z(Z::init(z_user)),
                     dz(
                         //---dz0---
@@ -8018,9 +8026,7 @@ namespace Optizelle{
                         //---h_diag1---
                     )
                 {
-                        //---z0---
                         Z::copy(z_user,z);
-                        //---z1---
                 }
                 
                 // A trick to allow dynamic casting later
