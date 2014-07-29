@@ -3329,13 +3329,9 @@ namespace Optizelle{
                     out.emplace_back(Utility::atos("*"));
                 out.emplace_back(Utility::atos(f_x));
                 out.emplace_back(Utility::atos(norm_grad));
-                if(!opt_begin) {
-                    if(algorithm_class==AlgorithmClass::LineSearch)
-                        out.emplace_back(
-                            Utility::atos(Real(1.)/alpha*norm_dx));
-                    else
-                        out.emplace_back(Utility::atos(norm_dx));
-                } else
+                if(!opt_begin) 
+                    out.emplace_back(Utility::atos(norm_dx));
+                else
                     out.emplace_back(Utility::blankSeparator);
                 
                 // More detailed information 
@@ -4447,12 +4443,17 @@ namespace Optizelle{
                             // parameter 
                             alpha0/=Real(2.);
 
+                            // Scale the search direction for the safe guard
+                            // test as well as the state manipulator, which
+                            // produces output
+                            X::scal(alpha,dx);
+
                             // Check if the step becomes so small that we're not
                             // making progress or if we have a step with NaNs in
                             // it.  In this case, take a zero step and allow
                             // the stopping conditions to exit
                             Real norm_dx = sqrt(X::innr(dx,dx));
-                            if(alpha*norm_dx < eps_dx*norm_dxtyp
+                            if(norm_dx < eps_dx*norm_dxtyp
                                 || norm_dx!=norm_dx
                             ) {
                                 X::zero(dx);
@@ -4462,6 +4463,10 @@ namespace Optizelle{
                             // Manipulate the state if required
                             smanip.eval(fns,state,
                                 OptimizationLocation::AfterRejectedLineSearch);
+
+                            // Rescale the search direction in case we're not
+                            // quite done searching yet.
+                            X::scal(Real(1.0)/alpha,dx);
                         }
 
                     // Continue as long as we haven't satisfied the sufficient
