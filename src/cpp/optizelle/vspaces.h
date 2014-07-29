@@ -183,7 +183,9 @@ namespace Optizelle {
         template <typename Real>
         struct Serialization <Real,Rm> {
             static std::string serialize (
-                typename Rm <Real>::Vector const & x
+                typename Rm <Real>::Vector const & x,
+                std::string const & name,
+                Natural const & iter
             ) {
                 // Create a jsoncpp object to copy into
                 Json::Value x_json;  
@@ -1106,7 +1108,9 @@ namespace Optizelle {
         template <typename Real>
         struct Serialization <Real,SQL> {
             static std::string serialize (
-                typename SQL <Real>::Vector const & x
+                typename SQL <Real>::Vector const & x,
+                std::string const & name,
+                Natural const & iter
             ) {
                 // Create a jsoncpp object to copy into
                 Json::Value x_json;  

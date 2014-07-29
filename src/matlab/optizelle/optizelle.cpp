@@ -649,11 +649,22 @@ namespace Optizelle {
         // Serialization utility for the Rm vector space
         template <>
         struct Serialization <double,Matlab::MatlabVS> {
-            static std::string serialize (Matlab::Vector const & x) {
+            static std::string serialize (
+                Matlab::Vector const & x,
+                std::string const & name_,
+                Natural const & iter_
+            ) {
+                // Convert the name and iteration to MATLAB
+                Matlab::mxArrayPtr name(mxCreateString(name_.c_str()));
+                Matlab::mxArrayPtr iter(Matlab::mxArray_FromSize_t(iter_));
+
                 // Call the serialize routine on the vector
-                mxArray * input[1]={const_cast <Matlab::Vector &> (x).get()};
+                mxArray * input[3]={
+                    const_cast <Matlab::Vector &> (x).get(),
+                    name.get(),
+                    iter.get()};
                 mxArray * output[1];
-                int err=mexCallMATLAB(1,output,1,input,"serialize");
+                int err=mexCallMATLAB(1,output,3,input,"serialize");
                 Matlab::mxArrayPtr x_json(output[0]);
 
                 // Check errors

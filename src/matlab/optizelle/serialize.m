@@ -11,7 +11,7 @@ function x_json = serialize(varargin)
     end
 
     % Determine if we're registering a new serialization function
-    if nargin==3
+    if nargin==3 && ischar(varargin{1}) && strcmp(varargin{1},'register')
         % Grab the arguments
         mode = varargin{1};
         sfn = varargin{2};
@@ -22,24 +22,25 @@ function x_json = serialize(varargin)
         checkFunction('serialize',sfn);
         checkFunction('check',scheck);
 
-        % Check that we're actually registering
-        if ~strcmp(mode,'register')
-            error('The only valid mode is register');
-        end
-
         % Register the new function and check
         sfns = {sfns{:},sfn};
         schecks = {schecks{:},scheck};
 
     % Call the serialization on the vector
-    elseif nargin==1
+    elseif nargin==3
         % Grab the arguments
         x = varargin{1};
+        name = varargin{2};
+        iter = varargin{3};
+        
+        % Check the arguments
+        checkString('name',name);
+        checkNatural('iter',iter);
 
         % Try to serialize the vector
         for i=1:length(sfns)
             if schecks{i}(x)
-                x_json = sfns{i}(x);
+                x_json = sfns{i}(x,name,iter);
                 break;
             end
         end
@@ -52,7 +53,7 @@ function x_json = serialize(varargin)
     % Throw an error if we have the wrong number of argumnets
     else
         error(['The serialize function must be called either in ' ...
-            'registration mode (three arguments) or serialize mode ' ...
-            '(one argument)']);
+            'registration mode (mode,serialize,check) or serialize mode ' ...
+            '(x,name,iter)']);
     end
 end

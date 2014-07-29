@@ -195,7 +195,9 @@ namespace Optizelle {
         template <>
         struct Serialization <double,MyVS> {
             static std::string serialize(
-                typename MyVS <double>::Vector const & x
+                typename MyVS <double>::Vector const & x,
+                std::string const & name,
+                Natural const & iter
             ) {
                 // Create a string with the format 
                 // [ x1, x2, ..., xm ].

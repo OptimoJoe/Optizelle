@@ -184,7 +184,9 @@ namespace Optizelle {
         template <typename Real,template <typename> class XX>
         struct Serialization {
             static std::string serialize(
-                typename XX <Real>::Vector const & x
+                typename XX <Real>::Vector const & x,
+                std::string const & name,
+                Natural const & iter
             ) { 
                 std::cerr << "Optizelle::json::Serialization <>::serialize "
                     << "undefined for the type: "
@@ -209,6 +211,7 @@ namespace Optizelle {
             void vectors(
                 typename RestartPackage<typename XX<Real>::Vector>::t const& xs,
                 std::string const & vs,
+                Natural const & iter,
                 Json::Value & root
             ) {
                 // Create some type shortcuts
@@ -226,7 +229,7 @@ namespace Optizelle {
                 ){
                     // Grab the json string of the vector
                     std::string x_json_(Serialization <Real,XX>::serialize(
-                        item->second));
+                        item->second,item->first,iter));
                    
                     // Parse the string
                     Json::Value x_json;
@@ -566,6 +569,9 @@ namespace Optizelle {
                 std::string const & fname,
                 typename Optizelle::Unconstrained <Real,XX>::State::t & state
             ) {
+                // Grab the iteration number
+                Natural iter = state.iter;
+
                 // Do a release 
                 X_Vectors xs;
                 Reals reals;
@@ -576,7 +582,7 @@ namespace Optizelle {
 
                 // Serialize everything
                 Json::Value root;
-                Serialize::vectors <Real,XX>(xs,"X_Vectors",root);
+                Serialize::vectors <Real,XX>(xs,"X_Vectors",iter,root);
                 Serialize::reals <Real> (reals,"Reals",root);
                 Serialize::naturals(nats,"Naturals",root);
                 Serialize::parameters(params,"Parameters",root);
@@ -805,6 +811,9 @@ namespace Optizelle {
                 typename Optizelle::EqualityConstrained <Real,XX,YY>::State::t &
                     state
             ) {
+                // Grab the iteration number
+                Natural iter = state.iter;
+
                 // Do a release 
                 X_Vectors xs;
                 Y_Vectors ys;
@@ -816,8 +825,8 @@ namespace Optizelle {
 
                 // Serialize everything
                 Json::Value root;
-                Serialize::vectors <Real,XX>(xs,"X_Vectors",root);
-                Serialize::vectors <Real,YY>(ys,"Y_Vectors",root);
+                Serialize::vectors <Real,XX>(xs,"X_Vectors",iter,root);
+                Serialize::vectors <Real,YY>(ys,"Y_Vectors",iter,root);
                 Serialize::reals <Real> (reals,"Reals",root);
                 Serialize::naturals(nats,"Naturals",root);
                 Serialize::parameters(params,"Parameters",root);
@@ -980,6 +989,9 @@ namespace Optizelle {
                 typename Optizelle::InequalityConstrained<Real,XX,ZZ>::State::t&
                     state
             ) {
+                // Grab the iteration number
+                Natural iter = state.iter;
+
                 // Do a release 
                 X_Vectors xs;
                 Z_Vectors zs;
@@ -991,8 +1003,8 @@ namespace Optizelle {
 
                 // Serialize everything
                 Json::Value root;
-                Serialize::vectors <Real,XX>(xs,"X_Vectors",root);
-                Serialize::vectors <Real,ZZ>(zs,"Z_Vectors",root);
+                Serialize::vectors <Real,XX>(xs,"X_Vectors",iter,root);
+                Serialize::vectors <Real,ZZ>(zs,"Z_Vectors",iter,root);
                 Serialize::reals <Real> (reals,"Reals",root);
                 Serialize::naturals(nats,"Naturals",root);
                 Serialize::parameters(params,"Parameters",root);
@@ -1097,6 +1109,9 @@ namespace Optizelle {
                 typename Optizelle::Constrained <Real,XX,YY,ZZ>::State::t &
                     state
             ) {
+                // Grab the iteration number
+                Natural iter = state.iter;
+
                 // Do a release 
                 X_Vectors xs;
                 Y_Vectors ys;
@@ -1109,9 +1124,9 @@ namespace Optizelle {
 
                 // Serialize everything
                 Json::Value root;
-                Serialize::vectors <Real,XX>(xs,"X_Vectors",root);
-                Serialize::vectors <Real,YY>(ys,"Y_Vectors",root);
-                Serialize::vectors <Real,ZZ>(zs,"Z_Vectors",root);
+                Serialize::vectors <Real,XX>(xs,"X_Vectors",iter,root);
+                Serialize::vectors <Real,YY>(ys,"Y_Vectors",iter,root);
+                Serialize::vectors <Real,ZZ>(zs,"Z_Vectors",iter,root);
                 Serialize::reals <Real> (reals,"Reals",root);
                 Serialize::naturals(nats,"Naturals",root);
                 Serialize::parameters(params,"Parameters",root);

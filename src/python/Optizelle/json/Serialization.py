@@ -31,7 +31,7 @@ class Extendable(object):
             return self.fn(*args) 
 
 @ Extendable
-def serialize(x):
+def serialize(x,name,iter):
     """Converts a vector to a JSON formatted string"""
     
     raise Optizelle.Exception(
@@ -44,7 +44,7 @@ def deserialize(x,x_json):
     raise Optizelle.Exception(
         "The deserialize function for the vector %s not defined." % str(x))
 
-def serialize_Rm(x):
+def serialize_Rm(x,name,iter):
     """Serializes a numpy array for the vector space Optizelle.Rm""" 
 
     # Create the json representation

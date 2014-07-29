@@ -140,7 +140,7 @@ class MyMessaging(Optizelle.Messaging):
 #---Messaging1---
 
 #---Serialization0---
-def serialize_MyVS(x):
+def serialize_MyVS(x,name,iter):
     """Serializes an array for the vector space MyVS""" 
 
     # Create the json representation
