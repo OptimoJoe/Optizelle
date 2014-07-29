@@ -24,6 +24,8 @@ set(ROSENBROCKADVANCEDAPIPATH
 set(SIMPLEEQUALITYPATH "${CMAKE_SOURCE_DIR}/src/examples/simple_equality/")
 set(SIMPLEINEQUALITYPATH "${CMAKE_SOURCE_DIR}/src/examples/simple_inequality/")
 set(SIMPLECONSTRAINEDPATH "${CMAKE_SOURCE_DIR}/src/examples/simple_constrained/")
+set(SIMPLECONSTRAINEDADVANCEDAPIPATH
+    "${CMAKE_SOURCE_DIR}/src/examples/simple_constrained_advanced_api/")
 set(SIMPLEQUADRATICCONEPATH
     "${CMAKE_SOURCE_DIR}/src/examples/simple_quadratic_cone/")
 set(SIMPLESDPCONEPATH

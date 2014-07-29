@@ -136,6 +136,7 @@ function self = MyIneq()
     self.pps = @(x,dx,dy) tostruct([ 0. ]); 
 end
 
+%---Serialization0---
 % Define the serialize routine for MyVS
 function x_json=serialize_MyVS(x,name,iter)
     % Create the filename where we put our vector
@@ -170,6 +171,7 @@ function MySerialization()
         @(x,x_json)deserialize_MyVS(x,x_json), ...
         @(x)isstruct(x) && isfield(x,'data') && isvector(x.data));
 end
+%---Serialization1---
 
 % Define a state manipulator that writes out the optimization state at
 % each iteration.

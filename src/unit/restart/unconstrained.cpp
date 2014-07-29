@@ -16,7 +16,9 @@ namespace Optizelle {
         template <>
         struct Serialization <Real,WW> {
             static std::string serialize(
-                typename WW <Real>::Vector const & x
+                typename WW <Real>::Vector const & x,
+                std::string const & name,
+                Natural const & iter
             ) { throw; }
             static typename WW <Real>::Vector deserialize(
                 typename WW <Real>::Vector const & x,

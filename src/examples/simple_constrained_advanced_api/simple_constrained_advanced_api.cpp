@@ -242,6 +242,7 @@ struct MyIneq :public Optizelle::VectorValuedFunction<double,MyVS,MyVS> {
     }
 };
 
+//---Serialization0---
 // Define serialization routines for MyVS
 namespace Optizelle {
     namespace json {
@@ -320,6 +321,7 @@ namespace Optizelle {
         };
     }
 }
+//---Serialization1---
 
 // Define a state manipulator that writes out the optimization state at
 // each iteration.

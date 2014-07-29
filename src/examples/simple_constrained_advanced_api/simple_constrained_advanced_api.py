@@ -162,6 +162,7 @@ class MyIneq(Optizelle.VectorValuedFunction):
     def pps(self,x,dx,dy,z):
         MyVS.zero(z)
 
+#---Serialization0---
 def serialize_MyVS(x,name,iter):
     """Serializes an array for the vector space MyVS""" 
 
@@ -211,6 +212,7 @@ def MySerialization():
         serialize_MyVS,array.array)
     Optizelle.json.Serialization.deserialize.register(
         deserialize_MyVS,array.array)
+#---Serialization1---
 
 # Define a state manipulator that writes out the optimization state at
 # each iteration.
