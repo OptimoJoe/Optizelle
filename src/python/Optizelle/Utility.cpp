@@ -392,6 +392,9 @@ namespace Optizelle {
             case AfterQuasi:
                 return Python::enumToPyObject(
                     "OptimizationLocation","AfterQuasi");
+            case AfterCheckStop:
+                return Python::enumToPyObject(
+                    "OptimizationLocation","AfterCheckStop");
             case EndOfOptimizationIteration:
                 return Python::enumToPyObject(
                     "OptimizationLocation","EndOfOptimizationIteration");
@@ -462,6 +465,9 @@ namespace Optizelle {
             else if(m==Python::enumToNatural(
                 "OptimizationLocation","AfterQuasi"))
                 return AfterQuasi;
+            else if(m==Python::enumToNatural(
+                "OptimizationLocation","AfterCheckStop"))
+                return AfterCheckStop;
             else if(m==Python::enumToNatural(
                 "OptimizationLocation","EndOfOptimizationIteration"))
                 return EndOfOptimizationIteration;
@@ -643,7 +649,11 @@ namespace Optizelle {
         // Serialization utility for the Rm vector space
         template <>
         struct Serialization <double,Python::PythonVS> {
-            static std::string serialize (Python::Vector const & x) {
+            static std::string serialize (
+                Python::Vector const & x,
+                std::string const & name_,
+                Natural const & iter_
+            ) {
                 // Grab the serialization module 
                 Python::PyObjectPtr module(PyImport_ImportModule(
                     "Optizelle.json.Serialization")); 
@@ -651,12 +661,18 @@ namespace Optizelle {
                 // Now, get the serialize routine
                 Python::PyObjectPtr serialize(PyObject_GetAttrString(
                     module.get(),"serialize"));
+                
+                // Make a Python object of the name and iteration 
+                Python::PyObjectPtr name(PyString_FromString(name_.c_str()));
+                Python::PyObjectPtr iter(PyInt_FromSize_t(iter_));
 
                 // Call the serialize routine on the vector
                 Python::PyObjectPtr x_json(
-                    Python::PyObject_CallObject1(
+                    Python::PyObject_CallObject3(
                         serialize.get(),
-                        const_cast <Python::Vector &> (x).get()));
+                        const_cast <Python::Vector &> (x).get(),
+                        name.get(),
+                        iter.get()));
             
                 // Check errors
                 if(x_json.get()==nullptr) {

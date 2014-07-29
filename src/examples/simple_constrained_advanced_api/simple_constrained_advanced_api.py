@@ -1,20 +1,18 @@
-# In this example, we duplicate the Rosenbrock example while demonstrating
-# some of the more advanced API features such as custom vector spaces,
-# messaging objects, and restarts.
+# Optimize a simple optimization problem with an optimal solution
+# of (1/3,1/3)
 
 from __future__ import print_function
 import Optizelle 
-import Optizelle.Unconstrained.State
-import Optizelle.Unconstrained.Functions
-import Optizelle.Unconstrained.Algorithms
-import Optizelle.json.Unconstrained
+import Optizelle.Constrained.State
+import Optizelle.Constrained.Functions
+import Optizelle.Constrained.Algorithms
+import Optizelle.json.Constrained
 import Optizelle.json.Serialization
 import sys
 import copy
 import array
 import math
 
-#---VectorSpace0---
 # Defines the vector space used for optimization.
 class MyVS(object):
     @staticmethod
@@ -94,87 +92,119 @@ class MyVS(object):
     def symm(x):
         """Symmetrization, x <- symm(x) such that L(symm(x)) is a symmetric operator"""
         pass
-#---VectorSpace1---
 
 # Squares its input
 sq = lambda x:x*x
 
-# Define the Rosenbrock function where
+# Define a simple objective where 
 # 
-# f(x,y)=(1-x)^2+100(y-x^2)^2
+# f(x,y)=(x+1)^2+(y+1)^2
 #
-class Rosenbrock(Optizelle.ScalarValuedFunction):
-    # Evaluation of the Rosenbrock function
+class MyObj(Optizelle.ScalarValuedFunction):
+
+    # Evaluation 
     def eval(self,x):
-        return sq(1.-x[0])+100.*sq(x[1]-sq(x[0]))
+        return sq(x[0]+1.)+sq(x[1]+1.)
 
     # Gradient
-    def grad(self,x,grad): 
-        grad[0]=-400*x[0]*(x[1]-sq(x[0]))-2*(1-x[0])
-        grad[1]=200*(x[1]-sq(x[0]))
+    def grad(self,x,grad):
+        grad[0]=2.*x[0]+2.
+        grad[1]=2.*x[1]+2.
 
     # Hessian-vector product
     def hessvec(self,x,dx,H_dx):
-    	H_dx[0] = (1200*sq(x[0])-400*x[1]+2)*dx[0]-400*x[0]*dx[1]
-        H_dx[1] = -400*x[0]*dx[0] + 200*dx[1]
+        H_dx[0]=2.*dx[0]
+        H_dx[1]=2.*dx[1]
 
-# Define a perfect preconditioner for the Hessian
-class RosenHInv(Optizelle.Operator):
-    def eval(self,state,dx,result):
-        x = state.x
-        one_over_det=1./(80000.*sq(x[0])-80000.*x[1]+400.)
-        result[0]=one_over_det*(200.*dx[0]+400.*x[0]*dx[1])
-        result[1]=(one_over_det*
-            (400.*x[0]*dx[0]+(1200.*x[0]*x[0]-400.*x[1]+2.)*dx[1]))
+# Define a simple equality
+#
+# g(x,y)= [ x + 2y = 1 ] 
+#
+class MyEq(Optizelle.VectorValuedFunction):
 
-#---Messaging0---
-# Define a custom messaging object
-class MyMessaging(Optizelle.Messaging):
-    """Defines how we output messages to the user"""
-   
-    def print(self,msg):
-        """Prints out normal diagnostic information"""
-        sys.stdout.write("PRINT:  %s\n" %(msg))
+    # y=g(x) 
+    def eval(self,x,y):
+        y[0]=x[0]+2.*x[1]-1.
 
-    def error(self,msg):
-        """Prints out error information"""
-        sys.stderr.write("ERROR:  %s\n" %(msg))
-#---Messaging1---
+    # y=g'(x)dx
+    def p(self,x,dx,y):
+        y[0]= dx[0]+2.*dx[1]
+
+    # z=g'(x)*dy
+    def ps(self,x,dy,z):
+        z[0]= dy[0]
+        z[1]= 2.*dy[0]
+
+    # z=(g''(x)dx)*dy
+    def pps(self,x,dx,dy,z):
+        MyVS.zero(z)
+
+# Define simple inequalities 
+#
+# h(x,y)= [ 2x + y >= 1 ] 
+#
+class MyIneq(Optizelle.VectorValuedFunction):
+
+    # y=h(x) 
+    def eval(self,x,y):
+        y[0]=2.*x[0]+x[1]-1.
+
+    # y=h'(x)dx
+    def p(self,x,dx,y):
+        y[0]= 2.*dx[0]+dx[1]
+
+    # z=h'(x)*dy
+    def ps(self,x,dy,z):
+        z[0]= 2.*dy[0]
+        z[1]= dy[0]
+
+    # z=(h''(x)dx)*dy
+    def pps(self,x,dx,dy,z):
+        MyVS.zero(z)
 
 #---Serialization0---
 def serialize_MyVS(x,name,iter):
     """Serializes an array for the vector space MyVS""" 
 
-    # Create the json representation
-    x_json="[ "
-    for i in xrange(0,len(x)):
-        x_json  += str(x[i]) + ", "
-    x_json=x_json[0:-2]
-    x_json +=" ]"
+    # Create the filename where we put our vector
+    fname = "./restart/%s.%04d.txt" % (name,iter)
 
+    # Actually write the vector there
+    fout = open(fname,"w");
+    for i in xrange(0,len(x)):
+        fout.write("%1.16e\n" % x[i]) 
+
+    # Close out the file
+    fout.close()
+
+    # Use this filename as the json string 
+    x_json = "\"%s\"" % fname
     return x_json
 
-def deserialize_MyVS(x,x_json):
+def deserialize_MyVS(x_,x_json):
     """Deserializes an array for the vector space MyVS""" 
 
     # Eliminate all whitespace
     x_json="".join(x_json.split())
 
-    # Check if we're a vector
-    if x_json[0:1]!="[" or x_json[-1:]!="]":
-        raise TypeError("Attempted to deserialize a non-array vector.")
-
     # Eliminate the initial and final delimiters
     x_json=x_json[1:-1]
 
-    # Create a list of the numbers involved 
-    x_json=x_json.split(",")
+    # Open the file for reading
+    fin = open(x_json,"r")
 
-    # Convert the strings to numbers
-    x_json=map(lambda x:float(x),x_json)
+    # Allocate a new vector to return
+    x = copy.deepcopy(x_)
+    
+    # Read in each of the elements
+    for i in xrange(0,len(x)):
+        x[i] = float(fin.readline())
 
-    # Create a MyVS vector
-    return array.array('d',x_json)
+    # Close out the file
+    fin.close()
+
+    # Return the result 
+    return x 
 
 # Register the serialization routines for arrays 
 def MySerialization():
@@ -184,7 +214,6 @@ def MySerialization():
         deserialize_MyVS,array.array)
 #---Serialization1---
 
-#---RestartManipulator0---
 # Define a state manipulator that writes out the optimization state at
 # each iteration.
 class MyRestartManipulator(Optizelle.StateManipulator):
@@ -192,50 +221,53 @@ class MyRestartManipulator(Optizelle.StateManipulator):
         # At the end of the optimization iteration, write the restart file
         if loc == Optizelle.OptimizationLocation.EndOfOptimizationIteration:
             # Create a reasonable file name
-            ss = "rosenbrock_advanced_api_%04d.json" % (state.iter)
+            ss = "simple_constrained_advanced_api_%04d.json" % (state.iter)
                 
             # Write the restart file
-            Optizelle.json.Unconstrained.write_restart( 
-               MyVS,MyMessaging(),ss,state)
-#---RestartManipulator1---
+            Optizelle.json.Constrained.write_restart( 
+               MyVS,MyVS,MyVS,Optizelle.Messaging(),ss,state)
 
 # Register the serialization routines
 MySerialization()
-    
+
 # Read in the name for the input file
 if not(len(sys.argv)==2 or len(sys.argv)==3):
-    sys.exit("python rosenbrock_advanced_api.py <parameters>\n" +
-             "python rosenbrock_advanced_api.py <parameters> <restart>")
+    sys.exit("python simple_constrained_advanced_api.py <parameters>\n" +
+             "python simple_constrained_advanced_api.py <parameters> <restart>")
 pname = sys.argv[1]
 rname = sys.argv[2] if len(sys.argv)==3 else ""
 
-# Generate an initial guess for Rosenbrock
-x = array.array('d',[-1.2,1.0])
+# Generate an initial guess 
+x = array.array('d',[2.1,1.1])
 
-# Create an unconstrained state based on this vector
-state=Optizelle.Unconstrained.State.t(MyVS,MyMessaging(),x)
+# Allocate memory for the equality multiplier 
+y = array.array('d',[0.])
 
-#---ReadRestart0---
+# Allocate memory for the inequality multiplier 
+z = array.array('d',[0.])
+
+# Create an optimization state
+state=Optizelle.Constrained.State.t(
+    MyVS,MyVS,MyVS,Optizelle.Messaging(),x,y,z)
+
 # If we have a restart file, read in the parameters 
 if len(sys.argv)==3:
-    Optizelle.json.Unconstrained.read_restart(
-        MyVS,MyMessaging(),rname,x,state)
+    Optizelle.json.Constrained.read_restart(
+        MyVS,MyVS,MyVS,Optizelle.Messaging(),rname,x,y,z,state)
 
-# Read additional parameters from file
-Optizelle.json.Unconstrained.read(MyVS,Optizelle.Messaging(),
-    pname,state)
-#---ReadRestart1---
+# Read the parameters from file
+Optizelle.json.Constrained.read(
+    MyVS,MyVS,MyVS,Optizelle.Messaging(),pname,state)
 
-# Create the bundle of functions 
-fns=Optizelle.Unconstrained.Functions.t()
-fns.f=Rosenbrock()
-fns.PH=RosenHInv()
+# Create a bundle of functions
+fns=Optizelle.Constrained.Functions.t()
+fns.f=MyObj()
+fns.g=MyEq()
+fns.h=MyIneq()
 
-#---Solver0---
 # Solve the optimization problem
-Optizelle.Unconstrained.Algorithms.getMin(
-    MyVS,MyMessaging(),fns,state,MyRestartManipulator())
-#---Solver1---
+Optizelle.Constrained.Algorithms.getMin(
+    MyVS,MyVS,MyVS,Optizelle.Messaging(),fns,state,MyRestartManipulator())
 
 # Print out the reason for convergence
 print("The algorithm converged due to: %s" % (
@@ -244,8 +276,6 @@ print("The algorithm converged due to: %s" % (
 # Print out the final answer
 print("The optimal point is: (%e,%e)" % (state.x[0],state.x[1]))
 
-#---WriteRestart0---
 # Write out the final answer to file
-Optizelle.json.Unconstrained.write_restart(
-    MyVS,Optizelle.Messaging(),"solution.json",state)
-#---WriteRestart1---
+Optizelle.json.Constrained.write_restart(MyVS,MyVS,MyVS,
+    Optizelle.Messaging(),"solution.json",state)

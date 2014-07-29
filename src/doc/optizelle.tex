@@ -577,6 +577,7 @@
 \newcommand{\secequality}{Simple equality constrained}
 \newcommand{\secinequality}{Simple inequality constrained}
 \newcommand{\secconstrained}{Simple constrained}
+\newcommand{\secsimpleconstrainedadvancedapi}{Simple constrained advanced API}
 \newcommand{\secrosenbrockadvancedapi}{Rosenbrock advanced API}
 \newcommand{\secrosenbrock}{Rosenbrock}
 \newcommand{\secquadratic}{Simple SOCP}
@@ -3606,7 +3607,7 @@ Number of blocks & \textct{x.numblocks()}
         {0}
         {m}
 \end{boldlist}
-\noindent In each command, the \textctref{serialize} and \textctref{deserialize} functions work in a similar manner.  The \textctref{serialize} function accepts a vector and then returns a valid JSON structure corresponding to this vector.  For \textctref{Rm}, we use simple JSON vector notation such as \textct{[1.2, 2.3, 3.4]}, but this can be significantly more complicated.  In fact, for large-scale optimization problems, we suggest storing the vector in a separate binary file and returning a JSON structure that denotes the name of the file and the byte where the information begins.  Next, the \textctref{deserialize} function accepts two arguments and returns a vector.  The first argument denotes a vector in the same vector space as the vector we need translated.  The second argument denotes a JSON formatted string of the vector we need to translate.  Generally, we use the first argument to initialize memory for the vector we eventually return.  Then, we use the JSON formatted string to fill in the appropriate information.  In C++, we accomplish this process through template specialization.  In Python, we call the \textct{serialize} and \textctref{deserialize} functions in the \hyperref[sec:import]{\textct{Optizelle.json.Serialization}} module with the \textct{"registration"} string.  Then, we provide our custom \textctref{serialize} and \textctref{deserialize} routines along with the type of the vector that we want to serialize in the variable \textct{vector_type}.  We obtain this information with the \textct{type} command and require it in order to disambiguate multiple serialization routines.  In MATLAB/Octave, we call the \textctref{serialize} and \textctref{deserialize} functions in the \hyperref[sec:import]{\textct{Optizelle.json.Serialization}} structure with the \textct{'registration'} string.  Then, similar to Python, we provide our custom \textctref{serialize} and \textctref{deserialize} routines along with a function \textct{check}.  The function \textct{check} accepts a single argument and returns \textct{1} when called with the kind of vector we want to serialize and \textct{0} otherwise.  We require the \textct{check} function to disambiguate the different serialization functions, so we try to make it as specific as possible. 
+\noindent In each command, the \textctref{serialize} and \textctref{deserialize} functions work in a similar manner.  The \textctref{serialize} function accepts a vector, the vector's name, and the current iteration. Then, \textctref{serialize} returns a valid JSON structure corresponding to this vector.  For \textctref{Rm}, we use simple JSON vector notation such as \textct{[1.2, 2.3, 3.4]}, but this can be significantly more complicated.  In fact, for large-scale optimization problems, we suggest storing the vector in a separate binary file and returning a JSON structure that denotes the name of the file.  In order to make process of defining these file names easier, we provide access to the variable name and iteration number as the second and third arguments, respectively.  Next, the \textctref{deserialize} function accepts two arguments and returns a vector.  The first argument denotes a vector in the same vector space as the vector we need translated.  The second argument denotes a JSON formatted string of the vector we need to translate.  Generally, we use the first argument to initialize memory for the vector we eventually return.  Then, we use the JSON formatted string to fill in the appropriate information.  In C++, we accomplish this process through template specialization.  In Python, we call the \textct{serialize} and \textctref{deserialize} functions in the \hyperref[sec:import]{\textct{Optizelle.json.Serialization}} module with the \textct{"registration"} string.  Then, we provide our custom \textctref{serialize} and \textctref{deserialize} routines along with the type of the vector that we want to serialize in the variable \textct{vector_type}.  We obtain this information with the \textct{type} command and require it in order to disambiguate multiple serialization routines.  In MATLAB/Octave, we call the \textctref{serialize} and \textctref{deserialize} functions in the \hyperref[sec:import]{\textct{Optizelle.json.Serialization}} structure with the \textct{'registration'} string.  Then, similar to Python, we provide our custom \textctref{serialize} and \textctref{deserialize} routines along with a function \textct{check}.  The function \textct{check} accepts a single argument and returns \textct{1} when called with the kind of vector we want to serialize and \textct{0} otherwise.  We require the \textct{check} function to disambiguate the different serialization functions, so we try to make it as specific as possible. 
 
         As an example, we return to our \exampleref{\secrosenbrockadvancedapi}{sec:rosenbrockadvancedapi} example.  There, we define custom serialization routines with the code:
 \begin{boldlist}
@@ -3621,6 +3622,21 @@ Number of blocks & \textct{x.numblocks()}
     \exampleitem
         {MATLAB/Octave}
         {\lstinputlisting[style=Matlab,linerange=Serialization0-Serialization1]{@ROSENBROCKADVANCEDAPIPATH@/rosenbrock_advanced_api.m}}
+\end{boldlist}
+        
+        As another example, we refer to our \exampleref{\secsimpleconstrainedadvancedapi}{sec:simpleconstrainedadvancedapi} example.  This differs from the previous example since we write our vectors to a separate file.  In order to accomplish this, we define custom serialization routines with the code:
+\begin{boldlist}
+    \exampleitem
+        {C++}
+        {\lstinputlisting[style=C++,linerange=Serialization0-Serialization1]{@SIMPLECONSTRAINEDADVANCEDAPIPATH@/simple_constrained_advanced_api.cpp}}
+
+    \exampleitem
+        {Python}
+        {\lstinputlisting[style=Python,linerange=Serialization0-Serialization1]{@SIMPLECONSTRAINEDADVANCEDAPIPATH@/simple_constrained_advanced_api.py}}
+
+    \exampleitem
+        {MATLAB/Octave}
+        {\lstinputlisting[style=Matlab,linerange=Serialization0-Serialization1]{@SIMPLECONSTRAINEDADVANCEDAPIPATH@/simple_constrained_advanced_api.m}}
 \end{boldlist}
 
         In some situations, we want to avoid using JSON all together.  Generally, this occurs when integrating Optizelle into an existing application with rigid I/O requirements.  In this case, we provide an alternative mechanism to generate restarts.
@@ -3805,6 +3821,31 @@ using the features described in our chapter \hyperref[ch:advanced]{\chadvanced}.
     \exampleitem
         {MATLAB/Octave}
         {\lstinputlisting[style=MATLAB]{@ROSENBROCKADVANCEDAPIPATH@/rosenbrock_advanced_api.m}}
+\end{boldlist}
+
+\section{\secsimpleconstrainedadvancedapi}\examplelabel{\secsimpleconstrainedadvancedapi}{sec:simpleconstrainedadvancedapi}
+
+        In our \exampleref{\secsimpleconstrainedadvancedapi}{sec:simpleconstrainedadvancedapi} example, we optimize the formulation
+$$
+    \begin{array}{rcl}
+        \min\limits_{x\in\re^2} && (x+1)^2+(y+1)^2\\
+        \st && x + 2y = 1\\
+            && 2x + y \geq 1
+    \end{array}
+$$
+which uses the same formulation as our example \exampleref{\secconstrained}{sec:constrained}.  It differs in that we implement a restart mechanism that writes our variables to an external file.  By using the features described in our chapter \hyperref[ch:advanced]{\chadvanced}, we accomplish this with the code:
+\begin{boldlist}
+    \exampleitem
+        {C++}
+        {\lstinputlisting[style=C++]{@SIMPLECONSTRAINEDADVANCEDAPIPATH@/simple_constrained_advanced_api.cpp}}
+
+    \exampleitem
+        {Python}
+        {\lstinputlisting[style=Python]{@SIMPLECONSTRAINEDADVANCEDAPIPATH@/simple_constrained_advanced_api.py}}
+
+    \exampleitem
+        {MATLAB/Octave}
+        {\lstinputlisting[style=MATLAB]{@SIMPLECONSTRAINEDADVANCEDAPIPATH@/simple_constrained_advanced_api.m}}
 \end{boldlist}
 
 \chapter{Algorithmic discussion}

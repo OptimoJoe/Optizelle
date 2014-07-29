@@ -20,10 +20,12 @@ namespace Optizelle {
         template <typename Real>
         struct Serialization <Real,XX> {
             static std::string serialize(
-                typename XX <Real>::Vector const & x
+                typename XX <Real>::Vector const & x,
+                std::string const & name,
+                Natural const & iter
             ) {
                 return Optizelle::json::Serialization
-                    <Real,Optizelle::Rm>::serialize(x);
+                    <Real,Optizelle::Rm>::serialize(x,name,iter);
             }
             static typename XX <Real>::Vector deserialize(
                 typename XX <Real>::Vector const & x,
@@ -37,10 +39,12 @@ namespace Optizelle {
         template <typename Real>
         struct Serialization <Real,YY> {
             static std::string serialize(
-                typename YY <Real>::Vector const & x
+                typename YY <Real>::Vector const & x,
+                std::string const & name,
+                Natural const & iter
             ) {
                 return Optizelle::json::Serialization
-                    <Real,Optizelle::Rm>::serialize(x);
+                    <Real,Optizelle::Rm>::serialize(x,name,iter);
             }
             static typename YY <Real>::Vector deserialize(
                 typename YY <Real>::Vector const & x,
@@ -54,10 +58,12 @@ namespace Optizelle {
         template <typename Real>
         struct Serialization <Real,ZZ> {
             static std::string serialize(
-                typename ZZ <Real>::Vector const & x
+                typename ZZ <Real>::Vector const & x,
+                std::string const & name,
+                Natural const & iter
             ) {
                 return Optizelle::json::Serialization
-                    <Real,Optizelle::Rm>::serialize(x);
+                    <Real,Optizelle::Rm>::serialize(x,name,iter);
             }
             static typename ZZ <Real>::Vector deserialize(
                 typename ZZ <Real>::Vector const & x,
