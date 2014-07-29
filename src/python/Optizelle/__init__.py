@@ -125,6 +125,7 @@ class OptimizationLocation(EnumeratedType):
     AfterGradient, \
     BeforeQuasi, \
     AfterQuasi, \
+    AfterCheckStop, \
     EndOfOptimizationIteration, \
     BeforeLineSearch, \
     AfterRejectedTrustRegion, \
@@ -132,7 +133,7 @@ class OptimizationLocation(EnumeratedType):
     BeforeActualVersusPredicted, \
     EndOfKrylovIteration, \
     EndOfOptimization \
-    = range(20)
+    = range(21)
 
 class ProblemClass(EnumeratedType):
     """Different problem classes"""

@@ -19,8 +19,6 @@ function rosenbrock_advanced_api(pname,rname)
 
 end
 
-
-
 %---VectorSpace0---
 % Convert a vector to structure
 function y = tostruct(x)

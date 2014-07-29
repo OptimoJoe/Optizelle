@@ -392,6 +392,9 @@ namespace Optizelle {
             case AfterQuasi:
                 return Python::enumToPyObject(
                     "OptimizationLocation","AfterQuasi");
+            case AfterCheckStop:
+                return Python::enumToPyObject(
+                    "OptimizationLocation","AfterCheckStop");
             case EndOfOptimizationIteration:
                 return Python::enumToPyObject(
                     "OptimizationLocation","EndOfOptimizationIteration");
@@ -462,6 +465,9 @@ namespace Optizelle {
             else if(m==Python::enumToNatural(
                 "OptimizationLocation","AfterQuasi"))
                 return AfterQuasi;
+            else if(m==Python::enumToNatural(
+                "OptimizationLocation","AfterCheckStop"))
+                return AfterCheckStop;
             else if(m==Python::enumToNatural(
                 "OptimizationLocation","EndOfOptimizationIteration"))
                 return EndOfOptimizationIteration;

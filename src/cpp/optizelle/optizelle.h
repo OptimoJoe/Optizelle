@@ -379,6 +379,11 @@ namespace Optizelle{
 
             // Occurs after we update our quasi-Newton information. 
             AfterQuasi,
+            
+            // This occurs after we check our stopping condition.  This is
+            // where the equality and inequality algorithms adjust the
+            // stopping conditions.
+            AfterCheckStop,
 
             // This occurs last in the optimization loop.  At this point,
             // we have already incremented our optimization iteration and
@@ -4777,6 +4782,9 @@ namespace Optizelle{
                     opt_stop=checkStop(fns,state);
 
                     // Manipulate the state if required
+                    smanip.eval(fns,state,OptimizationLocation::AfterCheckStop);
+
+                    // Manipulate the state if required
                     smanip.eval(fns,state,
                         OptimizationLocation::EndOfOptimizationIteration);
                 } 
@@ -7805,7 +7813,7 @@ namespace Optizelle{
                         g.eval(x,g_x);
                         break;
 
-                    case OptimizationLocation::EndOfOptimizationIteration:
+                    case OptimizationLocation::AfterCheckStop:
                         // Make sure we don't exit until the norm of the
                         // constraints is small as well.
                         adjustStoppingConditions(fns,state);
@@ -8233,6 +8241,7 @@ namespace Optizelle{
                 // Copy in all the real numbers
                 reals.emplace_back("mu",std::move(state.mu));
                 reals.emplace_back("mu_est",std::move(state.mu_est));
+                reals.emplace_back("mu_typ",std::move(state.mu_typ));
                 reals.emplace_back("eps_mu",std::move(state.eps_mu));
                 reals.emplace_back("sigma",std::move(state.sigma));
                 reals.emplace_back("gamma",std::move(state.gamma));
@@ -9538,7 +9547,7 @@ namespace Optizelle{
                     // Adjust the interior point parameter and insure that
                     // we do not converge unless the interior point parameter
                     // is small.
-                    case OptimizationLocation::EndOfOptimizationIteration:
+                    case OptimizationLocation::AfterCheckStop:
                         adjustStoppingConditions(fns,state);
                         break;
 

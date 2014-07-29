@@ -398,6 +398,9 @@ namespace Optizelle {
             case AfterQuasi:
                 return Matlab::enumToMxArray(
                     "OptimizationLocation","AfterQuasi");
+            case AfterCheckStop:
+                return Matlab::enumToMxArray(
+                    "OptimizationLocation","AfterCheckStop");
             case EndOfOptimizationIteration:
                 return Matlab::enumToMxArray(
                     "OptimizationLocation","EndOfOptimizationIteration");
@@ -468,6 +471,9 @@ namespace Optizelle {
             else if(m==Matlab::enumToNatural(
                 "OptimizationLocation","AfterQuasi"))
                 return AfterQuasi;
+            else if(m==Matlab::enumToNatural(
+                "OptimizationLocation","AfterCheckStop"))
+                return AfterCheckStop;
             else if(m==Matlab::enumToNatural(
                 "OptimizationLocation","EndOfOptimizationIteration"))
                 return EndOfOptimizationIteration;
