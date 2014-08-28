@@ -106,7 +106,9 @@ class MyIneq(Optizelle.VectorValuedFunction):
 
 # Read in the name for the input file
 if len(sys.argv)!=2:
-    sys.exit("simple_infeasible_inequality.py <parameters>")
+    sys.stderr.write("Usage: python simple_infeasible_inequality.py <parameters>.json\n")
+    raise ValueError("Parameters JSON file required.")
+
 fname=sys.argv[1]
 
 # Set the amount of infeasibility that we want to allow

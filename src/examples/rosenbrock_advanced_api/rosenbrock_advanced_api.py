@@ -201,11 +201,13 @@ class MyRestartManipulator(Optizelle.StateManipulator):
 MySerialization()
     
 # Read in the name for the input file
-if not(len(sys.argv)==2 or len(sys.argv)==3):
-    sys.exit("python rosenbrock_advanced_api.py <parameters>\n" +
-             "python rosenbrock_advanced_api.py <parameters> <restart>")
+if not len(sys.argv) not in (2,3):
+    sys.stderr.write("Usage: python rosenbrock_advanced_api.py <parameters>\n"
+                     "       python rosenbrock_advanced_api.py <parameters> <restart>")
+    raise ValueError("Parameters JSON file required.")
+
 pname = sys.argv[1]
-rname = sys.argv[2] if len(sys.argv)==3 else ""
+rname = sys.argv[-1]
 
 # Generate an initial guess for Rosenbrock
 x = array.array('d',[-1.2,1.0])

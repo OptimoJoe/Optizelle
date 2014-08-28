@@ -231,7 +231,8 @@ class MyEq(Optizelle.VectorValuedFunction):
 
 # Read in the name for the input file
 if len(sys.argv)!=2:
-    sys.exit("python nw_sqp_exercise.py <parameters>")
+    sys.stderr.write("Usage: python nw_sqp_exercise.py <parameters>.json\n")
+    raise ValueError("Parameters JSON file required.")
 fname = sys.argv[1]
 
 # Generate an initial guess for the primal
