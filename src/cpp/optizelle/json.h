@@ -906,6 +906,10 @@ namespace Optizelle {
                     msg,
                     root["Optizelle"].get("eps_mu",state.eps_mu),
                     "eps_mu");
+                state.mu=read::real <Real> (
+                    msg,
+                    root["Optizelle"].get("mu",state.mu),
+                    "mu");
                 state.sigma=read::real <Real> (
                     msg,
                     root["Optizelle"].get("sigma",state.sigma),
@@ -959,6 +963,7 @@ namespace Optizelle {
                 
                 // Write the optimization parameters
                 root["Optizelle"]["eps_mu"]=write::real(state.eps_mu);
+                root["Optizelle"]["mu"]=write::real(state.mu);
                 root["Optizelle"]["sigma"]=write::real(state.sigma);
                 root["Optizelle"]["gamma"]=write::real(state.gamma);
                 root["Optizelle"]["ipm"]=write_param(
