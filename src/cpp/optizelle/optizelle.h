@@ -1345,26 +1345,6 @@ namespace Optizelle{
         // Blank separator for printing
         std::string const blankSeparator = ".           ";
 
-        // Determines if we have an algorithm based on a Krylov method
-        template <typename ProblemClass>
-        bool is_krylov_algorithm(
-            typename ProblemClass::State::t const & state
-        ) {
-            // Create some shorcuts
-            AlgorithmClass::t const & algorithm_class
-                = state.algorithm_class;
-            LineSearchDirection::t const & dir=state.dir;
-
-            if( algorithm_class==AlgorithmClass::TrustRegion ||
-                algorithm_class==AlgorithmClass::UserDefined ||
-                (algorithm_class==AlgorithmClass::LineSearch &&
-                    dir == LineSearchDirection::NewtonCG)
-            )
-                return true;
-            else
-                return false;
-        }
-
         // Figure out if we're at the absolute beginning of the
         // optimization.  We have to be a little saavy about this
         // since we could be on the first iteration, but in the
@@ -1381,10 +1361,10 @@ namespace Optizelle{
             AlgorithmClass::t const & algorithm_class=state.algorithm_class;
 
             return (iter==1) &&
-                ((algorithm_class == AlgorithmClass::LineSearch && 
+                ((algorithm_class == AlgorithmClass::LineSearch &&
                     linesearch_iter==0) ||
                 ((algorithm_class == AlgorithmClass::TrustRegion ||
-                  algorithm_class == AlgorithmClass::UserDefined) && 
+                  algorithm_class == AlgorithmClass::UserDefined) &&
                     rejected_trustregion == 0));
         }
     }
@@ -2641,12 +2621,8 @@ namespace Optizelle{
                 // Preconditioner for the Hessian of the objective
                 std::unique_ptr <Operator <Real,XX,XX> > PH;
 
-                // Scaling used when modifying algorithms with things like
-                // an interior-point method
-                std::unique_ptr <Operator <Real,XX,XX> > Scaling;
-
                 // Initialize all of the pointers to null
-                t() : f(nullptr), PH(nullptr), Scaling(nullptr) {}
+                t() : f(nullptr), PH(nullptr) {}
                 
                 // A trick to allow dynamic casting later
                 virtual ~t() {}
@@ -2668,9 +2644,6 @@ namespace Optizelle{
                 // Objective modifications
                 ScalarValuedFunctionModifications <Real,XX> const & f_mod;
 
-                // Scaling
-                Operator <Real,XX,XX> const & Scaling;
-
                 // Current iterate
                 X_Vector const & x;
 
@@ -2688,7 +2661,6 @@ namespace Optizelle{
                     typename Functions::t const & fns,
                     typename State::t const & state
                 ) : f_mod(*(fns.f_mod)),
-                    Scaling(*(fns.Scaling)),
                     x(state.x),
                     grad(state.grad),
                     delta(state.delta),
@@ -2697,8 +2669,7 @@ namespace Optizelle{
 
                 void eval(X_Vector const & dx,X_Vector & result) const{
                     // Determine the norm of the gradient
-                    f_mod.grad_step(x,grad,result);
-                    Scaling.eval(result,grad_step);
+                    f_mod.grad_step(x,grad,grad_step);
                     Real norm_grad=sqrt(X::innr(grad_step,grad_step));
 
                     // Copy in the direction and scale it
@@ -3211,10 +3182,6 @@ namespace Optizelle{
                 // Check that a preconditioner exists 
                 if(fns.PH.get()==nullptr)
                     msg.error("Missing a preconditioner definition.");
-                
-                // Check that a scaling exists 
-                if(fns.Scaling.get()==nullptr)
-                    msg.error("Missing a scaling definition.");
             }
 
             // Initialize any missing functions for just unconstrained
@@ -3248,9 +3215,6 @@ namespace Optizelle{
                         msg.error("Not a valid Hessian approximation.");
                         break;
                 }
-
-                // Set the scaling
-                fns.Scaling.reset(new Identity());
 
                 // Check that all functions are defined (namely, the 
                 // objective).
@@ -3364,7 +3328,7 @@ namespace Optizelle{
 
                 // Figure out if we're at the absolute beginning of the
                 // optimization.
-                bool opt_begin = Utility::is_opt_begin <Unconstrained> (state); 
+                bool opt_begin = Utility::is_opt_begin <Unconstrained> (state);
 
                 // Determine some extra diagnostic information
                 Real merit_x=f_mod.merit(x,f_x);
@@ -3622,40 +3586,29 @@ namespace Optizelle{
                 // Objective modifications
                 ScalarValuedFunctionModifications <Real,XX> const & f_mod;
 
-                // Variable scalings
-                Operator <Real,XX,XX> const & Scaling;
-
                 // Store a reference to the base of the Hessian-vector product
                 X_Vector const & x;
 
-                // Allocate memory for temporaries 
-                mutable X_Vector x_tmp1;
-                mutable X_Vector x_tmp2;
+                // Allocate memory for temporaries
+                mutable X_Vector H_dx;
 
             public:
                 // Take in the objective and the base point during construction 
                 HessianOperator(
                     typename Functions::t const & fns,
                     X_Vector const & x_)
-                : f(*(fns.f)), f_mod(*(fns.f_mod)), Scaling(*(fns.Scaling)),
-                    x(x_), x_tmp1(X::init(x_)), x_tmp2(X::init(x_))
+                : f(*(fns.f)), f_mod(*(fns.f_mod)), x(x_), H_dx(X::init(x_))
                 {}
 
                 // Basic application
                 void eval(X_Vector const & dx,X_Vector & result)
                     const
                 {
-                    // x_tmp1 <- Scaling dx 
-                    Scaling.eval(dx,x_tmp1);
+                    // H_dx <- H dx
+                    f.hessvec(x,dx,H_dx);
 
-                    // result <- H Scaling dx
-                    f.hessvec(x,x_tmp1,result);
-
-                    // x_tmp2 <-  (H + f_mod) Scaling dx
-                    f_mod.hessvec_step(x,x_tmp1,result,x_tmp2);
-
-                    // result <- Scaling (H + f_mod) Scaling dx
-                    Scaling.eval(x_tmp2,result);
+                    // result <-  (H + f_mod) dx
+                    f_mod.hessvec_step(x,dx,H_dx,result);
                 }
             };
         
@@ -3697,8 +3650,8 @@ namespace Optizelle{
                 // m(dx) = f(x) + < grad,dx > + 0.5 < H(x)dx,dx >
                 Real model_dx= merit_x + X::innr(grad_step,dx)
                     + Real(.5)*X::innr(Hdx_step,dx);
-                
-                // Determine x+dx 
+
+                // Determine x+dx
                 X_Vector x_p_dx(X::init(x));
                 X::copy(dx,x_p_dx);
                 X::axpy(Real(1.),x,x_p_dx);
@@ -3756,7 +3709,6 @@ namespace Optizelle{
                 ScalarValuedFunction <Real,XX> const & f=*(fns.f);
                 ScalarValuedFunctionModifications <Real,XX> const & f_mod
                     = *(fns.f_mod);
-                Operator <Real,XX,XX> const & Scaling=*(fns.Scaling);
                 Operator <Real,XX,XX> const & PH=*(fns.PH);
                 Real const & eps_dx=state.eps_dx;
                 Real const & eps_krylov=state.eps_krylov;
@@ -3779,26 +3731,21 @@ namespace Optizelle{
                 Natural & history_reset=state.history_reset;
                 Real & alpha = state.alpha;
                 Real & alpha0 = state.alpha0;
-                
-                // Allocate a little bit of work space 
+
+                // Allocate a little bit of work space
                 X_Vector x_tmp1(X::init(x));
 
                 // Allocate memory for the Cauchy point
                 X_Vector dx_cp(X::init(x));
 
-                // Allocate memory for the scaled directions
-                X_Vector dx_scl(X::init(x));
-                X_Vector dx_cp_scl(X::init(x));
-
-                // Find -grad f(x) 
+                // Find -grad f(x)
                 X_Vector grad_step(X::init(x));
-                    f_mod.grad_step(x,grad,x_tmp1);
-                    Scaling.eval(x_tmp1,grad_step);
+                    f_mod.grad_step(x,grad,grad_step);
                 X_Vector minus_grad(X::init(x));
                     X::copy(grad_step,minus_grad);
                     X::scal(Real(-1.),minus_grad);
 
-                // Create the Hessian operator 
+                // Create the Hessian operator
                 HessianOperator H(fns,x);
 
                 // Continue to look for a step until one comes back as valid
@@ -3822,15 +3769,16 @@ namespace Optizelle{
                             H,
                             minus_grad,
                             PH,
-                            Scaling,
+                            typename Unconstrained <Real,XX>::Functions
+                                ::Identity(),
                             eps_krylov,
                             krylov_iter_max,
                             krylov_orthog_max,
                             delta,
                             x_tmp1,
 			    false,
-                            dx_scl,
-                            dx_cp_scl,
+                            dx,
+                            dx_cp,
                             residual_err0,
                             residual_err,
                             krylov_iter,
@@ -3843,14 +3791,15 @@ namespace Optizelle{
                             H,
                             minus_grad,
                             PH,
-                            Scaling,
+                            typename Unconstrained <Real,XX>::Functions
+                                ::Identity(),
                             eps_krylov,
                             krylov_iter_max,
                             krylov_orthog_max,
                             delta,
                             x_tmp1,
-                            dx_scl,
-                            dx_cp_scl,
+                            dx,
+                            dx_cp,
                             residual_err0,
                             residual_err,
                             krylov_iter,
@@ -3859,14 +3808,10 @@ namespace Optizelle{
                     }
 
                     // Force a descent direction
-                    if(X::innr(dx_scl,grad_step) > 0)
-                        X::scal(Real(-1.),dx_scl);
-                    if(X::innr(dx_cp_scl,grad_step)> 0)
-                        X::scal(Real(-1.),dx_cp_scl);
-
-                    // Change variables back to the original scaling 
-                    Scaling.eval(dx_scl,dx);
-                    Scaling.eval(dx_cp_scl,dx_cp);
+                    if(X::innr(dx,grad_step) > 0)
+                        X::scal(Real(-1.),dx);
+                    if(X::innr(dx_cp,grad_step)> 0)
+                        X::scal(Real(-1.),dx_cp);
 
                     // Calculate the Krylov error
                     krylov_rel_err = residual_err 
@@ -3926,7 +3871,6 @@ namespace Optizelle{
                 // Create some shortcuts 
                 ScalarValuedFunctionModifications <Real,XX> const &
                     f_mod=*(fns.f_mod);
-                Operator <Real,XX,XX> const & Scaling=*(fns.Scaling);
                 Operator <Real,XX,XX> const & PH=*(fns.PH);
                 X_Vector const & x=state.x;
                 X_Vector const & grad=state.grad;
@@ -3934,8 +3878,7 @@ namespace Optizelle{
 
                 // Determine the gradient for the step computation
                 X_Vector grad_step(X::init(grad));
-                    f_mod.grad_step(x,grad,dx);
-                    Scaling.eval(dx,grad_step);
+                    f_mod.grad_step(x,grad,grad_step);
 
                 // We take the steepest descent direction and apply the
                 // preconditioner.
@@ -3953,7 +3896,6 @@ namespace Optizelle{
                 // Create some shortcuts 
                 ScalarValuedFunctionModifications <Real,XX> const &
                     f_mod=*(fns.f_mod);
-                Operator <Real,XX,XX> const & Scaling=*(fns.Scaling);
                 Operator <Real,XX,XX> const & PH=*(fns.PH);
                 X_Vector const & x=state.x;
                 X_Vector const & grad=state.grad;
@@ -3971,8 +3913,7 @@ namespace Optizelle{
 
                 // Determine the gradient for the step computation
                 X_Vector grad_step(X::init(grad));
-                    f_mod.grad_step(x,grad,dx);
-                    Scaling.eval(dx,grad_step);
+                    f_mod.grad_step(x,grad,grad_step);
 
                 // If we're on the first iterations, we take the steepest
                 // descent direction
@@ -4016,22 +3957,16 @@ namespace Optizelle{
                 // Create some shortcuts 
                 ScalarValuedFunctionModifications <Real,XX> const &
                     f_mod=*(fns.f_mod);
-                Operator <Real,XX,XX> const & Scaling=*(fns.Scaling);
                 Operator <Real,XX,XX> const & PH=*(fns.PH);
                 X_Vector const & x=state.x;
                 X_Vector const & grad=state.grad;
                 X_Vector const & grad_old=state.grad_old;
 
-                // Allocate a little bit of workspace
-                X_Vector x_tmp1(X::init(x));
-
                 // Determine the gradient for the step computation
                 X_Vector grad_step(X::init(grad));
-                    f_mod.grad_step(x,grad,x_tmp1);
-                    Scaling.eval(x_tmp1,grad_step);
+                    f_mod.grad_step(x,grad,grad_step);
                 X_Vector grad_old_step(X::init(grad));
-                    f_mod.grad_step(x,grad_old,x_tmp1);
-                    Scaling.eval(x_tmp1,grad_old_step);
+                    f_mod.grad_step(x,grad_old,grad_old_step);
 
                 // Apply the preconditioner to the gradients 
                 X_Vector PH_grad_step(X::init(grad_step));
@@ -4052,22 +3987,16 @@ namespace Optizelle{
                 // Create some shortcuts 
                 ScalarValuedFunctionModifications <Real,XX> const &
                     f_mod=*(fns.f_mod);
-                Operator <Real,XX,XX> const & Scaling=*(fns.Scaling);
                 Operator <Real,XX,XX> const & PH=*(fns.PH);
                 X_Vector const & x=state.x;
                 X_Vector const & grad=state.grad;
                 X_Vector const & grad_old=state.grad_old;
 
-                // Allocate a little bit of workspace
-                X_Vector x_tmp1(X::init(x));
-
                 // Determine the gradient for the step computation
                 X_Vector grad_step(X::init(grad));
-                    f_mod.grad_step(x,grad,x_tmp1);
-                    Scaling.eval(x_tmp1,grad_step);
+                    f_mod.grad_step(x,grad,grad_step);
                 X_Vector grad_old_step(X::init(grad));
-                    f_mod.grad_step(x,grad_old,x_tmp1);
-                    Scaling.eval(x_tmp1,grad_old_step);
+                    f_mod.grad_step(x,grad_old,grad_old_step);
 
                 // Find grad-grad_old 
                 X_Vector grad_m_gradold(X::init(grad));
@@ -4094,23 +4023,17 @@ namespace Optizelle{
                 // Create some shortcuts 
                 ScalarValuedFunctionModifications <Real,XX> const &
                     f_mod=*(fns.f_mod);
-                Operator <Real,XX,XX> const & Scaling=*(fns.Scaling);
                 Operator <Real,XX,XX> const & PH=*(fns.PH);
                 X_Vector const & x=state.x;
                 X_Vector const & grad=state.grad;
                 X_Vector const & grad_old=state.grad_old;
                 X_Vector const & dx_old=state.dx_old;
 
-                // Allocate a little bit of workspace
-                X_Vector x_tmp1(X::init(x));
-
                 // Determine the gradient for the step computation
                 X_Vector grad_step(X::init(grad));
-                    f_mod.grad_step(x,grad,x_tmp1);
-                    Scaling.eval(x_tmp1,grad_step);
+                    f_mod.grad_step(x,grad,grad_step);
                 X_Vector grad_old_step(X::init(grad));
-                    f_mod.grad_step(x,grad_old,x_tmp1);
-                    Scaling.eval(x_tmp1,grad_old_step);
+                    f_mod.grad_step(x,grad_old,grad_old_step);
 
                 // Find grad-grad_old 
                 X_Vector grad_m_gradold(X::init(grad));
@@ -4137,15 +4060,13 @@ namespace Optizelle{
                 // Create some shortcuts 
                 ScalarValuedFunctionModifications <Real,XX> const &
                     f_mod=*(fns.f_mod);
-                Operator <Real,XX,XX> const & Scaling=*(fns.Scaling);
                 X_Vector const & x=state.x;
                 X_Vector const & grad=state.grad;
                 X_Vector & dx=state.dx;
 
                 // Determine the gradient for the step computation
                 X_Vector grad_step(X::init(grad));
-                    f_mod.grad_step(x,grad,dx);
-                    Scaling.eval(dx,grad_step);
+                    f_mod.grad_step(x,grad,grad_step);
 
                 // Create the inverse BFGS operator
                 typename Functions::InvBFGS Hinv(msg,state); 
@@ -4307,7 +4228,6 @@ namespace Optizelle{
                 ScalarValuedFunction <Real,XX> const & f=*(fns.f);
                 ScalarValuedFunctionModifications <Real,XX> const & f_mod
                     = *(fns.f_mod);
-                Operator <Real,XX,XX> const & Scaling=*(fns.Scaling);
                 X_Vector const & x=state.x;
                 X_Vector const & grad=state.grad;
                 X_Vector const & x_old=state.x_old;
@@ -4326,12 +4246,10 @@ namespace Optizelle{
 
                 // Determine the gradient for the step computation
                 X_Vector grad_step(X::init(grad));
-                    f_mod.grad_step(x,grad,dx);
-                    Scaling.eval(dx,grad_step);
+                    f_mod.grad_step(x,grad,grad_step);
                 
                 X_Vector grad_old_step(X::init(grad));
-                    f_mod.grad_step(x,grad_old,dx);
-                    Scaling.eval(dx,grad_old_step);
+                    f_mod.grad_step(x,grad_old,grad_old_step);
 
                 // Find delta_grad
                 X_Vector delta_grad(X::init(x));
@@ -4367,7 +4285,6 @@ namespace Optizelle{
                 ScalarValuedFunction <Real,XX> const & f=*(fns.f);
                 ScalarValuedFunctionModifications <Real,XX> const & f_mod
                     = *(fns.f_mod);
-                Operator <Real,XX,XX> const & Scaling=*(fns.Scaling);
                 Operator <Real,XX,XX> const & PH=*(fns.PH);
                 X_Vector const & x=state.x;
                 X_Vector const & grad=state.grad;
@@ -4423,17 +4340,12 @@ namespace Optizelle{
                     // Allocate memory for the Cauchy point
                     X_Vector dx_cp(X::init(x));
 
-                    // Allocate memory for the scaled directions
-                    X_Vector dx_scl(X::init(x));
-                    X_Vector dx_cp_scl(X::init(x));
-
                     // Create the Hessian operator
                     HessianOperator H(fns,x);
 
-                    // Find -grad f(x) 
+                    // Find -grad f(x)
                     X_Vector grad_step(X::init(grad));
-                        f_mod.grad_step(x,grad,dx);
-                        Scaling.eval(dx,grad_step);
+                        f_mod.grad_step(x,grad,grad_step);
                     X_Vector minus_grad(X::init(x));
                         X::copy(grad_step,minus_grad);
                         X::scal(Real(-1.),minus_grad);
@@ -4457,8 +4369,8 @@ namespace Optizelle{
                             std::numeric_limits <Real>::infinity(),
                             x_cntr,
                             false,
-                            dx_scl,
-                            dx_cp_scl,
+                            dx,
+                            dx_cp,
                             residual_err0,
                             residual_err,
                             krylov_iter,
@@ -4478,8 +4390,8 @@ namespace Optizelle{
                             krylov_orthog_max,
                             std::numeric_limits <Real>::infinity(),
                             x_cntr,
-                            dx_scl,
-                            dx_cp_scl,
+                            dx,
+                            dx_cp,
                             residual_err0,
                             residual_err,
                             krylov_iter,
@@ -4488,14 +4400,10 @@ namespace Optizelle{
                     }
 
                     // Force a descent direction
-                    if(X::innr(dx_scl,grad_step) > 0)
+                    if(X::innr(dx,grad_step) > 0)
                         X::scal(Real(-1.),dx);
-                    if(X::innr(dx_cp_scl,grad_step) > 0)
+                    if(X::innr(dx_cp,grad_step) > 0)
                         X::scal(Real(-1.),dx_cp);
-
-                    // Change variables back to the original scaling 
-                    Scaling.eval(dx_scl,dx);
-                    Scaling.eval(dx_cp_scl,dx_cp);
 
                     // Calculate the Krylov error
                     krylov_rel_err = residual_err 
@@ -6329,7 +6237,7 @@ namespace Optizelle{
                 // Figure out if we're at the absolute beginning of the
                 // optimization.
                 bool opt_begin = Utility::is_opt_begin <EqualityConstrained> (
-                    state); 
+                    state);
 
                 // Get a iterator to the last element prior to inserting
                 // elements
@@ -8073,10 +7981,10 @@ namespace Optizelle{
                 // How close we move to the boundary during a single step
                 Real gamma;
 
-                // Raw step multiplier for x 
+                // Raw step multiplier for x
                 Real alpha_x;
 
-                // Raw step multiplier for z 
+                // Raw step multiplier for z
                 Real alpha_z;
 
                 // Type of interior point method
@@ -8107,7 +8015,7 @@ namespace Optizelle{
                     ),
                     mu(
                         //---mu0---
-                        1.0 
+                        1.0
                         //---mu1---
                     ),
                     mu_est(
@@ -8185,7 +8093,7 @@ namespace Optizelle{
                     // Any
                     //---h_x_valid1---
                 
-                // Check that the interior point parameter is positive 
+                // Check that the interior point parameter is positive
                 if(!(
                     //---mu_valid0---
                     state.mu > Real(0.)
@@ -8243,29 +8151,14 @@ namespace Optizelle{
                 ))
                     ss << "The fraction to the boundary must be between " 
                         "0 and 1: gamma= " << state.gamma;
-                
-                // Check that the x step multiplier to the boundary is
-                // nonnegative
-                else if(!(
+
                     //---alpha_x_valid0---
-                    (state.iter == 1 && state.alpha_x != state.alpha_x) ||
-                    state.alpha_x >= Real(0.)
+                    // Any
                     //---alpha_x_valid1---
-                )) 
-                    ss << "The x step multiplier to the boundary must be "
-                        "nonnegative: alpha_x = " << state.alpha_x;
-                
-                // Check that the z step multiplier to the boundary is
-                // nonnegative 
-                else if(!(
+                    
                     //---alpha_z_valid0---
-                    (state.iter == 1 && state.alpha_z != state.alpha_z) ||
-                    state.ipm == InteriorPointMethod::LogBarrier || 
-                    state.alpha_z >= Real(0.)
+                    // Any
                     //---alpha_z_valid1---
-                )) 
-                    ss << "The z step multiplier to the boundary must be "
-                        "nonnegative: alpha_z = " << state.alpha_z;
                     
                     //---ipm_valid0---
                     // Any
@@ -8565,42 +8458,6 @@ namespace Optizelle{
                 t() : Unconstrained <Real,XX>::Functions::t(), h(nullptr) {}
             };
 
-            // Scales elements near the boundary 
-            struct BoundaryScaling : public Operator <Real,XX,XX> {
-            private:
-                // Inequality constraint.
-                Optizelle::VectorValuedFunction <Real,XX,ZZ> const & h;
-
-                // Current iterate
-                X_Vector const & x;
-                
-                // Inequality constraint evaluated at x
-                Z_Vector const & h_x;
-                
-                // Some workspace for the below functions
-                mutable Z_Vector z_tmp1;
-                mutable Z_Vector z_tmp2;
-
-            public:
-                BoundaryScaling(
-                    typename State::t const & state,
-                    typename Functions::t const & fns
-                ) : h(*(fns.h)),
-                    x(state.x),
-                    h_x(state.h_x),
-                    z_tmp1(Z::init(state.z)),
-                    z_tmp2(Z::init(state.z))
-                {}
-                
-                // Scales the iterate with  h'(x)*L(h(x))h'(x).  The idea is
-                // that we're going to make elements near the boundary small.  
-                void eval(X_Vector const & dx,X_Vector & result) const{
-                    h.p(x,dx,z_tmp1);
-                    Z::prod(h_x,z_tmp1,z_tmp2);
-                    h.ps(x,z_tmp2,result);
-                }
-            };
-
             struct InequalityModifications
                 : public Optizelle::ScalarValuedFunctionModifications <Real,XX>
             {
@@ -8857,9 +8714,6 @@ namespace Optizelle{
                 // Check that all functions are defined 
                 check(msg,fns);
 
-                // Set a scaling that shrinks elements near the boundary
-                //fns.Scaling.reset(new BoundaryScaling(state,fns));
-
                 // Modify the objective 
                 fns.f_mod.reset(new InequalityModifications(state,fns));
             }
@@ -8923,14 +8777,14 @@ namespace Optizelle{
                 // Create some shortcuts
                 Real const & mu=state.mu; 
                 Real const & mu_est=state.mu_est; 
-                Real const & alpha_x=state.alpha_x; 
-                Real const & alpha_z=state.alpha_z; 
+                Real const & alpha_x=state.alpha_x;
+                Real const & alpha_z=state.alpha_z;
                 Natural const & msg_level = state.msg_level;
-                
+
                 // Figure out if we're at the absolute beginning of the
                 // optimization.
                 bool opt_begin = Utility::is_opt_begin <InequalityConstrained> (
-                    state); 
+                    state);
 
                 // Get a iterator to the last element prior to inserting
                 // elements
@@ -9409,7 +9263,7 @@ namespace Optizelle{
 
                 // Find the largest alpha such that
                 // alpha dz + z >=0
-                alpha_z=Z::srch(dz,z); 
+                alpha_z=Z::srch(dz,z);
 
                 // Figure out how much to shorten the steps, if at all
                 alpha_x = alpha_x*gamma>Real(1.) ? Real(1.) : alpha_x*gamma;
@@ -9523,7 +9377,7 @@ namespace Optizelle{
 
                 // Only the dual step is restrictive
                 if( alpha_x > std::numeric_limits <Real>::max() &&
-                    alpha_z <= std::numeric_limits <Real>::max() 
+                    alpha_z <= std::numeric_limits <Real>::max()
                 )
                     alpha0 = alpha_z;
 
@@ -9537,7 +9391,7 @@ namespace Optizelle{
                 else if( alpha_x > std::numeric_limits <Real>::max() &&
                     alpha_z > std::numeric_limits <Real>::max()
                 )
-                    alpha0 = alpha_x; 
+                    alpha0 = alpha_x;
 
                 // Both steps are restrictive
                 else
@@ -9675,17 +9529,16 @@ namespace Optizelle{
 
                         // Initialize the value h(x)
                         h.eval(x,h_x);
-                        
-                        #if 1
-                        
+
+                        #if 0
                         // Set z to be
-                        // 
+                        //
                         // (mu <e,e> / <h(x),h(x)>) h(x)
-                        // 
+                        //
                         // In this way,
-                        // 
+                        //
                         // mu_est = <h(x),z> / <e,e>
-                        //        = mu 
+                        //        = mu
                         //
                         // On the first iteration with h'(x)=I and linear cone
                         // constraints
@@ -9693,48 +9546,47 @@ namespace Optizelle{
                         // f_mod = h'(x)* inv(L(h(x)))(h'(x)dx o z)
                         //       = inv(L(h(x)))(mu <e,e> / <h(x),h(x)>)L(h(x))dx
                         //       = (mu <e,e> / <h(x),h(x)>) dx
-                        // 
+                        //
                         // Basically, it sets the spectrum of the Hessian
                         // modification to be a multiple of the identity.
 
-                        // z_tmp1 <- e 
+                        // z_tmp1 <- e
                         Z_Vector z_tmp1(Z::init(z));
                             Z::id(z_tmp1);
-                        
+
                         // norm_h_2 = || h(x) ||^2
                         Real norm_h_2 = Z::innr(h_x,h_x);
 
                         // m = <e,e>
                         Real m = Z::innr(z_tmp1,z_tmp1);
 
-                        // z <- ( mu <e,e> / <h(x),h(x)> ) h(x) 
+                        // z <- ( mu <e,e> / <h(x),h(x)> ) h(x)
                         Z::copy(h_x,z);
                         Z::scal(mu*m/norm_h_2,z);
 
                         #elif 0
-                        
                         // Set z to be
-                        // 
+                        //
                         // mu inv(L(h(x))) e
-                        // 
+                        //
                         // In this way,
-                        // 
+                        //
                         // h(x) o z = mu e
-                        // 
+                        //
                         // mu_est = <h(x),z> / <e,e>
-                        //        = mu 
+                        //        = mu
 
-                        // z_tmp1 <- e 
+                        // z_tmp1 <- e
                         Z_Vector z_tmp1(Z::init(z));
                             Z::id(z_tmp1);
 
-                        // z <- inv(L(h(x))) e 
+                        // z <- inv(L(h(x))) e
                         Z::linv(h_x,z_tmp1,z);
 
                         // z <- mu inv(L(h(x))) e
                         Z::scal(mu,z);
 
-                        #elif 0
+                        #elif 1
                         // Set z to be
                         // 
                         // ( || h(x) || / || inv(L(h(x))) e || ) inv(L(h(x))) e
@@ -9764,7 +9616,7 @@ namespace Optizelle{
                         // z <- ( ||h(x)|| / ||inv(L(h(x))) e|| ) inv(L(h(x))) e
                         Z::scal(norm_h/norm_linv_hx_e,z);
                
-                        #else
+                        #elif 0
                         // Set z to be m / <h(x),e> e.  In this way,
                         // mu_est = <h(x),z> / m = 1.
                         Z::id(z);

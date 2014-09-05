@@ -3267,6 +3267,8 @@ namespace Optizelle {
                         "eps_mu",
                         "sigma",
                         "gamma",
+                        "alpha_x",
+                        "alpha_z",
                         "ipm",
                         "cstrat",
                         "h_diag"};
@@ -3304,6 +3306,8 @@ namespace Optizelle {
                     toMatlab::Real("eps_mu",state.eps_mu,mxstate);
                     toMatlab::Real("sigma",state.sigma,mxstate);
                     toMatlab::Real("gamma",state.gamma,mxstate);
+                    toMatlab::Real("alpha_x",state.alpha_x,mxstate);
+                    toMatlab::Real("alpha_z",state.alpha_z,mxstate);
                     toMatlab::Param <InteriorPointMethod::t> (
                         "ipm",
                         InteriorPointMethod::toMatlab,
@@ -3342,6 +3346,8 @@ namespace Optizelle {
                     fromMatlab::Real("eps_mu",mxstate,state.eps_mu);
                     fromMatlab::Real("sigma",mxstate,state.sigma);
                     fromMatlab::Real("gamma",mxstate,state.gamma);
+                    fromMatlab::Real("alpha_x",mxstate,state.alpha_x);
+                    fromMatlab::Real("alpha_z",mxstate,state.alpha_z);
                     fromMatlab::Param <InteriorPointMethod::t> (
                         "ipm",
                         InteriorPointMethod::fromMatlab,

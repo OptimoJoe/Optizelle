@@ -3001,6 +3001,8 @@ namespace Optizelle {
                     toPython::Real("eps_mu",state.eps_mu,pystate);
                     toPython::Real("sigma",state.sigma,pystate);
                     toPython::Real("gamma",state.gamma,pystate);
+                    toPython::Real("alpha_x",state.alpha_x,pystate);
+                    toPython::Real("alpha_z",state.alpha_z,pystate);
                     toPython::Param <InteriorPointMethod::t> (
                         "ipm",
                         InteriorPointMethod::toPython,
@@ -3039,6 +3041,8 @@ namespace Optizelle {
                     fromPython::Real("eps_mu",pystate,state.eps_mu);
                     fromPython::Real("sigma",pystate,state.sigma);
                     fromPython::Real("gamma",pystate,state.gamma);
+                    fromPython::Real("alpha_x",pystate,state.alpha_x);
+                    fromPython::Real("alpha_z",pystate,state.alpha_z);
                     fromPython::Param <InteriorPointMethod::t> (
                         "ipm",
                         InteriorPointMethod::fromPython,
