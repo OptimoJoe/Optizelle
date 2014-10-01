@@ -545,6 +545,8 @@ namespace Optizelle{
                 return "PrimalDualLinked";
             case LogBarrier:
                 return "LogBarrier";
+            case PrimalDualScaled:
+                return "PrimalDualScaled";
             default:
                 throw;
             }
@@ -558,6 +560,8 @@ namespace Optizelle{
                 return PrimalDualLinked; 
             else if(ipm=="LogBarrier")
                 return LogBarrier; 
+            else if(ipm=="PrimalDualScaled")
+                return PrimalDualScaled;
             else
                 throw;
         }
@@ -566,7 +570,8 @@ namespace Optizelle{
         bool is_valid(std::string const & name) {
             if( name=="PrimalDual" ||
                 name=="PrimalDualLinked" ||
-                name=="LogBarrier"
+                name=="LogBarrier" ||
+                name=="PrimalDualScaled"
             )
                 return true;
             else
