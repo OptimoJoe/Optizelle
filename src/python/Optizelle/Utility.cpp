@@ -508,9 +508,6 @@ namespace Optizelle {
             case LogBarrier:
                 return Python::enumToPyObject("InteriorPointMethod",
                     "LogBarrier");
-            case PrimalDualScaled:
-                return Python::enumToPyObject("InteriorPointMethod",
-                    "PrimalDualScaled");
             default:
                 throw;
             }
@@ -531,10 +528,6 @@ namespace Optizelle {
                 "LogBarrier")
             )
                 return LogBarrier;
-            else if(m==Python::enumToNatural("InteriorPointMethod",
-                "PrimalDualScaled")
-            )
-                return PrimalDualScaled;
             else
                 throw;
         }

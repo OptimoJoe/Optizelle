@@ -514,9 +514,6 @@ namespace Optizelle {
             case LogBarrier:
                 return Matlab::enumToMxArray("InteriorPointMethod",
                     "LogBarrier");
-            case PrimalDualScaled:
-                return Matlab::enumToMxArray("InteriorPointMethod",
-                    "PrimalDualScaled");
             default:
                 throw;
             }
@@ -537,10 +534,6 @@ namespace Optizelle {
                 "LogBarrier")
             )
                 return LogBarrier;
-            else if(m==Matlab::enumToNatural("InteriorPointMethod",
-                "PrimalDualScaled")
-            )
-                return PrimalDualScaled;
             else
                 throw;
         }

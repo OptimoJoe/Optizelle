@@ -153,9 +153,8 @@ class InteriorPointMethod(EnumeratedType):
     """Different kinds of interior point methods"""
     PrimalDual, \
     PrimalDualLinked, \
-    LogBarrier, \
-    PrimalDualScaled \
-    = range(4)
+    LogBarrier \
+    = range(3)
     
 class CentralityStrategy(EnumeratedType):
     """Different schemes for adjusting the interior point centrality"""

@@ -470,10 +470,7 @@ namespace Optizelle{
             PrimalDual,          // Standard primal-dual interior point method 
             PrimalDualLinked,    // A primal dual IPM, but the primal and dual
                                  // variables are kept in lock step.
-            LogBarrier,          // Primal log-barrier method
-            PrimalDualScaled     // A primal-dual interior piont method where we
-                                 // relax the complementary slackness condition
-                                 // into h(x) o ( z - mu h(x) ) = 0
+            LogBarrier           // Primal log-barrier method 
             //---InteriorPointMethod1---
         };
         
@@ -8476,9 +8473,6 @@ namespace Optizelle{
 
                 // Inequality constraint.
                 Optizelle::VectorValuedFunction <Real,XX,ZZ> const & h;
-
-                // Kind of interior point method
-                InteriorPointMethod::t const & ipm;
                 
                 // Inequality Lagrange multiplier
                 Z_Vector const & z;
@@ -8495,7 +8489,6 @@ namespace Optizelle{
                 mutable X_Vector x_tmp1;
                 mutable Z_Vector z_tmp1;
                 mutable Z_Vector z_tmp2;
-                mutable Z_Vector z_tmp3;
                 
                 // Variables used for caching.  The boolean values denote
                 // whether or not we've started caching yet.
@@ -8505,8 +8498,8 @@ namespace Optizelle{
                 mutable std::pair <bool,Z_Vector> z_lag;
                 mutable std::pair <bool,X_Vector> x_schur;
                 mutable std::pair <bool,Z_Vector> z_schur;
-                mutable X_Vector lag_mod;
-                mutable X_Vector schur_mod;
+                mutable X_Vector hpxsz;
+                mutable X_Vector hpxs_invLhx_e;
 
                 // Adds the Lagrangian pieces to the gradient
                 void grad_lag(
@@ -8524,11 +8517,8 @@ namespace Optizelle{
                         rel_err_cached <Real,ZZ> (z,z_lag)
                             >= std::numeric_limits <Real>::epsilon()*1e1 
                     ) {
-                        // lag_mod <- h'(x)* z
-                        h.ps(x,z,lag_mod);
-
-                        // lag_mod <- -h'(x)* z
-                        X::scal(Real(-1.0),lag_mod);
+                        // hpxsz <- h'(x)* z 
+                        h.ps(x,z,hpxsz);
 
                         // Cache the values
                         x_lag.first=true;
@@ -8538,7 +8528,7 @@ namespace Optizelle{
                     }
 
                     // grad_lag <- grad f(x) - h'(x)*z
-                    X::axpy(Real(1.0),lag_mod,grad_lag);
+                    X::axpy(-Real(1.0),hpxsz,grad_lag);
                 }
                 
                 // Adds the Schur complement pieces to the gradient
@@ -8557,31 +8547,14 @@ namespace Optizelle{
                         rel_err_cached <Real,ZZ> (z,z_schur)
                             >= std::numeric_limits <Real>::epsilon()*1e1
                     ) {
-                        switch(ipm){
-                        case InteriorPointMethod::PrimalDual:
-                        case InteriorPointMethod::PrimalDualLinked:
-                        case InteriorPointMethod::LogBarrier:
-                            // z_tmp1 <- e
-                            Z::id(z_tmp1);
+                        // z_tmp1 <- e
+                        Z::id(z_tmp1);
 
-                            // z_tmp2 <- inv(L(h(x))) e
-                            Z::linv(h_x,z_tmp1,z_tmp2);
+                        // z_tmp2 <- inv(L(h(x))) e 
+                        Z::linv(h_x,z_tmp1,z_tmp2);
 
-                            // schur_mod <- h'(x)* (inv(L(h(x))) e)
-                            h.ps(x,z_tmp2,schur_mod);
-
-                            // schur_mod <- -mu h'(x)* (inv(L(h(x))) e)
-                            X::scal(-mu,schur_mod);
-                            break;
-
-                        case InteriorPointMethod::PrimalDualScaled:
-                            // schur_mod <- h'(x)*h(x)
-                            h.ps(x,h_x,schur_mod);
-
-                            // schur_mod <- -mu h'(x)*h(x)
-                            X::scal(-mu,schur_mod);
-                            break;
-                        }
+                        // hpxs_invLhx_e <- h'(x)* (inv(L(h(x))) e)
+                        h.ps(x,z_tmp2,hpxs_invLhx_e);
                         
                         // Cache the values
                         x_schur.first=true;
@@ -8590,8 +8563,8 @@ namespace Optizelle{
                         Z::copy(z,z_schur.second);
                     }
 
-                    // grad_schur <- grad f(x) + schur_mod
-                    X::axpy(Real(1.0),schur_mod,grad_schur);
+                    // grad_schur<- grad f(x) - mu h'(x)* (inv(L(h(x))) e)
+                    X::axpy(-mu,hpxs_invLhx_e,grad_schur);
                 }
 
             public:
@@ -8600,7 +8573,6 @@ namespace Optizelle{
                     typename Functions::t & fns
                 ) : f_mod(std::move(fns.f_mod)),
                     h(*(fns.h)),
-                    ipm(state.ipm),
                     z(state.z),
                     mu(state.mu),
                     h_x(state.h_x),
@@ -8609,15 +8581,14 @@ namespace Optizelle{
                     x_tmp1(X::init(state.x)),
                     z_tmp1(Z::init(state.z)),
                     z_tmp2(Z::init(state.z)),
-                    z_tmp3(Z::init(state.z)),
                     x_merit(false,X::init(state.x)),
                     hx_merit(Z::init(state.z)),
                     x_lag(false,X::init(state.x)),
                     z_lag(false,Z::init(state.z)),
                     x_schur(false,X::init(state.x)),
                     z_schur(false,Z::init(state.z)),
-                    lag_mod(X::init(state.x)),
-                    schur_mod(X::init(state.x))
+                    hpxsz(X::init(state.x)),
+                    hpxs_invLhx_e(X::init(state.x))
                 {}
 
                 // Merit function additions to the objective
@@ -8638,19 +8609,8 @@ namespace Optizelle{
                         X::copy(x,x_merit.second);
                     }
 
-                    switch(ipm){
-                    case InteriorPointMethod::PrimalDual:
-                    case InteriorPointMethod::PrimalDualLinked:
-                    case InteriorPointMethod::LogBarrier:
-                        // Return merit(x) - mu barr(h(x))
-                        return merit_x - mu * Z::barr(hx_merit);
-                        break;
-
-                    case InteriorPointMethod::PrimalDualScaled:
-                        // Return merit(x) - (mu/2) <h(x),h(x)>
-                        return merit_x - (mu/2) * Z::innr(hx_merit,hx_merit);
-                        break;
-                    }
+                    // Return merit(x) - mu barr(h(x))
+                    return merit_x - mu * Z::barr(hx_merit); 
                 }
 
                 // Stopping condition modification of the gradient
@@ -8711,61 +8671,24 @@ namespace Optizelle{
                     X_Vector const & H_dx,
                     X_Vector & Hdx_step 
                 ) const {
+
                     // Modify the Hessian-vector product
                     f_mod->hessvec_step(x,dx,H_dx,Hdx_step);
 
-                    switch(ipm){
-                    case InteriorPointMethod::PrimalDual:
-                    case InteriorPointMethod::PrimalDualLinked:
-                    case InteriorPointMethod::LogBarrier:
-                        // z_tmp1 <- h'(x) dx
-                        h.p(x,dx,z_tmp1);
+                    // z_tmp1 <- h'(x) dx
+                    h.p(x,dx,z_tmp1);
 
-                        // z_tmp2 <- h'(x) dx o z
-                        Z::prod(z_tmp1,z,z_tmp2);
+                    // z_tmp2 <- h'(x) dx o z
+                    Z::prod(z_tmp1,z,z_tmp2);
 
-                        // z_tmp1 <- inv(L(h(x))) (h'(x) dx o z)
-                        Z::linv(h_x,z_tmp2,z_tmp1);
+                    // linv_hx_hpx_prod_z <- inv(L(h(x))) (h'(x) dx o z) 
+                    Z::linv(h_x,z_tmp2,z_tmp1);
 
-                        // hess_mod <- h'(x)* (inv(L(h(x))) (h'(x) dx o z))
-                        h.ps(x,z_tmp1,hess_mod);
-                        break;
+                    // hess_mod <- h'(x)* (inv(L(h(x))) (h'(x) dx o z))
+                    h.ps(x,z_tmp1,hess_mod);
 
-                    case InteriorPointMethod::PrimalDualScaled:
-                        // z_tmp1 <- h'(x) dx
-                        h.p(x,dx,z_tmp1);
-
-                        // z_tmp2 <- h'(x) dx o z
-                        Z::prod(z_tmp1,z,z_tmp2);
-
-                        // z_tmp3 <- h'(x) dx o h(x)
-                        Z::prod(z_tmp1,h_x,z_tmp3);
-
-                        // z_tmp2 <- h'(x) dx o z - mu h'(x) dx o h(x)
-                        Z::axpy(-mu,z_tmp3,z_tmp2);
-
-                        // z_tmp3 <- h(x) o h'(x) dx
-                        Z::prod(h_x,z_tmp1,z_tmp3);
-
-                        // z_tmp2 <- h'(x) dx o z - mu h'(x) dx o h(x)
-                        //                        - mu h(x) o h'(x) dx
-                        Z::axpy(-mu,z_tmp3,z_tmp2);
-
-                        // z_tmp1 <- inv(L(h(x))) (
-                        //               h'(x) dx o z
-                        //               - mu h'(x) dx o h(x)
-                        //               - mu h(x) o h'(x) dx)
-                        Z::linv(h_x,z_tmp2,z_tmp1);
-
-                        // hess_mod <- h'(x)* inv(L(h(x))) (
-                        //               h'(x) dx o z
-                        //               - mu h'(x) dx o h(x)
-                        //               - mu h(x) o h'(x) dx)
-                        h.ps(x,z_tmp1,hess_mod);
-                        break;
-                    }
-
-                    // H_dx = hess f(x) dx + hess_mod
+                    // H_dx 
+                    //  = hess f(x) dx + h'(x)* (inv(L(h(x))) (h'(x) dx o z))
                     X::axpy(Real(1.),hess_mod,Hdx_step);
                 }
             };
@@ -9112,88 +9035,39 @@ namespace Optizelle{
                 Z_Vector const & h_x=state.h_x;
                 X_Vector const & x=state.x;
                 X_Vector const & dx=state.dx;
-                InteriorPointMethod::t const & ipm=state.ipm;
                 Real const & mu=state.mu;
                 VectorValuedFunction <Real,XX,ZZ> const & h=*(fns.h);
                 Z_Vector & dz=state.dz;
 
-                // Create some scratch space
+                // z_tmp1 <- h'(x)dx
                 Z_Vector z_tmp1(Z::init(z));
+                h.p(x,dx,z_tmp1);
+
+                // z_tmp2 <- h'(x)dx o z
                 Z_Vector z_tmp2(Z::init(z));
-                Z_Vector z_tmp3(Z::init(z));
+                Z::prod(z_tmp1,z,z_tmp2);
 
-                switch(ipm){
-                case InteriorPointMethod::PrimalDual:
-                case InteriorPointMethod::PrimalDualLinked:
-                case InteriorPointMethod::LogBarrier:
-                    // z_tmp1 <- h'(x)dx
-                    h.p(x,dx,z_tmp1);
+                // z_tmp2 <- -h'(x)dx o z
+                Z::scal(Real(-1.),z_tmp2);
 
-                    // z_tmp2 <- h'(x)dx o z
-                    Z::prod(z_tmp1,z,z_tmp2);
+                // z_tmp1 <- e
+                Z::id(z_tmp1);
 
-                    // z_tmp2 <- -h'(x)dx o z
-                    Z::scal(Real(-1.),z_tmp2);
+                // z_tmp2 <- -h'(x)dx o z + mu e
+                Z::axpy(mu,z_tmp1,z_tmp2);
 
-                    // z_tmp1 <- e
-                    Z::id(z_tmp1);
+                // dz <- inv L(h(x)) (-h'(x)dx o z + mu e)
+                Z::linv(h_x,z_tmp2,dz);
 
-                    // z_tmp2 <- -h'(x)dx o z + mu e
-                    Z::axpy(mu,z_tmp1,z_tmp2);
-
-                    // dz <- inv L(h(x)) (-h'(x)dx o z + mu e)
-                    Z::linv(h_x,z_tmp2,dz);
-
-                    // dz <- -z + inv L(h(x)) (-h'(x)dx o z + mu e)
-                    Z::axpy(Real(-1.),z,dz);
-                    break;
-
-                case InteriorPointMethod::PrimalDualScaled:
-                    // z_tmp1 <- h'(x)dx
-                    h.p(x,dx,z_tmp1);
-
-                    // z_tmp2 <- h'(x)dx o z
-                    Z::prod(z_tmp1,z,z_tmp2);
-
-                    // z_tmp3 <- h'(x) dx o h(x)
-                    Z::prod(z_tmp1,h_x,z_tmp3);
-
-                    // z_tmp2 <- h'(x) dx o z - mu h'(x) dx o h(x)
-                    Z::axpy(-mu,z_tmp3,z_tmp2);
-
-                    // z_tmp3 <- h(x) o h'(x) dx
-                    Z::prod(h_x,z_tmp1,z_tmp3);
-
-                    // z_tmp2 <- h'(x) dx o z - mu h'(x) dx o h(x)
-                    //                        - mu h(x) o h'(x) dx
-                    Z::axpy(-mu,z_tmp3,z_tmp2);
-
-                    // z_tmp1 <- inv(L(h(x))) (
-                    //               h'(x) dx o z
-                    //               - mu h'(x) dx o h(x)
-                    //               - mu h(x) o h'(x) dx)
-                    Z::linv(h_x,z_tmp2,z_tmp1);
-
-                    // dz <- -z
-                    Z::copy(z,dz);
-                    Z::scal(Real(-1.0),dz);
-
-                    // dz <- -z + mu h(x)
-                    Z::axpy(mu,h_x,dz);
-
-                    // dz <- -z + mu h(x) - inv(L(h(x))) (
-                    //               h'(x) dx o z
-                    //               - mu h'(x) dx o h(x)
-                    //               - mu h(x) o h'(x) dx)
-                    Z::axpy(Real(-1.0),z_tmp1,dz);
-                    break;
-                }
+                // dz <- -z + inv L(h(x)) (-h'(x)dx o z + mu e)
+                Z::axpy(Real(-1.),z,dz);
                 
                 // Symmetrize the direction
                 Z::symm(dz);
             }
 
-            // Estimates the interior point parameter
+            // Estimates the interior point parameter with the formula
+            // mu = <z,h(x)>/m
             static void estimateInteriorPointParameter(
                 typename Functions::t const & fns,
                 typename State::t & state
@@ -9201,31 +9075,16 @@ namespace Optizelle{
                 // Create some shortcuts
                 Z_Vector const & z=state.z;
                 Z_Vector const & h_x=state.h_x;
-                InteriorPointMethod::t const & ipm=state.ipm;
                 Real & mu_est=state.mu_est;
 
-                // Find e
-                Z_Vector e(Z::init(z));
-                Z::id(e);
+                // Determine the scaling factor for the interior-
+                // point parameter estimate
+                Z_Vector z_tmp(Z::init(z));
+                Z::id(z_tmp);
+                Real m = Z::innr(z_tmp,z_tmp);
 
-                switch(ipm){
-                case InteriorPointMethod::PrimalDual:
-                case InteriorPointMethod::PrimalDualLinked:
-                case InteriorPointMethod::LogBarrier:
-                    // mu_est <- <h(x),z> / <e,e>
-                    mu_est = Z::innr(h_x,z) / Z::innr(e,e);
-                    break;
-
-                case InteriorPointMethod::PrimalDualScaled:
-                    #if 0
-                    // mu_est <- <z,h(x)> / <h(x),h(x)>
-                    mu_est = Z::innr(z,h_x) / Z::innr(h_x,h_x);
-                    #elif 1
-                    // mu_est <- <h(x),z> / <e,e>
-                    mu_est = Z::innr(h_x,z) / Z::innr(e,e);
-                    #endif
-                    break;
-                }
+                // Estimate the interior-point parameter
+                mu_est = Z::innr(z,h_x) / m;
             }
 
             // Find interior point parameter
@@ -9667,146 +9526,102 @@ namespace Optizelle{
 
                     switch(loc){
                     case OptimizationLocation::BeforeInitialFuncAndGrad: {
+
                         // Initialize the value h(x)
                         h.eval(x,h_x);
 
-                        switch(ipm){
-                        case InteriorPointMethod::PrimalDual:
-                        case InteriorPointMethod::PrimalDualLinked:
-                        case InteriorPointMethod::LogBarrier:{
+                        #if 0
+                        // Set z to be
+                        //
+                        // (mu <e,e> / <h(x),h(x)>) h(x)
+                        //
+                        // In this way,
+                        //
+                        // mu_est = <h(x),z> / <e,e>
+                        //        = mu
+                        //
+                        // On the first iteration with h'(x)=I and linear cone
+                        // constraints
+                        //
+                        // f_mod = h'(x)* inv(L(h(x)))(h'(x)dx o z)
+                        //       = inv(L(h(x)))(mu <e,e> / <h(x),h(x)>)L(h(x))dx
+                        //       = (mu <e,e> / <h(x),h(x)>) dx
+                        //
+                        // Basically, it sets the spectrum of the Hessian
+                        // modification to be a multiple of the identity.
 
-                            #if 0
-                            // Set z to be
-                            //
-                            // (mu <e,e> / <h(x),h(x)>) h(x)
-                            //
-                            // In this way,
-                            //
-                            // mu_est = <h(x),z> / <e,e>
-                            //        = mu
-                            //
-                            // On the first iteration with h'(x)=I and linear
-                            // cone constraints
-                            //
-                            // f_mod=h'(x)* inv(L(h(x)))(h'(x)dx o z)
-                            //      =inv(L(h(x)))(mu <e,e>/<h(x),h(x)>)L(h(x))dx
-                            //      =(mu <e,e> / <h(x),h(x)>) dx
-                            //
-                            // Basically, it sets the spectrum of the Hessian
-                            // modification to be a multiple of the identity.
+                        // z_tmp1 <- e
+                        Z_Vector z_tmp1(Z::init(z));
+                            Z::id(z_tmp1);
 
-                            // z_tmp1 <- e
-                            Z_Vector z_tmp1(Z::init(z));
-                                Z::id(z_tmp1);
+                        // norm_h_2 = || h(x) ||^2
+                        Real norm_h_2 = Z::innr(h_x,h_x);
 
-                            // norm_h_2 = || h(x) ||^2
-                            Real norm_h_2 = Z::innr(h_x,h_x);
+                        // m = <e,e>
+                        Real m = Z::innr(z_tmp1,z_tmp1);
 
-                            // m = <e,e>
-                            Real m = Z::innr(z_tmp1,z_tmp1);
+                        // z <- ( mu <e,e> / <h(x),h(x)> ) h(x)
+                        Z::copy(h_x,z);
+                        Z::scal(mu*m/norm_h_2,z);
 
-                            // z <- ( mu <e,e> / <h(x),h(x)> ) h(x)
-                            Z::copy(h_x,z);
-                            Z::scal(mu*m/norm_h_2,z);
+                        #elif 0
+                        // Set z to be
+                        //
+                        // mu inv(L(h(x))) e
+                        //
+                        // In this way,
+                        //
+                        // h(x) o z = mu e
+                        //
+                        // mu_est = <h(x),z> / <e,e>
+                        //        = mu
 
-                            #elif 0
-                            // Set z to be
-                            //
-                            // mu inv(L(h(x))) e
-                            //
-                            // In this way,
-                            //
-                            // h(x) o z = mu e
-                            //
-                            // mu_est = <h(x),z> / <e,e>
-                            //        = mu
+                        // z_tmp1 <- e
+                        Z_Vector z_tmp1(Z::init(z));
+                            Z::id(z_tmp1);
 
-                            // z_tmp1 <- e
-                            Z_Vector z_tmp1(Z::init(z));
-                                Z::id(z_tmp1);
+                        // z <- inv(L(h(x))) e
+                        Z::linv(h_x,z_tmp1,z);
 
-                            // z <- inv(L(h(x))) e
-                            Z::linv(h_x,z_tmp1,z);
+                        // z <- mu inv(L(h(x))) e
+                        Z::scal(mu,z);
 
-                            // z <- mu inv(L(h(x))) e
-                            Z::scal(mu,z);
+                        #elif 1
+                        // Set z to be
+                        // 
+                        // ( || h(x) || / || inv(L(h(x))) e || ) inv(L(h(x))) e
+                        // 
+                        // In this way,
+                        // 
+                        // || z || = || h(x) ||
+                        //
+                        // h(x) o z = ( || h(x) || / || inv(L(h(x))) e || ) e
+                        // 
+                        // mu_est = <h(x),z> / <e,e>
+                        //        = || h(x) || / || inv(L(h(x))) e ||
 
-                            #elif 1
-                            // Set z to be
-                            //
-                            // ( ||h(x)||/|| inv(L(h(x))) e || ) inv(L(h(x))) e
-                            //
-                            // In this way,
-                            //
-                            // || z || = || h(x) ||
-                            //
-                            // h(x) o z = ( ||h(x)|| / || inv(L(h(x))) e || ) e
-                            //
-                            // mu_est = <h(x),z> / <e,e>
-                            //        = || h(x) || / || inv(L(h(x))) e ||
+                        // z_tmp1 <- e 
+                        Z_Vector z_tmp1(Z::init(z));
+                            Z::id(z_tmp1);
 
-                            // z_tmp1 <- e
-                            Z_Vector z_tmp1(Z::init(z));
-                                Z::id(z_tmp1);
+                        // z <- inv(L(h(x))) e 
+                        Z::linv(h_x,z_tmp1,z);
 
-                            // z <- inv(L(h(x))) e
-                            Z::linv(h_x,z_tmp1,z);
+                        // norm_h = || h(x) ||
+                        Real norm_h = sqrt(Z::innr(h_x,h_x));
 
-                            // norm_h = || h(x) ||
-                            Real norm_h = sqrt(Z::innr(h_x,h_x));
+                        // norm_linv_hx_e = || inv(L(h(x))) e ||
+                        Real norm_linv_hx_e = sqrt(Z::innr(z,z));
 
-                            // norm_linv_hx_e = || inv(L(h(x))) e ||
-                            Real norm_linv_hx_e = sqrt(Z::innr(z,z));
-
-                            // z <- (||h(x)||/||inv(L(h(x)))e||) inv(L(h(x))) e
-                            Z::scal(norm_h/norm_linv_hx_e,z);
-
-                            #elif 0
-                            // Set z to be m / <h(x),e> e.  In this way,
-                            // mu_est = <h(x),z> / m = 1.
-                            Z::id(z);
-                            Z::scal(Z::innr(z,z)/Z::innr(h_x,z),z);
-                            #endif
-                            break;
-
-                        } case InteriorPointMethod::PrimalDualScaled:
-                            #if 0
-                            // Set z to be
-                            //
-                            // mu h(x)
-                            //
-                            // In this way,
-                            //
-                            // h(x) o z = mu h(x) o h(x)
-                            //
-                            // mu_est = <z,e> / <h(x),e>
-                            //        = mu
-                            Z::copy(h_x,z);
-                            Z::scal(mu,z);
-                            #elif 1
-                            // Set z to be
-                            //
-                            // (mu <e,e> / <h(x),h(x)>) h(x)
-                            //
-                            // In this way,
-                            //
-                            // h(x) o z = (mu <e,e> / <h(x),h(x)>) h(x) o h(x)
-                            //
-                            // mu_est = <h(x),z> / <e,e>
-                            //        = mu
-
-                            // z_tmp1 <- e
-                            Z_Vector e(Z::init(z));
-                                Z::id(e);
-
-                            // z <- h(x)
-                            Z::copy(h_x,z);
-
-                            // z <- (mu <e,e>/<h(x),h(x)>) h(x)
-                            Z::scal(mu*Z::innr(e,e)/Z::innr(h_x,h_x),z);
-                            #endif
-                            break;
-                        }
+                        // z <- ( ||h(x)|| / ||inv(L(h(x))) e|| ) inv(L(h(x))) e
+                        Z::scal(norm_h/norm_linv_hx_e,z);
+               
+                        #elif 0
+                        // Set z to be m / <h(x),e> e.  In this way,
+                        // mu_est = <h(x),z> / m = 1.
+                        Z::id(z);
+                        Z::scal(Z::innr(z,z)/Z::innr(h_x,z),z);
+                        #endif
 
                         // Estimate the interior point parameter
                         estimateInteriorPointParameter(fns,state);
@@ -9829,7 +9644,6 @@ namespace Optizelle{
                         // Do the linesearch
                         switch(ipm){
                         case InteriorPointMethod::PrimalDual:
-                        case InteriorPointMethod::PrimalDualScaled:
                             findInequalityMultiplierStep(fns,state);
                             positivityLineSearchPrimalDual(fns,state);
                             break;
@@ -9856,7 +9670,6 @@ namespace Optizelle{
                         // Find the new inequality multiplier or step
                         switch(ipm){
                         case InteriorPointMethod::PrimalDual:
-                        case InteriorPointMethod::PrimalDualScaled:
                             Z::axpy(Real(1.),dz,z);
 
                             // In theory, we start symmetric and make sure our
