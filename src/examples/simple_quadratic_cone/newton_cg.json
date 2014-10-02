@@ -11,7 +11,7 @@
       "gamma" : 0.995
    },
    "Naturals" : {
-      "iter" : 11
+      "iter" : 10
    },
    "X_Vectors" : {
       "x" : [ 2.5, 2.5] 

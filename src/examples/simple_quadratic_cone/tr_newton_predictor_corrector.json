@@ -11,7 +11,7 @@
       "cstrat" : "PredictorCorrector"
    },
    "Naturals" : {
-      "iter" : 11 
+      "iter" : 9
    },
    "X_Vectors" : {
       "x" : [ 2.5, 2.5] 

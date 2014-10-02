@@ -5373,14 +5373,14 @@ namespace Optizelle{
                     ss << "The tangential step inexactness tolerance must "
                         "lie in the interval (0,1): xi_tang = "<< state.xi_tang;
                 
-                // Check that the Lagrange multiplier inexactness tolerance
+                // Check that the equality multiplier inexactness tolerance
                 // lies in the interval (0,1) 
                 else if(!(
                     //---xi_lmh_valid0---
                     state.xi_lmh > Real(0.) && state.xi_lmh < Real(1.)
                     //---xi_lmh_valid1---
                 ))
-                    ss << "The Lagrange multiplier inexactness tolerance must "
+                    ss << "The equality multiplier inexactness tolerance must "
                         "lie in the interval (0,1): xi_lmh = " << state.xi_lmh;
                     
                     //---xi_all_valid0---
@@ -5388,13 +5388,13 @@ namespace Optizelle{
                     //---xi_all_valid1---
 
                 // Check that the absolute tolerance on the residual of the
-                // Lagrange multiplier solve is positive
+                // equality multiplier solve is positive
                 else if(!(
                     //---xi_lmg_valid0---
                     state.xi_lmg > Real(0.)
                     //---xi_lmg_valid1---
                 ))
-                    ss << "The Lagrange multiplier residual tolerance must "
+                    ss << "The equality multiplier residual tolerance must "
                         "be positive: xi_lmg = " << state.xi_lmg;
 
                 // Check that the tolerance for the error acceptable in
@@ -5930,7 +5930,7 @@ namespace Optizelle{
                 // Equality constraint.
                 Optizelle::VectorValuedFunction <Real,XX,YY> const & g;
 
-                // Reference to equality Lagrange multiplier
+                // Reference to equality multiplier
                 Y_Vector const & y;
 
                 // Reference to parameter for the augmented-Lagrangian
@@ -7057,19 +7057,19 @@ namespace Optizelle{
                 X::copy(x0.first,dx_t);
             }
             
-            // Sets the tolerances for the computation of the Lagrange 
+            // Sets the tolerances for the computation of the equality 
             // multiplier.
-            struct LagrangeMultiplierStepManipulator
+            struct EqualityMultiplierStepManipulator
                 : public GMRESManipulator <Real,XXxYY> {
             private:
                 typename State::t const & state;
                 typename Functions::t const & fns;
             public:
                 // Disallow constructors
-                NO_DEFAULT_COPY_ASSIGNMENT(LagrangeMultiplierStepManipulator)
+                NO_DEFAULT_COPY_ASSIGNMENT(EqualityMultiplierStepManipulator)
 
                 // Grab the states and fns on construction
-                LagrangeMultiplierStepManipulator(
+                EqualityMultiplierStepManipulator(
                     typename State::t const & state_,
                     typename Functions::t const & fns_
                 ) : GMRESManipulator <Real,XXxYY>(), state(state_), fns(fns_) {}
@@ -7097,8 +7097,8 @@ namespace Optizelle{
                 }
             };
 
-            // Finds the Lagrange multiplier at the current iterate 
-            static void lagrangeMultiplier(
+            // Finds the equality multiplier at the current iterate 
+            static void findEqualityMultiplier(
                 typename Functions::t const & fns,
                 typename State::t & state
             ) {
@@ -7111,7 +7111,7 @@ namespace Optizelle{
                 X_Vector const & grad=state.grad;
                 Y_Vector & y=state.y;
 
-                // Find the gradient modifications for the Lagrange multiplier
+                // Find the gradient modifications for the equality multiplier
                 // computation
                 X_Vector grad_mult(X::init(grad));
                     f_mod.grad_mult(x,grad,grad_mult);
@@ -7131,7 +7131,7 @@ namespace Optizelle{
                 BlockDiagonalPreconditioner PAugSys_l(I,*(fns.PSchur_left));
                 BlockDiagonalPreconditioner PAugSys_r(I,*(fns.PSchur_right));
 
-                // Solve the augmented system for the initial Lagrange
+                // Solve the augmented system for the initial equality 
                 // multiplier 
                 Optizelle::gmres <Real,XXxYY> (
                     AugmentedSystem(state,fns,x),
@@ -7141,16 +7141,16 @@ namespace Optizelle{
                     augsys_rst_freq,
                     PAugSys_l,
                     PAugSys_r,
-                    LagrangeMultiplierStepManipulator(state,fns),
+                    EqualityMultiplierStepManipulator(state,fns),
                     x0 
                 );
 
-                // Find the Lagrange multiplier based on this step
+                // Find the equality multiplier based on this step
                 Y::axpy(Real(1.),x0.second,y);
             }
             
-            // Finds the Lagrange multiplier step 
-            static void lagrangeMultiplierStep(
+            // Finds the equality multiplier step 
+            static void findEqualityMultiplierStep(
                 typename Functions::t const & fns,
                 typename State::t & state
             ) {
@@ -7174,7 +7174,7 @@ namespace Optizelle{
                 X_Vector grad_xpdx(X::init(x));
                     f.grad(x_p_dx,grad_xpdx);
 
-                // Find the gradient modifications for the Lagrange multiplier
+                // Find the gradient modifications for the equality multiplier
                 // computation
                 X_Vector grad_xpdx_mult(X::init(grad));
                     f_mod.grad_mult(x_p_dx,grad_xpdx,grad_xpdx_mult);
@@ -7208,7 +7208,7 @@ namespace Optizelle{
                     X::copy(x,x_save);
                 X::copy(x_p_dx,x);
 
-                // Solve the augmented system for the Lagrange multiplier step 
+                // Solve the augmented system for the equality multiplier step 
                 Optizelle::gmres <Real,XXxYY> (
                     AugmentedSystem(state,fns,x),
                     b0,
@@ -7217,19 +7217,19 @@ namespace Optizelle{
                     augsys_rst_freq,
                     PAugSys_l,
                     PAugSys_r,
-                    LagrangeMultiplierStepManipulator(state,fns),
+                    EqualityMultiplierStepManipulator(state,fns),
                     x0 
                 );
 
                 // Restore our current iterate
                 X::copy(x_save,x);
 
-                // Copy out the Lagrange multiplier step
+                // Copy out the equality multiplier step
                 Y::copy(x0.second,dy);
             }
             
-            // Does a check on how far off the Lagrange multiplier is 
-            static Real lagrangeMultiplierCheck(
+            // Does a check on how far off the equality multiplier is 
+            static Real equalityMultiplierCheck(
                 typename Functions::t const & fns,
                 typename State::t & state
             ) {
@@ -7247,7 +7247,7 @@ namespace Optizelle{
                 X_Vector grad_x(X::init(x));
                     f.grad(x,grad_x);
 
-                // Find the gradient modifications for the Lagrange multiplier
+                // Find the gradient modifications for the equality multiplier
                 // computation
                 X_Vector grad_x_mult(X::init(grad));
                     f_mod.grad_mult(x,grad_x,grad_x_mult);
@@ -7267,7 +7267,7 @@ namespace Optizelle{
                 BlockDiagonalPreconditioner PAugSys_l(I,*(fns.PSchur_left));
                 BlockDiagonalPreconditioner PAugSys_r(I,*(fns.PSchur_right));
 
-                // Solve the augmented system for the Lagrange multiplier step 
+                // Solve the augmented system for the equality multiplier step 
                 Optizelle::gmres <Real,XXxYY> (
                     AugmentedSystem(state,fns,x),
                     b0,
@@ -7276,11 +7276,11 @@ namespace Optizelle{
                     augsys_rst_freq,
                     PAugSys_l,
                     PAugSys_r,
-                    LagrangeMultiplierStepManipulator(state,fns),
+                    EqualityMultiplierStepManipulator(state,fns),
                     x0 
                 );
 
-                // Copy out the Lagrange multiplier step
+                // Copy out the equality multiplier step
                 return sqrt(Y::innr(x0.second,x0.second));
             }
 
@@ -7434,7 +7434,7 @@ namespace Optizelle{
                 X::copy(dx,x_p_dx);
                 X::axpy(Real(1.),x,x_p_dx);
 
-                // Save the old Lagrange multiplier
+                // Save the old equality multiplier
                 Y_Vector y_old(Y::init(y));
                     Y::copy(y,y_old);
 
@@ -7446,7 +7446,7 @@ namespace Optizelle{
                 f_xpdx = f.eval(x_p_dx);
                 Real merit_xpdx = f_mod.merit(x_p_dx,f_xpdx);
 
-                // Restore the old Lagrange multiplier
+                // Restore the old equality multiplier
                 Y::copy(y_old,y);
 
                 // norm_dx = || dx ||
@@ -7600,8 +7600,8 @@ namespace Optizelle{
                             // Find g'(x)dx_t
                             g.p(x,dx_t,gpxdxt);
 
-                            // Find the Lagrange multiplier step
-                            lagrangeMultiplierStep(fns,state);
+                            // Find the equality multiplier step
+                            findEqualityMultiplierStep(fns,state);
 
                             // Find the predicted reduction
                             rho = rho_old;
@@ -7667,10 +7667,10 @@ namespace Optizelle{
                     // If need be, shorten the step
                     X::scal(alpha0,dx);
 
-                    // If we shorten our step, update our Lagrange multiplier
+                    // If we shorten our step, update our equality multiplier
                     // step
                     if(alpha0 < Real(1.))
-                        lagrangeMultiplierStep(fns,state);
+                        findEqualityMultiplierStep(fns,state);
                     
                     // Check whether the step is good
                     if(checkStep(fns,state))
@@ -7803,12 +7803,12 @@ namespace Optizelle{
                         g.eval(x,g_x);
                         norm_gxtyp = sqrt(Y::innr(g_x,g_x));
 
-                        // Find the initial Lagrange multiplier and then update
+                        // Find the initial equality multiplier and then update
                         // the gradient and merit function.
-                        lagrangeMultiplier(fns,state);
+                        findEqualityMultiplier(fns,state);
 
                         // In addition, update the norm of gradient and
-                        // typical gradient since we've modified the Lagrange
+                        // typical gradient since we've modified the equality 
                         // multiplier
                         X_Vector grad_stop(X::init(grad));
                             f_mod.grad_stop(x,grad,grad_stop);
@@ -7840,9 +7840,9 @@ namespace Optizelle{
                     case OptimizationLocation::AfterGradient: {
                         // In an interior point method, we may have modified
                         // our interior point parameter, which changes the
-                        // gradient.  This necessitates a new Lagrange 
+                        // gradient.  This necessitates a new equality 
                         // multiplier computation. 
-                        lagrangeMultiplier(fns,state);
+                        findEqualityMultiplier(fns,state);
                         break;
 
                     } case OptimizationLocation::AfterStepBeforeGradient:
@@ -7981,10 +7981,12 @@ namespace Optizelle{
                 // How close we move to the boundary during a single step
                 Real gamma;
 
-                // Raw step multiplier for x
+                // Amount we truncate dx in order to maintain feasibility
+                // with respect to the inequality constraint
                 Real alpha_x;
 
-                // Raw step multiplier for z
+                // Amount we truncate dz in order to maintain feasibility
+                // of the inequality multiplier
                 Real alpha_z;
 
                 // Type of interior point method
@@ -8000,7 +8002,7 @@ namespace Optizelle{
                 t(X_Vector const & x_user,Z_Vector const & z_user) :
                     Unconstrained <Real,XX>::State::t(x_user),
                         //---z0---
-                        // ( || h(x) || / || inv(L(h(x))) e || ) inv(L(h(x))) e
+                        // mu inv(L(h(x))) e
                         //---z1---
                     z(Z::init(z_user)),
                     dz(
@@ -8474,7 +8476,7 @@ namespace Optizelle{
                 // Inequality constraint.
                 Optizelle::VectorValuedFunction <Real,XX,ZZ> const & h;
                 
-                // Inequality Lagrange multiplier
+                // Inequality multiplier
                 Z_Vector const & z;
 
                 // Interior point parameter
@@ -8743,6 +8745,7 @@ namespace Optizelle{
             ) {
                 // Create some shortcuts
                 Natural const & msg_level = state.msg_level;
+                InteriorPointMethod::t const & ipm=state.ipm;
 
                 // Basic information
                 out.emplace_back(Utility::atos("mu_est"));
@@ -8751,7 +8754,8 @@ namespace Optizelle{
                 if(msg_level >= 2) {
                     out.emplace_back(Utility::atos("mu"));
                     out.emplace_back(Utility::atos("alpha_x"));
-                    out.emplace_back(Utility::atos("alpha_z"));
+                    if(ipm==InteriorPointMethod::PrimalDual)
+                        out.emplace_back(Utility::atos("alpha_z"));
                 }
             }
 
@@ -8780,6 +8784,7 @@ namespace Optizelle{
                 Real const & alpha_x=state.alpha_x;
                 Real const & alpha_z=state.alpha_z;
                 Natural const & msg_level = state.msg_level;
+                InteriorPointMethod::t const & ipm=state.ipm;
 
                 // Figure out if we're at the absolute beginning of the
                 // optimization.
@@ -8798,10 +8803,14 @@ namespace Optizelle{
                     out.emplace_back(Utility::atos(mu));
                     if(!opt_begin) {
                         out.emplace_back(Utility::atos(alpha_x));
-                        out.emplace_back(Utility::atos(alpha_z));
-                    } else
-                        for(Natural i=0;i<2;i++)
+                        if(ipm==InteriorPointMethod::PrimalDual)
+                            out.emplace_back(Utility::atos(alpha_z));
+                    } else {
+                        Natural const nblanks =
+                            (ipm==InteriorPointMethod::PrimalDual) ? 2 : 1;
+                        for(Natural i=0;i<nblanks;i++)
                             out.emplace_back(Utility::blankSeparator);
+                    }
                 }
 
                 // If we needed to do blank insertions, overwrite the elements
@@ -8961,7 +8970,7 @@ namespace Optizelle{
                 }
             };
 
-            // Finds the new inequality Lagrange multiplier
+            // Finds the new inequality multiplier
             // z = inv L(h(x)) (-h'(x)dx o z + mu e)
             static void findInequalityMultiplierLinked(
                 typename Functions::t const & fns,
@@ -8999,7 +9008,7 @@ namespace Optizelle{
                 Z::symm(z);
             }
 
-            // Finds the new inequality Lagrange multiplier
+            // Finds the new inequality multiplier
             // z = mu inv L(h(x)) e 
             static void findInequalityMultiplierLogBarrier(
                 typename Functions::t const & fns,
@@ -9024,7 +9033,7 @@ namespace Optizelle{
                 Z::symm(z);
             }
 
-            // Finds the new inequality Lagrange multiplier step
+            // Finds the new inequality multiplier step
             // dz = -z + inv L(h(x)) (-h'(x)dx o z + mu e)
             static void findInequalityMultiplierStep(
                 typename Functions::t const & fns,
@@ -9064,6 +9073,111 @@ namespace Optizelle{
                 
                 // Symmetrize the direction
                 Z::symm(dz);
+            }
+            
+            // Find the initial inequality multiplier 
+            static void findInequalityMultiplierInitial(
+                typename Functions::t const & fns,
+                typename State::t & state
+            ) {
+                // Create some shortcuts
+                Z_Vector const & h_x=state.h_x;
+                Real const & mu=state.mu;
+                Z_Vector & z=state.z;
+
+                #if 0
+                // Set z to be
+                //
+                // (mu <e,e> / <h(x),h(x)>) h(x)
+                //
+                // In this way,
+                //
+                // mu_est = <h(x),z> / <e,e>
+                //        = mu
+                //
+                // On the first iteration with h'(x)=I and linear cone
+                // constraints
+                //
+                // f_mod = h'(x)* inv(L(h(x)))(h'(x)dx o z)
+                //       = inv(L(h(x)))(mu <e,e> / <h(x),h(x)>)L(h(x))dx
+                //       = (mu <e,e> / <h(x),h(x)>) dx
+                //
+                // Basically, it sets the spectrum of the Hessian
+                // modification to be a multiple of the identity.
+
+                // z_tmp1 <- e
+                Z_Vector z_tmp1(Z::init(z));
+                    Z::id(z_tmp1);
+
+                // norm_h_2 = || h(x) ||^2
+                Real norm_h_2 = Z::innr(h_x,h_x);
+
+                // m = <e,e>
+                Real m = Z::innr(z_tmp1,z_tmp1);
+
+                // z <- ( mu <e,e> / <h(x),h(x)> ) h(x)
+                Z::copy(h_x,z);
+                Z::scal(mu*m/norm_h_2,z);
+
+                #elif 1
+                // Set z to be
+                //
+                // mu inv(L(h(x))) e
+                //
+                // In this way,
+                //
+                // h(x) o z = mu e
+                //
+                // mu_est = <h(x),z> / <e,e>
+                //        = mu
+
+                // z_tmp1 <- e
+                Z_Vector z_tmp1(Z::init(z));
+                    Z::id(z_tmp1);
+
+                // z <- inv(L(h(x))) e
+                Z::linv(h_x,z_tmp1,z);
+
+                // z <- mu inv(L(h(x))) e
+                Z::scal(mu,z);
+
+                #elif 0
+                // Set z to be
+                // 
+                // ( || h(x) || / || inv(L(h(x))) e || ) inv(L(h(x))) e
+                // 
+                // In this way,
+                // 
+                // || z || = || h(x) ||
+                //
+                // h(x) o z = ( || h(x) || / || inv(L(h(x))) e || ) e
+                // 
+                // mu_est = <h(x),z> / <e,e>
+                //        = || h(x) || / || inv(L(h(x))) e ||
+
+                // z_tmp1 <- e 
+                Z_Vector z_tmp1(Z::init(z));
+                    Z::id(z_tmp1);
+
+                // z <- inv(L(h(x))) e 
+                Z::linv(h_x,z_tmp1,z);
+
+                // norm_h = || h(x) ||
+                Real norm_h = sqrt(Z::innr(h_x,h_x));
+
+                // norm_linv_hx_e = || inv(L(h(x))) e ||
+                Real norm_linv_hx_e = sqrt(Z::innr(z,z));
+
+                // z <- ( ||h(x)|| / ||inv(L(h(x))) e|| ) inv(L(h(x))) e
+                Z::scal(norm_h/norm_linv_hx_e,z);
+       
+                #elif 0
+                // Set z to be m / <h(x),e> e.  In this way,
+                // mu_est = <h(x),z> / m = 1.
+                Z::id(z);
+                Z::scal(Z::innr(z,z)/Z::innr(h_x,z),z);
+                #endif
+
             }
 
             // Estimates the interior point parameter with the formula
@@ -9297,13 +9411,13 @@ namespace Optizelle{
             //
             // Hence, we need
             //
-            // inv(L(h(x)))(-h'(x)alpha dx o z + mu e) >=
+            // inv(L(h(x)))(-h'(x)alpha dx o z + mu e) >= 0
             //
             // Or
             //
             // -alpha h'(x) dx o z + mu e >= 0
             //
-            // Simultaenously, we need
+            // Simultaneously, we need
             //
             // x + alpha dx >= 0
             //
@@ -9321,7 +9435,10 @@ namespace Optizelle{
                 VectorValuedFunction <Real,XX,ZZ> const & h=*(fns.h);
                 X_Vector & dx=state.dx;
                 Real & alpha_x=state.alpha_x;
-                Real & alpha_z=state.alpha_z;
+
+                // Don't save information into alpha_z since we're ultimately
+                // not going to reference it
+                Real alpha_z(std::numeric_limits<Real>::quiet_NaN());
 
                 // Create a fake step.  In the case of a trust-region
                 // method this is just the step.  In the case of
@@ -9401,17 +9518,20 @@ namespace Optizelle{
                 // boundary or leave the step unchanged.
                 alpha0 = alpha0*gamma > Real(1.) ?  Real(1.) : alpha0*gamma;
 
+                // Save the result in alpha_x
+                alpha_x = alpha0;
+
                 // If we're doing a trust-region method, shorten the
                 // step length accordingly
                 if(algorithm_class==AlgorithmClass::TrustRegion) 
 
                     // Shorten the step
-                    X::scal(alpha0,dx);
+                    X::scal(alpha_x,dx);
 
                 // If we're doing a line-search method, make sure
                 // we can't line-search past this point
                 else
-                    state.alpha0 *= alpha0;
+                    state.alpha0 *= alpha_x;
             }
 
             // Conduct a line search that preserves positivity of the
@@ -9529,99 +9649,9 @@ namespace Optizelle{
 
                         // Initialize the value h(x)
                         h.eval(x,h_x);
-
-                        #if 0
-                        // Set z to be
-                        //
-                        // (mu <e,e> / <h(x),h(x)>) h(x)
-                        //
-                        // In this way,
-                        //
-                        // mu_est = <h(x),z> / <e,e>
-                        //        = mu
-                        //
-                        // On the first iteration with h'(x)=I and linear cone
-                        // constraints
-                        //
-                        // f_mod = h'(x)* inv(L(h(x)))(h'(x)dx o z)
-                        //       = inv(L(h(x)))(mu <e,e> / <h(x),h(x)>)L(h(x))dx
-                        //       = (mu <e,e> / <h(x),h(x)>) dx
-                        //
-                        // Basically, it sets the spectrum of the Hessian
-                        // modification to be a multiple of the identity.
-
-                        // z_tmp1 <- e
-                        Z_Vector z_tmp1(Z::init(z));
-                            Z::id(z_tmp1);
-
-                        // norm_h_2 = || h(x) ||^2
-                        Real norm_h_2 = Z::innr(h_x,h_x);
-
-                        // m = <e,e>
-                        Real m = Z::innr(z_tmp1,z_tmp1);
-
-                        // z <- ( mu <e,e> / <h(x),h(x)> ) h(x)
-                        Z::copy(h_x,z);
-                        Z::scal(mu*m/norm_h_2,z);
-
-                        #elif 0
-                        // Set z to be
-                        //
-                        // mu inv(L(h(x))) e
-                        //
-                        // In this way,
-                        //
-                        // h(x) o z = mu e
-                        //
-                        // mu_est = <h(x),z> / <e,e>
-                        //        = mu
-
-                        // z_tmp1 <- e
-                        Z_Vector z_tmp1(Z::init(z));
-                            Z::id(z_tmp1);
-
-                        // z <- inv(L(h(x))) e
-                        Z::linv(h_x,z_tmp1,z);
-
-                        // z <- mu inv(L(h(x))) e
-                        Z::scal(mu,z);
-
-                        #elif 1
-                        // Set z to be
-                        // 
-                        // ( || h(x) || / || inv(L(h(x))) e || ) inv(L(h(x))) e
-                        // 
-                        // In this way,
-                        // 
-                        // || z || = || h(x) ||
-                        //
-                        // h(x) o z = ( || h(x) || / || inv(L(h(x))) e || ) e
-                        // 
-                        // mu_est = <h(x),z> / <e,e>
-                        //        = || h(x) || / || inv(L(h(x))) e ||
-
-                        // z_tmp1 <- e 
-                        Z_Vector z_tmp1(Z::init(z));
-                            Z::id(z_tmp1);
-
-                        // z <- inv(L(h(x))) e 
-                        Z::linv(h_x,z_tmp1,z);
-
-                        // norm_h = || h(x) ||
-                        Real norm_h = sqrt(Z::innr(h_x,h_x));
-
-                        // norm_linv_hx_e = || inv(L(h(x))) e ||
-                        Real norm_linv_hx_e = sqrt(Z::innr(z,z));
-
-                        // z <- ( ||h(x)|| / ||inv(L(h(x))) e|| ) inv(L(h(x))) e
-                        Z::scal(norm_h/norm_linv_hx_e,z);
-               
-                        #elif 0
-                        // Set z to be m / <h(x),e> e.  In this way,
-                        // mu_est = <h(x),z> / m = 1.
-                        Z::id(z);
-                        Z::scal(Z::innr(z,z)/Z::innr(h_x,z),z);
-                        #endif
+            
+                        // Find the initial inequality multiplier 
+                        findInequalityMultiplierInitial(fns,state);
 
                         // Estimate the interior point parameter
                         estimateInteriorPointParameter(fns,state);
@@ -9632,7 +9662,7 @@ namespace Optizelle{
                         // Find an initial interior point parameter
                         findInteriorPointParameter(fns,state);
 
-                        // In a log-barrier method, find the initial Lagrange
+                        // In a log-barrier method, find the initial inequality 
                         // multiplier.
                         if(ipm==InteriorPointMethod::LogBarrier)
                             findInequalityMultiplierLogBarrier(fns,state);

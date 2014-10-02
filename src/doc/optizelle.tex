@@ -2875,7 +2875,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
     \paramitemi
         {mu}
         {Real}
-        {No}
+        {Yes}
         {Interior point parameter.  We use this as the target for the interior-point parameter estimate \textctref{mu_est}.  As the interior point method progresses, we drive this value toward zero.  As a note, we output \textctref{mu} at each iteration under the label \textctrefalt{mu}.}
 
     \paramitemi
@@ -2914,6 +2914,18 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {Real}
         {Yes}
         {How close we move to the boundary during a single step.  A step of $1.0$ allows a step to touch the boundary of the inequality constraint in a single step, which is disallowed by the interior point algorithm.}
+    
+    \paramitemi
+        {alpha_x}
+        {Real}
+        {No}
+        {How much we truncate \textctref{dx} in an interior point method in order to maintain strict feasibility.  When $1.0$, we do not truncate and take a full step.}
+    
+    \paramitemi
+        {alpha_z}
+        {Real}
+        {No}
+        {How much we truncate \textctref{dz} in an interior point method in order to maintain strict feasibility.  When $1.0$, we do not truncate and take a full step.  Note, we only reference this when we set \textctref{ipm} to \hyperref[itm:InteriorPointMethod]{\textct{PrimalDual}}.}
     
     \paramitemi
         {ipm}
@@ -3090,6 +3102,18 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {\textctref{mu}}
         {2}
         {Interior point parameter.} 
+
+    \outputitemi
+        {alpha_x}
+        {\textctref{alpha_x}}
+        {2}
+        {Amount we truncate \textctref{dx} in order to maintain feasibility with respect to the inequality constraint.}
+
+    \outputitemi
+        {alpha_z}
+        {\textctref{alpha_z}}
+        {2}
+        {Amount we truncate \textctref{dz} in order to maintain feasibility with respect to the inequality multiplier.  Note, we only reference this when we set \textctref{ipm} to \hyperref[itm:InteriorPointMethod]{\textct{PrimalDual}}.}
 \end{boldlist}
 
 \chapter{\chadvanced}\label{ch:advanced}
@@ -4020,17 +4044,16 @@ and the determinant of an upper triangular matrix can be calculated quickly.
 
         As far as the initial inequality multiplier, we set
 $$
-        z =  \frac{\| h(x) \|}{\|L(h(x))^{-1} e \|} L(h(x))^{-1} e.
+        z =  \textctref{mu} L(h(x))^{-1} e.
 $$
 This guarantees that
 \begin{enumerate}
-    \item $\| z \| = \| h(x) \|$
-    \item $h(x) \circ z = \frac{\| h(x) \|}{\|L(h(x))^{-1} e \|} e$
-    \item $\textctref{mu_est} = \frac{\langle h(x),z\rangle}{\langle e,e\rangle}= \frac{\| h(x) \|}{\| L(h(x))^{-1} e \|}$
+    \item $h(x) \circ z = \textctref{mu} e$
+    \item $\textctref{mu_est} = \textctref{mu}$
 \end{enumerate}
-In other words, our initial inequality multiplier has a norm equal to the initial inequality constraint and puts us on the central path.
+In other words, our initial inequality multiplier puts us on the central path specified by the parameter \textctref{mu}.
 
-        Historically, we are not the first to use Euclidan-Jordan algebras in an interior point algorithm.  Alizadeh and Schmieta describe their use for semidefinite programming and Alizadeh and Goldfarb describe their use in second-order cone programming.  Nevertheless, we drop the commutativity requirement in our algorithm.  Part of the reason we drop the commutativity requirement is that in the SDP case we essentially generate the same optimality conditions as equation (4.10) in Helmberg, Rendl, Vanderbei, and Wolkowicz's SDP paper.  In fact, our symmetrization in the SQL vector space is identical to equation (4.30) in the same paper, which later became known as the HKM search direction.  Beyond the HKM symmetrization, we allow any similar symmetrization operator, which Zhang describes in his paper.
+        Historically, we are not the first to use Euclidean-Jordan algebras in an interior point algorithm.  Alizadeh and Schmieta describe their use for semidefinite programming and Alizadeh and Goldfarb describe their use in second-order cone programming.  Nevertheless, we drop the commutativity requirement in our algorithm.  Part of the reason we drop the commutativity requirement is that in the SDP case we essentially generate the same optimality conditions as equation (4.10) in Helmberg, Rendl, Vanderbei, and Wolkowicz's SDP paper.  In fact, our symmetrization in the SQL vector space is identical to equation (4.30) in the same paper, which later became known as the HKM search direction.  Beyond the HKM symmetrization, we allow any similar symmetrization operator, which Zhang describes in his paper.
     \begin{itemize} 
         \item \bibentry{alizadeh2000sdp_euclidean_jordan}.
         \item \bibentry{alizadeh2003socp}.
