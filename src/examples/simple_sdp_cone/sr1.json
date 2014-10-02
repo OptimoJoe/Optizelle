@@ -10,11 +10,12 @@
       "eps_grad" : 1e-9,
       "eps_mu" : 1e-10,
       "delta" : 100,
-      "sigma" : 0.3,
-      "gamma" : 0.95
+      "sigma" : 0.1,
+      "gamma" : 0.95,
+      "mu" : 5.0
    },
    "Naturals" : {
-      "iter" : 18 
+      "iter" : 12
    },
    "X_Vectors" : {
       "x" : [ 0.5, 0.25] 

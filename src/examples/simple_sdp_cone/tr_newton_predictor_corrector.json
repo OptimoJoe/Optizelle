@@ -8,10 +8,13 @@
       "gamma" : 0.81,
       "eps_mu" : 1e-7,
       "delta" : 100,
-      "cstrat" : "PredictorCorrector"
+      "cstrat" : "PredictorCorrector",
+      "sigma" : 0.1,
+      "gamma" : 0.95,
+      "mu" : 10.0
    },
    "Naturals" : {
-      "iter" : 21 
+      "iter" : 13
    },
    "X_Vectors" : {
       "x" : [ 0.5, 0.25] 
