@@ -17,7 +17,7 @@ end
 function self = MyObj()
 
     % Evaluation 
-    self.eval = @(x) -x(1)+x(2) 
+    self.eval = @(x) -x(1)+x(2);
 
     % Gradient
     self.grad = @(x) [
