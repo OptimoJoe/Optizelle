@@ -40,15 +40,14 @@ end
 % Define a perfect preconditioner for the Hessian
 function self = RosenHInv()
     self.eval = @(state,dx) eval(state,dx);
-
-    function result = eval(state,dx)
-        x = state.x;
-        one_over_det=1./(80000.*sq(x(1))-80000.*x(2)+400.);
-        result = [
-            one_over_det*(200.*dx(1)+400.*x(1)*dx(2));
-            one_over_det*...
-                (400.*x(1)*dx(1)+(1200.*x(1)*x(1)-400.*x(2)+2.)*dx(2))];
-    end
+end
+function result = eval(state,dx)
+    x = state.x;
+    one_over_det=1./(80000.*sq(x(1))-80000.*x(2)+400.);
+    result = [
+        one_over_det*(200.*dx(1)+400.*x(1)*dx(2));
+        one_over_det*...
+            (400.*x(1)*dx(1)+(1200.*x(1)*x(1)-400.*x(2)+2.)*dx(2))];
 end
 %---Preconditioner1---
 
