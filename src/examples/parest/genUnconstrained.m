@@ -42,7 +42,7 @@
 %
 % OUTPUTS
 %
-% f : The reduced objective function .
+% f : The reduced objective function
 %
 
 function f=genUnconstrained(X1,X2,ff,gg,phi,kry_tol,kry_rst,kry_iter_max)
@@ -71,17 +71,28 @@ phi.p=@(x,dx)p(X1,x,dx,gg,phi,kry_tol,kry_rst,kry_iter_max);
 % phi'(x)*dy = -g'_1(x,phi(x))* inv(g'_2(x,phi(x))*) dy
 phi.ps=@(x,dy)ps(X1,x,dy,gg,phi,kry_tol,kry_rst,kry_iter_max);
 
-% (phi''(x)dx)*dy_hat = 
-% -(   (g''_11(x,phi(x))dx)*dy
-%    + (g''_12(x,phi(x))phi'(x)dx)*dy
-%    + phi'(x)* (g''_21(x,phi(x))dx)*dy
-%                + g''_22(x,phi(x))phi'(x)dx)*dy)
-%  ) dy
-%
-% where we solve for dy in g'_2(x,phi(x))* dy = dy_hat.
-%
-phi.pps=@(x,dx,dy_hat) ...
-    pps(X1,X2,x,dx,dy_hat,gg,phi,kry_tol,kry_rst,kry_iter_max);
+% (phi''(x)dx)*dy = 
+% -(   (g''_11(x,phi(x))dx)*
+%    + (g''_12(x,phi(x))phi'(x)dx)*
+%    + phi'(x)* (  (g''_21(x,phi(x))dx)*
+%                 +(g''_22(x,phi(x))phi'(x)dx)*)
+% ) inv(g'_2(x,phi(x))) dy
+phi.pps=@(x,dx,dy) ...
+    pps(X1,X2,x,dx,dy,gg,phi,kry_tol,kry_rst,kry_iter_max);
+
+% Form the adjoint solve operator
+
+% psi(x) = inv(g'_2(x,phi(x))*) grad_2 f(x,phi(x))
+psi.eval = @(x)psi_eval(X1,X2,x,ff,gg,phi,kry_tol,kry_rst,kry_iter_max);
+
+% Rework the second derivative of the solution operator based on this
+
+% (phi_truncated''(x)dx)* grad_2 f(x,phi(x)) = 
+% -(   (g''_11(x,phi(x))dx)*
+%    + (g''_12(x,phi(x))phi'(x)dx)*
+% ) psi(x) 
+phi.pps_truncated=@(x,dx) ...
+    pps_truncated(X1,X2,x,dx,gg,phi,psi,kry_tol,kry_rst,kry_iter_max);
 
 % Form the objective function
 
@@ -89,15 +100,32 @@ phi.pps=@(x,dx,dy_hat) ...
 f.eval=@(x)ff.eval({x,phi.eval(x)});
 
 % grad J(x) = grad_1 f(x,phi(x)) + phi'(x)* grad_2 f(x,phi(x))
-f.grad = @(x)grad(X1,x,ff,phi);
+f.grad_old = @(x)grad_old(X1,x,ff,phi);
+
+% grad J(x) = grad_1 f(x,phi(x)) - g'_1(x,phi(x))* psi(x) 
+f.grad = @(x)grad(X1,x,ff,gg,phi,psi);
 
 % hess J(x) dx =
 %     hess_11 f(x,phi(x)) + 
 %     hess_12 f(x,phi(x)) phi'(x) +
 %     (phi''(x) dx)* grad_2 f(x,phi(x)) +
 %     phi'(x)* ( hess_12 f(x,phi(x)) + hess_22 f(x,phi(x)) phi'(x)dx)
-f.hessvec=@(x,dx) hessvec(X1,X2,x,dx,ff,phi);
+f.hessvec_old=@(x,dx) hessvec_old(X1,X2,x,dx,ff,phi);
 
+% hess J(x) dx =
+%     hess_11 f(x,phi(x)) + 
+%     hess_12 f(x,phi(x)) phi'(x) +
+%     (phi_truncated''(x) dx)* grad_2 f(x,phi(x)) +
+%     phi'(x)* (
+%         hess_12 f(x,phi(x)) +
+%         hess_22 f(x,phi(x)) phi'(x)dx -
+%         (g''_21(x,phi(x))dx)* psi(x) -
+%         (g''_22(x,phi(x))phi'(x)dx)* psi(x))
+%         
+% Why go through this mess as opposed to what we had above? If we cache
+% properly, we're down to 1 forward and 1 adjoint solve per Krylov iteration.
+%
+f.hessvec=@(x,dx) hessvec(X1,X2,x,dx,ff,gg,phi,psi);
 end
 
 % Derivative of the solution operator.  Requires caching.
@@ -147,41 +175,92 @@ function z=ps(X1,x,dy,gg,phi,kry_tol,kry_rst,kry_iter_max)
 end
 
 % Second derivative adjoint of the solution operator.  No caching.
-function z=pps(X1,X2,x,dx,dy_hat,gg,phi,kry_tol,kry_rst,kry_iter_max)
+function z=pps(X1,X2,x,dx,dy,gg,phi,kry_tol,kry_rst,kry_iter_max)
     %x_phix <- (x,phi(x))
     x_phix = {x,phi.eval(x)};
 
-    % dy <- inv(g'_2(x,phi(x))*) dy_hat
-    dy = mygmres( ...
+    % inv_gp2_xphix_dy <- inv(g'_2(x,phi(x))*) dy
+    inv_gp2_xphix_dy = mygmres( ...
         @(dy)gg.ps_2(x_phix,dy), ...
-        dy_hat, ...
+        dy, ...
         kry_rst,kry_tol,kry_iter_max, ...
         @(dy)gg.ps_2_inv(x_phix,dy));
 
     % phi_p_x_dx <- phi'(x)dx
     phi_p_x_dx = phi.p(x,dx);
 
-    % (phi''(x)dx)*dy_hat = 
-    % -(   (g''_11(x,phi(x))dx)*dy
-    %    + (g''_12(x,phi(x))phi'(x)dx)*dy
-    %    + phi'(x)* (g''_21(x,phi(x))dx)*dy
-    %                + g''_22(x,phi(x))phi'(x)dx)*dy)
-    %  ) dy
-    %
-    % where we solve for dy in g'_2(x,phi(x))* dy = dy_hat.
-    %
+    % (phi''(x)dx)*dy = 
+    % -(   (g''_11(x,phi(x))dx)*
+    %    + (g''_12(x,phi(x))phi'(x)dx)*
+    %    + phi'(x)* (  (g''_21(x,phi(x))dx)*
+    %                 +(g''_22(x,phi(x))phi'(x)dx)*)
+    % ) inv(g'_2(x,phi(x))) dy
     z = X1.scal(-1., ...
-        X1.axpy(1.,gg.pps_11(x_phix,dx,dy), ...
-        X1.axpy(1.,gg.pps_12(x_phix,phi_p_x_dx,dy),...
+        X1.axpy(1.,gg.pps_11(x_phix,dx,inv_gp2_xphix_dy), ...
+        X1.axpy(1.,gg.pps_12(x_phix,phi_p_x_dx,inv_gp2_xphix_dy),...
         phi.ps(x, ...
             X2.axpy(1., ...
-                gg.pps_21(x_phix,dx,dy), ...
-                gg.pps_22(x_phix,phi_p_x_dx,dy))))));
+                gg.pps_21(x_phix,dx,inv_gp2_xphix_dy), ...
+                gg.pps_22(x_phix,phi_p_x_dx,inv_gp2_xphix_dy))))));
 
 end
 
+% Second derivative adjoint of the solution operator with some pieces removed.
+% Basically, we're removing them so that we can simplify the Hessian calculation
+% later.
+function z=pps_truncated(X1,X2,x,dx,gg,phi,psi,kry_tol,kry_rst,kry_iter_max)
+    %x_phix <- (x,phi(x))
+    x_phix = {x,phi.eval(x)};
+
+    % psi_x <- psi(x)
+    psi_x = psi.eval(x);
+
+    % phi_p_x_dx <- phi'(x)dx
+    phi_p_x_dx = phi.p(x,dx);
+
+    % (phi_truncated''(x)dx)* grad_2 f(x,phi(x)) = 
+    % -(   (g''_11(x,phi(x))dx)*
+    %    + (g''_12(x,phi(x))phi'(x)dx)*
+    % ) psi(x) 
+    z = X1.scal(-1., ...
+        X1.axpy(1.,gg.pps_11(x_phix,dx,psi_x), ...
+                   gg.pps_12(x_phix,phi_p_x_dx,psi_x)));
+end
+
+% Form the adjoint solve operator.  Cached values.
+function z=psi_eval(X1,X2,x,ff,gg,phi,kry_tol,kry_rst,kry_iter_max)
+    %x_phix <- (x,phi(x))
+    x_phix = {x,phi.eval(x)};
+
+    % Cache the result if possible
+    persistent zz;
+    persistent xx;
+
+    % Check if we've already evaluated the function.
+    if ~isempty(xx) && isequal(xx,x)
+        z=zz;
+        return;
+    end
+
+    % Otherwise, calculate the result
+
+    %x_phix <- (x,phi(x))
+    x_phix = {x,phi.eval(x)};
+    
+    % z <- psi(x) = inv(g'_2(x,phi(x))*) grad_2 f(x,phi(x))
+    z = mygmres( ...
+        @(dy)gg.ps_2(x_phix,dy), ...
+        ff.grad_2(x_phix), ... 
+        kry_rst,kry_tol,kry_iter_max, ...
+        @(dy)gg.ps_2_inv(x_phix,dy));
+    
+    % Now, cache everything
+    xx=x;
+    zz=z;
+end
+
 % Gradient of the objective function
-function z=grad(X1,x,ff,phi)
+function z=grad_old(X1,x,ff,phi)
     %x_phix <- (x,phi(x))
     x_phix = {x,phi.eval(x)};
 
@@ -191,8 +270,23 @@ function z=grad(X1,x,ff,phi)
         phi.ps(x,ff.grad_2(x_phix)));
 end
 
+% Gradient of the objective function
+function z=grad(X1,x,ff,gg,phi,psi)
+    %x_phix <- (x,phi(x))
+    x_phix = {x,phi.eval(x)};
+
+    % psi_x <- psi(x)
+    psi_x = psi.eval(x);
+
+    % z <- grad J(x) = grad_1 f(x,phi(x)) - g'_1(x,phi(x))* psi(x) 
+    z = X1.axpy(1., ...
+        ff.grad_1(x_phix), ...
+        X1.scal(-1., ...
+            gg.ps_1(x_phix,psi_x)));            
+end
+
 % Hessian-vector product of the objective function
-function z=hessvec(X1,X2,x,dx,ff,phi)
+function z=hessvec_old(X1,X2,x,dx,ff,phi)
     %x_phix <- (x,phi(x))
     x_phix = {x,phi.eval(x)};
 
@@ -211,6 +305,39 @@ function z=hessvec(X1,X2,x,dx,ff,phi)
                 X2.axpy(1., ...
                     ff.hessvec_21(x_phix,dx),...
                     ff.hessvec_22(x_phix,phi_p_x_dx))))));
+end
+
+% Hessian-vector product of the objective function
+function z=hessvec(X1,X2,x,dx,ff,gg,phi,psi)
+    %x_phix <- (x,phi(x))
+    x_phix = {x,phi.eval(x)};
+
+    % phi_p_x_dx <- phi'(x)dx
+    phi_p_x_dx = phi.p(x,dx);
+    
+    % psi_x <- psi(x)
+    psi_x = psi.eval(x);
+
+    % z<- hess J(x) dx =
+    %     hess_11 f(x,phi(x)) + 
+    %     hess_12 f(x,phi(x)) phi'(x) +
+    %     (phi_truncated''(x) dx)* grad_2 f(x,phi(x)) +
+    %     phi'(x)* (
+    %         hess_12 f(x,phi(x)) +
+    %         hess_22 f(x,phi(x)) phi'(x)dx -
+    %         (g''_21(x,phi(x))dx)* psi(x) -
+    %         (g''_22(x,phi(x))phi'(x)dx)* psi(x))
+    %         
+    z = X1.axpy(1.,ff.hessvec_11(x_phix,dx), ...
+        X1.axpy(1.,ff.hessvec_12(x_phix,phi_p_x_dx), ...
+        X1.axpy(1.,phi.pps_truncated(x,dx), ...
+                   phi.ps(x, ...
+                       X2.axpy(1.,ff.hessvec_21(x_phix,dx),...
+                       X2.axpy(1.,ff.hessvec_22(x_phix,phi_p_x_dx), ...
+                       X2.scal(-1., ...
+                           X2.axpy(1., ...
+                               gg.pps_21(x_phix,dx,psi_x), ...
+                               gg.pps_22(x_phix,phi_p_x_dx,psi_x)))))))));
 end
 
 % A function to eliminate the messages from MATLAB's gmres routines
