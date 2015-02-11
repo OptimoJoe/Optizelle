@@ -135,6 +135,12 @@ Optizelle.DiagnosticScheme = createEnum( { ...
     'DiagnosticsOnly', ...
     'EveryIteration' } );
 
+% Different cones used in SQL problems 
+Optizelle.Cone = createEnum( { ...
+    'Linear', ...
+    'Quadratic', ...
+    'Semidefinite' } );
+
 %---ScalarValuedFunction0---
 % A simple scalar valued function interface, f : X -> R
 err_svf=@(x)error(sprintf( ...
@@ -192,6 +198,26 @@ Optizelle.Rm = struct( ...
     'srch',@(x,y) feval(@(z)min([min(z(find(z>0)));inf]),-y./x), ...
     'symm',@(x)x);
 
+% A vector spaces consisting of a finite product of semidefinite,
+% quadratic, and linear cones.  This uses the nonsymmetric product
+% for the SDP blocks where x o y = xy.  This is not a true Euclidean-Jordan
+% algebra, but is sufficient for our purposes.
+Optizelle.SQL = struct( ...
+    'create',@(types,sizes)sql_create(types,sizes), ...
+    'init',@(x)x, ...
+    'copy',@(x)x, ...
+    'scal',@(alpha,x)sql_scal(alpha,x), ...
+    'zero',@(x)sql_zero(x), ...
+    'axpy',@(alpha,x,y)sql_axpy(alpha,x,y), ...
+    'innr',@(x,y)sql_innr(x,y), ...
+    'rand',@(x)sql_rand(x), ...
+    'prod',@(x,y)sql_prod(x,y), ...
+    'id',@(x)sql_id(x), ...
+    'linv',@(x,y)sql_linv(x,y), ...
+    'barr',@(x)sql_barr(x), ...
+    'srch',@(x,y)sql_srch(x,y), ...
+    'symm',@(x)sql_symm(x));
+
 % Converts a vector to a JSON formatted string
 Optizelle.json.Serialization.serialize = @serialize;
 
@@ -201,6 +227,13 @@ Optizelle.json.Serialization.serialize( ...
     @(x,name,iter)strrep(mat2str(x'),' ',', '), ...
     @(x)isvector(x) && isnumeric(x));
 
+% For the moment, do an empty serialization of the SQL vector space 
+Optizelle.json.Serialization.serialize( ...
+    'register', ...
+    @(x,name,iter)'[]', ...
+    @(x)isfield(x,'data') && isfield(x,'types') && isfield(x,'sizes') && ...
+        isfield(x,'inverse') && isfield(x,'inverse_base'));
+
 % Converts a JSON formatted string to a vector 
 Optizelle.json.Serialization.deserialize = @deserialize;
 
@@ -209,6 +242,13 @@ Optizelle.json.Serialization.deserialize( ...
     'register', ...
     @(x,x_json)str2num(x_json)', ...
     @(x)isvector(x) && isnumeric(x));
+
+% For the moment, do an empty deserialization of the SQL vector space 
+Optizelle.json.Serialization.serialize( ...
+    'register', ...
+    @(x,x_json)sql_zero(x), ...
+    @(x)isfield('data',x) && isfield('types',x) && isfield('sizes',x) && ...
+        isfield('inverse',x) && isfield('inverse_base',x));
 
 %Creates an unconstrained state
 Optizelle.Unconstrained.State.t = @UnconstrainedStateCreate;
@@ -373,4 +413,337 @@ function ret=mergeStruct(s1,s2)
 
     % Merge the unique elements
     ret=cell2struct(data(i),fields,2);
+end
+
+% Creates an SQL vector
+function x = sql_create(types,sizes)
+    % Load in Optizelle
+    global Optizelle
+
+    % Make sure we have 1-dimensional objects for types and sizes
+    if(~isvector(types))
+        error('Argument types must be a vector');
+    end
+    if(~isvector(sizes))
+        error('Argument sizes must be a vector');
+    end
+
+    % Make sure that types and sizes are the same size
+    if length(types) ~= length(sizes)
+        error('Arguments types and sizes must be the same length');
+    end
+                
+    % Make sure we have at least one cone.
+    if length(types) == 0
+        error('A SQL vector requires at least one cone');
+    end
+
+    % Make sure that we have something with valid types
+    for i=1:length(types)
+        if types(i)~=Optizelle.Cone.Linear && ...
+           types(i)~=Optizelle.Cone.Quadratic && ...
+           types(i)~=Optizelle.Cone.Semidefinite
+           error('Parameter types (the first argument) uses invalid cones')
+        end
+    end
+
+    % Assign the types and sizes
+    x.types = types;
+    x.sizes = sizes;
+
+    % Create the data 
+    for i=1:length(x.sizes)
+        if  x.types(i)==Optizelle.Cone.Linear || ...
+            x.types(i)==Optizelle.Cone.Quadratic
+            x.data{i}=zeros(x.sizes(i),1);
+        else
+            x.data{i}=zeros(x.sizes(i));
+        end
+    end
+
+    % Create the memory required for the cached inverses (and where we computed
+    % them.)
+    for i=1:length(x.sizes)
+        if  x.types(i)==Optizelle.Cone.Linear || ...
+            x.types(i)==Optizelle.Cone.Quadratic
+            x.inverse{i}=zeros(0);
+            x.inverse_base{i}=zeros(0);
+        else
+            x.inverse{i}=zeros(x.sizes(i));
+            x.inverse_base{i}=zeros(x.sizes(i));
+        end
+    end
+end
+
+% SQL scalar multiply, x <- alpha * x
+function x = sql_scal(alpha,x)
+    % Loop over all the blocks
+    for blk=1:length(x.sizes)
+        x.data{blk}=alpha*x.data{blk};
+    end
+end
+
+% SQL zero, x <- 0
+function x = sql_zero(x)
+    % Loop over all the blocks
+    for blk=1:length(x.sizes)
+        x.data{blk}=zeros(size(x.data{blk}));
+    end
+end
+
+% SQL addition,  y <- alpha * x + y
+function y = sql_axpy(alpha,x,y)
+    % Loop over all the blocks
+    for blk=1:length(x.sizes)
+        y.data{blk}=alpha*x.data{blk}+y.data{blk};
+    end
+end
+
+% SQL inner product, innr <- <x,y>
+function z = sql_innr(x,y)
+    % Accumulate into z
+    z = 0.;
+
+    % Loop over all the blocks
+    for blk=1:length(x.sizes)
+        z = z + x.data{blk}(:)'*y.data{blk}(:);
+    end
+end
+
+% SQL random, x <- 0
+function x = sql_rand(x)
+    % Loop over all the blocks
+    for blk=1:length(x.sizes)
+        x.data{blk}=randn(size(x.data{blk}));
+    end
+
+    % Symmetrize the result
+    x = sql_symm(x);
+end
+
+% SQL Jordan product, z <- x o y
+function z = sql_prod(x,y)
+    % Load in Optizelle
+    global Optizelle
+
+    % Create a new SQL vector 
+    z = sql_create(x.types,x.sizes);
+
+    % Loop over all the blocks
+    for blk=1:length(x.sizes)
+
+        % z = diag(x) y
+        if x.types(blk)==Optizelle.Cone.Linear
+            z.data{blk}=x.data{blk}.*y.data{blk};
+
+        % z = [x'y ; x0 ybar + y0 xbar].
+        elseif x.types(blk)==Optizelle.Cone.Quadratic
+            z.data{blk}=[ ...
+                x.data{blk}'*y.data{blk}; ...
+                x.data{blk}(1)*y.data{blk}(2:end) + ...
+                    y.data{blk}(1)*x.data{blk}(2:end) ];
+
+        % z = xy 
+        else 
+            z.data{blk}=x.data{blk}*y.data{blk};
+        end
+    end
+end
+
+% SQL identity element, x <- e such that x o e = x
+function x = sql_id(x)
+    % Load in Optizelle
+    global Optizelle
+
+    % Loop over all the blocks
+    for blk=1:length(x.sizes)
+
+        % z = [1;...;1] 
+        if x.types(blk)==Optizelle.Cone.Linear
+            x.data{blk}=ones(x.sizes(blk),1);
+
+        % z = [1;0;...;0]
+        elseif x.types(blk)==Optizelle.Cone.Quadratic
+            x.data{blk}=zeros(x.sizes(blk),1);
+            x.data{blk}(1)=1;
+
+        % z = I
+        else 
+            x.data{blk}=eye(x.sizes(blk));
+        end
+    end
+end
+
+% This applies the inverse of the Schur complement of the Arw operator to a
+% vector, inv(Schur(Arw(x)))y.  Note, ybar has size one less than x.
+function z = invSchur(x,ybar)
+    % z<- 1/x0 ybar + <xbar,ybar> / (x0 ( x0^2 - <xbar,xbar> )) xbar
+    z = (1/x(1)) * ybar + ...
+        (x(2:end)'*ybar)/(x(1)*(x(1)^2-x(2:end)'*x(2:end))) * x(2:end);
+end
+        
+% SQL Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y
+function z = sql_linv(x,y)
+    % Load in Optizelle
+    global Optizelle
+
+    % Create a new SQL vector 
+    z = sql_create(x.types,x.sizes);
+
+    % Loop over all the blocks
+    for blk=1:length(x.sizes)
+
+        % z = inv(Diag(x)) y 
+        if x.types(blk)==Optizelle.Cone.Linear
+            z.data{blk}=y.data{blk}./x.data{blk};
+
+        % z0 <- y0/(x0-(1/x0) <x_bar,x_bar>) - (1/x0) <x_bar,invSchur(x)(y_bar)>
+        % z_bar <- (-y0/x0) invSchur(x)(x_bar) + invSchur(x)(y_bar)
+        elseif x.types(blk)==Optizelle.Cone.Quadratic
+            invSchur_x_ybar = invSchur(x.data{blk},y.data{blk}(2:end));
+            invSchur_x_xbar = invSchur(x.data{blk},x.data{blk}(2:end));
+            z.data{blk}(1) = ...
+                y.data{blk}(1) / ...
+                    (x.data{blk}(1) - ...
+                        x.data{blk}(2:end)'*x.data{blk}(2:end) ...
+                        / x.data{blk}(1)) - ...
+                x.data{blk}(2:end)'*invSchur_x_ybar / x.data{blk}(1);
+            z.data{blk}(2:end) = ...
+                (-y.data{blk}(1)/x.data{blk}(1)) * invSchur_x_xbar + ...
+                invSchur_x_ybar;
+
+        % z = inv(x)y 
+        else
+            % Get the inverse of the block.  If we're lucky, this is cached.
+            if ~isequal(x.data{blk},x.inverse_base{blk})
+               x.inverse{blk} = inv(x.data{blk});
+            end
+
+            z.data{blk}=x.inverse{blk}*y.data{blk};
+        end
+    end
+end
+        
+% SQL barrier function, barr <- barr(x) where x o grad barr(x) = e
+function z = sql_barr(x)
+    % Load in Optizelle
+    global Optizelle
+
+    % This accumulates the barrier's value
+    z=0.;
+
+    % Loop over all the blocks
+    for blk=1:length(x.sizes)
+
+        % z += sum_i log(x_i)
+        if x.types(blk)==Optizelle.Cone.Linear
+            z = z + sum(log(x.data{blk}));
+                
+        % z += 0.5 * log(x0^2-<xbar,xbar>)
+        elseif x.types(blk)==Optizelle.Cone.Quadratic
+            z = z + 0.5 * log( ...
+                x.data{blk}(1)^2*x.data{blk}(2:end)'*x.data{blk}(2:end)); 
+
+        % z += log(det(x)).  We compute this by noting that
+        % log(det(x)) = log(det(u'u)) = log(det(u')det(u))
+        %             = log(det(u)^2) = 2 log(det(u))
+        else
+            u = chol(x.data{blk});
+            z = z + 2. * log(prod(diag(u)));
+        end
+    end
+end
+
+% SQL line search, srch <- argmax {alpha \in Real >= 0 : alpha x + y >= 0}
+% where y > 0
+function alpha = sql_srch(x,y)
+    % Load in Optizelle
+    global Optizelle
+
+    % Line search parameter
+    alpha = inf; 
+
+    % Loop over all the blocks
+    for blk=1:length(x.sizes)
+
+        % Pointwise, alpha_i = -y_i / x_i.  If this number is positive,
+        % then we need to restrict how far we travel.
+        if x.types(blk)==Optizelle.Cone.Linear
+            alpha0 = feval(@(z)min([min(z(find(z>0)));inf]), ...
+                -y.data{blk}./x.data{blk});
+                
+        % We choose the smallest positive number between:
+        % -y0/x0, and the roots of alpha^2 a + alpha b + c
+        %
+        % where
+        %
+        % a = x0^2 - ||xbar||^2
+        % b = 2x0y0 - 2 <xbar,ybar>
+        % c = y0^2 - ||ybar||^2 
+        % 
+        % Technically, if a is zero, the quadratic formula doesn't
+        % apply and we use -c/b instead of the roots.  If b is zero
+        % and a is zero, then there's no limit to the line search
+        elseif x.types(blk)==Optizelle.Cone.Quadratic
+
+            % Now, first we have to insure that the leading coefficient
+            % of the second order cone problem remains nonnegative.
+            % This number tells us how far we can step before this
+            % is not true.
+            alpha0 = -y.data{blk}(1)/x.data{blk}(1);
+
+            % Next, assuming that the leading coefficient is fine,
+            % figure out how far we can step before we violate the
+            % rest of the SOCP constraint.  This involves solving
+            % the quadratic equation from above.
+            a = x.data{blk}(1)^2-x.data{blk}(2:end)'*x.data{blk}(2:end);
+            b = 2.0*x.data{blk}(1)*y.data{blk}(1) - ...
+                2.0*x.data{blk}(2:end)'*y.data{blk}(2:end);
+            c = y.data{blk}(1)^2-y.data{blk}(2:end)'*y.data{blk}(2:end);
+            alpha0 = [alpha0;roots([a,b,c])];
+
+            % Now, determine the step length.
+            alpha0 = feval(@(z)min([min(z(find(z>0)));inf]),alpha0);
+
+        % We need to find the solution of the generalized eigenvalue
+        % problem alpha X v + Y v = 0.  Since Y is positive definite,
+        % we want to divide by alpha to get a standard form
+        % generalized eigenvalue problem X v = (-1/alpha) Y v.  This
+        % means that we solve the problem X v = lambda Y v and then
+        % set alpha = -1/lambda as long as lambda is negative.  Note,
+        % our Krylov method will converge to lambda from the right,
+        % which is going to give an upper bound on alpha.  This is
+        % not good for our line search, since we want a lower bound.
+        % However, since we get an absolute estimate of the error
+        % in lambda, we can just back off of it by a small amount.
+        else
+            lambda = eigs(x.data{blk},y.data{blk},1,'sa',struct('tol',1e-2));
+            if lambda < 0
+                alpha0 = -1/lambda;
+            else
+                alpha0 = inf;
+            end
+        end
+
+        % Update alpha if we need to restrict more
+        if alpha0 < alpha
+            alpha = alpha0;
+        end
+    end
+end
+
+% Symmetrization, x <- symm(x) such that L(symm(x)) is a symmetric
+% operator
+function x = sql_symm(x)
+    % Load in Optizelle
+    global Optizelle
+
+    % Loop over all the blocks
+    for blk=1:length(x.sizes)
+
+        % Find the symmetric part of X, (X+X')/2
+        if x.types(blk)==Optizelle.Cone.Semidefinite
+            x.data{blk} = (x.data{blk}+x.data{blk}')/2.;
+        end
+    end
 end

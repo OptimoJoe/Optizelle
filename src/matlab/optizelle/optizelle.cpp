@@ -901,9 +901,9 @@ namespace Optizelle {
             // Call the error function on msg
             mxArray * error(mxGetField(ptr,0,"error"));
             mxArrayPtr msg(mxCreateString(msg_.c_str()));
-            std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
-                error,
-                msg.get()));
+            //std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
+            //    error,
+            //    msg.get()));
 
             // We do an additional call to the error handler to exit the
             // mex file.  This also helps if the above error function fails.
