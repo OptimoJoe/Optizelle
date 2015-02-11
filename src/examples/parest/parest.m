@@ -120,140 +120,137 @@ function main(fname)
     % Print out the reason for convergence
     fprintf('The algorithm converged due to: %s\n', ...
         Optizelle.StoppingCondition.to_string(state.opt_stop));
+end
+
+% Create the functions for the constraint
+function z = g_eval(A,b,x)
+    % Get the sizes
+    m = size(x{1},1);
+    n = size(x{2},1);
+    
+    % First, form sum A_i x1_i
+    B = zeros(n);
+    for i=1:m
+        B = B + x{1}(i)*A{i};
     end
 
-    % Create the functions for the constraint
-    function z = g_eval(A,b,x)
-        % Get the sizes
-        m = size(x{1},1);
-        n = size(x{2},1);
-        
-        % First, form sum A_i x1_i
-        B = zeros(n);
-        for i=1:m
-            B = B + x{1}(i)*A{i};
-        end
+    % Now, find (sum A_i x1_i)x2 - f
+    z=B*x{2}-b;
+end
 
-        % Now, find (sum A_i x1_i)x2 - f
-        z=B*x{2}-b;
+function z = gp_x1(A,x,dx1)
+    % Get the sizes
+    m = size(x{1},1);
+    n = size(x{2},1);
+    
+    % First, form sum A_i dx1_i
+    B = zeros(n);
+    for i=1:m
+        B = B + dx1(i)*A{i};
     end
 
-    function z = gp_x1(A,x,dx1)
-        % Get the sizes
-        m = size(x{1},1);
-        n = size(x{2},1);
-        
-        % First, form sum A_i dx1_i
-        B = zeros(n);
-        for i=1:m
-            B = B + dx1(i)*A{i};
-        end
+    % Now, find (sum A_i dx1_i)y
+    z=B*x{2};
+end
 
-        % Now, find (sum A_i dx1_i)y
-        z=B*x{2};
+function z = gp_x2(A,x,dx2)
+    % Get the sizes
+    m = size(x{1},1);
+    n = size(x{2},1);
+    
+    % First, form sum A_i x1_i
+    B = zeros(n);
+    for i=1:m
+        B = B + x{1}(i)*A{i};
     end
 
-    function z = gp_x2(A,x,dx2)
-        % Get the sizes
-        m = size(x{1},1);
-        n = size(x{2},1);
-        
-        % First, form sum A_i x1_i
-        B = zeros(n);
-        for i=1:m
-            B = B + x{1}(i)*A{i};
-        end
+    % Now, find (sum A_i x1_i)dx2
+    z=B*dx2;
+end
 
-        % Now, find (sum A_i x1_i)dx2
-        z=B*dx2;
+function z = gp_x2_inv(A,x,dx2)
+    % Get the sizes
+    m = size(x{1},1);
+    n = size(x{2},1);
+    
+    % First, form sum A_i x1_i
+    B = zeros(n);
+    for i=1:m
+        B = B + x{1}(i)*A{i};
     end
 
-    function z = gp_x2_inv(A,x,dx2)
-        % Get the sizes
-        m = size(x{1},1);
-        n = size(x{2},1);
-        
-        % First, form sum A_i x1_i
-        B = zeros(n);
-        for i=1:m
-            B = B + x{1}(i)*A{i};
-        end
+    % Now, solve (sum A_i x1_i) z = dx2
+    z=B\dx2;
+end
 
-        % Now, solve (sum A_i x1_i) z = dx2
-        z=B\dx2;
+function z = gps_x1(A,x,dy)
+    % Get the sizes
+    m = size(x{1},1);
+    n = size(x{2},1);
+
+    % Form the adjoint
+    z=zeros(m,1);
+    for i=1:m
+        z(i)=x{2}'*A{i}'*dy;
+    end
+end
+
+function z = gps_x2(A,x,dy)
+    % Get the sizes
+    m = size(x{1},1);
+    n = size(x{2},1);
+    
+    % First, form sum A_i x1_i
+    B = zeros(n);
+    for i=1:m
+        B = B + x{1}(i)*A{i}';
     end
 
-    function z = gps_x1(A,x,dy)
-        % Get the sizes
-        m = size(x{1},1);
-        n = size(x{2},1);
+    % Now, find (sum A_i' x1_i)dy
+    z=B*dy;
+end
 
-        % Form the adjoint
-        z=zeros(m,1);
-        for i=1:m
-            z(i)=x{2}'*A{i}'*dy;
-        end
+function z = gps_x2_inv(A,x,dy)
+    % Get the sizes
+    m = size(x{1},1);
+    n = size(x{2},1);
+    
+    % First, form sum A_i x1_i
+    B = zeros(n);
+    for i=1:m
+        B = B + x{1}(i)*A{i}';
     end
 
-    function z = gps_x2(A,x,dy)
-        % Get the sizes
-        m = size(x{1},1);
-        n = size(x{2},1);
-        
-        % First, form sum A_i x1_i
-        B = zeros(n);
-        for i=1:m
-            B = B + x{1}(i)*A{i}';
-        end
+    % Now, solve (sum A_i' x1_i) z = dy
+    z=B\dy;
+end
 
-        % Now, find (sum A_i' x1_i)dy
-        z=B*dy;
+% Create the functions for the solution operator.  Requires caching.
+function z = phi_eval(A,b,x)
+    % Cache the result if possible
+    persistent zz;
+    persistent xx;
+
+    % Get the sizes
+    m = size(x,1);
+    n = length(b);
+
+    % Check if we've already evaluated the function.
+    if ~isempty(xx) && isequal(x,xx)
+        z=zz;
+        return;
+    end
+    
+    % First, form sum A_i x1_i
+    B = zeros(n);
+    for i=1:m
+        B = B + x(i)*A{i};
     end
 
-    function z = gps_x2_inv(A,x,dy)
-        % Get the sizes
-        m = size(x{1},1);
-        n = size(x{2},1);
-        
-        % First, form sum A_i x1_i
-        B = zeros(n);
-        for i=1:m
-            B = B + x{1}(i)*A{i}';
-        end
+    % Now, solve (sum A_i x_i) z = b 
+    z=B\b;
 
-        % Now, solve (sum A_i' x1_i) z = dy
-        z=B\dy;
-    end
-
-    % Create the functions for the solution operator
-    function z = phi_eval(A,b,x)
-        % Cache the result if possible
-        persistent zz;
-        persistent xx;
-
-        % Get the sizes
-        m = size(x,1);
-        n = length(b);
-
-        % Check if we've already evaluated the function.
-        if length(xx)==m
-            if norm(x-xx)/(1e-16+norm(x)) < 1e-15
-                z=zz;
-                return;
-            end
-        end
-
-        
-        % First, form sum A_i x1_i
-        B = zeros(n);
-        for i=1:m
-            B = B + x(i)*A{i};
-        end
-
-        % Now, solve (sum A_i x_i) z = b 
-        z=B\b;
-
-        % Cache the result
-        xx=x;
-        zz=z;
-    end
+    % Cache the result
+    xx=x;
+    zz=z;
+end
