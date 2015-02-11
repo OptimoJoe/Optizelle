@@ -8,3 +8,6 @@ add_optizelle_example_supporting(${PROJECT_NAME}
     genUnconstrained.m
     genEqualityConstrained.m
     tr_newton.json)
+
+# Add some unit tests
+add_optizelle_unvalidated_json_test_matlab("*.json" ${PROJECT_NAME})

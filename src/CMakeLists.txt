@@ -6,6 +6,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
 include(AddOptizelleJsonTestCpp)
 include(AddOptizelleJsonTestPython)
 include(AddOptizelleJsonTestMatlab)
+include(AddOptizelleUnvalidatedJsonTestMatlab)
 include(AddOptizelleTestCpp)
 include(AddOptizelleTestPython)
 include(AddOptizelleTestMatlab)
