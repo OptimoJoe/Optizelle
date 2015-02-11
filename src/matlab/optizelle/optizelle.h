@@ -189,6 +189,9 @@ namespace Optizelle {
             std::string const & member 
         );
 
+        // Converts a MATLAB double to an Optizelle Natural
+        Natural fromDouble(double value);
+
         namespace mxArrayPtrMode {
             enum t : Natural {
                 Capture,        // Capture the pointer

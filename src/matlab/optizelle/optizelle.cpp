@@ -808,6 +808,21 @@ namespace Optizelle {
             // Convert and return the member
             return Natural(*mxGetPr(obj));
         }
+        
+        // Converts a MATLAB double to an Optizelle Natural
+        Natural fromDouble(double value) {
+            // Check that we're in bounds.  We were hitting a precision
+            // problem on 64-bit MATLAB/Octave that made this necessary.
+            if(value >= double(std::numeric_limits<Optizelle::Natural>::max())
+            )
+                return std::numeric_limits <Optizelle::Natural>::max();
+            else if(
+                value <= double(std::numeric_limits <Optizelle::Natural>::min())
+            )
+                return std::numeric_limits <Optizelle::Natural>::min();
+            else
+                return Optizelle::Natural(value);
+        }
 
         // On construction, initialize the pointer and figure out if
         // we're capturing the pointer or attaching to it
@@ -1689,7 +1704,7 @@ namespace Optizelle {
                 Optizelle::Natural & value
             ) {
                 mxArray * item(mxGetField(obj,0,name.c_str()));
-                value=Optizelle::Natural(mxGetPr(item)[0]);
+                value = fromDouble(mxGetPr(item)[0]);
             }
             
             // Sets a list of vectors in a C++ state 
@@ -1807,7 +1822,7 @@ namespace Optizelle {
                     // Create the elements in values 
                     values.emplace_back(
                         mxArrayToString(mxGetCell(mxvalue,0)),
-                        Optizelle::Natural(mxGetPr(mxGetCell(mxvalue,1))[0]));
+                        fromDouble(mxGetPr(mxGetCell(mxvalue,1))[0]));
                 }
             }
             
