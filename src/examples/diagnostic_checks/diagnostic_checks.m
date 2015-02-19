@@ -95,24 +95,26 @@ function main(fname)
 
     % Allocate memory for an initial guess and equality multiplier 
     x = [1.2;2.3];
-    y = zeros(3,1);
+    z = zeros(3,1);
 
     % Create an optimization state
-    state=Optizelle.EqualityConstrained.State.t( ...
-        Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,x,y);
+    state=Optizelle.InequalityConstrained.State.t( ...
+        Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,x,z);
 
     %Modify the state so that we just run our diagnostics and exit
     state.dscheme = Optizelle.DiagnosticScheme.DiagnosticsOnly;
     state.f_diag = Optizelle.FunctionDiagnostics.SecondOrder;
-    state.g_diag = Optizelle.FunctionDiagnostics.SecondOrder;
+    state.x_diag = Optizelle.VectorSpaceDiagnostics.Basic;
+    state.h_diag = Optizelle.FunctionDiagnostics.SecondOrder;
+    state.z_diag = Optizelle.VectorSpaceDiagnostics.EuclideanJordan;
 
     % Create a bundle of functions
-    fns=Optizelle.EqualityConstrained.Functions.t;
+    fns=Optizelle.InequalityConstrained.Functions.t;
     fns.f=Rosenbrock();
-    fns.g=Utility();
+    fns.h=Utility();
 
     % Even though this looks like we're solving an optimization problem,
     % we're actually just going to run our diagnostics and then exit.
-    Optizelle.EqualityConstrained.Algorithms.getMin( ...
+    Optizelle.InequalityConstrained.Algorithms.getMin( ...
         Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,fns,state);
 end

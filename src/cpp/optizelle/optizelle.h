@@ -1540,7 +1540,7 @@ namespace Optizelle{
                 ) {
                     // Run our diagnostic checks
                     ProblemClass::Diagnostics::checkFunctions(msg,fns,state);
-                    ProblemClass::Diagnostics::checkVectorSpace(msg,state);
+                    ProblemClass::Diagnostics::checkVectorSpace(msg,fns,state);
                 }
                 break;
 
@@ -3899,6 +3899,7 @@ namespace Optizelle{
             // Runs the specified vector space diagnostics 
             static void checkVectorSpace_(
                 Messaging const & msg,
+                typename Functions::t const & fns,
                 typename State::t const & state
             ) {
                 // Create some shortcuts
@@ -3924,10 +3925,11 @@ namespace Optizelle{
             // Runs the specified vector space diagnostics 
             static void checkVectorSpace(
                 Messaging const & msg,
+                typename Functions::t const & fns,
                 typename State::t const & state
             ) {
-                Unconstrained <Real,XX>::Diagnostics::checkVectorSpace_(
-                    msg,state);
+                Unconstrained <Real,XX>::Diagnostics
+                    ::checkVectorSpace_(msg,fns,state);
             }
         };
 
@@ -6805,6 +6807,7 @@ namespace Optizelle{
             // Runs the specified vector space diagnostics 
             static void checkVectorSpace_(
                 Messaging const & msg,
+                typename Functions::t const & fns,
                 typename State::t const & state
             ) {
                 // Create some shortcuts
@@ -6830,12 +6833,13 @@ namespace Optizelle{
             // Runs the specified vector space diagnostics 
             static void checkVectorSpace(
                 Messaging const & msg,
+                typename Functions::t const & fns,
                 typename State::t const & state
             ) {
-                Unconstrained <Real,XX>::Diagnostics::checkVectorSpace_(
-                    msg,state);
+                Unconstrained <Real,XX>::Diagnostics
+                    ::checkVectorSpace_(msg,fns,state);
                 EqualityConstrained <Real,XX,YY>::Diagnostics
-                    ::checkVectorSpace_(msg,state);
+                    ::checkVectorSpace_(msg,fns,state);
             }
         };
 
@@ -9404,10 +9408,13 @@ namespace Optizelle{
             // Runs the specified vector space diagnostics 
             static void checkVectorSpace_(
                 Messaging const & msg,
+                typename Functions::t const & fns,
                 typename State::t const & state
             ) {
                 // Create some shortcuts
+                VectorValuedFunction <Real,XX,ZZ> const & h=*(fns.h);
                 VectorSpaceDiagnostics::t const & z_diag=state.z_diag;
+                X_Vector const & x=state.x;
                 Z_Vector const & z=state.z;
                
                 // Create some random directions for these tests
@@ -9418,7 +9425,7 @@ namespace Optizelle{
                 Z_Vector dzzz(Z::init(z));
                     Z::rand(dzzz); 
                 Z_Vector dzzzz(Z::init(z));
-                    Z::rand(dzzzz); 
+                    Z::rand(dzzzz);
 
                 // Run the diagnostics
                 switch(z_diag) {
@@ -9429,7 +9436,13 @@ namespace Optizelle{
                         Optizelle::Diagnostics::copy_scal_innr <Real,ZZ> (
                             msg,dz,"Z");
                         break;
-                    case VectorSpaceDiagnostics::EuclideanJordan:
+                    case VectorSpaceDiagnostics::EuclideanJordan: {
+
+                        // Evaluate h_x
+                        Z_Vector h_x(Z::init(z));
+                        h.eval(x,h_x);
+
+                        // Run the diagnostics
                         Optizelle::Diagnostics::zero_innr <Real,ZZ> (msg,z,"Z");
                         Optizelle::Diagnostics::copy_axpy_innr <Real,ZZ> (
                             msg,dz,"Z");
@@ -9441,23 +9454,24 @@ namespace Optizelle{
                             msg,dz,dzz,"Z");
                         Optizelle::Diagnostics::id_srch <Real,ZZ> (msg,z,"Z");
                         Optizelle::Diagnostics::linv_id_barr <Real,ZZ> (
-                            msg,z,dz,"Z");
+                            msg,h_x,dz,"Z");
                         Optizelle::Diagnostics::innr_prod_symm <Real,ZZ> (
                             msg,dz,dzz,dzzz,dzzzz,"Z");
-                    case VectorSpaceDiagnostics::NoDiagnostics:
                         break;
+                    } 
                 }
             }
             
             // Runs the specified vector space diagnostics 
             static void checkVectorSpace(
                 Messaging const & msg,
+                typename Functions::t const & fns,
                 typename State::t const & state
             ) {
-                Unconstrained <Real,XX>::Diagnostics::checkVectorSpace_(
-                    msg,state);
+                Unconstrained <Real,XX>::Diagnostics
+                    ::checkVectorSpace_(msg,fns,state);
                 InequalityConstrained <Real,XX,ZZ>::Diagnostics
-                    ::checkVectorSpace_(msg,state);
+                    ::checkVectorSpace_(msg,fns,state);
             }
         };
 
@@ -10687,14 +10701,15 @@ namespace Optizelle{
             // Runs the specified vector space diagnostics 
             static void checkVectorSpace(
                 Messaging const & msg,
+                typename Functions::t const & fns,
                 typename State::t const & state
             ) {
-                Unconstrained <Real,XX>::Diagnostics::checkVectorSpace_(
-                    msg,state);
+                Unconstrained <Real,XX>::Diagnostics
+                    ::checkVectorSpace_(msg,fns,state);
                 EqualityConstrained <Real,XX,YY>::Diagnostics
-                    ::checkVectorSpace_(msg,state);
+                    ::checkVectorSpace_(msg,fns,state);
                 InequalityConstrained <Real,XX,ZZ>::Diagnostics
-                    ::checkVectorSpace_(msg,state);
+                    ::checkVectorSpace_(msg,fns,state);
             }
         };
         

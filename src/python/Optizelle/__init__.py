@@ -584,7 +584,10 @@ class Rm(object):
     @staticmethod
     def barr(x):
         """Barrier function, <- barr(x) where x o grad barr(x) = e"""
-        return reduce(lambda x,y:x+math.log(y),x,0.)
+        if (x>0).all():
+            return reduce(lambda x,y:x+math.log(y),x,0.)
+        else:
+            return float("nan")
         
     @staticmethod
     def srch(x,y):

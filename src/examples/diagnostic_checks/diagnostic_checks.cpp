@@ -139,23 +139,25 @@ int main() {
     // Allocate memory for an initial guess and equality multiplier 
     std::vector <double> x(2);
     x[0] = 1.2; x[1] = 2.3;
-    std::vector <double> y(3);
+    std::vector <double> z(3);
     
     // Create an optimization state
-    Optizelle::EqualityConstrained <double,Rm,Rm>::State::t state(x,y);
+    Optizelle::InequalityConstrained <double,Rm,Rm>::State::t state(x,z);
 
     // Modify the state so that we just run our diagnostics and exit
     state.dscheme = Optizelle::DiagnosticScheme::DiagnosticsOnly;
     state.f_diag = Optizelle::FunctionDiagnostics::SecondOrder;
-    state.g_diag = Optizelle::FunctionDiagnostics::SecondOrder;
+    state.x_diag = Optizelle::VectorSpaceDiagnostics::Basic;
+    state.h_diag = Optizelle::FunctionDiagnostics::SecondOrder;
+    state.z_diag = Optizelle::VectorSpaceDiagnostics::EuclideanJordan;
     
     // Create a bundle of functions
-    Optizelle::EqualityConstrained <double,Rm,Rm>::Functions::t fns;
+    Optizelle::InequalityConstrained <double,Rm,Rm>::Functions::t fns;
     fns.f.reset(new Rosenbrock);
-    fns.g.reset(new Utility);
+    fns.h.reset(new Utility);
 
     // Even though this looks like we're solving an optimization problem,
     // we're actually just going to run our diagnostics and then exit.
-    Optizelle::EqualityConstrained <double,Rm,Rm>::Algorithms
+    Optizelle::InequalityConstrained <double,Rm,Rm>::Algorithms
         ::getMin(Optizelle::Messaging(),fns,state);
 }
