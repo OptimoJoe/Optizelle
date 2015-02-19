@@ -607,6 +607,47 @@ namespace Optizelle {
         }
     }
 
+    namespace VectorSpaceDiagnostics { 
+        // Converts t to a Python enumerated type
+        PyObject * toPython(t const & diag) {
+            // Do the conversion
+            switch(diag){
+            case NoDiagnostics:
+                return Python::enumToPyObject("VectorSpaceDiagnostics",
+                    "NoDiagnostics");
+            case Basic:
+                return Python::enumToPyObject("VectorSpaceDiagnostics",
+                    "Basic");
+            case EuclideanJordan:
+                return Python::enumToPyObject("VectorSpaceDiagnostics",
+                    "EuclideanJordan");
+            default:
+                throw;
+            }
+        }
+
+        // Converts a Python enumerated type to t 
+        t fromPython(PyObject * const member) {
+            // Convert the member to a Natural 
+            Natural m=PyInt_AsSsize_t(member);
+
+            if(m==Python::enumToNatural("VectorSpaceDiagnostics",
+                "NoDiagnostics")
+            )
+                return NoDiagnostics;
+            else if(m==Python::enumToNatural("VectorSpaceDiagnostics",
+                "Basic")
+            )
+                return Basic;
+            else if(m==Python::enumToNatural("VectorSpaceDiagnostics",
+                "EuclideanJordan")
+            )
+                return EuclideanJordan;
+            else
+                throw;
+        }
+    }
+
     namespace DiagnosticScheme { 
         // Converts t to a Python enumerated type
         PyObject * toPython(t const & dscheme) {
@@ -1920,6 +1961,11 @@ namespace Optizelle {
                         FunctionDiagnostics::toPython,
                         state.f_diag,
                         pystate);
+                    toPython::Param <VectorSpaceDiagnostics::t> (
+                        "x_diag",
+                        VectorSpaceDiagnostics::toPython,
+                        state.x_diag,
+                        pystate);
                     toPython::Param <DiagnosticScheme::t> (
                         "dscheme",
                         DiagnosticScheme::toPython,
@@ -2034,6 +2080,11 @@ namespace Optizelle {
                         FunctionDiagnostics::fromPython,
                         pystate,
                         state.f_diag);
+                    fromPython::Param <VectorSpaceDiagnostics::t> (
+                        "x_diag",
+                        VectorSpaceDiagnostics::fromPython,
+                        pystate,
+                        state.x_diag);
                     fromPython::Param <DiagnosticScheme::t> (
                         "dscheme",
                         DiagnosticScheme::fromPython,
@@ -2495,6 +2546,11 @@ namespace Optizelle {
                         FunctionDiagnostics::toPython,
                         state.g_diag,
                         pystate);
+                    toPython::Param <VectorSpaceDiagnostics::t> (
+                        "y_diag",
+                        VectorSpaceDiagnostics::toPython,
+                        state.y_diag,
+                        pystate);
                 }
                 void toPython(
                     typename PyEqualityConstrained::State::t const & state,
@@ -2561,6 +2617,11 @@ namespace Optizelle {
                         FunctionDiagnostics::fromPython,
                         pystate,
                         state.g_diag);
+                    fromPython::Param <VectorSpaceDiagnostics::t> (
+                        "y_diag",
+                        VectorSpaceDiagnostics::fromPython,
+                        pystate,
+                        state.y_diag);
                 }
                 void fromPython(
                     PyObject * const pystate,
@@ -3018,6 +3079,11 @@ namespace Optizelle {
                         FunctionDiagnostics::toPython,
                         state.h_diag,
                         pystate);
+                    toPython::Param <VectorSpaceDiagnostics::t> (
+                        "z_diag",
+                        VectorSpaceDiagnostics::toPython,
+                        state.z_diag,
+                        pystate);
                 }
                 void toPython(
                     typename PyInequalityConstrained::State::t const & state,
@@ -3058,6 +3124,11 @@ namespace Optizelle {
                         FunctionDiagnostics::fromPython,
                         pystate,
                         state.h_diag);
+                    fromPython::Param <VectorSpaceDiagnostics::t> (
+                        "z_diag",
+                        VectorSpaceDiagnostics::fromPython,
+                        pystate,
+                        state.z_diag);
                 }
                 void fromPython(
                     PyObject * const pystate,

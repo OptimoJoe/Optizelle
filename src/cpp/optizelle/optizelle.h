@@ -547,6 +547,26 @@ namespace Optizelle{
         // Checks whether or not a string is valid
         bool is_valid(std::string const & dscheme);
     }
+    
+    // Different diagnostics on the algebra 
+    namespace VectorSpaceDiagnostics {
+        enum t : Natural{
+            //---VectorSpaceDiagnostics0---
+            NoDiagnostics,      // No diagnostic checks
+            Basic,              // Test our basic vector space operations
+            EuclideanJordan     // Test our Euclidean-jordan algebraic 
+            //---VectorSpaceDiagnostics1---
+        };
+        
+        // Converts the diagnostic checks to a string
+        std::string to_string(t const & diag);
+        
+        // Converts a string to the diagnostic checks 
+        t from_string(std::string const & diag);
+
+        // Checks whether or not a string is valid
+        bool is_valid(std::string const & name);
+    }
 
     // A collection of miscellaneous diagnostics that help determine errors.
     namespace Diagnostics {
@@ -1106,8 +1126,336 @@ namespace Optizelle{
             // Return the function's smallest relative error
             return min_rel_err; 
         }
-    }
+        
+        // Checks the zero and innr operations 
+        template <
+            typename Real,
+            template <typename> class XX
+        >
+        Real zero_innr(
+            Messaging const & msg,
+            typename XX <Real>::Vector const & x,
+            std::string const & name
+        ) {
+            // Create some type shortcuts
+            typedef XX <Real> X;
+            typedef typename X::Vector X_Vector;
 
+            // Create a zero vector 
+            X_Vector zero(X::init(x));
+            X::zero(zero);
+
+            // Figure out it's norm
+            Real norm = sqrt(X::innr(zero,zero));
+
+            // Print out it's norm
+            std::stringstream ss;
+            ss << "The " << name << "::norm of zero(x) is: " << norm;
+            msg.print(ss.str());
+
+            // Return the actual norm 
+            return norm;
+        }
+        
+        // Checks the copy, axpy, and innr operations 
+        template <
+            typename Real,
+            template <typename> class XX
+        >
+        Real copy_axpy_innr(
+            Messaging const & msg,
+            typename XX <Real>::Vector const & x,
+            std::string const & name
+        ) {
+            // Create some type shortcuts
+            typedef XX <Real> X;
+            typedef typename X::Vector X_Vector;
+
+            // Make a copy of x 
+            X_Vector xhat(X::init(x));
+            X::copy(x,xhat);
+
+            // xhat <- -0.5 x + xhat
+            X::axpy(Real(-0.5),x,xhat);
+
+            // xhat <- 0.5 x + xhat
+            X::axpy(Real(0.5),x,xhat);
+
+            // xhat <- -1.0 x + xhat
+            X::axpy(Real(-1.0),x,xhat);
+
+            // Figure out it's norm
+            Real norm = sqrt(X::innr(xhat,xhat));
+
+            // Print out it's norm
+            std::stringstream ss;
+            ss << "The " << name << "::norm of ((x-0.5x)+0.5x)-x is: " << norm;
+            msg.print(ss.str());
+
+            // Return the actual norm 
+            return norm;
+        }
+        
+        // Checks the copy, scal, and innr operations 
+        template <
+            typename Real,
+            template <typename> class XX
+        >
+        Real copy_scal_innr(
+            Messaging const & msg,
+            typename XX <Real>::Vector const & x,
+            std::string const & name
+        ) {
+            // Create some type shortcuts
+            typedef XX <Real> X;
+            typedef typename X::Vector X_Vector;
+
+            // Make a copy of x 
+            X_Vector xhat(X::init(x));
+            X::copy(x,xhat);
+
+            // xhat <- 10.0 x 
+            X::scal(Real(10.0),xhat);
+
+            // Figure out || xhat || 
+            Real xhat_norm = sqrt(X::innr(xhat,xhat));
+
+            // Figure out || x ||
+            Real x_norm = sqrt(X::innr(x,x));
+
+            // Figure out 10 || x || - || xhat ||
+            Real norm = Real(10.)*x_norm-xhat_norm;
+
+            // Print out their norms
+            std::stringstream ss;
+            ss << "The value || 10 x || - 10 || x || in the " << name <<
+                "::norm is: " << norm; 
+            msg.print(ss.str());
+
+            // Return the actual norm 
+            return norm;
+        }
+        
+        // Checks the id and prod operations 
+        template <
+            typename Real,
+            template <typename> class XX
+        >
+        Real id_prod(
+            Messaging const & msg,
+            typename XX <Real>::Vector const & x,
+            std::string const & name
+        ) {
+            // Create some type shortcuts
+            typedef XX <Real> X;
+            typedef typename X::Vector X_Vector;
+
+            // Find the identity element 
+            X_Vector e(X::init(x));
+            X::id(e);
+
+            // xhat <- x o e
+            X_Vector xhat(X::init(x));
+            X::prod(x,e,xhat);
+
+            // xhat <- x - (x o e)
+            X::scal(Real(-1.),xhat);
+            X::axpy(Real(1.0),x,xhat);
+
+            // Figure out || xhat || 
+            Real norm = sqrt(X::innr(xhat,xhat));
+
+            // Print out it's norm 
+            std::stringstream ss;
+            ss << "The value || x - (x o e) || in the " << name <<
+                "::norm is: " << norm; 
+            msg.print(ss.str());
+
+            // Return the actual norm 
+            return norm;
+        }
+        
+        // Checks the prod and linv operations 
+        template <
+            typename Real,
+            template <typename> class XX
+        >
+        Real prod_linv(
+            Messaging const & msg,
+            typename XX <Real>::Vector const & x1,
+            typename XX <Real>::Vector const & x2,
+            std::string const & name
+        ) {
+            // Create some type shortcuts
+            typedef XX <Real> X;
+            typedef typename X::Vector X_Vector;
+
+            // xhat <- x1 o x2 
+            X_Vector xhat(X::init(x1));
+            X::prod(x1,x2,xhat);
+
+            // xtild <- Linv(x1) xhat 
+            X_Vector xtild(X::init(x1));
+            X::linv(x1,xhat,xtild);
+
+            // xtild <- -x2 + xtild
+            X::axpy(Real(-1.0),x2,xtild);
+
+            // Figure out || xtild || 
+            Real norm = sqrt(X::innr(xtild,xtild));
+
+            // Print out it's norm 
+            std::stringstream ss;
+            ss << "The value || x2 - linv(x1)(x1 o x2)) || in the " << name <<
+                "::norm is: " << norm; 
+            msg.print(ss.str());
+
+            // Return the actual norm 
+            return norm;
+        }
+        
+        // Checks the id and srch operations 
+        template <
+            typename Real,
+            template <typename> class XX
+        >
+        Real id_srch(
+            Messaging const & msg,
+            typename XX <Real>::Vector const & x,
+            std::string const & name
+        ) {
+            // Create some type shortcuts
+            typedef XX <Real> X;
+            typedef typename X::Vector X_Vector;
+
+            // e <- id 
+            X_Vector e(X::init(x));
+            X::id(e);
+
+            // xhat <- -2.0 e
+            X_Vector xhat(X::init(x));
+            X::id(xhat);
+            X::scal(Real(-2.0),xhat); 
+
+            // alpha <- srch(-2.0 e,e) - 0.5
+            Real alpha(X::srch(xhat,e));
+            alpha -= Real(0.5);
+
+            // Print out the result 
+            std::stringstream ss;
+            ss << "The value of " << name << "::srch(-2.0 e,e) - 0.5 is: "
+                << alpha; 
+            msg.print(ss.str());
+
+            // Return the actual distance 
+            return alpha;
+        }
+
+        // Define the function: f(x) = barr(x)
+        template <
+            typename Real,
+            template <typename> class XX
+        >
+        struct barr : public Optizelle::ScalarValuedFunction <Real,XX> {
+            // Create some type shortcuts
+            typedef XX <Real> X;
+            typedef typename X::Vector X_Vector;
+
+            // Evaluation of the barrier function
+            Real eval(const X_Vector& x) const {
+                // Create some type shortcuts
+                typedef XX <Real> X;
+
+                // Return the barrier function
+                return X::barr(x);
+            }
+
+            // Gradient should be: Linv(x)e
+            void grad(
+                const X_Vector& x,
+                X_Vector& grad
+            ) const {
+                // e <- id 
+                X_Vector e(X::init(x));
+                X::id(e);
+
+                // grad <- linv(x)e
+                X::linv(x,e,grad);
+            }
+
+            // Hessian-vector product
+            void hessvec(
+                const X_Vector& x,
+                const X_Vector& dx,
+                X_Vector& H_dx
+            ) const {
+                X::zero(H_dx);
+            }
+        };
+        
+        // Checks the linv, id, and barr operations
+        template <
+            typename Real,
+            template <typename> class XX
+        >
+        Real linv_id_barr(
+            Messaging const & msg,
+            typename XX <Real>::Vector const & x,
+            typename XX <Real>::Vector const & dx,
+            std::string const & name
+        ) {
+            // Do a finite difference check on the barrier function 
+            std::stringstream ss;
+            ss << name << "::bar";
+            return gradientCheck(msg,barr <Real,XX> (),x,dx,ss.str());
+        }
+        
+        // Checks the innr, prod, and symm operations 
+        template <
+            typename Real,
+            template <typename> class XX
+        >
+        Real innr_prod_symm(
+            Messaging const & msg,
+            typename XX <Real>::Vector const & dx,
+            typename XX <Real>::Vector const & dxx,
+            typename XX <Real>::Vector const & dxxx,
+            typename XX <Real>::Vector const & dxxxx,
+            std::string const & name
+        ) {
+            // Create some type shortcuts
+            typedef XX <Real> X;
+            typedef typename X::Vector X_Vector;
+
+            // xhat <- symm(dx o dxx)
+            X_Vector xhat(X::init(dx));
+            X::prod(dx,dxx,xhat);
+            X::symm(xhat);
+
+            // xtild <- symm(dx o dxx) o dxxx
+            X_Vector xtild(X::init(dx));
+            X::prod(xhat,dxxx,xtild);
+
+            // innr1 <- <symm(dx o dxx) o dxxx , dxxxx >
+            Real innr1(X::innr(xtild,dxxxx));
+
+            // xtild <- symm(dx o dxx) o dxxxx
+            X::prod(xhat,dxxxx,xtild);
+
+            // innr2 <- < dxxx, symm(dx o dxx) o dxxxx >
+            Real innr2(X::innr(dxxx,xtild));
+
+            // Print out the result 
+            std::stringstream ss;
+            ss << "The value <symm(dx o dxx) o dxxx, dxxxx> - "
+            "<dxxx, symm(dx o dxx) o dxxxx> using " << name <<
+                "::innr is: " << innr1-innr2; 
+            msg.print(ss.str());
+
+            // Return the actual distance 
+            return innr1-innr2;
+        }
+    }
 
     //---StateManipulator0---
     // A function that has free reign to manipulate or analyze the state.
@@ -1192,6 +1540,7 @@ namespace Optizelle{
                 ) {
                     // Run our diagnostic checks
                     ProblemClass::Diagnostics::checkFunctions(msg,fns,state);
+                    ProblemClass::Diagnostics::checkVectorSpace(msg,fns,state);
                 }
                 break;
 
@@ -1574,6 +1923,9 @@ namespace Optizelle{
                 // Function diagnostics on f
                 FunctionDiagnostics::t f_diag;
 
+                // Vector space diagnostics on X 
+                VectorSpaceDiagnostics::t x_diag;
+
                 // Diagnostic scheme 
                 DiagnosticScheme::t dscheme;
 
@@ -1809,6 +2161,11 @@ namespace Optizelle{
                         //---f_diag0---
                         FunctionDiagnostics::NoDiagnostics
                         //---f_diag1---
+                    ),
+                    x_diag(
+                        //---x_diag0---
+                        VectorSpaceDiagnostics::NoDiagnostics
+                        //---x_diag1---
                     ),
                     dscheme(
                         //---dscheme0---
@@ -2148,6 +2505,10 @@ namespace Optizelle{
                     // Any 
                     //---f_diag_valid1---
                     
+                    //---x_diag_valid0---
+                    // Any 
+                    //---x_diag_valid1---
+                    
                     //---dscheme_valid0---
                     // Any 
                     //---dscheme_valid1---
@@ -2243,6 +2604,8 @@ namespace Optizelle{
                         LineSearchKind::is_valid(item.second)) ||
                     (item.first=="f_diag" &&
                         FunctionDiagnostics::is_valid(item.second)) ||
+                    (item.first=="x_diag" &&
+                        VectorSpaceDiagnostics::is_valid(item.second)) ||
                     (item.first=="dscheme" &&
                         DiagnosticScheme::is_valid(item.second))
                 ) 
@@ -2398,6 +2761,8 @@ namespace Optizelle{
                     LineSearchKind::to_string(state.kind));
                 params.emplace_back("f_diag",
                     FunctionDiagnostics::to_string(state.f_diag));
+                params.emplace_back("x_diag",
+                    VectorSpaceDiagnostics::to_string(state.x_diag));
                 params.emplace_back("dscheme",
                     DiagnosticScheme::to_string(state.dscheme));
             }
@@ -2545,6 +2910,9 @@ namespace Optizelle{
                     else if(item->first=="f_diag")
                         state.f_diag
                             = FunctionDiagnostics::from_string(item->second);
+                    else if(item->first=="x_diag")
+                        state.x_diag
+                            = VectorSpaceDiagnostics::from_string(item->second);
                     else if(item->first=="dscheme")
                         state.dscheme
                             = DiagnosticScheme::from_string(item->second);
@@ -3526,6 +3894,42 @@ namespace Optizelle{
             ) {
                 Unconstrained <Real,XX>::Diagnostics::checkFunctions_(
                     msg,fns,state);
+            }
+            
+            // Runs the specified vector space diagnostics 
+            static void checkVectorSpace_(
+                Messaging const & msg,
+                typename Functions::t const & fns,
+                typename State::t const & state
+            ) {
+                // Create some shortcuts
+                VectorSpaceDiagnostics::t const & x_diag=state.x_diag;
+                X_Vector const & x=state.x;
+               
+                // Create some random directions for these tests
+                X_Vector dx(X::init(x));
+                    X::rand(dx); 
+
+                // Run the diagnostics
+                switch(x_diag) {
+                    case VectorSpaceDiagnostics::Basic:
+                        Optizelle::Diagnostics::zero_innr <Real,XX> (msg,x,"X");
+                        Optizelle::Diagnostics::copy_axpy_innr <Real,XX> (
+                            msg,dx,"X");
+                        Optizelle::Diagnostics::copy_scal_innr <Real,XX> (
+                            msg,dx,"X");
+                        break;
+                }
+            }
+            
+            // Runs the specified vector space diagnostics 
+            static void checkVectorSpace(
+                Messaging const & msg,
+                typename Functions::t const & fns,
+                typename State::t const & state
+            ) {
+                Unconstrained <Real,XX>::Diagnostics
+                    ::checkVectorSpace_(msg,fns,state);
             }
         };
 
@@ -5066,6 +5470,9 @@ namespace Optizelle{
 
                 // Function diagnostics on g
                 FunctionDiagnostics::t g_diag;
+
+                // Vector space diagnostics on Y 
+                VectorSpaceDiagnostics::t y_diag;
                 
                 // Initialization constructors
                 explicit t(X_Vector const & x_user,Y_Vector const & y_user) : 
@@ -5247,6 +5654,11 @@ namespace Optizelle{
                         //---g_diag0---
                         FunctionDiagnostics::NoDiagnostics
                         //---g_diag1---
+                    ),
+                    y_diag(
+                        //---y_diag0---
+                        VectorSpaceDiagnostics::NoDiagnostics
+                        //---y_diag1---
                     )
                 {
                         Y::copy(y_user,y);
@@ -5515,6 +5927,10 @@ namespace Optizelle{
                     //---g_diag_valid0---
                     // Any
                     //---g_diag_valid1---
+                    
+                    //---y_diag_valid0---
+                    // Any
+                    //---y_diag_valid1---
 
                 // If there's an error, print it
                 if(ss.str()!="") msg.error(ss.str());
@@ -5587,7 +6003,9 @@ namespace Optizelle{
                     (item.first=="PSchur_right_type" &&
                         Operators::is_valid(item.second)) ||
                     (item.first=="g_diag" &&
-                        FunctionDiagnostics::is_valid(item.second))
+                        FunctionDiagnostics::is_valid(item.second)) ||
+                    (item.first=="y_diag" &&
+                        VectorSpaceDiagnostics::is_valid(item.second))
                 ) 
                     return true;
                 else
@@ -5713,6 +6131,8 @@ namespace Optizelle{
                     Operators::to_string(state.PSchur_right_type));
                 params.emplace_back("g_diag",
                     FunctionDiagnostics::to_string(state.g_diag));
+                params.emplace_back("y_diag",
+                    VectorSpaceDiagnostics::to_string(state.y_diag));
             }
             
             // Copy in all equality multipliers 
@@ -5829,7 +6249,11 @@ namespace Optizelle{
                         state.PSchur_right_type
                             =Operators::from_string(item->second);
                     else if(item->first=="g_diag")
-                        state.g_diag=FunctionDiagnostics::from_string(item->second);
+                        state.g_diag=FunctionDiagnostics::from_string(
+                            item->second);
+                    else if(item->first=="y_diag")
+                        state.y_diag=VectorSpaceDiagnostics::from_string(
+                            item->second);
                 }
             }
 
@@ -6378,6 +6802,44 @@ namespace Optizelle{
                     msg,fns,state);
                 EqualityConstrained <Real,XX,YY>::Diagnostics::checkFunctions_(
                     msg,fns,state);
+            }
+            
+            // Runs the specified vector space diagnostics 
+            static void checkVectorSpace_(
+                Messaging const & msg,
+                typename Functions::t const & fns,
+                typename State::t const & state
+            ) {
+                // Create some shortcuts
+                VectorSpaceDiagnostics::t const & y_diag=state.y_diag;
+                Y_Vector const & y=state.y;
+               
+                // Create some random directions for these tests
+                Y_Vector dy(Y::init(y));
+                    Y::rand(dy); 
+
+                // Run the diagnostics
+                switch(y_diag) {
+                    case VectorSpaceDiagnostics::Basic:
+                        Optizelle::Diagnostics::zero_innr <Real,YY> (msg,y,"Y");
+                        Optizelle::Diagnostics::copy_axpy_innr <Real,YY> (
+                            msg,dy,"Y");
+                        Optizelle::Diagnostics::copy_scal_innr <Real,YY> (
+                            msg,dy,"Y");
+                        break;
+                }
+            }
+            
+            // Runs the specified vector space diagnostics 
+            static void checkVectorSpace(
+                Messaging const & msg,
+                typename Functions::t const & fns,
+                typename State::t const & state
+            ) {
+                Unconstrained <Real,XX>::Diagnostics
+                    ::checkVectorSpace_(msg,fns,state);
+                EqualityConstrained <Real,XX,YY>::Diagnostics
+                    ::checkVectorSpace_(msg,fns,state);
             }
         };
 
@@ -7998,6 +8460,9 @@ namespace Optizelle{
                 // Function diagnostics on h
                 FunctionDiagnostics::t h_diag;
 
+                // Vector space diagnostics on Z
+                VectorSpaceDiagnostics::t z_diag;
+
                 // Initialization constructors
                 t(X_Vector const & x_user,Z_Vector const & z_user) :
                     Unconstrained <Real,XX>::State::t(x_user),
@@ -8069,6 +8534,11 @@ namespace Optizelle{
                         //---h_diag0---
                         FunctionDiagnostics::NoDiagnostics
                         //---h_diag1---
+                    ),
+                    z_diag(
+                        //---z_diag0---
+                        VectorSpaceDiagnostics::NoDiagnostics
+                        //---z_diag1---
                     )
                 {
                         Z::copy(z_user,z);
@@ -8173,6 +8643,10 @@ namespace Optizelle{
                     //---h_diag_valid0---
                     // Any
                     //---h_diag_valid1---
+                    
+                    //---z_diag_valid0---
+                    // Any
+                    //---z_diag_valid1---
 
                 // If there's an error, print it
                 if(ss.str()!="") msg.error(ss.str());
@@ -8233,7 +8707,9 @@ namespace Optizelle{
                     (item.first=="cstrat" &&
                         CentralityStrategy::is_valid(item.second)) ||
                     (item.first=="h_diag" &&
-                        FunctionDiagnostics::is_valid(item.second)) 
+                        FunctionDiagnostics::is_valid(item.second)) ||
+                    (item.first=="z_diag" &&
+                        VectorSpaceDiagnostics::is_valid(item.second)) 
                 ) 
                     return true;
                 else
@@ -8319,6 +8795,8 @@ namespace Optizelle{
                     CentralityStrategy::to_string(state.cstrat));
                 params.emplace_back("h_diag",
                     FunctionDiagnostics::to_string(state.h_diag));
+                params.emplace_back("z_diag",
+                    VectorSpaceDiagnostics::to_string(state.z_diag));
             }
             
             // Copy in inequality multipliers 
@@ -8383,6 +8861,9 @@ namespace Optizelle{
                             = CentralityStrategy::from_string(item->second);
                     else if(item->first=="h_diag")
                         state.h_diag=FunctionDiagnostics::from_string(
+                            item->second);
+                    else if(item->first=="z_diag")
+                        state.z_diag=VectorSpaceDiagnostics::from_string(
                             item->second);
                 }
             }
@@ -8922,6 +9403,75 @@ namespace Optizelle{
                     msg,fns,state);
                 InequalityConstrained<Real,XX,ZZ>::Diagnostics::checkFunctions_(
                     msg,fns,state);
+            }
+            
+            // Runs the specified vector space diagnostics 
+            static void checkVectorSpace_(
+                Messaging const & msg,
+                typename Functions::t const & fns,
+                typename State::t const & state
+            ) {
+                // Create some shortcuts
+                VectorValuedFunction <Real,XX,ZZ> const & h=*(fns.h);
+                VectorSpaceDiagnostics::t const & z_diag=state.z_diag;
+                X_Vector const & x=state.x;
+                Z_Vector const & z=state.z;
+               
+                // Create some random directions for these tests
+                Z_Vector dz(Z::init(z));
+                    Z::rand(dz); 
+                Z_Vector dzz(Z::init(z));
+                    Z::rand(dzz); 
+                Z_Vector dzzz(Z::init(z));
+                    Z::rand(dzzz); 
+                Z_Vector dzzzz(Z::init(z));
+                    Z::rand(dzzzz);
+
+                // Run the diagnostics
+                switch(z_diag) {
+                    case VectorSpaceDiagnostics::Basic:
+                        Optizelle::Diagnostics::zero_innr <Real,ZZ> (msg,z,"Z");
+                        Optizelle::Diagnostics::copy_axpy_innr <Real,ZZ> (
+                            msg,dz,"Z");
+                        Optizelle::Diagnostics::copy_scal_innr <Real,ZZ> (
+                            msg,dz,"Z");
+                        break;
+                    case VectorSpaceDiagnostics::EuclideanJordan: {
+
+                        // Evaluate h_x
+                        Z_Vector h_x(Z::init(z));
+                        h.eval(x,h_x);
+
+                        // Run the diagnostics
+                        Optizelle::Diagnostics::zero_innr <Real,ZZ> (msg,z,"Z");
+                        Optizelle::Diagnostics::copy_axpy_innr <Real,ZZ> (
+                            msg,dz,"Z");
+                        Optizelle::Diagnostics::copy_scal_innr <Real,ZZ> (
+                            msg,dz,"Z");
+
+                        Optizelle::Diagnostics::id_prod <Real,ZZ> (msg,dz,"Z");
+                        Optizelle::Diagnostics::prod_linv <Real,ZZ>(
+                            msg,dz,dzz,"Z");
+                        Optizelle::Diagnostics::id_srch <Real,ZZ> (msg,z,"Z");
+                        Optizelle::Diagnostics::linv_id_barr <Real,ZZ> (
+                            msg,h_x,dz,"Z");
+                        Optizelle::Diagnostics::innr_prod_symm <Real,ZZ> (
+                            msg,dz,dzz,dzzz,dzzzz,"Z");
+                        break;
+                    } 
+                }
+            }
+            
+            // Runs the specified vector space diagnostics 
+            static void checkVectorSpace(
+                Messaging const & msg,
+                typename Functions::t const & fns,
+                typename State::t const & state
+            ) {
+                Unconstrained <Real,XX>::Diagnostics
+                    ::checkVectorSpace_(msg,fns,state);
+                InequalityConstrained <Real,XX,ZZ>::Diagnostics
+                    ::checkVectorSpace_(msg,fns,state);
             }
         };
 
@@ -10146,6 +10696,20 @@ namespace Optizelle{
                     msg,fns,state);
                 InequalityConstrained<Real,XX,ZZ>::Diagnostics::checkFunctions_(
                     msg,fns,state);
+            }
+            
+            // Runs the specified vector space diagnostics 
+            static void checkVectorSpace(
+                Messaging const & msg,
+                typename Functions::t const & fns,
+                typename State::t const & state
+            ) {
+                Unconstrained <Real,XX>::Diagnostics
+                    ::checkVectorSpace_(msg,fns,state);
+                EqualityConstrained <Real,XX,YY>::Diagnostics
+                    ::checkVectorSpace_(msg,fns,state);
+                InequalityConstrained <Real,XX,ZZ>::Diagnostics
+                    ::checkVectorSpace_(msg,fns,state);
             }
         };
         
