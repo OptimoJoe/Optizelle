@@ -613,6 +613,47 @@ namespace Optizelle {
         }
     }
 
+    namespace VectorSpaceDiagnostics { 
+        // Converts t to a Matlab enumerated type
+        mxArray * toMatlab(t const & diag) {
+            // Do the conversion
+            switch(diag){
+            case NoDiagnostics:
+                return Matlab::enumToMxArray("VectorSpaceDiagnostics",
+                    "NoDiagnostics");
+            case Basic:
+                return Matlab::enumToMxArray("VectorSpaceDiagnostics",
+                    "Basic");
+            case EuclideanJordan:
+                return Matlab::enumToMxArray("VectorSpaceDiagnostics",
+                    "EuclideanJordan");
+            default:
+                throw;
+            }
+        }
+
+        // Converts a Matlab enumerated type to t 
+        t fromMatlab(mxArray * const member) {
+            // Convert the member to a Natural 
+            Natural m(*mxGetPr(member));
+
+            if(m==Matlab::enumToNatural("VectorSpaceDiagnostics",
+                "NoDiagnostics")
+            )
+                return NoDiagnostics;
+            else if(m==Matlab::enumToNatural("VectorSpaceDiagnostics",
+                "Basic")
+            )
+                return Basic;
+            else if(m==Matlab::enumToNatural("VectorSpaceDiagnostics",
+                "EuclideanJordan")
+            )
+                return EuclideanJordan;
+            else
+                throw;
+        }
+    }
+
     namespace DiagnosticScheme { 
         // Converts t to a Matlab enumerated type
         mxArray * toMatlab(t const & dscheme) {
@@ -1906,6 +1947,7 @@ namespace Optizelle {
                         "dir",
                         "kind",
                         "f_diag",
+                        "x_diag",
                         "dscheme"};
 
                     return std::move(names);
@@ -2019,6 +2061,11 @@ namespace Optizelle {
                         "f_diag",
                         FunctionDiagnostics::toMatlab,
                         state.f_diag,
+                        mxstate);
+                    toMatlab::Param <VectorSpaceDiagnostics::t> (
+                        "x_diag",
+                        VectorSpaceDiagnostics::toMatlab,
+                        state.x_diag,
                         mxstate);
                     toMatlab::Param <DiagnosticScheme::t> (
                         "dscheme",
@@ -2134,6 +2181,11 @@ namespace Optizelle {
                         FunctionDiagnostics::fromMatlab,
                         mxstate,
                         state.f_diag);
+                    fromMatlab::Param <VectorSpaceDiagnostics::t> (
+                        "x_diag",
+                        VectorSpaceDiagnostics::fromMatlab,
+                        mxstate,
+                        state.x_diag);
                     fromMatlab::Param <DiagnosticScheme::t> (
                         "dscheme",
                         DiagnosticScheme::fromMatlab,
@@ -2633,7 +2685,8 @@ namespace Optizelle {
                         "H_dxn",
                         "W_gradpHdxn",
                         "H_dxtuncorrected",
-                        "g_diag"};
+                        "g_diag",
+                        "y_diag"};
 
                     return std::move(names);
                 }
@@ -2711,6 +2764,11 @@ namespace Optizelle {
                         FunctionDiagnostics::toMatlab,
                         state.g_diag,
                         mxstate);
+                    toMatlab::Param <VectorSpaceDiagnostics::t> (
+                        "y_diag",
+                        VectorSpaceDiagnostics::toMatlab,
+                        state.y_diag,
+                        mxstate);
                 }
                 void toMatlab(
                     typename MxEqualityConstrained::State::t const & state,
@@ -2777,6 +2835,11 @@ namespace Optizelle {
                         FunctionDiagnostics::fromMatlab,
                         mxstate,
                         state.g_diag);
+                    fromMatlab::Param <VectorSpaceDiagnostics::t> (
+                        "y_diag",
+                        VectorSpaceDiagnostics::fromMatlab,
+                        mxstate,
+                        state.y_diag);
                 }
                 void fromMatlab(
                     mxArray * const mxstate,
@@ -3286,7 +3349,8 @@ namespace Optizelle {
                         "alpha_z",
                         "ipm",
                         "cstrat",
-                        "h_diag"};
+                        "h_diag",
+                        "z_diag"};
 
                     return std::move(names);
                 }
@@ -3338,6 +3402,11 @@ namespace Optizelle {
                         FunctionDiagnostics::toMatlab,
                         state.h_diag,
                         mxstate);
+                    toMatlab::Param <VectorSpaceDiagnostics::t> (
+                        "z_diag",
+                        VectorSpaceDiagnostics::toMatlab,
+                        state.z_diag,
+                        mxstate);
                 }
                 void toMatlab(
                     typename MxInequalityConstrained::State::t const & state,
@@ -3378,6 +3447,11 @@ namespace Optizelle {
                         FunctionDiagnostics::fromMatlab,
                         mxstate,
                         state.h_diag);
+                    fromMatlab::Param <VectorSpaceDiagnostics::t> (
+                        "z_diag",
+                        VectorSpaceDiagnostics::fromMatlab,
+                        mxstate,
+                        state.z_diag);
                 }
                 void fromMatlab(
                     mxArray * const mxstate,

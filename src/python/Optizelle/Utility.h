@@ -133,6 +133,14 @@ namespace Optizelle {
         t fromPython(PyObject * const member);
     }
     
+    namespace VectorSpaceDiagnostics{ 
+        // Converts t to a Python enumerated type
+        PyObject * toPython(t const & diag); 
+
+        // Converts a Python enumerated type to t 
+        t fromPython(PyObject * const member);
+    }
+    
     namespace DiagnosticScheme{ 
         // Converts t to a Python enumerated type
         PyObject * toPython(t const & dscheme); 

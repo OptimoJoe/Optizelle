@@ -697,6 +697,47 @@ namespace Optizelle{
         }
     }
 
+    // Different diagnostics on the algebra 
+    namespace VectorSpaceDiagnostics{
+
+        // Converts the diagnostic checks to a string
+        std::string to_string(t const & diag) {
+            switch(diag){
+            case NoDiagnostics: 
+                return "NoDiagnostics";
+            case Basic: 
+                return "Basic";
+            case EuclideanJordan: 
+                return "EuclideanJordan";
+            default:
+                throw;
+            }
+        }
+        
+        // Converts a string to the diagnostic checks 
+        t from_string(std::string const & diag) {
+            if(diag=="NoDiagnostics")
+                return NoDiagnostics; 
+            else if(diag=="Basic")
+                return Basic;
+            else if(diag=="EuclideanJordan")
+                return EuclideanJordan;
+            else
+                throw;
+        }
+
+        // Checks whether or not a string is valid
+        bool is_valid(std::string const & name) {
+            if( name=="NoDiagnostics" ||
+                name=="Basic" ||
+                name=="EuclideanJordan" 
+            )
+                return true;
+            else
+                return false;
+        }
+    }
+
     // Converts a variety of basic datatypes to strings
     std::ostream& Utility::formatReal(std::ostream & out) {
         return out<<std::setprecision(2) << std::scientific << std::setw(12)

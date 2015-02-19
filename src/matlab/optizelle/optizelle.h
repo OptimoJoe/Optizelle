@@ -125,6 +125,14 @@ namespace Optizelle {
         t fromMatlab(mxArray * const member);
     }
     
+    namespace VectorSpaceDiagnostics{ 
+        // Converts t to a Matlab enumerated type
+        mxArray * toMatlab(t const & diag); 
+
+        // Converts a Matlab enumerated type to t 
+        t fromMatlab(mxArray * const member);
+    }
+    
     namespace DiagnosticScheme{ 
         // Converts t to a Matlab enumerated type
         mxArray * toMatlab(t const & dscheme); 

@@ -170,6 +170,13 @@ class FunctionDiagnostics(EnumeratedType):
     SecondOrder \
     = range(3)
 
+class VectorSpaceDiagnostics(EnumeratedType):
+    """Different diagnostics on the vector space algebra""" 
+    NoDiagnostics, \
+    Basic, \
+    EuclideanJordan\
+    = range(3)
+
 class DiagnosticScheme(EnumeratedType):
     """When and how often we compute our intrusive diagnostics"""
     Never, \
