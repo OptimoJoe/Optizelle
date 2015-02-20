@@ -39,6 +39,7 @@ fns = Optizelle.Unconstrained.Functions.t;
 %---Functions1---
 
 % Do a null optimization
+state.f_x = 1.0;
 %---Solver0---
 state = Optizelle.Unconstrained.Algorithms.getMin(XX,msg,fns,state);
 %---Solver1---

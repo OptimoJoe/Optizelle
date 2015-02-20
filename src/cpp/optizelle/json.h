@@ -490,6 +490,13 @@ namespace Optizelle {
                     FunctionDiagnostics::is_valid,
                     FunctionDiagnostics::from_string,
                     "f_diag");
+                state.L_diag=read::param <FunctionDiagnostics::t> (
+                    msg,
+                    root["Optizelle"].get("L_diag",
+                        FunctionDiagnostics::to_string(state.L_diag)),
+                    FunctionDiagnostics::is_valid,
+                    FunctionDiagnostics::from_string,
+                    "L_diag");
                 state.x_diag=read::param <VectorSpaceDiagnostics::t> (
                     msg,
                     root["Optizelle"].get("x_diag",
@@ -556,6 +563,8 @@ namespace Optizelle {
                     LineSearchKind::to_string,state.kind);
                 root["Optizelle"]["f_diag"]=write_param(
                     FunctionDiagnostics::to_string,state.f_diag);
+                root["Optizelle"]["L_diag"]=write_param(
+                    FunctionDiagnostics::to_string,state.L_diag);
                 root["Optizelle"]["x_diag"]=write_param(
                     VectorSpaceDiagnostics::to_string,state.x_diag);
                 root["Optizelle"]["dscheme"]=write_param(

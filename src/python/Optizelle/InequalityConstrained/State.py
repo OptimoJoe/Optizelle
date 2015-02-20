@@ -70,6 +70,10 @@ class t(Optizelle.Unconstrained.State.t):
         "h_diag",
         Optizelle.FunctionDiagnostics,
         "Function diagnostics on h")
+    y_diag = Optizelle.createEnumProperty(
+        "y_diag",
+        Optizelle.VectorSpaceDiagnostics,
+        "Vector space diagnostics on Y")
 
 def checkT(name,value):
     """Check that we have a state"""

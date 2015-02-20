@@ -192,6 +192,14 @@ class t(object):
         "f_diag",
         Optizelle.FunctionDiagnostics,
         "Function diagnostics on f")
+    L_diag = Optizelle.createEnumProperty(
+        "L_diag",
+        Optizelle.FunctionDiagnostics,
+        "Function diagnostics on the Lagrangian")
+    x_diag = Optizelle.createEnumProperty(
+        "x_diag",
+        Optizelle.VectorSpaceDiagnostics,
+        "Vector space diagnostics on X")
     dscheme = Optizelle.createEnumProperty(
         "dscheme",
         Optizelle.DiagnosticScheme,

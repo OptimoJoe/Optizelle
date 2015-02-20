@@ -1947,6 +1947,7 @@ namespace Optizelle {
                         "dir",
                         "kind",
                         "f_diag",
+                        "L_diag",
                         "x_diag",
                         "dscheme"};
 
@@ -2061,6 +2062,11 @@ namespace Optizelle {
                         "f_diag",
                         FunctionDiagnostics::toMatlab,
                         state.f_diag,
+                        mxstate);
+                    toMatlab::Param <FunctionDiagnostics::t> (
+                        "L_diag",
+                        FunctionDiagnostics::toMatlab,
+                        state.L_diag,
                         mxstate);
                     toMatlab::Param <VectorSpaceDiagnostics::t> (
                         "x_diag",
@@ -2181,6 +2187,11 @@ namespace Optizelle {
                         FunctionDiagnostics::fromMatlab,
                         mxstate,
                         state.f_diag);
+                    fromMatlab::Param <FunctionDiagnostics::t> (
+                        "L_diag",
+                        FunctionDiagnostics::fromMatlab,
+                        mxstate,
+                        state.L_diag);
                     fromMatlab::Param <VectorSpaceDiagnostics::t> (
                         "x_diag",
                         VectorSpaceDiagnostics::fromMatlab,

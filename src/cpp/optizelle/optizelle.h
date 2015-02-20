@@ -88,10 +88,10 @@ namespace Optizelle{
         NO_COPY_ASSIGNMENT(ScalarValuedFunctionModifications)
 
         // Use an empty default constructor
-        ScalarValuedFunctionModifications() {}
+        ScalarValuedFunctionModifications() = default; 
 
         // Allow derived classes to deallocate memory
-        virtual ~ScalarValuedFunctionModifications() {}
+        virtual ~ScalarValuedFunctionModifications() = default; 
 
         // Merit function additions to the objective
         virtual Real merit(Vector const & x,Real const & f_x) const {
@@ -822,7 +822,7 @@ namespace Optizelle{
             Real dd_grad=X::innr(f_grad,dx);
 
             // Compute an ensemble of finite difference tests in a linear manner
-            msg.print("Finite difference test on the gradient of " + name +".");
+            msg.print("Finite difference test on the gradient of " + name);
             Real min_rel_err(std::numeric_limits<Real>::quiet_NaN());
             for(Integer i=-2;i<=5;i++){
                 Real epsilon=pow(Real(.1),int(i));
@@ -874,7 +874,7 @@ namespace Optizelle{
             f.hessvec(x,dx,hess_f_dx);
 
             // Compute an ensemble of finite difference tests in a linear manner
-            msg.print("Finite difference test on the Hessian of " + name + ".");
+            msg.print("Finite difference test on the Hessian of " + name);
             Real min_rel_err(std::numeric_limits<Real>::quiet_NaN());
             for(Integer i=-2;i<=5;i++){
 
@@ -942,10 +942,57 @@ namespace Optizelle{
             Real diff=fabs(innr_Hxdx_dxx-innr_dx_Hxdxx);
 
             // Send a message with the result
-            msg.print("Symmetry test on the Hessian of " + name + ".");
+            msg.print("Symmetry test on the Hessian of " + name);
             std::stringstream ss;
             ss<< "The absolute error between <H(x)dx,dxx> and <dx,H(x)dxx>: "
                 << std::scientific << std::setprecision(16) << diff;
+            msg.print(ss.str());
+            
+            // Return the absolute error in symmetry 
+            return diff;
+        }
+        
+        // Tests the symmetry of an operator comparing
+        // <A dx,dxx> to <dx,A dxx>.
+        template <
+            typename Real,
+            template <typename> class XX
+        >
+        Real operatorSymmetryCheck(
+            Messaging const & msg,
+            Operator <Real,XX,XX> const & A,
+            typename XX <Real>::Vector const & dx,
+            typename XX <Real>::Vector const & dxx,
+            std::string const & name
+        ) {
+            // Create some type shortcuts
+            typedef XX <Real> X;
+            typedef typename X::Vector X_Vector;
+
+            // Calculate A dx
+            X_Vector A_dx(X::init(dx));
+            A.eval(dx,A_dx);
+            
+            // Calculate A dxx
+            X_Vector A_dxx(X::init(dx));
+            A.eval(dxx,A_dxx);
+            
+            // Calculate < A dx,dxx>
+            Real innr_Adx_dxx = X::innr(A_dx,dxx);
+            
+            // Calculate <dx,A dxx>
+            Real innr_dx_Adxx = X::innr(dx,A_dxx);
+
+            // Determine the absolute difference between the two.  This really
+            // should be zero.
+            Real diff=fabs(innr_Adx_dxx-innr_dx_Adxx);
+
+            // Send a message with the result
+            msg.print("Symmetry test on the operator " + name);
+            std::stringstream ss;
+            ss<< "The absolute error between <" << name << " dx,dxx> and <dx,"
+                << name << " dxx>: " << std::scientific
+                << std::setprecision(16) << diff;
             msg.print(ss.str());
             
             // Return the absolute error in symmetry 
@@ -982,7 +1029,7 @@ namespace Optizelle{
             // Compute an ensemble of finite difference tests in a linear manner
             std::stringstream notice;
             notice << "Finite difference test on the derivative of " 
-                << name << ".";
+                << name;
             msg.print(notice.str());
             Real min_rel_err(std::numeric_limits<Real>::quiet_NaN());
             for(Integer i=-2;i<=5;i++){
@@ -1055,7 +1102,7 @@ namespace Optizelle{
             Real diff=fabs(innr_fpxdx_dy-innr_dx_fpsxdy);
 
             // Send a message with the result
-            msg.print("Adjoint test on the first derivative of " + name + ".");
+            msg.print("Adjoint test on the first derivative of " + name);
             std::stringstream ss;
             ss<<"The absolute err. between <" + name + "'(x)dx,dy> and <dx,"
                 + name + "'(x)*dy>: "
@@ -1096,7 +1143,7 @@ namespace Optizelle{
 
             // Compute an ensemble of finite difference tests in a linear manner
             msg.print("Finite difference test on the 2nd-derivative adjoint "
-                "of " + name + ".");
+                "of " + name);
             Real min_rel_err(std::numeric_limits<Real>::quiet_NaN());
             for(Integer i=-2;i<=5;i++){
 
@@ -1531,22 +1578,21 @@ namespace Optizelle{
             Natural const & msg_level=state.msg_level;
             DiagnosticScheme::t const & dscheme=state.dscheme;
 
-            switch(loc){
-            // Run function diagnostics 
-            case OptimizationLocation::BeginningOfOptimization:
-            case OptimizationLocation::BeginningOfOptimizationLoop:
-                if( dscheme==DiagnosticScheme::DiagnosticsOnly ||
-                    dscheme==DiagnosticScheme::EveryIteration
-                ) {
-                    // Run our diagnostic checks
-                    ProblemClass::Diagnostics::checkFunctions(msg,fns,state);
-                    ProblemClass::Diagnostics::checkVectorSpace(msg,fns,state);
-                }
-                break;
+            // In case we're only doing diagnostics
+            if( dscheme==DiagnosticScheme::DiagnosticsOnly &&
+                loc == OptimizationLocation::BeforeOptimizationLoop
+            ) {
+                ProblemClass::Diagnostics::checkVectorSpace(msg,fns,state);
+                ProblemClass::Diagnostics::checkFunctions(msg,fns,state);
+                ProblemClass::Diagnostics::checkLagrangian(msg,fns,state);
+                return;
+            }
 
-            // Output the headers for the diagonstic information
+            // If we're not just doing diagnostics
+            switch(loc){
             case OptimizationLocation::BeforeOptimizationLoop:
-                if(msg_level >= 1 &&dscheme!=DiagnosticScheme::DiagnosticsOnly){
+                // Output the headers for the diagonstic information
+                if(msg_level >= 1){
                     // Get the headers 
                     std::list <std::string> out;
                     ProblemClass::Diagnostics::getStateHeader(state,out);
@@ -1557,12 +1603,23 @@ namespace Optizelle{
                     msg.print(std::accumulate (
                         out.begin(),out.end(),std::string()));
                 }
+                break;
+            
+            case OptimizationLocation::BeginningOfOptimizationLoop:
+                // Run our diagnostic checks
+                if( dscheme==DiagnosticScheme::EveryIteration ) {
+                    ProblemClass::Diagnostics::checkVectorSpace(msg,fns,state);
+                    ProblemClass::Diagnostics::checkFunctions(msg,fns,state);
+                    ProblemClass::Diagnostics::checkLagrangian(msg,fns,state);
+                }
+                break;
+                
             // Output the overall state at the end of the optimization
             // iteration
             case OptimizationLocation::EndOfOptimizationIteration: 
             case OptimizationLocation::AfterRejectedTrustRegion:
             case OptimizationLocation::AfterRejectedLineSearch:
-                if(msg_level >= 1 &&dscheme!=DiagnosticScheme::DiagnosticsOnly){
+                if( msg_level >= 1){
                     // Get the diagonstic information
                     std::list <std::string> out;
 
@@ -1923,6 +1980,9 @@ namespace Optizelle{
                 // Function diagnostics on f
                 FunctionDiagnostics::t f_diag;
 
+                // Function diagnostics on the Lagrangian
+                FunctionDiagnostics::t L_diag;
+
                 // Vector space diagnostics on X 
                 VectorSpaceDiagnostics::t x_diag;
 
@@ -2162,6 +2222,11 @@ namespace Optizelle{
                         FunctionDiagnostics::NoDiagnostics
                         //---f_diag1---
                     ),
+                    L_diag(
+                        //---L_diag0---
+                        FunctionDiagnostics::NoDiagnostics
+                        //---L_diag1---
+                    ),
                     x_diag(
                         //---x_diag0---
                         VectorSpaceDiagnostics::NoDiagnostics
@@ -2359,8 +2424,7 @@ namespace Optizelle{
                 // iteration 1
                 else if(!(
                     //---f_x_valid0---
-                    state.iter > 1
-                    || (state.iter==1 && state.f_x!=state.f_x)
+                    state.f_x == state.f_x || state.iter==1
                     //---f_x_valid1---
                 ))
                     ss<< "The objective value must be a number: f_x = "
@@ -2370,8 +2434,7 @@ namespace Optizelle{
                 // a NaN past iteration 1
                 else if(!(
                     //---f_xpdx_valid0---
-                    state.iter > 1
-                    || (state.iter==1 && state.f_xpdx != state.f_xpdx)
+                    state.f_xpdx == state.f_xpdx || state.iter==1
                     //---f_xpdx_valid1---
                 ))
                     ss << "The objective value at the trial step must be a "
@@ -2505,6 +2568,10 @@ namespace Optizelle{
                     // Any 
                     //---f_diag_valid1---
                     
+                    //---L_diag_valid0---
+                    // Any 
+                    //---L_diag_valid1---
+                    
                     //---x_diag_valid0---
                     // Any 
                     //---x_diag_valid1---
@@ -2603,6 +2670,8 @@ namespace Optizelle{
                     (item.first=="kind" &&
                         LineSearchKind::is_valid(item.second)) ||
                     (item.first=="f_diag" &&
+                        FunctionDiagnostics::is_valid(item.second)) ||
+                    (item.first=="L_diag" &&
                         FunctionDiagnostics::is_valid(item.second)) ||
                     (item.first=="x_diag" &&
                         VectorSpaceDiagnostics::is_valid(item.second)) ||
@@ -2761,6 +2830,8 @@ namespace Optizelle{
                     LineSearchKind::to_string(state.kind));
                 params.emplace_back("f_diag",
                     FunctionDiagnostics::to_string(state.f_diag));
+                params.emplace_back("L_diag",
+                    FunctionDiagnostics::to_string(state.L_diag));
                 params.emplace_back("x_diag",
                     VectorSpaceDiagnostics::to_string(state.x_diag));
                 params.emplace_back("dscheme",
@@ -2909,6 +2980,9 @@ namespace Optizelle{
                         state.kind=LineSearchKind::from_string(item->second);
                     else if(item->first=="f_diag")
                         state.f_diag
+                            = FunctionDiagnostics::from_string(item->second);
+                    else if(item->first=="L_diag")
+                        state.L_diag
                             = FunctionDiagnostics::from_string(item->second);
                     else if(item->first=="x_diag")
                         state.x_diag
@@ -3852,7 +3926,7 @@ namespace Optizelle{
                 Unconstrained <Real,XX>::Diagnostics::getKrylov_(
                     state,blank,out);
             }
-            
+
             // Runs the specified function diagnostics 
             static void checkFunctions_(
                 Messaging const & msg,
@@ -3873,15 +3947,17 @@ namespace Optizelle{
                 // Run the diagnostics
                 switch(f_diag) {
                     case FunctionDiagnostics::FirstOrder:
+                        msg.print("Diagnostics on the function f");
                         Optizelle::Diagnostics::gradientCheck(msg,f,x,dx,"f");
+                        msg.print("");
                         break;
                     case FunctionDiagnostics::SecondOrder:
+                        msg.print("Diagnostics on the function f");
                         Optizelle::Diagnostics::gradientCheck(msg,f,x,dx,"f");
                         Optizelle::Diagnostics::hessianCheck(msg,f,x,dx,"f");
                         Optizelle::Diagnostics::hessianSymmetryCheck(
                             msg,f,x,dx,dxx,"f");
-                        break;
-                    case FunctionDiagnostics::NoDiagnostics:
+                        msg.print("");
                         break;
                 }
             }
@@ -3893,6 +3969,23 @@ namespace Optizelle{
                 typename State::t const & state
             ) {
                 Unconstrained <Real,XX>::Diagnostics::checkFunctions_(
+                    msg,fns,state);
+            }
+            
+            // Runs the specified Lagrangian diagnostics 
+            static void checkLagrangian_(
+                Messaging const & msg,
+                typename Functions::t const & fns,
+                typename State::t const & state
+            ) { }
+            
+            // Runs the specified Lagrangian diagnostics 
+            static void checkLagrangian(
+                Messaging const & msg,
+                typename Functions::t const & fns,
+                typename State::t const & state
+            ) {
+                Unconstrained <Real,XX>::Diagnostics::checkLagrangian_(
                     msg,fns,state);
             }
             
@@ -3913,11 +4006,13 @@ namespace Optizelle{
                 // Run the diagnostics
                 switch(x_diag) {
                     case VectorSpaceDiagnostics::Basic:
+                        msg.print("Diagnostics on the vector-space X");
                         Optizelle::Diagnostics::zero_innr <Real,XX> (msg,x,"X");
                         Optizelle::Diagnostics::copy_axpy_innr <Real,XX> (
                             msg,dx,"X");
                         Optizelle::Diagnostics::copy_scal_innr <Real,XX> (
                             msg,dx,"X");
+                        msg.print("");
                         break;
                 }
             }
@@ -5134,8 +5229,9 @@ namespace Optizelle{
                     OptimizationLocation::BeginningOfOptimization);
 
                 // Evaluate the objective function and gradient if we've not
-                // done so already and we're not just doing some diagnosics.
-                if(f_x != f_x && dscheme!=DiagnosticScheme::DiagnosticsOnly) {
+                // done so already.  Some diagnostics may require this
+                // information.
+                if(f_x != f_x) {
 
                     // Manipulate the state if required
                     smanip.eval(fns,state,OptimizationLocation
@@ -6348,8 +6444,8 @@ namespace Optizelle{
             private:
                 // Underlying modification.  This takes control of the memory
                 std::unique_ptr <
-                    Optizelle::ScalarValuedFunctionModifications <Real,XX> >
-                    f_mod;
+                    Optizelle::ScalarValuedFunctionModifications <Real,XX>
+                > f_mod;
 
                 // Equality constraint.
                 Optizelle::VectorValuedFunction <Real,XX,YY> const & g;
@@ -6405,9 +6501,12 @@ namespace Optizelle{
 
             public:
                 EqualityModifications(
+                    typename Functions::t const & fns,
                     typename State::t const & state,
-                    typename Functions::t & fns
-                ) : f_mod(std::move(fns.f_mod)),
+                    std::unique_ptr <
+                        ScalarValuedFunctionModifications<Real,XX>
+                    > && f_mod_
+                ) : f_mod(std::move(f_mod_)),
                     g(*(fns.g)),
                     y(state.y),
                     rho(state.rho),
@@ -6584,7 +6683,8 @@ namespace Optizelle{
                 check(msg,fns);
                 
                 // Modify the objective 
-                fns.f_mod.reset(new EqualityModifications(state,fns));
+                fns.f_mod.reset(new EqualityModifications(
+                    fns,state,std::move(fns.f_mod)));
             }
 
             // Initialize any missing functions 
@@ -6774,20 +6874,22 @@ namespace Optizelle{
                 // Run the diagnostics
                 switch(g_diag) {
                     case FunctionDiagnostics::FirstOrder:
+                        msg.print("Diagnostics on the function g");
                         Optizelle::Diagnostics::derivativeCheck(
                             msg,g,x,dx,dy,"g");
                         Optizelle::Diagnostics::derivativeAdjointCheck(
                             msg,g,x,dx,dy,"g");
+                        msg.print("");
                         break;
                     case FunctionDiagnostics::SecondOrder:
+                        msg.print("Diagnostics on the function g");
                         Optizelle::Diagnostics::derivativeCheck(
                             msg,g,x,dx,dy,"g");
                         Optizelle::Diagnostics::derivativeAdjointCheck(
                             msg,g,x,dx,dy,"g");
                         Optizelle::Diagnostics::secondDerivativeCheck(
                             msg,g,x,dx,dy,"g");
-                        break;
-                    case FunctionDiagnostics::NoDiagnostics:
+                        msg.print("");
                         break;
                 }
             }
@@ -6801,6 +6903,95 @@ namespace Optizelle{
                 Unconstrained <Real,XX>::Diagnostics::checkFunctions_(
                     msg,fns,state);
                 EqualityConstrained <Real,XX,YY>::Diagnostics::checkFunctions_(
+                    msg,fns,state);
+            }
+            
+            // Sets up the equality Hessian operator 
+            struct EqualityHessianOperator : public Operator <Real,XX,XX> {
+            private:
+                // Store the equality constraints 
+                VectorValuedFunction <Real,XX,YY> const & g;
+
+                // Current iterate
+                X_Vector const & x; 
+
+                // Equality modifications 
+                typename Functions::EqualityModifications g_mod;
+
+            public:
+                // Remove some constructors
+                NO_COPY_ASSIGNMENT(EqualityHessianOperator);
+
+                // Take in the objective and the base point during construction 
+                EqualityHessianOperator(
+                    typename Functions::t const & fns,
+                    typename State::t const & state
+                ) :
+                    g(*(fns.g)),
+                    x(state.x),
+                    g_mod(
+                        fns,
+                        state,
+                        std::unique_ptr <
+                            ScalarValuedFunctionModifications <Real,XX>
+                        > (new ScalarValuedFunctionModifications <Real,XX> ())
+                    )
+                {}
+
+                // Basic application
+                void eval(X_Vector const & dx,X_Vector & result)
+                    const
+                {
+                    // Grab the zero vector in the X space
+                    X_Vector zero(X::init(x));
+                    X::zero(zero);
+
+                    // Add the equality constraint's contribution to the
+                    // Hessian-vector product
+                    g_mod.hessvec_step(x,dx,zero,result);
+                }
+            };
+           
+            // Runs the specified Lagrangian diagnostics 
+            static void checkLagrangian_(
+                Messaging const & msg,
+                typename Functions::t const & fns,
+                typename State::t const & state
+            ) {
+                // Create some shortcuts
+                X_Vector const & x=state.x;
+                FunctionDiagnostics::t const & L_diag=state.L_diag;
+                
+                // Create some random directions for these tests
+                X_Vector dx(X::init(x));
+                    X::rand(dx); 
+                X_Vector dxx(X::init(x));
+                    X::rand(dxx); 
+
+                // Create the equality Hessian operator
+                EqualityHessianOperator L(fns,state);
+
+                // Run the diagnostics
+                switch(L_diag) {
+                    case FunctionDiagnostics::SecondOrder:
+                        msg.print("Diagnostics on the contribution of g to "
+                            "the Lagrangian");
+                        Optizelle::Diagnostics::operatorSymmetryCheck <Real,XX>(
+                            msg,L,dx,dxx,"(g''(x).)*y");
+                        msg.print("");
+                        break;
+                }
+            }
+            
+            // Runs the specified Lagrangian diagnostics 
+            static void checkLagrangian(
+                Messaging const & msg,
+                typename Functions::t const & fns,
+                typename State::t const & state
+            ) {
+                Unconstrained <Real,XX>::Diagnostics::checkLagrangian_(
+                    msg,fns,state);
+                EqualityConstrained <Real,XX,YY>::Diagnostics::checkLagrangian_(
                     msg,fns,state);
             }
             
@@ -6821,11 +7012,13 @@ namespace Optizelle{
                 // Run the diagnostics
                 switch(y_diag) {
                     case VectorSpaceDiagnostics::Basic:
+                        msg.print("Diagnostics on the vector-space Y");
                         Optizelle::Diagnostics::zero_innr <Real,YY> (msg,y,"Y");
                         Optizelle::Diagnostics::copy_axpy_innr <Real,YY> (
                             msg,dy,"Y");
                         Optizelle::Diagnostics::copy_scal_innr <Real,YY> (
                             msg,dy,"Y");
+                        msg.print("");
                         break;
                 }
             }
@@ -8578,8 +8771,7 @@ namespace Optizelle{
                 // non-nan past iteration 1.
                 else if(!(
                     //---mu_est_valid0---
-                    state.iter > 1  ||
-                    (state.iter == 1 && state.mu_est != state.mu_est)
+                    state.mu_est == state.mu_est || state.iter == 1
                     //---mu_est_valid1---
                 )) 
                     ss << "The estimated interior point parameter must be "
@@ -8589,8 +8781,7 @@ namespace Optizelle{
                 // or if we're on the first iteration, we allow NaN.
                 else if(!(
                     //---mu_typ_valid0---
-                    state.mu_typ > Real(0.)
-                    || (state.iter==1 && state.mu_typ!=state.mu_typ)
+                    state.mu_typ > Real(0.) || state.iter==1 
                     //---mu_typ_valid1---
                 ))
                     ss << "The typical interior point parameter must be "
@@ -9052,9 +9243,12 @@ namespace Optizelle{
 
             public:
                 InequalityModifications(
+                    typename Functions::t const & fns,
                     typename State::t const & state,
-                    typename Functions::t & fns
-                ) : f_mod(std::move(fns.f_mod)),
+                    std::unique_ptr <
+                        ScalarValuedFunctionModifications<Real,XX>
+                    > && f_mod_
+                ) : f_mod(std::move(f_mod_)),
                     h(*(fns.h)),
                     z(state.z),
                     mu(state.mu),
@@ -9198,7 +9392,8 @@ namespace Optizelle{
                 check(msg,fns);
 
                 // Modify the objective 
-                fns.f_mod.reset(new InequalityModifications(state,fns));
+                fns.f_mod.reset(new InequalityModifications(
+                    fns,state,std::move(fns.f_mod)));
             }
 
             // Initialize any missing functions 
@@ -9375,18 +9570,22 @@ namespace Optizelle{
                 // Run the diagnostics
                 switch(h_diag) {
                     case FunctionDiagnostics::FirstOrder:
+                        msg.print("Diagnostics on the function h");
                         Optizelle::Diagnostics::derivativeCheck(
                             msg,h,x,dx,dz,"h");
                         Optizelle::Diagnostics::derivativeAdjointCheck(
                             msg,h,x,dx,dz,"h");
+                        msg.print("");
                         break;
                     case FunctionDiagnostics::SecondOrder:
+                        msg.print("Diagnostics on the function h");
                         Optizelle::Diagnostics::derivativeCheck(
                             msg,h,x,dx,dz,"h");
                         Optizelle::Diagnostics::derivativeAdjointCheck(
                             msg,h,x,dx,dz,"h");
                         Optizelle::Diagnostics::secondDerivativeCheck(
                             msg,h,x,dx,dz,"h");
+                        msg.print("");
                         break;
                     case FunctionDiagnostics::NoDiagnostics:
                         break;
@@ -9405,6 +9604,96 @@ namespace Optizelle{
                     msg,fns,state);
             }
             
+            // Sets up the equality Hessian operator 
+            struct InequalityHessianOperator : public Operator <Real,XX,XX> {
+            private:
+                // Store the equality constraints 
+                VectorValuedFunction <Real,XX,ZZ> const & h;
+
+                // Current iterate
+                X_Vector const & x; 
+
+                // Inequality modifications 
+                typename Functions::InequalityModifications h_mod;
+
+            public:
+                // Remove some constructors
+                NO_COPY_ASSIGNMENT(InequalityHessianOperator);
+
+                // Take in the objective and the base point during construction 
+                InequalityHessianOperator(
+                    typename Functions::t const & fns,
+                    typename State::t const & state
+                ) :
+                    h(*(fns.h)),
+                    x(state.x),
+                    h_mod(
+                        fns,
+                        state,
+                        std::unique_ptr <
+                            ScalarValuedFunctionModifications <Real,XX>
+                        > (new ScalarValuedFunctionModifications <Real,XX> ())
+                    )
+                {}
+
+                // Basic application
+                void eval(X_Vector const & dx,X_Vector & result)
+                    const
+                {
+                    // Grab the zero vector in the X space
+                    X_Vector zero(X::init(x));
+                    X::zero(zero);
+
+                    // Add the equality constraint's contribution to the
+                    // Hessian-vector product
+                    h_mod.hessvec_step(x,dx,zero,result);
+                }
+            };
+           
+            // Runs the specified Lagrangian diagnostics 
+            static void checkLagrangian_(
+                Messaging const & msg,
+                typename Functions::t const & fns,
+                typename State::t const & state
+            ) {
+                // Create some shortcuts
+                X_Vector const & x=state.x;
+                FunctionDiagnostics::t const & L_diag=state.L_diag;
+                
+                // Create some random directions for these tests
+                X_Vector dx(X::init(x));
+                    X::rand(dx); 
+                X_Vector dxx(X::init(x));
+                    X::rand(dxx); 
+
+                // Create the inequality Hessian operator
+                InequalityHessianOperator L(fns,state);
+
+                // Run the diagnostics
+                switch(L_diag) {
+                    case FunctionDiagnostics::FirstOrder:
+                    case FunctionDiagnostics::SecondOrder:
+                        msg.print("Diagnostics on the contribution of h to "
+                            "the Lagrangian");
+                        Optizelle::Diagnostics::operatorSymmetryCheck <Real,XX>(
+                            msg,L,dx,dxx,"h'(x)*(Linv(h(x))(h'(x).z)");
+                        msg.print("");
+                        break;
+                }
+            }
+            
+            // Runs the specified Lagrangian diagnostics 
+            static void checkLagrangian(
+                Messaging const & msg,
+                typename Functions::t const & fns,
+                typename State::t const & state
+            ) {
+                Unconstrained <Real,XX>::Diagnostics
+                    ::checkLagrangian_(msg,fns,state);
+                InequalityConstrained <Real,XX,ZZ>::Diagnostics
+                    ::checkLagrangian_(msg,fns,state);
+            }
+
             // Runs the specified vector space diagnostics 
             static void checkVectorSpace_(
                 Messaging const & msg,
@@ -9430,11 +9719,13 @@ namespace Optizelle{
                 // Run the diagnostics
                 switch(z_diag) {
                     case VectorSpaceDiagnostics::Basic:
+                        msg.print("Diagnostics on the vector-space Z");
                         Optizelle::Diagnostics::zero_innr <Real,ZZ> (msg,z,"Z");
                         Optizelle::Diagnostics::copy_axpy_innr <Real,ZZ> (
                             msg,dz,"Z");
                         Optizelle::Diagnostics::copy_scal_innr <Real,ZZ> (
                             msg,dz,"Z");
+                        msg.print("");
                         break;
                     case VectorSpaceDiagnostics::EuclideanJordan: {
 
@@ -9443,6 +9734,7 @@ namespace Optizelle{
                         h.eval(x,h_x);
 
                         // Run the diagnostics
+                        msg.print("Diagnostics on the vector-space Z");
                         Optizelle::Diagnostics::zero_innr <Real,ZZ> (msg,z,"Z");
                         Optizelle::Diagnostics::copy_axpy_innr <Real,ZZ> (
                             msg,dz,"Z");
@@ -9457,6 +9749,7 @@ namespace Optizelle{
                             msg,h_x,dz,"Z");
                         Optizelle::Diagnostics::innr_prod_symm <Real,ZZ> (
                             msg,dz,dzz,dzzz,dzzzz,"Z");
+                        msg.print("");
                         break;
                     } 
                 }
@@ -10696,6 +10989,20 @@ namespace Optizelle{
                     msg,fns,state);
                 InequalityConstrained<Real,XX,ZZ>::Diagnostics::checkFunctions_(
                     msg,fns,state);
+            }
+            
+            // Runs the specified Lagrangian diagnostics 
+            static void checkLagrangian(
+                Messaging const & msg,
+                typename Functions::t const & fns,
+                typename State::t const & state
+            ) {
+                Unconstrained <Real,XX>::Diagnostics
+                    ::checkLagrangian_(msg,fns,state);
+                EqualityConstrained <Real,XX,YY>::Diagnostics
+                    ::checkLagrangian_(msg,fns,state);
+                InequalityConstrained <Real,XX,ZZ>::Diagnostics
+                    ::checkLagrangian_(msg,fns,state);
             }
             
             // Runs the specified vector space diagnostics 

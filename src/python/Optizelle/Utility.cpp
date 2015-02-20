@@ -1961,6 +1961,11 @@ namespace Optizelle {
                         FunctionDiagnostics::toPython,
                         state.f_diag,
                         pystate);
+                    toPython::Param <FunctionDiagnostics::t> (
+                        "L_diag",
+                        FunctionDiagnostics::toPython,
+                        state.L_diag,
+                        pystate);
                     toPython::Param <VectorSpaceDiagnostics::t> (
                         "x_diag",
                         VectorSpaceDiagnostics::toPython,
@@ -2080,6 +2085,11 @@ namespace Optizelle {
                         FunctionDiagnostics::fromPython,
                         pystate,
                         state.f_diag);
+                    fromPython::Param <FunctionDiagnostics::t> (
+                        "L_diag",
+                        FunctionDiagnostics::fromPython,
+                        pystate,
+                        state.L_diag);
                     fromPython::Param <VectorSpaceDiagnostics::t> (
                         "x_diag",
                         VectorSpaceDiagnostics::fromPython,

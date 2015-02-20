@@ -162,6 +162,10 @@ class t(Optizelle.Unconstrained.State.t):
         "g_diag",
         Optizelle.FunctionDiagnostics,
         "Function diagnostics on g")
+    z_diag = Optizelle.createEnumProperty(
+        "z_diag",
+        Optizelle.VectorSpaceDiagnostics,
+        "Vector space diagnostics on Z")
 
 def checkT(name,value):
     """Check that we have a state"""

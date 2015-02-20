@@ -150,6 +150,7 @@ int main() {
     state.x_diag = Optizelle::VectorSpaceDiagnostics::Basic;
     state.h_diag = Optizelle::FunctionDiagnostics::SecondOrder;
     state.z_diag = Optizelle::VectorSpaceDiagnostics::EuclideanJordan;
+    state.L_diag = Optizelle::FunctionDiagnostics::SecondOrder;
     
     // Create a bundle of functions
     Optizelle::InequalityConstrained <double,Rm,Rm>::Functions::t fns;

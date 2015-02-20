@@ -38,6 +38,7 @@ int main() {
     fns.h.reset(new H);
 
     // Do a null optimization
+    state.f_x = 1.0;
     //---Solver0---
     Optizelle::InequalityConstrained<Real,XX,ZZ>::Algorithms::getMin(
         msg,fns,state);
