@@ -38,6 +38,7 @@ int main() {
     fns.g.reset(new G);
 
     // Do a null optimization
+    state.f_x = 1.0;
     //---Solver0---
     Optizelle::EqualityConstrained<Real,XX,YY>::Algorithms::getMin(
         msg,fns,state);

@@ -41,6 +41,7 @@ fns = Optizelle.InequalityConstrained.Functions.t()
 #---Functions1---
 
 # Do a null optimization
+state.f_x = 1.0
 #---Solver0---
 Optizelle.InequalityConstrained.Algorithms.getMin(XX,ZZ,msg,fns,state)
 #---Solver1---
