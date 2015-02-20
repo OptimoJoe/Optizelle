@@ -102,11 +102,12 @@ state=Optizelle.InequalityConstrained.State.t(
     Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging(),x,z)
 
 # Modify the state so that we just run our diagnostics and exit
-state.dscheme = Optizelle.DiagnosticScheme.DiagnosticsOnly;
-state.f_diag = Optizelle.FunctionDiagnostics.SecondOrder;
-state.x_diag = Optizelle.VectorSpaceDiagnostics.Basic;
-state.h_diag = Optizelle.FunctionDiagnostics.SecondOrder;
-state.z_diag = Optizelle.VectorSpaceDiagnostics.EuclideanJordan;
+state.dscheme = Optizelle.DiagnosticScheme.DiagnosticsOnly
+state.f_diag = Optizelle.FunctionDiagnostics.SecondOrder
+state.x_diag = Optizelle.VectorSpaceDiagnostics.Basic
+state.h_diag = Optizelle.FunctionDiagnostics.SecondOrder
+state.z_diag = Optizelle.VectorSpaceDiagnostics.EuclideanJordan
+state.L_diag = Optizelle.FunctionDiagnostics.SecondOrder
 
 # Create a bundle of functions
 fns=Optizelle.InequalityConstrained.Functions.t()
