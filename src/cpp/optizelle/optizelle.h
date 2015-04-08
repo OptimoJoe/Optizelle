@@ -8165,6 +8165,7 @@ namespace Optizelle{
                 // Copy in all the real numbers
                 reals.emplace_back("mu",std::move(state.mu));
                 reals.emplace_back("mu_est",std::move(state.mu_est));
+                reals.emplace_back("mu_typ",std::move(state.mu_typ));
                 reals.emplace_back("eps_mu",std::move(state.eps_mu));
                 reals.emplace_back("sigma",std::move(state.sigma));
                 reals.emplace_back("gamma",std::move(state.gamma));
