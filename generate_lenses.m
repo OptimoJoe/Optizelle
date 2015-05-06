@@ -1,24 +1,26 @@
 % Generates the lenses based on the size of the network
-function [get set]=generate_lenses(nhidden,noutput)
+function lens=generate_lenses(ninput,nhidden)
 
     % Determine the size of each variable
     idx = struct( ...
-        'alpha',noutput,
-        'A',noutput*nhidden,
-        'b',noutput);
+        'alpha',nhidden,
+        'A',nhidden*ninput,
+        'b',nhidden);
     
     % Generate some indexing values
     idx = generate_raw_indexing(idx);
 
-    % Create some functions that get the specified values 
-    get.alpha=@(x)x(raw_idx.alpha);
-    get.A=@(x)reshape(x(raw_idx.A),noutput,nhidden);
-    get.b=@(x)x(raw_idx.b);
+    % Weights on the output layer  
+    lens.alpha.get=@(x)x(idx.alpha);
+    lens.alpha.set=@(dx,x)update(x,dx,idx.alpha);
 
-    % Create some functions that set the specified values 
-    set.alpha=@(x,dx)update(x,dx,idx.alpha);
-    set.A=@(x,dx)update(x,dx(:),idx.A);
-    set.b=@(x,dx)update(x,dx,idx.b);
+    % Weights on the hidden layer
+    lens.A.get=@(x)reshape(x(idx.A),nhidden,ninput);
+    lens.A.set=@(dx,x)update(x,dx(:),idx.A);
+
+    % Bias on the hidden layer
+    lens.b.get=@(x)x(idx.b);
+    lens.b.set=@(dx,x)update(x,dx,idx.b);
 end
 
 % Creates indices for elements specified in the given structure

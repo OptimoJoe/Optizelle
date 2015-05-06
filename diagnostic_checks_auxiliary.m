@@ -23,6 +23,7 @@ state.iter_max = 2;
 % Generate a random interpolant
 ninput = 3;
 nhidden = 20;
+nsamples = 5;
 alpha = randn(nhidden,1);
 A = randn(nhidden,ninput);
 b = randn(nhidden,1);
