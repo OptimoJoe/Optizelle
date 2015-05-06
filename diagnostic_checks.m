@@ -5,7 +5,7 @@ global Optizelle;
 setupOptizelle ();
 
 % Allocate memory for an initial guess and equality multiplier 
-x = [1.2;2.3;3.4];
+x = randn(3,1);
 y = zeros(3,1);
 z = zeros(3,1);
 
@@ -20,11 +20,19 @@ state.g_diag = Optizelle.FunctionDiagnostics.SecondOrder;
 state.h_diag = Optizelle.FunctionDiagnostics.SecondOrder;
 state.iter_max = 2;
 
+% Generate a random interpolant
+ninput = 3;
+nhidden = 20;
+alpha = randn(nhidden,1);
+A = randn(nhidden,ninput);
+b = randn(nhidden,1);
+
 % Create a bundle of functions
 fns=Optizelle.Constrained.Functions.t;
-fns.f.eval=@(x)zeros(size(x));
-fns.f.grad=@(x)zeros(size(x));
-fns.f.hessvec=@(x,dx)zeros(size(x));
+%fns.f.eval=@(x)zeros(size(x));
+%fns.f.grad=@(x)zeros(size(x));
+%fns.f.hessvec=@(x,dx)zeros(size(x));
+fns.f=generate_interpolant(generate_hyperbolic(),alpha,A,b);
 fns.g=generate_hyperbolic();
 fns.h=generate_logistic(2.0,3.0,4.0);
 
