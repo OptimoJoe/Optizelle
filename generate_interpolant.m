@@ -13,7 +13,7 @@ function f=generate_interpolant(phi,alpha,A,b)
     % Figure out the size of the problem
     [nhidden ninput] = size(A);
 
-    % Duplicate b by rows.  This is necessary for the vectorization.
+    % Duplicate by rows
     bb = @(x)repmat(b,1,size(x,2));
     aalpha = @(x)repmat(alpha,1,size(x,2));
 
