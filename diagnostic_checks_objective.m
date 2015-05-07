@@ -38,3 +38,8 @@ fns.f = generate_objective(generate_hyperbolic(),lens,x,y);
 % we're actually just going to run our diagnostics and then exit.
 Optizelle.Unconstrained.Algorithms.getMin( ...
     Optizelle.Rm,Optizelle.Messaging,fns,state);
+
+% Now, test the parametrization function
+fns.f = generate_parametrization(generate_hyperbolic(),lens,x);
+Optizelle.Unconstrained.Algorithms.getMin( ...
+    Optizelle.Rm,Optizelle.Messaging,fns,state);

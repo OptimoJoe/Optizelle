@@ -1,6 +1,6 @@
 % Generate an interpolatory function
 %
-% f(x) = alpha'*phi(A*x+b)
+% f(alpha,A,b)(x) = alpha'*phi(A*x+b)
 %
 % This works with vectorized inputs where size(x)=[ninput,nsamples].  In this
 % case,
