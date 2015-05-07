@@ -24,16 +24,14 @@ state.iter_max = 2;
 ninput = 3;
 nhidden = 20;
 nsamples = 5;
-alpha = randn(nhidden,1);
-A = randn(nhidden,ninput);
-b = randn(nhidden,1);
+xx = randn(nhidden+nhidden*ninput+nhidden,1);
+
+% Grab some lenses
+lens=generate_lenses(ninput,nhidden);
 
 % Create a bundle of functions
 fns=Optizelle.Constrained.Functions.t;
-%fns.f.eval=@(x)zeros(size(x));
-%fns.f.grad=@(x)zeros(size(x));
-%fns.f.hessvec=@(x,dx)zeros(size(x));
-fns.f=generate_interpolant(generate_hyperbolic(),alpha,A,b);
+fns.f=generate_interpolant(generate_hyperbolic(),lens,xx);
 fns.g=generate_hyperbolic();
 fns.h=generate_logistic(2.0,3.0,4.0);
 

@@ -14,7 +14,7 @@ b = randn(nhidden,1);
 
 % Generate some random data
 x = randn(ninput,nsamples);
-y = randn(nsamples,1);
+y = randn(1,nsamples);
 
 % Allocate memory for an initial guess
 xx = randn(nhidden+nhidden*ninput+nhidden,1);

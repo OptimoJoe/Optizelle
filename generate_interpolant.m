@@ -9,7 +9,12 @@
 % grad f(x) : ninput x nsamples
 % hess f(x) dx : ninput x nsamples
 %
-function f=generate_interpolant(phi,alpha,A,b)
+function f=generate_interpolant(phi,lens,xx)
+    % Grab our parameters 
+    alpha = lens.alpha.get(xx);
+    A = lens.A.get(xx);
+    b = lens.b.get(xx);
+
     % Figure out the size of the problem
     [nhidden ninput] = size(A);
 

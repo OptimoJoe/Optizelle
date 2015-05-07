@@ -9,7 +9,7 @@
 % grad f(alpha,A,b) : (nhidden + nhidden*ninput + nhidden) x nsamples
 % hess f(alpha,A,b) dx : (nhidden + nhidden*ninput + nhidden) x nsamples
 %
-function f = generate_parameterization(phi,lens,x)
+function f = generate_parametrization(phi,lens,x)
     f.eval=@(xx)mlp_eval(phi,lens,x,xx);
     f.grad=@(xx)mlp_grad(phi,lens,x,xx);
     f.hessvec=@(xx,dxx)mlp_hessvec(phi,lens,x,xx,dxx);
