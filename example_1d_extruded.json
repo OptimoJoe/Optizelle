@@ -1,0 +1,11 @@
+{
+   "Optizelle" : {
+      "msg_level" : 2,
+      "iter_max" : 300,
+      "eps_grad" : 1e-8,
+      "krylov_iter_max" : 100,
+      "krylov_orthog_max" : 100,
+      "eps_krylov" : 1e-5,
+      "delta" : 100
+   }
+}
