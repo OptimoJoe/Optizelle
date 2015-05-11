@@ -12,13 +12,29 @@ ninput = 2;
 nhidden = 20;
 nsamples = 50;
 
+% Determine if we black out a quadrant (no data)
+blackout = 0;
+x_black = [0.5;1];
+y_black = [0.5;1];
+
 % Generate some random data for the product of some sines and cosines along
 % skewed axes
 dir = rand(ninput,2);
 for j=1:2
     dir(:,j) = dir(:,j)/norm(dir(:,j));
 end
+
+% Figure out where we're sampling
 x = rand(ninput,nsamples);
+if blackout
+    for j=1:nsamples
+        while x(1,j) >= x_black(1) && x(1,j) <= x_black(2) && ...
+              x(2,j) >= y_black(1) && x(2,j) <= y_black(2)
+            x(:,j)=rand(ninput,1);                
+        end
+    end
+end
+
 true_fn = @(x)cos(5*x'*dir(:,1)).*sin(10*x'*dir(:,2));
 y = zeros(1,nsamples);
 for j = 1:nsamples
@@ -75,16 +91,31 @@ if ninput==2
         end
     end
 
+    % Create a small sphere
+    [sx sy sz] = sphere(5);
+    sx = 0.02*sx;
+    sy = 0.02*sy;
+    sz = 0.02*sz;
+
     % Plot the two results
     figure(2);
-    surf(X,Y,Z_true);
-    title('True');
+    h = surf(X,Y,Z_true);
+    set(h, 'cdata',zeros(100))
+   
+    hold on
+    h = surf(X,Y,Z_interp);
+    set(h, 'cdata',0.5* ones(100))
+    hold off
+    title('True (blue) vs Interpolated (green)');
     axis([0 1 0 1 -2 2]);
-    
-    figure(3);
-    surf(X,Y,Z_interp);
-    title('Interpolation');
-    axis([0 1 0 1 -2 2]);
+
+    % Plot where the data is
+    hold on
+    for j = 1:nsamples
+        h = surf(sx+x(1,j),sy+x(2,j),sz+y(j));
+        set(h, 'cdata',ones(6))
+    end
+    hold off
 end
 
 % Calculate the direction the MLP chose
@@ -96,7 +127,7 @@ end
 
 % Plot the directions if in 2-D
 if ninput==2
-    figure(4);
+    figure(3);
     compass(dir_mlp(:,1),dir_mlp(:,2),'b');
     hold on;
     compass(dir(:,1),dir(:,2),'r')
