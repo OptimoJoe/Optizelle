@@ -1,22 +1,45 @@
-% Interpolate on a simple 1-D problem 
+% Interpolate on a simple 2-D problem 
+function example_2d()
 
 % Grab the Optizelle library
 global Optizelle;
 setupOptizelle ();
 
 % Set the name of the parameter file
-fname = 'example_1d_extruded.json';
+fname = 'example_2d.json';
+
+% Set whether we're plotting or not
+do_plot = 0;
 
 % Set the size of the problem 
 ninput = 2;
-nhidden = 4;
-nsamples = 20;
+nhidden = 20;
+nsamples = 50;
 
-% Generate some random data along a direction
-dir = rand(ninput,1);
-dir = dir/norm(dir);
+% Determine if we black out a quadrant (no data)
+blackout = 0;
+x_black = [0.5;1];
+y_black = [0.5;1];
+
+% Generate some random data for the product of some sines and cosines along
+% skewed axes
+dir = rand(ninput,2);
+for j=1:2
+    dir(:,j) = dir(:,j)/norm(dir(:,j));
+end
+
+% Figure out where we're sampling
 x = rand(ninput,nsamples);
-true_fn = @(x)cos(5*x'*dir);
+if blackout
+    for j=1:nsamples
+        while x(1,j) >= x_black(1) && x(1,j) <= x_black(2) && ...
+              x(2,j) >= y_black(1) && x(2,j) <= y_black(2)
+            x(:,j)=rand(ninput,1);                
+        end
+    end
+end
+
+true_fn = @(x)cos(5*x'*dir(:,1)).*sin(10*x'*dir(:,2));
 y = zeros(1,nsamples);
 for j = 1:nsamples
     y(j) = true_fn(x(:,j)); 
@@ -46,6 +69,11 @@ state=Optizelle.Unconstrained.Algorithms.getMin( ...
 
 % Generate an interpolatory function based on this
 ff = generate_interpolant(generate_hyperbolic(),lens,state.x);
+
+% Return if we're not plotting
+if ~do_plot
+    return;
+end
 
 % Plot the result
 dir_plot = rand(ninput,1);
@@ -111,7 +139,7 @@ if ninput==2
     figure(3);
     compass(dir_mlp(:,1),dir_mlp(:,2),'b');
     hold on;
-    compass(dir(1),dir(2),'r')
+    compass(dir(:,1),dir(:,2),'r')
     hold off;
     title('Directions of Information Determined by the MLP')
 end

@@ -1,4 +1,5 @@
 % Interpolate on a simple 1-D problem 
+function example_1d()
 
 % Grab the Optizelle library
 global Optizelle;
@@ -6,6 +7,9 @@ setupOptizelle ();
 
 % Set the name of the parameter file
 fname = 'example_1d.json';
+
+% Set whether we're plotting or not
+do_plot = 0;
 
 % Set the size of the problem 
 ninput = 1;
@@ -41,6 +45,11 @@ state=Optizelle.Unconstrained.Algorithms.getMin( ...
 
 % Generate an interpolatory function based on this
 ff = generate_interpolant(generate_hyperbolic(),lens,state.x);
+
+% Return if we're not plotting
+if ~do_plot
+    return;
+end
 
 % Plot the result
 x_uniform=0:.01:1;
