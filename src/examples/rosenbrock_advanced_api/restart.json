@@ -1,0 +1,56 @@
+{
+   "Naturals" : {
+      "history_reset" : 5,
+      "iter" : 12,
+      "iter_max" : 50,
+      "krylov_iter" : 2,
+      "krylov_iter_max" : 10,
+      "krylov_iter_total" : 22,
+      "krylov_orthog_max" : 1,
+      "linesearch_iter" : 5,
+      "linesearch_iter_max" : 5,
+      "linesearch_iter_total" : 55,
+      "msg_level" : 1,
+      "rejected_trustregion" : 0,
+      "stored_history" : 0
+   },
+   "Parameters" : {
+      "H_type" : "UserDefined",
+      "PH_type" : "Identity",
+      "algorithm_class" : "LineSearch",
+      "dir" : "NewtonCG",
+      "dscheme" : "Never",
+      "f_diag" : "NoDiagnostics",
+      "kind" : "GoldenSection",
+      "krylov_solver" : "ConjugateDirection",
+      "krylov_stop" : "RelativeErrorSmall",
+      "opt_stop" : "NotConverged"
+   },
+   "Reals" : {
+      "alpha" : 2.111456180001682,
+      "alpha0" : 4.0,
+      "ared" : "NaN",
+      "c1" : 0.00010,
+      "delta" : 8.0,
+      "eps_dx" : 1.000000000000000e-08,
+      "eps_grad" : 1.000000000000000e-08,
+      "eps_krylov" : 0.010,
+      "eps_ls" : 0.010,
+      "eta1" : 0.10,
+      "eta2" : 0.90,
+      "f_x" : 0.02540595003978211,
+      "f_xpdx" : 0.02540595003978211,
+      "krylov_rel_err" : 9.133559966516509e-16,
+      "norm_dxtyp" : 232.8676877542266,
+      "norm_gradtyp" : 232.8676877542266,
+      "pred" : "NaN"
+   },
+   "X_Vectors" : {
+      "dx" : [ 0.1074642194911911, 0.2025852226216924 ],
+      "dx_old" : [ 0.1074642194911911, 0.2025852226216924 ],
+      "grad" : [ -3.355465690136785, 1.779621828638301 ],
+      "grad_old" : [ 5.129742732543251, -3.679257532944122 ],
+      "x" : [ 0.8693097347622132, 0.7645975240955409 ],
+      "x_old" : [ 0.7618455152710221, 0.5620123014738485 ]
+   }
+}

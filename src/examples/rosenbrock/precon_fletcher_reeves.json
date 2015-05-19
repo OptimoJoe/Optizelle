@@ -1,0 +1,18 @@
+{
+   "Optizelle" : {
+      "msg_level" : 1,
+      "algorithm_class" : "LineSearch",
+      "dir" : "FletcherReeves",
+      "PH_type" : "UserDefined",
+      "iter_max" : 50,
+      "linesearch_iter_max" : 7,
+      "alpha0" : 1e-2,
+      "eps_dx" : 1e-10
+   },
+   "Naturals" : {
+      "iter" : 27
+   },
+   "X_Vectors" : {
+      "x" : [ 1.0, 1.0 ] 
+   }
+}

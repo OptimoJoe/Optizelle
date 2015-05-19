@@ -1,0 +1,18 @@
+{
+   "Optizelle" : {
+      "msg_level" : 1,
+      "H_type" : "UserDefined",
+      "iter_max" : 50,
+      "eps_krylov" : 1e-10,
+      "eps_dx" : 1e-16,
+      "eps_mu" : 1e-9,
+      "gamma" : 0.99,
+      "cstrat" : "PredictorCorrector"
+   },
+   "Naturals" : {
+      "iter" : 13
+   },
+   "X_Vectors" : {
+      "x" : [ 0.33333333, 0.33333333 ] 
+   }
+}

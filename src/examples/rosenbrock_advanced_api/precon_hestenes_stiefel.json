@@ -1,0 +1,16 @@
+{
+   "Optizelle" : {
+      "msg_level" : 1,
+      "algorithm_class" : "LineSearch",
+      "dir" : "HestenesStiefel",
+      "PH_type" : "UserDefined",
+      "eps_dx" : 1e-12,
+      "iter_max" : 50
+   },
+   "Naturals" : {
+      "iter" : 21
+   },
+   "X_Vectors" : {
+      "x" : [ 1.0, 1.0 ] 
+   }
+}

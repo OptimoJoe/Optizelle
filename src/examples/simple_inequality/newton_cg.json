@@ -1,0 +1,19 @@
+{
+   "Optizelle" : {
+      "msg_level" : 1,
+      "algorithm_class" : "LineSearch",
+      "H_type" : "UserDefined",
+      "dir" : "NewtonCG",
+      "iter_max" : 50,
+      "eps_krylov" : 1e-10,
+      "eps_dx" : 1e-16,
+      "sigma" : 0.1,
+      "gamma" : 0.99
+   },
+   "Naturals" : {
+      "iter" : 11
+   },
+   "X_Vectors" : {
+      "x" : [ 0.33333333, 0.33333333 ] 
+   }
+}
