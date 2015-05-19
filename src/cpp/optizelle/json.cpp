@@ -91,11 +91,11 @@ namespace Optizelle {
                     + name + " contains an invalid natural.";
 
                 // As long as we have an unsigned integer, grab it
-                if(json.isUInt())
+                if(json.isUInt() || json.isUInt64())
                     return Natural(Json::Value::UInt64(json.asUInt64()));
                 
                 // If we have an integer, grab it if it's positive
-                else if(json.isInt()) {
+                else if(json.isInt() || json.isInt64()) {
                     Integer val(json.asInt64());
                     if(val>=0)
                         return Natural(val);
