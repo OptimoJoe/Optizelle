@@ -1,5 +1,4 @@
 % Interpolate on a simple 2-D problem 
-function example_2d()
 
 % Grab the Optizelle library
 global Optizelle;
@@ -13,7 +12,7 @@ do_plot = 0;
 
 % Set the size of the problem 
 ninput = 2;
-nhidden = 20;
+nhidden = 7;
 nsamples = 50;
 
 % Determine if we black out a quadrant (no data)
@@ -39,14 +38,20 @@ if blackout
     end
 end
 
-true_fn = @(x)cos(5*x'*dir(:,1)).*sin(10*x'*dir(:,2));
+true_fn = @(x)cos(4*x'*dir(:,1)).*sin(2*x'*dir(:,2));
 y = zeros(1,nsamples);
 for j = 1:nsamples
     y(j) = true_fn(x(:,j)); 
 end
 
+% Generate scalings based on this data
+scaling = generate_scaling(x,y);
+
+% Grab some lenses
+[lens idx]=generate_lenses(ninput,nhidden);
+
 % Allocate memory for an initial guess
-xx = randn(nhidden+nhidden*ninput+nhidden,1);
+xx = randn(idx.size,1);
 
 % Create an optimization state
 state=Optizelle.Unconstrained.State.t( ...
@@ -56,19 +61,16 @@ state=Optizelle.Unconstrained.State.t( ...
 state=Optizelle.json.Unconstrained.read(Optizelle.Rm,Optizelle.Messaging,...
     fname,state);
 
-% Grab some lenses
-lens=generate_lenses(ninput,nhidden);
-
 % Generate the objective function
 fns=Optizelle.Unconstrained.Functions.t;
-fns.f = generate_objective(generate_hyperbolic(),lens,x,y);
+fns.f = generate_objective(generate_hyperbolic(),lens,x,y,scaling);
 
 % Interpolate our data 
 state=Optizelle.Unconstrained.Algorithms.getMin( ...
     Optizelle.Rm,Optizelle.Messaging,fns,state);
 
 % Generate an interpolatory function based on this
-ff = generate_interpolant(generate_hyperbolic(),lens,state.x);
+ff = generate_interpolant(generate_hyperbolic(),lens,state.x,scaling);
 
 % Return if we're not plotting
 if ~do_plot

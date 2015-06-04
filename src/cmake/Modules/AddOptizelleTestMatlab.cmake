@@ -1,5 +1,14 @@
 # Sets up and runs Optizelle unit tests 
 macro(add_optizelle_test_matlab name)
+    
+    # Grab any extra arguments
+    set (extra_macro_args ${ARGN})
+    list(LENGTH extra_macro_args num_extra_args)
+    if (${num_extra_args} GREATER 0)
+        list(GET extra_macro_args 0 is_script)
+    else()
+        set (is_script "FALSE")
+    endif()
 
     # Make sure that tests are enabled
     if(ENABLE_MATLAB_UNIT)
@@ -9,13 +18,26 @@ macro(add_optizelle_test_matlab name)
         string(FIND ${prog} "matlab" is_matlab)
 
         if(${is_matlab} LESS 0)
-            add_test( "Execution_of_matlab_${name}"
-                ${MATLAB_EXECUTABLE} "--eval" 
-                "${executable}${name}(),exit")
+            if(NOT ${is_script})
+                add_test( "Execution_of_matlab_${name}"
+                    ${MATLAB_EXECUTABLE} "--eval" 
+                    "${executable}${name}(),exit")
+            else()
+                add_test( "Execution_of_matlab_${name}"
+                    ${MATLAB_EXECUTABLE} "--eval" 
+                    "${executable}${name},exit")
+            endif()
+                        
         else()
-            add_test( "Execution_of_matlab_${name}"
-                ${MATLAB_EXECUTABLE} "-nosplash -nodesktop -r" 
-                "\"${executable}${name}(),exit\"")
+            if(NOT ${is_script})
+                add_test( "Execution_of_matlab_${name}"
+                    ${MATLAB_EXECUTABLE} "-nosplash -nodesktop -r" 
+                    "\"${executable}${name}(),exit\"")
+            else()
+                add_test( "Execution_of_matlab_${name}"
+                    ${MATLAB_EXECUTABLE} "-nosplash -nodesktop -r" 
+                    "\"${executable}${name},exit\"")
+            endif()
         endif()
         set_tests_properties("Execution_of_matlab_${name}"
             PROPERTIES ENVIRONMENT
