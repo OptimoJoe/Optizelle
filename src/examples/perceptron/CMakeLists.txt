@@ -29,6 +29,6 @@ if(ENABLE_MATLAB_UNIT)
 endif()
 
 # Add some unit tests
-add_optizelle_test_matlab("example_1d",TRUE)
-add_optizelle_test_matlab("example_1d_extruded",TRUE)
-add_optizelle_test_matlab("example_2d",TRUE)
+add_optizelle_test_matlab("example_1d" , TRUE)
+add_optizelle_test_matlab("example_1d_extruded" , TRUE)
+add_optizelle_test_matlab("example_2d" , TRUE)
