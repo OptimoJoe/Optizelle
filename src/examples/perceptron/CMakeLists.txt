@@ -15,7 +15,9 @@ add_optizelle_example_supporting(${PROJECT_NAME}
     generate_lenses.m
     generate_logistic.m
     generate_objective.m
-    generate_parametrization.m)
+    generate_parametrization.m
+    generate_scaling.m
+    generate_scaling_operator.m)
 
 # Copy in the rest of the files for the unit tests. 
 if(ENABLE_MATLAB_UNIT)
@@ -27,6 +29,6 @@ if(ENABLE_MATLAB_UNIT)
 endif()
 
 # Add some unit tests
-add_optizelle_test_matlab(example_1d)
-add_optizelle_test_matlab(example_1d_extruded)
-add_optizelle_test_matlab(example_2d)
+add_optizelle_test_matlab("example_1d" , TRUE)
+add_optizelle_test_matlab("example_1d_extruded" , TRUE)
+add_optizelle_test_matlab("example_2d" , TRUE)

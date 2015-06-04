@@ -4,11 +4,17 @@
 global Optizelle;
 setupOptizelle ();
 
-% Generate a random MLP 
+% Set the sizes 
 ninput = 3;
 nhidden = 20;
 nsamples = 5;
+
+% Grab some lenses
+[lens idx]=generate_lenses(ninput,nhidden);
+
+% Create a random MLP
 alpha = randn(nhidden,1);
+beta = randn;
 A = randn(nhidden,ninput);
 b = randn(nhidden,1);
 
@@ -16,8 +22,11 @@ b = randn(nhidden,1);
 x = randn(ninput,nsamples);
 y = randn(1,nsamples);
 
+% Generate scalings based on this data
+scaling = generate_scaling(x,y);
+
 % Allocate memory for an initial guess
-xx = randn(nhidden+nhidden*ninput+nhidden,1);
+xx = randn(idx.size,1);
 
 % Create an optimization state
 state=Optizelle.Unconstrained.State.t( ...
@@ -28,11 +37,9 @@ state.dscheme = Optizelle.DiagnosticScheme.DiagnosticsOnly;
 state.f_diag = Optizelle.FunctionDiagnostics.SecondOrder;
 state.iter_max = 2;
 
-% Grab some lenses
-lens=generate_lenses(ninput,nhidden);
-
 % Generate the objective function
-fns.f = generate_objective(generate_hyperbolic(),lens,x,y);
+fns = Optizelle.Unconstrained.Functions.t; 
+fns.f = generate_objective(generate_hyperbolic(),lens,x,y,scaling);
 
 % Even though this looks like we're solving an optimization problem,
 % we're actually just going to run our diagnostics and then exit.
@@ -40,6 +47,6 @@ Optizelle.Unconstrained.Algorithms.getMin( ...
     Optizelle.Rm,Optizelle.Messaging,fns,state);
 
 % Now, test the parametrization function
-fns.f = generate_parametrization(generate_hyperbolic(),lens,x);
+fns.f = generate_parametrization(generate_hyperbolic(),lens,x,scaling);
 Optizelle.Unconstrained.Algorithms.getMin( ...
     Optizelle.Rm,Optizelle.Messaging,fns,state);

@@ -1,5 +1,4 @@
 % Interpolate on a simple 1-D problem 
-function example_1d()
 
 % Grab the Optizelle library
 global Optizelle;
@@ -13,16 +12,22 @@ do_plot = 0;
 
 % Set the size of the problem 
 ninput = 1;
-nhidden = 10;
+nhidden = 3;
 nsamples = 20;
+
+% Grab some lenses
+[lens idx]=generate_lenses(ninput,nhidden);
 
 % Generate some random data
 x = rand(ninput,nsamples);
-true_fn = @(x)cos(5*x);
+true_fn = @(x)cos(2*x);
 y = true_fn(x); 
 
+% Generate scalings based on this data
+scaling = generate_scaling(x,y);
+
 % Allocate memory for an initial guess
-xx = randn(nhidden+nhidden*ninput+nhidden,1);
+xx = randn(idx.size,1);
 
 % Create an optimization state
 state=Optizelle.Unconstrained.State.t( ...
@@ -32,19 +37,16 @@ state=Optizelle.Unconstrained.State.t( ...
 state=Optizelle.json.Unconstrained.read(Optizelle.Rm,Optizelle.Messaging,...
     fname,state);
 
-% Grab some lenses
-lens=generate_lenses(ninput,nhidden);
-
 % Generate the objective function
 fns=Optizelle.Unconstrained.Functions.t;
-fns.f = generate_objective(generate_hyperbolic(),lens,x,y);
+fns.f = generate_objective(generate_hyperbolic(),lens,x,y,scaling);
 
 % Interpolate our data 
 state=Optizelle.Unconstrained.Algorithms.getMin( ...
     Optizelle.Rm,Optizelle.Messaging,fns,state);
 
 % Generate an interpolatory function based on this
-ff = generate_interpolant(generate_hyperbolic(),lens,state.x);
+ff = generate_interpolant(generate_hyperbolic(),lens,state.x,scaling);
 
 % Return if we're not plotting
 if ~do_plot

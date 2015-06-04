@@ -1,50 +1,74 @@
 % Generates a parametrization 
 %
-% f(x)(alpha,A,b) = alpha'*phi(A*x+b)
+% f(x)(alpha,A,b) = alpha'*phi(A*x+b)+beta
 %
 % This works with vectorized inputs where size(x)=[ninput,nsamples].  In this
 % case,
 %
 % f(alpha,A,b) : 1 x nsamples
-% grad f(alpha,A,b) : (nhidden + nhidden*ninput + nhidden) x nsamples
-% hess f(alpha,A,b) dx : (nhidden + nhidden*ninput + nhidden) x nsamples
+% grad f(alpha,A,b) : (nhidden + 1 + nhidden*ninput + nhidden) x nsamples
+% hess f(alpha,A,b) dx : (nhidden + 1 + nhidden*ninput + nhidden) x nsamples
 %
-function f = generate_parametrization(phi,lens,x)
-    f.eval=@(xx)mlp_eval(phi,lens,x,xx);
-    f.grad=@(xx)mlp_grad(phi,lens,x,xx);
-    f.hessvec=@(xx,dxx)mlp_hessvec(phi,lens,x,xx,dxx);
+function [f scaling] = generate_parametrization(phi,lens,x,scaling)
+    % Generate the scaling operators 
+    scaling_x = generate_scaling_operator( ...
+        scaling.x.from.min,scaling.x.from.max, ...
+        scaling.x.to.min,scaling.x.to.max);
+    
+    scaling_y_inv = generate_scaling_operator( ...
+        scaling.y.to.min,scaling.y.to.max, ...
+        scaling.y.from.min,scaling.y.from.max);
+
+    % Scale the inputs
+    x = scaling_x.eval(x);
+
+    f.eval=@(xx)scaling_y_inv.eval(mlp_eval(phi,lens,x,xx));
+    f.grad=@(xx)scaling_y_inv.ps(1,1)*mlp_grad(phi,lens,x,xx);
+    f.hessvec=@(xx,dxx)scaling_y_inv.ps(1,1)*mlp_hessvec(phi,lens,x,xx,dxx);
 end
 
 % Evaluation
 function result = mlp_eval(phi,lens,x,xx)
     % Grab our parameters 
     alpha = lens.alpha.get(xx);
+    beta = lens.beta.get(xx);
     A = lens.A.get(xx);
     b = lens.b.get(xx);
-    
-    % Duplicate by rows
-    bb = @(x)repmat(b,1,size(x,2));
 
+    % Grab sizes
+    [ninput nsamples]=size(x);
+    nhidden=length(b);
+
+    % Expand terms 
+    bb = repmat(b,1,nsamples);
+    bbeta = repmat(beta,1,nsamples);
+    
     % Evaluate the MLP
-    result = alpha'*phi.eval(A*x+bb(x));
+    result = alpha'*phi.eval(A*x+bb)+bbeta;
 end
 
 % Gradient
 function result = mlp_grad(phi,lens,x,xx)
     % Grab our parameters 
     alpha = lens.alpha.get(xx);
+    beta = lens.beta.get(xx);
     A = lens.A.get(xx);
     b = lens.b.get(xx);
 
-    % Duplicate by rows
-    bb = @(x)repmat(b,1,size(x,2));
-    aalpha = @(x)repmat(alpha,1,size(x,2));
+    % Grab sizes
+    [ninput nsamples]=size(x);
+    nhidden=length(b);
+
+    % Expand terms 
+    bb = repmat(b,1,nsamples);
+    aalpha = repmat(alpha,1,nsamples);
 
     % Calculate the gradient
     result = [ ...
-        phi.eval(A*x+bb(x));
-        myouter(phi.ps(A*x+bb(x),aalpha(x)),x);
-        phi.ps(A*x+bb(x),aalpha(x))
+        phi.eval(A*x+bb);
+        ones(1,nsamples);
+        myouter(phi.ps(A*x+bb,aalpha),x);
+        phi.ps(A*x+bb,aalpha)
     ];
 end
 
@@ -52,36 +76,47 @@ end
 function result = mlp_hessvec(phi,lens,x,xx,dxx)
     % Grab our parameters 
     alpha = lens.alpha.get(xx);
+    beta = lens.beta.get(xx);
     A = lens.A.get(xx);
     b = lens.b.get(xx);
     
     dalpha = lens.alpha.get(dxx);
+    dbeta = lens.beta.get(dxx);
     dA = lens.A.get(dxx);
     db = lens.b.get(dxx);
 
-    % Duplicate by rows
-    bb = @(x)repmat(b,1,size(x,2));
-    dbb = @(x)repmat(db,1,size(x,2));
-    aalpha = @(x)repmat(alpha,1,size(x,2));
-    daalpha = @(x)repmat(dalpha,1,size(x,2));
+    % Grab sizes
+    [ninput nsamples]=size(x);
+    nhidden=length(b);
+
+    % Expand terms 
+    bb = repmat(b,1,nsamples);
+    aalpha = repmat(alpha,1,nsamples);
+    
+    dbb = repmat(db,1,nsamples);
+    daalpha = repmat(dalpha,1,nsamples);
 
     % Calculate the Hessian-vector product
-    hv_alpha_alpha = zeros(size(alpha,1),size(x,2));
-    hv_alpha_A = phi.p(A*x+bb(x),dA*x);
-    hv_alpha_b = phi.p(A*x+bb(x),dbb(x));
+    hv_alpha_alpha = zeros(nhidden,nsamples);
+    hv_alpha_beta = zeros(nhidden,nsamples);
+    hv_alpha_A = phi.p(A*x+bb,dA*x);
+    hv_alpha_b = phi.p(A*x+bb,dbb);
 
-    hv_A_alpha = myouter(phi.ps(A*x+bb(x),daalpha(x)),x);
-    hv_A_A = myouter(phi.pps(A*x+bb(x),dA*x,aalpha(x)),x);
-    hv_A_b = myouter(phi.pps(A*x+bb(x),dbb(x),aalpha(x)),x);
+    hv_A_alpha = myouter(phi.ps(A*x+bb,daalpha),x);
+    hv_A_beta = zeros(ninput*nhidden,nsamples);
+    hv_A_A = myouter(phi.pps(A*x+bb,dA*x,aalpha),x);
+    hv_A_b = myouter(phi.pps(A*x+bb,dbb,aalpha),x);
     
-    hv_b_alpha = phi.ps(A*x+bb(x),daalpha(x));
-    hv_b_A = phi.pps(A*x+bb(x),dA*x,aalpha(x));
-    hv_b_b = phi.pps(A*x+bb(x),dbb(x),aalpha(x));
+    hv_b_alpha = phi.ps(A*x+bb,daalpha);
+    hv_b_beta = zeros(nhidden,nsamples); 
+    hv_b_A = phi.pps(A*x+bb,dA*x,aalpha);
+    hv_b_b = phi.pps(A*x+bb,dbb,aalpha);
 
     result = [ ...
-        hv_alpha_alpha + hv_alpha_A + hv_alpha_b;
-        hv_A_alpha + hv_A_A + hv_A_b;
-        hv_b_alpha + hv_b_A + hv_b_b
+        hv_alpha_alpha + hv_alpha_beta + hv_alpha_A + hv_alpha_b;
+        zeros(1,nsamples); 
+        hv_A_alpha + hv_A_beta + hv_A_A + hv_A_b;
+        hv_b_alpha + hv_b_beta + hv_b_A + hv_b_b
     ];
 end
 
