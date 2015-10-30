@@ -1207,19 +1207,38 @@ namespace Optizelle {
         std::list <X_Vector> Brs;
         std::list <Real> norm_Brs;
 
-        // Allocate memory for the orthogonality check matrix.  This is
-        // inv(D) ( Brs' rs - D^2 ) inv(D) = inv(D) Brs' rs inv(D) - I,
-        // where D = diag(||Br_i||).  In theory, the projected/preconditioned
-        // residuals should be orthogonal to the residuals.  In practice,
-        // this may not be the case,  Hence, we look at how antisymmetric
-        // this matrix is and bail if it becomes too bad.  Note, we really
-        // need to know ( i, j, <orthog_check>_ij ).  We need the indices in
-        // order to help eliminate elements when we don't do full 
-        // orthogonalization.
-        typedef typename
-            std::list < std::pair< std::pair <Natural,Natural> , Real > >
-            indexed_matrix;
-        indexed_matrix orthog_check;
+        // Allocate memory for the orthogonality check matrix, which only makes
+        // sense when the preconditioner B is really a projection.  This is
+        //
+        // O =  inv(D) ( Brs' rs - D^2 ) inv(D) = inv(D) Brs' rs inv(D) - I
+        // 
+        // where D = diag(||Br_i||)
+        //
+        // In theory, two things should happen
+        //
+        // 1.  The projected/preconditioned residuals should be orthogonal to
+        //     the residuals, which means the off diagonal elements of O
+        //     should be zero 
+        //
+        // 2.  Our preconditioner B is really an orthogonal projection, so
+        //     B* = B and B*B=B^2=B.  Therefore, the diagonal elements of
+        //     O should be 0
+        //
+        // In practice, this is probably not the case if
+        //
+        // 1.  We're getting an inexact projection, so B really isn't
+        //     an orthogonal projector
+        //
+        // 2.  We run too many CG iterations with bad orthgonalization
+        //
+        // Basically, the matrix O should be zero, so we bail if it gets too
+        // big.  Note, because we may not be doing full orthgonalization, the
+        // matrix O is stored as a number of columns separate in memory.  When
+        // we truncate our history we eliminate the first column and first row,
+        // which means dumping the first column entirely and the first element
+        // in the subsequent
+        // columns 
+        std::vector <std::vector <Real>> O;
 
         // Allocate memory for the norm of the trust-region operator
         // applied at the trial step, || C( (x-x_cntr) + alpha Bp) ||.  
@@ -1321,19 +1340,13 @@ namespace Optizelle {
 
                     // Don't remove elements from the orthogonality check 
                     // matrix until we have enough elements to remove.
-                    if(iter>orthog_max) {
-                        // Figure out the index to remove from orthog_check
-                        Natural ii=iter-orthog_max;
-
-                        // Remove all elements associated with this index
-                        typename indexed_matrix::iterator
-                            ele=orthog_check.begin();
-                        while(ele!=orthog_check.end()) {
-                            if(ele->first.first==ii || ele->first.second==ii)
-                                ele=orthog_check.erase(ele);
-                            else
-                                ele++;
-                        }
+                    if(do_orthog_check && iter>orthog_max) {
+                        // Delete the first columns 
+                        O.erase(O.begin());
+                        
+                        // Delete the first element of the subsequent columns 
+                        for(auto & Oj : O)
+                            Oj.erase(Oj.begin());
                     }
                 }
 
@@ -1355,48 +1368,56 @@ namespace Optizelle {
 
                 norm_Brs.emplace_back(norm_Br);
 
-                // Build new pieces of the orthogonality check matrix
-                typename std::list <X_Vector>::reverse_iterator
-                    Br_star=Brs.rbegin();
-                typename std::list <Real>::reverse_iterator
-                    norm_Bri=norm_Brs.rbegin(); 
+                // Build new pieces of the orthogonality check matrix where
+                // 
+                // O_ij  = <B ri,rj> / || B ri || || B rj||
+                //
+                // for i != j and
+                //
+                // O_ii  = (<B ri,rj> / || B ri || || B rj|| ) - 1
+               
+                if(do_orthog_check) {
+                    // First add a new column to O
+                    {
+                        O.push_back(std::vector <Real>());
+                        auto const & rj = rs.back();
+                        auto const & norm_Brj = norm_Brs.back();
+                        auto norm_Bri = norm_Brs.cbegin();
+                        for(auto const & Bri : Brs) {
+                            // Bail if we're on the last row. We'll do that next 
+                            if(&Bri == &(Brs.back())) break;
 
-                // Start out at the iteration number and count backwards
-                // the number of elements equal to the number of residual
-                // vectors.
-                for(Natural ii=iter;ii>iter-rs.size();ii--) {
-                    typename std::list <X_Vector>::reverse_iterator
-                        r_star=rs.rbegin();
-                    typename std::list <Real>::reverse_iterator
-                        norm_Brj=norm_Brs.rbegin(); 
+                            // Add in the components
+                            O.back().push_back(
+                                X::innr(Bri,rj) / (*norm_Bri * norm_Brj));
 
-                    // Use the same counting scheme as ii
-                    for(Natural jj=iter;jj>iter-rs.size();jj--) {
-
-                        // Don't recompute elements that we've already stored
-                        if(ii >= iter || jj >= iter) {
-                            // < Br_i, r_j > / || Br_i || || Br_j ||
-                            orthog_check.emplace_back(
-                                std::pair <std::pair <Natural,Natural> , Real> (
-                                    std::pair <Natural,Natural> (ii,jj),
-                                    X::innr(*Br_star,*r_star)
-                                        / ((*norm_Brj)*(*norm_Bri))
-                                )
-                            );
-
-                            // If we're on a diagonal element, make sure to
-                            // remove the piece of the identity, 1.
-                            if(ii==jj)
-                                orthog_check.back().second -= Real(1.);
+                            // Make sure to iterate norm_Bri to match Bri
+                            norm_Bri++;
                         }
-
-                        r_star++;
-                        norm_Brj++;
                     }
-                    Br_star++;
-                    norm_Bri++;
-                }
+                    
+                    // Now, add a new row to O 
+                    {
+                        auto const & Bri = Brs.back();
+                        auto const & norm_Bri = norm_Brs.back();
+                        auto norm_Brj = norm_Brs.cbegin();
+                        auto Oj = O.begin();
+                        for(auto const & rj : rs) {
+                            // Add in the components
+                            Oj->push_back(
+                                X::innr(Bri,rj) / (norm_Bri * (*norm_Brj)));
 
+                            // Make sure to iterate norm_Brj and Oj to match Brj
+                            norm_Brj++;
+                            Oj++;
+                        }
+                    }
+
+                    // Finally, don't forget to pull off the 1 on our new
+                    // diagonal element
+                    O.back().back()-= Real(1.);
+                }
+                
                 // Do an exact linesearch in the computed direction
                 alpha = -X::innr(r,Bp) / Anorm_Bp_2;
 
@@ -1413,21 +1434,21 @@ namespace Optizelle {
                 norm_C_x_m_xcntr_p_a_Bp = sqrt(X::innr(x_tmp2,x_tmp2));
             }
 
-            // Calculate the Frobenius norm of the orgonality check.
-            Real norm_orthogcheck(0.);
-            for(typename indexed_matrix::iterator ele=orthog_check.begin();
-                ele!=orthog_check.end();
-                ele++
-            ) 
-                norm_orthogcheck += (ele->second)*(ele->second);
-            norm_orthogcheck = sqrt(norm_orthogcheck);
+            // Calculate the Frobenius norm of our orthogonality check O 
+            auto norm_O = Real(0.);
+            if(do_orthog_check) {
+                for(auto const & Oj : O)
+                    for(auto const & Oij : Oj)
+                        norm_O+=Oij*Oij;
+                norm_O = sqrt(norm_O);
+            }
 
             // Check if we have instability.  This is either a NaN in our
             // normalization factor for Gram-Schmidt or if the norm
             // of our orthogonality check matrix is greater than our
             // tolerance.
             bool instability = (Anorm_Bp_2!=Anorm_Bp_2)
-                || (do_orthog_check && norm_orthogcheck > eps_orthog);
+                || (do_orthog_check && norm_O > eps_orthog);
 
             // If we have negative curvature or our trial point is outside the
             // trust-region radius, terminate truncated-PCD and find our final
