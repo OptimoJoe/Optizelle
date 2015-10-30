@@ -449,7 +449,7 @@ function x = sql_create(types,sizes)
         if types(i)~=Optizelle.Cone.Linear && ...
            types(i)~=Optizelle.Cone.Quadratic && ...
            types(i)~=Optizelle.Cone.Semidefinite
-           error('Parameter types (the first argument) uses invalid cones')
+           error('Parameter types (the first argument) uses invalid cones');
         end
     end
 
