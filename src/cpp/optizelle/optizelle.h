@@ -3693,7 +3693,7 @@ namespace Optizelle{
                 Natural const & msg_level = state.msg_level;
 
                 // Basic information
-                out.emplace_back(Utility::atos("Iter"));
+                out.emplace_back(Utility::atos("iter"));
                 out.emplace_back(Utility::atos("f(x)"));
                 out.emplace_back(Utility::atos("||grad||"));
                 out.emplace_back(Utility::atos("||dx||"));
@@ -3706,14 +3706,14 @@ namespace Optizelle{
                     if(    algorithm_class==AlgorithmClass::TrustRegion
                         || dir==LineSearchDirection::NewtonCG
                     ){
-                        out.emplace_back(Utility::atos("KryIter"));
-                        out.emplace_back(Utility::atos("KryErr"));
-                        out.emplace_back(Utility::atos("KryStop"));
+                        out.emplace_back(Utility::atos("kry_iter"));
+                        out.emplace_back(Utility::atos("kry_err"));
+                        out.emplace_back(Utility::atos("kry_stop"));
                     }
 
                     // In case we're using a line-search method
                     if(algorithm_class==AlgorithmClass::LineSearch) {
-                        out.emplace_back(Utility::atos("LSIter"));
+                        out.emplace_back(Utility::atos("ls_iter"));
                         out.emplace_back(Utility::atos("alpha0"));
                         out.emplace_back(Utility::atos("alpha"));
                     }
@@ -3724,6 +3724,16 @@ namespace Optizelle{
                         out.emplace_back(Utility::atos("pred"));
                         out.emplace_back(Utility::atos("ared/pred"));
                         out.emplace_back(Utility::atos("delta"));
+                    }
+                }
+
+                // Even more detailed information
+                if(msg_level >= 3) {
+                    // In case we're using a Krylov method
+                    if(    algorithm_class==AlgorithmClass::TrustRegion
+                        || dir==LineSearchDirection::NewtonCG
+                    ){
+                        out.emplace_back(Utility::atos("kry_itr_tot"));
                     }
                 }
             }
@@ -3755,6 +3765,7 @@ namespace Optizelle{
                 Natural const & iter=state.iter;
                 Real const & f_x=state.f_x;
                 Natural const & krylov_iter=state.krylov_iter;
+                Natural const & krylov_iter_total=state.krylov_iter_total;
                 Real const & krylov_rel_err=state.krylov_rel_err;
                 KrylovStop::t const & krylov_stop=state.krylov_stop;
                 Natural const & linesearch_iter=state.linesearch_iter;
@@ -3832,6 +3843,20 @@ namespace Optizelle{
                             out.emplace_back(Utility::atos(delta));
                         } else  
                             for(Natural i=0;i<4;i++)
+                                out.emplace_back(Utility::blankSeparator);
+                    }
+                }
+                
+                // Even more detail 
+                if(msg_level >=3) {
+                    // In case we're using a Krylov method
+                    if(    algorithm_class==AlgorithmClass::TrustRegion
+                        || dir==LineSearchDirection::NewtonCG
+                    ){
+                        if(!opt_begin) {
+                            out.emplace_back(Utility::atos(krylov_iter_total));
+                        } else 
+                            for(Natural i=0;i<1;i++)
                                 out.emplace_back(Utility::blankSeparator);
                     }
                 }
@@ -7049,13 +7074,16 @@ namespace Optizelle{
                     out.emplace_back(Utility::atos("delta"));
                        
                     // Krylov method information
-                    out.emplace_back(Utility::atos("KryIter"));
-                    out.emplace_back(Utility::atos("KryErr"));
-                    out.emplace_back(Utility::atos("KryWhy"));
+                    out.emplace_back(Utility::atos("kry_iter"));
+                    out.emplace_back(Utility::atos("kry_err"));
+                    out.emplace_back(Utility::atos("kry_why"));
                 }
 
                 // Even more detail
                 if(msg_level>=3) {
+                    // Total number of Krylov iterations
+                    out.emplace_back(Utility::atos("kry_itr_tot"));
+
                     // Augmented system solves 
                     out.emplace_back(Utility::atos("qn_iter"));
                     out.emplace_back(Utility::atos("qn_iter_tot"));
@@ -7106,6 +7134,7 @@ namespace Optizelle{
                 // Create some shortcuts
                 Y_Vector const & g_x = state.g_x;
                 Natural const & krylov_iter=state.krylov_iter;
+                Natural const & krylov_iter_total=state.krylov_iter_total;
                 Real const & krylov_rel_err=state.krylov_rel_err;
                 KrylovStop::t const & krylov_stop=state.krylov_stop;
                 Real const & pred = state.pred;
@@ -7183,8 +7212,11 @@ namespace Optizelle{
                 
                 // Even more detail
                 if(msg_level >=3) {
-                    // Augmented system solves 
                     if(!opt_begin) {
+                        // Total number of Krylov iterations
+                        out.emplace_back(Utility::atos(krylov_iter_total));
+
+                        // Augmented system solves 
                         out.emplace_back(Utility::atos(augsys_qn_iter));
                         out.emplace_back(Utility::atos(augsys_qn_iter_total));
                         out.emplace_back(Utility::atos(augsys_qn_err));
@@ -7214,7 +7246,7 @@ namespace Optizelle{
                         
                         out.emplace_back(Utility::atos(augsys_iter_total));
                     } else 
-                        for(Natural i=0;i<21;i++)
+                        for(Natural i=0;i<22;i++)
                             out.emplace_back(Utility::blankSeparator);
                 }
 
