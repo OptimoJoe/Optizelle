@@ -1453,7 +1453,7 @@ namespace Optizelle{
         ) {
             // Do a finite difference check on the barrier function 
             std::stringstream ss;
-            ss << name << "::bar";
+            ss << name << "::barr";
             return gradientCheck(msg,barr <Real,XX> (),x,dx,ss.str());
         }
         
@@ -8306,6 +8306,7 @@ namespace Optizelle{
                             ){
                                 X::zero(dx);
                                 pred=Real(0.);
+                                break;
                             }
                         }
                     }
