@@ -695,7 +695,7 @@ namespace Optizelle {
                     "eps_constr");
                 state.xi_all(read::real <Real> (
                     msg,
-                    root["Optizelle"].get("xi_qn",state.xi_qn),
+                    root["Optizelle"].get("xi_all",state.xi_qn),
                     "xi_all"));
                 state.eps_constr=read::real <Real> (
                     msg,
