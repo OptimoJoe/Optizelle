@@ -2534,6 +2534,48 @@ namespace Optizelle {
                         state.augsys_iter_max,pystate);
                     toPython::Natural("augsys_rst_freq",
                         state.augsys_rst_freq,pystate);
+                    toPython::Natural("augsys_qn_iter",
+                        state.augsys_qn_iter,pystate);
+                    toPython::Natural("augsys_pg_iter",
+                        state.augsys_pg_iter,pystate);
+                    toPython::Natural("augsys_proj_iter",
+                        state.augsys_proj_iter,pystate);
+                    toPython::Natural("augsys_tang_iter",
+                        state.augsys_tang_iter,pystate);
+                    toPython::Natural("augsys_lmh_iter",
+                        state.augsys_lmh_iter,pystate);
+                    toPython::Natural("augsys_qn_iter_total",
+                        state.augsys_qn_iter_total,pystate);
+                    toPython::Natural("augsys_pg_iter_total",
+                        state.augsys_pg_iter_total,pystate);
+                    toPython::Natural("augsys_proj_iter_total",
+                        state.augsys_proj_iter_total,pystate);
+                    toPython::Natural("augsys_tang_iter_total",
+                        state.augsys_tang_iter_total,pystate);
+                    toPython::Natural("augsys_lmh_iter_total",
+                        state.augsys_lmh_iter_total,pystate);
+                    toPython::Real("augsys_qn_err",
+                        state.augsys_qn_err,pystate);
+                    toPython::Real("augsys_pg_err",
+                        state.augsys_pg_err,pystate);
+                    toPython::Real("augsys_proj_err",
+                        state.augsys_proj_err,pystate);
+                    toPython::Real("augsys_tang_err",
+                        state.augsys_tang_err,pystate);
+                    toPython::Real("augsys_lmh_err",
+                        state.augsys_lmh_err,pystate);
+                    toPython::Real("augsys_qn_err_target",
+                        state.augsys_qn_err_target,pystate);
+                    toPython::Real("augsys_pg_err_target",
+                        state.augsys_pg_err_target,pystate);
+                    toPython::Real("augsys_proj_err_target",
+                        state.augsys_proj_err_target,pystate);
+                    toPython::Real("augsys_tang_err_target",
+                        state.augsys_tang_err_target,pystate);
+                    toPython::Real("augsys_lmh_err_target",
+                        state.augsys_lmh_err_target,pystate);
+                    toPython::Natural("augsys_iter_total",
+                        state.augsys_iter_total,pystate);
                     toPython::Vector("g_x",state.g_x,pystate);
                     toPython::Real("norm_gxtyp",state.norm_gxtyp,pystate);
                     toPython::Vector("gpxdxn_p_gx",state.gpxdxn_p_gx,pystate);
@@ -2605,6 +2647,48 @@ namespace Optizelle {
                         pystate,state.augsys_iter_max);
                     fromPython::Natural("augsys_rst_freq",
                         pystate,state.augsys_rst_freq);
+                    fromPython::Natural("augsys_qn_iter",
+                        pystate,state.augsys_qn_iter);
+                    fromPython::Natural("augsys_pg_iter",
+                        pystate,state.augsys_pg_iter);
+                    fromPython::Natural("augsys_proj_iter",
+                        pystate,state.augsys_proj_iter);
+                    fromPython::Natural("augsys_tang_iter",
+                        pystate,state.augsys_tang_iter);
+                    fromPython::Natural("augsys_lmh_iter",
+                        pystate,state.augsys_lmh_iter);
+                    fromPython::Natural("augsys_qn_iter_total",
+                        pystate,state.augsys_qn_iter_total);
+                    fromPython::Natural("augsys_pg_iter_total",
+                        pystate,state.augsys_pg_iter_total);
+                    fromPython::Natural("augsys_proj_iter_total",
+                        pystate,state.augsys_proj_iter_total);
+                    fromPython::Natural("augsys_tang_iter_total",
+                        pystate,state.augsys_tang_iter_total);
+                    fromPython::Natural("augsys_lmh_iter_total",
+                        pystate,state.augsys_lmh_iter_total);
+                    fromPython::Real("augsys_qn_err",
+                        pystate,state.augsys_qn_err);
+                    fromPython::Real("augsys_pg_err",
+                        pystate,state.augsys_pg_err);
+                    fromPython::Real("augsys_proj_err",
+                        pystate,state.augsys_proj_err);
+                    fromPython::Real("augsys_tang_err",
+                        pystate,state.augsys_tang_err);
+                    fromPython::Real("augsys_lmh_err",
+                        pystate,state.augsys_lmh_err);
+                    fromPython::Real("augsys_qn_err_target",
+                        pystate,state.augsys_qn_err_target);
+                    fromPython::Real("augsys_pg_err_target",
+                        pystate,state.augsys_pg_err_target);
+                    fromPython::Real("augsys_proj_err_target",
+                        pystate,state.augsys_proj_err_target);
+                    fromPython::Real("augsys_tang_err_target",
+                        pystate,state.augsys_tang_err_target);
+                    fromPython::Real("augsys_lmh_err_target",
+                        pystate,state.augsys_lmh_err_target);
+                    fromPython::Natural("augsys_iter_total",
+                        pystate,state.augsys_iter_total);
                     fromPython::Vector("g_x",pystate,state.g_x);
                     fromPython::Real("norm_gxtyp",pystate,state.norm_gxtyp);
                     fromPython::Vector("gpxdxn_p_gx",pystate,state.gpxdxn_p_gx);
