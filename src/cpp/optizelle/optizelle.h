@@ -5513,6 +5513,35 @@ namespace Optizelle{
 
                 // How often we restart the augmented system solve
                 Natural augsys_rst_freq;
+
+                // Number of iterations taken by the augmented system solve
+                Natural augsys_qn_iter;
+                Natural augsys_pg_iter;
+                Natural augsys_proj_iter;
+                Natural augsys_tang_iter;
+                Natural augsys_lmh_iter;
+
+                // Total number of iterations taken by the augmented system
+                // solve
+                Natural augsys_qn_iter_total;
+                Natural augsys_pg_iter_total;
+                Natural augsys_proj_iter_total;
+                Natural augsys_tang_iter_total;
+                Natural augsys_lmh_iter_total;
+
+                // Error in the augmented system solve 
+                Real augsys_qn_err;
+                Real augsys_pg_err;
+                Real augsys_proj_err;
+                Real augsys_tang_err;
+                Real augsys_lmh_err;
+
+                // Desired error in the augmented system solve 
+                Real augsys_qn_err_desired;
+                Real augsys_pg_err_desired;
+                Real augsys_proj_err_desired;
+                Real augsys_tang_err_desired;
+                Real augsys_lmh_err_desired;
                 
                 // Equality constraint evaluated at x.  We use this in the
                 // quasinormal step as well as in the computation of the
@@ -5680,6 +5709,106 @@ namespace Optizelle{
                         //---augsys_rst_freq0---
                         0
                         //---augsys_rst_freq1---
+                    ),
+                    augsys_qn_iter(
+                        //---augsys_qn_iter0---
+                        0
+                        //---augsys_qn_iter1---
+                    ),
+                    augsys_pg_iter(
+                        //---augsys_pg_iter0---
+                        0
+                        //---augsys_pg_iter1---
+                    ),
+                    augsys_proj_iter(
+                        //---augsys_proj_iter0---
+                        0
+                        //---augsys_proj_iter1---
+                    ),
+                    augsys_tang_iter(
+                        //---augsys_tang_iter0---
+                        0
+                        //---augsys_tang_iter1---
+                    ),
+                    augsys_lmh_iter(
+                        //---augsys_lmh_iter0---
+                        0
+                        //---augsys_lmh_iter1---
+                    ),
+                    augsys_qn_iter_total(
+                        //---augsys_qn_iter_total0---
+                        0
+                        //---augsys_qn_iter_total1---
+                    ),
+                    augsys_pg_iter_total(
+                        //---augsys_pg_iter_total0---
+                        0
+                        //---augsys_pg_iter_total1---
+                    ),
+                    augsys_proj_iter_total(
+                        //---augsys_proj_iter_total0---
+                        0
+                        //---augsys_proj_iter_total1---
+                    ),
+                    augsys_tang_iter_total(
+                        //---augsys_tang_iter_total0---
+                        0
+                        //---augsys_tang_iter_total1---
+                    ),
+                    augsys_lmh_iter_total(
+                        //---augsys_lmh_iter_total0---
+                        0
+                        //---augsys_lmh_iter_total1---
+                    ),
+                    augsys_qn_err(
+                        //---augsys_qn_err0---
+                        0.
+                        //---augsys_qn_err1---
+                    ),
+                    augsys_pg_err(
+                        //---augsys_pg_err0---
+                        0.
+                        //---augsys_pg_err1---
+                    ),
+                    augsys_proj_err(
+                        //---augsys_proj_err0---
+                        0.
+                        //---augsys_proj_err1---
+                    ),
+                    augsys_tang_err(
+                        //---augsys_tang_err0---
+                        0.
+                        //---augsys_tang_err1---
+                    ),
+                    augsys_lmh_err(
+                        //---augsys_lmh_err0---
+                        0.
+                        //---augsys_lmh_err1---
+                    ),
+                    augsys_qn_err_desired(
+                        //---augsys_qn_err_desired0---
+                        0.
+                        //---augsys_qn_err_tartet1---
+                    ),
+                    augsys_pg_err_desired(
+                        //---augsys_pg_err_desired0---
+                        0.
+                        //---augsys_pg_err_tartet1---
+                    ),
+                    augsys_proj_err_desired(
+                        //---augsys_proj_err_desired0---
+                        0.
+                        //---augsys_proj_err_tartet1---
+                    ),
+                    augsys_tang_err_desired(
+                        //---augsys_tang_err_desired0---
+                        0.
+                        //---augsys_tang_err_tartet1---
+                    ),
+                    augsys_lmh_err_desired(
+                        //---augsys_lmh_err_desired0---
+                        0.
+                        //---augsys_lmh_err_tartet1---
                     ),
                     g_x(
                         //---g_x0---
@@ -5961,6 +6090,86 @@ namespace Optizelle{
                     // Any
                     //---augsys_rst_freq_valid1---
                     
+                    //---augsys_qn_iter_valid0---
+                    // Any
+                    //---augsys_qn_iter_valid1---
+                    
+                    //---augsys_pg_iter_valid0---
+                    // Any
+                    //---augsys_pg_iter_valid1---
+                    
+                    //---augsys_proj_iter_valid0---
+                    // Any
+                    //---augsys_proj_iter_valid1---
+                    
+                    //---augsys_tang_iter_valid0---
+                    // Any
+                    //---augsys_tang_iter_valid1---
+                    
+                    //---augsys_lmh_iter_valid0---
+                    // Any
+                    //---augsys_lmh_iter_valid1---
+                    
+                    //---augsys_qn_iter_total_valid0---
+                    // Any
+                    //---augsys_qn_iter_total_valid1---
+                    
+                    //---augsys_pg_iter_total_valid0---
+                    // Any
+                    //---augsys_pg_iter_total_valid1---
+                    
+                    //---augsys_proj_iter_total_valid0---
+                    // Any
+                    //---augsys_proj_iter_total_valid1---
+                    
+                    //---augsys_tang_iter_total_valid0---
+                    // Any
+                    //---augsys_tang_iter_total_valid1---
+                    
+                    //---augsys_lmh_iter_total_valid0---
+                    // Any
+                    //---augsys_lmh_iter_total_valid1---
+                    
+                    //---augsys_qn_err_valid0---
+                    // Any
+                    //---augsys_qn_err_valid1---
+                    
+                    //---augsys_pg_err_valid0---
+                    // Any
+                    //---augsys_pg_err_valid1---
+                    
+                    //---augsys_proj_err_valid0---
+                    // Any
+                    //---augsys_proj_err_valid1---
+                    
+                    //---augsys_tang_err_valid0---
+                    // Any
+                    //---augsys_tang_err_valid1---
+                    
+                    //---augsys_lmh_err_valid0---
+                    // Any
+                    //---augsys_lmh_err_valid1---
+                    
+                    //---augsys_qn_err_desired_valid0---
+                    // Any
+                    //---augsys_qn_err_desired_valid1---
+                    
+                    //---augsys_pg_err_desired_valid0---
+                    // Any
+                    //---augsys_pg_err_desired_valid1---
+                    
+                    //---augsys_proj_err_desired_valid0---
+                    // Any
+                    //---augsys_proj_err_desired_valid1---
+                    
+                    //---augsys_tang_err_desired_valid0---
+                    // Any
+                    //---augsys_tang_err_desired_valid1---
+                    
+                    //---augsys_lmh_err_desired_valid0---
+                    // Any
+                    //---augsys_lmh_err_desired_valid1---
+                    
                     //---g_x_valid0---
                     // Any
                     //---g_x_valid1---
@@ -6069,7 +6278,17 @@ namespace Optizelle{
                     item.first == "xi_4" ||
                     item.first == "rpred" ||
                     item.first == "norm_gxtyp" ||
-                    item.first == "norm_gpxdxnpgx" 
+                    item.first == "norm_gpxdxnpgx" ||
+                    item.first == "augsys_qn_err" ||
+                    item.first == "augsys_pg_err" ||
+                    item.first == "augsys_proj_err" ||
+                    item.first == "augsys_tang_err" ||
+                    item.first == "augsys_lmh_err" ||
+                    item.first == "augsys_qn_err_desired" ||
+                    item.first == "augsys_pg_err_desired" ||
+                    item.first == "augsys_proj_err_desired" ||
+                    item.first == "augsys_tang_err_desired" ||
+                    item.first == "augsys_lmh_err_desired"
                 )
                     return true;
                 else
@@ -6082,7 +6301,17 @@ namespace Optizelle{
             ) {
                 if( Unconstrained <Real,XX>::Restart::is_nat(item) ||
                     item.first == "augsys_iter_max" ||
-                    item.first == "augsys_rst_freq"
+                    item.first == "augsys_rst_freq" ||
+                    item.first == "augsys_qn_iter" ||
+                    item.first == "augsys_pg_iter" ||
+                    item.first == "augsys_proj_iter" ||
+                    item.first == "augsys_tang_iter" ||
+                    item.first == "augsys_lmh_iter" ||
+                    item.first == "augsys_qn_iter_total" ||
+                    item.first == "augsys_pg_iter_total" ||
+                    item.first == "augsys_proj_iter_total" ||
+                    item.first == "augsys_tang_iter_total" ||
+                    item.first == "augsys_lmh_iter_total"
                 )
                     return true;
                 else
@@ -6213,12 +6442,52 @@ namespace Optizelle{
                 reals.emplace_back("norm_gxtyp",std::move(state.norm_gxtyp));
                 reals.emplace_back("norm_gpxdxnpgx",
                     std::move(state.norm_gpxdxnpgx));
+                reals.emplace_back("augsys_qn_err",
+                    std::move(state.augsys_qn_err));
+                reals.emplace_back("augsys_pg_err",
+                    std::move(state.augsys_pg_err));
+                reals.emplace_back("augsys_proj_err",
+                    std::move(state.augsys_proj_err));
+                reals.emplace_back("augsys_tang_err",
+                    std::move(state.augsys_tang_err));
+                reals.emplace_back("augsys_lmh_err",
+                    std::move(state.augsys_lmh_err));
+                reals.emplace_back("augsys_qn_err_desired",
+                    std::move(state.augsys_qn_err_desired));
+                reals.emplace_back("augsys_pg_err_desired",
+                    std::move(state.augsys_pg_err_desired));
+                reals.emplace_back("augsys_proj_err_desired",
+                    std::move(state.augsys_proj_err_desired));
+                reals.emplace_back("augsys_tang_err_desired",
+                    std::move(state.augsys_tang_err_desired));
+                reals.emplace_back("augsys_lmh_err_desired",
+                    std::move(state.augsys_lmh_err_desired));
 
                 // Copy in all the natural numbers
                 nats.emplace_back("augsys_iter_max",
                     std::move(state.augsys_iter_max));
                 nats.emplace_back("augsys_rst_freq",
                     std::move(state.augsys_rst_freq));
+                nats.emplace_back("augsys_qn_iter",
+                    std::move(state.augsys_qn_iter));
+                nats.emplace_back("augsys_pg_iter",
+                    std::move(state.augsys_pg_iter));
+                nats.emplace_back("augsys_proj_iter",
+                    std::move(state.augsys_proj_iter));
+                nats.emplace_back("augsys_tang_iter",
+                    std::move(state.augsys_tang_iter));
+                nats.emplace_back("augsys_lmh_iter",
+                    std::move(state.augsys_lmh_iter));
+                nats.emplace_back("augsys_qn_iter_total",
+                    std::move(state.augsys_qn_iter_total));
+                nats.emplace_back("augsys_pg_iter_total",
+                    std::move(state.augsys_pg_iter_total));
+                nats.emplace_back("augsys_proj_iter_total",
+                    std::move(state.augsys_proj_iter_total));
+                nats.emplace_back("augsys_tang_iter_total",
+                    std::move(state.augsys_tang_iter_total));
+                nats.emplace_back("augsys_lmh_iter_total",
+                    std::move(state.augsys_lmh_iter_total));
 
                 // Copy in all the parameters
                 params.emplace_back("PSchur_left_type",
@@ -6320,6 +6589,26 @@ namespace Optizelle{
                         state.norm_gxtyp=std::move(item->second);
                     else if(item->first=="norm_gpxdxnpgx")
                         state.norm_gpxdxnpgx=std::move(item->second);
+                    else if(item->first=="augsys_qn_err")
+                        state.augsys_qn_err=std::move(item->second);
+                    else if(item->first=="augsys_pg_err")
+                        state.augsys_pg_err=std::move(item->second);
+                    else if(item->first=="augsys_proj_err")
+                        state.augsys_proj_err=std::move(item->second);
+                    else if(item->first=="augsys_tang_err")
+                        state.augsys_tang_err=std::move(item->second);
+                    else if(item->first=="augsys_lmh_err")
+                        state.augsys_lmh_err=std::move(item->second);
+                    else if(item->first=="augsys_qn_err_desired")
+                        state.augsys_qn_err_desired=std::move(item->second);
+                    else if(item->first=="augsys_pg_err_desired")
+                        state.augsys_pg_err_desired=std::move(item->second);
+                    else if(item->first=="augsys_proj_err_desired")
+                        state.augsys_proj_err_desired=std::move(item->second);
+                    else if(item->first=="augsys_tang_err_desired")
+                        state.augsys_tang_err_desired=std::move(item->second);
+                    else if(item->first=="augsys_lmh_err_desired")
+                        state.augsys_lmh_err_desired=std::move(item->second);
                 }
                 
                 // Next, copy in any naturals
@@ -6331,6 +6620,26 @@ namespace Optizelle{
                         state.augsys_iter_max=std::move(item->second);
                     else if(item->first=="augsys_rst_freq")
                         state.augsys_rst_freq=std::move(item->second);
+                    else if(item->first=="augsys_qn_iter")
+                        state.augsys_qn_iter=std::move(item->second);
+                    else if(item->first=="augsys_pg_iter")
+                        state.augsys_pg_iter=std::move(item->second);
+                    else if(item->first=="augsys_proj_iter")
+                        state.augsys_proj_iter=std::move(item->second);
+                    else if(item->first=="augsys_tang_iter")
+                        state.augsys_tang_iter=std::move(item->second);
+                    else if(item->first=="augsys_lmh_iter")
+                        state.augsys_lmh_iter=std::move(item->second);
+                    else if(item->first=="augsys_qn_iter_total")
+                        state.augsys_qn_iter_total=std::move(item->second);
+                    else if(item->first=="augsys_pg_iter_total")
+                        state.augsys_pg_iter_total=std::move(item->second);
+                    else if(item->first=="augsys_proj_iter_total")
+                        state.augsys_proj_iter_total=std::move(item->second);
+                    else if(item->first=="augsys_tang_iter_total")
+                        state.augsys_tang_iter_total=std::move(item->second);
+                    else if(item->first=="augsys_lmh_iter_total")
+                        state.augsys_lmh_iter_total=std::move(item->second);
                 }
                 
                 // Next, copy in any parameters 
@@ -6729,6 +7038,35 @@ namespace Optizelle{
                     out.emplace_back(Utility::atos("KryErr"));
                     out.emplace_back(Utility::atos("KryWhy"));
                 }
+
+                // Even more detail
+                if(msg_level>=2) {
+                    // Augmented system solves 
+                    out.emplace_back(Utility::atos("qn_iter"));
+                    out.emplace_back(Utility::atos("qn_iter_t"));
+                    out.emplace_back(Utility::atos("qn_err"));
+                    out.emplace_back(Utility::atos("qn_err_de"));
+                    
+                    out.emplace_back(Utility::atos("pg_iter"));
+                    out.emplace_back(Utility::atos("pg_iter_t"));
+                    out.emplace_back(Utility::atos("pg_err"));
+                    out.emplace_back(Utility::atos("pg_err_de"));
+                    
+                    out.emplace_back(Utility::atos("pj_iter"));
+                    out.emplace_back(Utility::atos("pj_iter_t"));
+                    out.emplace_back(Utility::atos("pj_err"));
+                    out.emplace_back(Utility::atos("pj_err_de"));
+                    
+                    out.emplace_back(Utility::atos("tg_iter"));
+                    out.emplace_back(Utility::atos("tg_iter_t"));
+                    out.emplace_back(Utility::atos("tg_err"));
+                    out.emplace_back(Utility::atos("tg_err_de"));
+                    
+                    out.emplace_back(Utility::atos("lm_iter"));
+                    out.emplace_back(Utility::atos("lm_iter_t"));
+                    out.emplace_back(Utility::atos("lm_err"));
+                    out.emplace_back(Utility::atos("lm_err_de"));
+                }
             }
             // Combines all of the state headers
             static void getStateHeader(
@@ -6757,6 +7095,32 @@ namespace Optizelle{
                 Real const & ared = state.ared;
                 Real const & delta = state.delta;
                 Natural const & msg_level = state.msg_level;
+                Natural const & augsys_qn_iter = state.augsys_qn_iter;
+                Natural const & augsys_qn_iter_total=state.augsys_qn_iter_total;
+                Real const & augsys_qn_err = state.augsys_qn_err;
+                Real const & augsys_qn_err_desired= state.augsys_qn_err_desired;
+                Natural const & augsys_pg_iter = state.augsys_pg_iter;
+                Natural const & augsys_pg_iter_total=state.augsys_pg_iter_total;
+                Real const & augsys_pg_err = state.augsys_pg_err;
+                Real const & augsys_pg_err_desired= state.augsys_pg_err_desired;
+                Natural const & augsys_proj_iter = state.augsys_proj_iter;
+                Natural const & augsys_proj_iter_total =
+                    state.augsys_proj_iter_total;
+                Real const & augsys_proj_err = state.augsys_proj_err;
+                Real const & augsys_proj_err_desired =
+                    state.augsys_proj_err_desired;
+                Natural const & augsys_tang_iter = state.augsys_tang_iter;
+                Natural const & augsys_tang_iter_total =
+                    state.augsys_tang_iter_total;
+                Real const & augsys_tang_err = state.augsys_tang_err;
+                Real const & augsys_tang_err_desired =
+                    state.augsys_tang_err_desired;
+                Natural const & augsys_lmh_iter = state.augsys_lmh_iter;
+                Natural const & augsys_lmh_iter_total =
+                    state.augsys_lmh_iter_total;
+                Real const & augsys_lmh_err = state.augsys_lmh_err;
+                Real const & augsys_lmh_err_desired =
+                    state.augsys_lmh_err_desired;
 
                 // Figure out if we're at the absolute beginning of the
                 // optimization.
@@ -6790,6 +7154,41 @@ namespace Optizelle{
                         out.emplace_back(Utility::atos(krylov_stop));
                     } else 
                         for(Natural i=0;i<3;i++)
+                            out.emplace_back(Utility::blankSeparator);
+                }
+                
+                // Even more detail
+                if(msg_level >=3) {
+                    // Augmented system solves 
+                    if(!opt_begin) {
+                        out.emplace_back(Utility::atos(augsys_qn_iter));
+                        out.emplace_back(Utility::atos(augsys_qn_iter_total));
+                        out.emplace_back(Utility::atos(augsys_qn_err));
+                        out.emplace_back(Utility::atos(augsys_qn_err_desired));
+                        
+                        out.emplace_back(Utility::atos(augsys_pg_iter));
+                        out.emplace_back(Utility::atos(augsys_pg_iter_total));
+                        out.emplace_back(Utility::atos(augsys_pg_err));
+                        out.emplace_back(Utility::atos(augsys_pg_err_desired));
+                        
+                        out.emplace_back(Utility::atos(augsys_proj_iter));
+                        out.emplace_back(Utility::atos(augsys_proj_iter_total));
+                        out.emplace_back(Utility::atos(augsys_proj_err));
+                        out.emplace_back(
+                            Utility::atos(augsys_proj_err_desired));
+                        
+                        out.emplace_back(Utility::atos(augsys_tang_iter));
+                        out.emplace_back(Utility::atos(augsys_tang_iter_total));
+                        out.emplace_back(Utility::atos(augsys_tang_err));
+                        out.emplace_back(
+                            Utility::atos(augsys_tang_err_desired));
+                        
+                        out.emplace_back(Utility::atos(augsys_lmh_iter));
+                        out.emplace_back(Utility::atos(augsys_lmh_iter_total));
+                        out.emplace_back(Utility::atos(augsys_lmh_err));
+                        out.emplace_back(Utility::atos(augsys_lmh_err_desired));
+                    } else 
+                        for(Natural i=0;i<4;i++)
                             out.emplace_back(Utility::blankSeparator);
                 }
 
@@ -7110,7 +7509,7 @@ namespace Optizelle{
             // Sets the tolerances for the quasi-normal Newton solve
             struct QNManipulator : public GMRESManipulator <Real,XXxYY> {
             private:
-                typename State::t const & state;
+                typename State::t & state;
                 typename Functions::t const & fns;
             public:
                 // Disallow constructors
@@ -7118,7 +7517,7 @@ namespace Optizelle{
 
                 // Grab the states and fns on construction
                 explicit QNManipulator(
-                    typename State::t const & state_,
+                    typename State::t & state_,
                     typename Functions::t const & fns_
                 ) : state(state_), fns(fns_) {}
 
@@ -7133,6 +7532,7 @@ namespace Optizelle{
                     Real const & xi_qn = state.xi_qn;
                     Real const & norm_gxtyp = state.norm_gxtyp;
                     Real const & eps_constr= state.eps_constr;
+                    Real & augsys_qn_err_desired = state.augsys_qn_err_desired;
 
                     // Find || g'(x)dx_ncp + g(x) ||
                     Real norm_gpxdxncp_p_g = sqrt(Y::innr(bb.second,bb.second));
@@ -7153,6 +7553,9 @@ namespace Optizelle{
                     // we bail.
                     if(norm_gpxdxncp_p_g < eps_constr*norm_gxtyp)
                         eps=Real(1.);
+
+                    // Save this desired error
+                    augsys_qn_err_desired=eps;
                 }
             };
 
@@ -7173,6 +7576,9 @@ namespace Optizelle{
                 Real const & eps_constr = state.eps_constr;
                 X_Vector & dx_ncp=state.dx_ncp;
                 X_Vector & dx_n=state.dx_n;
+                Real & augsys_qn_err = state.augsys_qn_err;
+                Natural & augsys_qn_iter = state.augsys_qn_iter;
+                Natural & augsys_qn_iter_total = state.augsys_qn_iter_total;
 
                 // If we're already feasible, don't even bother with the
                 // quasi-Newton step.  In fact, if g(x)=0, the equation for
@@ -7235,17 +7641,19 @@ namespace Optizelle{
                 BlockDiagonalPreconditioner PAugSys_r (I,*(fns.PSchur_right));
 
                 // Solve the augmented system for the Newton step
-                Optizelle::gmres <Real,XXxYY> (
-                    AugmentedSystem(state,fns,x),
-                    b0,
-                    Real(1.), // This will be overwritten by the manipulator
-                    augsys_iter_max,
-                    augsys_rst_freq,
-                    PAugSys_l,
-                    PAugSys_r,
-                    QNManipulator(state,fns),
-                    x0 
-                );
+                std::tie(augsys_qn_err,augsys_qn_iter) =
+                    Optizelle::gmres <Real,XXxYY> (
+                        AugmentedSystem(state,fns,x),
+                        b0,
+                        Real(1.), // This will be overwritten by the manipulator
+                        augsys_iter_max,
+                        augsys_rst_freq,
+                        PAugSys_l,
+                        PAugSys_r,
+                        QNManipulator(state,fns),
+                        x0 
+                    );
+                augsys_qn_iter_total+=augsys_qn_iter;
 
                 // Find the Newton shift, dx_dnewton = dx_newton-dx_ncp
                 X_Vector & dx_dnewton = x0.first;
@@ -7283,7 +7691,7 @@ namespace Optizelle{
             struct NullspaceProjForGradLagPlusHdxnManipulator
                 : public GMRESManipulator <Real,XXxYY> {
             private:
-                typename State::t const & state;
+                typename State::t & state;
                 typename Functions::t const & fns;
             public:
                 // Disallow constructors
@@ -7292,7 +7700,7 @@ namespace Optizelle{
 
                 // Grab the states and fns on construction
                 NullspaceProjForGradLagPlusHdxnManipulator(
-                    typename State::t const & state_,
+                    typename State::t & state_,
                     typename Functions::t const & fns_
                 ) : state(state_), fns(fns_) {}
 
@@ -7306,6 +7714,7 @@ namespace Optizelle{
                     // Create some shortcuts
                     Real const & xi_pg = state.xi_pg;
                     Real const & delta = state.delta;
+                    Real & augsys_pg_err_desired = state.augsys_pg_err_desired;
 
                     // Find || W (grad L(x,y) + H dx_n) || = || xx_1 || 
                     Real norm_WgpHdxn = sqrt(X::innr(xx.first,xx.first));
@@ -7333,6 +7742,9 @@ namespace Optizelle{
                               * norm_gradpHdxn * Real(1e2)
                     )
                         eps=Real(1.);
+
+                    // Save this desired error
+                    augsys_pg_err_desired=eps;
                 }
             };
 
@@ -7358,6 +7770,9 @@ namespace Optizelle{
                 Natural const & augsys_iter_max=state.augsys_iter_max;
                 Natural const & augsys_rst_freq=state.augsys_rst_freq;
                 X_Vector & W_gradpHdxn=state.W_gradpHdxn;
+                Real & augsys_pg_err = state.augsys_pg_err;
+                Natural & augsys_pg_iter = state.augsys_pg_iter;
+                Natural & augsys_pg_iter_total = state.augsys_pg_iter_total;
 
                 // Find the gradient modifications for the step computation
                 X_Vector grad_step(X::init(grad));
@@ -7389,17 +7804,19 @@ namespace Optizelle{
                 BlockDiagonalPreconditioner PAugSys_r (I,*(fns.PSchur_right));
 
                 // Solve the augmented system for the nullspace projection 
-                Optizelle::gmres <Real,XXxYY> (
-                    AugmentedSystem(state,fns,x),
-                    b0,
-                    Real(1.), // This will be overwritten by the manipulator
-                    augsys_iter_max,
-                    augsys_rst_freq,
-                    PAugSys_l,
-                    PAugSys_r,
-                    NullspaceProjForGradLagPlusHdxnManipulator(state,fns),
-                    x0 
-                );
+                std::tie(augsys_pg_err,augsys_pg_iter) =
+                    Optizelle::gmres <Real,XXxYY> (
+                        AugmentedSystem(state,fns,x),
+                        b0,
+                        Real(1.), // This will be overwritten by the manipulator
+                        augsys_iter_max,
+                        augsys_rst_freq,
+                        PAugSys_l,
+                        PAugSys_r,
+                        NullspaceProjForGradLagPlusHdxnManipulator(state,fns),
+                        x0 
+                    );
+                augsys_pg_iter_total+=augsys_pg_iter;
 
                 // Copy out the solution
                 X::copy(x0.first,W_gradpHdxn);
@@ -7410,7 +7827,7 @@ namespace Optizelle{
             struct NullspaceProjForKrylovMethodManipulator
                 : public GMRESManipulator <Real,XXxYY> {
             private:
-                typename State::t const & state;
+                typename State::t & state;
                 typename Functions::t const & fns;
             public:
                 // Disallow constructors
@@ -7419,7 +7836,7 @@ namespace Optizelle{
 
                 // Grab the states and fns on construction
                 explicit NullspaceProjForKrylovMethodManipulator (
-                    typename State::t const & state_,
+                    typename State::t & state_,
                     typename Functions::t const & fns_
                 ) : state(state_), fns(fns_) {}
 
@@ -7432,6 +7849,7 @@ namespace Optizelle{
                 ) const {
                     // Create some shortcuts
                     Real const & xi_proj = state.xi_proj;
+                    Real& augsys_proj_err_desired=state.augsys_proj_err_desired;
 
                     // Find || W dx_t_uncorrected || = || xx_1 || 
                     Real norm_Wdxt_uncorrected
@@ -7461,6 +7879,9 @@ namespace Optizelle{
                               * norm_dxt_uncorrected * Real(1e2)
                     )
                         eps=Real(1.);
+
+                    // Save this desired error
+                    augsys_proj_err_desired=eps;
                 }
             };
             
@@ -7468,11 +7889,11 @@ namespace Optizelle{
             // projected Krylov method. 
             struct NullspaceProjForKrylovMethod: public Operator <Real,XX,XX> {
             private:
-                typename State::t const & state;
+                typename State::t & state;
                 typename Functions::t const & fns;
             public:
                 NullspaceProjForKrylovMethod(
-                    typename State::t const & state_,
+                    typename State::t & state_,
                     typename Functions::t const & fns_
                 ) : state(state_), fns(fns_) {}
                
@@ -7484,8 +7905,12 @@ namespace Optizelle{
                     // Create some shortcuts
                     X_Vector const & x=state.x;
                     Y_Vector const & y=state.y;
-                    unsigned int const & augsys_iter_max=state.augsys_iter_max;
-                    unsigned int const & augsys_rst_freq=state.augsys_rst_freq;
+                    Natural const & augsys_iter_max=state.augsys_iter_max;
+                    Natural const & augsys_rst_freq=state.augsys_rst_freq;
+                    Real & augsys_proj_err = state.augsys_proj_err;
+                    Natural & augsys_proj_iter = state.augsys_proj_iter;
+                    Natural & augsys_proj_iter_total = 
+                        state.augsys_proj_iter_total;
 
                     // Create the initial guess, x0=(0,0)
                     XxY_Vector x0(X::init(x),Y::init(y));
@@ -7504,17 +7929,21 @@ namespace Optizelle{
                         PAugSys_r(I,*(fns.PSchur_right));
 
                     // Solve the augmented system for the nullspace projection 
-                    Optizelle::gmres <Real,XXxYY> (
-                        AugmentedSystem(state,fns,x),
-                        b0,
-                        Real(1.), // This will be overwritten by the manipulator
-                        augsys_iter_max,
-                        augsys_rst_freq,
-                        PAugSys_l,
-                        PAugSys_r,
-                        NullspaceProjForKrylovMethodManipulator(state,fns),
-                        x0 
-                    );
+                    auto iter = Natural(0);
+                    std::tie(augsys_proj_err,iter) =
+                        Optizelle::gmres <Real,XXxYY> (
+                            AugmentedSystem(state,fns,x),
+                            b0,
+                            Real(1.), // Overwritten by the manipulator
+                            augsys_iter_max,
+                            augsys_rst_freq,
+                            PAugSys_l,
+                            PAugSys_r,
+                            NullspaceProjForKrylovMethodManipulator(state,fns),
+                            x0 
+                        );
+                    augsys_proj_iter+=iter;
+                    augsys_proj_iter_total+=augsys_proj_iter;
 
                     // Copy out the solution
                     X::copy(x0.first,result);
@@ -7544,6 +7973,7 @@ namespace Optizelle{
                 Natural & krylov_iter=state.krylov_iter;
                 Natural & krylov_iter_total=state.krylov_iter_total;
                 KrylovStop::t& krylov_stop=state.krylov_stop;
+                Natural & augsys_proj_iter = state.augsys_proj_iter;
                 
                 // Create shortcuts to the functions that we need
                 ScalarValuedFunction <Real,XX> const & f=*(fns.f);
@@ -7566,6 +7996,12 @@ namespace Optizelle{
                 switch(krylov_solver) {
                 // Truncated conjugate direction
                 case KrylovSolverTruncated::ConjugateDirection:
+                    // Make sure to zero out our iteration counter for the
+                    // nullspace projection.  We'll do several iterations of
+                    // CD and we accumulate this number as we go
+                    augsys_proj_iter=0;
+
+                    // Do the actual solve
                     truncated_cd(
                         H,
                         minus_W_gradpHdxn,
@@ -7623,7 +8059,7 @@ namespace Optizelle{
             struct TangentialStepManipulator
                 : public GMRESManipulator <Real,XXxYY> {
             private:
-                typename State::t const & state;
+                typename State::t & state;
                 typename Functions::t const & fns;
             public: 
                 // Disallow constructors
@@ -7631,7 +8067,7 @@ namespace Optizelle{
 
                 // Grab the states and fns on construction
                 TangentialStepManipulator (
-                    typename State::t const & state_,
+                    typename State::t & state_,
                     typename Functions::t const & fns_
                 ) : state(state_), fns(fns_) {}
 
@@ -7646,6 +8082,7 @@ namespace Optizelle{
                     X_Vector const & dx_n=state.dx_n;
                     Real const & xi_tang = state.xi_tang;
                     Real const & delta = state.delta;
+                    Real& augsys_tang_err_desired=state.augsys_tang_err_desired;
 
                     // dxn_p_dxt <- dx_n + dx_t
                     X_Vector dxn_p_dxt(X::init(dx_n));
@@ -7665,6 +8102,9 @@ namespace Optizelle{
                     eps = eps < xi_tang*norm_dxt_uncorrected/delta
                         ? eps : xi_tang*norm_dxt_uncorrected/delta;
                     eps = eps*delta;
+
+                    // Save this desired error
+                    augsys_tang_err_desired=eps;
                 }
             };
             
@@ -7680,6 +8120,9 @@ namespace Optizelle{
                 Natural const & augsys_rst_freq=state.augsys_rst_freq;
                 X_Vector const & dx_t_uncorrected=state.dx_t_uncorrected;
                 X_Vector & dx_t=state.dx_t;
+                Real & augsys_tang_err = state.augsys_tang_err;
+                Natural & augsys_tang_iter = state.augsys_tang_iter;
+                Natural & augsys_tang_iter_total = state.augsys_tang_iter_total;
 
                 // Create the initial guess, x0=(0,0)
                 XxY_Vector x0(X::init(x),Y::init(y));
@@ -7696,17 +8139,19 @@ namespace Optizelle{
                 BlockDiagonalPreconditioner PAugSys_r(I,*(fns.PSchur_right));
 
                 // Solve the augmented system for the tangential step 
-                Optizelle::gmres <Real,XXxYY> (
-                    AugmentedSystem(state,fns,x),
-                    b0,
-                    Real(1.), // This will be overwritten by the manipulator
-                    augsys_iter_max,
-                    augsys_rst_freq,
-                    PAugSys_l,
-                    PAugSys_r,
-                    TangentialStepManipulator(state,fns),
-                    x0 
-                );
+                std::tie(augsys_tang_err,augsys_tang_iter) =
+                    Optizelle::gmres <Real,XXxYY> (
+                        AugmentedSystem(state,fns,x),
+                        b0,
+                        Real(1.), // This will be overwritten by the manipulator
+                        augsys_iter_max,
+                        augsys_rst_freq,
+                        PAugSys_l,
+                        PAugSys_r,
+                        TangentialStepManipulator(state,fns),
+                        x0 
+                    );
+                augsys_tang_iter_total+=augsys_tang_iter;
 
                 // Copy out the tangential step
                 X::copy(x0.first,dx_t);
@@ -7717,7 +8162,7 @@ namespace Optizelle{
             struct EqualityMultiplierStepManipulator
                 : public GMRESManipulator <Real,XXxYY> {
             private:
-                typename State::t const & state;
+                typename State::t & state;
                 typename Functions::t const & fns;
             public:
                 // Disallow constructors
@@ -7725,7 +8170,7 @@ namespace Optizelle{
 
                 // Grab the states and fns on construction
                 EqualityMultiplierStepManipulator(
-                    typename State::t const & state_,
+                    typename State::t & state_,
                     typename Functions::t const & fns_
                 ) : GMRESManipulator <Real,XXxYY>(), state(state_), fns(fns_) {}
 
@@ -7739,6 +8184,7 @@ namespace Optizelle{
                     // Create some shortcuts
                     Real const & xi_lmh = state.xi_lmh;
                     Real const & xi_lmg = state.xi_lmg;
+                    Real & augsys_lmh_err_desired= state.augsys_lmh_err_desired;
                 
                     // Find the norm of the gradient of the Lagrangian.
                     // Sometimes, this is -grad L(x+dx,y).  Sometimes, this
@@ -7749,6 +8195,9 @@ namespace Optizelle{
                     // The bound is
                     // min( xi_lmg, xi_lmh || grad f(x) + g'(x)*y ||)
                     eps = xi_lmg < norm_grad*xi_lmh ? xi_lmg : norm_grad*xi_lmh;
+
+                    // Save this desired error
+                    augsys_lmh_err_desired=eps;
                 }
             };
 
@@ -7765,6 +8214,9 @@ namespace Optizelle{
                 Natural const & augsys_rst_freq=state.augsys_rst_freq;
                 X_Vector const & grad=state.grad;
                 Y_Vector & y=state.y;
+                Real & augsys_lmh_err = state.augsys_lmh_err;
+                Natural & augsys_lmh_iter = state.augsys_lmh_iter;
+                Natural & augsys_lmh_iter_total = state.augsys_lmh_iter_total;
 
                 // Find the gradient modifications for the equality multiplier
                 // computation
@@ -7788,17 +8240,19 @@ namespace Optizelle{
 
                 // Solve the augmented system for the initial equality 
                 // multiplier 
-                Optizelle::gmres <Real,XXxYY> (
-                    AugmentedSystem(state,fns,x),
-                    b0,
-                    Real(1.), // This will be overwritten by the manipulator
-                    augsys_iter_max,
-                    augsys_rst_freq,
-                    PAugSys_l,
-                    PAugSys_r,
-                    EqualityMultiplierStepManipulator(state,fns),
-                    x0 
-                );
+                std::tie(augsys_lmh_err,augsys_lmh_iter) =
+                    Optizelle::gmres <Real,XXxYY> (
+                        AugmentedSystem(state,fns,x),
+                        b0,
+                        Real(1.), // This will be overwritten by the manipulator
+                        augsys_iter_max,
+                        augsys_rst_freq,
+                        PAugSys_l,
+                        PAugSys_r,
+                        EqualityMultiplierStepManipulator(state,fns),
+                        x0 
+                    );
+                augsys_lmh_iter_total+=augsys_lmh_iter;
 
                 // Find the equality multiplier based on this step
                 Y::axpy(Real(1.),x0.second,y);
@@ -7819,6 +8273,9 @@ namespace Optizelle{
                 Natural const & augsys_rst_freq=state.augsys_rst_freq;
                 X_Vector & x=state.x;
                 Y_Vector & dy=state.dy;
+                Real & augsys_lmh_err = state.augsys_lmh_err;
+                Natural & augsys_lmh_iter = state.augsys_lmh_iter;
+                Natural & augsys_lmh_iter_total = state.augsys_lmh_iter_total;
 
                 // x_p_dx <- x + dx
                 X_Vector x_p_dx(X::init(x));
@@ -7864,17 +8321,19 @@ namespace Optizelle{
                 X::copy(x_p_dx,x);
 
                 // Solve the augmented system for the equality multiplier step 
-                Optizelle::gmres <Real,XXxYY> (
-                    AugmentedSystem(state,fns,x),
-                    b0,
-                    Real(1.), // This will be overwritten by the manipulator
-                    augsys_iter_max,
-                    augsys_rst_freq,
-                    PAugSys_l,
-                    PAugSys_r,
-                    EqualityMultiplierStepManipulator(state,fns),
-                    x0 
-                );
+                std::tie(augsys_lmh_err,augsys_lmh_iter) =
+                    Optizelle::gmres <Real,XXxYY> (
+                        AugmentedSystem(state,fns,x),
+                        b0,
+                        Real(1.), // This will be overwritten by the manipulator
+                        augsys_iter_max,
+                        augsys_rst_freq,
+                        PAugSys_l,
+                        PAugSys_r,
+                        EqualityMultiplierStepManipulator(state,fns),
+                        x0 
+                    );
+                augsys_lmh_iter_total+=augsys_lmh_iter;
 
                 // Restore our current iterate
                 X::copy(x_save,x);
@@ -7897,6 +8356,9 @@ namespace Optizelle{
                 Natural const & augsys_rst_freq=state.augsys_rst_freq;
                 X_Vector & x=state.x;
                 Y_Vector & dy=state.dy;
+                Real & augsys_lmh_err = state.augsys_lmh_err;
+                Natural & augsys_lmh_iter = state.augsys_lmh_iter;
+                Natural & augsys_lmh_iter_total = state.augsys_lmh_iter_total;
 
                 // grad_x <- L(x,y) = grad f(x) + g'(x)*y
                 X_Vector grad_x(X::init(x));
@@ -7923,17 +8385,19 @@ namespace Optizelle{
                 BlockDiagonalPreconditioner PAugSys_r(I,*(fns.PSchur_right));
 
                 // Solve the augmented system for the equality multiplier step 
-                Optizelle::gmres <Real,XXxYY> (
-                    AugmentedSystem(state,fns,x),
-                    b0,
-                    Real(1.), // This will be overwritten by the manipulator
-                    augsys_iter_max,
-                    augsys_rst_freq,
-                    PAugSys_l,
-                    PAugSys_r,
-                    EqualityMultiplierStepManipulator(state,fns),
-                    x0 
-                );
+                std::tie(augsys_lmh_err,augsys_lmh_iter) =
+                    Optizelle::gmres <Real,XXxYY> (
+                        AugmentedSystem(state,fns,x),
+                        b0,
+                        Real(1.), // This will be overwritten by the manipulator
+                        augsys_iter_max,
+                        augsys_rst_freq,
+                        PAugSys_l,
+                        PAugSys_r,
+                        EqualityMultiplierStepManipulator(state,fns),
+                        x0 
+                    );
+                augsys_lmh_iter_total+=augsys_lmh_iter;
 
                 // Copy out the equality multiplier step
                 return sqrt(Y::innr(x0.second,x0.second));
