@@ -5819,27 +5819,27 @@ namespace Optizelle{
                     augsys_qn_err_target(
                         //---augsys_qn_err_target0---
                         0.
-                        //---augsys_qn_err_tartet1---
+                        //---augsys_qn_err_target1---
                     ),
                     augsys_pg_err_target(
                         //---augsys_pg_err_target0---
                         0.
-                        //---augsys_pg_err_tartet1---
+                        //---augsys_pg_err_target1---
                     ),
                     augsys_proj_err_target(
                         //---augsys_proj_err_target0---
                         0.
-                        //---augsys_proj_err_tartet1---
+                        //---augsys_proj_err_target1---
                     ),
                     augsys_tang_err_target(
                         //---augsys_tang_err_target0---
                         0.
-                        //---augsys_tang_err_tartet1---
+                        //---augsys_tang_err_target1---
                     ),
                     augsys_lmh_err_target(
                         //---augsys_lmh_err_target0---
                         0.
-                        //---augsys_lmh_err_tartet1---
+                        //---augsys_lmh_err_target1---
                     ),
                     g_x(
                         //---g_x0---
