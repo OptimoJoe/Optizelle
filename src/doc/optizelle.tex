@@ -515,7 +515,7 @@
 
 % Optizelle output
 \lstdefinestyle{OptizelleOutput}{
-    morekeywords={Iter,f,x,merit,grad,dx,KryWhy,KryErr,KryIter,ared,pred,
+    morekeywords={iter,f,x,merit,grad,dx,kry_why,kry_err,kry_iter,ared,pred,
         ared/pred,mu,mu_est,g,alpha,alpha0,delta},
     sensitive=false,
     literate=
@@ -709,7 +709,7 @@ $$
 In order to optimize this function, we use the following code and parameters, which generates the subsequent output.
 
 \begin{filecontents*}{rosen_output.txt}
-Iter        f(x)        ||grad||    ||dx||      
+iter        f(x)        ||grad||    ||dx||      
 1           2.42e+01    2.33e+02    .           
 2           4.73e+00    4.64e+00    3.81e-01    
 *           4.73e+00    4.64e+00    1.00e+00    
@@ -2248,6 +2248,8 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
     
     \enumitem {FunctionDiagnostics}
     
+    \enumitem {VectorSpaceDiagnostics}
+    
     \enumitem {DiagnosticScheme}
     
     \enumitemlinalg {KrylovStop}
@@ -2352,7 +2354,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {krylov_stop}
         {KrylovStop}
         {No}
-        {Reason why the truncated Krylov solver, \textctref{krylov_solver}, exited when solving the optimality system.  We output \textctref{krylov_stop} at each iteration under the label \textctrefalt{KryStop}.}
+        {Reason why the truncated Krylov solver, \textctref{krylov_solver}, exited when solving the optimality system.  We output \textctref{krylov_stop} at each iteration under the label \textctrefalt{kry_stop}.}
     
     \paramitemu
         {krylov_rel_err}
@@ -2482,7 +2484,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {msg_level}
         {Natural}
         {Yes}
-        {Messaging level.  To turn messages off, use $0$.  For normal messaging, set to $1$.  For more detailed information, set to $2$.  To see precise information about what information we display, refer to the chapter entitled \hyperref[ch:output]{\choutput}.}
+        {Messaging level.  To turn messages off, use $0$.  For normal messaging, set to $1$.  For more detailed information, set to $2$.  For linear solver information, set to $3$.  To see precise information about what information we display, refer to the chapter entitled \hyperref[ch:output]{\choutput}.}
 
     \paramitemu
         {delta}
@@ -2590,7 +2592,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {linesearch_iter}
         {Natural}
         {No}
-        {Current number of iterations used in the line search.  We use this to determine the amount of computational effort used by Optizelle during the last iteration.   As a note, we output \textctref{linesearch_iter} at each iteration under the label \textctrefalt{LSIter}.}
+        {Current number of iterations used in the line search.  We use this to determine the amount of computational effort used by Optizelle during the last iteration.   As a note, we output \textctref{linesearch_iter} at each iteration under the label \textctrefalt{ls_iter}.}
 
     \paramitemu
         {linesearch_iter_max}
@@ -2627,6 +2629,18 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {FunctionDiagnostics}
         {Yes}
         {Function diagnostics on $f$.}
+
+    \paramitemu
+        {L_diag}
+        {FunctionDiagnostics}
+        {Yes}
+        {Function diagnostics on the Lagrangian.}
+
+    \paramitemu
+        {x_diag}
+        {VectorSpaceDiagnostics}
+        {Yes}
+        {Vector space diagnostics on X.}
 
     \paramitemu
         {dscheme}
@@ -2771,10 +2785,136 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {How often we restart the augmented system solve.  We restart GMRES every specified number of iterations in order to save memory.  When 0, we do not restart.} 
 
     \paramiteme
+        {augsys_qn_iter}
+        {Natural}
+        {No}
+        {Number of iterations taken during the last iterate by the augmented system solve for the quasi-normal step.}
+
+    \paramiteme
+        {augsys_pg_iter}
+        {Natural}
+        {No}
+        {Number of iterations taken during the last iterate by the augmented system solve when projecting the gradient prior to the tangential subproblem.}
+
+    \paramiteme
+        {augsys_proj_iter}
+        {Natural}
+        {No}
+        {Number of iterations taken during the last iterate by the augmented system solve during the nullspace projection in the tangential subproblem.  Since there are likely many projections, this is the total number of iterations over all projections.}
+
+    \paramiteme
+        {augsys_tang_iter}
+        {Natural}
+        {No}
+        {Number of iterations taken during the last iterate by the augmented system solve during the tangential step.}
+
+    \paramiteme
+        {augsys_lmh_iter}
+        {Natural}
+        {No}
+        {Number of iterations taken during the last iterate by the augmented system solve during the equality multiplier solve.}
+
+    \paramiteme
+        {augsys_qn_iter_total}
+        {Natural}
+        {No}
+        {Total number of iterations taken by the augmented system solve for the quasi-normal step.}
+
+    \paramiteme
+        {augsys_pg_iter_total}
+        {Natural}
+        {No}
+        {Total number of iterations taken by the augmented system solve when projecting the gradient prior to the tangential subproblem.}
+
+    \paramiteme
+        {augsys_proj_iter_total}
+        {Natural}
+        {No}
+        {Total number of iterations taken by the augmented system solve during the nullspace projection in the tangential subproblem.}
+
+    \paramiteme
+        {augsys_tang_iter_total}
+        {Natural}
+        {No}
+        {Total number of iterations taken by the augmented system solve during the tangential step.}
+
+    \paramiteme
+        {augsys_lmh_iter_total}
+        {Natural}
+        {No}
+        {Total number of iterations taken by the augmented system solve during the equality multiplier solve.}
+
+    \paramiteme
+        {augsys_iter_total}
+        {Natural}
+        {No}
+        {Total number of iterations taken by all augmented system solves.}
+
+    \paramiteme
+        {augsys_qn_err}
+        {Real}
+        {No}
+        {Error in the last augmented system solve for the quasi-normal step.}
+
+    \paramiteme
+        {augsys_pg_err}
+        {Real}
+        {No}
+        {Error in the last augmented system solve when projecting the gradient prior to the tangential subproblem.}
+
+    \paramiteme
+        {augsys_proj_err}
+        {Real}
+        {No}
+        {Error in the last augmented system solve during the nullspace projection in the tangential subproblem.  Note, since there are likely many projections during a single tangential subproblem, this represents the error from the last such solve.}
+
+    \paramiteme
+        {augsys_tang_err}
+        {Real}
+        {No}
+        {Error in the last augmented system solve during the tangential step.}
+
+    \paramiteme
+        {augsys_lmh_err}
+        {Real}
+        {No}
+        {Error in the last augmented system solve during the equality multiplier solve.}
+
+    \paramiteme
+        {augsys_qn_err_target}
+        {Real}
+        {No}
+        {Target error in the last augmented system solve for the quasi-normal step.}
+
+    \paramiteme
+        {augsys_pg_err_target}
+        {Real}
+        {No}
+        {Target error in the last augmented system solve when projecting the gradient prior to the tangential subproblem.}
+
+    \paramiteme
+        {augsys_proj_err_target}
+        {Real}
+        {No}
+        {Target error in the last augmented system solve during the nullspace projection in the tangential subproblem.  Note, since there are likely many projections during a single tangential subproblem, this represents the target error from the last such solve.}
+
+    \paramiteme
+        {augsys_tang_err_target}
+        {Real}
+        {No}
+        {Target error in the last augmented system solve during the tangential step.}
+
+    \paramiteme
+        {augsys_lmh_err_target}
+        {Real}
+        {No}
+        {Target error in the last augmented system solve during the equality multiplier solve.}
+
+    \paramiteme
         {g_x}
         {Y_Vector}
         {No}
-        {Equality constraint evaluated a \textctref{x}, $g(\textctref{x})$.  We use this in the quasinormal step as well as in the computation of the linear Taylor series at \textctref{x} in the direction \textctref{dx_n}.  As a note, we output the norm of this vector each iteration under the label \textctrefalt{||g(x)||}.}
+        {Equality constraint evaluated a \textctref{x}, $g(\textctref{x})$.  We use this in the quasi-normal step as well as in the computation of the linear Taylor series at \textctref{x} in the direction \textctref{dx_n}.  As a note, we output the norm of this vector each iteration under the label \textctrefalt{||g(x)||}.}
 
     \paramiteme
         {norm_gxtyp}
@@ -2853,6 +2993,12 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {FunctionDiagnostics}
         {Yes}
         {Function diagnostics on $g$.}
+
+    \paramiteme
+        {y_diag}
+        {VectorSpaceDiagnostics}
+        {Yes}
+        {Vector space diagnostics on Y.}
 
     \paramitemi
         {z}
@@ -2977,6 +3123,12 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {FunctionDiagnostics}
         {Yes}
         {Function diagnostics on $h$.}
+
+    \paramitemi
+        {z_diag}
+        {VectorSpaceDiagnostics}
+        {Yes}
+        {Vector space diagnostics on Z.}
 \end{boldlist}
 
 \chapter{\choutput}\label{ch:output}
@@ -2993,7 +3145,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         As far as the information in the columns themselves, we detail their meaning below.  In terms of convergence, we require the values \textctrefalt{||grad||}, \textctrefalt{||g(x)||}, and \textctrefalt{mu_est} be small relative to their starting value and control the relative decrease required with the parameters \textctref{eps_grad}, \textctref{eps_constr}, and \textctref{eps_mu}, respectively.  In addition, if the value \textctrefalt{||dx||} becomes too small relative to its starting value, we terminate the optimization.  We control the amount of relative decrease allowed in \textctrefalt{||dx||} with the parameter \textctref{eps_dx}.
 \begin{boldlist}
     \outputitemu
-        {Iter}
+        {iter}
         {\textctref{iter}}
         {1}
         {Current optimization iteration.  If the value of this entry is \textct{*}, then either a trust-region algorithm has rejected a step due to an unfavorable actual versus predicted reduction or a line-search algorithm has rejected a step due to a lack of sufficient decrease.  In a trust-region method, we tune the rejection of steps with the parameter \textctref{eta1}.  In a line-search method, we tune the rejection of steps with the parameter \textctref{c1}.}
@@ -3038,19 +3190,19 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {Value of the merit function at the start of the specified iteration.  We specify the various merit functions in the description of the parameter \textctref{ared}.}
 
     \outputitemu
-        {KryIter}
+        {kry_iter}
         {\textctref{krylov_iter}}
         {2}
         {Number of iterations used by the truncated Krylov methods when solving the optimality system.   We tune the maximum number of Krylov iterations with the parameter \textctref{krylov_iter_max}.}
 
     \outputitemu
-        {KryErr}
+        {kry_err}
         {\textctref{krylov_rel_err}}
         {2}
         {Error in the truncated Krylov method when solving the optimality system.  We control this error with the parameter \textctref{eps_krylov} and indirectly affect it with the parameter \textctref{krylov_orthog_max}.}
 
     \outputitemu
-        {KryStop}
+        {kry_stop}
         {\textctref{krylov_stop}}
         {2}
         {Why the truncated Krylov solver terminated.  Although we shorten the strings, we describe each possible outcome in the enumerated type \textctref{KrylovStop}.}
@@ -3080,7 +3232,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {Trust-region radius.} 
 
     \outputitemu
-        {LSIter}
+        {ls_iter}
         {\textctref{linesearch_iter}}
         {2}
         {Number of iterations taken by the line search.  We tune the maximum number of line-search iterations with the parameter \textctref{linesearch_iter_max} and indirectly control the number of iterations with the parameter \textctref{eps_ls}.}
@@ -3114,6 +3266,138 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {\textctref{alpha_z}}
         {2}
         {Amount we truncate \textctref{dz} in order to maintain feasibility with respect to the inequality multiplier.  Note, we only reference this when we set \textctref{ipm} to \hyperref[itm:InteriorPointMethod]{\textct{PrimalDual}}.}
+
+    \outputitemu
+        {kry_iter_total}
+        {\textctref{krylov_iter_total}}
+        {3}
+        {Total number of iterations used by the truncated Krylov methods when solving the optimality system.  We typically use this to determine how many Hessian-vector products we've computed over the entire optimization run.}
+
+    \outputiteme
+        {qn_iter}
+        {\textctref{augsys_qn_iter}}
+        {3}
+        {Number of iterations taken during the last iterate by the augmented system solve for the quasi-normal step.}
+
+    \outputiteme
+        {qn_iter_tot}
+        {\textctref{augsys_qn_iter_total}}
+        {3}
+        {Total number of iterations taken by the augmented system solve for the quasi-normal step.}
+
+    \outputiteme
+        {qn_err}
+        {\textctref{augsys_qn_err}}
+        {3}
+        {Error in the last augmented system solve for the quasi-normal step.}
+
+    \outputiteme
+        {qn_err_trg}
+        {\textctref{augsys_qn_err_target}}
+        {3}
+        {Target error in the last augmented system solve for the quasi-normal step.}
+
+    \outputiteme
+        {pg_iter}
+        {\textctref{augsys_pg_iter}}
+        {3}
+        {Number of iterations taken during the last iterate by the augmented system solve when projecting the gradient prior to the tangential subproblem.}
+
+    \outputiteme
+        {pg_iter_tot}
+        {\textctref{augsys_pg_iter_total}}
+        {3}
+        {Total number of iterations taken by the augmented system solve when projecting the gradient prior to the tangential subproblem.}
+
+    \outputiteme
+        {pg_err}
+        {\textctref{augsys_pg_err}}
+        {3}
+        {Error in the last augmented system solve when projecting the gradient prior to the tangential subproblem.}
+
+    \outputiteme
+        {pg_err_trg}
+        {\textctref{augsys_pg_err_target}}
+        {3}
+        {Target error in the last augmented system solve when projecting the gradient prior to the tangential subproblem.}
+
+    \outputiteme
+        {pr_iter}
+        {\textctref{augsys_proj_iter}}
+        {3}
+        {Number of iterations taken during the last iterate by the augmented system solve during the nullspace projection in the tangential subproblem.  Since there are likely many projections, this is the total number of iterations over all projections.}
+
+    \outputiteme
+        {pr_iter_tot}
+        {\textctref{augsys_proj_iter_total}}
+        {3}
+        {Total number of iterations taken by the augmented system solve during the nullspace projection in the tangential subproblem.}
+
+    \outputiteme
+        {pr_err}
+        {\textctref{augsys_proj_err}}
+        {3}
+        {Error in the last augmented system solve during the nullspace projection in the tangential subproblem.  Note, since there are likely many projections during a single tangential subproblem, this represents the error from the last such solve.}
+
+    \outputiteme
+        {pr_err_trg}
+        {\textctref{augsys_proj_err_target}}
+        {3}
+        {Target error in the last augmented system solve during the tangential step.}
+
+    \outputiteme
+        {tg_iter}
+        {\textctref{augsys_tang_iter}}
+        {3}
+        {Number of iterations taken during the last iterate by the augmented system solve during the tangential step.}
+
+    \outputiteme
+        {tg_iter_tot}
+        {\textctref{augsys_tang_iter_total}}
+        {3}
+        {Total number of iterations taken by the augmented system solve during the tangential step.}
+
+    \outputiteme
+        {tg_err}
+        {\textctref{augsys_tang_err}}
+        {3}
+        {Error in the last augmented system solve during the tangential step.}
+
+    \outputiteme
+        {tg_err_trg}
+        {\textctref{augsys_tang_err_target}}
+        {3}
+        {Target error in the last augmented system solve during the tangential step.}
+
+    \outputiteme
+        {lm_iter}
+        {\textctref{augsys_lmh_iter}}
+        {3}
+        {Number of iterations taken during the last iterate by the augmented system solve during the equality multiplier solve.}
+
+    \outputiteme
+        {lm_iter_tot}
+        {\textctref{augsys_lmh_iter_total}}
+        {3}
+        {Total number of iterations taken by the augmented system solve during the equality multiplier solve.}
+
+    \outputiteme
+        {lm_err}
+        {\textctref{augsys_lmh_err}}
+        {3}
+        {Error in the last augmented system solve during the equality multiplier solve.}
+
+    \outputiteme
+        {lm_err_trg}
+        {\textctref{augsys_lmh_err_target}}
+        {3}
+        {Target error in the last augmented system solve during the equality multiplier solve.}
+
+    \outputiteme
+        {aug_itr_tot}
+        {\textctref{augsys_iter_total}}
+        {3}
+        {Total number of iterations taken by all augmented system solves.  We use this to help determine the overall expense of the augmented system solver and its precondition.} 
 \end{boldlist}
 
 \chapter{\chadvanced}\label{ch:advanced}

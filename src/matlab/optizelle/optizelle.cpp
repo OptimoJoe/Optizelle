@@ -2683,6 +2683,27 @@ namespace Optizelle {
                         "PSchur_right_type",
                         "augsys_iter_max",
                         "augsys_rst_freq",
+                        "augsys_qn_iter",
+                        "augsys_pg_iter",
+                        "augsys_proj_iter",
+                        "augsys_tang_iter",
+                        "augsys_lmh_iter",
+                        "augsys_qn_iter_total",
+                        "augsys_pg_iter_total",
+                        "augsys_proj_iter_total",
+                        "augsys_tang_iter_total",
+                        "augsys_lmh_iter_total",
+                        "augsys_qn_err",
+                        "augsys_pg_err",
+                        "augsys_proj_err",
+                        "augsys_tang_err",
+                        "augsys_lmh_err",
+                        "augsys_qn_err_target",
+                        "augsys_pg_err_target",
+                        "augsys_proj_err_target",
+                        "augsys_tang_err_target",
+                        "augsys_lmh_err_target",
+                        "augsys_iter_total",
                         "g_x",
                         "norm_gxtyp",
                         "gpxdxn_p_gx",
@@ -2753,6 +2774,48 @@ namespace Optizelle {
                         state.augsys_iter_max,mxstate);
                     toMatlab::Natural("augsys_rst_freq",
                         state.augsys_rst_freq,mxstate);
+                    toMatlab::Natural("augsys_qn_iter",
+                        state.augsys_qn_iter,mxstate);
+                    toMatlab::Natural("augsys_pg_iter",
+                        state.augsys_pg_iter,mxstate);
+                    toMatlab::Natural("augsys_proj_iter",
+                        state.augsys_proj_iter,mxstate);
+                    toMatlab::Natural("augsys_tang_iter",
+                        state.augsys_tang_iter,mxstate);
+                    toMatlab::Natural("augsys_lmh_iter",
+                        state.augsys_lmh_iter,mxstate);
+                    toMatlab::Natural("augsys_qn_iter_total",
+                        state.augsys_qn_iter_total,mxstate);
+                    toMatlab::Natural("augsys_pg_iter_total",
+                        state.augsys_pg_iter_total,mxstate);
+                    toMatlab::Natural("augsys_proj_iter_total",
+                        state.augsys_proj_iter_total,mxstate);
+                    toMatlab::Natural("augsys_tang_iter_total",
+                        state.augsys_tang_iter_total,mxstate);
+                    toMatlab::Natural("augsys_lmh_iter_total",
+                        state.augsys_lmh_iter_total,mxstate);
+                    toMatlab::Real("augsys_qn_err",
+                        state.augsys_qn_err,mxstate);
+                    toMatlab::Real("augsys_pg_err",
+                        state.augsys_pg_err,mxstate);
+                    toMatlab::Real("augsys_proj_err",
+                        state.augsys_proj_err,mxstate);
+                    toMatlab::Real("augsys_tang_err",
+                        state.augsys_tang_err,mxstate);
+                    toMatlab::Real("augsys_lmh_err",
+                        state.augsys_lmh_err,mxstate);
+                    toMatlab::Real("augsys_qn_err_target",
+                        state.augsys_qn_err_target,mxstate);
+                    toMatlab::Real("augsys_pg_err_target",
+                        state.augsys_pg_err_target,mxstate);
+                    toMatlab::Real("augsys_proj_err_target",
+                        state.augsys_proj_err_target,mxstate);
+                    toMatlab::Real("augsys_tang_err_target",
+                        state.augsys_tang_err_target,mxstate);
+                    toMatlab::Real("augsys_lmh_err_target",
+                        state.augsys_lmh_err_target,mxstate);
+                    toMatlab::Natural("augsys_iter_total",
+                        state.augsys_iter_total,mxstate);
                     toMatlab::Vector("g_x",state.g_x,mxstate);
                     toMatlab::Real("norm_gxtyp",state.norm_gxtyp,mxstate);
                     toMatlab::Vector("gpxdxn_p_gx",state.gpxdxn_p_gx,mxstate);
@@ -2824,6 +2887,48 @@ namespace Optizelle {
                         mxstate,state.augsys_iter_max);
                     fromMatlab::Natural("augsys_rst_freq",
                         mxstate,state.augsys_rst_freq);
+                    fromMatlab::Natural("augsys_qn_iter",
+                        mxstate,state.augsys_qn_iter);
+                    fromMatlab::Natural("augsys_pg_iter",
+                        mxstate,state.augsys_pg_iter);
+                    fromMatlab::Natural("augsys_proj_iter",
+                        mxstate,state.augsys_proj_iter);
+                    fromMatlab::Natural("augsys_tang_iter",
+                        mxstate,state.augsys_tang_iter);
+                    fromMatlab::Natural("augsys_lmh_iter",
+                        mxstate,state.augsys_lmh_iter);
+                    fromMatlab::Natural("augsys_qn_iter_total",
+                        mxstate,state.augsys_qn_iter_total);
+                    fromMatlab::Natural("augsys_pg_iter_total",
+                        mxstate,state.augsys_pg_iter_total);
+                    fromMatlab::Natural("augsys_proj_iter_total",
+                        mxstate,state.augsys_proj_iter_total);
+                    fromMatlab::Natural("augsys_tang_iter_total",
+                        mxstate,state.augsys_tang_iter_total);
+                    fromMatlab::Natural("augsys_lmh_iter_total",
+                        mxstate,state.augsys_lmh_iter_total);
+                    fromMatlab::Real("augsys_qn_err",
+                        mxstate,state.augsys_qn_err);
+                    fromMatlab::Real("augsys_pg_err",
+                        mxstate,state.augsys_pg_err);
+                    fromMatlab::Real("augsys_proj_err",
+                        mxstate,state.augsys_proj_err);
+                    fromMatlab::Real("augsys_tang_err",
+                        mxstate,state.augsys_tang_err);
+                    fromMatlab::Real("augsys_lmh_err",
+                        mxstate,state.augsys_lmh_err);
+                    fromMatlab::Real("augsys_qn_err_target",
+                        mxstate,state.augsys_qn_err_target);
+                    fromMatlab::Real("augsys_pg_err_target",
+                        mxstate,state.augsys_pg_err_target);
+                    fromMatlab::Real("augsys_proj_err_target",
+                        mxstate,state.augsys_proj_err_target);
+                    fromMatlab::Real("augsys_tang_err_target",
+                        mxstate,state.augsys_tang_err_target);
+                    fromMatlab::Real("augsys_lmh_err_target",
+                        mxstate,state.augsys_lmh_err_target);
+                    fromMatlab::Natural("augsys_iter_total",
+                        mxstate,state.augsys_iter_total);
                     fromMatlab::Vector("g_x",mxstate,state.g_x);
                     fromMatlab::Real("norm_gxtyp",mxstate,state.norm_gxtyp);
                     fromMatlab::Vector("gpxdxn_p_gx",mxstate,state.gpxdxn_p_gx);

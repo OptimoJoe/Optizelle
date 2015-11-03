@@ -110,6 +110,93 @@ class t(Optizelle.Unconstrained.State.t):
         "Maximum number of iterations used when solving the augmented system")
     augsys_rst_freq = Optizelle.createNatProperty(
         "augsys_rst_freq",
+        ("How often we restart the augmented system solve"))
+    augsys_qn_iter = Optizelle.createNatProperty(
+        "augsys_qn_iter",
+        ("Number of augmented system solve iterations used on the quasi-normal "
+        "step"))
+    augsys_pg_iter = Optizelle.createNatProperty(
+        "augsys_pg_iter",
+        ("Number of augmented system solve iterations used when projecting the "
+        "gradient prior to the tangential subproblem"))
+    augsys_proj_iter = Optizelle.createNatProperty(
+        "augsys_proj_iter",
+        ("Number of augmented system solve iterations used in the nullspace "
+        "projection inside the tangential subproblem"))
+    augsys_tang_iter = Optizelle.createNatProperty(
+        "augsys_tang_iter",
+        ("Number of augmented system solve iterations used in the tangential "
+        "step"))
+    augsys_lmh_iter = Optizelle.createNatProperty(
+        "augsys_lmh_iter",
+        ("Number of augmented system solve iterations used in the equality "
+        "multiplier solve"))
+    augsys_qn_iter_total = Optizelle.createNatProperty(
+        "augsys_qn_iter_total",
+        ("Total number of augmented system solve iterations used on the "
+        "quasi-normal step"))
+    augsys_pg_iter_total = Optizelle.createNatProperty(
+        "augsys_pg_iter_total",
+        ("Total number of augmented system solve iterations used when "
+        "projecting the gradient prior to the tangential subproblem"))
+    augsys_proj_iter_total = Optizelle.createNatProperty(
+        "augsys_proj_iter_total",
+        ("Total number of augmented system solve iterations used in the "
+        "nullspace projection inside the tangential subproblem"))
+    augsys_tang_iter_total = Optizelle.createNatProperty(
+        "augsys_tang_iter_total",
+        ("Total number of augmented system solve iterations used in the "
+        "tangential step"))
+    augsys_lmh_iter_total = Optizelle.createNatProperty(
+        "augsys_lmh_iter_total",
+        ("Total number of augmented system solve iterations used in the "
+        "equality multiplier solve"))
+    augsys_qn_err = Optizelle.createFloatProperty(
+        "augsys_qn_err",
+        ("Error in the augmented system solve used on the "
+        "quasi-normal step"))
+    augsys_pg_err = Optizelle.createFloatProperty(
+        "augsys_pg_err",
+        ("Error in the augmented system solve used when "
+        "projecting the gradient prior to the tangential subproblem"))
+    augsys_proj_err = Optizelle.createFloatProperty(
+        "augsys_proj_err",
+        ("Error in the augmented system solve used in the "
+        "nullspace projection inside the tangential subproblem"))
+    augsys_tang_err = Optizelle.createFloatProperty(
+        "augsys_tang_err",
+        ("Error in the augmented system solve used in the "
+        "tangential step"))
+    augsys_lmh_err = Optizelle.createFloatProperty(
+        "augsys_lmh_err",
+        ("Error in the augmented system solve used in the "
+        "equality multiplier solve"))
+    augsys_qn_err_target = Optizelle.createFloatProperty(
+        "augsys_qn_err_target",
+        ("Target error in the augmented system solve used on the "
+        "quasi-normal step"))
+    augsys_pg_err_target = Optizelle.createFloatProperty(
+        "augsys_pg_err_target",
+        ("Target error in the augmented system solve used when "
+        "projecting the gradient prior to the tangential subproblem"))
+    augsys_proj_err_target = Optizelle.createFloatProperty(
+        "augsys_proj_err_target",
+        ("Target error in the augmented system solve used in the "
+        "nullspace projection inside the tangential subproblem"))
+    augsys_tang_err_target = Optizelle.createFloatProperty(
+        "augsys_tang_err_target",
+        ("Target error in the augmented system solve used in the "
+        "tangential step"))
+    augsys_lmh_err_target = Optizelle.createFloatProperty(
+        "augsys_lmh_err_target",
+        ("Target error in the augmented system solve used in the "
+        "equality multiplier solve"))
+    augsys_iter_total = Optizelle.createNatProperty(
+        "augsys_iter_total",
+        ("Total number of augmented system solve iterations used in all "
+        "solves"))
+    g_x = Optizelle.createVectorProperty(
+        "g_x",
         ("Equality constraint evaluated at x.  This is used in the quasinormal "
         "step as well as in the computation of the linear Taylor series at x "
         "in the direciton dx_n."))
