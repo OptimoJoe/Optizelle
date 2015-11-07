@@ -40,9 +40,6 @@ int main() {
     // Create some empty null-space projection 
     IdentityOperator <double> W;
 
-    // Create some empty trust-region shape operator
-    IdentityOperator <double> TR_op;
-    
     // Create an initial guess at the solution
     std::vector <double> x(m);
     X::zero (x);
@@ -59,7 +56,7 @@ int main() {
     Natural iter;
     Optizelle::KrylovStop::t krylov_stop;
     Optizelle::truncated_cd <double,Optizelle::Rm>
-        (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,false,x,x_cp,
+        (A,b,W,eps_krylov,iter_max,1,delta,x_cntr,false,x,x_cp,
             residual_err0,residual_err,iter,krylov_stop);
 
     // Check that the size of x is just the trust-region radius

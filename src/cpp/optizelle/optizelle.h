@@ -4293,8 +4293,6 @@ namespace Optizelle{
                             H,
                             minus_grad,
                             PH,
-                            typename Unconstrained <Real,XX>::Functions
-                                ::Identity(),
                             eps_krylov,
                             krylov_iter_max,
                             krylov_orthog_max,
@@ -4315,8 +4313,6 @@ namespace Optizelle{
                             H,
                             minus_grad,
                             PH,
-                            typename Unconstrained <Real,XX>::Functions
-                                ::Identity(),
                             eps_krylov,
                             krylov_iter_max,
                             krylov_orthog_max,
@@ -4885,8 +4881,6 @@ namespace Optizelle{
                             H,
                             minus_grad,
                             PH,
-                            typename Unconstrained <Real,XX>::Functions
-                                ::Identity(),
                             eps_krylov,
                             krylov_iter_max,
                             krylov_orthog_max,
@@ -4907,8 +4901,6 @@ namespace Optizelle{
                             H,
                             minus_grad,
                             PH,
-                            typename Unconstrained <Real,XX>::Functions
-                                ::Identity(),
                             eps_krylov,
                             krylov_iter_max,
                             krylov_orthog_max,
@@ -7734,11 +7726,8 @@ namespace Optizelle{
                 Real aa = X::innr(dx_dnewton,dx_dnewton);
                 Real bb = Real(2.) * X::innr(dx_dnewton,dx_ncp);
                 Real cc = norm_dxncp*norm_dxncp - zeta*zeta*delta*delta;
-                Natural nroots;
-                Real r1;
-                Real r2;
-                quad_equation(aa,bb,cc,nroots,r1,r2);
-                Real theta = r1 > r2 ? r1 : r2;
+                auto roots = quad_equation(aa,bb,cc);
+                Real theta = roots[0] > roots[1] ? roots[0] : roots[1];
                 X::copy(dx_ncp,dx_n);
                 X::axpy(theta,dx_dnewton,dx_n);
             }
@@ -8070,8 +8059,6 @@ namespace Optizelle{
                         H,
                         minus_W_gradpHdxn,
                         NullspaceProjForKrylovMethod(state,fns), // Add in PH?
-                        typename Unconstrained <Real,XX>::Functions
-                            ::Identity(),
                         eps_krylov,
                         krylov_iter_max,
                         krylov_orthog_max,
@@ -8092,8 +8079,6 @@ namespace Optizelle{
                         H,
                         minus_W_gradpHdxn,
                         NullspaceProjForKrylovMethod(state,fns), // Add in PH?
-                        typename Unconstrained <Real,XX>::Functions
-                            ::Identity(),
                         eps_krylov,
                         krylov_iter_max,
                         krylov_orthog_max,

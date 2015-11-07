@@ -43,9 +43,6 @@ int main() {
     // Create some empty null-space projection 
     IdentityOperator <double> W;
 
-    // Create some empty trust-region shape operator
-    IdentityOperator <double> TR_op;
-    
     // Create an initial guess at the solution
     std::vector <double> x(m);
     for(Natural i=1;i<=m;i++) x[i-1]=1.;
@@ -62,7 +59,7 @@ int main() {
     Natural iter;
     Optizelle::KrylovStop::t krylov_stop;
     Optizelle::truncated_cd <double,Optizelle::Rm>
-        (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,true,x,x_cp,
+        (A,b,W,eps_krylov,iter_max,1,delta,x_cntr,true,x,x_cp,
             residual_err0,residual_err,iter,krylov_stop);
 
     // Check the error is less than our tolerance 

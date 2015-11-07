@@ -42,9 +42,6 @@ int main() {
             W.A[I-1]=(i==j && i<=2) ? 1. : 0.;
         }
 
-    // Create some empty trust-region shape operator
-    IdentityOperator <double> TR_op;
-    
     // Create some right hand side.  Make sure that this is in the range
     // of A*W.
     std::vector <double> b(m);
@@ -69,7 +66,7 @@ int main() {
     Natural iter;
     Optizelle::KrylovStop::t krylov_stop;
     Optizelle::truncated_cd <double,Optizelle::Rm>
-        (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,true,x,x_cp,
+        (A,b,W,eps_krylov,iter_max,1,delta,x_cntr,true,x,x_cp,
             residual_err0,residual_err,iter,krylov_stop);
 
     // Check the error is less than our tolerance 

@@ -100,7 +100,7 @@ namespace Optizelle {
             r = Real(0.0);
             z = Real(0.0);
         } else {
-            r = scale*sqrt(sq <Real> (a/scale) + sq <Real> (b/scale));
+            r = scale*std::sqrt(sq <Real> (a/scale) + sq <Real> (b/scale));
             r = sgn <Real> (roe)*r;
             c = a/r;
             s = b/r;
@@ -824,7 +824,8 @@ namespace Optizelle {
         std::uniform_real_distribution<> dis(0, 1);
         for(Natural i=1;i<=m;i++)
             V[ijtok(i,1,m)]=dis(gen);
-        norm_v=sqrt(dot <Real> (m,&(V[ijtok(1,1,m)]),1,&(V[ijtok(1,1,m)]),1));
+        norm_v=std::sqrt(dot<Real>(
+            m,&(V[ijtok(1,1,m)]),1,&(V[ijtok(1,1,m)]),1));
         scal <Real> (m,Real(1.)/norm_v,&(V[ijtok(1,1,m)]),1);
 
         // Allocate memory for the upper Hessenberg matrix that arises from
@@ -877,7 +878,7 @@ namespace Optizelle {
                             &(V[ijtok(1,k+1,m)]),1);
                     }
                 }
-                norm_v=sqrt(
+                norm_v=std::sqrt(
                     dot<Real>(m,&(V[ijtok(1,k+1,m)]),1,&(V[ijtok(1,k+1,m)]),1));
                 scal <Real> (m,Real(1.)/norm_v,&(V[ijtok(1,k+1,m)]),1);
             }
@@ -970,7 +971,7 @@ namespace Optizelle {
 
             // norm_v (H(2,1)) <- || v2 ||, but we're not storing the lower
             // diagonal pieces
-            norm_v=sqrt (dot <Real> (m,&(v2[0]),1,&(v2[0]),1));
+            norm_v=std::sqrt (dot <Real> (m,&(v2[0]),1,&(v2[0]),1));
 
             // Zero out the upper Hessenberg matrix since we just add elements
             // into this matrix since we're using the DGKS correction
@@ -1040,17 +1041,12 @@ namespace Optizelle {
     // Here, we assume that a, b, and c are not all zero.
     //
     // (input) a, b, c : Coefficients of the quadratic
-    // (output) nroots : Number of roots
-    // (output) r1 : First root, if it exists
-    // (output) r2 : Second root, if it exists
+    // (output) Roots, if they exist 
     template <typename Real>
-    void quad_equation(
+    std::vector <Real> quad_equation(
         Real const & a,
         Real const & b,
-        Real const & c,
-        Natural & nroots,
-        Real & r1,
-        Real & r2
+        Real const & c
     ) {
 
         // It's sort of hard to tell if we have a quadratic or a linear since
@@ -1060,29 +1056,27 @@ namespace Optizelle {
         // we assume that we have a quadratic and we use the most stable
         // equation that we can for the root.
         if( a != Real(0.) ) { 
-            if(b < Real(0.)) {
-                r1 = (-b + sqrt(b*b-Real(4.)*a*c)) / (Real(2.)*a);
-                r2 = (Real(2.)*c) / (-b + sqrt(b*b-Real(4.)*a*c));
-            } else {
-                r1 = (Real(2.)*c) / (-b - sqrt(b*b-Real(4.)*a*c));
-                r2 = (-b - sqrt(b*b-Real(4.)*a*c)) / (Real(2.)*a);
-            }
-            nroots = 2;
+            auto r1 = b < Real(0.) ?
+                (-b + std::sqrt(b*b-Real(4.)*a*c)) / (Real(2.)*a) :
+                (Real(2.)*c) / (-b - std::sqrt(b*b-Real(4.)*a*c));
+            auto r2 = b < Real(0.) ?
+                (Real(2.)*c) / (-b + std::sqrt(b*b-Real(4.)*a*c)) :
+                (-b - std::sqrt(b*b-Real(4.)*a*c)) / (Real(2.)*a);
+            return std::vector <Real> {r1,r2};
 
         // Now, in the case that a is zero, but b is not, we have a linear
         // function and we can solve for the root.
         } else if( b != Real(0.)) {
-            r1 = -c/b;
-            nroots = 1;
+            Real r1 = -c/b;
+            return std::vector <Real> {r1};
 
         // Here, we have a constant function.  Now, we could have no roots
         // if c is zero.  Alternatively, we could have an infinity number of
         // roots if c is zero.  There's not really a good way to denote all
         // of these cases, so we just assume that c is not zero and return
         // zero roots.
-        } else {
-            nroots = 0;
-        }
+        } else 
+            return std::vector <Real> ();
     }
 
     // Reasons we stop the Krylov method
@@ -1113,16 +1107,16 @@ namespace Optizelle {
         bool is_valid(std::string const & name);
     }
 
-    // A orthogonalizes a vector Bx to a list of other Bxs.  
+    // A orthogonalizes a vector x to a list of other xs.  
     template <
         typename Real,
         template <typename> class XX
     >
     void Aorthogonalize(
-        std::list <typename XX <Real>::Vector> const & Bvs,
-        std::list <typename XX <Real>::Vector> const & ABvs,
-        typename XX <Real>::Vector & Bx,
-        typename XX <Real>::Vector & ABx
+        std::list <typename XX <Real>::Vector> const & vs,
+        std::list <typename XX <Real>::Vector> const & Avs,
+        typename XX <Real>::Vector & x,
+        typename XX <Real>::Vector & Ax
     ) {
         // Create some type shortcuts
         typedef XX <Real> X;
@@ -1130,14 +1124,14 @@ namespace Optizelle {
 
         // Orthogonalize the vectors
         for(typename std::list <X_Vector>::const_iterator
-                Bv=Bvs.begin(),
-                ABv=ABvs.begin();
-            Bv!=Bvs.end();
-            Bv++,ABv++
+                v=vs.begin(),
+                Av=Avs.begin();
+            v!=vs.end();
+            v++,Av++
         ) {
-            Real beta=X::innr(*ABv,Bx);
-            X::axpy(Real(-1.)*beta,*Bv,Bx);
-            X::axpy(Real(-1.)*beta,*ABv,ABx);
+            Real beta=X::innr(*Av,x);
+            X::axpy(Real(-1.)*beta,*v,x);
+            X::axpy(Real(-1.)*beta,*Av,Ax);
         }
     }
 
@@ -1171,7 +1165,6 @@ namespace Optizelle {
         Operator <Real,XX,XX> const & A,
         typename XX <Real>::Vector const & b,
         Operator <Real,XX,XX> const & B,
-        Operator <Real,XX,XX> const & C,
         Real const & eps,
         Natural const & iter_max,
         Natural const & orthog_max,
@@ -1190,25 +1183,9 @@ namespace Optizelle {
         typedef XX <Real> X;
         typedef typename X::Vector X_Vector;
 
-        // Set the tolerance for our orthogonality check
-        const Real eps_orthog(0.5);
-
-        // Allocate memory for the projected search direction and the
-        // the operator applied to the projection
-        X_Vector Bp(X::init(x));
-        X_Vector ABp(X::init(x));
-
-        // Allocate memory for the previous search directions
-        std::list <X_Vector> Bps;
-        std::list <X_Vector> ABps;
-        
-        // Allocate memory for the residuals and projected residuals 
-        std::list <X_Vector> rs;
-        std::list <X_Vector> Brs;
-        std::list <Real> norm_Brs;
-
-        // Allocate memory for the orthogonality check matrix, which only makes
-        // sense when the preconditioner B is really a projection.  This is
+        // Allocate memory for the orthogonality check, which only makes sense
+        // when the preconditioner B is really a projection and not a
+        // preconditioner.  This is
         //
         // O =  inv(D) ( Brs' rs - D^2 ) inv(D) = inv(D) Brs' rs inv(D) - I
         // 
@@ -1238,60 +1215,59 @@ namespace Optizelle {
         // which means dumping the first column entirely and the first element
         // in the subsequent
         // columns 
-        std::vector <std::vector <Real>> O;
-
-        // Allocate memory for the norm of the trust-region operator
-        // applied at the trial step, || C( (x-x_cntr) + alpha Bp) ||.  
-        Real norm_C_x_m_xcntr_p_a_Bp(std::numeric_limits <Real>::quiet_NaN());
-
-        // Allocate memory for the line-search used in the algorithm.
-        Real alpha(std::numeric_limits<Real>::quiet_NaN());
+        std::list <X_Vector> rs;
+        std::list <X_Vector> Brs;
+        std::list <Real> norm_Brs;
+        std::list <std::list <Real>> O;
+        
+        // Set the tolerance for our orthogonality check
+        Real const eps_orthog(0.5);
 
         // Initialize x to zero. 
         X::zero(x);
 
-        // Allocate memory for and find the initial residual, A*x-b = -b.
-        // Also, allocate memory for the projected residual.
-        X_Vector r(X::init(x));
-        X_Vector Br(X::init(x));
-        X::copy(b,r);
-        X::scal(Real(-1.),r);
-
-        // Allocate memory for two additional work vectors.  We use these
-        // when calcuating the norm of the operator C applied to the
-        // trial step.  In theory, we could get rid of at least one of these
-        // work vectors.  However, by doing so, we have to calculate this
-        // norm implicitely, which involves additional inner products and adding
-        // the results together.  This can have some numerical difficulties,
-        // so we just sacrifice the additional memory.
-        X_Vector x_tmp1(X::init(x));
-        X_Vector x_tmp2(X::init(x));
-
-        // Allocate memory for the quantity x-x_cntr
-        X_Vector x_m_xcntr(X::init(x));
-        X::copy(x_cntr,x_m_xcntr);
-        X::scal(Real(-1.),x_m_xcntr);
-
-        // Verify that ||C(x-x_cntr)|| <= delta.  This insures that our initial
-        // iterate lies inside the trust-region.  If it does not, we exit.
-        C.eval(x_m_xcntr,x_tmp1);
-        Real norm_C_x_m_xcntr = sqrt(X::innr(x_tmp1,x_tmp1));
-        if(norm_C_x_m_xcntr > delta) {
+        // Verify that || x0 - x_cntr || = || x_cntr || <= delta.  This insures
+        // that our initial iterate lies inside the trust-region.  If it does
+        // not, we exit.
+        X_Vector shifted_iterate(X::init(x));
+        X::copy(x_cntr,shifted_iterate);
+        X::scal(Real(-1.),shifted_iterate);
+        auto norm_shifted_iterate =
+            std::sqrt(X::innr(shifted_iterate,shifted_iterate));
+        if(norm_shifted_iterate > delta) {
             X::zero(x_cp);
             iter=0;
             krylov_stop = KrylovStop::InvalidTrustRegionCenter;
             return;
         }
-
-        // Find the Br application.  We use this to find the norm of the
-        // B-residual.  Then, we save the original norm of the B-residual.
+        
+        // Find the initial residual and projected residual, A*x-b = -b
+        X_Vector r(X::init(x));
+        X::copy(b,r);
+        X::scal(Real(-1.),r);
+        X_Vector Br(X::init(x));
         B.eval(r,Br);
-        norm_Br0 = sqrt(X::innr(Br,Br));
+        norm_Br0 = std::sqrt(X::innr(Br,Br));
         norm_Br = norm_Br0; 
 
-        // Find the projected search direction 
-        X::copy(Br,Bp);
-        X::scal(Real(-1.),Bp);
+        // Find the projected search direction and make sure that we have memory
+        // for the operator applied to the projected search direction
+        X_Vector Bdx(X::init(x));
+        X::copy(Br,Bdx);
+        X::scal(Real(-1.),Bdx);
+        X_Vector ABdx(X::init(x));
+       
+        // Allocate memory for the previous search directions
+        std::list <X_Vector> Bdxs;
+        std::list <X_Vector> ABdxs;
+
+        // Allocate memory for the shifted trial step
+        //
+        // || (x - x_cntr) + alpha Bdx ||
+        //
+        // and its norm
+        X_Vector shifted_trial(X::init(x));
+        auto norm_shifted_trial = std::numeric_limits <Real>::quiet_NaN();
 
         // Loop until the maximum iteration
         for(iter=1;iter<=iter_max;iter++){
@@ -1304,82 +1280,108 @@ namespace Optizelle {
                 break;
             }
 
-            // Find the ABp application
-            A.eval(Bp,ABp);
+            // Find the ABdx application
+            A.eval(Bdx,ABdx);
 
             // Orthogonalize this direction to the previous directions
-            Aorthogonalize <Real,XX> (Bps,ABps,Bp,ABp); 
+            Aorthogonalize <Real,XX> (Bdxs,ABdxs,Bdx,ABdx); 
 
             // Check if this direction is a descent direction.  If it is not,
-            // flip it so that it is.
-            if(X::innr(Bp,r) > Real(0.)) {
-                X::scal(Real(-1.),Bp);
-                X::scal(Real(-1.),ABp);
+            // flip it so that it is.  In truth, this really shouldn't ever
+            // happen, but bad operators for A and B do stranger things.
+            if(X::innr(Bdx,r) > Real(0.)) {
+                X::scal(Real(-1.),Bdx);
+                X::scal(Real(-1.),ABdx);
             }
 
-            // Find || Bp ||_A^2.  Note, this is how we detect negative
+            // Find || Bdx ||_A^2.  Note, this is how we detect negative
             // curvature as well as instability in the algorithm due to things
             // like NaNs in the operator calculations.
-            Real Anorm_Bp_2 = X::innr(Bp,ABp);
+            Real Anorm_Bdx_2 = X::innr(Bdx,ABdx);
 
-            // If we detect negative curvature or instability, in this case
-            // that || Bp ||_A=NaN, then we don't need to compute the
-            // following steps.
-            if( Anorm_Bp_2 > Real(0.) && Anorm_Bp_2 == Anorm_Bp_2 ) {
-                // Find || Bp ||_A.
-                Real Anorm_Bp = sqrt(Anorm_Bp_2);
+            // Check for instability where || Bdx ||_A=NaN
+            bool instability = Anorm_Bdx_2!=Anorm_Bdx_2;
+
+            // Allocate memory for the line-search to the trust-region bound 
+            Real alpha(std::numeric_limits<Real>::quiet_NaN());
+
+            // If we detect negative curvature or instability where
+            // || Bdx ||_A=NaN, then we don't need to compute the
+            // following steps
+            if( Anorm_Bdx_2 > Real(0.) && Anorm_Bdx_2 == Anorm_Bdx_2 ) {
 
                 // Check if we need to eliminate any vectors for
-                // orthogonalization.
-                if(Bps.size()==orthog_max) {
-                    Bps.pop_front();
-                    ABps.pop_front();
-                    rs.pop_front();
-                    Brs.pop_front();
-                    norm_Brs.pop_front();
+                // orthogonalization
+                if(Bdxs.size()==orthog_max) {
+                    Bdxs.pop_front();
+                    ABdxs.pop_front();
+                }
+                   
+                // Store the previous directions
+                Real Anorm_Bdx = std::sqrt(Anorm_Bdx_2);
 
-                    // Don't remove elements from the orthogonality check 
-                    // matrix until we have enough elements to remove.
-                    if(do_orthog_check && iter>orthog_max) {
+                Bdxs.emplace_back(std::move(X::init(x)));
+                X::copy(Bdx,Bdxs.back());
+                X::scal(Real(1.)/Anorm_Bdx,Bdxs.back());
+                
+                ABdxs.emplace_back(std::move(X::init(x)));
+                X::copy(ABdx,ABdxs.back());
+                X::scal(Real(1.)/Anorm_Bdx,ABdxs.back());
+                
+                // Do an exact linesearch in the computed direction
+                alpha = -X::innr(r,Bdx) / Anorm_Bdx_2;
+
+                // Determine the norm of the shifted trial step
+                //
+                // || (x - x_cntr) + alpha Bdx ||
+                //
+                // We use this to determine if we've stepped outside the
+                // trust-region radius.
+                X::copy(shifted_iterate,shifted_trial);
+                X::axpy(alpha,Bdx,shifted_trial);
+                norm_shifted_trial = std::sqrt(
+                    X::innr(shifted_trial,shifted_trial));
+
+                // Do our orthogonality check work when requested 
+                if(do_orthog_check) {
+
+                    // Check if we need to prune elements from our residuals 
+                    // and orthogonality check matrix
+                    if(rs.size()==orthog_max) {
+
+                        // Eliminate our residuals and projected residuals
+                        rs.pop_front();
+                        Brs.pop_front();
+                        norm_Brs.pop_front();
+
                         // Delete the first columns 
-                        O.erase(O.begin());
+                        O.pop_front();
                         
                         // Delete the first element of the subsequent columns 
                         for(auto & Oj : O)
-                            Oj.erase(Oj.begin());
+                            Oj.pop_front();
                     }
-                }
 
-                // Store the previous directions
-                Bps.emplace_back(std::move(X::init(x)));
-                X::copy(Bp,Bps.back());
-                X::scal(Real(1.)/Anorm_Bp,Bps.back());
-                
-                ABps.emplace_back(std::move(X::init(x)));
-                X::copy(ABp,ABps.back());
-                X::scal(Real(1.)/Anorm_Bp,ABps.back());
+                    // Store the previous residuals
+                    rs.emplace_back(std::move(X::init(x)));
+                    X::copy(r,rs.back());
 
-                // Store the previous residuals
-                rs.emplace_back(std::move(X::init(x)));
-                X::copy(r,rs.back());
+                    Brs.emplace_back(std::move(X::init(x)));
+                    X::copy(Br,Brs.back());
 
-                Brs.emplace_back(std::move(X::init(x)));
-                X::copy(Br,Brs.back());
+                    norm_Brs.emplace_back(norm_Br);
 
-                norm_Brs.emplace_back(norm_Br);
+                    // Build new pieces of the orthogonality check matrix where
+                    // 
+                    // O_ij  = <B ri,rj> / || B ri || || B rj||
+                    //
+                    // for i != j and
+                    //
+                    // O_ii  = (<B ri,rj> / || B ri || || B rj|| ) - 1
 
-                // Build new pieces of the orthogonality check matrix where
-                // 
-                // O_ij  = <B ri,rj> / || B ri || || B rj||
-                //
-                // for i != j and
-                //
-                // O_ii  = (<B ri,rj> / || B ri || || B rj|| ) - 1
-               
-                if(do_orthog_check) {
                     // First add a new column to O
                     {
-                        O.push_back(std::vector <Real>());
+                        O.push_back(std::list <Real>());
                         auto const & rj = rs.back();
                         auto const & norm_Brj = norm_Brs.back();
                         auto norm_Bri = norm_Brs.cbegin();
@@ -1416,106 +1418,88 @@ namespace Optizelle {
                     // Finally, don't forget to pull off the 1 on our new
                     // diagonal element
                     O.back().back()-= Real(1.);
+
+                    // Calculate the Frobenius norm of O
+                    auto norm_O = Real(0.);
+                    for(auto const & Oj : O)
+                        for(auto const & Oij : Oj)
+                            norm_O+=Oij*Oij;
+                    norm_O = std::sqrt(norm_O);
+
+                    // Check if we have (more) instability
+                    instability=instability ? instability : norm_O > eps_orthog;
                 }
-                
-                // Do an exact linesearch in the computed direction
-                alpha = -X::innr(r,Bp) / Anorm_Bp_2;
-
-                // Find the trial step and the norm || C(x+alpha Bp) || 
-
-                // x_tmp1 <- (x-x_cntr) + alpha Bp
-                X::copy(x_m_xcntr,x_tmp1);
-                X::axpy(alpha,Bp,x_tmp1);
-
-                // x_tmp2 <- C( (x-x_cntr) + alpha Bp)
-                C.eval(x_tmp1,x_tmp2);
-
-                // norm_C_x_m_xcntr_p_a_Bp <- || C( (x-x_cntr) + alpha Bp) ||
-                norm_C_x_m_xcntr_p_a_Bp = sqrt(X::innr(x_tmp2,x_tmp2));
             }
 
-            // Calculate the Frobenius norm of our orthogonality check O 
-            auto norm_O = Real(0.);
-            if(do_orthog_check) {
-                for(auto const & Oj : O)
-                    for(auto const & Oij : Oj)
-                        norm_O+=Oij*Oij;
-                norm_O = sqrt(norm_O);
-            }
-
-            // Check if we have instability.  This is either a NaN in our
-            // normalization factor for Gram-Schmidt or if the norm
-            // of our orthogonality check matrix is greater than our
-            // tolerance.
-            bool instability = (Anorm_Bp_2!=Anorm_Bp_2)
-                || (do_orthog_check && norm_O > eps_orthog);
-
-            // If we have negative curvature or our trial point is outside the
-            // trust-region radius, terminate truncated-PCD and find our final
-            // step by scaling the search direction until we reach the
-            // trust-region radius.  In the case of a NaN, we can't trust
-            // our current search direction, Bp, so we take our last search
-            // direction, which is stored in the Bps.
-            if( Anorm_Bp_2 <= Real(0.) ||
-                norm_C_x_m_xcntr_p_a_Bp >= delta ||
+            // If we detect
+            //
+            // 1. Negative curvature
+            // 2. That we've left the trust-region
+            // 3. Instability
+            //
+            // Exit the algorithm with the appropriate resolution.
+            if( Anorm_Bdx_2 <= Real(0.) ||
+                norm_shifted_trial >= delta ||
                 instability 
             ) {
 
-                // If we have instability, we terminate without taking a step
-                if(instability)
-                    ;
+                // If we have instability or we ignore the trust-region, we
+                // stop immediately, unless we're on the first iteration.  In
+                // that case, we take a unit steepest descent step
+                if( (instability ||
+                    !(delta<std::numeric_limits<Real>::infinity())) &&
+                    iter==1
+                ) {
+                    // Note, dx already contains -r, since we're on the first
+                    // iteration, so we just take a unit step
+                    X::axpy(Real(1.),Bdx,x);
+                    X::axpy(Real(1.),Bdx,shifted_iterate);
+                    X::axpy(Real(1.),ABdx,r);
+                    B.eval(r,Br);
+                    norm_Br=std::sqrt(X::innr(Br,Br));
 
-                // If we're paying attention to the trust-region, scale the
-                // step appropriately.
-                else if(delta < std::numeric_limits <Real>::infinity()) {
+                // In the case that we have a trust-region and we either detect
+                // negative curvature or violate the trust-region bound, scale
+                // the step so that we hit the trust-region bound.
+                } else if(delta < std::numeric_limits <Real>::infinity()) {
                     // Find sigma so that
-                    // || C((x-x_cntr) + sigma Bp) || = delta.
+                    // 
+                    // || (x-x_cntr) + sigma Bdx || = delta.
+                    //
                     // This can be found by finding the positive root of the
                     // quadratic
-                    // || C(x-x_cntr) + sigma C(Bp) ||^2 = delta^2.
+                    //
+                    // || (x-x_cntr) + sigma Bdx ||^2 = delta^2.
+                    //
                     // Specifically, we want the positive root of
-                    // sigma^2 <C(Bp),C(Bp)>
-                    //     + sigma (2 <C(Bp),C(x-x_cntr)>)
-                    //     + (<C(x-x_cntr),C(x-x_cntr)>-delta^2).
-
-                    // x_tmp1 <- C(Bp)
-                    C.eval(Bp,x_tmp1);
-
-                    // x_tmp2 <- C(x-x_cntr)
-                    C.eval(x_m_xcntr,x_tmp2);
+                    //
+                    // sigma^2 || Bdx ||^2
+                    //     + sigma (2 <Bdx,x-x_cntr>)
+                    //     + (|| x-x_cntr ||^2-delta^2).
 
                     // Solve the quadratic equation for the positive root 
-                    Real aa = X::innr(x_tmp1,x_tmp1);
-                    Real bb = Real(2.)*X::innr(x_tmp1,x_tmp2);
-                    Real cc = norm_C_x_m_xcntr*norm_C_x_m_xcntr-delta*delta;
-                    Natural nroots;
-                    Real r1;
-                    Real r2;
-                    quad_equation(aa,bb,cc,nroots,r1,r2);
-                    Real sigma = r1 > r2 ? r1 : r2;
+                    Real aa = X::innr(Bdx,Bdx);
+                    Real bb = Real(2.)*X::innr(Bdx,shifted_iterate);
+                    Real cc = norm_shifted_iterate*norm_shifted_iterate
+                        - delta*delta;
+                    auto roots = quad_equation(aa,bb,cc);
+                    auto sigma = Real(0.);
+                    for(auto const & root : roots)
+                        if(root > sigma)
+                            sigma = root;
 
-                    // Take the step and find its residual. Then, compute
-                    // B-norm of the residual. 
-                    X::axpy(sigma,Bp,x);
-                    X::axpy(sigma,Bp,x_m_xcntr);
-                    X::axpy(sigma,ABp,r);
+                    // Take the step and find its residual
+                    X::axpy(sigma,Bdx,x);
+                    X::axpy(sigma,Bdx,shifted_iterate);
+                    X::axpy(sigma,ABdx,r);
                     B.eval(r,Br);
-                    norm_Br=sqrt(X::innr(Br,Br));
-
-                // In the case that we're ignoring the trust-region, we
-                // take a step of unit scale. 
-                } else {
-                    X::axpy(Real(1.),Bp,x);
-                    X::axpy(Real(1.),Bp,x_m_xcntr);
-                    X::axpy(Real(1.),ABp,r);
-                    B.eval(r,Br);
-                    norm_Br=sqrt(X::innr(Br,Br));
+                    norm_Br=std::sqrt(X::innr(Br,Br));
                 }
 
                 // Determine why we stopped
                 if(instability)
                     krylov_stop = KrylovStop::Instability;
-                else if(Anorm_Bp_2 <= Real(0.)) 
+                else if(Anorm_Bdx_2 <= Real(0.)) 
                     krylov_stop = KrylovStop::NegativeCurvature;
                 else
                     krylov_stop = KrylovStop::TrustRegionViolated;
@@ -1526,23 +1510,23 @@ namespace Optizelle {
             }
 
             // Take a step in this direction
-            X::axpy(alpha,Bp,x);
-            X::axpy(alpha,Bp,x_m_xcntr);
+            X::axpy(alpha,Bdx,x);
+
+            // Update the shifted iterate
+            X::copy(shifted_trial,shifted_iterate);
+            norm_shifted_iterate = norm_shifted_trial;
 
             // If this is the first iteration, save the Cauchy-Point
             if(iter==1) X::copy(x,x_cp);
 
-            // Update the norm of x
-            norm_C_x_m_xcntr = norm_C_x_m_xcntr_p_a_Bp;
-
             // Find the new residual and projected residual
-            X::axpy(alpha,ABp,r);
+            X::axpy(alpha,ABdx,r);
             B.eval(r,Br);
-            norm_Br = sqrt(X::innr(Br,Br));
+            norm_Br = std::sqrt(X::innr(Br,Br));
 
             // Find the projected steepest descent direction
-            X::copy(Br,Bp);
-            X::scal(Real(-1.),Bp);	
+            X::copy(Br,Bdx);
+            X::scal(Real(-1.),Bdx);	
         }
 
         // If we've exceeded the maximum iteration, make sure to denote this
@@ -1827,7 +1811,7 @@ namespace Optizelle {
         Ml_inv.eval(rtrue,r);
 
         // Store the norm of the preconditioned residual.  This completes #2.
-        norm_r = sqrt(X::innr(r,r));
+        norm_r = std::sqrt(X::innr(r,r));
 
         // Find the initial Krylov vector.  This completes #3.
         X::copy(r,v);
@@ -1987,7 +1971,7 @@ namespace Optizelle {
         A.eval(x,rtrue);
         X::scal(Real(-1.),rtrue);
         X::axpy(Real(1.),b,rtrue);
-        norm_rtrue = sqrt(X::innr(rtrue,rtrue));
+        norm_rtrue = std::sqrt(X::innr(rtrue,rtrue));
 
         // Initialize the GMRES algorithm
         resetGMRES<Real,XX> (rtrue,Ml_inv,rst_freq,v,vs,r,norm_r,
@@ -2019,7 +2003,7 @@ namespace Optizelle {
             orthogonalize <Real,XX> (vs,w,&(R[(i-1)*i/2]));
 
             // Find the norm of the remaining, orthogonalized vector
-            Real norm_w = sqrt(X::innr(w,w));
+            Real norm_w = std::sqrt(X::innr(w,w));
 
             // Normalize the orthogonalized Krylov vector and insert it into the
             // list of Krylov vectros
@@ -2065,7 +2049,7 @@ namespace Optizelle {
             A.eval(x_p_dx,rtrue);
             X::scal(Real(-1.),rtrue);
             X::axpy(Real(1.),b,rtrue);
-            norm_rtrue = sqrt(X::innr(rtrue,rtrue));
+            norm_rtrue = std::sqrt(X::innr(rtrue,rtrue));
 
             // Adjust the stopping tolerance
             gmanip.eval(i,x_p_dx,b,eps);
@@ -2144,7 +2128,6 @@ namespace Optizelle {
     // (input) b : Right hand side
     // (input) B: Operator that computes the symmetric positive definite
     //    preconditioner
-    // (input) C : Operator that modifies the shape of the trust-region.
     // (input) eps : Relative stopping tolerance.  We check the relative 
     //    difference between the current and original preconditioned
     //    norm of the residual.
@@ -2166,7 +2149,6 @@ namespace Optizelle {
         Operator <Real,XX,XX> const & A,
         typename XX <Real>::Vector const & b,
         Operator <Real,XX,XX> const & B,
-        Operator <Real,XX,XX> const & C,
         Real const & eps,
         Natural const & iter_max,
         Natural orthog_max,
@@ -2219,7 +2201,7 @@ namespace Optizelle {
 
         // Find the preconditioned residual
         B.eval(b,x_tmp1);
-        Bnorm_r0 = sqrt(X::innr(x_tmp1,b));
+        Bnorm_r0 = std::sqrt(X::innr(x_tmp1,b));
         Bnorm_r = Bnorm_r0;
 
         // Find the initial Krylov vector. 
@@ -2237,21 +2219,28 @@ namespace Optizelle {
         Qt_e1[0] = Bnorm_r;
         Qt_e1[1] = Real(0.);
 
-        // Allocate memory for the quantity x-x_cntr
-        X_Vector x_m_xcntr(X::init(x));
-        X::copy(x_cntr,x_m_xcntr);
-        X::scal(Real(-1.),x_m_xcntr);
-
-        // Verify that ||C(x-x_cntr)|| <= delta.  This insures that our initial
-        // iterate lies inside the trust-region.  If it does not, we exit.
-        C.eval(x_m_xcntr,x_tmp1);
-        Real norm_C_x_m_xcntr = sqrt(X::innr(x_tmp1,x_tmp1));
-        if(norm_C_x_m_xcntr > delta) {
+        // Verify that || x0 - x_cntr || = || x_cntr || <= delta.  This insures
+        // that our initial iterate lies inside the trust-region.  If it does
+        // not, we exit.
+        X_Vector shifted_iterate(X::init(x));
+        X::copy(x_cntr,shifted_iterate);
+        X::scal(Real(-1.),shifted_iterate);
+        auto norm_shifted_iterate =
+            std::sqrt(X::innr(shifted_iterate,shifted_iterate));
+        if(norm_shifted_iterate > delta) {
             X::zero(x_cp);
             iter=0;
             krylov_stop = KrylovStop::InvalidTrustRegionCenter;
             return;
         }
+
+        // Allocate memory for the shifted trial step
+        //
+        // || (x - x_cntr) + dx ||
+        //
+        // and its norm
+        X_Vector shifted_trial(X::init(x));
+        auto norm_shifted_trial = std::numeric_limits <Real>::quiet_NaN();
 
         // Iterate until the maximum iteration
         for(iter = 1; iter <= iter_max;iter++) {
@@ -2267,7 +2256,7 @@ namespace Optizelle {
             Borthogonalize <Real,XX> (vs,Bvs,x_tmp1,x_tmp2,R); 
             
             // Determine the normalizing factor, || v ||_B.
-            Real Bnorm_v = sqrt(X::innr(x_tmp2,x_tmp1));
+            Real Bnorm_v = std::sqrt(X::innr(x_tmp2,x_tmp1));
 
             // Note, it is possible that the normalizing factor is NaN if
             // either A or B returned a NaN or if B is really indefinite. In
@@ -2357,11 +2346,11 @@ namespace Optizelle {
                 X::copy(B_V_Rinvs.back(),dx);
                 X::scal(Qt_e1[0],dx);
 
-                // Find || C( (x-x_cntr) + dx) ||
-                X::copy(x_m_xcntr,x_tmp1);
-                X::axpy(Real(1.),dx,x_tmp1);
-                C.eval(x_tmp1,x_tmp2);
-                norm_C_x_m_xcntr = sqrt(X::innr(x_tmp2,x_tmp2));
+                // Find || (x-x_cntr) + dx ||
+                X::copy(shifted_iterate,shifted_trial);
+                X::axpy(Real(1.),dx,shifted_trial);
+                norm_shifted_trial = std::sqrt(
+                    X::innr(shifted_trial,shifted_trial));
                 
             // Sometimes the second Krylov vector lies in the nullspace
             // of B.  In this case, we don't have a search direction to
@@ -2392,26 +2381,26 @@ namespace Optizelle {
                 // = Bnorm_Abv1_2 alpha^2 - 2 Binnr_ABv1_b alpha + Bnorm_r0^2.
                 // Note, if this is near zero, it's possible for the number
                 // to go negative, which messes up the output.
-                Bnorm_r = sqrt(
+                Bnorm_r = std::sqrt(
                     Bnorm_ABv1_2*alpha*alpha
                     - Real(2.)*Binnr_ABv1_b*alpha
                     + Bnorm_r0*Bnorm_r0); 
 
-                // Find || C( (x-x_cntr) + dx) ||
-                X::copy(x_m_xcntr,x_tmp1);
-                X::axpy(Real(1.),dx,x_tmp1);
-                C.eval(x_tmp1,x_tmp2);
-                norm_C_x_m_xcntr = sqrt(X::innr(x_tmp2,x_tmp2));
+                // Find || (x-x_cntr) + dx ||
+                X::copy(shifted_iterate,shifted_trial);
+                X::axpy(Real(1.),dx,shifted_trial);
+                norm_shifted_trial = std::sqrt(
+                    X::innr(shifted_trial,shifted_trial));
             
                 // Determine if we should exit since the norm of the
                 // preconditioned residual is small.  Note, since we're
                 // technically in this block of code since we're detected
                 // instability, we need the exit statement here otherwise
                 // we'll scale the current direction to the trust-region.
-                if(!(norm_C_x_m_xcntr >= delta) && Bnorm_r < eps*Bnorm_r0) {
+                if(!(norm_shifted_trial >= delta) && Bnorm_r < eps*Bnorm_r0) {
                     // Move to the new iterate, x <- x + dx
                     X::axpy(Real(1.),dx,x);
-                    X::axpy(Real(1.),dx,x_m_xcntr);
+                    X::copy(shifted_trial,shifted_iterate);
 
                     // Save the Cauchy-Point
                     if(iter==1) 
@@ -2429,47 +2418,44 @@ namespace Optizelle {
 
             // Exit early if we have either exceeded our trust-region or
             // if we have detected a NaN.
-            if(norm_C_x_m_xcntr >= delta || instability) {
+            if(norm_shifted_trial >= delta || instability) {
                 // If we're paying attention to the trust-region, scale the
                 // step appropriately.  We do not do this if we're unstable.
                 if(delta < std::numeric_limits <Real>::infinity()
                     && !instability
                 ) {
-
                     // Find sigma so that
+                    // 
+                    // || (x-x_cntr) + sigma dx || = delta.
                     //
-                    // || C( (x-x_cntr) + sigma dx) ||=delta.
-                    //
-                    // This can be found by finding the positive root of the 
+                    // This can be found by finding the positive root of the
                     // quadratic
                     //
-                    // || C( (x-x_cntr) + sigma dx) ||^2 = delta^2.
+                    // || (x-x_cntr) + sigma dx ||^2 = delta^2.
                     //
                     // Specifically, we want the positive root of
-                    // 
-                    // sigma^2 < C(dx),C(dx) >
-                    //     + sigma (2 < C(dx),C(x-x_cntr) >)
-                    //     + (< C(x-x_cntr),C(x-x_cntr) > - delta^2).
-
-                    // x_tmp1 <- C(dx)
-                    C.eval(dx,x_tmp1);
-
-                    // x_tmp2 <- C(x-x_cntr);
-                    C.eval(x_m_xcntr,x_tmp2);
-
+                    //
+                    // sigma^2 || dx ||^2
+                    //     + sigma (2 <dx,x-x_cntr>)
+                    //     + (|| x-x_cntr ||^2-delta^2).
+                    //
+                    // Note, we really should get two roots here as dx should
+                    // not be zero.
+                    
                     // Solve the quadratic equation for the positive root 
-                    Real aa = X::innr(x_tmp1,x_tmp1);
-                    Real bb = Real(2.)*X::innr(x_tmp1,x_tmp2);
-                    Real cc = X::innr(x_tmp2,x_tmp2)-delta*delta;
-                    Natural nroots;
-                    Real r1;
-                    Real r2;
-                    quad_equation(aa,bb,cc,nroots,r1,r2);
-                    Real sigma = r1 > r2 ? r1 : r2;
+                    Real aa = X::innr(dx,dx);
+                    Real bb = Real(2.)*X::innr(dx,shifted_iterate);
+                    Real cc = norm_shifted_iterate*norm_shifted_iterate
+                        - delta*delta;
+                    auto roots = quad_equation(aa,bb,cc);
+                    auto sigma = Real(0.);
+                    for(auto const & root : roots)
+                        if(root > sigma)
+                            sigma = root;
 
                     // Take the step, x <- x + sigma dx
                     X::axpy(sigma,dx,x);
-                    X::axpy(sigma,dx,x_m_xcntr);
+                    X::axpy(sigma,dx,shifted_iterate);
                 }
 
                 // Determine why we stopped
@@ -2490,7 +2476,7 @@ namespace Optizelle {
 
             // Move to the new iterate, x <- x + dx
             X::axpy(Real(1.),dx,x);
-            X::axpy(Real(1.),dx,x_m_xcntr);
+            X::copy(shifted_trial,shifted_iterate);
                
             // Determine the B-norm of the residual
             Bnorm_r = fabs(Qt_e1[0]);
@@ -2539,8 +2525,8 @@ namespace Optizelle {
             X::axpy(Real(-1.),x,x_tmp1);
 
             // Figure out the relative error between x and x_cached 
-            Real rel_err = sqrt(X::innr(x_tmp1,x_tmp1)) /
-                (std::numeric_limits <Real>::epsilon() + sqrt(X::innr(x,x)));
+            Real rel_err = std::sqrt(X::innr(x_tmp1,x_tmp1)) /
+                (std::numeric_limits <Real>::epsilon()+std::sqrt(X::innr(x,x)));
 
             // Return the relative error 
             return rel_err;

@@ -7,7 +7,7 @@
       "eps_dx" : 1e-16,
       "eps_grad" : 1e-9,
       "eps_mu" : 1e-7,
-      "gamma" : 0.995,
+      "gamma" : 0.99,
       "cstrat" : "PredictorCorrector"
    },
    "Naturals" : {

@@ -928,10 +928,7 @@ namespace Optizelle {
                         - dot <Real> (mbar,&(x.bar(blk)),1,&(y.bar(blk)),1));
                     Real c = y.naught(blk)*y.naught(blk)
                         - dot <Real> (mbar,&(y.bar(blk)),1,&(y.bar(blk)),1);
-                    Natural nroots(0);
-                    Real alpha1(-1.);
-                    Real alpha2(-1.);
-                    quad_equation(a,b,c,nroots,alpha1,alpha2);
+                    auto roots = quad_equation(a,b,c);
 
                     // Now, determine the step length.
 
@@ -941,13 +938,17 @@ namespace Optizelle {
                         alpha0 : alpha;
 
                     // Next, if we have two roots, determine the restriction 
-                    if(nroots==2) { 
+                    if(roots.size()==2) { 
+                        auto alpha1 = roots[0];
+                        auto alpha2 = roots[1];
                         alpha = alpha1>=Real(0.)&&alpha1<alpha ? alpha1 : alpha;
                         alpha = alpha2>=Real(0.)&&alpha2<alpha ? alpha2 : alpha;
 
                     // If we have a single root 
-                    } else if(nroots==1)
+                    } else if(roots.size()==1) {
+                        auto alpha1 = roots[0];
                         alpha = alpha1>=Real(0.)&&alpha1<alpha ? alpha1 : alpha;
+                    }
 
                     // If we no roots, there's no additional restriction.
                     // This can't happen since we assume that y is strictly
