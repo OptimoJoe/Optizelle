@@ -1450,6 +1450,17 @@ namespace Optizelle {
                     !(delta<std::numeric_limits<Real>::infinity())) &&
                     iter==1
                 ) {
+                    // If we do have a trust-region, instability, and the
+                    // steepest descent direction exceeds the bound, we need
+                    // to truncate it
+                    if( delta<std::numeric_limits<Real>::infinity() &&
+                        Anorm_Bdx_2 > delta*delta
+                    ) {
+                        auto norm_Bdx = std::sqrt(X::innr(Bdx,Bdx));
+                        X::scal(delta/norm_Bdx,Bdx);
+                        X::scal(delta/norm_Bdx,ABdx);
+                    }
+
                     // Note, dx already contains -r, since we're on the first
                     // iteration, so we just take a unit step
                     X::axpy(Real(1.),Bdx,x);
