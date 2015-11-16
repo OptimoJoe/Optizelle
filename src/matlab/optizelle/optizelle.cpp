@@ -101,6 +101,8 @@ namespace Optizelle {
         mxArray * toMatlab(t const & krylov_stop) {
             // Do the conversion
             switch(krylov_stop){
+            case NotConverged:
+                return Matlab::enumToMxArray("KrylovStop","NotConverged");
             case NegativeCurvature:
                 return Matlab::enumToMxArray("KrylovStop","NegativeCurvature");
             case RelativeErrorSmall:
@@ -111,11 +113,17 @@ namespace Optizelle {
             case TrustRegionViolated:
                 return Matlab::enumToMxArray(
                     "KrylovStop","TrustRegionViolated");
-            case Instability:
-                return Matlab::enumToMxArray("KrylovStop","Instability");
-            case InvalidTrustRegionCenter:
+            case NanDetected:
+                return Matlab::enumToMxArray("KrylovStop","NanDetected");
+            case LossOfOrthogonality:
                 return Matlab::enumToMxArray(
-                    "KrylovStop","InvalidTrustRegionCenter");
+                    "KrylovStop","LossOfOrthogonality");
+            case InvalidTrustRegionOffset:
+                return Matlab::enumToMxArray(
+                    "KrylovStop","InvalidTrustRegionOffset");
+            case TooManyFailedSafeguard:
+                return Matlab::enumToMxArray(
+                    "KrylovStop","TooManyFailedSafeguard");
             default:
                 throw;
             }
@@ -126,7 +134,9 @@ namespace Optizelle {
             // Convert the member to a Natural 
             Natural m(*mxGetPr(member));
 
-            if(m==Matlab::enumToNatural("KrylovStop","NegativeCurvature"))
+            if(m==Matlab::enumToNatural("KrylovStop","NotConverged"))
+                return NotConverged;
+            else if(m==Matlab::enumToNatural("KrylovStop","NegativeCurvature"))
                 return NegativeCurvature;
             else if(m==Matlab::enumToNatural("KrylovStop","RelativeErrorSmall"))
                 return RelativeErrorSmall;
@@ -136,12 +146,20 @@ namespace Optizelle {
                 "KrylovStop","TrustRegionViolated")
             )
                 return TrustRegionViolated;
-            else if(m==Matlab::enumToNatural("KrylovStop","Instability"))
-                return Instability;
+            else if(m==Matlab::enumToNatural("KrylovStop","NanDetected"))
+                return NanDetected;
             else if(m==Matlab::enumToNatural(
-                "KrylovStop","InvalidTrustRegionCenter")
+                "KrylovStop","LossOfOrthogonality")
             )
-                return InvalidTrustRegionCenter;
+                return LossOfOrthogonality;
+            else if(m==Matlab::enumToNatural(
+                "KrylovStop","InvalidTrustRegionOffset")
+            )
+                return InvalidTrustRegionOffset;
+            else if(m==Matlab::enumToNatural(
+                "KrylovStop","TooManyFailedSafeguard")
+            )
+                return TooManyFailedSafeguard;
             else
                 throw;
         }
@@ -1931,6 +1949,7 @@ namespace Optizelle {
                         "f_x",
                         "f_xpdx",
                         "msg_level",
+                        "failed_safeguard_max",
                         "delta",
                         "eta1",
                         "eta2",
@@ -2031,6 +2050,8 @@ namespace Optizelle {
                     toMatlab::Real("f_x",state.f_x,mxstate);
                     toMatlab::Real("f_xpdx",state.f_xpdx,mxstate);
                     toMatlab::Natural("msg_level",state.msg_level,mxstate);
+                    toMatlab::Natural("failed_safeguard_max",
+                        state.failed_safeguard_max,mxstate);
                     toMatlab::Real("delta",state.delta,mxstate);
                     toMatlab::Real("eta1",state.eta1,mxstate);
                     toMatlab::Real("eta2",state.eta2,mxstate);
@@ -2155,6 +2176,8 @@ namespace Optizelle {
                     fromMatlab::Real("f_x",mxstate,state.f_x);
                     fromMatlab::Real("f_xpdx",mxstate,state.f_xpdx);
                     fromMatlab::Natural("msg_level",mxstate,state.msg_level);
+                    fromMatlab::Natural("failed_safeguard_max",
+                        mxstate,state.failed_safeguard_max);
                     fromMatlab::Real("delta",mxstate,state.delta);
                     fromMatlab::Real("eta1",mxstate,state.eta1);
                     fromMatlab::Real("eta2",mxstate,state.eta2);
@@ -3466,7 +3489,8 @@ namespace Optizelle {
                         "ipm",
                         "cstrat",
                         "h_diag",
-                        "z_diag"};
+                        "z_diag",
+                        "delta_z"};
 
                     return std::move(names);
                 }
@@ -3523,6 +3547,7 @@ namespace Optizelle {
                         VectorSpaceDiagnostics::toMatlab,
                         state.z_diag,
                         mxstate);
+                    toMatlab::Real("delta_z",state.delta_z,mxstate);
                 }
                 void toMatlab(
                     typename MxInequalityConstrained::State::t const & state,
@@ -3568,6 +3593,7 @@ namespace Optizelle {
                         VectorSpaceDiagnostics::fromMatlab,
                         mxstate,
                         state.z_diag);
+                    fromMatlab::Real("delta_z",mxstate,state.delta_z);
                 }
                 void fromMatlab(
                     mxArray * const mxstate,

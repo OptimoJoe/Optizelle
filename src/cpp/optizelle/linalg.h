@@ -42,6 +42,7 @@ Author: Joseph Young (joe@optimojoe.com)
 #include <iostream>
 #include <cstdlib>
 #include <random>
+#include <functional>
 
 // Putting this into a class prevents its construction.  Essentially, we use
 // this trick in order to create modules like in ML.  It also allows us to
@@ -626,6 +627,14 @@ namespace Optizelle {
         virtual ~Operator() {}
     };
     //---Operator1---
+    
+    // A safeguard search used primarily for inequality constraints
+    template <typename Real,template <typename> class XX>
+    using SafeguardSimplified = std::function <
+        Real(
+            typename XX <Real>::Vector const & dx_base,
+            typename XX <Real>::Vector const & dx_dir
+        )>;
 
     /* Given a Schur decomposition of A, A=V D V', solve the Sylvester equation
     
@@ -1083,17 +1092,20 @@ namespace Optizelle {
     namespace KrylovStop{
         enum t{
             //---KrylovStop0---
+            NotConverged,             // Algorithm has not converged
             NegativeCurvature,        // Negative curvature detected
             RelativeErrorSmall,       // Relative error is small
             MaxItersExceeded,         // Maximum number of iterations exceeded
             TrustRegionViolated,      // Trust-region radius violated
-            Instability,              // Some sort of instability detected.
-                                      // Normally, a NaN.
-            InvalidTrustRegionCenter  // Trust-region center is chosen such that
-                                      // || C(x_cntr) || > delta where delta is
+            NanDetected,              // NaN detected in the operator or 
+                                      // preconditioner application 
+            LossOfOrthogonality,      // Loss of orthogonality detected
+            InvalidTrustRegionOffset, // Trust-region offset is chosen such that
+                                      // || x_offset || > delta where delta is
                                       // the trust-region radius.  This means
                                       // that our starting solution of 0
                                       // violates the trust-region.
+            TooManyFailedSafeguard    // Too many safeguarded steps have failed
             //---KrylovStop1---
         };
 
@@ -1137,7 +1149,7 @@ namespace Optizelle {
 
     // Computes the truncated projected conjugate direction algorithm in order
     // to solve Ax=b where we restrict x to be in the range of B and that
-    // || C (x - x_cntr) || <= delta.  The parameters are as follows.
+    // || x + x_offset || <= delta.  The parameters are as follows.
     // 
     // (input) A : Operator in the system A B x = b.
     // (input) b : Right hand side in the system A B x = b.
@@ -1149,8 +1161,11 @@ namespace Optizelle {
     //     number is 1, then we do the conjugate gradient algorithm.
     // (input) delta : Trust region radius.  If this number is infinity, we
     //     do not scale the final step if we detect negative curvature.
-    // (input) x_cntr : Center of the trust-region. 
+    // (input) x_offset : Offset for checking the TR radius 
     // (input) do_orthog_check : Orthogonality check for projected algorithms 
+    // (input) failed_safeguard_max : Maximum number of failed safeguard steps
+    //     before exiting
+    // (input) safeguard : Our safeguard function
     // (output) x : Final solution x.
     // (output) x_cp : The Cauchy-Point, which is defined as the solution x
     //     after a single iteration.
@@ -1169,8 +1184,10 @@ namespace Optizelle {
         Natural const & iter_max,
         Natural const & orthog_max,
         Real const & delta,
-        typename XX <Real>::Vector const & x_cntr,
+        typename XX <Real>::Vector const & x_offset,
 	bool const & do_orthog_check,
+        Natural const & failed_safeguard_max,
+        SafeguardSimplified <Real,XX> const & safeguard,
         typename XX <Real>::Vector & x,
         typename XX <Real>::Vector & x_cp,
         Real & norm_Br0,
@@ -1182,6 +1199,9 @@ namespace Optizelle {
         // Create some type shortcuts
         typedef XX <Real> X;
         typedef typename X::Vector X_Vector;
+
+        // At the start, we haven't converged
+        krylov_stop = KrylovStop::NotConverged;
 
         // Allocate memory for the orthogonality check, which only makes sense
         // when the preconditioner B is really a projection and not a
@@ -1215,34 +1235,31 @@ namespace Optizelle {
         // which means dumping the first column entirely and the first element
         // in the subsequent
         // columns 
+        Real const eps_orthog(0.5);
         std::list <X_Vector> rs;
         std::list <X_Vector> Brs;
         std::list <Real> norm_Brs;
         std::list <std::list <Real>> O;
-        
-        // Set the tolerance for our orthogonality check
-        Real const eps_orthog(0.5);
 
         // Initialize x to zero. 
         X::zero(x);
 
-        // Verify that || x0 - x_cntr || = || x_cntr || <= delta.  This insures
-        // that our initial iterate lies inside the trust-region.  If it does
-        // not, we exit.
-        X_Vector shifted_iterate(X::init(x));
-        X::copy(x_cntr,shifted_iterate);
-        X::scal(Real(-1.),shifted_iterate);
+        // Verify that || x0 + x_offset || = || x_offset || <= delta.  This
+        // insures that our initial iterate lies inside the trust-region.  If
+        // it does not, we exit.
+        auto shifted_iterate(X::init(x));
+        X::copy(x_offset,shifted_iterate);
         auto norm_shifted_iterate =
             std::sqrt(X::innr(shifted_iterate,shifted_iterate));
         if(norm_shifted_iterate > delta) {
             X::zero(x_cp);
             iter=0;
-            krylov_stop = KrylovStop::InvalidTrustRegionCenter;
+            krylov_stop = KrylovStop::InvalidTrustRegionOffset;
             return;
         }
         
         // Find the initial residual and projected residual, A*x-b = -b
-        X_Vector r(X::init(x));
+        auto r = X::init(x);
         X::copy(b,r);
         X::scal(Real(-1.),r);
         X_Vector Br(X::init(x));
@@ -1252,33 +1269,43 @@ namespace Optizelle {
 
         // Find the projected search direction and make sure that we have memory
         // for the operator applied to the projected search direction
-        X_Vector Bdx(X::init(x));
+        auto Bdx = X::init(x);
         X::copy(Br,Bdx);
         X::scal(Real(-1.),Bdx);
-        X_Vector ABdx(X::init(x));
+        auto ABdx = X::init(x);
        
         // Allocate memory for the previous search directions
-        std::list <X_Vector> Bdxs;
-        std::list <X_Vector> ABdxs;
+        auto Bdxs = std::list <X_Vector> ();
+        auto ABdxs = std::list <X_Vector> ();
 
         // Allocate memory for the shifted trial step
         //
-        // || (x - x_cntr) + alpha Bdx ||
+        // || (x + x_offset) + alpha Bdx ||
         //
         // and its norm
-        X_Vector shifted_trial(X::init(x));
+        auto shifted_trial = X::init(x);
         auto norm_shifted_trial = std::numeric_limits <Real>::quiet_NaN();
 
-        // Loop until the maximum iteration
-        for(iter=1;iter<=iter_max;iter++){
-        
-            // If the norm of the residual is small relative to the starting
-            // residual, exit
-            if(norm_Br <= eps*norm_Br0) {
-                iter--;
-                krylov_stop = KrylovStop::RelativeErrorSmall;
-                break;
-            }
+        // Track the number of failed safeguard steps and also keep a copy
+        // of the last successful iterate and step 
+        auto shifted_iterate0 = X::init(x);
+        X::copy(shifted_iterate,shifted_iterate0);
+        auto dx_aggregate = X::init(x);
+        auto failed_safeguard = Natural(0);
+        auto x_safe = X::init(x);
+        X::copy(x,x_safe);
+        auto Bdx_safe = X::init(x);
+        X::zero(Bdx_safe);
+        auto ABdx_safe = X::init(x);
+        X::zero(ABdx_safe);
+        auto r_safe = X::init(x);
+        X::copy(r,r_safe);
+        auto shifted_iterate_safe = X::init(x);
+        X::copy(shifted_iterate,shifted_iterate_safe);
+
+        // Loop until we converge (or don't)
+        iter = 1;
+        while(krylov_stop == KrylovStop::NotConverged) {
 
             // Find the ABdx application
             A.eval(Bdx,ABdx);
@@ -1294,21 +1321,26 @@ namespace Optizelle {
                 X::scal(Real(-1.),ABdx);
             }
 
-            // Find || Bdx ||_A^2.  Note, this is how we detect negative
-            // curvature as well as instability in the algorithm due to things
-            // like NaNs in the operator calculations.
+            // Find || Bdx ||_A^2
             Real Anorm_Bdx_2 = X::innr(Bdx,ABdx);
 
-            // Check for instability where || Bdx ||_A=NaN
-            bool instability = Anorm_Bdx_2!=Anorm_Bdx_2;
+            // Check for NaNs, || Bdx ||_A^2=NaN.  Technically, the NaN could
+            // have occured in either A or B.  We could differentiate the
+            // two by finding the norm of our operator A applied to the step,
+            // but I don't think that information matters at the moment.
+            if(Anorm_Bdx_2!=Anorm_Bdx_2)
+                krylov_stop = KrylovStop::NanDetected;
+
+            // Check for negative curvature, when || Bdx ||_A^2 < 0
+            if(Anorm_Bdx_2 < Real(0.) && krylov_stop ==KrylovStop::NotConverged)
+                krylov_stop = KrylovStop::NegativeCurvature;
 
             // Allocate memory for the line-search to the trust-region bound 
             Real alpha(std::numeric_limits<Real>::quiet_NaN());
 
-            // If we detect negative curvature or instability where
-            // || Bdx ||_A=NaN, then we don't need to compute the
-            // following steps
-            if( Anorm_Bdx_2 > Real(0.) && Anorm_Bdx_2 == Anorm_Bdx_2 ) {
+            // We only compute the following when we have not detected some
+            // kind of exiting condition
+            if(krylov_stop == KrylovStop::NotConverged) {
 
                 // Check if we need to eliminate any vectors for
                 // orthogonalization
@@ -1333,7 +1365,7 @@ namespace Optizelle {
 
                 // Determine the norm of the shifted trial step
                 //
-                // || (x - x_cntr) + alpha Bdx ||
+                // || (x + x_offset) + alpha Bdx ||
                 //
                 // We use this to determine if we've stepped outside the
                 // trust-region radius.
@@ -1341,6 +1373,10 @@ namespace Optizelle {
                 X::axpy(alpha,Bdx,shifted_trial);
                 norm_shifted_trial = std::sqrt(
                     X::innr(shifted_trial,shifted_trial));
+
+                // Check if we've met or exceeded the trust-region radius
+                if(norm_shifted_trial >= delta)
+                    krylov_stop = KrylovStop::TrustRegionViolated;
 
                 // Do our orthogonality check work when requested 
                 if(do_orthog_check) {
@@ -1426,78 +1462,95 @@ namespace Optizelle {
                             norm_O+=Oij*Oij;
                     norm_O = std::sqrt(norm_O);
 
-                    // Check if we have (more) instability
-                    instability=instability ? instability : norm_O > eps_orthog;
+                    // Check if we have lost orthogonality 
+                    if(norm_O > eps_orthog)
+                        krylov_stop = KrylovStop::LossOfOrthogonality;
                 }
             }
 
-            // If we detect
-            //
-            // 1. Negative curvature
-            // 2. That we've left the trust-region
-            // 3. Instability
-            //
-            // Exit the algorithm with the appropriate resolution.
-            if( Anorm_Bdx_2 <= Real(0.) ||
-                norm_shifted_trial >= delta ||
-                instability 
-            ) {
-
-                // If we have instability or we ignore the trust-region, we
-                // stop immediately, unless we're on the first iteration.  In
-                // that case, we take a unit steepest descent step
-                if( (instability ||
-                    !(delta<std::numeric_limits<Real>::infinity())) &&
-                    iter==1
+            // If our last iterate was safe, then keep the current search
+            // direction as long as it didn't arise from some a NaN or loss of
+            // orthogonality.  In these cases, we set our saved trial steps
+            // to zero.
+            if( failed_safeguard==0 ) {
+                if( krylov_stop != KrylovStop::NanDetected && 
+                    krylov_stop != KrylovStop::LossOfOrthogonality
                 ) {
-                    // If we do have a trust-region, instability, and the
-                    // steepest descent direction exceeds the bound, we need
-                    // to truncate it
-                    if( delta<std::numeric_limits<Real>::infinity() &&
-                        Anorm_Bdx_2 > delta*delta
-                    ) {
-                        auto norm_Bdx = std::sqrt(X::innr(Bdx,Bdx));
-                        X::scal(delta/norm_Bdx,Bdx);
-                        X::scal(delta/norm_Bdx,ABdx);
+                    X::copy(Bdx,Bdx_safe);
+                    X::scal(alpha,Bdx_safe);
+                    X::copy(ABdx,ABdx_safe);
+                    X::scal(alpha,ABdx_safe);
+                } else {
+                    X::zero(Bdx_safe);
+                    X::zero(ABdx_safe);
+                }
+            }
+
+            // If we detect any kind of exit condition, resolve it here
+            if( krylov_stop != KrylovStop::NotConverged ) {
+                switch(krylov_stop) {
+
+                // These are cases should not be able to occur here 
+                case KrylovStop::NotConverged:
+                case KrylovStop::MaxItersExceeded:
+                case KrylovStop::InvalidTrustRegionOffset:
+                case KrylovStop::RelativeErrorSmall:
+                case KrylovStop::TooManyFailedSafeguard:
+                    throw;
+
+                // When we have negative curvature or have hit the trust-region
+                // bound, we extend the step to the trust-region when one
+                // exists.  Otherwise, we retreat to the last step.  In the
+                // case we're on iteration 1, we use the steepest descent
+                // direction.
+                case KrylovStop::TrustRegionViolated:
+                case KrylovStop::NegativeCurvature: {
+                    // Amount that we cut back the step
+                    auto sigma = Real(0.);
+
+                    // When we have a trust-region
+                    if(delta < std::numeric_limits <Real>::infinity()) {
+                        // Find sigma so that
+                        // 
+                        // || (x+x_offset) + sigma Bdx || = delta.
+                        //
+                        // This can be found by finding the positive root of the
+                        // quadratic
+                        //
+                        // || (x+x_offset) + sigma Bdx ||^2 = delta^2.
+                        //
+                        // Specifically, we want the positive root of
+                        //
+                        // sigma^2 || Bdx ||^2
+                        //     + sigma (2 <Bdx,x+x_offset>)
+                        //     + (|| x+x_offset||^2-delta^2).
+
+                        // Solve the quadratic equation for the positive root 
+                        auto aa = X::innr(Bdx,Bdx);
+                        auto bb = Real(2.)*X::innr(Bdx,shifted_iterate);
+                        auto cc = norm_shifted_iterate*norm_shifted_iterate
+                            - delta*delta;
+                        auto roots = quad_equation(aa,bb,cc);
+                        for(auto const & root : roots)
+                            if(root > sigma)
+                                sigma = root;
+
+                    // When we don't have a trust region, but we're on iteration
+                    // 1
+                    } else if(iter == 1) {
+                        // Note, dx already contains -r, since we're on the
+                        // first iteration, so we just take a unit step
+                        sigma = Real(1.);
                     }
 
-                    // Note, dx already contains -r, since we're on the first
-                    // iteration, so we just take a unit step
-                    X::axpy(Real(1.),Bdx,x);
-                    X::axpy(Real(1.),Bdx,shifted_iterate);
-                    X::axpy(Real(1.),ABdx,r);
-                    B.eval(r,Br);
-                    norm_Br=std::sqrt(X::innr(Br,Br));
-
-                // In the case that we have a trust-region and we either detect
-                // negative curvature or violate the trust-region bound, scale
-                // the step so that we hit the trust-region bound.
-                } else if(delta < std::numeric_limits <Real>::infinity()) {
-                    // Find sigma so that
-                    // 
-                    // || (x-x_cntr) + sigma Bdx || = delta.
-                    //
-                    // This can be found by finding the positive root of the
-                    // quadratic
-                    //
-                    // || (x-x_cntr) + sigma Bdx ||^2 = delta^2.
-                    //
-                    // Specifically, we want the positive root of
-                    //
-                    // sigma^2 || Bdx ||^2
-                    //     + sigma (2 <Bdx,x-x_cntr>)
-                    //     + (|| x-x_cntr ||^2-delta^2).
-
-                    // Solve the quadratic equation for the positive root 
-                    Real aa = X::innr(Bdx,Bdx);
-                    Real bb = Real(2.)*X::innr(Bdx,shifted_iterate);
-                    Real cc = norm_shifted_iterate*norm_shifted_iterate
-                        - delta*delta;
-                    auto roots = quad_equation(aa,bb,cc);
-                    auto sigma = Real(0.);
-                    for(auto const & root : roots)
-                        if(root > sigma)
-                            sigma = root;
+                    // If the current iterate is safe, see how far we can go
+                    // in the current direction.  If this amount truncates us
+                    // more than sigma, then we reduce the size of sigma.
+                    if(failed_safeguard==0) { 
+                        auto alpha_safeguard = safeguard(shifted_iterate,Bdx);
+                        if(alpha_safeguard < Real(1.) && alpha_safeguard<sigma)
+                            sigma = alpha_safeguard;
+                    }
 
                     // Take the step and find its residual
                     X::axpy(sigma,Bdx,x);
@@ -1505,16 +1558,16 @@ namespace Optizelle {
                     X::axpy(sigma,ABdx,r);
                     B.eval(r,Br);
                     norm_Br=std::sqrt(X::innr(Br,Br));
+                    break;
+
+                // When we find a NaN, we can't really trust our step.
+                // Alternatively, when we lose orthogonality, we can't really
+                // trust anything either.
+                } case KrylovStop::NanDetected:
+                case KrylovStop::LossOfOrthogonality:
+                    break;
                 }
 
-                // Determine why we stopped
-                if(instability)
-                    krylov_stop = KrylovStop::Instability;
-                else if(Anorm_Bdx_2 <= Real(0.)) 
-                    krylov_stop = KrylovStop::NegativeCurvature;
-                else
-                    krylov_stop = KrylovStop::TrustRegionViolated;
- 
                 // If this is the first iteration, save the Cauchy-Point
                 if(iter==1) X::copy(x,x_cp);
                 break;
@@ -1534,18 +1587,70 @@ namespace Optizelle {
             X::axpy(alpha,ABdx,r);
             B.eval(r,Br);
             norm_Br = std::sqrt(X::innr(Br,Br));
+                
+            // Determine if this new iterate is feasible with respect to our
+            // safeguard.  We calculate this from x_offset, which we assume to
+            // be a safe starting place.  In any case, if the new iterate is
+            // safe, save it for potential use later
+            X::copy(x,dx_aggregate);
+            X::axpy(Real(-1.),shifted_iterate0,dx_aggregate);
+            auto alpha_safeguard = safeguard(x_offset,x);
+            if(alpha_safeguard < Real(1.))
+                failed_safeguard += 1;
+            else {
+                failed_safeguard = 0;
+                X::copy(x,x_safe);
+                X::copy(r,r_safe);
+                X::copy(shifted_iterate,shifted_iterate_safe);
+            }
 
             // Find the projected steepest descent direction
             X::copy(Br,Bdx);
             X::scal(Real(-1.),Bdx);	
+
+            // If we have too many failed safeguard steps, exit
+            if(failed_safeguard > failed_safeguard_max)
+                krylov_stop = KrylovStop::TooManyFailedSafeguard;
+        
+            // If the norm of the residual is small relative to the starting
+            // residual, exit
+            else if(norm_Br <= eps*norm_Br0)
+                krylov_stop = KrylovStop::RelativeErrorSmall;
+
+            // If we've exceeded the maximum number of iterations, also exit
+            else if(iter>=iter_max)
+                krylov_stop = KrylovStop::MaxItersExceeded;
+
+            // Otherwise, increment our iteration and keep computing
+            else
+                iter++;
         }
 
-        // If we've exceeded the maximum iteration, make sure to denote this
-        if(iter > iter_max)
-            krylov_stop=KrylovStop::MaxItersExceeded;
+        // If our last x was safe, we assume at this point that we have
+        // truncated things appropriating and that our solution in x is
+        // feasible with respect to our safeguard.  If our last x was not
+        // safe, then go back to our last safe x and grab its Bdx.  Then,
+        // we truncate Bdx until we meet our safeguard.
+        if(failed_safeguard>0) {
+            // Grab our old iterate, steps, and residual
+            X::copy(x_safe,x);
+            X::copy(r_safe,r);
+            X::copy(shifted_iterate_safe,shifted_iterate);
+            X::copy(Bdx_safe,Bdx);
+            X::copy(ABdx_safe,ABdx);
 
-        // Adjust the iteration number if we ran out of iterations
-        iter = iter > iter_max ? iter_max : iter;
+            // Determine how far we can go safely in the saved direction
+            auto alpha_safeguard = safeguard(shifted_iterate,Bdx);
+            alpha_safeguard = alpha_safeguard < Real(1.) ?
+                alpha_safeguard : Real(1.);
+
+            // Take the safeguarded step and update our residuals
+            X::axpy(alpha_safeguard,Bdx,x);
+            X::axpy(alpha_safeguard,Bdx,shifted_iterate);
+            X::axpy(alpha_safeguard,ABdx,r);
+            B.eval(r,Br);
+            norm_Br=std::sqrt(X::innr(Br,Br));
+        }
     }
 
     // Solve a 2x2 linear system in packed storage.  This is done through
@@ -2144,7 +2249,7 @@ namespace Optizelle {
     //    norm of the residual.
     // (input) iter_max : Maximum number of iterations
     // (input) delta : Trust region radius.  
-    // (input) x_cntr : Center of the trust-region. 
+    // (input) x_offset : Offset for checking the TR radius 
     // (output) x : Final solution.
     // (output) x_cp : The Cauchy-Point, which is defined as the solution x
     //     after a single iteration.
@@ -2164,7 +2269,7 @@ namespace Optizelle {
         Natural const & iter_max,
         Natural orthog_max,
         Real const & delta,
-        typename XX <Real>::Vector const & x_cntr,
+        typename XX <Real>::Vector const & x_offset,
         typename XX <Real>::Vector & x,
         typename XX <Real>::Vector & x_cp,
         Real & Bnorm_r0,
@@ -2230,24 +2335,23 @@ namespace Optizelle {
         Qt_e1[0] = Bnorm_r;
         Qt_e1[1] = Real(0.);
 
-        // Verify that || x0 - x_cntr || = || x_cntr || <= delta.  This insures
-        // that our initial iterate lies inside the trust-region.  If it does
-        // not, we exit.
+        // Verify that || x0 - x_offset|| = || x_offset || <= delta.  This
+        // insures that our initial iterate lies inside the trust-region.  If
+        // it does not, we exit.
         X_Vector shifted_iterate(X::init(x));
-        X::copy(x_cntr,shifted_iterate);
-        X::scal(Real(-1.),shifted_iterate);
+        X::copy(x_offset,shifted_iterate);
         auto norm_shifted_iterate =
             std::sqrt(X::innr(shifted_iterate,shifted_iterate));
         if(norm_shifted_iterate > delta) {
             X::zero(x_cp);
             iter=0;
-            krylov_stop = KrylovStop::InvalidTrustRegionCenter;
+            krylov_stop = KrylovStop::InvalidTrustRegionOffset;
             return;
         }
 
         // Allocate memory for the shifted trial step
         //
-        // || (x - x_cntr) + dx ||
+        // || (x + x_offset) + dx ||
         //
         // and its norm
         X_Vector shifted_trial(X::init(x));
@@ -2357,7 +2461,7 @@ namespace Optizelle {
                 X::copy(B_V_Rinvs.back(),dx);
                 X::scal(Qt_e1[0],dx);
 
-                // Find || (x-x_cntr) + dx ||
+                // Find || (x+x_offset) + dx ||
                 X::copy(shifted_iterate,shifted_trial);
                 X::axpy(Real(1.),dx,shifted_trial);
                 norm_shifted_trial = std::sqrt(
@@ -2397,7 +2501,7 @@ namespace Optizelle {
                     - Real(2.)*Binnr_ABv1_b*alpha
                     + Bnorm_r0*Bnorm_r0); 
 
-                // Find || (x-x_cntr) + dx ||
+                // Find || (x+x_offset) + dx ||
                 X::copy(shifted_iterate,shifted_trial);
                 X::axpy(Real(1.),dx,shifted_trial);
                 norm_shifted_trial = std::sqrt(
@@ -2437,18 +2541,18 @@ namespace Optizelle {
                 ) {
                     // Find sigma so that
                     // 
-                    // || (x-x_cntr) + sigma dx || = delta.
+                    // || (x+x_offset) + sigma dx || = delta.
                     //
                     // This can be found by finding the positive root of the
                     // quadratic
                     //
-                    // || (x-x_cntr) + sigma dx ||^2 = delta^2.
+                    // || (x+x_offset) + sigma dx ||^2 = delta^2.
                     //
                     // Specifically, we want the positive root of
                     //
                     // sigma^2 || dx ||^2
-                    //     + sigma (2 <dx,x-x_cntr>)
-                    //     + (|| x-x_cntr ||^2-delta^2).
+                    //     + sigma (2 <dx,x+x_offset>)
+                    //     + (|| x+x_offset||^2-delta^2).
                     //
                     // Note, we really should get two roots here as dx should
                     // not be zero.
@@ -2471,7 +2575,7 @@ namespace Optizelle {
 
                 // Determine why we stopped
                 if(iter>1 && instability)
-                    krylov_stop = KrylovStop::Instability;
+                    krylov_stop = KrylovStop::NanDetected;
                 else
                     krylov_stop = KrylovStop::TrustRegionViolated;
  

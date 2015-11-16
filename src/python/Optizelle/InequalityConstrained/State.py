@@ -58,6 +58,14 @@ class t(Optizelle.Unconstrained.State.t):
     gamma = Optizelle.createFloatProperty(
         "gamma",
         "How close we move to the boundary during a single step")
+    alpha_x = Optizelle.createFloatProperty(
+        "alpha_x",
+        ("Amount we truncate dx in order to maintain feasibility "
+        " with respect to the inequality constraint"))
+    alpha_z = Optizelle.createFloatProperty(
+        "alpha_z",
+        ("Amount we truncate dx in order to maintain feasibility "
+        " of the inequality multiplier"))
     ipm = Optizelle.createEnumProperty(
         "ipm",
         Optizelle.InteriorPointMethod,
@@ -74,6 +82,9 @@ class t(Optizelle.Unconstrained.State.t):
         "y_diag",
         Optizelle.VectorSpaceDiagnostics,
         "Vector space diagnostics on Y")
+    delta_z = Optizelle.createFloatProperty(
+        "delta_z",
+        "Trust-region radius for the inequality constraint")
 
 def checkT(name,value):
     """Check that we have a state"""

@@ -8,7 +8,9 @@
 #include "unit.h"
 #include "restart.h"
 
-template <typename Real> using WW = Optizelle::Rm <Real>;
+template <typename Real> struct WW {
+    typedef Optizelle::Rm <Real> Vector;
+};
 
 //---Serialization0---
 namespace Optizelle {

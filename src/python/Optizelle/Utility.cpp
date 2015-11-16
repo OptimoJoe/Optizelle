@@ -95,6 +95,8 @@ namespace Optizelle {
         PyObject * toPython(t const & krylov_stop) {
             // Do the conversion
             switch(krylov_stop){
+            case NotConverged:
+                return Python::enumToPyObject("KrylovStop","NotConverged");
             case NegativeCurvature:
                 return Python::enumToPyObject("KrylovStop","NegativeCurvature");
             case RelativeErrorSmall:
@@ -105,11 +107,17 @@ namespace Optizelle {
             case TrustRegionViolated:
                 return Python::enumToPyObject(
                     "KrylovStop","TrustRegionViolated");
-            case Instability:
-                return Python::enumToPyObject("KrylovStop","Instability");
-            case InvalidTrustRegionCenter:
+            case NanDetected:
+                return Python::enumToPyObject("KrylovStop","NanDetected");
+            case LossOfOrthogonality:
                 return Python::enumToPyObject(
-                    "KrylovStop","InvalidTrustRegionCenter");
+                    "KrylovStop","LossOfOrthogonality");
+            case InvalidTrustRegionOffset:
+                return Python::enumToPyObject(
+                    "KrylovStop","InvalidTrustRegionOffset");
+            case TooManyFailedSafeguard:
+                return Python::enumToPyObject(
+                    "KrylovStop","TooManyFailedSafeguard");
             default:
                 throw;
             }
@@ -120,7 +128,9 @@ namespace Optizelle {
             // Convert the member to a Natural 
             Natural m=PyInt_AsSsize_t(member);
 
-            if(m==Python::enumToNatural("KrylovStop","NegativeCurvature"))
+            if(m==Python::enumToNatural("KrylovStop","NotConverged"))
+                return NotConverged;
+            else if(m==Python::enumToNatural("KrylovStop","NegativeCurvature"))
                 return NegativeCurvature;
             else if(m==Python::enumToNatural("KrylovStop","RelativeErrorSmall"))
                 return RelativeErrorSmall;
@@ -130,12 +140,20 @@ namespace Optizelle {
                 "KrylovStop","TrustRegionViolated")
             )
                 return TrustRegionViolated;
-            else if(m==Python::enumToNatural("KrylovStop","Instability"))
-                return Instability;
+            else if(m==Python::enumToNatural("KrylovStop","NanDetected"))
+                return NanDetected;
             else if(m==Python::enumToNatural(
-                "KrylovStop","InvalidTrustRegionCenter")
+                "KrylovStop","LossOfOrthogonality")
             )
-                return InvalidTrustRegionCenter;
+                return LossOfOrthogonality;
+            else if(m==Python::enumToNatural(
+                "KrylovStop","InvalidTrustRegionOffset")
+            )
+                return InvalidTrustRegionOffset;
+            else if(m==Python::enumToNatural(
+                "KrylovStop","TooManyFailedSafeguard")
+            )
+                return TooManyFailedSafeguard;
             else
                 throw;
         }
@@ -1929,6 +1947,8 @@ namespace Optizelle {
                     toPython::Real("f_x",state.f_x,pystate);
                     toPython::Real("f_xpdx",state.f_xpdx,pystate);
                     toPython::Natural("msg_level",state.msg_level,pystate);
+                    toPython::Natural("failed_safeguard_max",
+                        state.failed_safeguard_max,pystate);
                     toPython::Real("delta",state.delta,pystate);
                     toPython::Real("eta1",state.eta1,pystate);
                     toPython::Real("eta2",state.eta2,pystate);
@@ -2053,6 +2073,8 @@ namespace Optizelle {
                     fromPython::Real("f_x",pystate,state.f_x);
                     fromPython::Real("f_xpdx",pystate,state.f_xpdx);
                     fromPython::Natural("msg_level",pystate,state.msg_level);
+                    fromPython::Natural("failed_safeguard_max",
+                        pystate,state.failed_safeguard_max);
                     fromPython::Real("delta",pystate,state.delta);
                     fromPython::Real("eta1",pystate,state.eta1);
                     fromPython::Real("eta2",pystate,state.eta2);
@@ -3178,6 +3200,7 @@ namespace Optizelle {
                         VectorSpaceDiagnostics::toPython,
                         state.z_diag,
                         pystate);
+                    toPython::Real("delta_z",state.delta_z,pystate);
                 }
                 void toPython(
                     typename PyInequalityConstrained::State::t const & state,
@@ -3223,6 +3246,7 @@ namespace Optizelle {
                         VectorSpaceDiagnostics::fromPython,
                         pystate,
                         state.z_diag);
+                    fromPython::Real("delta_z",pystate,state.delta_z);
                 }
                 void fromPython(
                     PyObject * const pystate,

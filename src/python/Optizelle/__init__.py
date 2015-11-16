@@ -55,13 +55,16 @@ class EnumeratedType(object):
         
 class KrylovStop(EnumeratedType):
     """Reasons we stop the Krylov method"""
+    NotConverged, \
     NegativeCurvature, \
     RelativeErrorSmall, \
     MaxItersExceeded, \
     TrustRegionViolated, \
-    Instability, \
-    InvalidTrustRegionCenter \
-     = range(6)
+    NanDetected, \
+    LossOfOrthogonality, \
+    InvalidTrustRegionOffset, \
+    TooManyFailedSafeguard \
+    = range(9)
 
 class AlgorithmClass(EnumeratedType):
     """Which algorithm class do we use"""

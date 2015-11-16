@@ -770,6 +770,8 @@ namespace Optizelle{
         std::stringstream ss;
         // Converts the Krylov stopping condition to a shorter string 
         switch(x){
+        case KrylovStop::NotConverged:
+            return atos("NotConv");
         case KrylovStop::NegativeCurvature:
             return atos("NegCurv");
         case KrylovStop::RelativeErrorSmall:
@@ -778,10 +780,14 @@ namespace Optizelle{
             return atos("IterExcd");
         case KrylovStop::TrustRegionViolated:
             return atos("TrstReg");
-        case KrylovStop::Instability:
-            return atos("Unstable");
-        case KrylovStop::InvalidTrustRegionCenter:
+        case KrylovStop::NanDetected:
+            return atos("NaN");
+        case KrylovStop::LossOfOrthogonality:
+            return atos("OrthogLost");
+        case KrylovStop::InvalidTrustRegionOffset:
             return atos("InvldCnt");
+        case KrylovStop::TooManyFailedSafeguard:
+            return atos("Safeguard");
         default:
             throw;
         }

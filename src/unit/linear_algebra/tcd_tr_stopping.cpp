@@ -56,7 +56,8 @@ int main() {
     Natural iter;
     Optizelle::KrylovStop::t krylov_stop;
     Optizelle::truncated_cd <double,Optizelle::Rm>
-        (A,b,W,eps_krylov,iter_max,1,delta,x_cntr,false,x,x_cp,
+        (A,b,W,eps_krylov,iter_max,1,delta,x_cntr,false,0,
+            no_safeguard <double,Optizelle::Rm>,x,x_cp,
             residual_err0,residual_err,iter,krylov_stop);
 
     // Check that the size of x is just the trust-region radius

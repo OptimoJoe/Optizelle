@@ -439,6 +439,12 @@ namespace Optizelle {
                         "msg_level",
                         Json::Value::UInt64(state.msg_level)),
                     "msg_level");
+                state.failed_safeguard_max=read::natural(
+                    msg,
+                    root["Optizelle"].get(
+                        "failed_safeguard_max",
+                        Json::Value::UInt64(state.failed_safeguard_max)),
+                    "failed_safeguard_max");
                 state.delta=read::real <Real> (
                     msg,
                     root["Optizelle"].get("delta",state.delta),
@@ -549,6 +555,8 @@ namespace Optizelle {
                 root["Optizelle"]["H_type"]=write_param(
                     Operators::to_string,state.H_type);
                 root["Optizelle"]["msg_level"]=write::natural(state.msg_level);
+                root["Optizelle"]["failed_safeguard_max"]=write::natural(
+                    state.failed_safeguard_max);
                 root["Optizelle"]["delta"]=write::real(state.delta);
                 root["Optizelle"]["eta1"]=write::real(state.eta1);
                 root["Optizelle"]["eta2"]=write::real(state.eta2);
@@ -973,6 +981,10 @@ namespace Optizelle {
                     VectorSpaceDiagnostics::is_valid,
                     VectorSpaceDiagnostics::from_string,
                     "z_diag");
+                state.delta_z=read::real <Real> (
+                    msg,
+                    root["Optizelle"].get("delta_z",state.delta_z),
+                    "delta_z");
             }
             static void read(
                 Optizelle::Messaging const & msg,
@@ -1008,6 +1020,7 @@ namespace Optizelle {
                     FunctionDiagnostics::to_string,state.h_diag);
                 root["Optizelle"]["z_diag"]=write_param(
                     VectorSpaceDiagnostics::to_string,state.z_diag);
+                root["Optizelle"]["delta_z"]=write::real(state.delta_z);
 
                 return writer.write(root);
             }

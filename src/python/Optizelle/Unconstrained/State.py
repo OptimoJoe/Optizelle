@@ -140,6 +140,9 @@ class t(object):
     msg_level = Optizelle.createNatProperty(
         "msg_level",
         "Messaging level")
+    failed_safeguard_max = Optizelle.createNatProperty(
+        "failed_safeguard_max",
+        "Number of failed safe-guard steps before quitting the method")
     delta = Optizelle.createFloatProperty(
         "delta",
         "Trust region radius")
