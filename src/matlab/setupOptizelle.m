@@ -645,7 +645,7 @@ function z = sql_barr(x)
         % z += 0.5 * log(x0^2-<xbar,xbar>)
         elseif x.types(blk)==Optizelle.Cone.Quadratic
             z = z + 0.5 * log( ...
-                x.data{blk}(1)^2*x.data{blk}(2:end)'*x.data{blk}(2:end)); 
+                x.data{blk}(1)^2-x.data{blk}(2:end)'*x.data{blk}(2:end)); 
 
         % z += log(det(x)).  We compute this by noting that
         % log(det(x)) = log(det(u'u)) = log(det(u')det(u))

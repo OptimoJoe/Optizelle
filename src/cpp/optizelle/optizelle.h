@@ -9411,12 +9411,12 @@ namespace Optizelle{
                     ),
                     sigma(
                         //---sigma0---
-                        0.5
+                        0.1
                         //---sigma1---
                     ),
                     gamma(
                         //---gamma0---
-                        0.95
+                        0.99
                         //---gamma1---
                     ),
                     alpha_z(

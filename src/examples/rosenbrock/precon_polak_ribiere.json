@@ -9,7 +9,7 @@
       "eps_dx" : 1e-10
    },
    "Naturals" : {
-      "iter" : 29 
+      "iter" : 25 
    },
    "X_Vectors" : {
       "x" : [ 1.0, 1.0 ] 

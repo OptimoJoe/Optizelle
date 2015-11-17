@@ -7,13 +7,10 @@
       "kind" : "BackTracking",
       "iter_max" : 100,
       "eps_krylov" : 1e-10,
-      "eps_dx" : 1e-16,
-      "sigma" : 0.01,
-      "gamma" : 0.95,
-      "mu" : 3.0
+      "eps_dx" : 1e-16
    },
    "Naturals" : {
-      "iter" : 11
+      "iter" : 10
    },
    "X_Vectors" : {
       "x" : [ 2.5, 2.5] 
