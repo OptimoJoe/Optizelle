@@ -11181,22 +11181,32 @@ namespace Optizelle{
                         mu_typ=mu_est;
                         break;
 
-                    // After we reject a step, make sure that we take a zero
-                    // step in the inequality multiplier.  This is important
-                    // in case we exit early due to small steps.
-                    case OptimizationLocation::AfterRejectedTrustRegion:
-                    case OptimizationLocation::AfterRejectedLineSearch:
-                        Z::zero(dz);
-                        break;
+                    case OptimizationLocation::BeforeLineSearch:
+                    case OptimizationLocation::BeforeActualVersusPredicted:
+                        // To be sure, I find this a little bit odd.
+                        // Basically, the inequality multiplier step dz depends
+                        // on dx.  The code appears to work better when we
+                        // solve for dz prior to scaling dx from a line-search
+                        // when one is required.  For a trust-region method,
+                        // computing here doesn't matter.
 
-                    case OptimizationLocation::BeforeStep:
                         // Find the inequality multiplier step 
                         findInequalityMultiplierStep(fns,state);
                         
                         // Truncate the inequality multiplier step if need be 
                         adjustInequalityMultiplierStep(fns,state);
+                        break;
 
-                        // Take our inequality multiplier ste
+                    case OptimizationLocation::AfterRejectedTrustRegion:
+                    case OptimizationLocation::AfterRejectedLineSearch:
+                        // After we reject a step, make sure that we take a
+                        // zero step in the inequality multiplier.  This is
+                        // important in case we exit early due to small steps.
+                        Z::zero(dz);
+                        break;
+
+                    case OptimizationLocation::BeforeStep:
+                        // Take our inequality multiplier step
                         Z::axpy(Real(1.),dz,z);
                         break;
 
