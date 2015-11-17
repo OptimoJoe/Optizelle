@@ -154,6 +154,11 @@ class t(object):
         ("Amount we truncate dx in order to maintain feasibility "
         " with respect to the safeguard, which probably relates to "
         "the inequality constraint"))
+    alpha_x_qn = Optizelle.createFloatProperty(
+        "alpha_x_qn",
+        ("Amount we truncate dx_n in order to maintain feasibility "
+        "with respect to the safeguard, which probably relates to "
+        "the inequailty constraint"))
     delta = Optizelle.createFloatProperty(
         "delta",
         "Trust region radius")

@@ -1880,6 +1880,7 @@ namespace Optizelle {
                     toPython::Natural("failed_safeguard_total",
                         state.failed_safeguard_total,pystate);
                     toPython::Real("alpha_x",state.alpha_x,pystate);
+                    toPython::Real("alpha_x_qn",state.alpha_x_qn,pystate);
                     toPython::Real("delta",state.delta,pystate);
                     toPython::Real("eta1",state.eta1,pystate);
                     toPython::Real("eta2",state.eta2,pystate);
@@ -2011,6 +2012,7 @@ namespace Optizelle {
                     fromPython::Natural("failed_safeguard_total",
                         pystate,state.failed_safeguard_total);
                     fromPython::Real("alpha_x",pystate,state.alpha_x);
+                    fromPython::Real("alpha_x_qn",pystate,state.alpha_x_qn);
                     fromPython::Real("delta",pystate,state.delta);
                     fromPython::Real("eta1",pystate,state.eta1);
                     fromPython::Real("eta2",pystate,state.eta2);

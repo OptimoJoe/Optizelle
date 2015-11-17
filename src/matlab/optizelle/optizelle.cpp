@@ -1879,6 +1879,7 @@ namespace Optizelle {
                         "failed_safeguard",
                         "failed_safeguard_total",
                         "alpha_x",
+                        "alpha_x_qn",
                         "delta",
                         "eta1",
                         "eta2",
@@ -1986,6 +1987,7 @@ namespace Optizelle {
                     toMatlab::Natural("failed_safeguard_total",
                         state.failed_safeguard_total,mxstate);
                     toMatlab::Real("alpha_x",state.alpha_x,mxstate);
+                    toMatlab::Real("alpha_x_qn",state.alpha_x_qn,mxstate);
                     toMatlab::Real("delta",state.delta,mxstate);
                     toMatlab::Real("eta1",state.eta1,mxstate);
                     toMatlab::Real("eta2",state.eta2,mxstate);
@@ -2117,6 +2119,7 @@ namespace Optizelle {
                     fromMatlab::Natural("failed_safeguard_total",
                         mxstate,state.failed_safeguard_total);
                     fromMatlab::Real("alpha_x",mxstate,state.alpha_x);
+                    fromMatlab::Real("alpha_x_qn",mxstate,state.alpha_x_qn);
                     fromMatlab::Real("delta",mxstate,state.delta);
                     fromMatlab::Real("eta1",mxstate,state.eta1);
                     fromMatlab::Real("eta2",mxstate,state.eta2);

@@ -226,8 +226,10 @@ namespace Optizelle{
     // has been modified.  We use this for modifying the interior point
     // parameter just prior to step calculation.
     template <typename Real,template <typename> class XX>
-    using GradStepModification = std::function <
-        bool(typename XX <Real>::Vector const & grad_step)>;
+    using GradStepModification = std::function <bool(
+        typename XX <Real>::Vector const & grad_step,
+        Real const & gx_reduction,
+        bool const & gx_converged)>;
 
     // Communicates whether we need to do a second equality multiplier solve
     // for the equality constrained problem.  In an interior point method, we
@@ -1925,6 +1927,11 @@ namespace Optizelle{
                 // with respect to the safeguard, which probably relates to
                 // the inequailty constraint
                 Real alpha_x;
+
+                // Amount we truncate dx_n in order to maintain feasibility
+                // with respect to the safeguard, which probably relates to
+                // the inequailty constraint
+                Real alpha_x_qn;
                 
                 // ------------- TRUST-REGION ------------- 
 
@@ -2161,6 +2168,11 @@ namespace Optizelle{
                         //---alpha_x0---
                         std::numeric_limits<Real>::quiet_NaN()
                         //---alpha_x1---
+                    ),
+                    alpha_x_qn(
+                        //---alpha_x_qn0---
+                        1.0 
+                        //---alpha_x_qn1---
                     ),
                     delta(
                         //---delta0---
@@ -2488,6 +2500,10 @@ namespace Optizelle{
                     //---alpha_x_valid0---
                     // Any
                     //---alpha_x_valid1---
+                    
+                    //---alpha_x_qn_valid0---
+                    // Any
+                    //---alpha_x_qn_valid1---
 
                 // Check that the trust-region radius is nonnegative 
                 else if(!(
@@ -2656,7 +2672,8 @@ namespace Optizelle{
                     item.first == "norm_dxtyp" || 
                     item.first == "f_x" || 
                     item.first == "f_xpdx" ||
-                    item.first == "alpha_x" ||
+                    item.first == "alpha_x"  ||
+                    item.first == "alpha_x_qn"||
                     item.first == "delta" || 
                     item.first == "eta1" || 
                     item.first == "eta2" || 
@@ -2827,6 +2844,7 @@ namespace Optizelle{
                 reals.emplace_back("f_x",std::move(state.f_x));
                 reals.emplace_back("f_xpdx",std::move(state.f_xpdx));
                 reals.emplace_back("alpha_x",std::move(state.alpha_x));
+                reals.emplace_back("alpha_x_qn",std::move(state.alpha_x_qn));
                 reals.emplace_back("delta",std::move(state.delta));
                 reals.emplace_back("eta1",std::move(state.eta1));
                 reals.emplace_back("eta2",std::move(state.eta2));
@@ -2958,6 +2976,8 @@ namespace Optizelle{
                         state.f_xpdx=std::move(item->second);
                     else if(item->first=="alpha_x")
                         state.alpha_x=std::move(item->second);
+                    else if(item->first=="alpha_x_qn")
+                        state.alpha_x_qn=std::move(item->second);
                     else if(item->first=="delta")
                         state.delta=std::move(item->second);
                     else if(item->first=="eta1")
@@ -3694,7 +3714,9 @@ namespace Optizelle{
 
             // Don't modify the gradient used for the step
             static bool noGradStepModification(
-                X_Vector const & grad_step
+                X_Vector const & grad_step,
+                Real const & gx_reduction,
+                bool const & gx_converged
             ) {
                 return false;
             }
@@ -4376,7 +4398,7 @@ namespace Optizelle{
                 // Find -grad f(x)
                 X_Vector grad_step(X::init(x));
                     f_mod.grad_step(x,grad,grad_step);
-                if(gradmod(grad_step))
+                if(gradmod(grad_step,Real(0.),true))
                     f_mod.grad_step(x,grad,grad_step);
                 X_Vector minus_grad(X::init(x));
                     X::copy(grad_step,minus_grad);
@@ -4973,7 +4995,7 @@ namespace Optizelle{
                 // Modify the gradient if need be 
                 auto grad_step = X::init(x);
                 f_mod.grad_step(x,grad,grad_step);
-                if(gradmod(grad_step))
+                if(gradmod(grad_step,Real(0.),true))
                     f_mod.grad_step(x,grad,grad_step);
 
                 // Create the trust-region center 
@@ -5789,7 +5811,7 @@ namespace Optizelle{
 
                 // Vector space diagnostics on Y 
                 VectorSpaceDiagnostics::t y_diag;
-                
+
                 // Initialization constructors
                 explicit t(X_Vector const & x_user,Y_Vector const & y_user) : 
                     Unconstrained <Real,XX>::State::t(x_user),
@@ -7306,39 +7328,40 @@ namespace Optizelle{
                 Real const & ared = state.ared;
                 Real const & delta = state.delta;
                 Natural const & msg_level = state.msg_level;
+                auto const & algorithm_class = state.algorithm_class;
 
-                Natural const & augsys_qn_iter = state.augsys_qn_iter;
-                Natural const & augsys_qn_iter_total=state.augsys_qn_iter_total;
-                Real const & augsys_qn_err = state.augsys_qn_err;
-                Real const & augsys_qn_err_target= state.augsys_qn_err_target;
+                auto const & augsys_qn_iter = state.augsys_qn_iter;
+                auto const & augsys_qn_iter_total=state.augsys_qn_iter_total;
+                auto const & augsys_qn_err = state.augsys_qn_err;
+                auto const & augsys_qn_err_target= state.augsys_qn_err_target;
 
-                Natural const & augsys_pg_iter = state.augsys_pg_iter;
-                Natural const & augsys_pg_iter_total=state.augsys_pg_iter_total;
-                Real const & augsys_pg_err = state.augsys_pg_err;
-                Real const & augsys_pg_err_target= state.augsys_pg_err_target;
+                auto const & augsys_pg_iter = state.augsys_pg_iter;
+                auto const & augsys_pg_iter_total=state.augsys_pg_iter_total;
+                auto const & augsys_pg_err = state.augsys_pg_err;
+                auto const & augsys_pg_err_target= state.augsys_pg_err_target;
 
-                Natural const & augsys_proj_iter = state.augsys_proj_iter;
-                Natural const & augsys_proj_iter_total =
+                auto const & augsys_proj_iter = state.augsys_proj_iter;
+                auto const & augsys_proj_iter_total =
                     state.augsys_proj_iter_total;
-                Real const & augsys_proj_err = state.augsys_proj_err;
-                Real const & augsys_proj_err_target =
+                auto const & augsys_proj_err = state.augsys_proj_err;
+                auto const & augsys_proj_err_target =
                     state.augsys_proj_err_target;
 
-                Natural const & augsys_tang_iter = state.augsys_tang_iter;
-                Natural const & augsys_tang_iter_total =
+                auto const & augsys_tang_iter = state.augsys_tang_iter;
+                auto const & augsys_tang_iter_total =
                     state.augsys_tang_iter_total;
-                Real const & augsys_tang_err = state.augsys_tang_err;
-                Real const & augsys_tang_err_target =
+                auto const & augsys_tang_err = state.augsys_tang_err;
+                auto const & augsys_tang_err_target =
                     state.augsys_tang_err_target;
 
-                Natural const & augsys_lmh_iter = state.augsys_lmh_iter;
-                Natural const & augsys_lmh_iter_total =
+                auto const & augsys_lmh_iter = state.augsys_lmh_iter;
+                auto const & augsys_lmh_iter_total =
                     state.augsys_lmh_iter_total;
-                Real const & augsys_lmh_err = state.augsys_lmh_err;
-                Real const & augsys_lmh_err_target =
+                auto const & augsys_lmh_err = state.augsys_lmh_err;
+                auto const & augsys_lmh_err_target =
                     state.augsys_lmh_err_target;
                 
-                Natural const & augsys_iter_total = state.augsys_iter_total;
+                auto const & augsys_iter_total = state.augsys_iter_total;
 
                 // Figure out if we're at the absolute beginning of the
                 // optimization.
@@ -7804,6 +7827,7 @@ namespace Optizelle{
                 Natural & augsys_qn_iter = state.augsys_qn_iter;
                 Natural & augsys_qn_iter_total = state.augsys_qn_iter_total;
                 Natural & augsys_iter_total = state.augsys_iter_total;
+                auto & alpha_x_qn = state.alpha_x_qn;
 
                 // If we're already feasible, don't even bother with the
                 // quasi-Newton step.  In fact, if g(x)=0, the equation for
@@ -7840,16 +7864,15 @@ namespace Optizelle{
                 // Safeguard the Cauchy point
                 auto zero = X::init(x);
                 X::zero(zero);
-                auto alpha_safeguard = safeguard(zero,dx_ncp,zeta);
+                alpha_x_qn = std::min(safeguard(zero,dx_ncp,zeta),Real(1.));
 
                 // If || dx_ncp || >= zeta delta, scale it back to zeta
                 // delta and return.  Alternatively, if the safeguard truncates
                 // things, scale things back and return.
                 Real norm_dxncp = sqrt(X::innr(dx_ncp,dx_ncp));
                 auto alpha_tr = zeta*delta/norm_dxncp;
-                if(alpha_tr < Real(1.0) || alpha_safeguard < Real(1.0)) {
-                    auto alpha = alpha_tr < alpha_safeguard ?
-                        alpha_tr : alpha_safeguard;
+                auto alpha = std::min(alpha_tr,alpha_x_qn);
+                if(alpha < Real(1.0)) {
                     X::scal(alpha,dx_ncp);
                     X::copy(dx_ncp,dx_n);
                     return;
@@ -7898,24 +7921,27 @@ namespace Optizelle{
                 X::axpy(Real(1.),dx_dnewton,dx_n);
 
                 // Safeguard the Newton step 
-                alpha_safeguard = safeguard(dx_ncp,dx_dnewton,zeta);
+                alpha_x_qn=std::min(Real(1.),safeguard(dx_ncp,dx_dnewton,zeta));
 
                 // If the dx_n is smaller than zeta delta and we don't have to
                 // safeguard, then return it as the quasi-normal step
                 Real norm_dxn = sqrt(X::innr(dx_n,dx_n));
-                if(norm_dxn <= zeta*delta && alpha_safeguard >= Real(1.))return;
+                if(norm_dxn <= zeta*delta && alpha_x_qn >= Real(1.))return;
 
                 // Otherwise, compute the dogleg step.  In order to accomplish
                 // this, we need to find theta so that
+                //
                 // || dx_ncp + theta dx_dnewton || = zeta*delta
+                //
                 // and then set
-                // dx_n = dx_ncp + min(theta,alpha_safeguard) dx_dnewton.
+                //
+                // dx_n = dx_ncp + min(theta,alpha_x_qn) dx_dnewton.
                 Real aa = X::innr(dx_dnewton,dx_dnewton);
                 Real bb = Real(2.) * X::innr(dx_dnewton,dx_ncp);
                 Real cc = norm_dxncp*norm_dxncp - zeta*zeta*delta*delta;
                 auto roots = quad_equation(aa,bb,cc);
                 Real theta = roots[0] > roots[1] ? roots[0] : roots[1];
-                auto alpha = theta < alpha_safeguard ? theta : alpha_safeguard;
+                alpha = std::min(theta,alpha_x_qn);
                 X::copy(dx_ncp,dx_n);
                 X::axpy(alpha,dx_dnewton,dx_n);
             }
@@ -8893,7 +8919,9 @@ namespace Optizelle{
                 Real const & norm_dxtyp=state.norm_dxtyp;
                 Real const & rho_old=state.rho_old;
                 Natural const & history_reset=state.history_reset;
-                auto & W_gradpHdxn = state.W_gradpHdxn;
+                auto const & eps_constr = state.eps_constr;
+                auto const & norm_gxtyp = state.norm_gxtyp;
+                auto const & W_gradpHdxn = state.W_gradpHdxn;
                 X_Vector & dx=state.dx;
                 X_Vector & dx_t_uncorrected=state.dx_t_uncorrected;
                 X_Vector & H_dxn=state.H_dxn;
@@ -8956,7 +8984,10 @@ namespace Optizelle{
                             
                             // See if we need to modify the gradient.  If we do
                             // recompute.
-                            if(gradmod(W_gradpHdxn))
+                            auto norm_gx=sqrt(Y::innr(g_x,g_x)); 
+                            auto gx_reduction=log10(norm_gxtyp)-log10(norm_gx);
+                            auto gx_converged=norm_gx < eps_constr*norm_gxtyp;
+                            if(gradmod(W_gradpHdxn,gx_reduction,gx_converged))
                                 projectedGradLagrangianPlusHdxn(fns,state);
 
                             // Find the uncorrected tangential step
@@ -10108,7 +10139,9 @@ namespace Optizelle{
             static Real inequalityGradStepModification(
                 typename Functions::t const & fns,
                 typename State::t & state,
-                X_Vector const & grad_step
+                X_Vector const & grad_step,
+                Real const & gx_reduction,
+                bool const & gx_converged
             ) {
                 // Create some shortcuts
                 auto const & f_mod = *(fns.f_mod);
@@ -10130,47 +10163,59 @@ namespace Optizelle{
                     return false;
 
                 // Find || grad_step ||
-                auto norm_grad_step = sqrt(X::innr(grad_step,grad_step));
+                auto norm_grad_step = std::sqrt(X::innr(grad_step,grad_step));
                        
                 // Find || grad_stop ||
                 auto grad_stop = X::init(x);
                 f_mod.grad_stop(x,grad,grad_stop);
-                auto norm_grad_stop = sqrt(X::innr(grad_stop,grad_stop));
+                auto norm_grad_stop = std::sqrt(X::innr(grad_stop,grad_stop));
 
                 // We reduce mu when the following has occured
                 //
-                // 1. We reduced grad_step sufficiently (need only one)
+                // 1. We converge grad either locally or globally
+                //    (need only one)
+                //
                 //    a. || grad_step || compared to || grad_typ || is smaller
                 //       than mu_typ compared to mu_est
-                //       
-                //    b. || grad_stop || compared to || grad_typ || is smaller
-                //       than mu_typ compared to mu_est
                 //
-                //    c. || grad_step || < eps_grad || grad_typ ||
+                //    b. || grad_step || < eps_grad || grad_typ ||
+                //       
+                //    c. || grad_stop || compared to || grad_typ || is smaller
+                //       than mu_typ compared to mu_est
                 //
                 //    d. || grad_stop || < eps_grad || grad_typ ||
                 //
-                // 2. |mu - mu_est | < mu.  Basically, we want mu and mu_est to
-                //    be on the same order
+                // 2. We converge g(x) locally or globally (need only one)
                 //
-                // 3. |mu - eps_mu mu_typ| >= eps_mu mu_typ.  Basically, once
-                //    we converge mu to the same order as eps_mu mu_typ, we
-                //    don't reduce it further 
+                //    a. || g(x) || compared to || g(x)_typ || is smaller
+                //       than mu_typ compared to mu_est
+                //
+                //    b. || g(x) || < eps_constr || g(x)_typ ||
+                //
+                // 3. We converge mu_est locally
+                //
+                //    |mu - mu_est | < mu
+                //
+                // 4. We have *not* converged mu globally
+                //
+                //    |mu - eps_mu mu_typ| >= eps_mu mu_typ
                 auto grad_step_reduction =
                     log10(norm_gradtyp)-log10(norm_grad_step);
-                auto grad_stop_reduction =
-                    log10(norm_gradtyp)-log10(norm_grad_stop);
-                auto mu_reduction = log10(mu_typ) - log10(mu_est);
                 auto grad_step_converged =
                     norm_grad_step < eps_grad*norm_gradtyp;
+
+                auto grad_stop_reduction =
+                    log10(norm_gradtyp)-log10(norm_grad_stop);
                 auto grad_stop_converged =
                     norm_grad_stop < eps_grad*norm_gradtyp;
+
+                auto mu_reduction = log10(mu_typ) - log10(mu_est);
                 auto mu_est_converged = std::fabs(mu-mu_est) < mu;
                 auto mu_converged = std::fabs(mu-mu_typ*eps_mu) < mu_typ*eps_mu;
-                if(((grad_step_reduction >= mu_reduction) ||
-                    grad_step_converged ||
-                    (grad_stop_reduction >= mu_reduction) ||
-                    grad_stop_converged) &&
+
+                if(((grad_step_reduction >=mu_reduction)||grad_step_converged||
+                    (grad_stop_reduction >=mu_reduction)||grad_stop_converged)&&
+                    ((gx_reduction >= mu_reduction) || gx_converged) &&
                     mu_est_converged &&
                     !mu_converged
                 ) {
@@ -10227,7 +10272,9 @@ namespace Optizelle{
                             inequalityGradStepModification,
                             std::cref(fns),
                             std::ref(state),
-                            std::placeholders::_1));
+                            std::placeholders::_1,
+                            std::placeholders::_2,
+                            std::placeholders::_3));
                 
                 // If we also have equality constraints, we need another
                 // multiplier solve 
@@ -10260,6 +10307,7 @@ namespace Optizelle{
             ) {
                 // Create some shortcuts
                 auto const & msg_level = state.msg_level;
+                auto const & algorithm_class = state.algorithm_class;
 
                 // Basic information
                 out.emplace_back(Utility::atos("mu_est"));
@@ -10268,8 +10316,10 @@ namespace Optizelle{
                 if(msg_level >= 2) {
                     out.emplace_back(Utility::atos("mu"));
                     out.emplace_back(Utility::atos("alpha_x"));
+                    out.emplace_back(Utility::atos("alpha_x_qn"));
                     out.emplace_back(Utility::atos("alpha_z"));
-                    out.emplace_back(Utility::atos("failed_safe"));
+                    if(algorithm_class!=AlgorithmClass::LineSearch)
+                        out.emplace_back(Utility::atos("failed_safe"));
                 }
             }
 
@@ -10296,9 +10346,11 @@ namespace Optizelle{
                 auto const & mu=state.mu; 
                 auto const & mu_est=state.mu_est; 
                 auto const & alpha_x =state.alpha_x;
+                auto const & alpha_x_qn =state.alpha_x_qn;
                 auto const & alpha_z =state.alpha_z;
                 auto const & failed_safeguard=state.failed_safeguard;
                 auto const & msg_level = state.msg_level;
+                auto const & algorithm_class = state.algorithm_class;
 
                 // Figure out if we're at the absolute beginning of the
                 // optimization.
@@ -10318,10 +10370,14 @@ namespace Optizelle{
 
                     if(!opt_begin) {
                         out.emplace_back(Utility::atos(alpha_x));
+                        out.emplace_back(Utility::atos(alpha_x_qn));
                         out.emplace_back(Utility::atos(alpha_z));
-                        out.emplace_back(Utility::atos(failed_safeguard));
+                        if(algorithm_class!=AlgorithmClass::LineSearch)
+                            out.emplace_back(Utility::atos(failed_safeguard));
                     } else {
-                        for(Natural i=0;i<3;i++)
+                        auto nblank=algorithm_class!=AlgorithmClass::LineSearch?
+                            4 : 3;
+                        for(Natural i=0;i<nblank;i++)
                             out.emplace_back(Utility::blankSeparator);
                     }
                 }
