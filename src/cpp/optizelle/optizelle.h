@@ -11198,14 +11198,14 @@ namespace Optizelle{
 
                         // Take our inequality multiplier ste
                         Z::axpy(Real(1.),dz,z);
-
-                        // Update the interior point estimate
-                        estimateInteriorPointParameter(fns,state);
                         break;
 
                     case OptimizationLocation::AfterStepBeforeGradient:
                         // Updated our cached copy of h(x)
                         h.eval(x,h_x);
+
+                        // Update the interior point estimate
+                        estimateInteriorPointParameter(fns,state);
                         break;
 
                     // Adjust the interior point parameter and insure that
