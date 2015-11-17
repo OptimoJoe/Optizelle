@@ -10316,7 +10316,6 @@ namespace Optizelle{
                 if(msg_level >= 2) {
                     out.emplace_back(Utility::atos("mu"));
                     out.emplace_back(Utility::atos("alpha_x"));
-                    out.emplace_back(Utility::atos("alpha_x_qn"));
                     out.emplace_back(Utility::atos("alpha_z"));
                     if(algorithm_class!=AlgorithmClass::LineSearch)
                         out.emplace_back(Utility::atos("failed_safe"));
@@ -10346,7 +10345,6 @@ namespace Optizelle{
                 auto const & mu=state.mu; 
                 auto const & mu_est=state.mu_est; 
                 auto const & alpha_x =state.alpha_x;
-                auto const & alpha_x_qn =state.alpha_x_qn;
                 auto const & alpha_z =state.alpha_z;
                 auto const & failed_safeguard=state.failed_safeguard;
                 auto const & msg_level = state.msg_level;
@@ -10370,13 +10368,12 @@ namespace Optizelle{
 
                     if(!opt_begin) {
                         out.emplace_back(Utility::atos(alpha_x));
-                        out.emplace_back(Utility::atos(alpha_x_qn));
                         out.emplace_back(Utility::atos(alpha_z));
                         if(algorithm_class!=AlgorithmClass::LineSearch)
                             out.emplace_back(Utility::atos(failed_safeguard));
                     } else {
                         auto nblank=algorithm_class!=AlgorithmClass::LineSearch?
-                            4 : 3;
+                            3 : 2;
                         for(Natural i=0;i<nblank;i++)
                             out.emplace_back(Utility::blankSeparator);
                     }
@@ -11615,6 +11612,12 @@ namespace Optizelle{
                 typename State::t const & state,
                 std::list <std::string> & out
             ) { 
+                // Create some shortcuts
+                auto const & msg_level = state.msg_level;
+
+                // More detailed information
+                if(msg_level >= 2)
+                    out.emplace_back(Utility::atos("alpha_x_qn"));
             }
             // Combines all of the state headers
             static void getStateHeader(
@@ -11627,6 +11630,48 @@ namespace Optizelle{
                     state,out);
                 InequalityConstrained<Real,XX,ZZ>::Diagnostics::getStateHeader_(
                     state,out);
+                Constrained<Real,XX,YY,ZZ>::Diagnostics::getStateHeader_(
+                    state,out);
+            }
+
+            // Gets the state information for output
+            static void getState_(
+                typename Functions::t const & fns,
+                typename State::t const & state,
+                bool const & blank,
+                std::list <std::string> & out
+            ) {
+
+                // Create some shortcuts
+                auto const & alpha_x_qn =state.alpha_x_qn;
+                auto const & msg_level = state.msg_level;
+
+                // Figure out if we're at the absolute beginning of the
+                // optimization.
+                bool opt_begin = Utility::is_opt_begin <Constrained> (state);
+
+                // Get a iterator to the last element prior to inserting
+                // elements
+                std::list <std::string>::iterator prior=out.end(); prior--;
+
+                // More detailed information
+                if(msg_level >= 2) {
+                    if(!opt_begin)
+                        out.emplace_back(Utility::atos(alpha_x_qn));
+                    else {
+                        for(Natural i=0;i<1;i++)
+                            out.emplace_back(Utility::blankSeparator);
+                    }
+                }
+
+                // If we needed to do blank insertions, overwrite the elements
+                // with spaces 
+                if(blank)
+                    for(std::list <std::string>::iterator x=++prior;
+                        x!=out.end();
+                        x++
+                    )
+                        (*x)=Utility::blankSeparator;
             }
 
             // Combines all of the state information
@@ -11642,6 +11687,8 @@ namespace Optizelle{
                 EqualityConstrained <Real,XX,YY>::Diagnostics
                     ::getState_(fns,state,blank,out);
                 InequalityConstrained <Real,XX,ZZ>::Diagnostics
+                    ::getState_(fns,state,blank,out);
+                Constrained <Real,XX,YY,ZZ>::Diagnostics
                     ::getState_(fns,state,blank,out);
             }
 
