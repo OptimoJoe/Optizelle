@@ -1151,12 +1151,12 @@ namespace Optizelle {
     // to solve Ax=b where we restrict x to be in the range of B and that
     // || x + x_offset || <= delta.  The parameters are as follows.
     // 
-    // (input) A : Operator in the system A B x = b.
-    // (input) b : Right hand side in the system A B x = b.
-    // (input) B : Projection in the system A B x = b.
-    // (input) C : Operator that modifies the shape of the trust-region.
-    // (input) eps : Stopping tolerance.
-    // (input) iter_max :  Maximum number of iterations.
+    // (input) A : Operator in the system A B x = b
+    // (input) b : Right hand side in the system A B x = b
+    // (input) B : Projection in the system A B x = b
+    // (input) C : Operator that modifies the shape of the trust-region
+    // (input) eps : Stopping tolerance
+    // (input) iter_max :  Maximum number of iterations
     // (input) orthog_max : Maximum number of orthgonalizations.  If this
     //     number is 1, then we do the conjugate gradient algorithm.
     // (input) delta : Trust region radius.  If this number is infinity, we
@@ -1166,12 +1166,14 @@ namespace Optizelle {
     // (input) failed_safeguard_max : Maximum number of failed safeguard steps
     //     before exiting
     // (input) safeguard : Our safeguard function
-    // (output) x : Final solution x.
+    // (output) x : Final solution x
     // (output) x_cp : The Cauchy-Point, which is defined as the solution x
-    //     after a single iteration.
-    // (output) norm_Br : The norm ||B r|| of the final residual.
-    // (output) iter : The number of iterations required to converge. 
-    // (output) krylov_stop : The reason why the Krylov method was terminated.
+    //     after a single iteration
+    // (output) norm_Br : The norm ||B r|| of the final residual
+    // (output) iter : The number of iterations required to converge.
+    // (output) krylov_stop : The reason why the Krylov method was terminated
+    // (output) failed_safeguard : Number of failed safeguard steps upon exiting
+    // (output) alpha_safeguard : Amount we truncated the last iteration
     template <
         typename Real,
         template <typename> class XX
@@ -1193,7 +1195,9 @@ namespace Optizelle {
         Real & norm_Br0,
         Real & norm_Br,
         Natural & iter,
-        KrylovStop::t & krylov_stop
+        KrylovStop::t & krylov_stop,
+        Natural & failed_safeguard,
+        Real & alpha_safeguard
     ){
 
         // Create some type shortcuts
@@ -1202,6 +1206,9 @@ namespace Optizelle {
 
         // At the start, we haven't converged
         krylov_stop = KrylovStop::NotConverged;
+
+        // We also haven't truncated anything at the start
+        alpha_safeguard = Real(1.0);
 
         // Allocate memory for the orthogonality check, which only makes sense
         // when the preconditioner B is really a projection and not a
@@ -1291,7 +1298,7 @@ namespace Optizelle {
         auto shifted_iterate0 = X::init(x);
         X::copy(shifted_iterate,shifted_iterate0);
         auto dx_aggregate = X::init(x);
-        auto failed_safeguard = Natural(0);
+        failed_safeguard = 0;
         auto x_safe = X::init(x);
         X::copy(x,x_safe);
         auto Bdx_safe = X::init(x);
@@ -1331,8 +1338,9 @@ namespace Optizelle {
             if(Anorm_Bdx_2!=Anorm_Bdx_2)
                 krylov_stop = KrylovStop::NanDetected;
 
-            // Check for negative curvature, when || Bdx ||_A^2 < 0
-            if(Anorm_Bdx_2 < Real(0.) && krylov_stop ==KrylovStop::NotConverged)
+            // Check for negative curvature, when || Bdx ||_A^2 <= 0.  Note,
+            // this also encapsulates zero curvature, which is also bad.
+            if(Anorm_Bdx_2 <= Real(0.)&& krylov_stop ==KrylovStop::NotConverged)
                 krylov_stop = KrylovStop::NegativeCurvature;
 
             // Allocate memory for the line-search to the trust-region bound 
@@ -1547,7 +1555,8 @@ namespace Optizelle {
                     // in the current direction.  If this amount truncates us
                     // more than sigma, then we reduce the size of sigma.
                     if(failed_safeguard==0) { 
-                        auto alpha_safeguard = safeguard(shifted_iterate,Bdx);
+                        alpha_safeguard = std::min(
+                            safeguard(shifted_iterate,Bdx),Real(1.0));
                         if(alpha_safeguard < Real(1.) && alpha_safeguard<sigma)
                             sigma = alpha_safeguard;
                     }
@@ -1594,7 +1603,7 @@ namespace Optizelle {
             // safe, save it for potential use later
             X::copy(x,dx_aggregate);
             X::axpy(Real(-1.),shifted_iterate0,dx_aggregate);
-            auto alpha_safeguard = safeguard(x_offset,x);
+            alpha_safeguard = std::min(safeguard(x_offset,x),Real(1.0));
             if(alpha_safeguard < Real(1.))
                 failed_safeguard += 1;
             else {
@@ -1609,7 +1618,7 @@ namespace Optizelle {
             X::scal(Real(-1.),Bdx);	
 
             // If we have too many failed safeguard steps, exit
-            if(failed_safeguard > failed_safeguard_max)
+            if(failed_safeguard >= failed_safeguard_max)
                 krylov_stop = KrylovStop::TooManyFailedSafeguard;
         
             // If the norm of the residual is small relative to the starting
@@ -1640,7 +1649,7 @@ namespace Optizelle {
             X::copy(ABdx_safe,ABdx);
 
             // Determine how far we can go safely in the saved direction
-            auto alpha_safeguard = safeguard(shifted_iterate,Bdx);
+            alpha_safeguard= std::min(safeguard(shifted_iterate,Bdx),Real(1.0));
             alpha_safeguard = alpha_safeguard < Real(1.) ?
                 alpha_safeguard : Real(1.);
 

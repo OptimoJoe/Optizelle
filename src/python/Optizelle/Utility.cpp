@@ -512,80 +512,6 @@ namespace Optizelle {
         }
     }
 
-    namespace InteriorPointMethod { 
-        // Converts t to a Python enumerated type
-        PyObject * toPython(t const & ipm) {
-            // Do the conversion
-            switch(ipm){
-            case PrimalDual:
-                return Python::enumToPyObject("InteriorPointMethod",
-                    "PrimalDual");
-            case PrimalDualLinked:
-                return Python::enumToPyObject("InteriorPointMethod",
-                    "PrimalDualLinked");
-            case LogBarrier:
-                return Python::enumToPyObject("InteriorPointMethod",
-                    "LogBarrier");
-            default:
-                throw;
-            }
-        }
-
-        // Converts a Python enumerated type to t 
-        t fromPython(PyObject * const member) {
-            // Convert the member to a Natural 
-            Natural m=PyInt_AsSsize_t(member);
-
-            if(m==Python::enumToNatural("InteriorPointMethod","PrimalDual"))
-                return PrimalDual;
-            else if(m==Python::enumToNatural("InteriorPointMethod",
-                "PrimalDualLinked")
-            )
-                return PrimalDualLinked;
-            else if(m==Python::enumToNatural("InteriorPointMethod",
-                "LogBarrier")
-            )
-                return LogBarrier;
-            else
-                throw;
-        }
-    }
-
-    namespace CentralityStrategy { 
-        // Converts t to a Python enumerated type
-        PyObject * toPython(t const & cstrat) {
-            // Do the conversion
-            switch(cstrat){
-            case Constant:
-                return Python::enumToPyObject("CentralityStrategy","Constant");
-            case StairStep:
-                return Python::enumToPyObject("CentralityStrategy","StairStep");
-            case PredictorCorrector:
-                return Python::enumToPyObject("CentralityStrategy",
-                    "PredictorCorrector");
-            default:
-                throw;
-            }
-        }
-
-        // Converts a Python enumerated type to t 
-        t fromPython(PyObject * const member) {
-            // Convert the member to a Natural 
-            Natural m=PyInt_AsSsize_t(member);
-
-            if(m==Python::enumToNatural("CentralityStrategy","Constant"))
-                return Constant;
-            else if(m==Python::enumToNatural("CentralityStrategy","StairStep"))
-                return StairStep;
-            else if(m==Python::enumToNatural("CentralityStrategy",
-                "PredictorCorrector")
-            )
-                return PredictorCorrector;
-            else
-                throw;
-        }
-    }
-
     namespace FunctionDiagnostics { 
         // Converts t to a Python enumerated type
         PyObject * toPython(t const & diag) {
@@ -1949,6 +1875,11 @@ namespace Optizelle {
                     toPython::Natural("msg_level",state.msg_level,pystate);
                     toPython::Natural("failed_safeguard_max",
                         state.failed_safeguard_max,pystate);
+                    toPython::Natural("failed_safeguard",
+                        state.failed_safeguard,pystate);
+                    toPython::Natural("failed_safeguard_total",
+                        state.failed_safeguard_total,pystate);
+                    toPython::Real("alpha_x",state.alpha_x,pystate);
                     toPython::Real("delta",state.delta,pystate);
                     toPython::Real("eta1",state.eta1,pystate);
                     toPython::Real("eta2",state.eta2,pystate);
@@ -2075,6 +2006,11 @@ namespace Optizelle {
                     fromPython::Natural("msg_level",pystate,state.msg_level);
                     fromPython::Natural("failed_safeguard_max",
                         pystate,state.failed_safeguard_max);
+                    fromPython::Natural("failed_safeguard",
+                        pystate,state.failed_safeguard);
+                    fromPython::Natural("failed_safeguard_total",
+                        pystate,state.failed_safeguard_total);
+                    fromPython::Real("alpha_x",pystate,state.alpha_x);
                     fromPython::Real("delta",pystate,state.delta);
                     fromPython::Real("eta1",pystate,state.eta1);
                     fromPython::Real("eta2",pystate,state.eta2);
@@ -3178,18 +3114,7 @@ namespace Optizelle {
                     toPython::Real("eps_mu",state.eps_mu,pystate);
                     toPython::Real("sigma",state.sigma,pystate);
                     toPython::Real("gamma",state.gamma,pystate);
-                    toPython::Real("alpha_x",state.alpha_x,pystate);
                     toPython::Real("alpha_z",state.alpha_z,pystate);
-                    toPython::Param <InteriorPointMethod::t> (
-                        "ipm",
-                        InteriorPointMethod::toPython,
-                        state.ipm,
-                        pystate);
-                    toPython::Param <CentralityStrategy::t> (
-                        "cstrat",
-                        CentralityStrategy::toPython,
-                        state.cstrat,
-                        pystate);
                     toPython::Param <FunctionDiagnostics::t> (
                         "h_diag",
                         FunctionDiagnostics::toPython,
@@ -3200,7 +3125,6 @@ namespace Optizelle {
                         VectorSpaceDiagnostics::toPython,
                         state.z_diag,
                         pystate);
-                    toPython::Real("delta_z",state.delta_z,pystate);
                 }
                 void toPython(
                     typename PyInequalityConstrained::State::t const & state,
@@ -3224,18 +3148,7 @@ namespace Optizelle {
                     fromPython::Real("eps_mu",pystate,state.eps_mu);
                     fromPython::Real("sigma",pystate,state.sigma);
                     fromPython::Real("gamma",pystate,state.gamma);
-                    fromPython::Real("alpha_x",pystate,state.alpha_x);
                     fromPython::Real("alpha_z",pystate,state.alpha_z);
-                    fromPython::Param <InteriorPointMethod::t> (
-                        "ipm",
-                        InteriorPointMethod::fromPython,
-                        pystate,
-                        state.ipm);
-                    fromPython::Param <CentralityStrategy::t> (
-                        "cstrat",
-                        CentralityStrategy::fromPython,
-                        pystate,
-                        state.cstrat);
                     fromPython::Param <FunctionDiagnostics::t> (
                         "h_diag",
                         FunctionDiagnostics::fromPython,
@@ -3246,7 +3159,6 @@ namespace Optizelle {
                         VectorSpaceDiagnostics::fromPython,
                         pystate,
                         state.z_diag);
-                    fromPython::Real("delta_z",pystate,state.delta_z);
                 }
                 void fromPython(
                     PyObject * const pystate,

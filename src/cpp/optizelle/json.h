@@ -953,20 +953,6 @@ namespace Optizelle {
                     msg,
                     root["Optizelle"].get("gamma",state.gamma),
                     "gamma");
-                state.ipm=read::param <InteriorPointMethod::t> (
-                    msg,
-                    root["Optizelle"].get("ipm",
-                        InteriorPointMethod::to_string(state.ipm)),
-                    InteriorPointMethod::is_valid,
-                    InteriorPointMethod::from_string,
-                    "ipm");
-                state.cstrat=read::param <CentralityStrategy::t> (
-                    msg,
-                    root["Optizelle"].get("cstrat",
-                        CentralityStrategy::to_string(state.cstrat)),
-                    CentralityStrategy::is_valid,
-                    CentralityStrategy::from_string,
-                    "cstrat");
                 state.h_diag=read::param <FunctionDiagnostics::t> (
                     msg,
                     root["Optizelle"].get("h_diag",
@@ -981,10 +967,6 @@ namespace Optizelle {
                     VectorSpaceDiagnostics::is_valid,
                     VectorSpaceDiagnostics::from_string,
                     "z_diag");
-                state.delta_z=read::real <Real> (
-                    msg,
-                    root["Optizelle"].get("delta_z",state.delta_z),
-                    "delta_z");
             }
             static void read(
                 Optizelle::Messaging const & msg,
@@ -1012,15 +994,10 @@ namespace Optizelle {
                 root["Optizelle"]["mu"]=write::real(state.mu);
                 root["Optizelle"]["sigma"]=write::real(state.sigma);
                 root["Optizelle"]["gamma"]=write::real(state.gamma);
-                root["Optizelle"]["ipm"]=write_param(
-                    InteriorPointMethod::to_string,state.ipm);
-                root["Optizelle"]["cstrat"]=write_param(
-                    CentralityStrategy::to_string,state.cstrat);
                 root["Optizelle"]["h_diag"]=write_param(
                     FunctionDiagnostics::to_string,state.h_diag);
                 root["Optizelle"]["z_diag"]=write_param(
                     VectorSpaceDiagnostics::to_string,state.z_diag);
-                root["Optizelle"]["delta_z"]=write::real(state.delta_z);
 
                 return writer.write(root);
             }

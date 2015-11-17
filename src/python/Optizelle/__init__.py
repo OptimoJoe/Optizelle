@@ -23,8 +23,6 @@ __all__ = [
     "OptimizationLocation",
     "ProblemClass",
     "KrylovSolverTruncated",
-    "InteriorPointMethod",
-    "CentralityStrategy",
     "FunctionDiagnostics",
     "DiagnosticScheme",
 
@@ -151,21 +149,7 @@ class KrylovSolverTruncated(EnumeratedType):
     ConjugateDirection, \
     MINRES \
     = range(2)
-
-class InteriorPointMethod(EnumeratedType):
-    """Different kinds of interior point methods"""
-    PrimalDual, \
-    PrimalDualLinked, \
-    LogBarrier \
-    = range(3)
     
-class CentralityStrategy(EnumeratedType):
-    """Different schemes for adjusting the interior point centrality"""
-    Constant, \
-    StairStep, \
-    PredictorCorrector \
-    = range(3)
-
 class FunctionDiagnostics(EnumeratedType):
     """Different function diagnostics on the optimization functions""" 
     NoDiagnostics, \

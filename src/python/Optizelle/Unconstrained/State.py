@@ -143,6 +143,17 @@ class t(object):
     failed_safeguard_max = Optizelle.createNatProperty(
         "failed_safeguard_max",
         "Number of failed safe-guard steps before quitting the method")
+    failed_safeguard = Optizelle.createNatProperty(
+        "failed_safeguard",
+        "Number of failed safeguard steps during the last iteration")
+    failed_safeguard_total = Optizelle.createNatProperty(
+        "failed_safeguard_total",
+        "Total number of failed safeguard steps")
+    alpha_x = Optizelle.createFloatProperty(
+        "alpha_x",
+        ("Amount we truncate dx in order to maintain feasibility "
+        " with respect to the safeguard, which probably relates to "
+        "the inequality constraint"))
     delta = Optizelle.createFloatProperty(
         "delta",
         "Trust region radius")

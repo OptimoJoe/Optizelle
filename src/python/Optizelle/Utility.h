@@ -109,22 +109,6 @@ namespace Optizelle {
         t fromPython(PyObject * const member);
     }
     
-    namespace InteriorPointMethod{ 
-        // Converts t to a Python enumerated type
-        PyObject * toPython(t const & ipm);
-
-        // Converts a Python enumerated type to t 
-        t fromPython(PyObject * const member);
-    }
-    
-    namespace CentralityStrategy{ 
-        // Converts t to a Python enumerated type
-        PyObject * toPython(t const & cstrat);
-
-        // Converts a Python enumerated type to t 
-        t fromPython(PyObject * const member);
-    }
-    
     namespace FunctionDiagnostics{ 
         // Converts t to a Python enumerated type
         PyObject * toPython(t const & diag); 

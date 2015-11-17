@@ -101,22 +101,6 @@ namespace Optizelle {
         t fromMatlab(mxArray * const member);
     }
     
-    namespace InteriorPointMethod{ 
-        // Converts t to a Matlab enumerated type
-        mxArray * toMatlab(t const & ipm);
-
-        // Converts a Matlab enumerated type to t 
-        t fromMatlab(mxArray * const member);
-    }
-    
-    namespace CentralityStrategy{ 
-        // Converts t to a Matlab enumerated type
-        mxArray * toMatlab(t const & cstrat);
-
-        // Converts a Matlab enumerated type to t 
-        t fromMatlab(mxArray * const member);
-    }
-    
     namespace FunctionDiagnostics{ 
         // Converts t to a Matlab enumerated type
         mxArray * toMatlab(t const & diag); 
