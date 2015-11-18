@@ -2166,12 +2166,12 @@ namespace Optizelle{
                     ),
                     alpha_x(
                         //---alpha_x0---
-                        std::numeric_limits<Real>::quiet_NaN()
+                        std::numeric_limits <Real>::quiet_NaN() 
                         //---alpha_x1---
                     ),
                     alpha_x_qn(
                         //---alpha_x_qn0---
-                        1.0 
+                        std::numeric_limits <Real>::quiet_NaN() 
                         //---alpha_x_qn1---
                     ),
                     delta(
@@ -8223,6 +8223,7 @@ namespace Optizelle{
                 typename State::t & state
             ) {
                 // Create some shortcuts
+                ScalarValuedFunction <Real,XX> const & f=*(fns.f);
                 ScalarValuedFunctionModifications <Real,XX> const & f_mod
                     = *(fns.f_mod);
                 auto const & safeguard = *(fns.safeguard); 
@@ -8247,9 +8248,6 @@ namespace Optizelle{
                 auto & failed_safeguard_total = state.failed_safeguard_total;
                 auto & alpha_x = state.alpha_x;
                 
-                // Create shortcuts to the functions that we need
-                ScalarValuedFunction <Real,XX> const & f=*(fns.f);
-                    
                 // Setup the Hessian operator and allocate memory for the
                 // Cauchy point.
                 typename Unconstrained <Real,XX>::Algorithms::HessianOperator
@@ -8990,6 +8988,7 @@ namespace Optizelle{
                             if(gradmod(W_gradpHdxn,gx_reduction,gx_converged))
                                 projectedGradLagrangianPlusHdxn(fns,state);
 
+                            
                             // Find the uncorrected tangential step
                             tangentialSubProblem(fns,state);
                         }
@@ -9452,7 +9451,7 @@ namespace Optizelle{
                     ),
                     alpha_z(
                         //---alpha_z0---
-                        std::numeric_limits<Real>::quiet_NaN()
+                        std::numeric_limits <Real>::quiet_NaN() 
                         //---alpha_z1---
                     ),
                     h_diag(
@@ -10153,9 +10152,24 @@ namespace Optizelle{
                 auto const & eps_mu=state.eps_mu;
                 auto const & mu_est=state.mu_est;
                 auto const & sigma=state.sigma;
+                auto const & alpha_x=state.alpha_x;
+                auto const & alpha_x_qn=state.alpha_x_qn;
+                auto const & alpha_z=state.alpha_z;
+                auto const & iter = state.iter;
                 auto & mu=state.mu;
                 auto & z=state.z;
                 auto & dz=state.dz;
+
+                // If we're taking tiny primal and dual steps, increase mu and
+                // reset z
+                if( alpha_x <= Real(0.1) ||
+                    alpha_x_qn <= Real(0.1) ||
+                    alpha_z <= Real(0.1)
+                ) {
+                    mu /= sigma;
+                    Algorithms::findInequalityMultiplierInitial(fns,state);
+                    return true;
+                }
 
                 // If mu satisfies the stopping criteria, stop trying to
                 // reduce the interior point parameter
@@ -10199,6 +10213,12 @@ namespace Optizelle{
                 // 4. We have *not* converged mu globally
                 //
                 //    |mu - eps_mu mu_typ| >= eps_mu mu_typ
+                //
+                // 5. We're not on the first iteration.  We really haven't
+                //    done anything yet, so the reductions are basically zero
+                //    except that the grad_step_reduction may be slight because
+                //    of how we calculate things.  Really, we're on the first
+                //    iteration, give it some time with the specified value.
                 auto grad_step_reduction =
                     log10(norm_gradtyp)-log10(norm_grad_step);
                 auto grad_step_converged =
@@ -10213,13 +10233,14 @@ namespace Optizelle{
                 auto mu_est_converged = std::fabs(mu-mu_est) < mu;
                 auto mu_converged = std::fabs(mu-mu_typ*eps_mu) < mu_typ*eps_mu;
 
-                if(((grad_step_reduction >=mu_reduction)||grad_step_converged||
+                if( iter>1 &&
+                    ((grad_step_reduction >=mu_reduction)||grad_step_converged||
                     (grad_stop_reduction >=mu_reduction)||grad_stop_converged)&&
                     ((gx_reduction >= mu_reduction) || gx_converged) &&
                     mu_est_converged &&
                     !mu_converged
                 ) {
-                    mu=sigma*mu;
+                    mu *= sigma;
                     return true;
                 }
                 else

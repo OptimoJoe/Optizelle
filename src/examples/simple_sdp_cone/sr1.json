@@ -1,6 +1,6 @@
 {
    "Optizelle" : {
-      "msg_level" : 2,
+      "msg_level" : 1,
       "H_type" : "SR1",
       "stored_history" : 2,
       "iter_max" : 100,
@@ -9,7 +9,7 @@
       "delta" : 100
    },
    "Naturals" : {
-      "iter" : 15
+      "iter" : 11 
    },
    "X_Vectors" : {
       "x" : [ 0.5, 0.25] 
