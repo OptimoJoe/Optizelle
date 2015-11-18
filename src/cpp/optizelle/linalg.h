@@ -1555,16 +1555,18 @@ namespace Optizelle {
                     // in the current direction.  If this amount truncates us
                     // more than sigma, then we reduce the size of sigma.
                     if(failed_safeguard==0) { 
+                        auto sigma_Bdx = X::init(x);
+                        X::copy(Bdx,sigma_Bdx);
+                        X::scal(sigma,sigma_Bdx);
                         alpha_safeguard = std::min(
-                            safeguard(shifted_iterate,Bdx),Real(1.0));
-                        if(alpha_safeguard < Real(1.) && alpha_safeguard<sigma)
-                            sigma = alpha_safeguard;
-                    }
+                            safeguard(shifted_iterate,sigma_Bdx),Real(1.0));
+                    } else 
+                        alpha_safeguard = Real(1.);
 
                     // Take the step and find its residual
-                    X::axpy(sigma,Bdx,x);
-                    X::axpy(sigma,Bdx,shifted_iterate);
-                    X::axpy(sigma,ABdx,r);
+                    X::axpy(alpha_safeguard*sigma,Bdx,x);
+                    X::axpy(alpha_safeguard*sigma,Bdx,shifted_iterate);
+                    X::axpy(alpha_safeguard*sigma,ABdx,r);
                     B.eval(r,Br);
                     norm_Br=std::sqrt(X::innr(Br,Br));
                     break;
@@ -1650,8 +1652,6 @@ namespace Optizelle {
 
             // Determine how far we can go safely in the saved direction
             alpha_safeguard= std::min(safeguard(shifted_iterate,Bdx),Real(1.0));
-            alpha_safeguard = alpha_safeguard < Real(1.) ?
-                alpha_safeguard : Real(1.);
 
             // Take the safeguarded step and update our residuals
             X::axpy(alpha_safeguard,Bdx,x);

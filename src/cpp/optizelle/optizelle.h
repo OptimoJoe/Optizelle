@@ -8905,10 +8905,10 @@ namespace Optizelle{
                 // Create some shortcuts
                 ScalarValuedFunction <Real,XX> const & f=*(fns.f);
                 VectorValuedFunction <Real,XX,YY> const & g=*(fns.g);
+                auto const & safeguard = *(fns.safeguard);
                 auto const & gradmod=*(fns.gradmod);
                 X_Vector const & x=state.x;
                 X_Vector const & dx_n=state.dx_n;
-                X_Vector const & dx_t=state.dx_t;
                 X_Vector const & dx_tcp_uncorrected
                     =state.dx_tcp_uncorrected;
                 Real const & xi_4=state.xi_4;
@@ -8940,6 +8940,8 @@ namespace Optizelle{
                 Real & rho=state.rho;
                 Real & alpha0=state.alpha0;
                 Natural & rejected_trustregion=state.rejected_trustregion;
+                auto & alpha_x = state.alpha_x;
+                auto & dx_t=state.dx_t;
 
                 // Create a single temporary vector
                 X_Vector x_tmp1(X::init(x));
@@ -9013,6 +9015,18 @@ namespace Optizelle{
 
                             // Correct the tangential step
                             tangentialStep(fns,state);
+
+                            // Safeguard the tangential step.  In theory, this
+                            // step should already be feasible, but with
+                            // inexactness, dx_t and dx_t_uncorrected may be
+                            // moderately different, so we need to safeguard
+                            // again.
+                            auto alpha_safeguard = std::min(Real(1.),
+                                safeguard(dx_n,dx_t,Real(1.)));
+                            if(alpha_safeguard < Real(1.)) {
+                                alpha_x *= alpha_safeguard;
+                                X::scal(alpha_safeguard,dx_t);
+                            }
 
                             // Find the primal step
                             X::copy(dx_n,dx);
