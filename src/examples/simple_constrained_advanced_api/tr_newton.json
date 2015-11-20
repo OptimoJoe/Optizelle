@@ -8,9 +8,9 @@
       "eps_dx" : 1e-16
    },
    "Naturals" : {
-      "iter" : 11
+      "iter" : 13
    },
    "Parameters" : {
-      "opt_stop" : "RelativeGradientSmall" 
+      "opt_stop" : "GradientSmall" 
    }
 }

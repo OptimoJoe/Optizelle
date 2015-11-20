@@ -74,8 +74,8 @@ class AlgorithmClass(EnumeratedType):
 class StoppingCondition(EnumeratedType):
     """Reasons why we stop the algorithm"""
     NotConverged, \
-    RelativeGradientSmall, \
-    RelativeStepSmall, \
+    GradientSmall, \
+    StepSmall, \
     MaxItersExceeded, \
     InteriorPointInstability, \
     UserDefined \
@@ -170,6 +170,12 @@ class DiagnosticScheme(EnumeratedType):
     DiagnosticsOnly, \
     EveryIteration \
     = range(3)
+
+class ToleranceKind(EnumeratedType):
+    """Different kinds of stopping tolerances"""
+    Relative, \
+    Absolute, \
+    = range(2)
 
 def checkFloat(name,value):
     """Checks that an input is a floating-point number"""

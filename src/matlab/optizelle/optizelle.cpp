@@ -46,12 +46,12 @@ namespace Optizelle {
             case NotConverged:
                 return Matlab::enumToMxArray(
                     "StoppingCondition","NotConverged");
-            case RelativeGradientSmall:
+            case GradientSmall:
                 return Matlab::enumToMxArray(
-                    "StoppingCondition","RelativeGradientSmall");
-            case RelativeStepSmall:
+                    "StoppingCondition","GradientSmall");
+            case StepSmall:
                 return Matlab::enumToMxArray(
-                    "StoppingCondition","RelativeStepSmall");
+                    "StoppingCondition","StepSmall");
             case MaxItersExceeded:
                 return Matlab::enumToMxArray(
                     "StoppingCondition","MaxItersExceeded");
@@ -74,13 +74,13 @@ namespace Optizelle {
             if(m==Matlab::enumToNatural("StoppingCondition","NotConverged"))
                 return NotConverged;
             else if(m==Matlab::enumToNatural(
-                "StoppingCondition","RelativeGradientSmall")
+                "StoppingCondition","GradientSmall")
             )
-                return RelativeGradientSmall;
+                return GradientSmall;
             else if(m==Matlab::enumToNatural(
-                "StoppingCondition","RelativeStepSmall")
+                "StoppingCondition","StepSmall")
             )
-                return RelativeStepSmall;
+                return StepSmall;
             else if(m==Matlab::enumToNatural(
                 "StoppingCondition","MaxItersExceeded")
             )
@@ -631,6 +631,40 @@ namespace Optizelle {
                 "EveryIteration")
             )
                 return EveryIteration;
+            else
+                throw;
+        }
+    }
+
+    namespace ToleranceKind { 
+        // Converts t to a Matlab enumerated type
+        mxArray * toMatlab(t const & skind) {
+            // Do the conversion
+            switch(skind){
+            case Relative:
+                return Matlab::enumToMxArray("ToleranceKind",
+                    "Relative");
+            case Absolute:
+                return Matlab::enumToMxArray("ToleranceKind",
+                    "Absolute");
+            default:
+                throw;
+            }
+        }
+
+        // Converts a Matlab enumerated type to t 
+        t fromMatlab(mxArray * const member) {
+            // Convert the member to a Natural 
+            Natural m(*mxGetPr(member));
+
+            if(m==Matlab::enumToNatural("ToleranceKind",
+                "Relative")
+            )
+                return Relative;
+            else if(m==Matlab::enumToNatural("ToleranceKind",
+                "Absolute")
+            )
+                return Absolute;
             else
                 throw;
         }
@@ -1898,7 +1932,8 @@ namespace Optizelle {
                         "f_diag",
                         "L_diag",
                         "x_diag",
-                        "dscheme"};
+                        "dscheme",
+                        "eps_kind"};
 
                     return std::move(names);
                 }
@@ -2035,6 +2070,11 @@ namespace Optizelle {
                         DiagnosticScheme::toMatlab,
                         state.dscheme,
                         mxstate);
+                    toMatlab::Param <ToleranceKind::t> (
+                        "eps_kind",
+                        ToleranceKind::toMatlab,
+                        state.eps_kind,
+                        mxstate);
                 }
                 void toMatlab(
                     typename MxUnconstrained::State::t const & state,
@@ -2167,6 +2207,11 @@ namespace Optizelle {
                         DiagnosticScheme::fromMatlab,
                         mxstate,
                         state.dscheme);
+                    fromMatlab::Param <ToleranceKind::t> (
+                        "eps_kind",
+                        ToleranceKind::fromMatlab,
+                        mxstate,
+                        state.eps_kind);
                 }
                 void fromMatlab(
                     mxArray * const mxstate,

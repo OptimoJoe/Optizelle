@@ -8,7 +8,7 @@
       "iter_max" : 50
    },
    "Naturals" : {
-      "iter" : 25
+      "iter" : 26
    },
    "X_Vectors" : {
       "x" : [ 1.0, 1.0 ] 

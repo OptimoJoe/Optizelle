@@ -94,10 +94,10 @@ namespace Optizelle{
             switch(opt_stop){
             case NotConverged:
                 return "NotConverged";
-            case RelativeGradientSmall:
-                return "RelativeGradientSmall";
-            case RelativeStepSmall:
-                return "RelativeStepSmall";
+            case GradientSmall:
+                return "GradientSmall";
+            case StepSmall:
+                return "StepSmall";
             case MaxItersExceeded:
                 return "MaxItersExceeded";
             case InteriorPointInstability:
@@ -113,10 +113,10 @@ namespace Optizelle{
         t from_string(std::string const & opt_stop) {
             if(opt_stop=="NotConverged")
                 return NotConverged;
-            else if(opt_stop=="RelativeGradientSmall")
-                return RelativeGradientSmall;
-            else if(opt_stop=="RelativeStepSmall")
-                return RelativeStepSmall;
+            else if(opt_stop=="GradientSmall")
+                return GradientSmall;
+            else if(opt_stop=="StepSmall")
+                return StepSmall;
             else if(opt_stop=="MaxItersExceeded")
                 return MaxItersExceeded;
             else if(opt_stop=="InteriorPointInstability")
@@ -130,8 +130,8 @@ namespace Optizelle{
         // Checks whether or not a string is valid
         bool is_valid(std::string const & name) {
             if( name=="NotConverged" ||
-                name=="RelativeGradientSmall" ||
-                name=="RelativeStepSmall" ||
+                name=="GradientSmall" ||
+                name=="StepSmall" ||
                 name=="MaxItersExceeded" ||
                 name=="InteriorPointInstability" ||
                 name=="UserDefined"
@@ -649,6 +649,42 @@ namespace Optizelle{
             if( name=="NoDiagnostics" ||
                 name=="Basic" ||
                 name=="EuclideanJordan" 
+            )
+                return true;
+            else
+                return false;
+        }
+    }
+
+    // Different kinds of stopping tolerances 
+    namespace ToleranceKind{
+
+        // Converts the kind of stopping tolerance to a string
+        std::string to_string(t const & eps_rel) {
+            switch(eps_rel){
+            case Relative: 
+                return "Relative";
+            case Absolute: 
+                return "Absolute";
+            default:
+                throw;
+            }
+        }
+        
+        // Converts a string to the kind of stopping tolerance
+        t from_string(std::string const & eps_rel) {
+            if(eps_rel=="Relative")
+                return Relative; 
+            else if(eps_rel=="Absolute")
+                return Absolute;
+            else
+                throw;
+        }
+
+        // Checks whether or not a string is valid
+        bool is_valid(std::string const & name) {
+            if( name=="Relative" ||
+                name=="Absolute"
             )
                 return true;
             else

@@ -238,6 +238,10 @@ namespace Optizelle{
     // recomputed.
     typedef std::function<bool()> MultiplierSolve;
 
+    // Determines whether we're using an aboslute or relative tolerance 
+    template <typename Real>
+    using ToleranceSelector = std::function<Real(Real const & typ)>;
+
     // Which algorithm class do we use
     namespace AlgorithmClass{
         enum t : Natural{
@@ -263,8 +267,8 @@ namespace Optizelle{
         enum t : Natural{
             //---StoppingCondition0---
             NotConverged,            // Algorithm did not converge
-            RelativeGradientSmall,   // Relative gradient was sufficiently small
-            RelativeStepSmall,       // Relative change in the step is small
+            GradientSmall,           // Gradient was sufficiently small
+            StepSmall,               // Change in the step is small
             MaxItersExceeded,        // Maximum number of iterations exceeded
             InteriorPointInstability,// Instability in the interior point method
             UserDefined              // Some user defined stopping condition 
@@ -545,6 +549,25 @@ namespace Optizelle{
 
         // Checks whether or not a string is valid
         bool is_valid(std::string const & name);
+    }
+    
+    // Different kinds of stopping tolerances 
+    namespace ToleranceKind {
+        enum t : Natural{
+            //---ToleranceKind0---
+            Relative,           // Relative stopping tolerances
+            Absolute,           // Absolute stopping tolerances 
+            //---ToleranceKind1---
+        };
+        
+        // Converts the diagnostic checks to a string
+        std::string to_string(t const & eps_rel);
+        
+        // Converts a string to the diagnostic checks 
+        t from_string(std::string const & eps_rel);
+
+        // Checks whether or not a string is valid
+        bool is_valid(std::string const & eps_rel);
     }
 
     // A collection of miscellaneous diagnostics that help determine errors.
@@ -1932,6 +1955,9 @@ namespace Optizelle{
                 // with respect to the safeguard, which probably relates to
                 // the inequailty constraint
                 Real alpha_x_qn;
+
+                // Kind of stopping tolerance
+                ToleranceKind::t eps_kind;
                 
                 // ------------- TRUST-REGION ------------- 
 
@@ -2173,6 +2199,11 @@ namespace Optizelle{
                         //---alpha_x_qn0---
                         std::numeric_limits <Real>::quiet_NaN() 
                         //---alpha_x_qn1---
+                    ),
+                    eps_kind(
+                        //---eps_kind0---
+                        ToleranceKind::Absolute
+                        //---eps_kind1---
                     ),
                     delta(
                         //---delta0---
@@ -2504,6 +2535,10 @@ namespace Optizelle{
                     //---alpha_x_qn_valid0---
                     // Any
                     //---alpha_x_qn_valid1---
+                    
+                    //---eps_kind_valid0---
+                    // Any 
+                    //---eps_kind_valid1---
 
                 // Check that the trust-region radius is nonnegative 
                 else if(!(
@@ -2742,8 +2777,10 @@ namespace Optizelle{
                     (item.first=="x_diag" &&
                         VectorSpaceDiagnostics::is_valid(item.second)) ||
                     (item.first=="dscheme" &&
-                        DiagnosticScheme::is_valid(item.second))
-                ) 
+                        DiagnosticScheme::is_valid(item.second)) ||
+                    (item.first=="eps_kind" &&
+                        ToleranceKind::is_valid(item.second))
+                )
                     return true;
                 else
                     return false;
@@ -2910,6 +2947,9 @@ namespace Optizelle{
                     VectorSpaceDiagnostics::to_string(state.x_diag));
                 params.emplace_back("dscheme",
                     DiagnosticScheme::to_string(state.dscheme));
+                params.emplace_back("eps_kind",
+                    ToleranceKind::to_string(
+                        state.eps_kind));
             }
 
             // Copy in all variables.  This assumes that the quasi-Newton
@@ -3074,6 +3114,9 @@ namespace Optizelle{
                     else if(item->first=="dscheme")
                         state.dscheme
                             = DiagnosticScheme::from_string(item->second);
+                    else if(item->first=="eps_kind")
+                        state.eps_kind
+                            = ToleranceKind::from_string(item->second);
                 }
             }
             
@@ -3155,6 +3198,10 @@ namespace Optizelle{
 
                 // Indicates whether another multiplier solve is required
                 std::unique_ptr <MultiplierSolve> multsolve;
+
+                // Determines whether we're using an absolute or relative
+                // tolerance 
+                std::unique_ptr <ToleranceSelector<Real>> absrel;
 
                 // Initialize all of the pointers to null
                 t() : f(nullptr), PH(nullptr) {}
@@ -3726,6 +3773,14 @@ namespace Optizelle{
                 return false;
             }
 
+            // Flips between absolute and relative tolerances 
+            static Real absrelSwitch(
+                ToleranceKind::t const & eps_kind,
+                Real const & typ
+            ) {
+                return eps_kind==ToleranceKind::Relative ? typ : Real(1.);
+            }
+
             // Check that all the functions are defined
             static void check(Messaging const & msg,t const & fns) {
                 // Check that objective function exists 
@@ -3787,6 +3842,11 @@ namespace Optizelle{
                     noSafeguard);
                 fns.gradmod= std::make_unique <GradStepModification <Real,XX>>(
                     noGradStepModification);
+                fns.absrel = std::make_unique <ToleranceSelector<Real>>(
+                    std::bind(
+                        absrelSwitch,
+                        std::cref(state.eps_kind),
+                        std::placeholders::_1));
 
                 // No additional multiplier solves required
                 fns.multsolve = std::make_unique <MultiplierSolve> (
@@ -4193,6 +4253,7 @@ namespace Optizelle{
                 // Create some shortcuts
                 ScalarValuedFunctionModifications <Real,XX> const & f_mod
                     = *(fns.f_mod);
+                auto const & absrel = *(fns.absrel);
                 X_Vector const & x=state.x;
                 X_Vector const & grad=state.grad;
                 X_Vector const & dx=state.dx;
@@ -4215,13 +4276,13 @@ namespace Optizelle{
 
                 // Check whether the change in the step length has become too
                 // small relative to some typical step
-                if(norm_dx < eps_dx*norm_dxtyp)
-                    return StoppingCondition::RelativeStepSmall;
+                if(norm_dx< eps_dx * absrel(norm_dxtyp))
+                    return StoppingCondition::StepSmall;
                 
                 // Check whether the norm is small relative to some typical
                 // gradient
-                if(norm_grad < eps_grad*norm_gradtyp)
-                    return StoppingCondition::RelativeGradientSmall;
+                if(norm_grad < eps_grad * absrel(norm_gradtyp))
+                    return StoppingCondition::GradientSmall;
 
                 // Otherwise, return that we're not converged 
                 return StoppingCondition::NotConverged;
@@ -4360,7 +4421,8 @@ namespace Optizelle{
                 ScalarValuedFunction <Real,XX> const & f=*(fns.f);
                 ScalarValuedFunctionModifications <Real,XX> const & f_mod
                     = *(fns.f_mod);
-                auto & gradmod = *(fns.gradmod);
+                auto const & gradmod = *(fns.gradmod);
+                auto const & absrel = *(fns.absrel);
                 Operator <Real,XX,XX> const & PH=*(fns.PH);
                 auto const & safeguard = *(fns.safeguard); 
                 Real const & eps_dx=state.eps_dx;
@@ -4517,9 +4579,7 @@ namespace Optizelle{
                     // zero length step so that we do not modify the current
                     // iterate.
                     Real norm_dx = sqrt(X::innr(dx,dx));
-                    if(norm_dx < eps_dx*norm_dxtyp
-                        || norm_dx!=norm_dx 
-                    ) {
+                    if(norm_dx<eps_dx*absrel(norm_dxtyp) || norm_dx!=norm_dx) {
                         X::zero(dx);
                         break;
                     }
@@ -4959,6 +5019,7 @@ namespace Optizelle{
                 ScalarValuedFunctionModifications <Real,XX> const & f_mod
                     = *(fns.f_mod);
                 auto const & gradmod = *(fns.gradmod);
+                auto const & absrel = *(fns.absrel);
                 Operator <Real,XX,XX> const & PH=*(fns.PH);
                 auto const & safeguard = *(fns.safeguard); 
                 X_Vector const & x=state.x;
@@ -5196,8 +5257,8 @@ namespace Optizelle{
                             // it.  In this case, take a zero step and allow
                             // the stopping conditions to exit
                             Real norm_dx = sqrt(X::innr(dx,dx));
-                            if(norm_dx < eps_dx*norm_dxtyp
-                                || norm_dx!=norm_dx
+                            if( norm_dx < eps_dx * absrel(norm_dxtyp) ||
+                                norm_dx != norm_dx
                             ) {
                                 X::zero(dx);
                                 break;
@@ -7775,6 +7836,7 @@ namespace Optizelle{
                     Real & eps
                 ) const {
                     // Create some shortcuts
+                    auto const & absrel = *(fns.absrel);
                     Real const & xi_qn = state.xi_qn;
                     Real const & norm_gxtyp = state.norm_gxtyp;
                     Real const & eps_constr= state.eps_constr;
@@ -7797,7 +7859,7 @@ namespace Optizelle{
                     // feasible after the step.  Therefore, we check if we
                     // satisfy our stopping condition for feasibility.  If so,
                     // we bail.
-                    if(norm_gpxdxncp_p_g < eps_constr*norm_gxtyp)
+                    if(norm_gpxdxncp_p_g < eps_constr * absrel(norm_gxtyp))
                         eps=Real(1.);
 
                     // Save this desired error
@@ -7813,6 +7875,7 @@ namespace Optizelle{
                 // Create some shortcuts
                 VectorValuedFunction <Real,XX,YY> const & g=*(fns.g);
                 auto const & safeguard = *(fns.safeguard); 
+                auto const & absrel = *(fns.absrel);
                 X_Vector const & x=state.x;
                 Y_Vector const & g_x=state.g_x;
                 Natural const & augsys_iter_max=state.augsys_iter_max;
@@ -7834,7 +7897,7 @@ namespace Optizelle{
                 // the Cauchy point divides by zero, which causes all sorts
                 // of headaches later on.
                 Real norm_gx = sqrt(X::innr(g_x,g_x));
-                if(norm_gx < eps_constr*norm_gxtyp) {
+                if(norm_gx < eps_constr * absrel(norm_gxtyp)) {
                     X::zero(dx_ncp);
                     X::zero(dx_n);
                     return;
@@ -8907,6 +8970,7 @@ namespace Optizelle{
                 VectorValuedFunction <Real,XX,YY> const & g=*(fns.g);
                 auto const & safeguard = *(fns.safeguard);
                 auto const & gradmod=*(fns.gradmod);
+                auto const & absrel = *(fns.absrel);
                 X_Vector const & x=state.x;
                 X_Vector const & dx_n=state.dx_n;
                 X_Vector const & dx_tcp_uncorrected
@@ -8985,11 +9049,12 @@ namespace Optizelle{
                             // See if we need to modify the gradient.  If we do
                             // recompute.
                             auto norm_gx=sqrt(Y::innr(g_x,g_x)); 
-                            auto gx_reduction=log10(norm_gxtyp)-log10(norm_gx);
-                            auto gx_converged=norm_gx < eps_constr*norm_gxtyp;
+                            auto gx_reduction =
+                                log10(absrel(norm_gxtyp))-log10(norm_gx);
+                            auto gx_converged =
+                                norm_gx < eps_constr * absrel(norm_gxtyp);
                             if(gradmod(W_gradpHdxn,gx_reduction,gx_converged))
                                 projectedGradLagrangianPlusHdxn(fns,state);
-
                             
                             // Find the uncorrected tangential step
                             tangentialSubProblem(fns,state);
@@ -9120,8 +9185,8 @@ namespace Optizelle{
                     // zero length step so that we do not modify the current
                     // iterate.
                     Real norm_dx = sqrt(X::innr(dx,dx));
-                    if(norm_dx < eps_dx*norm_dxtyp
-                        || norm_dx!=norm_dx
+                    if( norm_dx < eps_dx * absrel(norm_dxtyp) ||
+                        norm_dx != norm_dx
                     ) {
                         X::zero(dx);
                         break;
@@ -9136,6 +9201,7 @@ namespace Optizelle{
                 typename State::t & state
             ) {
                 // Create some shortcuts
+                auto const & absrel = *(fns.absrel);
                 Y_Vector const & g_x = state.g_x;
                 Real const & eps_constr=state.eps_constr;
                 Real const & norm_gxtyp=state.norm_gxtyp; 
@@ -9143,8 +9209,8 @@ namespace Optizelle{
                 
                 // Prevent convergence unless the infeasibility is small. 
                 Real norm_gx=sqrt(Y::innr(g_x,g_x));
-                if( opt_stop==StoppingCondition::RelativeGradientSmall &&
-                    !(norm_gx < eps_constr*norm_gxtyp) 
+                if( opt_stop==StoppingCondition::GradientSmall &&
+                    !(norm_gx < eps_constr * absrel(norm_gxtyp)) 
                 )
                     opt_stop=StoppingCondition::NotConverged;
             }
@@ -10158,6 +10224,7 @@ namespace Optizelle{
             ) {
                 // Create some shortcuts
                 auto const & f_mod = *(fns.f_mod);
+                auto const & absrel = *(fns.absrel);
                 auto const & x=state.x;
                 auto const & grad=state.grad;
                 auto const & norm_gradtyp=state.norm_gradtyp;
@@ -10166,28 +10233,14 @@ namespace Optizelle{
                 auto const & eps_mu=state.eps_mu;
                 auto const & mu_est=state.mu_est;
                 auto const & sigma=state.sigma;
-                auto const & alpha_x=state.alpha_x;
-                auto const & alpha_x_qn=state.alpha_x_qn;
-                auto const & alpha_z=state.alpha_z;
                 auto const & iter = state.iter;
                 auto & mu=state.mu;
                 auto & z=state.z;
                 auto & dz=state.dz;
 
-                // If we're taking tiny primal and dual steps, increase mu and
-                // reset z
-                if( alpha_x <= Real(0.1) ||
-                    alpha_x_qn <= Real(0.1) ||
-                    alpha_z <= Real(0.1)
-                ) {
-                    mu /= sigma;
-                    Algorithms::findInequalityMultiplierInitial(fns,state);
-                    return true;
-                }
-
                 // If mu satisfies the stopping criteria, stop trying to
                 // reduce the interior point parameter
-                if(std::fabs(mu-mu_typ*eps_mu) < Real(1e-0)*mu_typ*eps_mu)
+                if(std::fabs(mu-absrel(mu_typ)*eps_mu)<absrel(mu_typ)*eps_mu)
                     return false;
 
                 // Find || grad_step ||
@@ -10234,18 +10287,19 @@ namespace Optizelle{
                 //    of how we calculate things.  Really, we're on the first
                 //    iteration, give it some time with the specified value.
                 auto grad_step_reduction =
-                    log10(norm_gradtyp)-log10(norm_grad_step);
+                    log10(absrel(norm_gradtyp))-log10(norm_grad_step);
                 auto grad_step_converged =
-                    norm_grad_step < eps_grad*norm_gradtyp;
+                    norm_grad_step < eps_grad*absrel(norm_gradtyp);
 
                 auto grad_stop_reduction =
-                    log10(norm_gradtyp)-log10(norm_grad_stop);
+                    log10(absrel(norm_gradtyp))-log10(norm_grad_stop);
                 auto grad_stop_converged =
-                    norm_grad_stop < eps_grad*norm_gradtyp;
+                    norm_grad_stop < eps_grad*absrel(norm_gradtyp);
 
-                auto mu_reduction = log10(mu_typ) - log10(mu_est);
+                auto mu_reduction = log10(absrel(mu_typ)) - log10(mu_est);
                 auto mu_est_converged = std::fabs(mu-mu_est) < mu;
-                auto mu_converged = std::fabs(mu-mu_typ*eps_mu) < mu_typ*eps_mu;
+                auto mu_converged =
+                    std::fabs(mu-absrel(mu_typ)*eps_mu) < absrel(mu_typ)*eps_mu;
 
                 if( iter>1 &&
                     ((grad_step_reduction >=mu_reduction)||grad_step_converged||
@@ -10906,6 +10960,7 @@ namespace Optizelle{
                 typename State::t & state
             ) {
                 // Create some shortcuts
+                auto const & absrel = *(fns.absrel);
                 Real const & mu=state.mu;
                 Real const & mu_est=state.mu_est;
                 Real const & mu_typ=state.mu_typ;
@@ -10921,11 +10976,13 @@ namespace Optizelle{
 
                 // Prevent convergence unless
                 //
-                // 1.  mu has been reduced to the same order as eps_mu * mu_typ
+                // 1.  mu has been reduced to the same order as eps_mu *
+                //     mu_normalization
                 // 2.  mu_est is on the same order as mu
-                auto mu_converged = std::fabs(mu-mu_typ*eps_mu) < mu_typ*eps_mu;
+                auto mu_converged =
+                    std::fabs(mu-absrel(mu_typ)*eps_mu) < absrel(mu_typ)*eps_mu;
                 auto mu_est_converged = std::fabs(mu-mu_est) < mu;
-                if( opt_stop==StoppingCondition::RelativeGradientSmall &&
+                if( opt_stop==StoppingCondition::GradientSmall &&
                     !(mu_converged && mu_est_converged)
                 ) {
                     opt_stop=StoppingCondition::NotConverged;

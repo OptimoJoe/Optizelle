@@ -517,6 +517,15 @@ namespace Optizelle {
                     DiagnosticScheme::is_valid,
                     DiagnosticScheme::from_string,
                     "dscheme");
+                state.eps_kind=read::param
+                    <ToleranceKind::t> (
+                    msg,
+                    root["Optizelle"].get("eps_kind",
+                        ToleranceKind::to_string(
+                            state.eps_kind)),
+                    ToleranceKind::is_valid,
+                    ToleranceKind::from_string,
+                    "eps_kind");
             }
             static void read(
                 Optizelle::Messaging const & msg,
@@ -577,6 +586,8 @@ namespace Optizelle {
                     VectorSpaceDiagnostics::to_string,state.x_diag);
                 root["Optizelle"]["dscheme"]=write_param(
                     DiagnosticScheme::to_string,state.dscheme);
+                root["Optizelle"]["eps_kind"]=write_param(
+                    ToleranceKind::to_string,state.eps_kind);
 
                 // Create a string with the above output
                 Json::StyledWriter writer;

@@ -223,6 +223,10 @@ class t(object):
         "dscheme",
         Optizelle.DiagnosticScheme,
         "Diagnostic scheme")
+    eps_kind = Optizelle.createEnumProperty(
+        "eps_kind",
+        Optizelle.ToleranceKind,
+        "Kind of stopping tolerance")
 
 def checkT(name,value):
     """Check that we have a state"""

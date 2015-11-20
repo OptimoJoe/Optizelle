@@ -3,8 +3,8 @@
       "msg_level" : 1,
       "algorithm_class" : "LineSearch",
       "dir" : "PolakRibiere",
-      "iter_max" : 50,
-      "linesearch_iter_max" : 200
+      "linesearch_iter_max" : 200,
+      "eps_grad" : 1e-7
    },
    "Naturals" : {
       "iter" : 4 

@@ -6,10 +6,7 @@
       "delta" : 100,
       "eps_krylov" : 1e-10,
       "eps_dx" : 1e-16,
-      "sigma" : 0.1,
-      "gamma" : 0.99,
-      "mu" : 10,
-      "eps_mu" : 1e-9
+      "mu" : 10
    },
    "Naturals" : {
       "iter" : 12

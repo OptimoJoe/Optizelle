@@ -9,9 +9,9 @@
       "delta" : 100
    },
    "Naturals" : {
-      "iter" :  12
+      "iter" :  14
    },
    "Parameters" : {
-      "opt_stop" : "RelativeGradientSmall" 
+      "opt_stop" : "GradientSmall" 
    }
 }

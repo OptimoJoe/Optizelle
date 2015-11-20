@@ -40,12 +40,12 @@ namespace Optizelle {
             case NotConverged:
                 return Python::enumToPyObject(
                     "StoppingCondition","NotConverged");
-            case RelativeGradientSmall:
+            case GradientSmall:
                 return Python::enumToPyObject(
-                    "StoppingCondition","RelativeGradientSmall");
-            case RelativeStepSmall:
+                    "StoppingCondition","GradientSmall");
+            case StepSmall:
                 return Python::enumToPyObject(
-                    "StoppingCondition","RelativeStepSmall");
+                    "StoppingCondition","StepSmall");
             case MaxItersExceeded:
                 return Python::enumToPyObject(
                     "StoppingCondition","MaxItersExceeded");
@@ -68,13 +68,13 @@ namespace Optizelle {
             if(m==Python::enumToNatural("StoppingCondition","NotConverged"))
                 return NotConverged;
             else if(m==Python::enumToNatural(
-                "StoppingCondition","RelativeGradientSmall")
+                "StoppingCondition","GradientSmall")
             )
-                return RelativeGradientSmall;
+                return GradientSmall;
             else if(m==Python::enumToNatural(
-                "StoppingCondition","RelativeStepSmall")
+                "StoppingCondition","StepSmall")
             )
-                return RelativeStepSmall;
+                return StepSmall;
             else if(m==Python::enumToNatural(
                 "StoppingCondition","MaxItersExceeded")
             )
@@ -625,6 +625,40 @@ namespace Optizelle {
                 "EveryIteration")
             )
                 return EveryIteration;
+            else
+                throw;
+        }
+    }
+
+    namespace ToleranceKind { 
+        // Converts t to a Python enumerated type
+        PyObject * toPython(t const & dscheme) {
+            // Do the conversion
+            switch(dscheme){
+            case Relative:
+                return Python::enumToPyObject("ToleranceKind",
+                    "Relative");
+            case Absolute:
+                return Python::enumToPyObject("ToleranceKind",
+                    "Absolute");
+            default:
+                throw;
+            }
+        }
+
+        // Converts a Python enumerated type to t 
+        t fromPython(PyObject * const member) {
+            // Convert the member to a Natural 
+            Natural m=PyInt_AsSsize_t(member);
+
+            if(m==Python::enumToNatural("ToleranceKind",
+                "Relative")
+            )
+                return Relative;
+            else if(m==Python::enumToNatural("ToleranceKind",
+                "Absolute")
+            )
+                return Absolute;
             else
                 throw;
         }
@@ -1928,6 +1962,11 @@ namespace Optizelle {
                         DiagnosticScheme::toPython,
                         state.dscheme,
                         pystate);
+                    toPython::Param <ToleranceKind::t> (
+                        "eps_kind",
+                        ToleranceKind::toPython,
+                        state.eps_kind,
+                        pystate);
                 }
                 void toPython(
                     typename PyUnconstrained::State::t const & state,
@@ -2060,6 +2099,11 @@ namespace Optizelle {
                         DiagnosticScheme::fromPython,
                         pystate,
                         state.dscheme);
+                    fromPython::Param <ToleranceKind::t> (
+                        "eps_kind",
+                        ToleranceKind::fromPython,
+                        pystate,
+                        state.eps_kind);
                 }
                 void fromPython(
                     PyObject * const pystate,

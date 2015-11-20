@@ -7,11 +7,10 @@
       "eps_krylov" : 1e-16,
       "eps_dx" : 1e-10,
       "delta" : 100,
-      "mu" : 10,
-      "eps_mu" : 1e-9
+      "mu" : 10
    },
    "Naturals" : {
-      "iter" : 15
+      "iter" : 18
    },
    "X_Vectors" : {
       "x" : [ 0.33333333, 0.33333333, 0.0, 0.0 ] 
