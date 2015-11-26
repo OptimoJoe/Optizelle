@@ -8853,11 +8853,16 @@ namespace Optizelle{
                 // norm_gx <- || g(x) ||
                 Real const & norm_gx=sqrt(Y::innr(g_x,g_x));
 
-                // If the predicted reduction is small, update the penalty
-                // parameter.  Make sure we actually have a positive predicted
-                // correction before we attempt this.
-                if( pred > 0 && 
-                    pred < (rho_old/Real(2.))
+                // If the predicted reduction is small or negative, update the
+                // penalty parameter.  Essentially, we're going to force the
+                // predicted reduction to be positive as long as the
+                // quasinormal step improved feasibility and the tangential
+                // step obtained reduction.  Our choice here guarantees
+                //
+                // pred >= (rho/2) (|| g(x) || - || g'(x) dx_n + g(x) ||)
+                //
+                // Further, when we update rho_new > rho_old thanks to rho_bar.
+                if( pred < (rho_old/Real(2.))
                         * (norm_gx*norm_gx - norm_gpxdxnpgx*norm_gpxdxnpgx) 
                 ) {
                     rho = -Real(2.) * pred
