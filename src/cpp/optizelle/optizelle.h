@@ -7329,6 +7329,10 @@ namespace Optizelle{
 
                 // Even more detail
                 if(msg_level>=3) {
+                    // Size of the normal and tangential steps
+                    out.emplace_back(Utility::atos("|| dx_n ||"));
+                    out.emplace_back(Utility::atos("|| dx_t ||"));
+
                     // Total number of Krylov iterations
                     out.emplace_back(Utility::atos("kry_itr_tot"));
 
@@ -7390,6 +7394,9 @@ namespace Optizelle{
                 Real const & delta = state.delta;
                 Natural const & msg_level = state.msg_level;
                 auto const & algorithm_class = state.algorithm_class;
+
+                auto const & dx_n = state.dx_n;
+                auto const & dx_t = state.dx_t;
 
                 auto const & augsys_qn_iter = state.augsys_qn_iter;
                 auto const & augsys_qn_iter_total=state.augsys_qn_iter_total;
@@ -7462,6 +7469,12 @@ namespace Optizelle{
                 // Even more detail
                 if(msg_level >=3) {
                     if(!opt_begin) {
+                        // Size of the normal and tangential steps
+                        auto norm_dxn = std::sqrt(X::innr(dx_n,dx_n));
+                        auto norm_dxt = std::sqrt(X::innr(dx_t,dx_t));
+                        out.emplace_back(Utility::atos(norm_dxn));
+                        out.emplace_back(Utility::atos(norm_dxt));
+
                         // Total number of Krylov iterations
                         out.emplace_back(Utility::atos(krylov_iter_total));
 
@@ -7495,7 +7508,7 @@ namespace Optizelle{
                         
                         out.emplace_back(Utility::atos(augsys_iter_total));
                     } else 
-                        for(Natural i=0;i<22;i++)
+                        for(Natural i=0;i<24;i++)
                             out.emplace_back(Utility::blankSeparator);
                 }
 
