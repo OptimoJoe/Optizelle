@@ -4451,8 +4451,8 @@ namespace Optizelle{
                             std::placeholders::_2,
                             Real(1.)));
 
-                    // Truncated conjugate direction
-                    truncated_cd(
+                    // Find the trial step 
+                    truncated_cg(
                         H,
                         minus_grad,
                         PH,
@@ -5036,8 +5036,8 @@ namespace Optizelle{
                             std::placeholders::_2,
                             Real(1.)));
 
-                    // Truncated conjugate direction
-                    truncated_cd(
+                    // Find the trial step 
+                    truncated_cg(
                         H,
                         minus_grad,
                         PH,
@@ -8248,8 +8248,8 @@ namespace Optizelle{
                 // CD and we accumulate this number as we go
                 augsys_proj_iter=0;
 
-                // Truncated conjugate direction
-                truncated_cd(
+                // Find the trial step 
+                truncated_cg(
                     H,
                     minus_W_gradpHdxn,
                     NullspaceProjForKrylovMethod(state,fns), // Add in PH?

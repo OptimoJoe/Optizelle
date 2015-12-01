@@ -45,14 +45,14 @@ int main() {
 
     // Create an initial guess at the solution
     std::vector <double> x(m);
-    X::zero (x);
+    for(Natural i=1;i<=m;i++) x[i-1]=1.;
 
     // Create a vector for the Cauchy point
     std::vector <double> x_cp(m);
 
-    // Create a vector for the center of the trust-region
-    std::vector <double> x_cntr(m);
-    Optizelle::Rm <double>::zero(x_cntr);
+    // Create a vector for the offset of the trust-region
+    std::vector <double> x_offset(m);
+    Optizelle::Rm <double>::zero(x_offset);
 
     // Solve this linear system
     double residual_err0, residual_err; 
@@ -60,8 +60,8 @@ int main() {
     Optizelle::KrylovStop::t krylov_stop;
     auto failed_safeguard = Natural(0);
     auto alpha_safeguard = double(0.);
-    Optizelle::truncated_cd <double,Optizelle::Rm>
-        (A,b,W,eps_krylov,iter_max,1,delta,x_cntr,false,1,
+    Optizelle::truncated_cg <double,Optizelle::Rm>
+        (A,b,W,eps_krylov,iter_max,1,delta,x_offset,true,1,
             no_safeguard <double,Optizelle::Rm>,x,x_cp,
             residual_err0,residual_err,iter,krylov_stop,failed_safeguard,
             alpha_safeguard);

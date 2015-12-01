@@ -1147,7 +1147,7 @@ namespace Optizelle {
         }
     }
 
-    // Computes the truncated projected conjugate direction algorithm in order
+    // Computes the truncated projected conjugate gradient algorithm in order
     // to solve Ax=b where we restrict x to be in the range of B and that
     // || x + x_offset || <= delta.  The parameters are as follows.
     // 
@@ -1178,7 +1178,7 @@ namespace Optizelle {
         typename Real,
         template <typename> class XX
     >
-    void truncated_cd(
+    void truncated_cg(
         Operator <Real,XX,XX> const & A,
         typename XX <Real>::Vector const & b,
         Operator <Real,XX,XX> const & B,
