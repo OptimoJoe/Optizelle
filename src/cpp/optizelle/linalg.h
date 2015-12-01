@@ -1421,7 +1421,7 @@ namespace Optizelle {
                     //
                     // for i != j and
                     //
-                    // O_ii  = (<B ri,rj> / || B ri || || B rj|| ) - 1
+                    // O_ii  = (<B ri,ri> / || B ri || || B ri|| ) - 1
 
                     // First add a new column to O
                     {
