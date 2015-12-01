@@ -9,6 +9,7 @@ add_optizelle_example_matlab(${PROJECT_NAME})
 add_optizelle_example_supporting(${PROJECT_NAME}
     newton_cg.json
     newton_cg_backtracking.json
+    steepest_descent.json
     sr1.json
     tr_newton.json)
 

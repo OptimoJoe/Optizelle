@@ -10193,7 +10193,15 @@ namespace Optizelle{
                     mu_est_converged &&
                     !mu_converged
                 ) {
+                    // Reduce mu;
                     mu *= sigma;
+                    
+                    // If we're doing a log-barrier method, update our
+                    // multiplier
+                    if(!Algorithms::usePrimalDual(state))
+                        Algorithms::findInequalityMultiplierLogBarrier(state);
+
+                    // Notify that we modified things
                     return true;
                 }
                 else
@@ -10290,7 +10298,8 @@ namespace Optizelle{
                 if(msg_level >= 2) {
                     out.emplace_back(Utility::atos("mu"));
                     out.emplace_back(Utility::atos("alpha_x"));
-                    out.emplace_back(Utility::atos("alpha_z"));
+                    if(Algorithms::usePrimalDual(state))
+                        out.emplace_back(Utility::atos("alpha_z"));
                     if(algorithm_class!=AlgorithmClass::LineSearch)
                         out.emplace_back(Utility::atos("failed_safe"));
                 }
@@ -10342,12 +10351,16 @@ namespace Optizelle{
 
                     if(!opt_begin) {
                         out.emplace_back(Utility::atos(alpha_x));
-                        out.emplace_back(Utility::atos(alpha_z));
+                        if(Algorithms::usePrimalDual(state))
+                            out.emplace_back(Utility::atos(alpha_z));
                         if(algorithm_class!=AlgorithmClass::LineSearch)
                             out.emplace_back(Utility::atos(failed_safeguard));
                     } else {
-                        auto nblank=algorithm_class!=AlgorithmClass::LineSearch?
-                            3 : 2;
+                        auto nblank = 1;
+                        if(Algorithms::usePrimalDual(state))
+                            nblank++;
+                        if(algorithm_class!=AlgorithmClass::LineSearch)
+                            nblank++;
                         for(Natural i=0;i<nblank;i++)
                             out.emplace_back(Utility::blankSeparator);
                     }
@@ -10680,9 +10693,18 @@ namespace Optizelle{
                 Z::symm(dz);
             }
 
-            // Find the initial inequality multiplier 
-            static void findInequalityMultiplierInitial(
-                typename Functions::t const & fns,
+            // Find the log-barrier inequality multiplier.  Specifically,
+            // we set z to be 
+            //
+            // mu inv(L(h(x))) e
+            //
+            // In this way,
+            //
+            // h(x) o z = mu e
+            //
+            // mu_est = <h(x),z> / <e,e>
+            //        = mu
+            static void findInequalityMultiplierLogBarrier(
                 typename State::t & state
             ) {
                 // Create some shortcuts
@@ -10690,99 +10712,15 @@ namespace Optizelle{
                 Real const & mu=state.mu;
                 Z_Vector & z=state.z;
 
-                #if 0
-                // Set z to be
-                //
-                // (mu <e,e> / <h(x),h(x)>) h(x)
-                //
-                // In this way,
-                //
-                // mu_est = <h(x),z> / <e,e>
-                //        = mu
-                //
-                // On the first iteration with h'(x)=I and linear cone
-                // constraints
-                //
-                // f_mod = h'(x)* inv(L(h(x)))(h'(x)dx o z)
-                //       = inv(L(h(x)))(mu <e,e> / <h(x),h(x)>)L(h(x))dx
-                //       = (mu <e,e> / <h(x),h(x)>) dx
-                //
-                // Basically, it sets the spectrum of the Hessian
-                // modification to be a multiple of the identity.
-
                 // z_tmp1 <- e
-                Z_Vector z_tmp1(Z::init(z));
-                    Z::id(z_tmp1);
-
-                // norm_h_2 = || h(x) ||^2
-                Real norm_h_2 = Z::innr(h_x,h_x);
-
-                // m = <e,e>
-                Real m = Z::innr(z_tmp1,z_tmp1);
-
-                // z <- ( mu <e,e> / <h(x),h(x)> ) h(x)
-                Z::copy(h_x,z);
-                Z::scal(mu*m/norm_h_2,z);
-
-                #elif 1
-                // Set z to be
-                //
-                // mu inv(L(h(x))) e
-                //
-                // In this way,
-                //
-                // h(x) o z = mu e
-                //
-                // mu_est = <h(x),z> / <e,e>
-                //        = mu
-
-                // z_tmp1 <- e
-                Z_Vector z_tmp1(Z::init(z));
-                    Z::id(z_tmp1);
+                auto e = Z::init(z);
+                Z::id(e);
 
                 // z <- inv(L(h(x))) e
-                Z::linv(h_x,z_tmp1,z);
+                Z::linv(h_x,e,z);
 
                 // z <- mu inv(L(h(x))) e
                 Z::scal(mu,z);
-
-                #elif 0
-                // Set z to be
-                // 
-                // ( || h(x) || / || inv(L(h(x))) e || ) inv(L(h(x))) e
-                // 
-                // In this way,
-                // 
-                // || z || = || h(x) ||
-                //
-                // h(x) o z = ( || h(x) || / || inv(L(h(x))) e || ) e
-                // 
-                // mu_est = <h(x),z> / <e,e>
-                //        = || h(x) || / || inv(L(h(x))) e ||
-
-                // z_tmp1 <- e 
-                Z_Vector z_tmp1(Z::init(z));
-                    Z::id(z_tmp1);
-
-                // z <- inv(L(h(x))) e 
-                Z::linv(h_x,z_tmp1,z);
-
-                // norm_h = || h(x) ||
-                Real norm_h = sqrt(Z::innr(h_x,h_x));
-
-                // norm_linv_hx_e = || inv(L(h(x))) e ||
-                Real norm_linv_hx_e = sqrt(Z::innr(z,z));
-
-                // z <- ( ||h(x)|| / ||inv(L(h(x))) e|| ) inv(L(h(x))) e
-                Z::scal(norm_h/norm_linv_hx_e,z);
-       
-                #elif 0
-                // Set z to be m / <h(x),e> e.  In this way,
-                // mu_est = <h(x),z> / m = 1.
-                Z::id(z);
-                Z::scal(Z::innr(z,z)/Z::innr(h_x,z),z);
-                #endif
-
             }
            
             // Assume that dz has already been calculated.  Truncate the step
@@ -10949,6 +10887,32 @@ namespace Optizelle{
                 // we can't line-search past this point
                 else
                     state.alpha0 *= alpha_x;
+            }
+
+            // Determines if we are currently using a primal-dual method.
+            // Basically, whenever we solve some kind of second-order system,
+            // like on a Newton method, we do primal dual.  Otherwise, we do
+            // log-barrier.
+            static bool usePrimalDual(
+                typename State::t const & state
+            ) {
+                // Create some shortcuts 
+                auto const & algorithm_class = state.algorithm_class;
+                auto const & dir = state.dir;
+
+                // Anytime we have a second-order system, we do primal-dual.
+                // The UserDefined case is tricky.  Right now, we use this
+                // for the composite-step SQP, so we'll do primal-dual here, but
+                // realistically if the user defines a scheme we may want one
+                // versus the other.
+                if( algorithm_class == AlgorithmClass::TrustRegion ||
+                    algorithm_class == AlgorithmClass::UserDefined ||
+                    (algorithm_class == AlgorithmClass::LineSearch &&
+                    dir == LineSearchDirection::NewtonCG)
+                )
+                    return true;
+                else
+                    return false;
             }
             
             // Conduct a line search that preserves positivity of both the
@@ -11201,8 +11165,10 @@ namespace Optizelle{
                         // Initialize the value h(x)
                         h.eval(x,h_x);
             
-                        // Find the initial inequality multiplier 
-                        findInequalityMultiplierInitial(fns,state);
+                        // Find the initial inequality multiplier.  Currently,
+                        // we choose our initial z to be what it would be
+                        // during a log-barrier method. 
+                        findInequalityMultiplierLogBarrier(state);
 
                         // Estimate the interior point parameter
                         estimateInteriorPointParameter(fns,state);
@@ -11213,18 +11179,22 @@ namespace Optizelle{
 
                     case OptimizationLocation::BeforeLineSearch:
                     case OptimizationLocation::BeforeActualVersusPredicted:
-                        // To be sure, I find this a little bit odd.
-                        // Basically, the inequality multiplier step dz depends
-                        // on dx.  The code appears to work better when we
-                        // solve for dz prior to scaling dx from a line-search
-                        // when one is required.  For a trust-region method,
-                        // computing here doesn't matter.
+                        if(usePrimalDual(state)) {
+                            // To be sure, I find this a little bit odd.
+                            // Basically, the inequality multiplier step dz
+                            // depends on dx.  The code appears to work better
+                            // when we solve for dz prior to scaling dx from a
+                            // line-search when one is required.  For a
+                            // trust-region method, computing here doesn't
+                            // matter.
 
-                        // Find the inequality multiplier step 
-                        findInequalityMultiplierStep(fns,state);
-                        
-                        // Truncate the inequality multiplier step if need be 
-                        adjustInequalityMultiplierStep(fns,state);
+                            // Find the inequality multiplier step 
+                            findInequalityMultiplierStep(fns,state);
+                            
+                            // Truncate the inequality multiplier step if need
+                            // be 
+                            adjustInequalityMultiplierStep(fns,state);
+                        }
                         break;
 
                     case OptimizationLocation::AfterRejectedTrustRegion:
@@ -11237,7 +11207,12 @@ namespace Optizelle{
 
                     case OptimizationLocation::BeforeStep:
                         // Take our inequality multiplier step
-                        Z::axpy(Real(1.),dz,z);
+                        if(usePrimalDual(state))
+                            Z::axpy(Real(1.),dz,z);
+
+                        // Find the log-barrier multiplier
+                        else
+                            findInequalityMultiplierLogBarrier(state);
                         break;
 
                     case OptimizationLocation::AfterStepBeforeGradient:

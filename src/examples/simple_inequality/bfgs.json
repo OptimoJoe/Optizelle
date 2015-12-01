@@ -3,13 +3,16 @@
       "msg_level" : 1,
       "algorithm_class" : "LineSearch",
       "H_type" : "UserDefined",
-      "dir" : "NewtonCG",
+      "dir" : "BFGS",
+      "stored_history" : 2,
       "iter_max" : 200,
       "eps_krylov" : 1e-12,
-      "eps_dx" : 1e-16
+      "eps_dx" : 1e-16,
+      "eps_mu" : 1e-5,
+      "eps_grad" : 1e-5
    },
    "Naturals" : {
-      "iter" : 11
+      "iter" : 76
    },
    "X_Vectors" : {
       "x" : [ 0.33333333, 0.33333333 ] 
