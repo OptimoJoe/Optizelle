@@ -65,9 +65,13 @@ int main() {
     double residual_err0, residual_err; 
     Natural iter;
     Optizelle::KrylovStop::t krylov_stop;
+    auto failed_safeguard = Natural(0);
+    auto alpha_safeguard = double(0.);
     Optizelle::truncated_minres <double,Optizelle::Rm>
-        (A,b,W,eps_krylov,iter_max,1,delta,x_cntr,x,x_cp,
-            residual_err0,residual_err,iter,krylov_stop);
+        (A,b,W,eps_krylov,iter_max,1,delta,x_cntr,1,
+            no_safeguard <double,Optizelle::Rm>,x,x_cp,
+            residual_err0,residual_err,iter,krylov_stop,failed_safeguard,
+            alpha_safeguard);
 
     // Check the error is less than our tolerance 
     CHECK(residual_err < eps_krylov*norm_b);

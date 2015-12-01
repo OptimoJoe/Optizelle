@@ -4527,24 +4527,21 @@ namespace Optizelle{
                             krylov_orthog_max,
                             delta,
                             x_tmp1,
+                            failed_safeguard_max,
+                            simplified_safeguard,
                             dx,
                             dx_cp,
                             residual_err0,
                             residual_err,
                             krylov_iter,
-                            krylov_stop);
+                            krylov_stop,
+                            failed_safeguard,
+                            alpha_x);
                         break;
                     }
 
-                    // Force a descent direction
-                    if(X::innr(dx,grad_step) > 0)
-                        X::scal(Real(-1.),dx);
-                    if(X::innr(dx_cp,grad_step)> 0)
-                        X::scal(Real(-1.),dx_cp);
-
                     // Calculate the Krylov error
-                    krylov_rel_err = residual_err 
-                        / (std::numeric_limits <Real>::epsilon()+residual_err0);
+                    krylov_rel_err = residual_err / residual_err0;
                     krylov_iter_total += krylov_iter;
 
                     // Keep track of the number of failed safeguard steps
@@ -5059,9 +5056,9 @@ namespace Optizelle{
                 if(gradmod(grad_step,Real(0.),true))
                     f_mod.grad_step(x,grad,grad_step);
 
-                // Create the trust-region center 
-                X_Vector x_cntr(X::init(x));
-                X::zero(x_cntr);
+                // Create the trust-region offset 
+                auto x_offset = X::init(x);
+                X::zero(x_offset);
 
                 // Find the line-search direction
                 switch(dir){
@@ -5119,7 +5116,7 @@ namespace Optizelle{
                             krylov_iter_max,
                             krylov_orthog_max,
                             std::numeric_limits <Real>::infinity(),
-                            x_cntr,
+                            x_offset,
                             false,
                             failed_safeguard_max,
                             simplified_safeguard,
@@ -5143,25 +5140,22 @@ namespace Optizelle{
                             krylov_iter_max,
                             krylov_orthog_max,
                             std::numeric_limits <Real>::infinity(),
-                            x_cntr,
+                            x_offset,
+                            failed_safeguard_max,
+                            simplified_safeguard,
                             dx,
                             dx_cp,
                             residual_err0,
                             residual_err,
                             krylov_iter,
-                            krylov_stop);
+                            krylov_stop,
+                            failed_safeguard,
+                            alpha_x);
                         break;
                     }
 
-                    // Force a descent direction
-                    if(X::innr(dx,grad_step) > 0)
-                        X::scal(Real(-1.),dx);
-                    if(X::innr(dx_cp,grad_step) > 0)
-                        X::scal(Real(-1.),dx_cp);
-
                     // Calculate the Krylov error
-                    krylov_rel_err = residual_err 
-                        / (std::numeric_limits <Real>::epsilon()+residual_err0);
+                    krylov_rel_err = residual_err / residual_err0;
                     krylov_iter_total += krylov_iter;
 
                     // Keep track of the number of failed safeguard steps
@@ -8389,22 +8383,19 @@ namespace Optizelle{
                         krylov_orthog_max,
                         delta,
                         dx_n,
+                        failed_safeguard_max,
+                        simplified_safeguard,
                         dx_t_uncorrected,
                         dx_tcp_uncorrected,
                         residual_err0,
                         residual_err,
                         krylov_iter,
-                        krylov_stop);
-
-                    // Force a descent direction
-                    if(X::innr(dx_t_uncorrected,W_gradpHdxn) > 0)
-                        X::scal(Real(-1.),dx_t_uncorrected);
-                    if(X::innr(dx_tcp_uncorrected,W_gradpHdxn) > 0)
-                        X::scal(Real(-1.),dx_tcp_uncorrected);
+                        krylov_stop,
+                        failed_safeguard,
+                        alpha_x);
                     break;
                 }
-                krylov_rel_err = residual_err 
-                    / (std::numeric_limits <Real>::epsilon()+residual_err0);
+                krylov_rel_err = residual_err / residual_err0;
                 krylov_iter_total += krylov_iter;
 
                 // Keep track of the number of failed safeguard steps
