@@ -13,7 +13,11 @@ macro(add_optizelle_unit_cpp name)
         target_link_libraries(${name}
             optizelle_shared)
             
-        add_test("Execution_of_cpp_${name}" ${name})
+        # Grab the absolute path of the test
+        get_filename_component(fullname ${name} ABSOLUTE)
+
+        # Add the test
+        add_test("Execution_of_cpp_${fullname}" ${name})
     endif()
 
 endmacro()
