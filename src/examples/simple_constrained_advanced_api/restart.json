@@ -28,7 +28,6 @@
       "g_diag" : "NoDiagnostics",
       "h_diag" : "NoDiagnostics",
       "kind" : "GoldenSection",
-      "krylov_solver" : "ConjugateDirection",
       "krylov_stop" : "RelativeErrorSmall",
       "opt_stop" : "NotConverged"
    },

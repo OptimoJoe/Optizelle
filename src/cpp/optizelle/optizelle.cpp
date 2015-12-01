@@ -497,42 +497,6 @@ namespace Optizelle{
         }
     }
     
-    // Different truncated Krylov solvers 
-    namespace KrylovSolverTruncated{
-        
-        // Converts the Krylov solver to a string
-        std::string to_string(const t& truncated_krylov) {
-            switch(truncated_krylov){
-            case ConjugateDirection:
-                return "ConjugateDirection";
-            case MINRES:
-                return "MINRES";
-            default:
-                    throw;
-            }
-        }
-
-        // Converts a string to a problem class 
-        t from_string(std::string const & truncated_krylov) {
-            if(truncated_krylov=="ConjugateDirection")
-                return ConjugateDirection;
-            else if(truncated_krylov=="MINRES")
-                return MINRES;
-            else
-                throw;
-        }
-
-        // Checks whether or not a string is valid
-        bool is_valid(std::string const & name) {
-            if( name=="ConjugateDirection" ||
-                name=="MINRES" 
-            )
-                return true;
-            else
-                return false;
-        }
-    }
-
     // Different diagnostic tests on the optimization functions 
     namespace FunctionDiagnostics{
 

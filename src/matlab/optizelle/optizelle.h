@@ -53,14 +53,6 @@ namespace Optizelle {
         t fromMatlab(mxArray * const member);
     }
     
-    namespace KrylovSolverTruncated {
-        // Converts t to a Matlab enumerated type
-        mxArray * toMatlab(t const & truncated_krylov);
-
-        // Converts a Matlab enumerated type to t 
-        t fromMatlab(mxArray * const member);
-    }
-
     namespace AlgorithmClass { 
         // Converts t to a Matlab enumerated type
         mxArray * toMatlab(t const & algorithm_class);

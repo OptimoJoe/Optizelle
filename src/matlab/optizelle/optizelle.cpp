@@ -164,38 +164,6 @@ namespace Optizelle {
                 throw;
         }
     }
-    
-    namespace KrylovSolverTruncated { 
-        // Converts t to a Matlab enumerated type
-        mxArray * toMatlab(t const & truncated_krylov) {
-            // Do the conversion
-            switch(truncated_krylov){
-            case ConjugateDirection:
-                return Matlab::enumToMxArray(
-                    "KrylovSolverTruncated","ConjugateDirection");
-            case MINRES:
-                return Matlab::enumToMxArray(
-                    "KrylovSolverTruncated","MINRES");
-            default:
-                throw;
-            }
-        }
-
-        // Converts a Matlab enumerated type to t 
-        t fromMatlab(mxArray * const member) {
-            // Convert the member to a Natural 
-            Natural m(*mxGetPr(member));
-
-            if(m==Matlab::enumToNatural(
-                "KrylovSolverTruncated","ConjugateDirection")
-            )
-                return ConjugateDirection;
-            else if(m==Matlab::enumToNatural("KrylovSolverTruncated","MINRES"))
-                return MINRES;
-            else
-                throw;
-        }
-    }
 
     namespace AlgorithmClass { 
         // Converts t to a Matlab enumerated type
@@ -1892,7 +1860,6 @@ namespace Optizelle {
                         "krylov_stop",
                         "krylov_rel_err",
                         "eps_krylov",
-                        "krylov_solver",
                         "algorithm_class",
                         "PH_type",
                         "H_type",
@@ -1982,11 +1949,6 @@ namespace Optizelle {
                     toMatlab::Real("krylov_rel_err",
                         state.krylov_rel_err,mxstate);
                     toMatlab::Real("eps_krylov",state.eps_krylov,mxstate);
-                    toMatlab::Param <KrylovSolverTruncated::t> (
-                        "krylov_solver",
-                        KrylovSolverTruncated::toMatlab,
-                        state.krylov_solver,
-                        mxstate);
                     toMatlab::Param <AlgorithmClass::t> (
                         "algorithm_class",
                         AlgorithmClass::toMatlab,
@@ -2118,11 +2080,6 @@ namespace Optizelle {
                     fromMatlab::Real("krylov_rel_err",
                         mxstate,state.krylov_rel_err);
                     fromMatlab::Real("eps_krylov",mxstate,state.eps_krylov);
-                    fromMatlab::Param <KrylovSolverTruncated::t> (
-                        "krylov_solver",
-                        KrylovSolverTruncated::fromMatlab,
-                        mxstate,
-                        state.krylov_solver);
                     fromMatlab::Param <AlgorithmClass::t> (
                         "algorithm_class",
                         AlgorithmClass::fromMatlab,

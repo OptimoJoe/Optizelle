@@ -144,12 +144,6 @@ class ProblemClass(EnumeratedType):
     Constrained \
     = range(4)
     
-class KrylovSolverTruncated(EnumeratedType):
-    """Different truncated Krylov solvers"""
-    ConjugateDirection, \
-    MINRES \
-    = range(2)
-    
 class FunctionDiagnostics(EnumeratedType):
     """Different function diagnostics on the optimization functions""" 
     NoDiagnostics, \

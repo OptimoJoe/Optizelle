@@ -472,25 +472,6 @@ namespace Optizelle{
         bool is_valid(std::string const & name);
     }
     
-    // Different truncated Krylov solvers 
-    namespace KrylovSolverTruncated{
-        enum t : Natural{
-            //---KrylovSolverTruncated0---
-            ConjugateDirection,         // Conjugate direction 
-            MINRES                      // MINRES 
-            //---KrylovSolverTruncated1---
-        };
-
-        // Converts the problem class to a string
-        std::string to_string(t const & truncated_krylov);
-
-        // Converts a string to a problem class 
-        t from_string(std::string const & truncated_krylov);
-
-        // Checks whether or not a string is valid
-        bool is_valid(std::string const & name);
-    }
-    
     // Different function diagnostics on the optimization functions 
     namespace FunctionDiagnostics {
         enum t : Natural{
@@ -1886,9 +1867,6 @@ namespace Optizelle{
                 // Stopping tolerance for the Krylov method
                 Real eps_krylov;
 
-                // Truncated Krylov solver
-                KrylovSolverTruncated::t krylov_solver;
-
                 // Algorithm class
                 AlgorithmClass::t algorithm_class;
 
@@ -2093,11 +2071,6 @@ namespace Optizelle{
                         //---eps_krylov0---
                         1e-2
                         //---eps_krylov1---
-                    ),
-                    krylov_solver(
-                        //---krylov_solver0---
-                        KrylovSolverTruncated::ConjugateDirection
-                        //---krylov_solver1---
                     ),
                     algorithm_class(
                         //---algorithm_class0---
@@ -2412,10 +2385,6 @@ namespace Optizelle{
                     ss << "The tolerance for the Krylov method stopping "
                         "condition must be positive: eps_krylov = "
                     << state.eps_krylov;
-                    
-                    //---krylov_solver_valid0---
-                    // Any 
-                    //---krylov_solver_valid1---
                     
                     //---algorithm_class_valid0---
                     // Any 
@@ -2754,9 +2723,7 @@ namespace Optizelle{
             static bool is_param (
                 typename RestartPackage <std::string>::tuple const & item
             ){
-                if( (item.first=="krylov_solver" &&
-                        KrylovSolverTruncated::is_valid(item.second)) ||
-                    (item.first=="algorithm_class" &&
+                if( (item.first=="algorithm_class" &&
                         AlgorithmClass::is_valid(item.second)) ||
                     (item.first=="opt_stop" &&
                         StoppingCondition::is_valid(item.second)) ||
@@ -2923,8 +2890,6 @@ namespace Optizelle{
                     std::move(state.linesearch_iter_total));
 
                 // Copy in all the parameters
-                params.emplace_back("krylov_solver",
-                    KrylovSolverTruncated::to_string(state.krylov_solver));
                 params.emplace_back("algorithm_class",
                     AlgorithmClass::to_string(state.algorithm_class));
                 params.emplace_back("opt_stop",
@@ -3082,10 +3047,7 @@ namespace Optizelle{
                     item!=params.end();
                     item++
                 ){
-                    if(item->first=="krylov_solver")
-                        state.krylov_solver
-                            = KrylovSolverTruncated::from_string(item->second);
-                    else if(item->first=="algorithm_class")
+                    if(item->first=="algorithm_class")
                         state.algorithm_class
                             = AlgorithmClass::from_string(item->second);
                     else if(item->first=="opt_stop")
@@ -4434,8 +4396,6 @@ namespace Optizelle{
                 X_Vector const & grad=state.grad;
                 Real const & norm_dxtyp=state.norm_dxtyp;
                 auto const & failed_safeguard_max = state.failed_safeguard_max;
-                KrylovSolverTruncated::t const & krylov_solver
-                    = state.krylov_solver;
                 Natural & rejected_trustregion=state.rejected_trustregion;
                 X_Vector & dx=state.dx;
                 Natural & krylov_iter=state.krylov_iter;
@@ -4491,54 +4451,27 @@ namespace Optizelle{
                             std::placeholders::_2,
                             Real(1.)));
 
-                    switch(krylov_solver) {
                     // Truncated conjugate direction
-                    case KrylovSolverTruncated::ConjugateDirection:
-                        truncated_cd(
-                            H,
-                            minus_grad,
-                            PH,
-                            eps_krylov,
-                            krylov_iter_max,
-                            krylov_orthog_max,
-                            delta,
-                            x_tmp1,
-			    false,
-                            failed_safeguard_max,
-                            simplified_safeguard,
-                            dx,
-                            dx_cp,
-                            residual_err0,
-                            residual_err,
-                            krylov_iter,
-                            krylov_stop,
-                            failed_safeguard,
-                            alpha_x);
-                        break;
-
-                    // Truncated MINRES 
-                    case KrylovSolverTruncated::MINRES:
-                        truncated_minres(
-                            H,
-                            minus_grad,
-                            PH,
-                            eps_krylov,
-                            krylov_iter_max,
-                            krylov_orthog_max,
-                            delta,
-                            x_tmp1,
-                            failed_safeguard_max,
-                            simplified_safeguard,
-                            dx,
-                            dx_cp,
-                            residual_err0,
-                            residual_err,
-                            krylov_iter,
-                            krylov_stop,
-                            failed_safeguard,
-                            alpha_x);
-                        break;
-                    }
+                    truncated_cd(
+                        H,
+                        minus_grad,
+                        PH,
+                        eps_krylov,
+                        krylov_iter_max,
+                        krylov_orthog_max,
+                        delta,
+                        x_tmp1,
+                        false,
+                        failed_safeguard_max,
+                        simplified_safeguard,
+                        dx,
+                        dx_cp,
+                        residual_err0,
+                        residual_err,
+                        krylov_iter,
+                        krylov_stop,
+                        failed_safeguard,
+                        alpha_x);
 
                     // Calculate the Krylov error
                     krylov_rel_err = residual_err / residual_err0;
@@ -5030,8 +4963,6 @@ namespace Optizelle{
                 Real const & eps_krylov=state.eps_krylov;
                 Natural const & krylov_iter_max=state.krylov_iter_max;
                 Natural const & krylov_orthog_max=state.krylov_orthog_max;
-                KrylovSolverTruncated::t const & krylov_solver
-                    = state.krylov_solver;
                 Real const & c1=state.c1;
                 auto const & failed_safeguard_max = state.failed_safeguard_max;
                 X_Vector & dx=state.dx;
@@ -5105,54 +5036,27 @@ namespace Optizelle{
                             std::placeholders::_2,
                             Real(1.)));
 
-                    switch(krylov_solver) {
                     // Truncated conjugate direction
-                    case KrylovSolverTruncated::ConjugateDirection:
-                        truncated_cd(
-                            H,
-                            minus_grad,
-                            PH,
-                            eps_krylov,
-                            krylov_iter_max,
-                            krylov_orthog_max,
-                            std::numeric_limits <Real>::infinity(),
-                            x_offset,
-                            false,
-                            failed_safeguard_max,
-                            simplified_safeguard,
-                            dx,
-                            dx_cp,
-                            residual_err0,
-                            residual_err,
-                            krylov_iter,
-                            krylov_stop,
-                            failed_safeguard,
-                            alpha_x);
-                        break;
-
-                    // Truncated MINRES 
-                    case KrylovSolverTruncated::MINRES:
-                        truncated_minres(
-                            H,
-                            minus_grad,
-                            PH,
-                            eps_krylov,
-                            krylov_iter_max,
-                            krylov_orthog_max,
-                            std::numeric_limits <Real>::infinity(),
-                            x_offset,
-                            failed_safeguard_max,
-                            simplified_safeguard,
-                            dx,
-                            dx_cp,
-                            residual_err0,
-                            residual_err,
-                            krylov_iter,
-                            krylov_stop,
-                            failed_safeguard,
-                            alpha_x);
-                        break;
-                    }
+                    truncated_cd(
+                        H,
+                        minus_grad,
+                        PH,
+                        eps_krylov,
+                        krylov_iter_max,
+                        krylov_orthog_max,
+                        std::numeric_limits <Real>::infinity(),
+                        x_offset,
+                        false,
+                        failed_safeguard_max,
+                        simplified_safeguard,
+                        dx,
+                        dx_cp,
+                        residual_err0,
+                        residual_err,
+                        krylov_iter,
+                        krylov_stop,
+                        failed_safeguard,
+                        alpha_x);
 
                     // Calculate the Krylov error
                     krylov_rel_err = residual_err / residual_err0;
@@ -8304,8 +8208,6 @@ namespace Optizelle{
                 Real const & eps_krylov=state.eps_krylov;
                 Natural const & krylov_iter_max=state.krylov_iter_max;
                 Natural const & krylov_orthog_max=state.krylov_orthog_max;
-                KrylovSolverTruncated::t const & krylov_solver
-                    = state.krylov_solver;
                 auto const & failed_safeguard_max = state.failed_safeguard_max;
                 X_Vector & dx_t_uncorrected=state.dx_t_uncorrected;
                 X_Vector & dx_tcp_uncorrected=state.dx_tcp_uncorrected;
@@ -8341,60 +8243,34 @@ namespace Optizelle{
                         std::placeholders::_2,
                         Real(1.)));
 
-                switch(krylov_solver) {
+                // Make sure to zero out our iteration counter for the
+                // nullspace projection.  We'll do several iterations of
+                // CD and we accumulate this number as we go
+                augsys_proj_iter=0;
+
                 // Truncated conjugate direction
-                case KrylovSolverTruncated::ConjugateDirection:
-                    // Make sure to zero out our iteration counter for the
-                    // nullspace projection.  We'll do several iterations of
-                    // CD and we accumulate this number as we go
-                    augsys_proj_iter=0;
+                truncated_cd(
+                    H,
+                    minus_W_gradpHdxn,
+                    NullspaceProjForKrylovMethod(state,fns), // Add in PH?
+                    eps_krylov,
+                    krylov_iter_max,
+                    krylov_orthog_max,
+                    delta,
+                    dx_n,
+                    true,
+                    failed_safeguard_max,
+                    simplified_safeguard,
+                    dx_t_uncorrected,
+                    dx_tcp_uncorrected,
+                    residual_err0,
+                    residual_err,
+                    krylov_iter,
+                    krylov_stop,
+                    failed_safeguard,
+                    alpha_x);
 
-                    // Do the actual solve
-                    truncated_cd(
-                        H,
-                        minus_W_gradpHdxn,
-                        NullspaceProjForKrylovMethod(state,fns), // Add in PH?
-                        eps_krylov,
-                        krylov_iter_max,
-                        krylov_orthog_max,
-                        delta,
-                        dx_n,
-			true,
-                        failed_safeguard_max,
-                        simplified_safeguard,
-                        dx_t_uncorrected,
-                        dx_tcp_uncorrected,
-                        residual_err0,
-                        residual_err,
-                        krylov_iter,
-                        krylov_stop,
-                        failed_safeguard,
-                        alpha_x);
-                    break;
-
-                // Truncated MINRES 
-                case KrylovSolverTruncated::MINRES:
-                    truncated_minres(
-                        H,
-                        minus_W_gradpHdxn,
-                        NullspaceProjForKrylovMethod(state,fns), // Add in PH?
-                        eps_krylov,
-                        krylov_iter_max,
-                        krylov_orthog_max,
-                        delta,
-                        dx_n,
-                        failed_safeguard_max,
-                        simplified_safeguard,
-                        dx_t_uncorrected,
-                        dx_tcp_uncorrected,
-                        residual_err0,
-                        residual_err,
-                        krylov_iter,
-                        krylov_stop,
-                        failed_safeguard,
-                        alpha_x);
-                    break;
-                }
+                // Calculate the Krylov error
                 krylov_rel_err = residual_err / residual_err0;
                 krylov_iter_total += krylov_iter;
 

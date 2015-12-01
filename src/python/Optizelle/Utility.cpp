@@ -158,38 +158,6 @@ namespace Optizelle {
                 throw;
         }
     }
-    
-    namespace KrylovSolverTruncated { 
-        // Converts t to a Python enumerated type
-        PyObject * toPython(t const & truncated_krylov) {
-            // Do the conversion
-            switch(truncated_krylov){
-            case ConjugateDirection:
-                return Python::enumToPyObject(
-                    "KrylovSolverTruncated","ConjugateDirection");
-            case MINRES:
-                return Python::enumToPyObject(
-                    "KrylovSolverTruncated","MINRES");
-            default:
-                throw;
-            }
-        }
-
-        // Converts a Python enumerated type to t 
-        t fromPython(PyObject * const member) {
-            // Convert the member to a Natural 
-            Natural m=PyInt_AsSsize_t(member);
-
-            if(m==Python::enumToNatural(
-                "KrylovSolverTruncated","ConjugateDirection")
-            )
-                return ConjugateDirection;
-            else if(m==Python::enumToNatural("KrylovSolverTruncated","MINRES"))
-                return MINRES;
-            else
-                throw;
-        }
-    }
 
     namespace AlgorithmClass { 
         // Converts t to a Python enumerated type
@@ -1874,11 +1842,6 @@ namespace Optizelle {
                     toPython::Real("krylov_rel_err",
                         state.krylov_rel_err,pystate);
                     toPython::Real("eps_krylov",state.eps_krylov,pystate);
-                    toPython::Param <KrylovSolverTruncated::t> (
-                        "krylov_solver",
-                        KrylovSolverTruncated::toPython,
-                        state.krylov_solver,
-                        pystate);
                     toPython::Param <AlgorithmClass::t> (
                         "algorithm_class",
                         AlgorithmClass::toPython,
@@ -2010,11 +1973,6 @@ namespace Optizelle {
                     fromPython::Real("krylov_rel_err",
                         pystate,state.krylov_rel_err);
                     fromPython::Real("eps_krylov",pystate,state.eps_krylov);
-                    fromPython::Param <KrylovSolverTruncated::t> (
-                        "krylov_solver",
-                        KrylovSolverTruncated::fromPython,
-                        pystate,
-                        state.krylov_solver);
                     fromPython::Param <AlgorithmClass::t> (
                         "algorithm_class",
                         AlgorithmClass::fromPython,

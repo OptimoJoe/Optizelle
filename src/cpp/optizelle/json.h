@@ -405,13 +405,6 @@ namespace Optizelle {
                     msg,
                     root["Optizelle"].get("eps_krylov",state.eps_krylov),
                     "eps_krylov");
-                state.krylov_solver=read::param <KrylovSolverTruncated::t> (
-                    msg,
-                    root["Optizelle"].get("krylov_solver",
-                        KrylovSolverTruncated::to_string(state.krylov_solver)),
-                    KrylovSolverTruncated::is_valid,
-                    KrylovSolverTruncated::from_string,
-                    "krylov_solver");
                 state.algorithm_class=read::param <AlgorithmClass::t> (
                     msg,
                     root["Optizelle"].get("algorithm_class",
@@ -555,8 +548,6 @@ namespace Optizelle {
                 root["Optizelle"]["krylov_orthog_max"]=write::natural(
                     state.krylov_orthog_max);
                 root["Optizelle"]["eps_krylov"]=write::real(state.eps_krylov);
-                root["Optizelle"]["krylov_solver"]=write_param(
-                    KrylovSolverTruncated::to_string,state.krylov_solver);
                 root["Optizelle"]["algorithm_class"]=write_param(
                     AlgorithmClass::to_string,state.algorithm_class);
                 root["Optizelle"]["PH_type"]=write_param(

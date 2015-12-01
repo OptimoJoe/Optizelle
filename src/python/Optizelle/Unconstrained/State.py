@@ -84,10 +84,6 @@ class t(object):
     eps_krylov = Optizelle.createFloatProperty(
         "eps_krylov",
         "Stopping tolerance for the Krylov method")
-    krylov_solver = Optizelle.createEnumProperty(
-        "krylov_solver",
-        Optizelle.KrylovSolverTruncated, 
-        "Truncated Krylov solver")
     algorithm_class = Optizelle.createEnumProperty(
         "algorithm_class",
         Optizelle.AlgorithmClass,

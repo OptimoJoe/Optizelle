@@ -61,14 +61,6 @@ namespace Optizelle {
         t fromPython(PyObject * const member);
     }
     
-    namespace KrylovSolverTruncated {
-        // Converts t to a Python enumerated type
-        PyObject * toPython(t const & truncated_krylov);
-
-        // Converts a Python enumerated type to t 
-        t fromPython(PyObject * const member);
-    }
-
     namespace AlgorithmClass { 
         // Converts t to a Python enumerated type
         PyObject * toPython(t const & algorithm_class);
