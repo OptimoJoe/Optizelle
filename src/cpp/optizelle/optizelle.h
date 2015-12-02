@@ -3946,7 +3946,7 @@ namespace Optizelle{
                 if(!noiter)
                     out.emplace_back(Utility::atos(iter));
                 else
-                    out.emplace_back(Utility::atos("*"));
+                    out.emplace_back(Utility::atos("."));
                 out.emplace_back(Utility::atos(f_x));
                 out.emplace_back(Utility::atos(norm_grad));
                 if(!opt_begin) 
