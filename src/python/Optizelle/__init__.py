@@ -104,12 +104,11 @@ class LineSearchDirection(EnumeratedType):
    
 class LineSearchKind(EnumeratedType):
     """Different sorts of line searches"""
-    Brents, \
     GoldenSection, \
     BackTracking, \
     TwoPointA, \
     TwoPointB \
-    = range(5)
+    = range(4)
     
 class OptimizationLocation(EnumeratedType):
     """Different points in the optimization algorithm"""

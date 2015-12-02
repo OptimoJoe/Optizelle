@@ -300,8 +300,6 @@ namespace Optizelle {
         PyObject * toPython(t const & kind) {
             // Do the conversion
             switch(kind){
-            case Brents:
-                return Python::enumToPyObject("LineSearchKind","Brents");
             case GoldenSection:
                 return Python::enumToPyObject("LineSearchKind","GoldenSection");
             case BackTracking:
@@ -320,9 +318,7 @@ namespace Optizelle {
             // Convert the member to a Natural 
             Natural m=PyInt_AsSsize_t(member);
 
-            if(m==Python::enumToNatural("LineSearchKind","Brents"))
-                return Brents;
-            else if(m==Python::enumToNatural("LineSearchKind","GoldenSection"))
+            if(m==Python::enumToNatural("LineSearchKind","GoldenSection"))
                 return GoldenSection;
             else if(m==Python::enumToNatural("LineSearchKind","BackTracking"))
                 return BackTracking;

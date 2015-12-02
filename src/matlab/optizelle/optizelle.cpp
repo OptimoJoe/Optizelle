@@ -306,8 +306,6 @@ namespace Optizelle {
         mxArray * toMatlab(t const & kind) {
             // Do the conversion
             switch(kind){
-            case Brents:
-                return Matlab::enumToMxArray("LineSearchKind","Brents");
             case GoldenSection:
                 return Matlab::enumToMxArray("LineSearchKind","GoldenSection");
             case BackTracking:
@@ -326,9 +324,7 @@ namespace Optizelle {
             // Convert the member to a Natural 
             Natural m(*mxGetPr(member));
 
-            if(m==Matlab::enumToNatural("LineSearchKind","Brents"))
-                return Brents;
-            else if(m==Matlab::enumToNatural("LineSearchKind","GoldenSection"))
+            if(m==Matlab::enumToNatural("LineSearchKind","GoldenSection"))
                 return GoldenSection;
             else if(m==Matlab::enumToNatural("LineSearchKind","BackTracking"))
                 return BackTracking;

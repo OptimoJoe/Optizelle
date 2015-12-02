@@ -264,8 +264,6 @@ namespace Optizelle{
         // Converts the line-search kind to a string 
         std::string to_string(t const & kind) {
             switch(kind){
-            case Brents:
-                return "Brents";
             case GoldenSection:
                 return "GoldenSection";
             case BackTracking:
@@ -281,9 +279,7 @@ namespace Optizelle{
         
         // Converts a string to a line-search kind 
         t from_string(std::string const & kind) {
-            if(kind=="Brents")
-                return Brents; 
-            else if(kind=="GoldenSection")
+            if(kind=="GoldenSection")
                 return GoldenSection; 
             else if(kind=="BackTracking")
                 return BackTracking; 
@@ -297,8 +293,7 @@ namespace Optizelle{
 
         // Checks whether or not a string is valid
         bool is_valid(std::string const & name) {
-            if( name=="Brents" ||
-                name=="GoldenSection" ||
+            if( name=="GoldenSection" ||
                 name=="BackTracking" ||
                 name=="TwoPointA" ||
                 name=="TwoPointB" 
@@ -314,7 +309,6 @@ namespace Optizelle{
             switch(kind){
             case GoldenSection:
             case BackTracking:
-            case Brents:
                 return true;
             case TwoPointA:
             case TwoPointB:

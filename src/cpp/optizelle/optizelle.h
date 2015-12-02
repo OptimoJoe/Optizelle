@@ -337,7 +337,6 @@ namespace Optizelle{
     namespace LineSearchKind{
         enum t : Natural{
             //---LineSearchKind0---
-            Brents,           // Brent's minimization
             GoldenSection,    // Golden-section search 
             BackTracking,     // BackTracking search 
             TwoPointA,        // Barzilai and Borwein's method A
@@ -5117,9 +5116,6 @@ namespace Optizelle{
                             ls_why=goldenSection(fns,state);
                         else if(kind==LineSearchKind::BackTracking)
                             backTracking(fns,state);
-                        else if(kind==LineSearchKind::Brents) 
-                            msg.error("Brent's linesearch is not currently "
-                                "implemented.");
 
                         // Determine x+dx 
                         X::copy(x,x_p_adx);
