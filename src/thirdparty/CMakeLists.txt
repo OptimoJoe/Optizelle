@@ -106,13 +106,13 @@ if(ENABLE_BUILD_BLAS_AND_LAPACK)
         fix_lapack_install_copy_bin
         ALL
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-            ${CMAKE_BINARY_DIR}/installed/bin
-            ${CMAKE_BINARY_DIR}/installed/lib)
+            ${CMAKE_BINARY_DIR}/thirdparty/bin
+            ${CMAKE_BINARY_DIR}/thirdparty/lib)
     add_custom_target(
         fix_lapack_install_remove_bin
         ALL
         COMMAND ${CMAKE_COMMAND} -E remove_directory
-            ${CMAKE_BINARY_DIR}/installed/bin)
+            ${CMAKE_BINARY_DIR}/thirdparty/bin)
 
     # Set the location of BLAS and LAPACK 
     set(BLAS_LIBRARY
