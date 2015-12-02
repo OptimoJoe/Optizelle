@@ -472,26 +472,6 @@ namespace Optizelle{
         bool is_valid(std::string const & name);
     }
     
-    // Different function diagnostics on the optimization functions 
-    namespace FunctionDiagnostics {
-        enum t : Natural{
-            //---FunctionDiagnostics0---
-            NoDiagnostics,      // No diagnostic checks
-            FirstOrder,         // First-order function checks
-            SecondOrder         // Second-order function checks
-            //---FunctionDiagnostics1---
-        };
-        
-        // Converts the diagnostic checks to a string
-        std::string to_string(t const & diag);
-        
-        // Converts a string to the diagnostic checks 
-        t from_string(std::string const & diag);
-
-        // Checks whether or not a string is valid
-        bool is_valid(std::string const & name);
-    }
-    
     // When and how often we compute our intrusive diagnostics 
     namespace DiagnosticScheme {
         enum t : Natural{
@@ -510,6 +490,26 @@ namespace Optizelle{
 
         // Checks whether or not a string is valid
         bool is_valid(std::string const & dscheme);
+    }
+    
+    // Different function diagnostics on the optimization functions 
+    namespace FunctionDiagnostics {
+        enum t : Natural{
+            //---FunctionDiagnostics0---
+            NoDiagnostics,      // No diagnostic checks
+            FirstOrder,         // First-order function checks
+            SecondOrder         // Second-order function checks
+            //---FunctionDiagnostics1---
+        };
+        
+        // Converts the diagnostic checks to a string
+        std::string to_string(t const & diag);
+        
+        // Converts a string to the diagnostic checks 
+        t from_string(std::string const & diag);
+
+        // Checks whether or not a string is valid
+        bool is_valid(std::string const & name);
     }
     
     // Different diagnostics on the algebra 
@@ -10803,8 +10803,8 @@ namespace Optizelle{
                 //     mu_normalization
                 // 2.  mu_est is on the same order as mu
                 auto mu_converged =
-                    std::fabs(mu-absrel(mu_typ)*eps_mu) < absrel(mu_typ)*eps_mu;
-                auto mu_est_converged = std::fabs(mu-mu_est) < mu;
+                    std::fabs(mu-absrel(mu_typ)*eps_mu) <=absrel(mu_typ)*eps_mu;
+                auto mu_est_converged = std::fabs(mu-mu_est) <= mu;
                 if( opt_stop==StoppingCondition::GradientSmall &&
                     !(mu_converged && mu_est_converged)
                 ) {
