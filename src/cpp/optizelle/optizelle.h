@@ -5463,6 +5463,10 @@ namespace Optizelle{
                     // Move to the new iterate
                     X::axpy(Real(1.),dx,x);
 
+                    // Save the size of the first step
+                    if(iter==1)
+                        norm_dxtyp=std::sqrt(X::innr(dx,dx));
+
                     // Manipulate the state if required
                     smanip.eval(fns,state,
                         OptimizationLocation::AfterStepBeforeGradient);
