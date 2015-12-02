@@ -53,14 +53,6 @@ namespace Optizelle {
         t fromMatlab(mxArray * const member);
     }
     
-    namespace KrylovSolverTruncated {
-        // Converts t to a Matlab enumerated type
-        mxArray * toMatlab(t const & truncated_krylov);
-
-        // Converts a Matlab enumerated type to t 
-        t fromMatlab(mxArray * const member);
-    }
-
     namespace AlgorithmClass { 
         // Converts t to a Matlab enumerated type
         mxArray * toMatlab(t const & algorithm_class);
@@ -96,22 +88,6 @@ namespace Optizelle {
     namespace OptimizationLocation{ 
         // Converts t to a Matlab enumerated type
         mxArray * toMatlab(t const & loc);
-
-        // Converts a Matlab enumerated type to t 
-        t fromMatlab(mxArray * const member);
-    }
-    
-    namespace InteriorPointMethod{ 
-        // Converts t to a Matlab enumerated type
-        mxArray * toMatlab(t const & ipm);
-
-        // Converts a Matlab enumerated type to t 
-        t fromMatlab(mxArray * const member);
-    }
-    
-    namespace CentralityStrategy{ 
-        // Converts t to a Matlab enumerated type
-        mxArray * toMatlab(t const & cstrat);
 
         // Converts a Matlab enumerated type to t 
         t fromMatlab(mxArray * const member);

@@ -1,0 +1,20 @@
+{
+   "Optizelle" : {
+      "msg_level" : 1,
+      "algorithm_class" : "LineSearch",
+      "H_type" : "UserDefined",
+      "dir" : "BFGS",
+      "stored_history" : 2,
+      "iter_max" : 800,
+      "eps_krylov" : 1e-10,
+      "eps_dx" : 1e-16,
+      "eps_grad" : 5e-3,
+      "eps_mu" : 1e-3
+   },
+   "Naturals" : {
+      "iter" : 10
+   },
+   "X_Vectors" : {
+      "x" : [ 2.5, 2.5] 
+   }
+}

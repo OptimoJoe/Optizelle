@@ -1,17 +1,17 @@
 {
    "Optizelle" : {
       "msg_level" : 1,
+      "algorithm_class" : "LineSearch",
       "H_type" : "UserDefined",
-      "iter_max" : 50,
+      "dir" : "SteepestDescent",
+      "iter_max" : 800,
       "eps_krylov" : 1e-10,
       "eps_dx" : 1e-16,
-      "eps_grad" : 1e-9,
-      "eps_mu" : 1e-7,
-      "gamma" : 0.995,
-      "cstrat" : "PredictorCorrector"
+      "eps_grad" : 1e-2,
+      "eps_mu" : 1e-3
    },
    "Naturals" : {
-      "iter" : 9
+      "iter" : 197
    },
    "X_Vectors" : {
       "x" : [ 2.5, 2.5] 

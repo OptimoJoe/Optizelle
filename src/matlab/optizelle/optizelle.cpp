@@ -46,12 +46,12 @@ namespace Optizelle {
             case NotConverged:
                 return Matlab::enumToMxArray(
                     "StoppingCondition","NotConverged");
-            case RelativeGradientSmall:
+            case GradientSmall:
                 return Matlab::enumToMxArray(
-                    "StoppingCondition","RelativeGradientSmall");
-            case RelativeStepSmall:
+                    "StoppingCondition","GradientSmall");
+            case StepSmall:
                 return Matlab::enumToMxArray(
-                    "StoppingCondition","RelativeStepSmall");
+                    "StoppingCondition","StepSmall");
             case MaxItersExceeded:
                 return Matlab::enumToMxArray(
                     "StoppingCondition","MaxItersExceeded");
@@ -74,13 +74,13 @@ namespace Optizelle {
             if(m==Matlab::enumToNatural("StoppingCondition","NotConverged"))
                 return NotConverged;
             else if(m==Matlab::enumToNatural(
-                "StoppingCondition","RelativeGradientSmall")
+                "StoppingCondition","GradientSmall")
             )
-                return RelativeGradientSmall;
+                return GradientSmall;
             else if(m==Matlab::enumToNatural(
-                "StoppingCondition","RelativeStepSmall")
+                "StoppingCondition","StepSmall")
             )
-                return RelativeStepSmall;
+                return StepSmall;
             else if(m==Matlab::enumToNatural(
                 "StoppingCondition","MaxItersExceeded")
             )
@@ -101,6 +101,8 @@ namespace Optizelle {
         mxArray * toMatlab(t const & krylov_stop) {
             // Do the conversion
             switch(krylov_stop){
+            case NotConverged:
+                return Matlab::enumToMxArray("KrylovStop","NotConverged");
             case NegativeCurvature:
                 return Matlab::enumToMxArray("KrylovStop","NegativeCurvature");
             case RelativeErrorSmall:
@@ -111,11 +113,17 @@ namespace Optizelle {
             case TrustRegionViolated:
                 return Matlab::enumToMxArray(
                     "KrylovStop","TrustRegionViolated");
-            case Instability:
-                return Matlab::enumToMxArray("KrylovStop","Instability");
-            case InvalidTrustRegionCenter:
+            case NanDetected:
+                return Matlab::enumToMxArray("KrylovStop","NanDetected");
+            case LossOfOrthogonality:
                 return Matlab::enumToMxArray(
-                    "KrylovStop","InvalidTrustRegionCenter");
+                    "KrylovStop","LossOfOrthogonality");
+            case InvalidTrustRegionOffset:
+                return Matlab::enumToMxArray(
+                    "KrylovStop","InvalidTrustRegionOffset");
+            case TooManyFailedSafeguard:
+                return Matlab::enumToMxArray(
+                    "KrylovStop","TooManyFailedSafeguard");
             default:
                 throw;
             }
@@ -126,7 +134,9 @@ namespace Optizelle {
             // Convert the member to a Natural 
             Natural m(*mxGetPr(member));
 
-            if(m==Matlab::enumToNatural("KrylovStop","NegativeCurvature"))
+            if(m==Matlab::enumToNatural("KrylovStop","NotConverged"))
+                return NotConverged;
+            else if(m==Matlab::enumToNatural("KrylovStop","NegativeCurvature"))
                 return NegativeCurvature;
             else if(m==Matlab::enumToNatural("KrylovStop","RelativeErrorSmall"))
                 return RelativeErrorSmall;
@@ -136,44 +146,20 @@ namespace Optizelle {
                 "KrylovStop","TrustRegionViolated")
             )
                 return TrustRegionViolated;
-            else if(m==Matlab::enumToNatural("KrylovStop","Instability"))
-                return Instability;
+            else if(m==Matlab::enumToNatural("KrylovStop","NanDetected"))
+                return NanDetected;
             else if(m==Matlab::enumToNatural(
-                "KrylovStop","InvalidTrustRegionCenter")
+                "KrylovStop","LossOfOrthogonality")
             )
-                return InvalidTrustRegionCenter;
-            else
-                throw;
-        }
-    }
-    
-    namespace KrylovSolverTruncated { 
-        // Converts t to a Matlab enumerated type
-        mxArray * toMatlab(t const & truncated_krylov) {
-            // Do the conversion
-            switch(truncated_krylov){
-            case ConjugateDirection:
-                return Matlab::enumToMxArray(
-                    "KrylovSolverTruncated","ConjugateDirection");
-            case MINRES:
-                return Matlab::enumToMxArray(
-                    "KrylovSolverTruncated","MINRES");
-            default:
-                throw;
-            }
-        }
-
-        // Converts a Matlab enumerated type to t 
-        t fromMatlab(mxArray * const member) {
-            // Convert the member to a Natural 
-            Natural m(*mxGetPr(member));
-
-            if(m==Matlab::enumToNatural(
-                "KrylovSolverTruncated","ConjugateDirection")
+                return LossOfOrthogonality;
+            else if(m==Matlab::enumToNatural(
+                "KrylovStop","InvalidTrustRegionOffset")
             )
-                return ConjugateDirection;
-            else if(m==Matlab::enumToNatural("KrylovSolverTruncated","MINRES"))
-                return MINRES;
+                return InvalidTrustRegionOffset;
+            else if(m==Matlab::enumToNatural(
+                "KrylovStop","TooManyFailedSafeguard")
+            )
+                return TooManyFailedSafeguard;
             else
                 throw;
         }
@@ -500,80 +486,6 @@ namespace Optizelle {
         }
     }
 
-    namespace InteriorPointMethod { 
-        // Converts t to a Matlab enumerated type
-        mxArray * toMatlab(t const & ipm) {
-            // Do the conversion
-            switch(ipm){
-            case PrimalDual:
-                return Matlab::enumToMxArray("InteriorPointMethod",
-                    "PrimalDual");
-            case PrimalDualLinked:
-                return Matlab::enumToMxArray("InteriorPointMethod",
-                    "PrimalDualLinked");
-            case LogBarrier:
-                return Matlab::enumToMxArray("InteriorPointMethod",
-                    "LogBarrier");
-            default:
-                throw;
-            }
-        }
-
-        // Converts a Matlab enumerated type to t 
-        t fromMatlab(mxArray * const member) {
-            // Convert the member to a Natural 
-            Natural m(*mxGetPr(member));
-
-            if(m==Matlab::enumToNatural("InteriorPointMethod","PrimalDual"))
-                return PrimalDual;
-            else if(m==Matlab::enumToNatural("InteriorPointMethod",
-                "PrimalDualLinked")
-            )
-                return PrimalDualLinked;
-            else if(m==Matlab::enumToNatural("InteriorPointMethod",
-                "LogBarrier")
-            )
-                return LogBarrier;
-            else
-                throw;
-        }
-    }
-
-    namespace CentralityStrategy { 
-        // Converts t to a Matlab enumerated type
-        mxArray * toMatlab(t const & cstrat) {
-            // Do the conversion
-            switch(cstrat){
-            case Constant:
-                return Matlab::enumToMxArray("CentralityStrategy","Constant");
-            case StairStep:
-                return Matlab::enumToMxArray("CentralityStrategy","StairStep");
-            case PredictorCorrector:
-                return Matlab::enumToMxArray("CentralityStrategy",
-                    "PredictorCorrector");
-            default:
-                throw;
-            }
-        }
-
-        // Converts a Matlab enumerated type to t 
-        t fromMatlab(mxArray * const member) {
-            // Convert the member to a Natural 
-            Natural m(*mxGetPr(member));
-
-            if(m==Matlab::enumToNatural("CentralityStrategy","Constant"))
-                return Constant;
-            else if(m==Matlab::enumToNatural("CentralityStrategy","StairStep"))
-                return StairStep;
-            else if(m==Matlab::enumToNatural("CentralityStrategy",
-                "PredictorCorrector")
-            )
-                return PredictorCorrector;
-            else
-                throw;
-        }
-    }
-
     namespace FunctionDiagnostics { 
         // Converts t to a Matlab enumerated type
         mxArray * toMatlab(t const & diag) {
@@ -687,6 +599,40 @@ namespace Optizelle {
                 "EveryIteration")
             )
                 return EveryIteration;
+            else
+                throw;
+        }
+    }
+
+    namespace ToleranceKind { 
+        // Converts t to a Matlab enumerated type
+        mxArray * toMatlab(t const & skind) {
+            // Do the conversion
+            switch(skind){
+            case Relative:
+                return Matlab::enumToMxArray("ToleranceKind",
+                    "Relative");
+            case Absolute:
+                return Matlab::enumToMxArray("ToleranceKind",
+                    "Absolute");
+            default:
+                throw;
+            }
+        }
+
+        // Converts a Matlab enumerated type to t 
+        t fromMatlab(mxArray * const member) {
+            // Convert the member to a Natural 
+            Natural m(*mxGetPr(member));
+
+            if(m==Matlab::enumToNatural("ToleranceKind",
+                "Relative")
+            )
+                return Relative;
+            else if(m==Matlab::enumToNatural("ToleranceKind",
+                "Absolute")
+            )
+                return Absolute;
             else
                 throw;
         }
@@ -1914,7 +1860,6 @@ namespace Optizelle {
                         "krylov_stop",
                         "krylov_rel_err",
                         "eps_krylov",
-                        "krylov_solver",
                         "algorithm_class",
                         "PH_type",
                         "H_type",
@@ -1931,6 +1876,11 @@ namespace Optizelle {
                         "f_x",
                         "f_xpdx",
                         "msg_level",
+                        "failed_safeguard_max",
+                        "failed_safeguard",
+                        "failed_safeguard_total",
+                        "alpha_x",
+                        "alpha_x_qn",
                         "delta",
                         "eta1",
                         "eta2",
@@ -1949,7 +1899,8 @@ namespace Optizelle {
                         "f_diag",
                         "L_diag",
                         "x_diag",
-                        "dscheme"};
+                        "dscheme",
+                        "eps_kind"};
 
                     return std::move(names);
                 }
@@ -1998,11 +1949,6 @@ namespace Optizelle {
                     toMatlab::Real("krylov_rel_err",
                         state.krylov_rel_err,mxstate);
                     toMatlab::Real("eps_krylov",state.eps_krylov,mxstate);
-                    toMatlab::Param <KrylovSolverTruncated::t> (
-                        "krylov_solver",
-                        KrylovSolverTruncated::toMatlab,
-                        state.krylov_solver,
-                        mxstate);
                     toMatlab::Param <AlgorithmClass::t> (
                         "algorithm_class",
                         AlgorithmClass::toMatlab,
@@ -2031,6 +1977,14 @@ namespace Optizelle {
                     toMatlab::Real("f_x",state.f_x,mxstate);
                     toMatlab::Real("f_xpdx",state.f_xpdx,mxstate);
                     toMatlab::Natural("msg_level",state.msg_level,mxstate);
+                    toMatlab::Natural("failed_safeguard_max",
+                        state.failed_safeguard_max,mxstate);
+                    toMatlab::Natural("failed_safeguard",
+                        state.failed_safeguard,mxstate);
+                    toMatlab::Natural("failed_safeguard_total",
+                        state.failed_safeguard_total,mxstate);
+                    toMatlab::Real("alpha_x",state.alpha_x,mxstate);
+                    toMatlab::Real("alpha_x_qn",state.alpha_x_qn,mxstate);
                     toMatlab::Real("delta",state.delta,mxstate);
                     toMatlab::Real("eta1",state.eta1,mxstate);
                     toMatlab::Real("eta2",state.eta2,mxstate);
@@ -2078,6 +2032,11 @@ namespace Optizelle {
                         DiagnosticScheme::toMatlab,
                         state.dscheme,
                         mxstate);
+                    toMatlab::Param <ToleranceKind::t> (
+                        "eps_kind",
+                        ToleranceKind::toMatlab,
+                        state.eps_kind,
+                        mxstate);
                 }
                 void toMatlab(
                     typename MxUnconstrained::State::t const & state,
@@ -2121,11 +2080,6 @@ namespace Optizelle {
                     fromMatlab::Real("krylov_rel_err",
                         mxstate,state.krylov_rel_err);
                     fromMatlab::Real("eps_krylov",mxstate,state.eps_krylov);
-                    fromMatlab::Param <KrylovSolverTruncated::t> (
-                        "krylov_solver",
-                        KrylovSolverTruncated::fromMatlab,
-                        mxstate,
-                        state.krylov_solver);
                     fromMatlab::Param <AlgorithmClass::t> (
                         "algorithm_class",
                         AlgorithmClass::fromMatlab,
@@ -2155,6 +2109,14 @@ namespace Optizelle {
                     fromMatlab::Real("f_x",mxstate,state.f_x);
                     fromMatlab::Real("f_xpdx",mxstate,state.f_xpdx);
                     fromMatlab::Natural("msg_level",mxstate,state.msg_level);
+                    fromMatlab::Natural("failed_safeguard_max",
+                        mxstate,state.failed_safeguard_max);
+                    fromMatlab::Natural("failed_safeguard",
+                        mxstate,state.failed_safeguard);
+                    fromMatlab::Natural("failed_safeguard_total",
+                        mxstate,state.failed_safeguard_total);
+                    fromMatlab::Real("alpha_x",mxstate,state.alpha_x);
+                    fromMatlab::Real("alpha_x_qn",mxstate,state.alpha_x_qn);
                     fromMatlab::Real("delta",mxstate,state.delta);
                     fromMatlab::Real("eta1",mxstate,state.eta1);
                     fromMatlab::Real("eta2",mxstate,state.eta2);
@@ -2202,6 +2164,11 @@ namespace Optizelle {
                         DiagnosticScheme::fromMatlab,
                         mxstate,
                         state.dscheme);
+                    fromMatlab::Param <ToleranceKind::t> (
+                        "eps_kind",
+                        ToleranceKind::fromMatlab,
+                        mxstate,
+                        state.eps_kind);
                 }
                 void fromMatlab(
                     mxArray * const mxstate,
@@ -3461,10 +3428,7 @@ namespace Optizelle {
                         "eps_mu",
                         "sigma",
                         "gamma",
-                        "alpha_x",
                         "alpha_z",
-                        "ipm",
-                        "cstrat",
                         "h_diag",
                         "z_diag"};
 
@@ -3501,18 +3465,7 @@ namespace Optizelle {
                     toMatlab::Real("eps_mu",state.eps_mu,mxstate);
                     toMatlab::Real("sigma",state.sigma,mxstate);
                     toMatlab::Real("gamma",state.gamma,mxstate);
-                    toMatlab::Real("alpha_x",state.alpha_x,mxstate);
                     toMatlab::Real("alpha_z",state.alpha_z,mxstate);
-                    toMatlab::Param <InteriorPointMethod::t> (
-                        "ipm",
-                        InteriorPointMethod::toMatlab,
-                        state.ipm,
-                        mxstate);
-                    toMatlab::Param <CentralityStrategy::t> (
-                        "cstrat",
-                        CentralityStrategy::toMatlab,
-                        state.cstrat,
-                        mxstate);
                     toMatlab::Param <FunctionDiagnostics::t> (
                         "h_diag",
                         FunctionDiagnostics::toMatlab,
@@ -3546,18 +3499,7 @@ namespace Optizelle {
                     fromMatlab::Real("eps_mu",mxstate,state.eps_mu);
                     fromMatlab::Real("sigma",mxstate,state.sigma);
                     fromMatlab::Real("gamma",mxstate,state.gamma);
-                    fromMatlab::Real("alpha_x",mxstate,state.alpha_x);
                     fromMatlab::Real("alpha_z",mxstate,state.alpha_z);
-                    fromMatlab::Param <InteriorPointMethod::t> (
-                        "ipm",
-                        InteriorPointMethod::fromMatlab,
-                        mxstate,
-                        state.ipm);
-                    fromMatlab::Param <CentralityStrategy::t> (
-                        "cstrat",
-                        CentralityStrategy::fromMatlab,
-                        mxstate,
-                        state.cstrat);
                     fromMatlab::Param <FunctionDiagnostics::t> (
                         "h_diag",
                         FunctionDiagnostics::fromMatlab,

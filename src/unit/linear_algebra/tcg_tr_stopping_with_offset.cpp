@@ -11,7 +11,7 @@
 //     [ 4 ]
 // This has no solution.  On the first iteration, CG will move
 // in the steepest descent direction, which is b.  In order to check the code
-// for moving the center of a trust-region, we put the center at [-3;-4] with 
+// for moving the center of a trust-region, we put the offset at [3;4] with 
 // a radius of 7.5.  By setting the center in the opposite direction with a
 // radius of 7.5, it should only move half the distance.
 int main() {
@@ -45,27 +45,28 @@ int main() {
     // Create some empty null-space projection 
     IdentityOperator <double> W;
 
-    // Create some empty trust-region shape operator
-    IdentityOperator <double> TR_op;
-    
     // Create a vector for the solution 
     std::vector <double> x(m);
 
     // Create a vector for the Cauchy point
     std::vector <double> x_cp(m);
 
-    // Create a vector for the center of the trust-region
-    std::vector <double> x_cntr(m);
-    x_cntr[0]=-3.;
-    x_cntr[1]=-4.;
+    // Create a vector for the offset of the trust-region
+    std::vector <double> x_offset(m);
+    x_offset[0]=3.;
+    x_offset[1]=4.;
 
     // Solve this linear system
     double residual_err0, residual_err; 
     Natural iter;
     Optizelle::KrylovStop::t krylov_stop;
-    Optizelle::truncated_cd <double,Optizelle::Rm>
-        (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,false,x,x_cp,
-            residual_err0,residual_err,iter,krylov_stop);
+    auto failed_safeguard = Natural(0);
+    auto alpha_safeguard = double(0.);
+    Optizelle::truncated_cg <double,Optizelle::Rm>
+        (A,b,W,eps_krylov,iter_max,1,delta,x_offset,false,1,
+            no_safeguard <double,Optizelle::Rm>,x,x_cp,
+            residual_err0,residual_err,iter,krylov_stop,failed_safeguard,
+            alpha_safeguard);
 
     // Check that the size of x is 2.5 
     double norm_x = sqrt(X::innr(x,x));

@@ -7,6 +7,12 @@
 % Now, in the case we don't have a starting feasible solution, we can play
 % a reformulation trick that adds two scalar variables and allows us to find
 % a strictly feasible solution.  Namely,
+%
+% Note, most of the time, we're much better off just adding slack variables.
+% Basically, this trick is only worthwhile when we don't have a linear system
+% solver for the equality constraints added from the slacks since this method
+% only adds a single equality constraint.
+
 % min x + y
 % st  x + 2y >= 1 - z
 %     2x + y >= 1 - z

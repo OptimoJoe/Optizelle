@@ -17,32 +17,35 @@ macro(add_optizelle_test_matlab name)
         string(TOLOWER ${MATLAB_EXECUTABLE} prog)
         string(FIND ${prog} "matlab" is_matlab)
 
+        # Grab the absolute path of the test
+        get_filename_component(fullname ${name} ABSOLUTE)
+
         if(${is_matlab} LESS 0)
             if(NOT ${is_script})
-                add_test( "Execution_of_matlab_${name}"
+                add_test( "Execution_of_matlab_${fullname}"
                     ${MATLAB_EXECUTABLE} "--eval" 
-                    "${executable}${name}(),exit")
+                    "${name}(),exit")
             else()
-                add_test( "Execution_of_matlab_${name}"
+                add_test( "Execution_of_matlab_${fullname}"
                     ${MATLAB_EXECUTABLE} "--eval" 
-                    "${executable}${name},exit")
+                    "${name},exit")
             endif()
                         
         else()
             if(NOT ${is_script})
-                add_test( "Execution_of_matlab_${name}"
+                add_test( "Execution_of_matlab_${fullname}"
                     ${MATLAB_EXECUTABLE} "-nosplash -nodesktop -r" 
-                    "\"${executable}${name}(),exit\"")
+                    "\"${name}(),exit\"")
             else()
-                add_test( "Execution_of_matlab_${name}"
+                add_test( "Execution_of_matlab_${fullname}"
                     ${MATLAB_EXECUTABLE} "-nosplash -nodesktop -r" 
-                    "\"${executable}${name},exit\"")
+                    "\"${name},exit\"")
             endif()
         endif()
-        set_tests_properties("Execution_of_matlab_${name}"
+        set_tests_properties("Execution_of_matlab_${fullname}"
             PROPERTIES ENVIRONMENT
                 "MATLABPATH=${CMAKE_BINARY_DIR}/src/matlab:${CMAKE_CURRENT_SOURCE_DIR}")
-        set_property(TEST "Execution_of_matlab_${name}"
+        set_property(TEST "Execution_of_matlab_${fullname}"
             APPEND PROPERTY ENVIRONMENT
                 "OCTAVE_PATH=${CMAKE_BINARY_DIR}/src/matlab:${CMAKE_CURRENT_SOURCE_DIR}")
     endif()

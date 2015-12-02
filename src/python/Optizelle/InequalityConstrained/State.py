@@ -58,22 +58,18 @@ class t(Optizelle.Unconstrained.State.t):
     gamma = Optizelle.createFloatProperty(
         "gamma",
         "How close we move to the boundary during a single step")
-    ipm = Optizelle.createEnumProperty(
-        "ipm",
-        Optizelle.InteriorPointMethod,
-        "Type of interior point method")
-    cstrat = Optizelle.createEnumProperty(
-        "cstrat",
-        Optizelle.CentralityStrategy,
-        "Centrality strategy")
+    alpha_z = Optizelle.createFloatProperty(
+        "alpha_z",
+        ("Amount we truncate dx in order to maintain feasibility "
+        " of the inequality multiplier"))
     h_diag = Optizelle.createEnumProperty(
         "h_diag",
         Optizelle.FunctionDiagnostics,
         "Function diagnostics on h")
-    y_diag = Optizelle.createEnumProperty(
-        "y_diag",
+    z_diag = Optizelle.createEnumProperty(
+        "z_diag",
         Optizelle.VectorSpaceDiagnostics,
-        "Vector space diagnostics on Y")
+        "Vector space diagnostics on Z")
 
 def checkT(name,value):
     """Check that we have a state"""

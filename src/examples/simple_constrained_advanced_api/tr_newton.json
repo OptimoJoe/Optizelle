@@ -5,14 +5,12 @@
       "iter_max" : 50,
       "delta" : 100,
       "eps_krylov" : 1e-10,
-      "eps_dx" : 1e-16,
-      "sigma" : 0.1,
-      "gamma" : 0.95
+      "eps_dx" : 1e-16
    },
    "Naturals" : {
-      "iter" : 12 
+      "iter" : 13
    },
    "Parameters" : {
-      "opt_stop" : "RelativeGradientSmall" 
+      "opt_stop" : "GradientSmall" 
    }
 }

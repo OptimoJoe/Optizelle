@@ -84,10 +84,6 @@ class t(object):
     eps_krylov = Optizelle.createFloatProperty(
         "eps_krylov",
         "Stopping tolerance for the Krylov method")
-    krylov_solver = Optizelle.createEnumProperty(
-        "krylov_solver",
-        Optizelle.KrylovSolverTruncated, 
-        "Truncated Krylov solver")
     algorithm_class = Optizelle.createEnumProperty(
         "algorithm_class",
         Optizelle.AlgorithmClass,
@@ -140,6 +136,25 @@ class t(object):
     msg_level = Optizelle.createNatProperty(
         "msg_level",
         "Messaging level")
+    failed_safeguard_max = Optizelle.createNatProperty(
+        "failed_safeguard_max",
+        "Number of failed safe-guard steps before quitting the method")
+    failed_safeguard = Optizelle.createNatProperty(
+        "failed_safeguard",
+        "Number of failed safeguard steps during the last iteration")
+    failed_safeguard_total = Optizelle.createNatProperty(
+        "failed_safeguard_total",
+        "Total number of failed safeguard steps")
+    alpha_x = Optizelle.createFloatProperty(
+        "alpha_x",
+        ("Amount we truncate dx in order to maintain feasibility "
+        " with respect to the safeguard, which probably relates to "
+        "the inequality constraint"))
+    alpha_x_qn = Optizelle.createFloatProperty(
+        "alpha_x_qn",
+        ("Amount we truncate dx_n in order to maintain feasibility "
+        "with respect to the safeguard, which probably relates to "
+        "the inequailty constraint"))
     delta = Optizelle.createFloatProperty(
         "delta",
         "Trust region radius")
@@ -204,6 +219,10 @@ class t(object):
         "dscheme",
         Optizelle.DiagnosticScheme,
         "Diagnostic scheme")
+    eps_kind = Optizelle.createEnumProperty(
+        "eps_kind",
+        Optizelle.ToleranceKind,
+        "Kind of stopping tolerance")
 
 def checkT(name,value):
     """Check that we have a state"""

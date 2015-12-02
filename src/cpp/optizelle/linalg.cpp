@@ -838,6 +838,8 @@ namespace Optizelle {
         // Converts the Krylov stopping condition to a string 
         std::string to_string(t const & krylov_stop){
             switch(krylov_stop){
+            case NotConverged:
+                return "NotConverged";
             case NegativeCurvature:
                 return "NegativeCurvature";
             case RelativeErrorSmall:
@@ -846,10 +848,14 @@ namespace Optizelle {
                 return "MaxItersExceeded";
             case TrustRegionViolated:
                 return "TrustRegionViolated";
-            case Instability:
-                return "Instability";
-            case InvalidTrustRegionCenter:
-                return "InvalidTrustRegionCenter";
+            case NanDetected:
+                return "NanDetected";
+            case LossOfOrthogonality:
+                return "LossOfOrthogonality";
+            case InvalidTrustRegionOffset:
+                return "InvalidTrustRegionOffset";
+            case TooManyFailedSafeguard:
+                return "TooManyFailedSafeguard";
             default:
                 throw;
             }
@@ -857,7 +863,9 @@ namespace Optizelle {
         
         // Converts a string to a Krylov stopping condition
         t from_string(std::string const & krylov_stop){
-            if(krylov_stop=="NegativeCurvature")
+            if(krylov_stop=="NotConverged")
+                return NotConverged;
+            else if(krylov_stop=="NegativeCurvature")
                 return NegativeCurvature;
             else if(krylov_stop=="RelativeErrorSmall")
                 return RelativeErrorSmall;
@@ -865,22 +873,29 @@ namespace Optizelle {
                 return MaxItersExceeded;
             else if(krylov_stop=="TrustRegionViolated")
                 return TrustRegionViolated;
-            else if(krylov_stop=="Instability")
-                return Instability;
-            else if(krylov_stop=="InvalidTrustRegionCenter")
-                return InvalidTrustRegionCenter;
+            else if(krylov_stop=="NanDetected")
+                return NanDetected;
+            else if(krylov_stop=="LossOfOrthogonality")
+                return LossOfOrthogonality;
+            else if(krylov_stop=="InvalidTrustRegionOffset")
+                return InvalidTrustRegionOffset;
+            else if(krylov_stop=="TooManyFailedSafeguard")
+                return TooManyFailedSafeguard;
             else
                 throw;
         }
 
         // Checks whether or not a string is valid
         bool is_valid(std::string const & name) {
-            if( name=="NegativeCurvature" ||
+            if( name=="NotConverged" ||
+                name=="NegativeCurvature" ||
                 name=="RelativeErrorSmall" ||
                 name=="MaxItersExceeded" ||
                 name=="TrustRegionViolated" ||
-                name=="Instability" ||
-                name=="InvalidTrustRegionCenter"
+                name=="NanDetected" ||
+                name=="LossOfOrthogonality" ||
+                name=="InvalidTrustRegionOffset" ||
+                name=="TooManyFailedSafeguard"
             )
                 return true;
             else

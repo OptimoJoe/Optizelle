@@ -61,14 +61,6 @@ namespace Optizelle {
         t fromPython(PyObject * const member);
     }
     
-    namespace KrylovSolverTruncated {
-        // Converts t to a Python enumerated type
-        PyObject * toPython(t const & truncated_krylov);
-
-        // Converts a Python enumerated type to t 
-        t fromPython(PyObject * const member);
-    }
-
     namespace AlgorithmClass { 
         // Converts t to a Python enumerated type
         PyObject * toPython(t const & algorithm_class);
@@ -104,22 +96,6 @@ namespace Optizelle {
     namespace OptimizationLocation{ 
         // Converts t to a Python enumerated type
         PyObject * toPython(t const & loc);
-
-        // Converts a Python enumerated type to t 
-        t fromPython(PyObject * const member);
-    }
-    
-    namespace InteriorPointMethod{ 
-        // Converts t to a Python enumerated type
-        PyObject * toPython(t const & ipm);
-
-        // Converts a Python enumerated type to t 
-        t fromPython(PyObject * const member);
-    }
-    
-    namespace CentralityStrategy{ 
-        // Converts t to a Python enumerated type
-        PyObject * toPython(t const & cstrat);
 
         // Converts a Python enumerated type to t 
         t fromPython(PyObject * const member);

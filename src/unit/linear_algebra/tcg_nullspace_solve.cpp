@@ -42,9 +42,6 @@ int main() {
             W.A[I-1]=(i==j && i<=2) ? 1. : 0.;
         }
 
-    // Create some empty trust-region shape operator
-    IdentityOperator <double> TR_op;
-    
     // Create some right hand side.  Make sure that this is in the range
     // of A*W.
     std::vector <double> b(m);
@@ -60,17 +57,21 @@ int main() {
     // Create a vector for the Cauchy point
     std::vector <double> x_cp(m);
 
-    // Create a vector for the center of the trust-region
-    std::vector <double> x_cntr(m);
-    Optizelle::Rm <double>::zero(x_cntr);
+    // Create a vector for the offset of the trust-region
+    std::vector <double> x_offset(m);
+    Optizelle::Rm <double>::zero(x_offset);
 
     // Solve this linear system
     double residual_err0, residual_err; 
     Natural iter;
     Optizelle::KrylovStop::t krylov_stop;
-    Optizelle::truncated_minres <double,Optizelle::Rm>
-        (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,x,x_cp,
-            residual_err0,residual_err,iter,krylov_stop);
+    auto failed_safeguard = Natural(0);
+    auto alpha_safeguard = double(0.);
+    Optizelle::truncated_cg <double,Optizelle::Rm>
+        (A,b,W,eps_krylov,iter_max,1,delta,x_offset,true,1,
+            no_safeguard <double,Optizelle::Rm>,x,x_cp,
+            residual_err0,residual_err,iter,krylov_stop,failed_safeguard,
+            alpha_safeguard);
 
     // Check the error is less than our tolerance 
     CHECK(residual_err < eps_krylov*norm_b);

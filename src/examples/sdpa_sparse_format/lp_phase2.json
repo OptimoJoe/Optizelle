@@ -7,15 +7,11 @@
       "krylov_orthog_max" : 200,
       "eps_krylov" : 1e-8,
       "eps_dx" : 1e-15,
-      "eps_grad" : 1e-8,
-      "eps_mu" : 1e-8,
-      "sigma" : 0.5,
-      "gamma" : 0.95,
       "delta" : 1e50,
       "PH_type" : "UserDefined"
    },
    "Naturals" : {
-      "iter" : 28
+      "iter" : 10 
    },
    "X_Vectors" : {
       "x" : [ 0.3333333333333333, 0.3333333333333333 ]

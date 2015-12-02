@@ -40,9 +40,6 @@ int main() {
     // Create some empty null-space projection 
     IdentityOperator <double> W;
 
-    // Create some empty trust-region shape operator
-    IdentityOperator <double> TR_op;
-    
     // Create an initial guess at the solution
     std::vector <double> x(m);
     X::zero (x);
@@ -50,17 +47,21 @@ int main() {
     // Create a vector for the Cauchy point
     std::vector <double> x_cp(m);
 
-    // Create a vector for the center of the trust-region
-    std::vector <double> x_cntr(m);
-    Optizelle::Rm <double>::zero(x_cntr);
+    // Create a vector for the offset of the trust-region
+    std::vector <double> x_offset(m);
+    Optizelle::Rm <double>::zero(x_offset);
 
     // Solve this linear system
     double residual_err0, residual_err; 
     Natural iter;
     Optizelle::KrylovStop::t krylov_stop;
-    Optizelle::truncated_minres <double,Optizelle::Rm>
-        (A,b,W,TR_op,eps_krylov,iter_max,1,delta,x_cntr,x,x_cp,
-            residual_err0,residual_err,iter,krylov_stop);
+    auto failed_safeguard = Natural(0);
+    auto alpha_safeguard = double(0.);
+    Optizelle::truncated_cg <double,Optizelle::Rm>
+        (A,b,W,eps_krylov,iter_max,1,delta,x_offset,false,1,
+            no_safeguard <double,Optizelle::Rm>,x,x_cp,
+            residual_err0,residual_err,iter,krylov_stop,failed_safeguard,
+            alpha_safeguard);
 
     // Check that the size of x is just the trust-region radius
     double norm_x = sqrt(X::innr(x,x));

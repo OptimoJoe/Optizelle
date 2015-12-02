@@ -405,13 +405,6 @@ namespace Optizelle {
                     msg,
                     root["Optizelle"].get("eps_krylov",state.eps_krylov),
                     "eps_krylov");
-                state.krylov_solver=read::param <KrylovSolverTruncated::t> (
-                    msg,
-                    root["Optizelle"].get("krylov_solver",
-                        KrylovSolverTruncated::to_string(state.krylov_solver)),
-                    KrylovSolverTruncated::is_valid,
-                    KrylovSolverTruncated::from_string,
-                    "krylov_solver");
                 state.algorithm_class=read::param <AlgorithmClass::t> (
                     msg,
                     root["Optizelle"].get("algorithm_class",
@@ -439,6 +432,12 @@ namespace Optizelle {
                         "msg_level",
                         Json::Value::UInt64(state.msg_level)),
                     "msg_level");
+                state.failed_safeguard_max=read::natural(
+                    msg,
+                    root["Optizelle"].get(
+                        "failed_safeguard_max",
+                        Json::Value::UInt64(state.failed_safeguard_max)),
+                    "failed_safeguard_max");
                 state.delta=read::real <Real> (
                     msg,
                     root["Optizelle"].get("delta",state.delta),
@@ -511,6 +510,15 @@ namespace Optizelle {
                     DiagnosticScheme::is_valid,
                     DiagnosticScheme::from_string,
                     "dscheme");
+                state.eps_kind=read::param
+                    <ToleranceKind::t> (
+                    msg,
+                    root["Optizelle"].get("eps_kind",
+                        ToleranceKind::to_string(
+                            state.eps_kind)),
+                    ToleranceKind::is_valid,
+                    ToleranceKind::from_string,
+                    "eps_kind");
             }
             static void read(
                 Optizelle::Messaging const & msg,
@@ -540,8 +548,6 @@ namespace Optizelle {
                 root["Optizelle"]["krylov_orthog_max"]=write::natural(
                     state.krylov_orthog_max);
                 root["Optizelle"]["eps_krylov"]=write::real(state.eps_krylov);
-                root["Optizelle"]["krylov_solver"]=write_param(
-                    KrylovSolverTruncated::to_string,state.krylov_solver);
                 root["Optizelle"]["algorithm_class"]=write_param(
                     AlgorithmClass::to_string,state.algorithm_class);
                 root["Optizelle"]["PH_type"]=write_param(
@@ -549,6 +555,8 @@ namespace Optizelle {
                 root["Optizelle"]["H_type"]=write_param(
                     Operators::to_string,state.H_type);
                 root["Optizelle"]["msg_level"]=write::natural(state.msg_level);
+                root["Optizelle"]["failed_safeguard_max"]=write::natural(
+                    state.failed_safeguard_max);
                 root["Optizelle"]["delta"]=write::real(state.delta);
                 root["Optizelle"]["eta1"]=write::real(state.eta1);
                 root["Optizelle"]["eta2"]=write::real(state.eta2);
@@ -569,6 +577,8 @@ namespace Optizelle {
                     VectorSpaceDiagnostics::to_string,state.x_diag);
                 root["Optizelle"]["dscheme"]=write_param(
                     DiagnosticScheme::to_string,state.dscheme);
+                root["Optizelle"]["eps_kind"]=write_param(
+                    ToleranceKind::to_string,state.eps_kind);
 
                 // Create a string with the above output
                 Json::StyledWriter writer;
@@ -945,20 +955,6 @@ namespace Optizelle {
                     msg,
                     root["Optizelle"].get("gamma",state.gamma),
                     "gamma");
-                state.ipm=read::param <InteriorPointMethod::t> (
-                    msg,
-                    root["Optizelle"].get("ipm",
-                        InteriorPointMethod::to_string(state.ipm)),
-                    InteriorPointMethod::is_valid,
-                    InteriorPointMethod::from_string,
-                    "ipm");
-                state.cstrat=read::param <CentralityStrategy::t> (
-                    msg,
-                    root["Optizelle"].get("cstrat",
-                        CentralityStrategy::to_string(state.cstrat)),
-                    CentralityStrategy::is_valid,
-                    CentralityStrategy::from_string,
-                    "cstrat");
                 state.h_diag=read::param <FunctionDiagnostics::t> (
                     msg,
                     root["Optizelle"].get("h_diag",
@@ -1000,10 +996,6 @@ namespace Optizelle {
                 root["Optizelle"]["mu"]=write::real(state.mu);
                 root["Optizelle"]["sigma"]=write::real(state.sigma);
                 root["Optizelle"]["gamma"]=write::real(state.gamma);
-                root["Optizelle"]["ipm"]=write_param(
-                    InteriorPointMethod::to_string,state.ipm);
-                root["Optizelle"]["cstrat"]=write_param(
-                    CentralityStrategy::to_string,state.cstrat);
                 root["Optizelle"]["h_diag"]=write_param(
                     FunctionDiagnostics::to_string,state.h_diag);
                 root["Optizelle"]["z_diag"]=write_param(

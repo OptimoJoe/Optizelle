@@ -5,10 +5,11 @@
       "dir" : "FletcherReeves",
       "PH_type" : "UserDefined",
       "iter_max" : 50,
-      "eps_dx" : 1e-10
+      "eps_dx" : 1e-10,
+      "alpha0" : 1.0
    },
    "Naturals" : {
-      "iter" : 18 
+      "iter" : 21 
    },
    "X_Vectors" : {
       "x" : [ 1.0, 1.0 ] 

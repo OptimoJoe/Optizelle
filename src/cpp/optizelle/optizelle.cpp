@@ -94,10 +94,10 @@ namespace Optizelle{
             switch(opt_stop){
             case NotConverged:
                 return "NotConverged";
-            case RelativeGradientSmall:
-                return "RelativeGradientSmall";
-            case RelativeStepSmall:
-                return "RelativeStepSmall";
+            case GradientSmall:
+                return "GradientSmall";
+            case StepSmall:
+                return "StepSmall";
             case MaxItersExceeded:
                 return "MaxItersExceeded";
             case InteriorPointInstability:
@@ -113,10 +113,10 @@ namespace Optizelle{
         t from_string(std::string const & opt_stop) {
             if(opt_stop=="NotConverged")
                 return NotConverged;
-            else if(opt_stop=="RelativeGradientSmall")
-                return RelativeGradientSmall;
-            else if(opt_stop=="RelativeStepSmall")
-                return RelativeStepSmall;
+            else if(opt_stop=="GradientSmall")
+                return GradientSmall;
+            else if(opt_stop=="StepSmall")
+                return StepSmall;
             else if(opt_stop=="MaxItersExceeded")
                 return MaxItersExceeded;
             else if(opt_stop=="InteriorPointInstability")
@@ -130,8 +130,8 @@ namespace Optizelle{
         // Checks whether or not a string is valid
         bool is_valid(std::string const & name) {
             if( name=="NotConverged" ||
-                name=="RelativeGradientSmall" ||
-                name=="RelativeStepSmall" ||
+                name=="GradientSmall" ||
+                name=="StepSmall" ||
                 name=="MaxItersExceeded" ||
                 name=="InteriorPointInstability" ||
                 name=="UserDefined"
@@ -497,124 +497,6 @@ namespace Optizelle{
         }
     }
     
-    // Different truncated Krylov solvers 
-    namespace KrylovSolverTruncated{
-        
-        // Converts the Krylov solver to a string
-        std::string to_string(const t& truncated_krylov) {
-            switch(truncated_krylov){
-            case ConjugateDirection:
-                return "ConjugateDirection";
-            case MINRES:
-                return "MINRES";
-            default:
-                    throw;
-            }
-        }
-
-        // Converts a string to a problem class 
-        t from_string(std::string const & truncated_krylov) {
-            if(truncated_krylov=="ConjugateDirection")
-                return ConjugateDirection;
-            else if(truncated_krylov=="MINRES")
-                return MINRES;
-            else
-                throw;
-        }
-
-        // Checks whether or not a string is valid
-        bool is_valid(std::string const & name) {
-            if( name=="ConjugateDirection" ||
-                name=="MINRES" 
-            )
-                return true;
-            else
-                return false;
-        }
-    }
-        
-    // Different kinds of interior point methods
-    namespace InteriorPointMethod{
-
-        // Converts the interior point method to a string 
-        std::string to_string(t const & ipm) {
-            switch(ipm){
-            case PrimalDual:
-                return "PrimalDual";
-            case PrimalDualLinked:
-                return "PrimalDualLinked";
-            case LogBarrier:
-                return "LogBarrier";
-            default:
-                throw;
-            }
-        }
-        
-        // Converts a string to an interior point method 
-        t from_string(std::string const & ipm) {
-            if(ipm=="PrimalDual")
-                return PrimalDual; 
-            else if(ipm=="PrimalDualLinked")
-                return PrimalDualLinked; 
-            else if(ipm=="LogBarrier")
-                return LogBarrier; 
-            else
-                throw;
-        }
-
-        // Checks whether or not a string is valid
-        bool is_valid(std::string const & name) {
-            if( name=="PrimalDual" ||
-                name=="PrimalDualLinked" ||
-                name=="LogBarrier"
-            )
-                return true;
-            else
-                return false;
-        }
-    }
-        
-    // Different schemes for adjusting the interior point centrality 
-    namespace CentralityStrategy{
-
-        // Converts the centrality strategy to a string
-        std::string to_string(t const & cstrat) {
-            switch(cstrat){
-            case Constant:
-                return "Constant";
-            case StairStep:
-                return "StairStep";
-            case PredictorCorrector:
-                return "PredictorCorrector";
-            default:
-                throw;
-            }
-        }
-        
-        // Converts a string to the cstrat
-        t from_string(std::string const & cstrat) {
-            if(cstrat=="Constant")
-                return Constant; 
-            else if(cstrat=="StairStep")
-                return StairStep; 
-            else if(cstrat=="PredictorCorrector")
-                return PredictorCorrector; 
-            else
-                throw;
-        }
-
-        // Checks whether or not a string is valid
-        bool is_valid(std::string const & name) {
-            if( name=="Constant" ||
-                name=="StairStep" ||
-                name=="PredictorCorrector" 
-            )
-                return true;
-            else
-                return false;
-        }
-    }
-        
     // Different diagnostic tests on the optimization functions 
     namespace FunctionDiagnostics{
 
@@ -738,6 +620,42 @@ namespace Optizelle{
         }
     }
 
+    // Different kinds of stopping tolerances 
+    namespace ToleranceKind{
+
+        // Converts the kind of stopping tolerance to a string
+        std::string to_string(t const & eps_rel) {
+            switch(eps_rel){
+            case Relative: 
+                return "Relative";
+            case Absolute: 
+                return "Absolute";
+            default:
+                throw;
+            }
+        }
+        
+        // Converts a string to the kind of stopping tolerance
+        t from_string(std::string const & eps_rel) {
+            if(eps_rel=="Relative")
+                return Relative; 
+            else if(eps_rel=="Absolute")
+                return Absolute;
+            else
+                throw;
+        }
+
+        // Checks whether or not a string is valid
+        bool is_valid(std::string const & name) {
+            if( name=="Relative" ||
+                name=="Absolute"
+            )
+                return true;
+            else
+                return false;
+        }
+    }
+
     // Converts a variety of basic datatypes to strings
     std::ostream& Utility::formatReal(std::ostream & out) {
         return out<<std::setprecision(2) << std::scientific << std::setw(12)
@@ -770,6 +688,8 @@ namespace Optizelle{
         std::stringstream ss;
         // Converts the Krylov stopping condition to a shorter string 
         switch(x){
+        case KrylovStop::NotConverged:
+            return atos("NotConv");
         case KrylovStop::NegativeCurvature:
             return atos("NegCurv");
         case KrylovStop::RelativeErrorSmall:
@@ -778,10 +698,14 @@ namespace Optizelle{
             return atos("IterExcd");
         case KrylovStop::TrustRegionViolated:
             return atos("TrstReg");
-        case KrylovStop::Instability:
-            return atos("Unstable");
-        case KrylovStop::InvalidTrustRegionCenter:
+        case KrylovStop::NanDetected:
+            return atos("NaN");
+        case KrylovStop::LossOfOrthogonality:
+            return atos("OrthogLost");
+        case KrylovStop::InvalidTrustRegionOffset:
             return atos("InvldCnt");
+        case KrylovStop::TooManyFailedSafeguard:
+            return atos("Safeguard");
         default:
             throw;
         }

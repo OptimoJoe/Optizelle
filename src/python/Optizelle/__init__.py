@@ -23,8 +23,6 @@ __all__ = [
     "OptimizationLocation",
     "ProblemClass",
     "KrylovSolverTruncated",
-    "InteriorPointMethod",
-    "CentralityStrategy",
     "FunctionDiagnostics",
     "DiagnosticScheme",
 
@@ -55,13 +53,16 @@ class EnumeratedType(object):
         
 class KrylovStop(EnumeratedType):
     """Reasons we stop the Krylov method"""
+    NotConverged, \
     NegativeCurvature, \
     RelativeErrorSmall, \
     MaxItersExceeded, \
     TrustRegionViolated, \
-    Instability, \
-    InvalidTrustRegionCenter \
-     = range(6)
+    NanDetected, \
+    LossOfOrthogonality, \
+    InvalidTrustRegionOffset, \
+    TooManyFailedSafeguard \
+    = range(9)
 
 class AlgorithmClass(EnumeratedType):
     """Which algorithm class do we use"""
@@ -73,8 +74,8 @@ class AlgorithmClass(EnumeratedType):
 class StoppingCondition(EnumeratedType):
     """Reasons why we stop the algorithm"""
     NotConverged, \
-    RelativeGradientSmall, \
-    RelativeStepSmall, \
+    GradientSmall, \
+    StepSmall, \
     MaxItersExceeded, \
     InteriorPointInstability, \
     UserDefined \
@@ -143,26 +144,6 @@ class ProblemClass(EnumeratedType):
     Constrained \
     = range(4)
     
-class KrylovSolverTruncated(EnumeratedType):
-    """Different truncated Krylov solvers"""
-    ConjugateDirection, \
-    MINRES \
-    = range(2)
-
-class InteriorPointMethod(EnumeratedType):
-    """Different kinds of interior point methods"""
-    PrimalDual, \
-    PrimalDualLinked, \
-    LogBarrier \
-    = range(3)
-    
-class CentralityStrategy(EnumeratedType):
-    """Different schemes for adjusting the interior point centrality"""
-    Constant, \
-    StairStep, \
-    PredictorCorrector \
-    = range(3)
-
 class FunctionDiagnostics(EnumeratedType):
     """Different function diagnostics on the optimization functions""" 
     NoDiagnostics, \
@@ -183,6 +164,12 @@ class DiagnosticScheme(EnumeratedType):
     DiagnosticsOnly, \
     EveryIteration \
     = range(3)
+
+class ToleranceKind(EnumeratedType):
+    """Different kinds of stopping tolerances"""
+    Relative, \
+    Absolute, \
+    = range(2)
 
 def checkFloat(name,value):
     """Checks that an input is a floating-point number"""

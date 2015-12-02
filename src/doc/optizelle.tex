@@ -342,6 +342,14 @@
         {#3}
         {#4}}
 
+\newcommand{\outputitemc}[4]{
+    \outputitem
+        {#1}
+        {#2}
+        {Constrained}
+        {#3}
+        {#4}}
+
 % Custom vector-space items 
 \newcommand{\customvsitem}[8]{
     \item[Name] \index{Vector Space Operations!\textct{#1}}{\textctlabel{#1}}
@@ -645,7 +653,7 @@
 \begin{itemize}
     \item {\bf State of the art algorithms}
         \begin{itemize}
-            \item Unconstrained -- steepest descent, preconditioned nonlinear-CG (Fletcher-Reeves, Polak-Ribiere, Hestenes-Stiefel), BFGS, Newton-CG, SR1, trust-region Newton (truncated-CG and truncated-MINRES), Barzilai-Borwein two-point approximation
+            \item Unconstrained -- steepest descent, preconditioned nonlinear-CG (Fletcher-Reeves, Polak-Ribiere, Hestenes-Stiefel), BFGS, Newton-CG, SR1, trust-region Newton, Barzilai-Borwein two-point approximation
             \item Equality constrained -- inexact composite-step SQP.
             \item Inequality constrained -- primal-dual interior point method for cone constraints (linear, second-order cone, and semidefinite), log-barrier method for cone constraints
             \item Constrained -- any combination of the above
@@ -735,7 +743,7 @@ iter        f(x)        ||grad||    ||dx||
 20          1.62e-08    2.58e-04    2.83e-03    
 21          2.64e-14    7.13e-06    2.84e-04    
 22          6.98e-27    1.67e-13    7.27e-08    
-The algorithm converged due to: RelativeStepSmall
+The algorithm converged due to: StepSmall
 The optimal point is: (1,1) 
 \end{filecontents*}
 
@@ -2240,17 +2248,13 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
     
     \enumitem {ProblemClass}
     
-    \enumitem {KrylovSolverTruncated}
-    
-    \enumitem {InteriorPointMethod}
-    
-    \enumitem {CentralityStrategy}
+    \enumitem {DiagnosticScheme}
     
     \enumitem {FunctionDiagnostics}
     
     \enumitem {VectorSpaceDiagnostics}
     
-    \enumitem {DiagnosticScheme}
+    \enumitem {ToleranceKind}
     
     \enumitemlinalg {KrylovStop}
     
@@ -2263,7 +2267,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {eps_grad}
         {Real}
         {Yes}
-        {Relative tolerance for the gradient stopping criteria reported in \textctref{opt_stop}.  We satisfy this stopping criteria when 
+        {Tolerance for the gradient stopping criteria reported in \textctref{opt_stop}.  We satisfy this stopping criteria when 
         \begin{boldlist}
             \formitem
                 {$\|\uncGradLag{\textctref{x})}\| \leq \textctref{eps_grad} \cdot \textctref{norm_gradtyp}$,}
@@ -2277,7 +2281,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {eps_dx}
         {Real}
         {Yes}
-        {Relative tolerance for the step length stopping criteria reported in \textctref{opt_stop}.  We satisfy this stopping criteria when
+        {Tolerance for the step length stopping criteria reported in \textctref{opt_stop}.  We satisfy this stopping criteria when
         $$
             \|\textctref{dx}\| < \textctref{eps_dx}\cdot\textctref{norm_dxtyp}.
         $$
@@ -2299,7 +2303,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {iter}
         {Natural}
         {No}
-        {Current optimization iteration.  We output \textctref{iter} at each iteration under the label \textctrefalt{Iter}.}
+        {Current optimization iteration.  We output \textctref{iter} at each iteration under the label \textctrefalt{iter}.}
 
     \paramitemu
         {iter_max}
@@ -2330,49 +2334,43 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {krylov_iter}
         {Natural}
         {No}
-        {Current number of iterations taken by the truncated Krylov solver, \textctref{krylov_solver}, when solving the optimality conditions.  We output \textctref{krylov_iter} at each iteration under the label \textctrefalt{KryIter}.} 
+        {Current number of iterations taken by the truncated Krylov solver when solving the optimality conditions.  We output \textctref{krylov_iter} at each iteration under the label \textctrefalt{kry_iter}.} 
     
     \paramitemu
         {krylov_iter_max}
         {Natural}
         {Yes}
-        {Maximum number of iterations taken by the truncated Krylov solver, \textctref{krylov_solver}, when solving the optimality conditions.} 
+        {Maximum number of iterations taken by the truncated Krylov solver when solving the optimality conditions.} 
     
     \paramitemu
         {krylov_iter_total}
         {Natural}
         {No}
-        {Total number of iterations ever taken by the truncated Krylov, \textctref{krylov_solver}, when solving the optimality conditions.  This gives information about the total amount computational effort taken by Optizelle.}
+        {Total number of iterations ever taken by the truncated Krylov when solving the optimality conditions.  This gives information about the total amount computational effort taken by Optizelle.  We output \textctref{krylov_iter_total} at each iteration under the label \textctrefalt{kry_iter_total}.}
     
     \paramitemu
         {krylov_orthog_max}
         {Natural}
         {Yes}
-        {Numbers of vectors stored and used in the orthogonalization of our truncated Krylov solver, \textctref{krylov_solver}.  In order to turn conjugate direction into conjugate gradient, set this to parameter to $1$.  In practice, if memory is available, it may be worthwhile to over orthogonalize.} 
+        {Numbers of vectors stored and used in the orthogonalization of our truncated Krylov solver.  In order to turn conjugate direction into conjugate gradient, set this to parameter to $1$.  In practice, if memory is available, it may be worthwhile to over orthogonalize.} 
     
     \paramitemu
         {krylov_stop}
         {KrylovStop}
         {No}
-        {Reason why the truncated Krylov solver, \textctref{krylov_solver}, exited when solving the optimality system.  We output \textctref{krylov_stop} at each iteration under the label \textctrefalt{kry_stop}.}
+        {Reason why the truncated Krylov solver exited when solving the optimality system.  We output \textctref{krylov_stop} at each iteration under the label \textctrefalt{kry_stop}.}
     
     \paramitemu
         {krylov_rel_err}
         {Real}
         {No}
-        {Relative error in the solution returned by the truncated Krylov solver, \textctref{krylov_solver}, when solving the optimality system.  We output \textctref{krylov_rel_err} at each iteration under the label \textctrefalt{KryErr}.}
+        {Relative error in the solution returned by the truncated Krylov solver when solving the optimality system.  We output \textctref{krylov_rel_err} at each iteration under the label \textctrefalt{kry_err}.}
     
     \paramitemu
         {eps_krylov}
         {Real}
         {Yes}
-        {Relative stopping criteria for our truncated Krylov solver, \textctref{krylov_solver}.  In conjugate directions, when solving the system $Ax=b$ with preconditioner $B$, we use the stopping criteria  $\|B(Ax_k-b)\|\leq \textctref{eps_krylov}\|B(Ax_0-b)\|$.  In MINRES, we use the stopping criteria $\|Ax_k-b\|_B \leq \textctref{eps_krylov}\|Ax_0-b\|_B$.}
-    
-    \paramitemu
-        {krylov_solver}
-        {KrylovSolverTruncated}
-        {Yes}
-        {Truncated krylov solver used when solving the optimality conditions.}
+        {Relative stopping criteria for our truncated Krylov solver.  In truncated CG, when solving the system $Ax=b$ with preconditioner $B$, we use the stopping criteria  $\|B(Ax_k-b)\|\leq \textctref{eps_krylov}\|B(Ax_0-b)\|$.}
     
     \paramitemu
         {algorithm_class}
@@ -2404,13 +2402,13 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
                 {$\|\ineqGradLag{\textctref{x}_0}{\textctref{z}_0}\|$,}
                 {$\|\conGradLag{\textctref{x}_0}{\textctref{y}_0}{\textctref{z}_0}\|$,}
         \end{boldlist}
-        where $\textctref{x}_0$, $\textctref{y}_0$, and $\textctref{z}_0$ denote our variables at the first iteration.  We use \textctref{norm_gradtyp} with the stopping criteria described in \textctref{eps_grad}.}
+        where $\textctref{x}_0$, $\textctref{y}_0$, and $\textctref{z}_0$ denote our variables at the first iteration.  Sometimes, we use \textctref{norm_gradtyp} with the stopping criteria described in \textctref{eps_grad}.  Specifically, we only refer to this quantity when \textctref{eps_kind} is set to \hyperref[itm:ToleranceKind]{Relative}.  When \textctref{eps_kind} is set to \hyperref[itm:ToleranceKind]{Absolute}, we ignore this value and instead use $1.0$.}
     
     \paramitemu
         {norm_dxtyp}
         {Real}
         {No}
-        {Norm of a typical optimization step.  Similar to \textctref{norm_gradtyp}, we set this to be the gradient found at the initial guess and use it in the stopping criteria described in \textctref{eps_dx}.  Since an optimization algorithm may have numerical issues on the first optimization iteration, we do not use the first optimization step generated.  By using the norm of the gradient, we approximate the norm of a step taken by the steepest descent algorithm.}
+        {Norm of a typical optimization step.  Similar to \textctref{norm_gradtyp}, we set this to be the gradient found at the initial guess and use it in the stopping criteria described in \textctref{eps_dx}.  Since an optimization algorithm may have numerical issues on the first optimization iteration, we do not use the first optimization step generated.  By using the norm of the gradient, we approximate the norm of a step taken by the steepest descent algorithm.  As a note, we only refer to this quantity when \textctref{eps_kind} is set to \hyperref[itm:ToleranceKind]{Relative}.  When \textctref{eps_kind} is set to \hyperref[itm:ToleranceKind]{Absolute}, we ignore this value and instead use $1.0$.}
     
     \paramitemu
         {x}
@@ -2485,6 +2483,42 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {Natural}
         {Yes}
         {Messaging level.  To turn messages off, use $0$.  For normal messaging, set to $1$.  For more detailed information, set to $2$.  For linear solver information, set to $3$.  To see precise information about what information we display, refer to the chapter entitled \hyperref[ch:output]{\choutput}.}
+    
+    \paramitemu
+        {failed_safeguard_max}
+        {Natural}
+        {Yes}
+        {Number of failed safe-guard steps before exiting the truncated-Krylov method.  We use this exclusively for our inequality constraints.}
+
+    \paramitemu
+        {failed_safeguard}
+        {Natural}
+        {No}
+        {Number of failed safe-guard steps during the last iteration.  We output \textctref{failed_safeguard} at each iteration under the label \textctrefalt{failed_safe}.}
+
+    \paramitemu
+        {failed_safeguard_total}
+        {Natural}
+        {No}
+        {Total number of failed safe-guard steps.} 
+    
+    \paramitemu
+        {alpha_x}
+        {Real}
+        {No}
+        {How much we truncate \textctref{dx} in an interior point method in order to maintain strict feasibility.  When $1.0$, we do not truncate and take a full step.  We output \textctref{alpha_x} at each iteration under the label \textctrefalt{alpha_x}.}
+    
+    \paramitemu
+        {alpha_x_qn}
+        {Real}
+        {No}
+        {How much we truncate \textctref{dx_n} in an interior point method in order to maintain strict feasibility.  When $1.0$, we do not truncate and take a full step.}  We output \textctref{alpha_x_qn} at each iteration under the label \textctrefalt{alpha_x_qn}.
+    
+    \paramitemu
+        {eps_kind}
+        {ToleranceKind}
+        {Yes}
+        {Kind of stopping tolerance used by the algorithms.}
 
     \paramitemu
         {delta}
@@ -2920,7 +2954,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {norm_gxtyp}
         {Real}
         {No}
-        {Norm of a typical equality constraint.  Generally, we use the norm of the equality constraint at the first iteration.} 
+        {Norm of a typical equality constraint, which we define to be the norm of the equality constraint at the first iteration.  Sometimes, we use \textctref{norm_gxtyp} with the stopping criteria described in \textctref{eps_constr}. Specifically, we only refer to this quantity when \textctref{eps_kind} is set to \hyperref[itm:ToleranceKind]{Relative}.  When \textctref{eps_kind} is set to \hyperref[itm:ToleranceKind]{Absolute}, we ignore this value and instead use $1.0$.} 
 
     \paramiteme
         {gpxdxn_p_gx}
@@ -2944,7 +2978,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {dx_n}
         {X_Vector}
         {No}
-        {Normal step.}
+        {Normal step.  We output the norm of this vector at each iteration under the label \textctrefalt{||dx_n||}.}
 
     \paramiteme
         {dx_ncp}
@@ -2956,7 +2990,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {dx_t}
         {X_Vector}
         {No}
-        {(Corrected) tangential step.}
+        {(Corrected) tangential step.  We output the norm of this vector at each iteration under the label \textctrefalt{||dx_t||}.}
 
     \paramiteme
         {dx_t_uncorrected}
@@ -3038,22 +3072,23 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {mu_typ}
         {Real}
         {No}
-        {Typical value for \textctref{mu}.  Generally, we use the value of \textctref{mu_est} at the first iteration.}
+        {Typical value for \textctref{mu}, which we define as the value of \textctref{mu_est} at the first iteration.  Sometimes, we use \textctref{mu_typ} with the stopping criteria described in \textctref{eps_mu}.  Specifically, we only refer to this quantity when \textctref{eps_kind} is set to \hyperref[itm:ToleranceKind]{Relative}.  When \textctref{eps_kind} is set to \hyperref[itm:ToleranceKind]{Absolute}, we ignore this value and instead use $1.0$.}
 
     \paramitemi
         {eps_mu}
         {Real}
         {Yes}
         {Relative stopping tolerance for satisfying the complementary slackness condition for the inequality constraint.  We satisfy this stopping criteria when
-        $$
-                \textctref{mu_est} \leq \textctref{eps_mu}\cdot\textctref{mu_typ}.
-        $$}
+        \begin{enumerate}
+            \item $|\textctref{mu} - \textctref{mu_typ} \cdot \textctref{eps_mu}| \leq \textctref{mu_typ} \cdot \textctref{eps_mu}$
+            \item $|\textctref{mu} - \textctref{mu_est}| \leq \textctref{mu}$
+        \end{enumerate}}
     
     \paramitemi
         {sigma}
         {Real}
         {Yes}
-        {Rate that we decrease the interior point parameter.  When set to 0, we take a pure optimality step.  When set to 1, we take a step toward the central path.  As such, we must balance these two desires with this parameter.  The precise behavior of how we decrease the interior point parameter is governed between this parameter and \textctref{cstrat}.}
+        {Rate that we decrease the interior point parameter.}
     
     \paramitemi
         {gamma}
@@ -3062,61 +3097,10 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {How close we move to the boundary during a single step.  A step of $1.0$ allows a step to touch the boundary of the inequality constraint in a single step, which is disallowed by the interior point algorithm.}
     
     \paramitemi
-        {alpha_x}
-        {Real}
-        {No}
-        {How much we truncate \textctref{dx} in an interior point method in order to maintain strict feasibility.  When $1.0$, we do not truncate and take a full step.}
-    
-    \paramitemi
         {alpha_z}
         {Real}
         {No}
-        {How much we truncate \textctref{dz} in an interior point method in order to maintain strict feasibility.  When $1.0$, we do not truncate and take a full step.  Note, we only reference this when we set \textctref{ipm} to \hyperref[itm:InteriorPointMethod]{\textct{PrimalDual}}.}
-    
-    \paramitemi
-        {ipm}
-        {InteriorPointMethod}
-        {Yes}
-        {Type of interior point method.  In all cases, we use the same merit function described in parameter \textctref{ared}.  Rather, the difference between these algorithms lies in how we choose the inequality multiplier \textctref{z} and conduct the line search that maintains positivity with respect to the inequality constraint
-        \begin{boldlist}
-            \ipmitem
-                {Variables \textctref{z} and \textctref{dz} vary independently of \textctref{x} and \textctref{dx},}
-                {Multiplier \textctref{z} set to
-                $$
-                    L(h(\textctref{x}))^{-1} (-h^\prime(\textctref{x})\textctref{dx} \circ \textctref{z} + \textctref{mu}\cdot e),
-                $$}
-                {Multiplier \textctref{z} set to
-                $$
-                    \textctref{mu} \cdot L(h(\textctref{x}))^{-1} e.
-                $$}
-        \end{boldlist}
-        Here, $\circ$ denotes the Jordan product, \textctref{prod}; $L(h(x))^{-1}$ denotes the inverse of the linear operator induced by the Jordan product, \textctref{linv}; and $e$ denotes the identity element in the pseudo-Euclidean-Jordan algebra, \textctref{id}.  We describe each of these operations further in the section \hyperref[sec:customvector]{\seccustomvector}.  Implicitly, these choices affect the Hessian modification that we apply during the course of the interior point method.  Nevertheless, in almost all cases, we're better off using the primal-dual interior point method.}
-    
-    \paramitemi
-        {cstrat}
-        {CentralityStrategy}
-        {Yes}
-        {Centrality strategy.  This parameter affects how we follow the central path during the course of optimization.  Specifically, the complementary slackness conditions modified by the interior point algorithm require that
-        $$
-                \textctref{x}\circ\textctref{z} = \textctref{mu} \cdot e.
-        $$
-        Here, $\circ$ denotes the Jordan product, \textctref{prod}; and $e$ denotes the identity element in the pseudo-Euclidean-Jordan algebra, \textctref{id}.  We describe each of these operations further in the section \hyperref[sec:customvector]{\seccustomvector}.  Then, we drive \textctref{mu} toward zero.  How we drive \textctref{mu} toward zero depends on this parameter.  Precisely,
-        \begin{boldlist}
-        \cstratitem
-            {Set $\textctref{mu}=\textctref{sigma}\cdot\textctref{mu_est}$}
-            {If
-                $$
-                \log_{10}(\textctref{norm_gradtyp})-\log_{10}(\textct{norm_grad}) < \log_{10}(\textctref{mu_typ})-\log_{10}(\textctref{mu_est})
-                $$
-                where we define \textct{norm_grad} as
-                \begin{boldlist}
-                    \formitemi
-                        {$\|\ineqGradLag{\textctref{x}}{\textctref{z}}\|,$} 
-                        {$\|\conGradLag{\textctref{x}}{\textctref{y}}{\textctref{z}}\|,$} 
-                \end{boldlist}
-                then we set $\textctref{mu}=\textctref{sigma}\cdot\textctref{mu_est}$.  Otherwise, we hold \textctref{mu} constant.  In other words, we only reduce \textctref{mu} when the progress toward satisfying the gradient stopping condition exceeds that of the interior point condition.}
-            {On odd iterations, we set $\textctref{mu}=1$.  On even, we set $\textctref{mu}=0$.}
-        \end{boldlist}}
+        {How much we truncate \textctref{dz} in an interior point method in order to maintain strict feasibility.  When $1.0$, we do not truncate and take a full step.  We output \textctref{alpha_z} at each iteration under the label \textctrefalt{alpha_z}.}
 
     \paramitemi
         {h_diag}
@@ -3265,13 +3249,39 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {alpha_z}
         {\textctref{alpha_z}}
         {2}
-        {Amount we truncate \textctref{dz} in order to maintain feasibility with respect to the inequality multiplier.  Note, we only reference this when we set \textctref{ipm} to \hyperref[itm:InteriorPointMethod]{\textct{PrimalDual}}.}
+        {Amount we truncate \textctref{dz} in order to maintain feasibility with respect to the inequality multiplier.  Note, we only reference this when we are using a primal-dual interior point method.}
+
+    \outputitemi
+        {failed_safe}
+        {\textctref{failed_safeguard}}
+        {2}
+        {Number of failed safe-guard steps during the last iteration.  Note, we only reference this when using a trust-region method.}
+
+    \outputitemc
+        {alpha_x_qn}
+        {\textctref{alpha_x_qn}}
+        {2}
+        {Amount we truncate \textctref{dx_n} in order to maintain feasibility with respect to the inequality constraint.}
 
     \outputitemu
         {kry_iter_total}
         {\textctref{krylov_iter_total}}
         {3}
         {Total number of iterations used by the truncated Krylov methods when solving the optimality system.  We typically use this to determine how many Hessian-vector products we've computed over the entire optimization run.}
+
+    \outputitemraw
+        {\index{Outputs!\textct{"|"| dx_n "|"|}}{\textctlabelalt{||dx_n||}}}
+        {Equality Constrained, Constrained}
+        {None}
+        {3}
+        {Norm of the quasinormal step, \textctref{dx_n}, taken during the last iteration.}
+
+    \outputitemraw
+        {\index{Outputs!\textct{"|"| dx_t "|"|}}{\textctlabelalt{||dx_t||}}}
+        {Equality Constrained, Constrained}
+        {None}
+        {3}
+        {Norm of the tangential step, \textctref{dx_t}, taken during the last iteration.}
 
     \outputiteme
         {qn_iter}
@@ -4224,11 +4234,10 @@ which uses the same formulation as our example \exampleref{\secconstrained}{sec:
 
     \algorithmitem
         {Truncated-Krylov methods}
-        {By truncated-Krylov method, we refer to both truncated-CG as well as truncated-MINRES.  Our version of truncated-CG actually implements the conjugate direction algorithm, but it reduces to truncated-CG when we set \textctref{krylov_orthog_max} to 1.  In the case of truncated-MINRES, we can not guarantee a descent direction unless the Hessian approximation is positive-definite.  Therefore, we do a hard check on the direction of descent and negate it when necessary.  Historically, Toint and Steihaug give a description of truncated-CG in their respective papers.  For a modern treatment of truncated-CG see Conn, Gould, and Toint's book.  For a description of the truncated-MINRES algorithm, see Fong's Ph.D. thesis.
+        {By truncated-Krylov method, we mean truncated-CG.  Our version of truncated-CG actually implements the conjugate direction algorithm, but it reduces to truncated-CG when we set \textctref{krylov_orthog_max} to 1.  Historically, Toint and Steihaug give a description of truncated-CG in their respective papers.  For a modern treatment of truncated-CG see Conn, Gould, and Toint's book.
     \begin{itemize}
         \item \bibentry{toint1981truncated_cg}.
         \item \bibentry{steihaug1983truncated_cg}.
-        \item \bibentry{fong2011minres_optimization}.
         \item \bibentry{conn2000trust_region_methods}.
     \end{itemize}}
 
@@ -4308,9 +4317,52 @@ where $L(h(x))^{-1}$ denotes the inverse of the linear operator induced by the J
     $$
         [\textnormal{hess}(x,y) + h^\prime(x)^* (L(h(x))^{-1} (h^\prime(x) \cdot \circ z)) ] \delta x =  -\textnormal{grad}(x,y) + \mu h^\prime(x)^* (L(h(x))^{-1} e).
     $$
-    At this point, we solve the Newton system using our truncated-Krylov methods.
+    At this point, we solve the Newton system using our truncated-Krylov methods.  As a note, when using a line-search method that is not Newton-CG, we using a different scheme and instead set
+    $$
+        \textctref{z} =  \textctref{mu} \cdot L(h(\textctref{x}))^{-1} e.
+    $$
+This gives us a log-barrier algorithm for these methods.  In short, without solving a Newton system, the equations for \textctref{dz} don't make sense, so we instead fallback on a log-barrier method, which does not require them.
 
-        In order to maintain strict feasibility of $h(x)$ and $z$ we conduct a positivity line search before the algorithm's globalization routines, which we refer to as \textctref{srch}.  In a trust-region method, this occurs before we check the actual versus predicted reduction.  In a line-search method, this occurs before the line search.  Based on the results of our positivity line search, we truncate the step.  In our \textctref{Rm} and \textctref{SQL} vector spaces, we use a closed form formula for linear and second-order cones and the Arnoldi algorithm for semidefinite cones.  Next, when we set \textctref{ipm} to \hyperref[itm:InteriorPointMethod]{\textct{PrimalDual}}, we conduct the line-search on both $\delta x$ and $\delta z$.  When we set \textctref{ipm} to \hyperref[itm:InteriorPointMethod]{\textct{Linked}}, we conduct a line-search on $\delta x$ that insures that both $x+\alpha \delta x$ and $-h^\prime(x) (\alpha \delta x) \circ z + \mu e$ remain positive.  Then, we set $z =  L(h(x))^{-1} (-h^\prime(x) \delta x \circ z + \mu e)$.  Finally, when we set \textctref{ipm} to \hyperref[itm:InteriorPointMethod]{\textct{LogBarrier}}, we conduct a line-search on $\delta x$ and set $z =  L(h(x))^{-1} e$.  
+        In order to maintain strict feasibility of $h(x)$ and $z$ we safeguard our steps \textctref{dx} and \textctref{dz} using the fraction to the boundary rule
+\begin{align*}
+        h(\textctref{x} + \textctref{alpha_x}\cdot\textctref{dx}) \geq& (1-\textctref{gamma}) h(x)\\
+        \textctref{z} + \textctref{alpha_z}\cdot\textctref{dz} \geq& (1-\textctref{gamma}) z)\\
+        h(\textctref{x} + \textctref{alpha_x_qn}\cdot\textctref{dx_n}) \geq& (1-\textctref{gamma}\cdot\textctref{zeta}) h(x)
+\end{align*}
+Note, the last inequality only occurs in constrained problems.  When we enforce these rules depends on the algorithm.  Specifically, trust-region methods enforce these bounds during the truncated-Krylov solve of the optimality conditions.  Since the Krylov solver may violate the inequality bounds periodically throughout the optimality solve, we save the last feasible iterate during the computation.  When we exit, we take the last feasible iterate and step and compute the safeguard search, which satisfies the fraction to the boundary rule above.  In order to prevent too many discarded steps due to the safeguard, we limit the maximum number of infeasible steps that we allow to be \textctref{failed_safeguard_max}.  In a line-search method, we safeguard the step prior to the line search.  Specifically, we shorten \textctref{alpha0} so that the maximum step length taken by the line search does not exceed our fraction to the boundary rule.  Finally, in the inexact composite step SQP method, we also safeguard our quasi-normal step by enforcing the fraction to the boundary rule during the dogleg computation.  In each case, we calculate the distance to the boundary with the user-defined function \textctref{srch}.  In our \textctref{Rm} and \textctref{SQL} vector spaces, we use a closed form formula for linear and second-order cones and the Arnoldi algorithm for semidefinite cones.
+
+        We reduce \textctref{mu} prior to the truncated-Krylov solve for the optimality system and set $\textctref{mu} = \textctref{sigma}\cdot \textctref{mu}$ when one of the following global or local convergence criteria is satisfied
+        \begin{enumerate}
+            \item $\log(\textctref{norm_gradtyp}) - \log(\|\textnormal{gradstep}(x,y,z)\|) < \log(\textctref{mu_typ}) - \log(\textctref{mu_est})$
+
+            \item $\|\textnormal{gradstep}(x,y,z)\| < \textctref{eps_grad}\cdot \textctref{norm_gradtyp}$
+
+            \item $\log(\textctref{norm_gradtyp}) - \log(\|\textnormal{gradstop}(x,y,z)\|) < \log(\textctref{mu_typ}) - \log(\textctref{mu_est})$
+            
+            \item $\|\textnormal{gradstop}(x,y,z)\| < \textctref{eps_grad}\cdot \textctref{norm_gradtyp}$
+        \end{enumerate}
+        where
+        \begin{align*}
+            \textnormal{gradstop}(x,y,z) =& \left\{
+                \begin{array}{ll}
+                    \nabla f(x) - h^\prime(x)^*z& \textnormal{Inequality constrained,}\\
+                    \nabla f(x) + g^\prime(x)^*y -h^\prime(x)^* z & \textnormal{Constrained.}
+                \end{array}\right.\\
+            \textnormal{gradstep}(x,y,z) =& \left\{
+                \begin{array}{ll}
+                    \nabla f(x) - \mu h^\prime(x)^* L(h(x))^{-1} e& \textnormal{Inequality constrained,}\\
+                    \nabla f(x) + W(\nabla^2 f(x)\textctref{dx_n}) + g^\prime(x)^*y - \mu h^\prime(x)^* L(h(x))^{-1} e & \textnormal{Constrained.}
+                \end{array}\right.
+        \end{align*}
+        and $W$ denotes the projection onto nullspace of $g^\prime(x)$.  In addition, we must converge \textctref{mu_est} locally
+        $$
+                | \textctref{mu} - \textctref{mu_est} | < \textctref{mu}
+        $$
+        and not have converged \textctref{mu} globally
+        $$
+                | \textctref{mu} - \textctref{eps_mu}\cdot \textctref{mu_typ}| \geq \textctref{eps_mu} \cdot \textctref{mu_typ}.
+        $$
+        Finally, we also require that $\textctref{iter} > 1$, so that we don't reduce \textctref{mu} on the first iteration.
 
         For globalization, in both trust-region and line-search methods, we modify our merit function with the addition of a barrier function, which we refer to as \textctref{barr}.  Specifically, we allow any barrier function such that $x\circ\nabla\textctref{barr}(x)=e$.  In our \textctref{Rm} and \textctref{SQL} vector spaces, we use the log-barrier functions:
         $$\begin{array}{ll}
@@ -4328,11 +4380,11 @@ and the determinant of an upper triangular matrix can be calculated quickly.
 
         As far as the initial inequality multiplier, we set
 $$
-        z =  \textctref{mu} L(h(x))^{-1} e.
+        \textctref{z} =  \textctref{mu} \cdot L(h(\textctref{x}))^{-1} e.
 $$
 This guarantees that
 \begin{enumerate}
-    \item $h(x) \circ z = \textctref{mu} e$
+    \item $h(\textctref{x}) \circ \textctref{z} = \textctref{mu} \cdot e$
     \item $\textctref{mu_est} = \textctref{mu}$
 \end{enumerate}
 In other words, our initial inequality multiplier puts us on the central path specified by the parameter \textctref{mu}.

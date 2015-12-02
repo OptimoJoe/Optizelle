@@ -1,0 +1,16 @@
+{
+   "Optizelle" : {
+      "msg_level" : 1,
+      "H_type" : "Identity",
+      "iter_max" : 50,
+      "delta" : 100,
+      "eps_krylov" : 1e-10,
+      "eps_dx" : 1e-16
+   },
+   "Naturals" : {
+      "iter" : 18
+   },
+   "X_Vectors" : {
+      "x" : [ 1., 1., 1., 1., 1., 1., 1., 1., 1., 1. ]
+   }
+}

@@ -1,0 +1,19 @@
+{
+   "Optizelle" : {
+      "msg_level" : 2,
+      "algorithm_class" : "LineSearch",
+      "H_type" : "UserDefined",
+      "dir" : "SteepestDescent",
+      "iter_max" : 500,
+      "eps_krylov" : 1e-10,
+      "eps_dx" : 1e-16,
+      "eps_mu" : 1e-2,
+      "eps_grad" : 1e-2
+   },
+   "Naturals" : {
+      "iter" : 342 
+   },
+   "X_Vectors" : {
+      "x" : [ 0.5, 0.25] 
+   }
+}

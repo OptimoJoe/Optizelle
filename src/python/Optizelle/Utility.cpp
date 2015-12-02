@@ -40,12 +40,12 @@ namespace Optizelle {
             case NotConverged:
                 return Python::enumToPyObject(
                     "StoppingCondition","NotConverged");
-            case RelativeGradientSmall:
+            case GradientSmall:
                 return Python::enumToPyObject(
-                    "StoppingCondition","RelativeGradientSmall");
-            case RelativeStepSmall:
+                    "StoppingCondition","GradientSmall");
+            case StepSmall:
                 return Python::enumToPyObject(
-                    "StoppingCondition","RelativeStepSmall");
+                    "StoppingCondition","StepSmall");
             case MaxItersExceeded:
                 return Python::enumToPyObject(
                     "StoppingCondition","MaxItersExceeded");
@@ -68,13 +68,13 @@ namespace Optizelle {
             if(m==Python::enumToNatural("StoppingCondition","NotConverged"))
                 return NotConverged;
             else if(m==Python::enumToNatural(
-                "StoppingCondition","RelativeGradientSmall")
+                "StoppingCondition","GradientSmall")
             )
-                return RelativeGradientSmall;
+                return GradientSmall;
             else if(m==Python::enumToNatural(
-                "StoppingCondition","RelativeStepSmall")
+                "StoppingCondition","StepSmall")
             )
-                return RelativeStepSmall;
+                return StepSmall;
             else if(m==Python::enumToNatural(
                 "StoppingCondition","MaxItersExceeded")
             )
@@ -95,6 +95,8 @@ namespace Optizelle {
         PyObject * toPython(t const & krylov_stop) {
             // Do the conversion
             switch(krylov_stop){
+            case NotConverged:
+                return Python::enumToPyObject("KrylovStop","NotConverged");
             case NegativeCurvature:
                 return Python::enumToPyObject("KrylovStop","NegativeCurvature");
             case RelativeErrorSmall:
@@ -105,11 +107,17 @@ namespace Optizelle {
             case TrustRegionViolated:
                 return Python::enumToPyObject(
                     "KrylovStop","TrustRegionViolated");
-            case Instability:
-                return Python::enumToPyObject("KrylovStop","Instability");
-            case InvalidTrustRegionCenter:
+            case NanDetected:
+                return Python::enumToPyObject("KrylovStop","NanDetected");
+            case LossOfOrthogonality:
                 return Python::enumToPyObject(
-                    "KrylovStop","InvalidTrustRegionCenter");
+                    "KrylovStop","LossOfOrthogonality");
+            case InvalidTrustRegionOffset:
+                return Python::enumToPyObject(
+                    "KrylovStop","InvalidTrustRegionOffset");
+            case TooManyFailedSafeguard:
+                return Python::enumToPyObject(
+                    "KrylovStop","TooManyFailedSafeguard");
             default:
                 throw;
             }
@@ -120,7 +128,9 @@ namespace Optizelle {
             // Convert the member to a Natural 
             Natural m=PyInt_AsSsize_t(member);
 
-            if(m==Python::enumToNatural("KrylovStop","NegativeCurvature"))
+            if(m==Python::enumToNatural("KrylovStop","NotConverged"))
+                return NotConverged;
+            else if(m==Python::enumToNatural("KrylovStop","NegativeCurvature"))
                 return NegativeCurvature;
             else if(m==Python::enumToNatural("KrylovStop","RelativeErrorSmall"))
                 return RelativeErrorSmall;
@@ -130,44 +140,20 @@ namespace Optizelle {
                 "KrylovStop","TrustRegionViolated")
             )
                 return TrustRegionViolated;
-            else if(m==Python::enumToNatural("KrylovStop","Instability"))
-                return Instability;
+            else if(m==Python::enumToNatural("KrylovStop","NanDetected"))
+                return NanDetected;
             else if(m==Python::enumToNatural(
-                "KrylovStop","InvalidTrustRegionCenter")
+                "KrylovStop","LossOfOrthogonality")
             )
-                return InvalidTrustRegionCenter;
-            else
-                throw;
-        }
-    }
-    
-    namespace KrylovSolverTruncated { 
-        // Converts t to a Python enumerated type
-        PyObject * toPython(t const & truncated_krylov) {
-            // Do the conversion
-            switch(truncated_krylov){
-            case ConjugateDirection:
-                return Python::enumToPyObject(
-                    "KrylovSolverTruncated","ConjugateDirection");
-            case MINRES:
-                return Python::enumToPyObject(
-                    "KrylovSolverTruncated","MINRES");
-            default:
-                throw;
-            }
-        }
-
-        // Converts a Python enumerated type to t 
-        t fromPython(PyObject * const member) {
-            // Convert the member to a Natural 
-            Natural m=PyInt_AsSsize_t(member);
-
-            if(m==Python::enumToNatural(
-                "KrylovSolverTruncated","ConjugateDirection")
+                return LossOfOrthogonality;
+            else if(m==Python::enumToNatural(
+                "KrylovStop","InvalidTrustRegionOffset")
             )
-                return ConjugateDirection;
-            else if(m==Python::enumToNatural("KrylovSolverTruncated","MINRES"))
-                return MINRES;
+                return InvalidTrustRegionOffset;
+            else if(m==Python::enumToNatural(
+                "KrylovStop","TooManyFailedSafeguard")
+            )
+                return TooManyFailedSafeguard;
             else
                 throw;
         }
@@ -494,80 +480,6 @@ namespace Optizelle {
         }
     }
 
-    namespace InteriorPointMethod { 
-        // Converts t to a Python enumerated type
-        PyObject * toPython(t const & ipm) {
-            // Do the conversion
-            switch(ipm){
-            case PrimalDual:
-                return Python::enumToPyObject("InteriorPointMethod",
-                    "PrimalDual");
-            case PrimalDualLinked:
-                return Python::enumToPyObject("InteriorPointMethod",
-                    "PrimalDualLinked");
-            case LogBarrier:
-                return Python::enumToPyObject("InteriorPointMethod",
-                    "LogBarrier");
-            default:
-                throw;
-            }
-        }
-
-        // Converts a Python enumerated type to t 
-        t fromPython(PyObject * const member) {
-            // Convert the member to a Natural 
-            Natural m=PyInt_AsSsize_t(member);
-
-            if(m==Python::enumToNatural("InteriorPointMethod","PrimalDual"))
-                return PrimalDual;
-            else if(m==Python::enumToNatural("InteriorPointMethod",
-                "PrimalDualLinked")
-            )
-                return PrimalDualLinked;
-            else if(m==Python::enumToNatural("InteriorPointMethod",
-                "LogBarrier")
-            )
-                return LogBarrier;
-            else
-                throw;
-        }
-    }
-
-    namespace CentralityStrategy { 
-        // Converts t to a Python enumerated type
-        PyObject * toPython(t const & cstrat) {
-            // Do the conversion
-            switch(cstrat){
-            case Constant:
-                return Python::enumToPyObject("CentralityStrategy","Constant");
-            case StairStep:
-                return Python::enumToPyObject("CentralityStrategy","StairStep");
-            case PredictorCorrector:
-                return Python::enumToPyObject("CentralityStrategy",
-                    "PredictorCorrector");
-            default:
-                throw;
-            }
-        }
-
-        // Converts a Python enumerated type to t 
-        t fromPython(PyObject * const member) {
-            // Convert the member to a Natural 
-            Natural m=PyInt_AsSsize_t(member);
-
-            if(m==Python::enumToNatural("CentralityStrategy","Constant"))
-                return Constant;
-            else if(m==Python::enumToNatural("CentralityStrategy","StairStep"))
-                return StairStep;
-            else if(m==Python::enumToNatural("CentralityStrategy",
-                "PredictorCorrector")
-            )
-                return PredictorCorrector;
-            else
-                throw;
-        }
-    }
-
     namespace FunctionDiagnostics { 
         // Converts t to a Python enumerated type
         PyObject * toPython(t const & diag) {
@@ -681,6 +593,40 @@ namespace Optizelle {
                 "EveryIteration")
             )
                 return EveryIteration;
+            else
+                throw;
+        }
+    }
+
+    namespace ToleranceKind { 
+        // Converts t to a Python enumerated type
+        PyObject * toPython(t const & dscheme) {
+            // Do the conversion
+            switch(dscheme){
+            case Relative:
+                return Python::enumToPyObject("ToleranceKind",
+                    "Relative");
+            case Absolute:
+                return Python::enumToPyObject("ToleranceKind",
+                    "Absolute");
+            default:
+                throw;
+            }
+        }
+
+        // Converts a Python enumerated type to t 
+        t fromPython(PyObject * const member) {
+            // Convert the member to a Natural 
+            Natural m=PyInt_AsSsize_t(member);
+
+            if(m==Python::enumToNatural("ToleranceKind",
+                "Relative")
+            )
+                return Relative;
+            else if(m==Python::enumToNatural("ToleranceKind",
+                "Absolute")
+            )
+                return Absolute;
             else
                 throw;
         }
@@ -1896,11 +1842,6 @@ namespace Optizelle {
                     toPython::Real("krylov_rel_err",
                         state.krylov_rel_err,pystate);
                     toPython::Real("eps_krylov",state.eps_krylov,pystate);
-                    toPython::Param <KrylovSolverTruncated::t> (
-                        "krylov_solver",
-                        KrylovSolverTruncated::toPython,
-                        state.krylov_solver,
-                        pystate);
                     toPython::Param <AlgorithmClass::t> (
                         "algorithm_class",
                         AlgorithmClass::toPython,
@@ -1929,6 +1870,14 @@ namespace Optizelle {
                     toPython::Real("f_x",state.f_x,pystate);
                     toPython::Real("f_xpdx",state.f_xpdx,pystate);
                     toPython::Natural("msg_level",state.msg_level,pystate);
+                    toPython::Natural("failed_safeguard_max",
+                        state.failed_safeguard_max,pystate);
+                    toPython::Natural("failed_safeguard",
+                        state.failed_safeguard,pystate);
+                    toPython::Natural("failed_safeguard_total",
+                        state.failed_safeguard_total,pystate);
+                    toPython::Real("alpha_x",state.alpha_x,pystate);
+                    toPython::Real("alpha_x_qn",state.alpha_x_qn,pystate);
                     toPython::Real("delta",state.delta,pystate);
                     toPython::Real("eta1",state.eta1,pystate);
                     toPython::Real("eta2",state.eta2,pystate);
@@ -1976,6 +1925,11 @@ namespace Optizelle {
                         DiagnosticScheme::toPython,
                         state.dscheme,
                         pystate);
+                    toPython::Param <ToleranceKind::t> (
+                        "eps_kind",
+                        ToleranceKind::toPython,
+                        state.eps_kind,
+                        pystate);
                 }
                 void toPython(
                     typename PyUnconstrained::State::t const & state,
@@ -2019,11 +1973,6 @@ namespace Optizelle {
                     fromPython::Real("krylov_rel_err",
                         pystate,state.krylov_rel_err);
                     fromPython::Real("eps_krylov",pystate,state.eps_krylov);
-                    fromPython::Param <KrylovSolverTruncated::t> (
-                        "krylov_solver",
-                        KrylovSolverTruncated::fromPython,
-                        pystate,
-                        state.krylov_solver);
                     fromPython::Param <AlgorithmClass::t> (
                         "algorithm_class",
                         AlgorithmClass::fromPython,
@@ -2053,6 +2002,14 @@ namespace Optizelle {
                     fromPython::Real("f_x",pystate,state.f_x);
                     fromPython::Real("f_xpdx",pystate,state.f_xpdx);
                     fromPython::Natural("msg_level",pystate,state.msg_level);
+                    fromPython::Natural("failed_safeguard_max",
+                        pystate,state.failed_safeguard_max);
+                    fromPython::Natural("failed_safeguard",
+                        pystate,state.failed_safeguard);
+                    fromPython::Natural("failed_safeguard_total",
+                        pystate,state.failed_safeguard_total);
+                    fromPython::Real("alpha_x",pystate,state.alpha_x);
+                    fromPython::Real("alpha_x_qn",pystate,state.alpha_x_qn);
                     fromPython::Real("delta",pystate,state.delta);
                     fromPython::Real("eta1",pystate,state.eta1);
                     fromPython::Real("eta2",pystate,state.eta2);
@@ -2100,6 +2057,11 @@ namespace Optizelle {
                         DiagnosticScheme::fromPython,
                         pystate,
                         state.dscheme);
+                    fromPython::Param <ToleranceKind::t> (
+                        "eps_kind",
+                        ToleranceKind::fromPython,
+                        pystate,
+                        state.eps_kind);
                 }
                 void fromPython(
                     PyObject * const pystate,
@@ -3156,18 +3118,7 @@ namespace Optizelle {
                     toPython::Real("eps_mu",state.eps_mu,pystate);
                     toPython::Real("sigma",state.sigma,pystate);
                     toPython::Real("gamma",state.gamma,pystate);
-                    toPython::Real("alpha_x",state.alpha_x,pystate);
                     toPython::Real("alpha_z",state.alpha_z,pystate);
-                    toPython::Param <InteriorPointMethod::t> (
-                        "ipm",
-                        InteriorPointMethod::toPython,
-                        state.ipm,
-                        pystate);
-                    toPython::Param <CentralityStrategy::t> (
-                        "cstrat",
-                        CentralityStrategy::toPython,
-                        state.cstrat,
-                        pystate);
                     toPython::Param <FunctionDiagnostics::t> (
                         "h_diag",
                         FunctionDiagnostics::toPython,
@@ -3201,18 +3152,7 @@ namespace Optizelle {
                     fromPython::Real("eps_mu",pystate,state.eps_mu);
                     fromPython::Real("sigma",pystate,state.sigma);
                     fromPython::Real("gamma",pystate,state.gamma);
-                    fromPython::Real("alpha_x",pystate,state.alpha_x);
                     fromPython::Real("alpha_z",pystate,state.alpha_z);
-                    fromPython::Param <InteriorPointMethod::t> (
-                        "ipm",
-                        InteriorPointMethod::fromPython,
-                        pystate,
-                        state.ipm);
-                    fromPython::Param <CentralityStrategy::t> (
-                        "cstrat",
-                        CentralityStrategy::fromPython,
-                        pystate,
-                        state.cstrat);
                     fromPython::Param <FunctionDiagnostics::t> (
                         "h_diag",
                         FunctionDiagnostics::fromPython,

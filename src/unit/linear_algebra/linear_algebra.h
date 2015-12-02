@@ -56,4 +56,13 @@ public:
     }
 };
 
+// Turns off safeguarding
+template <typename Real,template <typename> class XX>
+Real no_safeguard(
+    typename XX <Real>::Vector const & dx_base,
+    typename XX <Real>::Vector const & dx_dir
+) {
+    return Real(1.0);
+}
+
 #endif
