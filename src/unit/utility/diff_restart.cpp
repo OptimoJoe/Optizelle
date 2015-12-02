@@ -86,7 +86,17 @@ int main(int argc,char* argv[]) {
                             std::vector <double>(),
                             writer.write(test[category.name()]
                                              [variable.name()])));
+                // Check that the vectors are the same size.  Mostly, this
+                // comes up when copying old setups for new tests.
+                if(x.size()!=y.size()) {
+                    std::cout << "Mismatch in " << category.name()
+                        << '.' << variable.name()
+                        << ": size(x)=" << x.size() << ", size(y)=" << y.size()
+                        << std::endl;
+                    return EXIT_FAILURE;
+                }
 
+                // Find the difference between the two vectors
                 Rm::Vector diff(Rm::init(x));
                     Rm::copy(x,diff);
                     Rm::axpy(-1.,y,diff);
