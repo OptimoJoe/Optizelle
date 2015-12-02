@@ -17,7 +17,7 @@
 
 # It features
 * **State of the art algorithms**
-    * Unconstrained -- steepest descent, preconditioned nonlinear-CG (Fletcher-Reeves, Polak-Ribiere, Hestenes-Stiefel), BFGS, Newton-CG, SR1, trust-region Newton (truncated-CG and truncated-MINRES), Barzilai-Borwein two-point approximation
+    * Unconstrained -- steepest descent, preconditioned nonlinear-CG (Fletcher-Reeves, Polak-Ribiere, Hestenes-Stiefel), BFGS, Newton-CG, SR1, trust-region Newton, Barzilai-Borwein two-point approximation
     * Equality constrained -- inexact composite-step SQP
     * Inequality constrained -- primal-dual interior point method for cone constraints (linear, second-order cone, and semidefinite), log-barrier method for cone constraints
     * Constrained -- any combination of the above
