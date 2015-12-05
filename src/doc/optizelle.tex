@@ -2256,6 +2256,8 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
     
     \enumitem {ToleranceKind}
     
+    \enumitem {QuasinormalStop}
+    
     \enumitemlinalg {KrylovStop}
     
     \enumitemvspace {Cone}
@@ -3034,6 +3036,12 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {Yes}
         {Vector space diagnostics on Y.}
 
+    \paramiteme
+        {qn_stop}
+        {QuasinormalStop}
+        {No}
+        {Reason why the quasinormal problem exited.}
+
     \paramitemi
         {z}
         {Z_Vector}
@@ -3232,6 +3240,12 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {\textctref{alpha0}}
         {2}
         {Base line-search step length.}
+
+    \outputiteme
+        {qn_stop}
+        {\textctref{qn_stop}}
+        {2}
+        {Reason why the quasinormal problem exited.}
 
     \outputitemi
         {mu}

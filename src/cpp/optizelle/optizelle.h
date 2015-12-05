@@ -553,16 +553,16 @@ namespace Optizelle{
     // Reasons why the quasinormal problem exited
     namespace QuasinormalStop{
         enum t{
-            //---QuasiNormalStop0---
+            //---QuasinormalStop0---
             Newton,                   // Obtained the full Newton point
             CauchyTrustRegion,        // Cauchy point truncated by the
                                       // trust-region
             CauchySafeguard,          // Cauchy point truncated by the safeguard
-            DoglegTrustRegion,        // Dogleg point truncaed by the
+            DoglegTrustRegion,        // Dogleg point truncated by the
                                       // trust-region
             DoglegSafeguard,          // Dogleg point truncated by the safeguard
             Skipped                   // Skipped due to feasibility
-            //---QuasiNormalStop1---
+            //---QuasinormalStop1---
         };
 
         // Converts the quasinormal stopping condition to a string 
