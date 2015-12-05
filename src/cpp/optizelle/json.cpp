@@ -190,7 +190,7 @@ namespace Optizelle {
                 typename RestartPackage <Natural>::t & nats
             ) {
                 // Loop over all the names in the root
-                for(Json::ValueIterator itr=root[vs].begin();
+                for(Json::ValueConstIterator itr=root[vs].begin();
                     itr!=root[vs].end();
                     itr++
                 ){
@@ -209,7 +209,7 @@ namespace Optizelle {
                 typename RestartPackage <std::string>::t & params 
             ) {
                 // Loop over all the names in the root
-                for(Json::ValueIterator itr=root[vs].begin();
+                for(Json::ValueConstIterator itr=root[vs].begin();
                     itr!=root[vs].end();
                     itr++
                 ){
