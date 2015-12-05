@@ -649,6 +649,62 @@ namespace Optizelle{
                 return false;
         }
     }
+    
+    // Reasons why the quasinormal problem exited
+    namespace QuasinormalStop{
+
+        // Converts the quasinormal stopping condition to a string 
+        std::string to_string(t const & qn_stop) {
+            switch(qn_stop){
+            case Newton: 
+                return "Newton";
+            case CauchyTrustRegion: 
+                return "CauchyTrustRegion";
+            case CauchySafeguard: 
+                return "CauchySafeguard";
+            case DoglegTrustRegion: 
+                return "DoglegTrustRegion";
+            case DoglegSafeguard: 
+                return "DoglegSafeguard";
+            case Skipped: 
+                return "Skipped";
+            default:
+                throw;
+            }
+        }
+        
+        // Converts a string to a quasinormal stopping condition
+        t from_string(std::string const & qn_stop) {
+            if(qn_stop=="Newton")
+                return Newton; 
+            else if(qn_stop=="CauchyTrustRegion")
+                return CauchyTrustRegion;
+            else if(qn_stop=="CauchySafeguard")
+                return CauchySafeguard;
+            else if(qn_stop=="DoglegTrustRegion")
+                return DoglegTrustRegion;
+            else if(qn_stop=="DoglegSafeguard")
+                return DoglegSafeguard;
+            else if(qn_stop=="Skipped")
+                return Skipped;
+            else
+                throw;
+        }
+
+        // Checks whether or not a string is valid
+        bool is_valid(std::string const & name) {
+            if( name=="Newton" ||
+                name=="CauchyTrustRegion" ||
+                name=="CauchySafeguard" ||
+                name=="DoglegTrustRegion" ||
+                name=="DoglegSafeguard" ||
+                name=="Skipped"
+            )
+                return true;
+            else
+                return false;
+        }
+    }
 
     // Converts a variety of basic datatypes to strings
     std::ostream& Utility::formatReal(std::ostream & out) {
@@ -700,6 +756,26 @@ namespace Optizelle{
             return atos("InvldCnt");
         case KrylovStop::TooManyFailedSafeguard:
             return atos("Safeguard");
+        default:
+            throw;
+        }
+    }
+    std::string Utility::atos(QuasinormalStop::t const & x){
+        std::stringstream ss;
+        // Converts the quasinormal stopping condition to a shorter string 
+        switch(x){
+        case QuasinormalStop::Newton:
+            return atos("Newton");
+        case QuasinormalStop::CauchyTrustRegion:
+            return atos("CauchyTR");
+        case QuasinormalStop::CauchySafeguard:
+            return atos("CauchySafe");
+        case QuasinormalStop::DoglegTrustRegion:
+            return atos("DoglegTR");
+        case QuasinormalStop::DoglegSafeguard:
+            return atos("DoglegSafe");
+        case QuasinormalStop::Skipped:
+            return atos("Skipped");
         default:
             throw;
         }

@@ -596,9 +596,9 @@ namespace Optizelle {
 
     namespace ToleranceKind { 
         // Converts t to a Python enumerated type
-        PyObject * toPython(t const & dscheme) {
+        PyObject * toPython(t const & eps_kind) {
             // Do the conversion
-            switch(dscheme){
+            switch(eps_kind){
             case Relative:
                 return Python::enumToPyObject("ToleranceKind",
                     "Relative");
@@ -623,6 +623,68 @@ namespace Optizelle {
                 "Absolute")
             )
                 return Absolute;
+            else
+                throw;
+        }
+    }
+
+    namespace QuasinormalStop{ 
+        // Converts t to a Python enumerated type
+        PyObject * toPython(t const & qn_stop) {
+            // Do the conversion
+            switch(qn_stop){
+            case Newton:
+                return Python::enumToPyObject("QuasinormalStop",
+                    "Newton");
+            case CauchyTrustRegion:
+                return Python::enumToPyObject("QuasinormalStop",
+                    "CauchyTrustRegion");
+            case CauchySafeguard:
+                return Python::enumToPyObject("QuasinormalStop",
+                    "CauchySafeguard");
+            case DoglegTrustRegion:
+                return Python::enumToPyObject("QuasinormalStop",
+                    "DoglegTrustRegion");
+            case DoglegSafeguard:
+                return Python::enumToPyObject("QuasinormalStop",
+                    "DoglegSafeguard");
+            case Skipped:
+                return Python::enumToPyObject("QuasinormalStop",
+                    "Skipped");
+            default:
+                throw;
+            }
+        }
+
+        // Converts a Python enumerated type to t 
+        t fromPython(PyObject * const member) {
+            // Convert the member to a Natural 
+            Natural m=PyInt_AsSsize_t(member);
+
+            if(m==Python::enumToNatural("QuasinormalStop",
+                "Newton")
+            )
+                return Newton;
+            else if(m==Python::enumToNatural("QuasinormalStop",
+                "CauchyTrustRegion")
+            )
+                return CauchyTrustRegion;
+            else if(m==Python::enumToNatural("QuasinormalStop",
+                "CauchySafeguard")
+            )
+                return CauchySafeguard;
+            else if(m==Python::enumToNatural("QuasinormalStop",
+                "DoglegTrustRegion")
+            )
+                return DoglegTrustRegion;
+            else if(m==Python::enumToNatural("QuasinormalStop",
+                "DoglegSafeguard")
+            )
+                return DoglegSafeguard;
+            else if(m==Python::enumToNatural("QuasinormalStop",
+                "Skipped")
+            )
+                return Skipped;
             else
                 throw;
         }
@@ -2561,6 +2623,11 @@ namespace Optizelle {
                         VectorSpaceDiagnostics::toPython,
                         state.y_diag,
                         pystate);
+                    toPython::Param <QuasinormalStop::t> (
+                        "qn_stop",
+                        QuasinormalStop::toPython,
+                        state.qn_stop,
+                        pystate);
                 }
                 void toPython(
                     typename PyEqualityConstrained::State::t const & state,
@@ -2674,6 +2741,11 @@ namespace Optizelle {
                         VectorSpaceDiagnostics::fromPython,
                         pystate,
                         state.y_diag);
+                    fromPython::Param <QuasinormalStop::t> (
+                        "qn_stop",
+                        QuasinormalStop::fromPython,
+                        pystate,
+                        state.qn_stop);
                 }
                 void fromPython(
                     PyObject * const pystate,

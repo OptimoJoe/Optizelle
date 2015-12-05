@@ -550,6 +550,31 @@ namespace Optizelle{
         bool is_valid(std::string const & eps_rel);
     }
 
+    // Reasons why the quasinormal problem exited
+    namespace QuasinormalStop{
+        enum t{
+            //---QuasiNormalStop0---
+            Newton,                   // Obtained the full Newton point
+            CauchyTrustRegion,        // Cauchy point truncated by the
+                                      // trust-region
+            CauchySafeguard,          // Cauchy point truncated by the safeguard
+            DoglegTrustRegion,        // Dogleg point truncaed by the
+                                      // trust-region
+            DoglegSafeguard,          // Dogleg point truncated by the safeguard
+            Skipped                   // Skipped due to feasibility
+            //---QuasiNormalStop1---
+        };
+
+        // Converts the quasinormal stopping condition to a string 
+        std::string to_string(t const & qn_stop);
+        
+        // Converts a string to a quasinormal stopping condition
+        t from_string(std::string const & qn_stop);
+
+        // Checks whether or not a string is valid
+        bool is_valid(std::string const & name);
+    }
+
     // A collection of miscellaneous diagnostics that help determine errors.
     namespace Diagnostics {
         // Returns the smallest positive non-Nan number between the two. 
@@ -1738,6 +1763,7 @@ namespace Optizelle{
         std::string atos(Natural const & x);
         std::string atos(std::string const & x);
         std::string atos(KrylovStop::t const & x);
+        std::string atos(QuasinormalStop::t const & x);
 
         // Blank separator for printing
         std::string const blankSeparator = ".           ";
@@ -5771,6 +5797,9 @@ namespace Optizelle{
                 // Vector space diagnostics on Y 
                 VectorSpaceDiagnostics::t y_diag;
 
+                // Reason why the quasinormal problem exited
+                QuasinormalStop::t qn_stop;
+
                 // Initialization constructors
                 explicit t(X_Vector const & x_user,Y_Vector const & y_user) : 
                     Unconstrained <Real,XX>::State::t(x_user),
@@ -6061,6 +6090,11 @@ namespace Optizelle{
                         //---y_diag0---
                         VectorSpaceDiagnostics::NoDiagnostics
                         //---y_diag1---
+                    ),
+                    qn_stop(
+                        //---qn_stop0---
+                        QuasinormalStop::Skipped
+                        //---qn_stop1---
                     )
                 {
                         Y::copy(y_user,y);
@@ -6417,6 +6451,10 @@ namespace Optizelle{
                     //---y_diag_valid0---
                     // Any
                     //---y_diag_valid1---
+                    
+                    //---qn_stop_valid0---
+                    // Any
+                    //---qn_stop_valid1---
 
                 // If there's an error, print it
                 if(ss.str()!="") msg.error(ss.str());
@@ -6512,7 +6550,9 @@ namespace Optizelle{
                     (item.first=="g_diag" &&
                         FunctionDiagnostics::is_valid(item.second)) ||
                     (item.first=="y_diag" &&
-                        VectorSpaceDiagnostics::is_valid(item.second))
+                        VectorSpaceDiagnostics::is_valid(item.second)) ||
+                    (item.first=="qn_stop" &&
+                        QuasinormalStop::is_valid(item.second))
                 ) 
                     return true;
                 else
@@ -6682,6 +6722,8 @@ namespace Optizelle{
                     FunctionDiagnostics::to_string(state.g_diag));
                 params.emplace_back("y_diag",
                     VectorSpaceDiagnostics::to_string(state.y_diag));
+                params.emplace_back("qn_stop",
+                    QuasinormalStop::to_string(state.qn_stop));
             }
             
             // Copy in all equality multipliers 
@@ -6844,6 +6886,9 @@ namespace Optizelle{
                             item->second);
                     else if(item->first=="y_diag")
                         state.y_diag=VectorSpaceDiagnostics::from_string(
+                            item->second);
+                    else if(item->first=="qn_stop")
+                        state.qn_stop=QuasinormalStop::from_string(
                             item->second);
                 }
             }
@@ -7223,6 +7268,9 @@ namespace Optizelle{
                     out.emplace_back(Utility::atos("kry_iter"));
                     out.emplace_back(Utility::atos("kry_err"));
                     out.emplace_back(Utility::atos("kry_why"));
+
+                    // Quasinormal step information
+                    out.emplace_back(Utility::atos("qn_stop"));
                 }
 
                 // Even more detail
@@ -7292,6 +7340,7 @@ namespace Optizelle{
                 Real const & delta = state.delta;
                 Natural const & msg_level = state.msg_level;
                 auto const & algorithm_class = state.algorithm_class;
+                auto const & qn_stop = state.qn_stop;
 
                 auto const & dx_n = state.dx_n;
                 auto const & dx_t = state.dx_t;
@@ -7362,6 +7411,12 @@ namespace Optizelle{
                     } else 
                         for(Natural i=0;i<3;i++)
                             out.emplace_back(Utility::blankSeparator);
+
+                    // Quasinormal step information
+                    if(!opt_begin)
+                        out.emplace_back(Utility::atos(qn_stop));
+                    else 
+                        out.emplace_back(Utility::blankSeparator);
                 }
                 
                 // Even more detail
@@ -7802,6 +7857,7 @@ namespace Optizelle{
                 Natural & augsys_qn_iter_total = state.augsys_qn_iter_total;
                 Natural & augsys_iter_total = state.augsys_iter_total;
                 auto & alpha_x_qn = state.alpha_x_qn;
+                auto & qn_stop = state.qn_stop;
 
                 // If we're already feasible, don't even bother with the
                 // quasi-Newton step.  In fact, if g(x)=0, the equation for
@@ -7811,6 +7867,7 @@ namespace Optizelle{
                 if(norm_gx < eps_constr * absrel(norm_gxtyp)) {
                     X::zero(dx_ncp);
                     X::zero(dx_n);
+                    qn_stop = QuasinormalStop::Skipped;
                     return;
                 }
 
@@ -7847,6 +7904,9 @@ namespace Optizelle{
                 auto alpha_tr = zeta*delta/norm_dxncp;
                 auto alpha = std::min(alpha_tr,alpha_x_qn);
                 if(alpha < Real(1.0)) {
+                    qn_stop = alpha_tr <= alpha_x_qn ?
+                        QuasinormalStop::CauchyTrustRegion :
+                        QuasinormalStop::CauchySafeguard;
                     X::scal(alpha,dx_ncp);
                     X::copy(dx_ncp,dx_n);
                     return;
@@ -7900,7 +7960,10 @@ namespace Optizelle{
                 // If the dx_n is smaller than zeta delta and we don't have to
                 // safeguard, then return it as the quasi-normal step
                 Real norm_dxn = sqrt(X::innr(dx_n,dx_n));
-                if(norm_dxn <= zeta*delta && alpha_x_qn >= Real(1.))return;
+                if(norm_dxn <= zeta*delta && alpha_x_qn >= Real(1.)) {
+                    qn_stop = QuasinormalStop::Newton;
+                    return;
+                }
 
                 // Otherwise, compute the dogleg step.  In order to accomplish
                 // this, we need to find theta so that
@@ -7918,6 +7981,9 @@ namespace Optizelle{
                 alpha = std::min(theta,alpha_x_qn);
                 X::copy(dx_ncp,dx_n);
                 X::axpy(alpha,dx_dnewton,dx_n);
+                qn_stop = theta <= alpha_x_qn ?
+                    QuasinormalStop::DoglegTrustRegion :
+                    QuasinormalStop::DoglegSafeguard;
             }
             
             // Sets the tolerances for projecting 
@@ -8777,6 +8843,7 @@ namespace Optizelle{
                 Real const & eta2=state.eta2;
                 Real const & f_x=state.f_x;
                 KrylovStop::t const & krylov_stop=state.krylov_stop;
+                auto const & qn_stop = state.qn_stop;
                 Y_Vector & y=state.y;
                 Real & delta=state.delta;
                 Real & ared=state.ared;
@@ -8827,10 +8894,12 @@ namespace Optizelle{
                 // Update the trust region radius and return whether or not we
                 // accept the step
                 if(ared >= eta2*pred){
-                    // Increase the size of the trust-region if the Krylov
-                    // solver reached the boundary.
+                    // Increase the size of the trust-region if either the
+                    // tangential or quasinormal steps have reached the boundary
                     if( krylov_stop==KrylovStop::NegativeCurvature ||
-                        krylov_stop==KrylovStop::TrustRegionViolated
+                        krylov_stop==KrylovStop::TrustRegionViolated ||
+                        qn_stop==QuasinormalStop::CauchyTrustRegion ||
+                        qn_stop==QuasinormalStop::DoglegTrustRegion
                     ) 
                         delta *= Real(2.);
                     return true;

@@ -249,10 +249,14 @@ class t(Optizelle.Unconstrained.State.t):
         "g_diag",
         Optizelle.FunctionDiagnostics,
         "Function diagnostics on g")
-    z_diag = Optizelle.createEnumProperty(
-        "z_diag",
+    y_diag = Optizelle.createEnumProperty(
+        "y_diag",
         Optizelle.VectorSpaceDiagnostics,
-        "Vector space diagnostics on Z")
+        "Vector space diagnostics on Y")
+    qn_stop = Optizelle.createEnumProperty(
+        "qn_stop",
+        Optizelle.QuasinormalStop,
+        "Reason why the quasinormal problem exited")
 
 def checkT(name,value):
     """Check that we have a state"""
