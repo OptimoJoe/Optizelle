@@ -602,9 +602,9 @@ namespace Optizelle {
 
     namespace ToleranceKind { 
         // Converts t to a Matlab enumerated type
-        mxArray * toMatlab(t const & skind) {
+        mxArray * toMatlab(t const & eps_kind) {
             // Do the conversion
-            switch(skind){
+            switch(eps_kind){
             case Relative:
                 return Matlab::enumToMxArray("ToleranceKind",
                     "Relative");
@@ -629,6 +629,68 @@ namespace Optizelle {
                 "Absolute")
             )
                 return Absolute;
+            else
+                throw;
+        }
+    }
+
+    namespace QuasinormalStop{ 
+        // Converts t to a Matlab enumerated type
+        mxArray * toMatlab(t const & qn_stop) {
+            // Do the conversion
+            switch(qn_stop){
+            case Newton:
+                return Matlab::enumToMxArray("QuasinormalStop",
+                    "Newton");
+            case CauchyTrustRegion:
+                return Matlab::enumToMxArray("QuasinormalStop",
+                    "CauchyTrustRegion");
+            case CauchySafeguard:
+                return Matlab::enumToMxArray("QuasinormalStop",
+                    "CauchySafeguard");
+            case DoglegTrustRegion:
+                return Matlab::enumToMxArray("QuasinormalStop",
+                    "DoglegTrustRegion");
+            case DoglegSafeguard:
+                return Matlab::enumToMxArray("QuasinormalStop",
+                    "DoglegSafeguard");
+            case Skipped:
+                return Matlab::enumToMxArray("QuasinormalStop",
+                    "Skipped");
+            default:
+                throw;
+            }
+        }
+
+        // Converts a Matlab enumerated type to t 
+        t fromMatlab(mxArray * const member) {
+            // Convert the member to a Natural 
+            Natural m(*mxGetPr(member));
+
+            if(m==Matlab::enumToNatural("QuasinormalStop",
+                "Newton")
+            )
+                return Newton;
+            else if(m==Matlab::enumToNatural("QuasinormalStop",
+                "CauchyTrustRegion")
+            )
+                return CauchyTrustRegion;
+            else if(m==Matlab::enumToNatural("QuasinormalStop",
+                "CauchySafeguard")
+            )
+                return CauchySafeguard;
+            else if(m==Matlab::enumToNatural("QuasinormalStop",
+                "DoglegTrustRegion")
+            )
+                return DoglegTrustRegion;
+            else if(m==Matlab::enumToNatural("QuasinormalStop",
+                "DoglegSafeguard")
+            )
+                return DoglegSafeguard;
+            else if(m==Matlab::enumToNatural("QuasinormalStop",
+                "Skipped")
+            )
+                return Skipped;
             else
                 throw;
         }
@@ -2681,7 +2743,8 @@ namespace Optizelle {
                         "W_gradpHdxn",
                         "H_dxtuncorrected",
                         "g_diag",
-                        "y_diag"};
+                        "y_diag",
+                        "qn_stop"};
 
                     return std::move(names);
                 }
@@ -2806,6 +2869,11 @@ namespace Optizelle {
                         VectorSpaceDiagnostics::toMatlab,
                         state.y_diag,
                         mxstate);
+                    toMatlab::Param <QuasinormalStop::t> (
+                        "qn_stop",
+                        QuasinormalStop::toMatlab,
+                        state.qn_stop,
+                        mxstate);
                 }
                 void toMatlab(
                     typename MxEqualityConstrained::State::t const & state,
@@ -2919,6 +2987,11 @@ namespace Optizelle {
                         VectorSpaceDiagnostics::fromMatlab,
                         mxstate,
                         state.y_diag);
+                    fromMatlab::Param <QuasinormalStop::t> (
+                        "qn_stop",
+                        QuasinormalStop::fromMatlab,
+                        mxstate,
+                        state.qn_stop);
                 }
                 void fromMatlab(
                     mxArray * const mxstate,

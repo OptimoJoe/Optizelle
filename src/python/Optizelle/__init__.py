@@ -167,8 +167,18 @@ class DiagnosticScheme(EnumeratedType):
 class ToleranceKind(EnumeratedType):
     """Different kinds of stopping tolerances"""
     Relative, \
-    Absolute, \
+    Absolute \
     = range(2)
+
+class QuasinormalStop(EnumeratedType):
+    """Reasons why the quasinormal problem exited"""
+    Newton, \
+    CauchyTrustRegion, \
+    CauchySafeguard, \
+    DoglegTrustRegion, \
+    DoglegSafeguard, \
+    Skipped \
+    = range(6)
 
 def checkFloat(name,value):
     """Checks that an input is a floating-point number"""
