@@ -286,7 +286,7 @@ namespace Optizelle {
                 Json::StyledWriter writer;
 
                 // Loop over all the names in the root
-                for(Json::ValueIterator itr=root[vs].begin();
+                for(Json::ValueConstIterator itr=root[vs].begin();
                     itr!=root[vs].end();
                     itr++
                 ){
@@ -307,7 +307,7 @@ namespace Optizelle {
                 typename RestartPackage <Real>::t & reals
             ) {
                 // Loop over all the names in the root
-                for(Json::ValueIterator itr=root[vs].begin();
+                for(Json::ValueConstIterator itr=root[vs].begin();
                     itr!=root[vs].end();
                     itr++
                 ){
