@@ -4439,8 +4439,10 @@ namespace Optizelle{
                 // Allocate a little bit of work space
                 X_Vector x_tmp1(X::init(x));
 
-                // Allocate memory for the Cauchy point
-                X_Vector dx_cp(X::init(x));
+                // Allocate memory for the Cauchy point and truncated Newton
+                // points
+                auto dx_cp = X::init(x);
+                auto dx_n = X::init(x);
 
                 // Find -grad f(x)
                 X_Vector grad_step(X::init(x));
@@ -4454,56 +4456,106 @@ namespace Optizelle{
                 // Create the Hessian operator
                 HessianOperator H(fns,x);
 
+                // Manipulate the state if required
+                smanip.eval(fns,state,OptimizationLocation::BeforeGetStep);
+
+                // Set the trust-region center
+                X::zero(x_tmp1);
+
+                // Keep track of the residual errors
+                Real residual_err0(std::numeric_limits <Real>::quiet_NaN());
+                Real residual_err(std::numeric_limits <Real>::quiet_NaN());
+
+                // Create the simplified safeguard function
+                auto simplified_safeguard =
+                    SafeguardSimplified <Real,XX>(std::bind(
+                        safeguard,
+                        std::placeholders::_1,
+                        std::placeholders::_2,
+                        Real(1.)));
+
+                // Find the trial step 
+                truncated_cg(
+                    H,
+                    minus_grad,
+                    PH,
+                    eps_krylov,
+                    krylov_iter_max,
+                    krylov_orthog_max,
+                    delta,
+                    x_tmp1,
+                    false,
+                    failed_safeguard_max,
+                    simplified_safeguard,
+                    dx_n,
+                    dx_cp,
+                    residual_err0,
+                    residual_err,
+                    krylov_iter,
+                    krylov_stop,
+                    failed_safeguard,
+                    alpha_x);
+
+                // Calculate the Krylov error
+                krylov_rel_err = residual_err / residual_err0;
+                krylov_iter_total += krylov_iter;
+
+                // Keep track of the number of failed safeguard steps
+                failed_safeguard_total+=failed_safeguard;
+
+                // Find the Newton shift, dx_dnewton = dx_newton-dx_cp.  We
+                // use this in the dogleg computation if required.
+                auto dx_dnewton = X::init(x);
+                X::copy(dx_n,dx_dnewton);
+                X::axpy(Real(-1.),dx_cp,dx_dnewton);
+                
+                // Find || dx_cp|| and || dx_n ||.  We use this in the dogleg
+                // computation if required.
+                auto norm_dxcp = std::sqrt(X::innr(dx_cp,dx_cp));
+                auto norm_dxn = std::sqrt(X::innr(dx_n,dx_n));
+
                 // Continue to look for a step until one comes back as valid
                 for(rejected_trustregion=0;
                     true; 
                 ) {
-                    // Manipulate the state if required
-                    smanip.eval(fns,state,OptimizationLocation::BeforeGetStep);
 
-                    // Set the trust-region center
-                    X::zero(x_tmp1);
-
-                    // Keep track of the residual errors
-                    Real residual_err0(std::numeric_limits <Real>::quiet_NaN());
-                    Real residual_err(std::numeric_limits <Real>::quiet_NaN());
-
-                    // Create the simplified safeguard function
-                    auto simplified_safeguard =
-                        SafeguardSimplified <Real,XX>(std::bind(
-                            safeguard,
-                            std::placeholders::_1,
-                            std::placeholders::_2,
-                            Real(1.)));
-
-                    // Find the trial step 
-                    truncated_cg(
-                        H,
-                        minus_grad,
-                        PH,
-                        eps_krylov,
-                        krylov_iter_max,
-                        krylov_orthog_max,
-                        delta,
-                        x_tmp1,
-                        false,
-                        failed_safeguard_max,
-                        simplified_safeguard,
-                        dx,
-                        dx_cp,
-                        residual_err0,
-                        residual_err,
-                        krylov_iter,
-                        krylov_stop,
-                        failed_safeguard,
-                        alpha_x);
-
-                    // Calculate the Krylov error
-                    krylov_rel_err = residual_err / residual_err0;
-                    krylov_iter_total += krylov_iter;
-
-                    // Keep track of the number of failed safeguard steps
-                    failed_safeguard_total+=failed_safeguard;
+                    // Compute the dogleg step.  There are three cases
+                    //
+                    // 1.  || dx_cp || >= delta
+                    //
+                    //     Here, we set
+                    //
+                    //     dx = (delta / || dx_cp || ) dx_np
+                    //
+                    // 2.  || dx_n || <= delta
+                    //
+                    //     Here, we set
+                    //
+                    //     dx = dx_n
+                    //
+                    // 3.  || dx_n || > delta > || dx_cp ||
+                    //
+                    //     Here, we find theta such that 
+                    //
+                    //     || dx_cp + theta dx_dnewton || = delta
+                    //
+                    //     and then set
+                    //
+                    //     dx = dx_ncp + theta dx_dnewton
+                    if(norm_dxcp >= delta) {
+                        X::copy(dx_cp,dx);
+                        X::scal(delta/norm_dxcp,dx);
+                    } else if(norm_dxn <= delta) {
+                        X::copy(dx_n,dx);
+                    } else {
+                        auto aa = X::innr(dx_dnewton,dx_dnewton);
+                        auto bb = Real(2.) * X::innr(dx_dnewton,dx_cp);
+                        auto cc = norm_dxcp*norm_dxcp - delta*delta;
+                        auto roots = quad_equation(aa,bb,cc);
+                        auto theta = roots[0] > roots[1] ? roots[0] : roots[1];
+                        X::copy(dx_cp,dx);
+                        X::axpy(theta,dx_dnewton,dx);
+                    }
 
                     // Manipulate the state if required
                     smanip.eval(fns,state,
@@ -4529,7 +4581,7 @@ namespace Optizelle{
 
                     // Alternatively, check if the step becomes so small
                     // that we're not making progress or if we have a step
-                    // with Nans in it.  In this case, break and allow the
+                    // with nans in it.  In this case, break and allow the
                     // stopping conditions to terminate optimization.  We use a
                     // zero length step so that we do not modify the current
                     // iterate.
@@ -4538,14 +4590,14 @@ namespace Optizelle{
                         X::zero(dx);
                         break;
                     }
-                } 
+                }
                 
                 // Set line-search parameters in such a way that they are
                 // consistent to what just happened in the trust-region
                 // method.  This helps keep this consistent if we ever switch
                 // to a line-search method.
                 alpha = Real(1.);
-                alpha0 = delta/Real(2.);
+                alpha0 = delta;
             }
         
             // Steepest descent search direction
