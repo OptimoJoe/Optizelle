@@ -90,34 +90,37 @@ namespace Optizelle {
         }
     }
     
-    namespace KrylovStop { 
+    namespace TruncatedStop { 
         // Converts t to a Python enumerated type
-        PyObject * toPython(t const & krylov_stop) {
+        PyObject * toPython(t const & trunc_stop) {
             // Do the conversion
-            switch(krylov_stop){
+            switch(trunc_stop){
             case NotConverged:
-                return Python::enumToPyObject("KrylovStop","NotConverged");
+                return Python::enumToPyObject(
+                    "TruncatedStop","NotConverged");
             case NegativeCurvature:
-                return Python::enumToPyObject("KrylovStop","NegativeCurvature");
+                return Python::enumToPyObject(
+                    "TruncatedStop","NegativeCurvature");
             case RelativeErrorSmall:
                 return Python::enumToPyObject(
-                    "KrylovStop","RelativeErrorSmall");
+                    "TruncatedStop","RelativeErrorSmall");
             case MaxItersExceeded:
-                return Python::enumToPyObject("KrylovStop","MaxItersExceeded");
+                return Python::enumToPyObject(
+                    "TruncatedStop","MaxItersExceeded");
             case TrustRegionViolated:
                 return Python::enumToPyObject(
-                    "KrylovStop","TrustRegionViolated");
+                    "TruncatedStop","TrustRegionViolated");
             case NanDetected:
-                return Python::enumToPyObject("KrylovStop","NanDetected");
+                return Python::enumToPyObject("TruncatedStop","NanDetected");
             case LossOfOrthogonality:
                 return Python::enumToPyObject(
-                    "KrylovStop","LossOfOrthogonality");
+                    "TruncatedStop","LossOfOrthogonality");
             case InvalidTrustRegionOffset:
                 return Python::enumToPyObject(
-                    "KrylovStop","InvalidTrustRegionOffset");
+                    "TruncatedStop","InvalidTrustRegionOffset");
             case TooManyFailedSafeguard:
                 return Python::enumToPyObject(
-                    "KrylovStop","TooManyFailedSafeguard");
+                    "TruncatedStop","TooManyFailedSafeguard");
             default:
                 throw;
             }
@@ -128,30 +131,36 @@ namespace Optizelle {
             // Convert the member to a Natural 
             Natural m=PyInt_AsSsize_t(member);
 
-            if(m==Python::enumToNatural("KrylovStop","NotConverged"))
+            if(m==Python::enumToNatural("TruncatedStop","NotConverged"))
                 return NotConverged;
-            else if(m==Python::enumToNatural("KrylovStop","NegativeCurvature"))
+            else if(m==Python::enumToNatural(
+                "TruncatedStop","NegativeCurvature")
+            )
                 return NegativeCurvature;
-            else if(m==Python::enumToNatural("KrylovStop","RelativeErrorSmall"))
+            else if(m==Python::enumToNatural(
+                "TruncatedStop","RelativeErrorSmall")
+            )
                 return RelativeErrorSmall;
-            else if(m==Python::enumToNatural("KrylovStop","MaxItersExceeded"))
+            else if(m==Python::enumToNatural(
+                "TruncatedStop","MaxItersExceeded")
+            )
                 return MaxItersExceeded;
             else if(m==Python::enumToNatural(
-                "KrylovStop","TrustRegionViolated")
+                "TruncatedStop","TrustRegionViolated")
             )
                 return TrustRegionViolated;
-            else if(m==Python::enumToNatural("KrylovStop","NanDetected"))
+            else if(m==Python::enumToNatural("TruncatedStop","NanDetected"))
                 return NanDetected;
             else if(m==Python::enumToNatural(
-                "KrylovStop","LossOfOrthogonality")
+                "TruncatedStop","LossOfOrthogonality")
             )
                 return LossOfOrthogonality;
             else if(m==Python::enumToNatural(
-                "KrylovStop","InvalidTrustRegionOffset")
+                "TruncatedStop","InvalidTrustRegionOffset")
             )
                 return InvalidTrustRegionOffset;
             else if(m==Python::enumToNatural(
-                "KrylovStop","TooManyFailedSafeguard")
+                "TruncatedStop","TooManyFailedSafeguard")
             )
                 return TooManyFailedSafeguard;
             else
@@ -392,9 +401,6 @@ namespace Optizelle {
             case BeforeActualVersusPredicted:
                 return Python::enumToPyObject(
                     "OptimizationLocation","BeforeActualVersusPredicted");
-            case EndOfKrylovIteration:
-                return Python::enumToPyObject(
-                    "OptimizationLocation","EndOfKrylovIteration");
             case EndOfOptimization:
                 return Python::enumToPyObject(
                     "OptimizationLocation","EndOfOptimization");
@@ -465,9 +471,6 @@ namespace Optizelle {
             else if(m==Python::enumToNatural(
                 "OptimizationLocation","BeforeActualVersusPredicted"))
                 return BeforeActualVersusPredicted;
-            else if(m==Python::enumToNatural(
-                "OptimizationLocation","EndOfKrylovIteration"))
-                return EndOfKrylovIteration;
             else if(m==Python::enumToNatural(
                 "OptimizationLocation","EndOfOptimization"))
                 return EndOfOptimization;
@@ -1885,21 +1888,21 @@ namespace Optizelle {
                         StoppingCondition::toPython,
                         state.opt_stop,
                         pystate);
-                    toPython::Natural("krylov_iter",state.krylov_iter,pystate);
-                    toPython::Natural("krylov_iter_max",
-                        state.krylov_iter_max,pystate);
-                    toPython::Natural("krylov_iter_total",
-                        state.krylov_iter_total,pystate);
-                    toPython::Natural("krylov_orthog_max",
-                        state.krylov_orthog_max,pystate);
-                    toPython::Param <KrylovStop::t> (
-                        "krylov_stop",
-                        KrylovStop::toPython,
-                        state.krylov_stop,
+                    toPython::Natural("trunc_iter",state.trunc_iter,pystate);
+                    toPython::Natural("trunc_iter_max",
+                        state.trunc_iter_max,pystate);
+                    toPython::Natural("trunc_iter_total",
+                        state.trunc_iter_total,pystate);
+                    toPython::Natural("trunc_orthog_max",
+                        state.trunc_orthog_max,pystate);
+                    toPython::Param <TruncatedStop::t> (
+                        "trunc_stop",
+                        TruncatedStop::toPython,
+                        state.trunc_stop,
                         pystate);
-                    toPython::Real("krylov_rel_err",
-                        state.krylov_rel_err,pystate);
-                    toPython::Real("eps_krylov",state.eps_krylov,pystate);
+                    toPython::Real("trunc_err",
+                        state.trunc_err,pystate);
+                    toPython::Real("eps_trunc",state.eps_trunc,pystate);
                     toPython::Param <AlgorithmClass::t> (
                         "algorithm_class",
                         AlgorithmClass::toPython,
@@ -2015,22 +2018,22 @@ namespace Optizelle {
                         StoppingCondition::fromPython,
                         pystate,
                         state.opt_stop);
-                    fromPython::Natural("krylov_iter",
-                        pystate,state.krylov_iter);
-                    fromPython::Natural("krylov_iter_max",
-                        pystate,state.krylov_iter_max);
-                    fromPython::Natural("krylov_iter_total",
-                        pystate,state.krylov_iter_total);
-                    fromPython::Natural("krylov_orthog_max",
-                        pystate,state.krylov_orthog_max);
-                    fromPython::Param <KrylovStop::t> (
-                        "krylov_stop",
-                        KrylovStop::fromPython,
+                    fromPython::Natural("trunc_iter",
+                        pystate,state.trunc_iter);
+                    fromPython::Natural("trunc_iter_max",
+                        pystate,state.trunc_iter_max);
+                    fromPython::Natural("trunc_iter_total",
+                        pystate,state.trunc_iter_total);
+                    fromPython::Natural("trunc_orthog_max",
+                        pystate,state.trunc_orthog_max);
+                    fromPython::Param <TruncatedStop::t> (
+                        "trunc_stop",
+                        TruncatedStop::fromPython,
                         pystate,
-                        state.krylov_stop);
-                    fromPython::Real("krylov_rel_err",
-                        pystate,state.krylov_rel_err);
-                    fromPython::Real("eps_krylov",pystate,state.eps_krylov);
+                        state.trunc_stop);
+                    fromPython::Real("trunc_err",
+                        pystate,state.trunc_err);
+                    fromPython::Real("eps_trunc",pystate,state.eps_trunc);
                     fromPython::Param <AlgorithmClass::t> (
                         "algorithm_class",
                         AlgorithmClass::fromPython,

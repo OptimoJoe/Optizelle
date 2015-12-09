@@ -3,9 +3,9 @@
       "msg_level" : 1,
       "H_type" : "UserDefined",
       "iter_max" : 200,
-      "krylov_iter_max" : 200,
-      "krylov_orthog_max" : 200,
-      "eps_krylov" : 1e-8,
+      "trunc_iter_max" : 200,
+      "trunc_orthog_max" : 200,
+      "eps_trunc" : 1e-8,
       "eps_dx" : 1e-15,
       "delta" : 1e50,
       "PH_type" : "UserDefined"

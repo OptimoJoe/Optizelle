@@ -14,7 +14,7 @@ __all__ = [
     "Constrained",
     "Utility"
 
-    "KrylovStop",
+    "TruncatedStop",
     "AlgorithmClass",
     "StoppingCondition",
     "Operators",
@@ -22,7 +22,6 @@ __all__ = [
     "LineSearchKind",
     "OptimizationLocation",
     "ProblemClass",
-    "KrylovSolverTruncated",
     "FunctionDiagnostics",
     "DiagnosticScheme",
 
@@ -51,8 +50,8 @@ class EnumeratedType(object):
         return filter(lambda (name,value):value==i,
             cls.__dict__.items())[0][0]
         
-class KrylovStop(EnumeratedType):
-    """Reasons we stop the Krylov method"""
+class TruncatedStop(EnumeratedType):
+    """Reasons we stop truncated CG"""
     NotConverged, \
     NegativeCurvature, \
     RelativeErrorSmall, \
@@ -131,9 +130,8 @@ class OptimizationLocation(EnumeratedType):
     AfterRejectedTrustRegion, \
     AfterRejectedLineSearch, \
     BeforeActualVersusPredicted, \
-    EndOfKrylovIteration, \
     EndOfOptimization \
-    = range(21)
+    = range(20)
 
 class ProblemClass(EnumeratedType):
     """Different problem classes"""

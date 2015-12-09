@@ -5,7 +5,7 @@
       "H_type" : "UserDefined",
       "dir" : "SteepestDescent",
       "iter_max" : 200,
-      "eps_krylov" : 1e-12,
+      "eps_trunc" : 1e-12,
       "eps_dx" : 1e-16,
       "eps_mu" : 1e-5,
       "eps_grad" : 1e-5

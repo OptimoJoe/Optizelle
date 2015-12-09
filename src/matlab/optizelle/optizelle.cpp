@@ -96,34 +96,37 @@ namespace Optizelle {
         }
     }
     
-    namespace KrylovStop { 
+    namespace TruncatedStop { 
         // Converts t to a Matlab enumerated type
-        mxArray * toMatlab(t const & krylov_stop) {
+        mxArray * toMatlab(t const & trunc_stop) {
             // Do the conversion
-            switch(krylov_stop){
+            switch(trunc_stop){
             case NotConverged:
-                return Matlab::enumToMxArray("KrylovStop","NotConverged");
+                return Matlab::enumToMxArray(
+                    "TruncatedStop","NotConverged");
             case NegativeCurvature:
-                return Matlab::enumToMxArray("KrylovStop","NegativeCurvature");
+                return Matlab::enumToMxArray(
+                    "TruncatedStop","NegativeCurvature");
             case RelativeErrorSmall:
                 return Matlab::enumToMxArray(
-                    "KrylovStop","RelativeErrorSmall");
+                    "TruncatedStop","RelativeErrorSmall");
             case MaxItersExceeded:
-                return Matlab::enumToMxArray("KrylovStop","MaxItersExceeded");
+                return Matlab::enumToMxArray(
+                    "TruncatedStop","MaxItersExceeded");
             case TrustRegionViolated:
                 return Matlab::enumToMxArray(
-                    "KrylovStop","TrustRegionViolated");
+                    "TruncatedStop","TrustRegionViolated");
             case NanDetected:
-                return Matlab::enumToMxArray("KrylovStop","NanDetected");
+                return Matlab::enumToMxArray("TruncatedStop","NanDetected");
             case LossOfOrthogonality:
                 return Matlab::enumToMxArray(
-                    "KrylovStop","LossOfOrthogonality");
+                    "TruncatedStop","LossOfOrthogonality");
             case InvalidTrustRegionOffset:
                 return Matlab::enumToMxArray(
-                    "KrylovStop","InvalidTrustRegionOffset");
+                    "TruncatedStop","InvalidTrustRegionOffset");
             case TooManyFailedSafeguard:
                 return Matlab::enumToMxArray(
-                    "KrylovStop","TooManyFailedSafeguard");
+                    "TruncatedStop","TooManyFailedSafeguard");
             default:
                 throw;
             }
@@ -134,30 +137,36 @@ namespace Optizelle {
             // Convert the member to a Natural 
             Natural m(*mxGetPr(member));
 
-            if(m==Matlab::enumToNatural("KrylovStop","NotConverged"))
+            if(m==Matlab::enumToNatural("TruncatedStop","NotConverged"))
                 return NotConverged;
-            else if(m==Matlab::enumToNatural("KrylovStop","NegativeCurvature"))
+            else if(m==Matlab::enumToNatural(
+                "TruncatedStop","NegativeCurvature")
+            )
                 return NegativeCurvature;
-            else if(m==Matlab::enumToNatural("KrylovStop","RelativeErrorSmall"))
+            else if(m==Matlab::enumToNatural(
+                "TruncatedStop","RelativeErrorSmall")
+            )
                 return RelativeErrorSmall;
-            else if(m==Matlab::enumToNatural("KrylovStop","MaxItersExceeded"))
+            else if(m==Matlab::enumToNatural(
+                "TruncatedStop","MaxItersExceeded")
+            )
                 return MaxItersExceeded;
             else if(m==Matlab::enumToNatural(
-                "KrylovStop","TrustRegionViolated")
+                "TruncatedStop","TrustRegionViolated")
             )
                 return TrustRegionViolated;
-            else if(m==Matlab::enumToNatural("KrylovStop","NanDetected"))
+            else if(m==Matlab::enumToNatural("TruncatedStop","NanDetected"))
                 return NanDetected;
             else if(m==Matlab::enumToNatural(
-                "KrylovStop","LossOfOrthogonality")
+                "TruncatedStop","LossOfOrthogonality")
             )
                 return LossOfOrthogonality;
             else if(m==Matlab::enumToNatural(
-                "KrylovStop","InvalidTrustRegionOffset")
+                "TruncatedStop","InvalidTrustRegionOffset")
             )
                 return InvalidTrustRegionOffset;
             else if(m==Matlab::enumToNatural(
-                "KrylovStop","TooManyFailedSafeguard")
+                "TruncatedStop","TooManyFailedSafeguard")
             )
                 return TooManyFailedSafeguard;
             else
@@ -398,9 +407,6 @@ namespace Optizelle {
             case BeforeActualVersusPredicted:
                 return Matlab::enumToMxArray(
                     "OptimizationLocation","BeforeActualVersusPredicted");
-            case EndOfKrylovIteration:
-                return Matlab::enumToMxArray(
-                    "OptimizationLocation","EndOfKrylovIteration");
             case EndOfOptimization:
                 return Matlab::enumToMxArray(
                     "OptimizationLocation","EndOfOptimization");
@@ -471,9 +477,6 @@ namespace Optizelle {
             else if(m==Matlab::enumToNatural(
                 "OptimizationLocation","BeforeActualVersusPredicted"))
                 return BeforeActualVersusPredicted;
-            else if(m==Matlab::enumToNatural(
-                "OptimizationLocation","EndOfKrylovIteration"))
-                return EndOfKrylovIteration;
             else if(m==Matlab::enumToNatural(
                 "OptimizationLocation","EndOfOptimization"))
                 return EndOfOptimization;
@@ -1911,13 +1914,13 @@ namespace Optizelle {
                         "iter",
                         "iter_max",
                         "opt_stop",
-                        "krylov_iter",
-                        "krylov_iter_max",
-                        "krylov_iter_total",
-                        "krylov_orthog_max",
-                        "krylov_stop",
-                        "krylov_rel_err",
-                        "eps_krylov",
+                        "trunc_iter",
+                        "trunc_iter_max",
+                        "trunc_iter_total",
+                        "trunc_orthog_max",
+                        "trunc_stop",
+                        "trunc_err",
+                        "eps_trunc",
                         "algorithm_class",
                         "PH_type",
                         "H_type",
@@ -1992,21 +1995,21 @@ namespace Optizelle {
                         StoppingCondition::toMatlab,
                         state.opt_stop,
                         mxstate);
-                    toMatlab::Natural("krylov_iter",state.krylov_iter,mxstate);
-                    toMatlab::Natural("krylov_iter_max",
-                        state.krylov_iter_max,mxstate);
-                    toMatlab::Natural("krylov_iter_total",
-                        state.krylov_iter_total,mxstate);
-                    toMatlab::Natural("krylov_orthog_max",
-                        state.krylov_orthog_max,mxstate);
-                    toMatlab::Param <KrylovStop::t> (
-                        "krylov_stop",
-                        KrylovStop::toMatlab,
-                        state.krylov_stop,
+                    toMatlab::Natural("trunc_iter",state.trunc_iter,mxstate);
+                    toMatlab::Natural("trunc_iter_max",
+                        state.trunc_iter_max,mxstate);
+                    toMatlab::Natural("trunc_iter_total",
+                        state.trunc_iter_total,mxstate);
+                    toMatlab::Natural("trunc_orthog_max",
+                        state.trunc_orthog_max,mxstate);
+                    toMatlab::Param <TruncatedStop::t> (
+                        "trunc_stop",
+                        TruncatedStop::toMatlab,
+                        state.trunc_stop,
                         mxstate);
-                    toMatlab::Real("krylov_rel_err",
-                        state.krylov_rel_err,mxstate);
-                    toMatlab::Real("eps_krylov",state.eps_krylov,mxstate);
+                    toMatlab::Real("trunc_err",
+                        state.trunc_err,mxstate);
+                    toMatlab::Real("eps_trunc",state.eps_trunc,mxstate);
                     toMatlab::Param <AlgorithmClass::t> (
                         "algorithm_class",
                         AlgorithmClass::toMatlab,
@@ -2122,22 +2125,22 @@ namespace Optizelle {
                         StoppingCondition::fromMatlab,
                         mxstate,
                         state.opt_stop);
-                    fromMatlab::Natural("krylov_iter",
-                        mxstate,state.krylov_iter);
-                    fromMatlab::Natural("krylov_iter_max",
-                        mxstate,state.krylov_iter_max);
-                    fromMatlab::Natural("krylov_iter_total",
-                        mxstate,state.krylov_iter_total);
-                    fromMatlab::Natural("krylov_orthog_max",
-                        mxstate,state.krylov_orthog_max);
-                    fromMatlab::Param <KrylovStop::t> (
-                        "krylov_stop",
-                        KrylovStop::fromMatlab,
+                    fromMatlab::Natural("trunc_iter",
+                        mxstate,state.trunc_iter);
+                    fromMatlab::Natural("trunc_iter_max",
+                        mxstate,state.trunc_iter_max);
+                    fromMatlab::Natural("trunc_iter_total",
+                        mxstate,state.trunc_iter_total);
+                    fromMatlab::Natural("trunc_orthog_max",
+                        mxstate,state.trunc_orthog_max);
+                    fromMatlab::Param <TruncatedStop::t> (
+                        "trunc_stop",
+                        TruncatedStop::fromMatlab,
                         mxstate,
-                        state.krylov_stop);
-                    fromMatlab::Real("krylov_rel_err",
-                        mxstate,state.krylov_rel_err);
-                    fromMatlab::Real("eps_krylov",mxstate,state.eps_krylov);
+                        state.trunc_stop);
+                    fromMatlab::Real("trunc_err",
+                        mxstate,state.trunc_err);
+                    fromMatlab::Real("eps_trunc",mxstate,state.eps_trunc);
                     fromMatlab::Param <AlgorithmClass::t> (
                         "algorithm_class",
                         AlgorithmClass::fromMatlab,

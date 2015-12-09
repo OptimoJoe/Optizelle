@@ -834,10 +834,10 @@ namespace Optizelle {
         return i-Natural(1);
     }
     
-    namespace KrylovStop{
-        // Converts the Krylov stopping condition to a string 
-        std::string to_string(t const & krylov_stop){
-            switch(krylov_stop){
+    namespace TruncatedStop{
+        // Converts the truncated CG stopping condition to a string 
+        std::string to_string(t const & trunc_stop){
+            switch(trunc_stop){
             case NotConverged:
                 return "NotConverged";
             case NegativeCurvature:
@@ -861,25 +861,25 @@ namespace Optizelle {
             }
         }
         
-        // Converts a string to a Krylov stopping condition
-        t from_string(std::string const & krylov_stop){
-            if(krylov_stop=="NotConverged")
+        // Converts a string to a truncated CG stopping condition
+        t from_string(std::string const & trunc_stop){
+            if(trunc_stop=="NotConverged")
                 return NotConverged;
-            else if(krylov_stop=="NegativeCurvature")
+            else if(trunc_stop=="NegativeCurvature")
                 return NegativeCurvature;
-            else if(krylov_stop=="RelativeErrorSmall")
+            else if(trunc_stop=="RelativeErrorSmall")
                 return RelativeErrorSmall;
-            else if(krylov_stop=="MaxItersExceeded")
+            else if(trunc_stop=="MaxItersExceeded")
                 return MaxItersExceeded;
-            else if(krylov_stop=="TrustRegionViolated")
+            else if(trunc_stop=="TrustRegionViolated")
                 return TrustRegionViolated;
-            else if(krylov_stop=="NanDetected")
+            else if(trunc_stop=="NanDetected")
                 return NanDetected;
-            else if(krylov_stop=="LossOfOrthogonality")
+            else if(trunc_stop=="LossOfOrthogonality")
                 return LossOfOrthogonality;
-            else if(krylov_stop=="InvalidTrustRegionOffset")
+            else if(trunc_stop=="InvalidTrustRegionOffset")
                 return InvalidTrustRegionOffset;
-            else if(krylov_stop=="TooManyFailedSafeguard")
+            else if(trunc_stop=="TooManyFailedSafeguard")
                 return TooManyFailedSafeguard;
             else
                 throw;

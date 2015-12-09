@@ -1088,10 +1088,10 @@ namespace Optizelle {
             return std::vector <Real> ();
     }
 
-    // Reasons we stop the Krylov method
-    namespace KrylovStop{
+    // Reasons we stop truncated CG 
+    namespace TruncatedStop{
         enum t{
-            //---KrylovStop0---
+            //---TruncatedStop0---
             NotConverged,             // Algorithm has not converged
             NegativeCurvature,        // Negative curvature detected
             RelativeErrorSmall,       // Relative error is small
@@ -1106,14 +1106,14 @@ namespace Optizelle {
                                       // that our starting solution of 0
                                       // violates the trust-region.
             TooManyFailedSafeguard    // Too many safeguarded steps have failed
-            //---KrylovStop1---
+            //---TruncatedStop1---
         };
 
         // Converts the Krylov stopping condition to a string 
-        std::string to_string(t const & krylov_stop);
+        std::string to_string(t const & trunc_stop);
         
         // Converts a string to a Krylov stopping condition
-        t from_string(std::string const & krylov_stop);
+        t from_string(std::string const & trunc_stop);
 
         // Checks whether or not a string is valid
         bool is_valid(std::string const & name);
@@ -1171,7 +1171,7 @@ namespace Optizelle {
     //     after a single iteration
     // (output) norm_Br : The norm ||B r|| of the final residual
     // (output) iter : The number of iterations required to converge.
-    // (output) krylov_stop : The reason why the Krylov method was terminated
+    // (output) stop : The reason why the method was terminated
     // (output) failed_safeguard : Number of failed safeguard steps upon exiting
     // (output) alpha_safeguard : Amount we truncated the last iteration
     template <
@@ -1195,7 +1195,7 @@ namespace Optizelle {
         Real & norm_Br0,
         Real & norm_Br,
         Natural & iter,
-        KrylovStop::t & krylov_stop,
+        TruncatedStop::t & stop,
         Natural & failed_safeguard,
         Real & alpha_safeguard
     ){
@@ -1205,7 +1205,7 @@ namespace Optizelle {
         typedef typename X::Vector X_Vector;
 
         // At the start, we haven't converged
-        krylov_stop = KrylovStop::NotConverged;
+        stop = TruncatedStop::NotConverged;
 
         // We also haven't truncated anything at the start
         alpha_safeguard = Real(1.0);
@@ -1267,7 +1267,7 @@ namespace Optizelle {
         if(norm_shifted_iterate > delta) {
             X::zero(x_cp);
             iter=0;
-            krylov_stop = KrylovStop::InvalidTrustRegionOffset;
+            stop = TruncatedStop::InvalidTrustRegionOffset;
             return;
         }
         
@@ -1318,7 +1318,7 @@ namespace Optizelle {
 
         // Loop until we converge (or don't)
         iter = 1;
-        while(krylov_stop == KrylovStop::NotConverged) {
+        while(stop == TruncatedStop::NotConverged) {
 
             // Find the ABdx application
             A.eval(Bdx,ABdx);
@@ -1342,19 +1342,19 @@ namespace Optizelle {
             // two by finding the norm of our operator A applied to the step,
             // but I don't think that information matters at the moment.
             if(Anorm_Bdx_2!=Anorm_Bdx_2)
-                krylov_stop = KrylovStop::NanDetected;
+                stop = TruncatedStop::NanDetected;
 
             // Check for negative curvature, when || Bdx ||_A^2 <= 0.  Note,
             // this also encapsulates zero curvature, which is also bad.
-            if(Anorm_Bdx_2 <= Real(0.)&& krylov_stop ==KrylovStop::NotConverged)
-                krylov_stop = KrylovStop::NegativeCurvature;
+            if(Anorm_Bdx_2 <= Real(0.)&& stop ==TruncatedStop::NotConverged)
+                stop = TruncatedStop::NegativeCurvature;
 
             // Allocate memory for the line-search to the trust-region bound 
             Real alpha(std::numeric_limits<Real>::quiet_NaN());
 
             // We only compute the following when we have not detected some
             // kind of exiting condition
-            if(krylov_stop == KrylovStop::NotConverged) {
+            if(stop == TruncatedStop::NotConverged) {
 
                 // Check if we need to eliminate any vectors for
                 // orthogonalization
@@ -1390,7 +1390,7 @@ namespace Optizelle {
 
                 // Check if we've met or exceeded the trust-region radius
                 if(norm_shifted_trial >= delta)
-                    krylov_stop = KrylovStop::TrustRegionViolated;
+                    stop = TruncatedStop::TrustRegionViolated;
 
                 // Do our orthogonality check work when requested 
                 if(do_orthog_check) {
@@ -1478,7 +1478,7 @@ namespace Optizelle {
 
                     // Check if we have lost orthogonality 
                     if(norm_O > eps_orthog)
-                        krylov_stop = KrylovStop::LossOfOrthogonality;
+                        stop = TruncatedStop::LossOfOrthogonality;
                 }
             }
 
@@ -1487,8 +1487,8 @@ namespace Optizelle {
             // orthogonality.  In these cases, we set our saved trial steps
             // to zero.
             if( failed_safeguard==0 ) {
-                if( krylov_stop != KrylovStop::NanDetected && 
-                    krylov_stop != KrylovStop::LossOfOrthogonality
+                if( stop != TruncatedStop::NanDetected && 
+                    stop != TruncatedStop::LossOfOrthogonality
                 ) {
                     X::copy(Bdx,Bdx_safe);
                     X::scal(alpha,Bdx_safe);
@@ -1501,15 +1501,15 @@ namespace Optizelle {
             }
 
             // If we detect any kind of exit condition, resolve it here
-            if( krylov_stop != KrylovStop::NotConverged ) {
-                switch(krylov_stop) {
+            if( stop != TruncatedStop::NotConverged ) {
+                switch(stop) {
 
                 // These are cases should not be able to occur here 
-                case KrylovStop::NotConverged:
-                case KrylovStop::MaxItersExceeded:
-                case KrylovStop::InvalidTrustRegionOffset:
-                case KrylovStop::RelativeErrorSmall:
-                case KrylovStop::TooManyFailedSafeguard:
+                case TruncatedStop::NotConverged:
+                case TruncatedStop::MaxItersExceeded:
+                case TruncatedStop::InvalidTrustRegionOffset:
+                case TruncatedStop::RelativeErrorSmall:
+                case TruncatedStop::TooManyFailedSafeguard:
                     throw;
 
                 // When we have negative curvature or have hit the trust-region
@@ -1517,8 +1517,8 @@ namespace Optizelle {
                 // exists.  Otherwise, we retreat to the last step.  In the
                 // case we're on iteration 1, we use the steepest descent
                 // direction.
-                case KrylovStop::TrustRegionViolated:
-                case KrylovStop::NegativeCurvature: {
+                case TruncatedStop::TrustRegionViolated:
+                case TruncatedStop::NegativeCurvature: {
                     // Amount that we cut back the step
                     auto sigma = Real(0.);
 
@@ -1580,8 +1580,8 @@ namespace Optizelle {
                 // When we find a NaN, we can't really trust our step.
                 // Alternatively, when we lose orthogonality, we can't really
                 // trust anything either.
-                } case KrylovStop::NanDetected:
-                case KrylovStop::LossOfOrthogonality:
+                } case TruncatedStop::NanDetected:
+                case TruncatedStop::LossOfOrthogonality:
                     break;
                 }
 
@@ -1627,16 +1627,16 @@ namespace Optizelle {
 
             // If we have too many failed safeguard steps, exit
             if(failed_safeguard >= failed_safeguard_max)
-                krylov_stop = KrylovStop::TooManyFailedSafeguard;
+                stop = TruncatedStop::TooManyFailedSafeguard;
         
             // If the norm of the residual is small relative to the starting
             // residual, exit
             else if(norm_Br <= eps*norm_Br0)
-                krylov_stop = KrylovStop::RelativeErrorSmall;
+                stop = TruncatedStop::RelativeErrorSmall;
 
             // If we've exceeded the maximum number of iterations, also exit
             else if(iter>=iter_max)
-                krylov_stop = KrylovStop::MaxItersExceeded;
+                stop = TruncatedStop::MaxItersExceeded;
 
             // Otherwise, increment our iteration and keep computing
             else

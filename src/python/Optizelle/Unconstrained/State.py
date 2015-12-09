@@ -60,30 +60,28 @@ class t(object):
         "opt_stop",
         Optizelle.StoppingCondition,
         "Why we've stopped the optimization")
-    krylov_iter = Optizelle.createNatProperty(
-        "krylov_iter",
-        "Current number of Krylov iterations taken")
-    krylov_iter_max = Optizelle.createNatProperty(
-        "krylov_iter_max",
-        "Maximum number of iterations in the Krylov method")
-    krylov_iter_total = Optizelle.createNatProperty(
-        "krylov_iter_total",
-        "Total number of Krylov iterations taken")
-    krylov_orthog_max = Optizelle.createNatProperty(
-        "krylov_orthog_max",
-        ("The maximum number of vectors we orthogonalize "
-        "against in the Krylov method.  For something like "
-        "CG, this is 1."))
-    krylov_stop = Optizelle.createEnumProperty(
-        "krylov_stop",
-        Optizelle.KrylovStop,
-        "Why the Krylov method was last stopped")
-    krylov_rel_err = Optizelle.createFloatProperty(
-        "krylov_rel_err",
-        "Relative error in the Krylov method")
-    eps_krylov = Optizelle.createFloatProperty(
-        "eps_krylov",
-        "Stopping tolerance for the Krylov method")
+    trunc_iter = Optizelle.createNatProperty(
+        "trunc_iter",
+        "Current number of truncated-CG iterations taken")
+    trunc_iter_max = Optizelle.createNatProperty(
+        "trunc_iter_max",
+        "Maximum number of iterations used by truncated CG")
+    trunc_iter_total = Optizelle.createNatProperty(
+        "trunc_iter_total",
+        "Total number of truncated-CG iterations taken")
+    trunc_orthog_max = Optizelle.createNatProperty(
+        "trunc_orthog_max",
+        "Maximum number of vectors we orthogonalize against in truncated CG")
+    trunc_stop = Optizelle.createEnumProperty(
+        "trunc_stop",
+        Optizelle.TruncatedStop,
+        "Why truncated CG was last stopped")
+    trunc_err = Optizelle.createFloatProperty(
+        "trunc_err",
+        "Relative error in truncated CG")
+    eps_trunc = Optizelle.createFloatProperty(
+        "eps_trunc",
+        "Stopping tolerance for truncated CG")
     algorithm_class = Optizelle.createEnumProperty(
         "algorithm_class",
         Optizelle.AlgorithmClass,

@@ -53,9 +53,9 @@ namespace Optizelle {
         t fromPython(PyObject * const member);
     }
 
-    namespace KrylovStop {
+    namespace TruncatedStop {
         // Converts t to a Python enumerated type
-        PyObject * toPython(t const & krylov_stop);
+        PyObject * toPython(t const & trunc_stop);
 
         // Converts a Python enumerated type to t 
         t fromPython(PyObject * const member);

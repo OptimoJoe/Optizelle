@@ -4,7 +4,7 @@
       "algorithm_class" : "TrustRegion",
       "H_type" : "UserDefined",
       "iter_max" : 50,
-      "eps_krylov" : 1e-12
+      "eps_trunc" : 1e-12
    },
    "Naturals" : {
       "iter" : 18 
