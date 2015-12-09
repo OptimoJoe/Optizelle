@@ -16,7 +16,7 @@ __all__ = [
 
     "TruncatedStop",
     "AlgorithmClass",
-    "StoppingCondition",
+    "OptimizationStop",
     "Operators",
     "LineSearchDirection",
     "LineSearchKind",
@@ -70,15 +70,16 @@ class AlgorithmClass(EnumeratedType):
     UserDefined \
      = range(3)
 
-class StoppingCondition(EnumeratedType):
+class OptimizationStop(EnumeratedType):
     """Reasons why we stop the algorithm"""
     NotConverged, \
     GradientSmall, \
     StepSmall, \
     MaxItersExceeded, \
     InteriorPointInstability, \
+    GlobalizationFailure, \
     UserDefined \
-    = range(6)
+    = range(7)
 
 class Operators(EnumeratedType):
     """Various operators for both Hessian approximations and preconditioners"""

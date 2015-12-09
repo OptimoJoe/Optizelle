@@ -88,7 +88,7 @@ namespace Optizelle{
     }
 
     // Reasons why we stop the algorithm
-    namespace StoppingCondition{
+    namespace OptimizationStop{
         // Converts the stopping condition to a string 
         std::string to_string(t const & opt_stop) {
             switch(opt_stop){
@@ -102,6 +102,8 @@ namespace Optizelle{
                 return "MaxItersExceeded";
             case InteriorPointInstability:
                 return "InteriorPointInstability";
+            case GlobalizationFailure:
+                return "GlobalizationFailure";
             case UserDefined:
                 return "UserDefined";
             default:
@@ -121,6 +123,8 @@ namespace Optizelle{
                 return MaxItersExceeded;
             else if(opt_stop=="InteriorPointInstability")
                 return InteriorPointInstability; 
+            else if(opt_stop=="GlobalizationFailure")
+                return GlobalizationFailure;
             else if(opt_stop=="UserDefined")
                 return UserDefined;
             else
@@ -134,6 +138,7 @@ namespace Optizelle{
                 name=="StepSmall" ||
                 name=="MaxItersExceeded" ||
                 name=="InteriorPointInstability" ||
+                name=="GlobalizationFailure" ||
                 name=="UserDefined"
             )
                 return true;

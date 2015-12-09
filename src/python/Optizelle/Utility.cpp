@@ -32,29 +32,32 @@ Author: Joseph Young (joe@optimojoe.com)
 #include <Utility.h>
 
 namespace Optizelle {
-    namespace StoppingCondition { 
+    namespace OptimizationStop { 
         // Converts t to a Python enumerated type
         PyObject * toPython(t const & opt_stop) {
             // Do the conversion
             switch(opt_stop){
             case NotConverged:
                 return Python::enumToPyObject(
-                    "StoppingCondition","NotConverged");
+                    "OptimizationStop","NotConverged");
             case GradientSmall:
                 return Python::enumToPyObject(
-                    "StoppingCondition","GradientSmall");
+                    "OptimizationStop","GradientSmall");
             case StepSmall:
                 return Python::enumToPyObject(
-                    "StoppingCondition","StepSmall");
+                    "OptimizationStop","StepSmall");
             case MaxItersExceeded:
                 return Python::enumToPyObject(
-                    "StoppingCondition","MaxItersExceeded");
+                    "OptimizationStop","MaxItersExceeded");
             case InteriorPointInstability:
                 return Python::enumToPyObject(
-                    "StoppingCondition","InteriorPointInstability");
+                    "OptimizationStop","InteriorPointInstability");
+            case GlobalizationFailure:
+                return Python::enumToPyObject(
+                    "OptimizationStop","GlobalizationFailure");
             case UserDefined:
                 return Python::enumToPyObject(
-                    "StoppingCondition","UserDefined");
+                    "OptimizationStop","UserDefined");
             default:
                 throw;
             }
@@ -65,25 +68,29 @@ namespace Optizelle {
             // Convert the member to a Natural 
             Natural m=PyInt_AsSsize_t(member);
 
-            if(m==Python::enumToNatural("StoppingCondition","NotConverged"))
+            if(m==Python::enumToNatural("OptimizationStop","NotConverged"))
                 return NotConverged;
             else if(m==Python::enumToNatural(
-                "StoppingCondition","GradientSmall")
+                "OptimizationStop","GradientSmall")
             )
                 return GradientSmall;
             else if(m==Python::enumToNatural(
-                "StoppingCondition","StepSmall")
+                "OptimizationStop","StepSmall")
             )
                 return StepSmall;
             else if(m==Python::enumToNatural(
-                "StoppingCondition","MaxItersExceeded")
+                "OptimizationStop","MaxItersExceeded")
             )
                 return MaxItersExceeded;
             else if(m==Python::enumToNatural(
-                "StoppingCondition","InteriorPointInstability")
+                "OptimizationStop","InteriorPointInstability")
             )
                 return InteriorPointInstability;
-            else if(m==Python::enumToNatural("StoppingCondition","UserDefined"))
+            else if(m==Python::enumToNatural(
+                "OptimizationStop","GlobalizationFailure")
+            )
+                return GlobalizationFailure;
+            else if(m==Python::enumToNatural("OptimizationStop","UserDefined"))
                 return UserDefined;
             else
                 throw;
@@ -1879,13 +1886,16 @@ namespace Optizelle {
                     toPython::Real("eps_dx",state.eps_dx,pystate);
                     toPython::Natural("stored_history",
                         state.stored_history,pystate);
-                    toPython::Natural("history_reset",
-                        state.history_reset,pystate);
                     toPython::Natural("iter",state.iter,pystate);
                     toPython::Natural("iter_max",state.iter_max,pystate);
-                    toPython::Param <StoppingCondition::t> (
+                    toPython::Natural("glob_iter",state.glob_iter,pystate);
+                    toPython::Natural("glob_iter_max",
+                        state.glob_iter_max,pystate);
+                    toPython::Natural("glob_iter_total",
+                        state.glob_iter_total,pystate);
+                    toPython::Param <OptimizationStop::t> (
                         "opt_stop",
-                        StoppingCondition::toPython,
+                        OptimizationStop::toPython,
                         state.opt_stop,
                         pystate);
                     toPython::Natural("trunc_iter",state.trunc_iter,pystate);
@@ -1944,17 +1954,15 @@ namespace Optizelle {
                     toPython::Real("eta2",state.eta2,pystate);
                     toPython::Real("ared",state.ared,pystate);
                     toPython::Real("pred",state.pred,pystate);
-                    toPython::Natural("rejected_trustregion",
-                        state.rejected_trustregion,pystate);
                     toPython::Real("alpha0",state.alpha0,pystate);
                     toPython::Real("alpha",state.alpha,pystate);
                     toPython::Real("c1",state.c1,pystate);
-                    toPython::Natural("linesearch_iter",
-                        state.linesearch_iter,pystate);
-                    toPython::Natural("linesearch_iter_max",
-                        state.linesearch_iter_max,pystate);
-                    toPython::Natural("linesearch_iter_total",
-                        state.linesearch_iter_total,pystate);
+                    toPython::Natural("ls_iter",
+                        state.ls_iter,pystate);
+                    toPython::Natural("ls_iter_max",
+                        state.ls_iter_max,pystate);
+                    toPython::Natural("ls_iter_total",
+                        state.ls_iter_total,pystate);
                     toPython::Real("eps_ls",state.eps_ls,pystate);
                     toPython::Param <LineSearchDirection::t> (
                         "dir",
@@ -2009,13 +2017,17 @@ namespace Optizelle {
                     fromPython::Real("eps_dx",pystate,state.eps_dx);
                     fromPython::Natural("stored_history",
                         pystate,state.stored_history);
-                    fromPython::Natural("history_reset",
-                        pystate,state.history_reset);
                     fromPython::Natural("iter",pystate,state.iter);
                     fromPython::Natural("iter_max",pystate,state.iter_max);
-                    fromPython::Param <StoppingCondition::t> (
+                    fromPython::Natural("glob_iter",
+                        pystate,state.glob_iter);
+                    fromPython::Natural("glob_iter_max",
+                        pystate,state.glob_iter_max);
+                    fromPython::Natural("glob_iter_total",
+                        pystate,state.glob_iter_total);
+                    fromPython::Param <OptimizationStop::t> (
                         "opt_stop",
-                        StoppingCondition::fromPython,
+                        OptimizationStop::fromPython,
                         pystate,
                         state.opt_stop);
                     fromPython::Natural("trunc_iter",
@@ -2076,17 +2088,15 @@ namespace Optizelle {
                     fromPython::Real("eta2",pystate,state.eta2);
                     fromPython::Real("ared",pystate,state.ared);
                     fromPython::Real("pred",pystate,state.pred);
-                    fromPython::Natural("rejected_trustregion",
-                        pystate,state.rejected_trustregion);
                     fromPython::Real("alpha0",pystate,state.alpha0);
                     fromPython::Real("alpha",pystate,state.alpha);
                     fromPython::Real("c1",pystate,state.c1);
-                    fromPython::Natural("linesearch_iter",
-                        pystate,state.linesearch_iter);
-                    fromPython::Natural("linesearch_iter_max",
-                        pystate,state.linesearch_iter_max);
-                    fromPython::Natural("linesearch_iter_total",pystate,
-                        state.linesearch_iter_total);
+                    fromPython::Natural("ls_iter",
+                        pystate,state.ls_iter);
+                    fromPython::Natural("ls_iter_max",
+                        pystate,state.ls_iter_max);
+                    fromPython::Natural("ls_iter_total",pystate,
+                        state.ls_iter_total);
                     fromPython::Real("eps_ls",pystate,state.eps_ls);
                     fromPython::Param <LineSearchDirection::t> (
                         "dir",

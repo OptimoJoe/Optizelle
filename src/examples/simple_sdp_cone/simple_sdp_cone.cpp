@@ -141,7 +141,7 @@ int main(int argc,char* argv[]){
 
     // Print out the reason for convergence
     std::cout << "The algorithm converged due to: " <<
-        Optizelle::StoppingCondition::to_string(state.opt_stop) << std::endl;
+        Optizelle::OptimizationStop::to_string(state.opt_stop) << std::endl;
 
     // Print out the final answer
     std::cout << std::setprecision(16) << std::scientific 

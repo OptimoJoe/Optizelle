@@ -238,7 +238,7 @@ function main(pname,rname)
 
     % Print out the reason for convergence
     fprintf('The algorithm converged due to: %s\n', ...
-        Optizelle.StoppingCondition.to_string(state.opt_stop));
+        Optizelle.OptimizationStop.to_string(state.opt_stop));
 
     % Print out the final answer
     fprintf('The optimal point is: (%e,%e)\n',state.x.data(1),state.x.data(2));

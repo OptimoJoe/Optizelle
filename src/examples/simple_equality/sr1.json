@@ -4,7 +4,6 @@
       "H_type" : "SR1",
       "PSchur_left_type" : "UserDefined",
       "stored_history" : 2,
-      "history_reset" : 10,
       "iter_max" : 100,
       "eps_trunc" : 1e-16,
       "eps_dx" : 1e-10,

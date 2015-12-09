@@ -263,16 +263,17 @@ namespace Optizelle{
     }
 
     // Reasons why we stop the algorithm
-    namespace StoppingCondition{
+    namespace OptimizationStop{
         enum t : Natural{
-            //---StoppingCondition0---
+            //---OptimizationStop0---
             NotConverged,            // Algorithm did not converge
             GradientSmall,           // Gradient was sufficiently small
             StepSmall,               // Change in the step is small
             MaxItersExceeded,        // Maximum number of iterations exceeded
             InteriorPointInstability,// Instability in the interior point method
+            GlobalizationFailure,    // Too many failed globalization iterations
             UserDefined              // Some user defined stopping condition 
-            //---StoppingCondition1---
+            //---OptimizationStop1---
         };
 
         // Converts the stopping condition to a string 
@@ -1750,17 +1751,12 @@ namespace Optizelle{
             typename ProblemClass::State::t const & state
         ) {
             // Create some shortcuts
-            Natural const & iter=state.iter;
-            Natural const & linesearch_iter=state.linesearch_iter;
-            Natural const & rejected_trustregion=state.rejected_trustregion;
-            AlgorithmClass::t const & algorithm_class=state.algorithm_class;
+            auto const & iter=state.iter;
+            auto const & glob_iter_total=state.glob_iter_total;
 
-            return (iter==1) &&
-                ((algorithm_class == AlgorithmClass::LineSearch &&
-                    linesearch_iter==0) ||
-                ((algorithm_class == AlgorithmClass::TrustRegion ||
-                  algorithm_class == AlgorithmClass::UserDefined) &&
-                    rejected_trustregion == 0));
+            // Return true if we're on iteration 1 and we've not globalized
+            // anything yet
+            return (iter==1) && (glob_iter_total==0);
         }
     }
        
@@ -1824,7 +1820,7 @@ namespace Optizelle{
                 AlgorithmClass::t algorithm_class;
 
                 // Why we've stopped the optimization
-                StoppingCondition::t opt_stop;
+                OptimizationStop::t opt_stop;
 
                 // Tolerance for the gradient stopping condition
                 Real eps_grad;
@@ -1837,6 +1833,15 @@ namespace Optizelle{
 
                 // Maximum number of optimization iterations
                 Natural iter_max;
+
+                // Globalization iteration
+                Natural glob_iter;
+
+                // Maximum number of globalization iterations before we quit
+                Natural glob_iter_max;
+
+                // Total number of globalization iterations taken
+                Natural glob_iter_total;
 
                 // Preconditioner for the Hessian
                 Operators::t PH_type;
@@ -1880,9 +1885,6 @@ namespace Optizelle{
                 // Kind of stopping tolerance
                 ToleranceKind::t eps_kind;
 
-                // Number of control objects to store in a quasi-Newton method
-                Natural stored_history;
-
                 // ----------- Diagnostics ----------
 
                 // Function diagnostics on f
@@ -1899,9 +1901,8 @@ namespace Optizelle{
 
                 // ---------- Quasi-Newton Methods ----------
 
-                // Number of failed iterations before we reset the history for
-                // quasi-Newton methods
-                Natural history_reset;
+                // Number of control objects to store in a quasi-Newton method
+                Natural stored_history;
 
                 // Difference in prior gradients
                 std::list <X_Vector> oldY;
@@ -1973,9 +1974,6 @@ namespace Optizelle{
                 // Predicted reduction
                 Real pred;
 
-                // Number of rejected trust-region steps
-                Natural rejected_trustregion;
-
                 // ---------- Line Search  ----------
 
                 // Base line-search step length
@@ -1988,13 +1986,13 @@ namespace Optizelle{
                 Real c1;
 
                 // Current number of iterations used in the line-search
-                Natural linesearch_iter;
+                Natural ls_iter;
 
                 // Maximum number of iterations used in the line-search
-                Natural linesearch_iter_max;
+                Natural ls_iter_max;
 
                 // Total number of line-search iterations computed
-                Natural linesearch_iter_total;
+                Natural ls_iter_total;
 
                 // Stopping tolerance for the line-search
                 Real eps_ls;
@@ -2022,11 +2020,6 @@ namespace Optizelle{
                         0
                         //---stored_history1---
                     ),
-                    history_reset(
-                        //---history_reset0---
-                        5
-                        //---history_reset1---
-                    ),
                     iter(
                         //---iter0---
                         1
@@ -2037,9 +2030,24 @@ namespace Optizelle{
                         std::numeric_limits <Natural>::max() 
                         //---iter_max1---
                     ),
+                    glob_iter(
+                        //---glob_iter0---
+                        0
+                        //---glob_iter1---
+                    ),
+                    glob_iter_max(
+                        //---glob_iter_max0---
+                        10
+                        //---glob_iter_max1---
+                    ),
+                    glob_iter_total(
+                        //---glob_iter_total0---
+                        0
+                        //---glob_iter_total1---
+                    ),
                     opt_stop(
                         //---opt_stop0---
-                        StoppingCondition::NotConverged
+                        OptimizationStop::NotConverged
                         //---opt_stop1---
                     ),
                     trunc_iter(
@@ -2208,11 +2216,6 @@ namespace Optizelle{
                         std::numeric_limits<Real>::quiet_NaN()
                         //---pred1---
                     ),
-                    rejected_trustregion(
-                        //---rejected_trustregion0---
-                        0
-                        //---rejected_trustregion1---
-                    ),
                     alpha0(
                         //---alpha00---
                         1.
@@ -2228,20 +2231,20 @@ namespace Optizelle{
                         1e-4
                         //---c11---
                     ),
-                    linesearch_iter(
-                        //---linesearch_iter0---
+                    ls_iter(
+                        //---ls_iter0---
                         0
-                        //---linesearch_iter1---
+                        //---ls_iter1---
                     ),
-                    linesearch_iter_max(
-                        //---linesearch_iter_max0---
+                    ls_iter_max(
+                        //---ls_iter_max0---
                         5
-                        //---linesearch_iter_max1---
+                        //---ls_iter_max1---
                     ),
-                    linesearch_iter_total(
-                        //---linesearch_iter_total0---
+                    ls_iter_total(
+                        //---ls_iter_total0---
                         0
-                        //---linesearch_iter_total1---
+                        //---ls_iter_total1---
                     ),
                     eps_ls(
                         //---eps_ls0---
@@ -2318,10 +2321,6 @@ namespace Optizelle{
                     // Any 
                     //---stored_history_valid1---
                     
-                    //---history_reset_valid0---
-                    // Any 
-                    //---history_reset_valid1---
-        
                 // Check that the current iteration is positive
                 else if(!(
                     //---iter_valid0---
@@ -2339,6 +2338,23 @@ namespace Optizelle{
                 ))
                     ss << "The maximum optimization iteration must be "
                         "positive: iter_max = " << state.iter_max;
+
+                    //---glob_iter_valid0---
+                    // Any 
+                    //---glob_iter_valid1---
+
+                // Check that the maximum globalization iteration is positive 
+                else if(!(
+                    //---glob_iter_max_valid0---
+                    state.glob_iter_max > 0
+                    //---glob_iter_max_valid1---
+                ))
+                    ss << "The maximum globalization iteration must be "
+                        "positive: glob_iter_max = " << state.glob_iter_max;
+                    
+                    //---glob_iter_total_valid0---
+                    // Any 
+                    //---glob_iter_total_valid1---
                     
                     //---opt_stop_valid0---
                     // Any 
@@ -2553,10 +2569,6 @@ namespace Optizelle{
                     // Any 
                     //---pred_valid1---
                     
-                    //---rejected_trustregion_valid0---
-                    // Any 
-                    //---rejected_trustregion_valid1---
-
                 // Check that the base line-search step length is nonnegative 
                 else if(!(
                     //---alpha0_valid0---
@@ -2580,23 +2592,23 @@ namespace Optizelle{
                     ss << "The sufficient decrease parameter must lie between "
                         "0 and 1: c1 = " << state.c1;
                     
-                    //---linesearch_iter_valid0---
+                    //---ls_iter_valid0---
                     // Any 
-                    //---linesearch_iter_valid1---
+                    //---ls_iter_valid1---
 
                 // Check that the number of line-search iterations is positve 
                 else if(!(
-                    //---linesearch_iter_max_valid0---
-                    state.linesearch_iter_max > 0
-                    //---linesearch_iter_max_valid1---
+                    //---ls_iter_max_valid0---
+                    state.ls_iter_max > 0
+                    //---ls_iter_max_valid1---
                 ))
                     ss << "The maximum number of line-search iterations must "
-                        "be positive: linesearch_iter_max = "
-                        << state.linesearch_iter_max;
+                        "be positive: ls_iter_max = "
+                        << state.ls_iter_max;
                     
-                    //---linesearch_iter_total_valid0---
+                    //---ls_iter_total_valid0---
                     // Any 
-                    //---linesearch_iter_total_valid1---
+                    //---ls_iter_total_valid1---
 
                 // Check that the stopping tolerance for the line-search
                 // methods is positive
@@ -2619,15 +2631,15 @@ namespace Optizelle{
                 else if(!(
                     //---kind_valid0---
                     (state.kind!=LineSearchKind::GoldenSection 
-                        || state.linesearch_iter_max >= 2) &&
+                        || state.ls_iter_max >= 2) &&
                     (state.kind!=LineSearchKind::TwoPointA ||
                         state.kind!=LineSearchKind::TwoPointB ||
                         state.dir==LineSearchDirection::SteepestDescent)
                     //---kind_valid1---
                 )) {
                     ss << "When using a golden-section search, we require at "
-                        "least 2 line-search iterations: linesearch_iter_max = "
-                        << state.linesearch_iter_max << std::endl << std::endl;
+                        "least 2 line-search iterations: ls_iter_max = "
+                        << state.ls_iter_max << std::endl << std::endl;
                     
                     ss << "When using the Barzilai-Borwein two point Hessian "
                         "approximation line-search, the search direction must "
@@ -2703,9 +2715,11 @@ namespace Optizelle{
                 typename RestartPackage <Natural>::tuple const & item
             ) {
                 if( item.first == "stored_history" ||
-                    item.first == "history_reset" || 
                     item.first == "iter" || 
                     item.first == "iter_max" || 
+                    item.first == "glob_iter" || 
+                    item.first == "glob_iter_max" ||
+                    item.first == "glob_iter_total" || 
                     item.first == "trunc_iter" || 
                     item.first == "trunc_iter_max" ||
                     item.first == "trunc_iter_total" || 
@@ -2714,10 +2728,9 @@ namespace Optizelle{
                     item.first == "failed_safeguard_max" ||
                     item.first == "failed_safeguard" ||
                     item.first == "failed_safeguard_total" ||
-                    item.first == "rejected_trustregion" || 
-                    item.first == "linesearch_iter" || 
-                    item.first == "linesearch_iter_max" ||
-                    item.first == "linesearch_iter_total" 
+                    item.first == "ls_iter" || 
+                    item.first == "ls_iter_max" ||
+                    item.first == "ls_iter_total" 
                 ) 
                     return true;
                 else
@@ -2731,7 +2744,7 @@ namespace Optizelle{
                 if( (item.first=="algorithm_class" &&
                         AlgorithmClass::is_valid(item.second)) ||
                     (item.first=="opt_stop" &&
-                        StoppingCondition::is_valid(item.second)) ||
+                        OptimizationStop::is_valid(item.second)) ||
                     (item.first=="trunc_stop" &&
                         TruncatedStop::is_valid(item.second)) ||
                     (item.first=="H_type" &&
@@ -2867,10 +2880,13 @@ namespace Optizelle{
                 // Copy in all the natural numbers
                 nats.emplace_back("stored_history",
                     std::move(state.stored_history));
-                nats.emplace_back("history_reset",
-                    std::move(state.history_reset));
                 nats.emplace_back("iter",std::move(state.iter));
                 nats.emplace_back("iter_max",std::move(state.iter_max));
+                nats.emplace_back("glob_iter",std::move(state.glob_iter));
+                nats.emplace_back("glob_iter_max",
+                    std::move(state.glob_iter_max));
+                nats.emplace_back("glob_iter_total",
+                    std::move(state.glob_iter_total));
                 nats.emplace_back("trunc_iter",std::move(state.trunc_iter));
                 nats.emplace_back("trunc_iter_max",
                     std::move(state.trunc_iter_max));
@@ -2885,20 +2901,18 @@ namespace Optizelle{
                     std::move(state.failed_safeguard));
                 nats.emplace_back("failed_safeguard_total",
                     std::move(state.failed_safeguard_total));
-                nats.emplace_back("rejected_trustregion",
-                    std::move(state.rejected_trustregion));
-                nats.emplace_back("linesearch_iter",
-                    std::move(state.linesearch_iter));
-                nats.emplace_back("linesearch_iter_max",
-                    std::move(state.linesearch_iter_max));
-                nats.emplace_back("linesearch_iter_total",
-                    std::move(state.linesearch_iter_total));
+                nats.emplace_back("ls_iter",
+                    std::move(state.ls_iter));
+                nats.emplace_back("ls_iter_max",
+                    std::move(state.ls_iter_max));
+                nats.emplace_back("ls_iter_total",
+                    std::move(state.ls_iter_total));
 
                 // Copy in all the parameters
                 params.emplace_back("algorithm_class",
                     AlgorithmClass::to_string(state.algorithm_class));
                 params.emplace_back("opt_stop",
-                    StoppingCondition::to_string(state.opt_stop));
+                    OptimizationStop::to_string(state.opt_stop));
                 params.emplace_back("trunc_stop",
                     TruncatedStop::to_string(state.trunc_stop));
                 params.emplace_back("H_type",
@@ -3015,12 +3029,16 @@ namespace Optizelle{
                 ){
                     if(item->first=="stored_history")
                         state.stored_history=std::move(item->second);
-                    else if(item->first=="history_reset")
-                        state.history_reset=std::move(item->second);
                     else if(item->first=="iter")
                         state.iter=std::move(item->second);
                     else if(item->first=="iter_max")
                         state.iter_max=std::move(item->second);
+                    else if(item->first=="glob_iter")
+                        state.glob_iter=std::move(item->second);
+                    else if(item->first=="glob_iter_max")
+                        state.glob_iter_max=std::move(item->second);
+                    else if(item->first=="glob_iter_total")
+                        state.glob_iter_total=std::move(item->second);
                     else if(item->first=="trunc_iter")
                         state.trunc_iter=std::move(item->second);
                     else if(item->first=="trunc_iter_max")
@@ -3037,14 +3055,12 @@ namespace Optizelle{
                         state.failed_safeguard=std::move(item->second);
                     else if(item->first=="failed_safeguard_total")
                         state.failed_safeguard_total=std::move(item->second);
-                    else if(item->first=="rejected_trustregion")
-                        state.rejected_trustregion=std::move(item->second);
-                    else if(item->first=="linesearch_iter")
-                        state.linesearch_iter=std::move(item->second);
-                    else if(item->first=="linesearch_iter_max")
-                        state.linesearch_iter_max=std::move(item->second);
-                    else if(item->first=="linesearch_iter_total")
-                        state.linesearch_iter_total=std::move(item->second);
+                    else if(item->first=="ls_iter")
+                        state.ls_iter=std::move(item->second);
+                    else if(item->first=="ls_iter_max")
+                        state.ls_iter_max=std::move(item->second);
+                    else if(item->first=="ls_iter_total")
+                        state.ls_iter_total=std::move(item->second);
                 }
                     
                 // Next, copy in any parameters 
@@ -3057,7 +3073,7 @@ namespace Optizelle{
                             = AlgorithmClass::from_string(item->second);
                     else if(item->first=="opt_stop")
                         state.opt_stop
-                            = StoppingCondition::from_string(item->second);
+                            = OptimizationStop::from_string(item->second);
                     else if(item->first=="trunc_stop")
                         state.trunc_stop=TruncatedStop::from_string(
                             item->second);
@@ -3868,22 +3884,24 @@ namespace Optizelle{
 
                     // In case we're using a line-search method
                     if(algorithm_class==AlgorithmClass::LineSearch) {
-                        out.emplace_back(Utility::atos("ls_iter"));
                         out.emplace_back(Utility::atos("alpha0"));
                         out.emplace_back(Utility::atos("alpha"));
+                        out.emplace_back(Utility::atos("ls_iter"));
                     }
 
                     // In case we're using a trust-region method 
                     if(algorithm_class==AlgorithmClass::TrustRegion) {
+                        out.emplace_back(Utility::atos("delta"));
                         out.emplace_back(Utility::atos("ared"));
                         out.emplace_back(Utility::atos("pred"));
                         out.emplace_back(Utility::atos("ared/pred"));
-                        out.emplace_back(Utility::atos("delta"));
                     }
                 }
 
                 // Even more detailed information
                 if(msg_level >= 3) {
+                    out.emplace_back(Utility::atos("glb_itr_tot"));
+
                     // In case we're using truncated CG 
                     if(    algorithm_class==AlgorithmClass::TrustRegion
                         || dir==LineSearchDirection::NewtonCG
@@ -3918,12 +3936,14 @@ namespace Optizelle{
                 X_Vector const & dx=state.dx;
                 X_Vector const & grad=state.grad;
                 Natural const & iter=state.iter;
+                auto const & glob_iter = state.glob_iter;
+                auto const & glob_iter_total = state.glob_iter_total;
                 Real const & f_x=state.f_x;
                 Natural const & trunc_iter=state.trunc_iter;
                 Natural const & trunc_iter_total=state.trunc_iter_total;
                 Real const & trunc_err=state.trunc_err;
                 TruncatedStop::t const & trunc_stop=state.trunc_stop;
-                Natural const & linesearch_iter=state.linesearch_iter;
+                Natural const & ls_iter=state.ls_iter;
                 Real const & alpha0=state.alpha0;
                 Real const & alpha=state.alpha;
                 Real const & ared=state.ared;
@@ -3931,7 +3951,6 @@ namespace Optizelle{
                 Real const & delta=state.delta;
                 AlgorithmClass::t const & algorithm_class=state.algorithm_class;
                 LineSearchDirection::t const & dir=state.dir;
-                Natural const & rejected_trustregion=state.rejected_trustregion;
                 Natural const & msg_level=state.msg_level;
 
                 // Figure out if we're at the absolute beginning of the
@@ -3953,7 +3972,7 @@ namespace Optizelle{
                 if(!noiter)
                     out.emplace_back(Utility::atos(iter));
                 else
-                    out.emplace_back(Utility::atos("."));
+                    out.emplace_back(Utility::blankSeparator);
                 out.emplace_back(Utility::atos(f_x));
                 out.emplace_back(Utility::atos(norm_grad));
                 if(!opt_begin) 
@@ -3969,7 +3988,7 @@ namespace Optizelle{
                     if(    algorithm_class==AlgorithmClass::TrustRegion
                         || dir==LineSearchDirection::NewtonCG
                     ){
-                        if(!opt_begin) {
+                        if(glob_iter==1) {
                             out.emplace_back(Utility::atos(trunc_iter));
                             out.emplace_back(Utility::atos(trunc_err));
                             out.emplace_back(Utility::atos(trunc_stop));
@@ -3980,35 +3999,40 @@ namespace Optizelle{
 
                     // In case we're using a line-search method
                     if(algorithm_class==AlgorithmClass::LineSearch) {
+                        out.emplace_back(Utility::atos(alpha0));
                         if(!opt_begin) {
-                            out.emplace_back(Utility::atos(linesearch_iter));
-                            out.emplace_back(Utility::atos(alpha0));
                             out.emplace_back(Utility::atos(alpha));
+                            out.emplace_back(Utility::atos(ls_iter));
                         } else 
-                            for(Natural i=0;i<3;i++)
+                            for(Natural i=0;i<2;i++)
                                 out.emplace_back(Utility::blankSeparator);
                     }
                     
                     // In case we're using a trust-region method
                     if(algorithm_class==AlgorithmClass::TrustRegion) {
+                        out.emplace_back(Utility::atos(delta));
                         if(!opt_begin) {
                             out.emplace_back(Utility::atos(ared));
                             out.emplace_back(Utility::atos(pred));
                             out.emplace_back(Utility::atos(ared/pred));
-                            out.emplace_back(Utility::atos(delta));
                         } else  
-                            for(Natural i=0;i<4;i++)
+                            for(Natural i=0;i<3;i++)
                                 out.emplace_back(Utility::blankSeparator);
                     }
                 }
                 
                 // Even more detail 
                 if(msg_level >=3) {
+                    if(!opt_begin)
+                        out.emplace_back(Utility::atos(glob_iter_total));
+                    else
+                        out.emplace_back(Utility::blankSeparator);
+
                     // In case we're using truncated-CG 
                     if(    algorithm_class==AlgorithmClass::TrustRegion
                         || dir==LineSearchDirection::NewtonCG
                     ){
-                        if(!opt_begin) {
+                        if(glob_iter==1) {
                             out.emplace_back(Utility::atos(trunc_iter_total));
                         } else 
                             for(Natural i=0;i<1;i++)
@@ -4145,7 +4169,7 @@ namespace Optizelle{
             NO_CONSTRUCTORS(Algorithms)
 
             // Checks a set of stopping conditions
-            static StoppingCondition::t checkStop(
+            static OptimizationStop::t checkStop(
                 typename Functions::t const & fns, 
                 typename State::t const & state
             ){
@@ -4162,6 +4186,8 @@ namespace Optizelle{
                 Natural const & iter_max=state.iter_max;
                 Real const & eps_grad=state.eps_grad;
                 Real const & eps_dx=state.eps_dx;
+                auto const & glob_iter = state.glob_iter;
+                auto const & glob_iter_max = state.glob_iter_max;
 
                 // Find both the norm of the gradient and the step
                 X_Vector grad_stop(X::init(grad));
@@ -4169,22 +4195,27 @@ namespace Optizelle{
                 const Real norm_grad=sqrt(X::innr(grad_stop,grad_stop));
                 const Real norm_dx=sqrt(X::innr(dx,dx));
 
+                // Check whether or not we have too many failed globalization
+                // iterations
+                if(glob_iter > glob_iter_max)
+                    return OptimizationStop::GlobalizationFailure;
+
                 // Check if we've exceeded the number of iterations
                 if(iter>=iter_max)
-                    return StoppingCondition::MaxItersExceeded;
+                    return OptimizationStop::MaxItersExceeded;
 
                 // Check whether the change in the step length has become too
                 // small relative to some typical step
                 if(norm_dx< eps_dx * absrel(norm_dxtyp))
-                    return StoppingCondition::StepSmall;
+                    return OptimizationStop::StepSmall;
                 
                 // Check whether the norm is small relative to some typical
                 // gradient
                 if(norm_grad < eps_grad * absrel(norm_gradtyp))
-                    return StoppingCondition::GradientSmall;
+                    return OptimizationStop::GradientSmall;
 
                 // Otherwise, return that we're not converged 
-                return StoppingCondition::NotConverged;
+                return OptimizationStop::NotConverged;
             }
 
             // Sets up the Hessian operator for use in truncated CG.  In
@@ -4333,7 +4364,7 @@ namespace Optizelle{
                 X_Vector const & grad=state.grad;
                 Real const & norm_dxtyp=state.norm_dxtyp;
                 auto const & failed_safeguard_max = state.failed_safeguard_max;
-                Natural & rejected_trustregion=state.rejected_trustregion;
+                auto const & glob_iter_max = state.glob_iter_max;
                 X_Vector & dx=state.dx;
                 Natural & trunc_iter=state.trunc_iter;
                 Natural & trunc_iter_total=state.trunc_iter_total;
@@ -4341,12 +4372,13 @@ namespace Optizelle{
                 TruncatedStop::t& trunc_stop=state.trunc_stop;
                 std::list <X_Vector>& oldY=state.oldY; 
                 std::list <X_Vector>& oldS=state.oldS; 
-                Natural & history_reset=state.history_reset;
                 Real & alpha = state.alpha;
                 Real & alpha0 = state.alpha0;
                 auto & failed_safeguard = state.failed_safeguard;
                 auto & failed_safeguard_total = state.failed_safeguard_total;
                 auto & alpha_x = state.alpha_x;
+                auto & glob_iter = state.glob_iter;
+                auto & glob_iter_total = state.glob_iter_total;
 
                 // Allocate a little bit of work space
                 X_Vector x_tmp1(X::init(x));
@@ -4427,9 +4459,7 @@ namespace Optizelle{
                 auto norm_dxn = std::sqrt(X::innr(dx_n,dx_n));
 
                 // Continue to look for a step until one comes back as valid
-                for(rejected_trustregion=0;
-                    true; 
-                ) {
+                for(glob_iter=1;glob_iter<=glob_iter_max;glob_iter++) {
 
                     // Compute the dogleg step.  There are three cases
                     //
@@ -4476,17 +4506,7 @@ namespace Optizelle{
                     // Check whether the step is good
                     if(checkStep(fns,state))
                         break;
-                    else
-                        rejected_trustregion++;
                     
-                    // If the number of rejected steps is above the
-                    // history_reset threshold, destroy the quasi-Newton
-                    // information
-                    if(rejected_trustregion > history_reset){
-                        oldY.clear();
-                        oldS.clear();
-                    }
-
                     // Manipulate the state if required
                     smanip.eval(fns,state,
                         OptimizationLocation::AfterRejectedTrustRegion);
@@ -4503,12 +4523,15 @@ namespace Optizelle{
                         break;
                     }
                 }
+
+                // Keep track of the number of globalization iterations
+                glob_iter_total += std::max(glob_iter,glob_iter_max);
                 
                 // Set line-search parameters in such a way that they are
                 // consistent to what just happened in the trust-region
                 // method.  This helps keep this consistent if we ever switch
                 // to a line-search method.
-                alpha = Real(1.);
+                alpha = delta;
                 alpha0 = delta;
             }
         
@@ -4738,10 +4761,10 @@ namespace Optizelle{
                     f_mod=*(fns.f_mod);
                 X_Vector const & x=state.x;
                 X_Vector const & dx=state.dx;
-                Natural const & iter_max=state.linesearch_iter_max;
+                Natural const & iter_max=state.ls_iter_max;
                 Real const & alpha0=state.alpha0;
-                Natural & iter_total=state.linesearch_iter_total;
-                Natural & iter=state.linesearch_iter;
+                Natural & iter_total=state.ls_iter_total;
+                Natural & iter=state.ls_iter;
                 Real & f_xpdx=state.f_xpdx;
                 Real & alpha=state.alpha;
                 
@@ -4849,8 +4872,8 @@ namespace Optizelle{
                 X_Vector const & x=state.x;
                 X_Vector const & dx=state.dx;
                 Real const & alpha0=state.alpha0;
-                Natural & iter_total=state.linesearch_iter_total;
-                Natural & iter=state.linesearch_iter;
+                Natural & iter_total=state.ls_iter_total;
+                Natural & iter=state.ls_iter;
                 Real & f_xpdx=state.f_xpdx;
                 Real & alpha=state.alpha;
                             
@@ -4887,8 +4910,8 @@ namespace Optizelle{
                 LineSearchKind::t const & kind=state.kind;
                 Real & alpha=state.alpha;
                 X_Vector & dx=state.dx;
-                Natural & iter_total=state.linesearch_iter_total;
-                Natural & iter=state.linesearch_iter;
+                Natural & iter_total=state.ls_iter_total;
+                Natural & iter=state.ls_iter;
                 Real & f_xpdx=state.f_xpdx;
 
                 // Find delta_x
@@ -4954,6 +4977,7 @@ namespace Optizelle{
                 Natural const & trunc_orthog_max=state.trunc_orthog_max;
                 Real const & c1=state.c1;
                 auto const & failed_safeguard_max = state.failed_safeguard_max;
+                auto const & glob_iter_max = state.glob_iter_max;
                 X_Vector & dx=state.dx;
                 Real & f_xpdx=state.f_xpdx;
                 Real & alpha0=state.alpha0;
@@ -4966,6 +4990,8 @@ namespace Optizelle{
                 auto & failed_safeguard = state.failed_safeguard;
                 auto & failed_safeguard_total = state.failed_safeguard_total;
                 auto & alpha_x = state.alpha_x;
+                auto & glob_iter = state.glob_iter;
+                auto & glob_iter_total = state.glob_iter_total;
                 
                 // Manipulate the state if required
                 smanip.eval(fns,state,OptimizationLocation::BeforeGetStep);
@@ -5073,7 +5099,7 @@ namespace Optizelle{
 
                     // Keep track of whether or not we hit a bound with the
                     // line-search
-                    typename LineSearchTermination::t ls_why
+                    typename LineSearchTermination::t ls_stop
                         = LineSearchTermination::Between;
 
                     // Save the original line search base
@@ -5097,13 +5123,16 @@ namespace Optizelle{
                     // Keep track of whether the sufficient decrease condition
                     // is satisfied.
                     bool sufficient_decrease=false;
-                    do {
+
+                    // Continue to look for a step until one comes back as valid
+                    for(glob_iter=1;glob_iter<=glob_iter_max;glob_iter++) {
+
                         // Do the line-search
                         if(kind==LineSearchKind::GoldenSection ||
                             (!LineSearchKind::is_sufficient_decrease(kind) &&
                             iter==1)
                         )
-                            ls_why=goldenSection(fns,state);
+                            ls_stop=goldenSection(fns,state);
                         else if(kind==LineSearchKind::BackTracking)
                             backTracking(fns,state);
 
@@ -5124,46 +5153,42 @@ namespace Optizelle{
                             (merit_xpdx==merit_xpdx) &&
                             (merit_xpdx <= merit_pred);
 
-                        // If we've not satisfied the sufficient decrease
-                        // condition, cut the step
-                        if( !sufficient_decrease ) {
+                        // If we have sufficient decrease, quit
+                        if(sufficient_decrease)
+                            break;
 
-                            // Decrease the size of the base line-search
-                            // parameter 
-                            alpha0/=Real(2.);
+                        // Decrease the size of the base line-search
+                        // parameter 
+                        alpha0/=Real(2.);
 
-                            // Scale the search direction for the the state
-                            // manipulator, which produces output
-                            X::scal(alpha,dx);
+                        // Scale the search direction for the the state
+                        // manipulator, which produces output
+                        X::scal(alpha,dx);
 
-                            // Check if the step becomes so small that we're not
-                            // making progress or if we have a step with NaNs in
-                            // it.  In this case, take a zero step and allow
-                            // the stopping conditions to exit
-                            Real norm_dx = sqrt(X::innr(dx,dx));
-                            if( norm_dx < eps_dx * absrel(norm_dxtyp) ||
-                                norm_dx != norm_dx
-                            ) {
-                                X::zero(dx);
-                                break;
-                            }
-
-                            // Manipulate the state if required
-                            smanip.eval(fns,state,
-                                OptimizationLocation::AfterRejectedLineSearch);
-
-                            // Rescale the search direction in case we're not
-                            // quite done searching yet.
-                            X::scal(Real(1.0)/alpha,dx);
+                        // Check if the step becomes so small that we're not
+                        // making progress or if we have a step with NaNs in
+                        // it.  In this case, take a zero step and allow
+                        // the stopping conditions to exit
+                        Real norm_dx = sqrt(X::innr(dx,dx));
+                        if( norm_dx < eps_dx * absrel(norm_dxtyp) ||
+                            norm_dx != norm_dx
+                        ) {
+                            X::zero(dx);
+                            break;
                         }
 
-                    // Continue as long as we haven't satisfied the sufficient
-                    // decrease condition.
-                    } while( !sufficient_decrease );
+                        // Manipulate the state if required
+                        smanip.eval(fns,state,
+                            OptimizationLocation::AfterRejectedLineSearch);
+
+                        // Rescale the search direction in case we're not
+                        // quite done searching yet.
+                        X::scal(Real(1.0)/alpha,dx);
+                    } 
                 
                     // If the line-search hit one of the bounds, change the base
                     // line-search parameter.
-                    switch(ls_why){
+                    switch(ls_stop){
                     case LineSearchTermination::Min:
                         alpha0/=Real(2.);
                         break;
@@ -5186,8 +5211,13 @@ namespace Optizelle{
 
                 // Do the line-searches that are not based on sufficient
                 // decrease
-                } else 
+                } else {
                     twoPoint(fns,state);
+                    glob_iter = 1;
+                }
+
+                // Keep track of the number of globalization iterations
+                glob_iter_total += std::max(glob_iter,glob_iter_max);
 
                 // Adjust the size of the step (apply the line-search 
                 // parameter.)
@@ -5197,7 +5227,7 @@ namespace Optizelle{
                 // consistent to what just happened in the line-search method 
                 // method.  This helps keep this consistent if we ever switch
                 // to a trust-region method.
-                delta = Real(2.)*alpha0;
+                delta = alpha0;
             }
 
             // Finds a new trial step
@@ -5379,7 +5409,7 @@ namespace Optizelle{
                 Real & norm_gradtyp=state.norm_gradtyp;
                 Real & norm_dxtyp=state.norm_dxtyp;
                 Natural & iter=state.iter;
-                StoppingCondition::t & opt_stop=state.opt_stop;
+                OptimizationStop::t & opt_stop=state.opt_stop;
                 
                 // Manipulate the state if required
                 smanip.eval(fns,state,
@@ -5423,7 +5453,7 @@ namespace Optizelle{
                     OptimizationLocation::BeforeOptimizationLoop);
 
                 // Primary optimization loop
-                while(opt_stop==StoppingCondition::NotConverged &&
+                while(opt_stop==OptimizationStop::NotConverged &&
                       dscheme!=DiagnosticScheme::DiagnosticsOnly
                 ) {
 
@@ -7223,10 +7253,10 @@ namespace Optizelle{
                 // More detailed information
                 if(msg_level>=2) {
                     // Trust-region information
+                    out.emplace_back(Utility::atos("delta"));
                     out.emplace_back(Utility::atos("ared"));
                     out.emplace_back(Utility::atos("pred"));
                     out.emplace_back(Utility::atos("ared/pred"));
-                    out.emplace_back(Utility::atos("delta"));
                        
                     // Truncated-CG information
                     out.emplace_back(Utility::atos("trunc_iter"));
@@ -7305,6 +7335,7 @@ namespace Optizelle{
                 Natural const & msg_level = state.msg_level;
                 auto const & algorithm_class = state.algorithm_class;
                 auto const & qn_stop = state.qn_stop;
+                auto const & glob_iter = state.glob_iter;
 
                 auto const & dx_n = state.dx_n;
                 auto const & dx_t = state.dx_t;
@@ -7357,18 +7388,18 @@ namespace Optizelle{
                     
                 // More detailed information
                 if(msg_level >=2) {
+                    out.emplace_back(Utility::atos(delta));
                     // Actual vs. predicted reduction 
                     if(!opt_begin) {
                         out.emplace_back(Utility::atos(ared));
                         out.emplace_back(Utility::atos(pred));
                         out.emplace_back(Utility::atos(ared/pred));
-                        out.emplace_back(Utility::atos(delta));
                     } else 
-                        for(Natural i=0;i<4;i++)
+                        for(Natural i=0;i<3;i++)
                             out.emplace_back(Utility::blankSeparator);
                     
                     // Truncated-CG information
-                    if(!opt_begin) {
+                    if(glob_iter==1) {
                         out.emplace_back(Utility::atos(trunc_iter));
                         out.emplace_back(Utility::atos(trunc_err));
                         out.emplace_back(Utility::atos(trunc_stop));
@@ -7393,7 +7424,10 @@ namespace Optizelle{
                         out.emplace_back(Utility::atos(norm_dxt));
 
                         // Total number of truncated-CG iterations 
-                        out.emplace_back(Utility::atos(trunc_iter_total));
+                        if(glob_iter==1)
+                            out.emplace_back(Utility::atos(trunc_iter_total));
+                        else
+                            out.emplace_back(Utility::blankSeparator);
 
                         // Augmented system solves 
                         out.emplace_back(Utility::atos(augsys_qn_iter));
@@ -8863,10 +8897,11 @@ namespace Optizelle{
                 Real const & eps_dx=state.eps_dx;
                 Real const & norm_dxtyp=state.norm_dxtyp;
                 Real const & rho_old=state.rho_old;
-                Natural const & history_reset=state.history_reset;
                 auto const & eps_constr = state.eps_constr;
                 auto const & norm_gxtyp = state.norm_gxtyp;
                 auto const & W_gradpHdxn = state.W_gradpHdxn;
+                auto const & glob_iter_max = state.glob_iter_max;
+                auto const & delta = state.delta;
                 X_Vector & dx=state.dx;
                 X_Vector & dx_t_uncorrected=state.dx_t_uncorrected;
                 X_Vector & H_dxn=state.H_dxn;
@@ -8885,18 +8920,18 @@ namespace Optizelle{
                 Real & pred=state.pred;
                 Real & rpred=state.rpred;
                 Real & rho=state.rho;
-                Real & alpha0=state.alpha0;
-                Natural & rejected_trustregion=state.rejected_trustregion;
                 auto & alpha_x = state.alpha_x;
                 auto & dx_t=state.dx_t;
+                auto & glob_iter = state.glob_iter;
+                auto & glob_iter_total = state.glob_iter_total;
+                auto & alpha = state.alpha; 
+                auto & alpha0 = state.alpha0; 
 
                 // Create a single temporary vector
                 X_Vector x_tmp1(X::init(x));
 
-                // Continue to look for a step until our actual vs. predicted
-                // reduction is good.
-                rejected_trustregion=0;
-                while(true) {
+                // Continue to look for a step until one comes back as valid
+                for(glob_iter = 1; glob_iter <= glob_iter_max; glob_iter++) { 
                     // Manipulate the state if required
                     smanip.eval(fns,state,OptimizationLocation::BeforeGetStep);
 
@@ -9046,16 +9081,6 @@ namespace Optizelle{
                     // Check whether the step is good
                     if(checkStep(fns,state))
                         break;
-                    else
-                        rejected_trustregion++;
-                    
-                    // If the number of rejected steps is above the
-                    // history_reset threshold, destroy the quasi-Newton
-                    // information
-                    if(rejected_trustregion > history_reset){
-                        oldY.clear();
-                        oldS.clear();
-                    }
 
                     // Manipulate the state if required
                     smanip.eval(fns,state,
@@ -9075,6 +9100,16 @@ namespace Optizelle{
                         break;
                     }
                 } 
+
+                // Keep track of the number of globalization iterations
+                glob_iter_total += std::max(glob_iter,glob_iter_max);
+                
+                // Set line-search parameters in such a way that they are
+                // consistent to what just happened in the trust-region
+                // method.  This helps keep this consistent if we ever switch
+                // to a line-search method.
+                alpha = delta;
+                alpha0 = delta;
             }
             
             // Adjust the stopping conditions unless
@@ -9088,14 +9123,14 @@ namespace Optizelle{
                 Y_Vector const & g_x = state.g_x;
                 Real const & eps_constr=state.eps_constr;
                 Real const & norm_gxtyp=state.norm_gxtyp; 
-                StoppingCondition::t & opt_stop=state.opt_stop;
+                OptimizationStop::t & opt_stop=state.opt_stop;
                 
                 // Prevent convergence unless the infeasibility is small. 
                 Real norm_gx=sqrt(Y::innr(g_x,g_x));
-                if( opt_stop==StoppingCondition::GradientSmall &&
+                if( opt_stop==OptimizationStop::GradientSmall &&
                     !(norm_gx < eps_constr * absrel(norm_gxtyp)) 
                 )
-                    opt_stop=StoppingCondition::NotConverged;
+                    opt_stop=OptimizationStop::NotConverged;
             }
 
             
@@ -10751,11 +10786,11 @@ namespace Optizelle{
                 Real const & mu_typ=state.mu_typ;
                 Real const & eps_mu=state.eps_mu;
                 Natural const & iter=state.iter;
-                StoppingCondition::t & opt_stop=state.opt_stop;
+                OptimizationStop::t & opt_stop=state.opt_stop;
 
                 // If the estimated interior point paramter is negative, exit
                 if(mu_est < Real(0.)) {
-                    opt_stop=StoppingCondition::InteriorPointInstability;
+                    opt_stop=OptimizationStop::InteriorPointInstability;
                     return;
                 }
 
@@ -10767,10 +10802,10 @@ namespace Optizelle{
                 auto mu_converged =
                     std::fabs(mu-absrel(mu_typ)*eps_mu) <=absrel(mu_typ)*eps_mu;
                 auto mu_est_converged = std::fabs(mu-mu_est) <= mu;
-                if( opt_stop==StoppingCondition::GradientSmall &&
+                if( opt_stop==OptimizationStop::GradientSmall &&
                     !(mu_converged && mu_est_converged)
                 ) {
-                    opt_stop=StoppingCondition::NotConverged;
+                    opt_stop=OptimizationStop::NotConverged;
                     return;
                 }
             }

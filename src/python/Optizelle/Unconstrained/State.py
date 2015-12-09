@@ -46,19 +46,24 @@ class t(object):
     stored_history = Optizelle.createNatProperty(
         "stored_history", 
         "Number of control objects to store in a quasi-Newton method")
-    history_reset = Optizelle.createNatProperty(
-        "history_reset", 
-            "Number of failed iterations before we reset the "
-            "history for quasi-Newton methods")
     iter = Optizelle.createNatProperty(
         "iter",
         "Current iteration")
     iter_max = Optizelle.createNatProperty(
         "iter_max",
         "Maximum number of optimization iterations")
+    glob_iter = Optizelle.createNatProperty(
+        "glob_iter",
+        "Globalization iteration")
+    glob_iter_max = Optizelle.createNatProperty(
+        "glob_iter_max",
+        "Maximum number of globalization iterations before we quit")
+    glob_iter_total = Optizelle.createNatProperty(
+        "glob_iter_total",
+        "Total number of globalization iterations taken")
     opt_stop = Optizelle.createEnumProperty(
         "opt_stop",
-        Optizelle.StoppingCondition,
+        Optizelle.OptimizationStop,
         "Why we've stopped the optimization")
     trunc_iter = Optizelle.createNatProperty(
         "trunc_iter",
@@ -169,9 +174,6 @@ class t(object):
     pred = Optizelle.createFloatProperty(
         "pred",
         "Predicted reduction")
-    rejected_trustregion = Optizelle.createNatProperty(
-        "rejected_trustregion",
-        "Number of rejected trust-region steps")
     alpha0 = Optizelle.createFloatProperty(
         "alpha0",
         "Base line-search step length")
@@ -181,14 +183,14 @@ class t(object):
     c1 = Optizelle.createFloatProperty(
         "c1",
         "Parameter that helps govern the sufficient decrease")
-    linesearch_iter = Optizelle.createNatProperty(
-        "linesearch_iter",
+    ls_iter = Optizelle.createNatProperty(
+        "ls_iter",
         "Current number of iterations used in the line-search")
-    linesearch_iter_max = Optizelle.createNatProperty(
-        "linesearch_iter_max",
+    ls_iter_max = Optizelle.createNatProperty(
+        "ls_iter_max",
         "Maximum number of iterations used in the line-search")
-    linesearch_iter_total = Optizelle.createNatProperty(
-        "linesearch_iter_total",
+    ls_iter_total = Optizelle.createNatProperty(
+        "ls_iter_total",
         "Total number of line-search iterations computed")
     eps_ls = Optizelle.createFloatProperty(
         "eps_ls",

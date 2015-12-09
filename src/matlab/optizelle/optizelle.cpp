@@ -38,29 +38,32 @@ namespace Optizelle {
     // each time we enter these routines.
     static std::list<mxArray *> optizelle;
 
-    namespace StoppingCondition { 
+    namespace OptimizationStop { 
         // Converts t to a Matlab enumerated type
         mxArray * toMatlab(t const & opt_stop) {
             // Do the conversion
             switch(opt_stop){
             case NotConverged:
                 return Matlab::enumToMxArray(
-                    "StoppingCondition","NotConverged");
+                    "OptimizationStop","NotConverged");
             case GradientSmall:
                 return Matlab::enumToMxArray(
-                    "StoppingCondition","GradientSmall");
+                    "OptimizationStop","GradientSmall");
             case StepSmall:
                 return Matlab::enumToMxArray(
-                    "StoppingCondition","StepSmall");
+                    "OptimizationStop","StepSmall");
             case MaxItersExceeded:
                 return Matlab::enumToMxArray(
-                    "StoppingCondition","MaxItersExceeded");
+                    "OptimizationStop","MaxItersExceeded");
             case InteriorPointInstability:
                 return Matlab::enumToMxArray(
-                    "StoppingCondition","InteriorPointInstability");
+                    "OptimizationStop","InteriorPointInstability");
+            case GlobalizationFailure:
+                return Matlab::enumToMxArray(
+                    "OptimizationStop","GlobalizationFailure");
             case UserDefined:
                 return Matlab::enumToMxArray(
-                    "StoppingCondition","UserDefined");
+                    "OptimizationStop","UserDefined");
             default:
                 throw;
             }
@@ -71,25 +74,29 @@ namespace Optizelle {
             // Convert the member to a Natural 
             Natural m(*mxGetPr(member));
 
-            if(m==Matlab::enumToNatural("StoppingCondition","NotConverged"))
+            if(m==Matlab::enumToNatural("OptimizationStop","NotConverged"))
                 return NotConverged;
             else if(m==Matlab::enumToNatural(
-                "StoppingCondition","GradientSmall")
+                "OptimizationStop","GradientSmall")
             )
                 return GradientSmall;
             else if(m==Matlab::enumToNatural(
-                "StoppingCondition","StepSmall")
+                "OptimizationStop","StepSmall")
             )
                 return StepSmall;
             else if(m==Matlab::enumToNatural(
-                "StoppingCondition","MaxItersExceeded")
+                "OptimizationStop","MaxItersExceeded")
             )
                 return MaxItersExceeded;
             else if(m==Matlab::enumToNatural(
-                "StoppingCondition","InteriorPointInstability")
+                "OptimizationStop","InteriorPointInstability")
             )
                 return InteriorPointInstability;
-            else if(m==Matlab::enumToNatural("StoppingCondition","UserDefined"))
+            else if(m==Matlab::enumToNatural(
+                "OptimizationStop","GlobalizationFailure")
+            )
+                return GlobalizationFailure;
+            else if(m==Matlab::enumToNatural("OptimizationStop","UserDefined"))
                 return UserDefined;
             else
                 throw;
@@ -1910,9 +1917,11 @@ namespace Optizelle {
                         "eps_grad",
                         "eps_dx",
                         "stored_history",
-                        "history_reset",
                         "iter",
                         "iter_max",
+                        "glob_iter",
+                        "glob_iter_max",
+                        "glob_iter_total",
                         "opt_stop",
                         "trunc_iter",
                         "trunc_iter_max",
@@ -1947,13 +1956,12 @@ namespace Optizelle {
                         "eta2",
                         "ared",
                         "pred",
-                        "rejected_trustregion",
                         "alpha0",
                         "alpha",
                         "c1",
-                        "linesearch_iter",
-                        "linesearch_iter_max",
-                        "linesearch_iter_total",
+                        "ls_iter",
+                        "ls_iter_max",
+                        "ls_iter_total",
                         "eps_ls",
                         "dir",
                         "kind",
@@ -1986,13 +1994,16 @@ namespace Optizelle {
                     toMatlab::Real("eps_dx",state.eps_dx,mxstate);
                     toMatlab::Natural("stored_history",
                         state.stored_history,mxstate);
-                    toMatlab::Natural("history_reset",
-                        state.history_reset,mxstate);
                     toMatlab::Natural("iter",state.iter,mxstate);
                     toMatlab::Natural("iter_max",state.iter_max,mxstate);
-                    toMatlab::Param <StoppingCondition::t> (
+                    toMatlab::Natural("glob_iter",state.glob_iter,mxstate);
+                    toMatlab::Natural("glob_iter_max",
+                        state.glob_iter_max,mxstate);
+                    toMatlab::Natural("glob_iter_total",
+                        state.trunc_iter_total,mxstate);
+                    toMatlab::Param <OptimizationStop::t> (
                         "opt_stop",
-                        StoppingCondition::toMatlab,
+                        OptimizationStop::toMatlab,
                         state.opt_stop,
                         mxstate);
                     toMatlab::Natural("trunc_iter",state.trunc_iter,mxstate);
@@ -2051,17 +2062,15 @@ namespace Optizelle {
                     toMatlab::Real("eta2",state.eta2,mxstate);
                     toMatlab::Real("ared",state.ared,mxstate);
                     toMatlab::Real("pred",state.pred,mxstate);
-                    toMatlab::Natural("rejected_trustregion",
-                        state.rejected_trustregion,mxstate);
                     toMatlab::Real("alpha0",state.alpha0,mxstate);
                     toMatlab::Real("alpha",state.alpha,mxstate);
                     toMatlab::Real("c1",state.c1,mxstate);
-                    toMatlab::Natural("linesearch_iter",
-                        state.linesearch_iter,mxstate);
-                    toMatlab::Natural("linesearch_iter_max",
-                        state.linesearch_iter_max,mxstate);
-                    toMatlab::Natural("linesearch_iter_total",
-                        state.linesearch_iter_total,mxstate);
+                    toMatlab::Natural("ls_iter",
+                        state.ls_iter,mxstate);
+                    toMatlab::Natural("ls_iter_max",
+                        state.ls_iter_max,mxstate);
+                    toMatlab::Natural("ls_iter_total",
+                        state.ls_iter_total,mxstate);
                     toMatlab::Real("eps_ls",state.eps_ls,mxstate);
                     toMatlab::Param <LineSearchDirection::t> (
                         "dir",
@@ -2116,13 +2125,17 @@ namespace Optizelle {
                     fromMatlab::Real("eps_dx",mxstate,state.eps_dx);
                     fromMatlab::Natural("stored_history",
                         mxstate,state.stored_history);
-                    fromMatlab::Natural("history_reset",
-                        mxstate,state.history_reset);
                     fromMatlab::Natural("iter",mxstate,state.iter);
                     fromMatlab::Natural("iter_max",mxstate,state.iter_max);
-                    fromMatlab::Param <StoppingCondition::t> (
+                    fromMatlab::Natural("glob_iter",
+                        mxstate,state.glob_iter);
+                    fromMatlab::Natural("glob_iter_max",
+                        mxstate,state.glob_iter_max);
+                    fromMatlab::Natural("glob_iter_total",
+                        mxstate,state.glob_iter_total);
+                    fromMatlab::Param <OptimizationStop::t> (
                         "opt_stop",
-                        StoppingCondition::fromMatlab,
+                        OptimizationStop::fromMatlab,
                         mxstate,
                         state.opt_stop);
                     fromMatlab::Natural("trunc_iter",
@@ -2183,17 +2196,15 @@ namespace Optizelle {
                     fromMatlab::Real("eta2",mxstate,state.eta2);
                     fromMatlab::Real("ared",mxstate,state.ared);
                     fromMatlab::Real("pred",mxstate,state.pred);
-                    fromMatlab::Natural("rejected_trustregion",
-                        mxstate,state.rejected_trustregion);
                     fromMatlab::Real("alpha0",mxstate,state.alpha0);
                     fromMatlab::Real("alpha",mxstate,state.alpha);
                     fromMatlab::Real("c1",mxstate,state.c1);
-                    fromMatlab::Natural("linesearch_iter",
-                        mxstate,state.linesearch_iter);
-                    fromMatlab::Natural("linesearch_iter_max",
-                        mxstate,state.linesearch_iter_max);
-                    fromMatlab::Natural("linesearch_iter_total",mxstate,
-                        state.linesearch_iter_total);
+                    fromMatlab::Natural("ls_iter",
+                        mxstate,state.ls_iter);
+                    fromMatlab::Natural("ls_iter_max",
+                        mxstate,state.ls_iter_max);
+                    fromMatlab::Natural("ls_iter_total",mxstate,
+                        state.ls_iter_total);
                     fromMatlab::Real("eps_ls",mxstate,state.eps_ls);
                     fromMatlab::Param <LineSearchDirection::t> (
                         "dir",

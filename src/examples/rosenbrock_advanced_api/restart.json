@@ -1,17 +1,15 @@
 {
    "Naturals" : {
-      "history_reset" : 5,
       "iter" : 12,
       "iter_max" : 50,
       "trunc_iter" : 2,
       "trunc_iter_max" : 10,
       "trunc_iter_total" : 22,
       "trunc_orthog_max" : 1,
-      "linesearch_iter" : 5,
-      "linesearch_iter_max" : 5,
-      "linesearch_iter_total" : 55,
+      "ls_iter" : 5,
+      "ls_iter_max" : 5,
+      "ls_iter_total" : 55,
       "msg_level" : 1,
-      "rejected_trustregion" : 0,
       "stored_history" : 0
    },
    "Parameters" : {

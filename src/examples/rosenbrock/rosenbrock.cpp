@@ -110,7 +110,7 @@ int main(int argc,char* argv[]){
     //---Extract0---
     // Print out the reason for convergence
     std::cout << "The algorithm converged due to: " <<
-        Optizelle::StoppingCondition::to_string(state.opt_stop) <<
+        Optizelle::OptimizationStop::to_string(state.opt_stop) <<
         std::endl;
 
     // Print out the final answer

@@ -3,7 +3,6 @@
       "msg_level" : 1,
       "H_type" : "SR1",
       "stored_history" : 5,
-      "history_reset" : 10,
       "iter_max" : 100,
       "eps_trunc" : 1e-16,
       "eps_dx" : 1e-10,

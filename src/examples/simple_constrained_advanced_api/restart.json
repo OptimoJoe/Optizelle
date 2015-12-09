@@ -2,18 +2,16 @@
    "Naturals" : {
       "augsys_iter_max" : 100,
       "augsys_rst_freq" : 0,
-      "history_reset" : 5,
       "iter" : 8,
       "iter_max" : 50,
       "trunc_iter" : 1,
       "trunc_iter_max" : 10,
       "trunc_iter_total" : 7,
       "trunc_orthog_max" : 10,
-      "linesearch_iter" : 0,
-      "linesearch_iter_max" : 5,
-      "linesearch_iter_total" : 0,
+      "ls_iter" : 0,
+      "ls_iter_max" : 5,
+      "ls_iter_total" : 0,
       "msg_level" : 1,
-      "rejected_trustregion" : 0,
       "stored_history" : 0
    },
    "Parameters" : {
