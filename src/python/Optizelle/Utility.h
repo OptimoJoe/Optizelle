@@ -45,7 +45,7 @@ Author: Joseph Young (joe@optimojoe.com)
 // count, but we will consider this to be a constant operation.
 
 namespace Optizelle {
-    namespace StoppingCondition { 
+    namespace OptimizationStop { 
         // Converts t to a Python enumerated type
         PyObject * toPython(t const & opt_stop);
 
@@ -53,9 +53,9 @@ namespace Optizelle {
         t fromPython(PyObject * const member);
     }
 
-    namespace KrylovStop {
+    namespace TruncatedStop {
         // Converts t to a Python enumerated type
-        PyObject * toPython(t const & krylov_stop);
+        PyObject * toPython(t const & trunc_stop);
 
         // Converts a Python enumerated type to t 
         t fromPython(PyObject * const member);

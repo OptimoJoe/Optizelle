@@ -259,7 +259,7 @@ Optizelle.EqualityConstrained.Algorithms.getMin(
 
 # Print out the reason for convergence
 print "The algorithm converged due to: %s" % (
-    Optizelle.StoppingCondition.to_string(state.opt_stop))
+    Optizelle.OptimizationStop.to_string(state.opt_stop))
 
 # Print out the final answer
 print "The optimal point is:"

@@ -38,29 +38,32 @@ namespace Optizelle {
     // each time we enter these routines.
     static std::list<mxArray *> optizelle;
 
-    namespace StoppingCondition { 
+    namespace OptimizationStop { 
         // Converts t to a Matlab enumerated type
         mxArray * toMatlab(t const & opt_stop) {
             // Do the conversion
             switch(opt_stop){
             case NotConverged:
                 return Matlab::enumToMxArray(
-                    "StoppingCondition","NotConverged");
+                    "OptimizationStop","NotConverged");
             case GradientSmall:
                 return Matlab::enumToMxArray(
-                    "StoppingCondition","GradientSmall");
+                    "OptimizationStop","GradientSmall");
             case StepSmall:
                 return Matlab::enumToMxArray(
-                    "StoppingCondition","StepSmall");
+                    "OptimizationStop","StepSmall");
             case MaxItersExceeded:
                 return Matlab::enumToMxArray(
-                    "StoppingCondition","MaxItersExceeded");
+                    "OptimizationStop","MaxItersExceeded");
             case InteriorPointInstability:
                 return Matlab::enumToMxArray(
-                    "StoppingCondition","InteriorPointInstability");
+                    "OptimizationStop","InteriorPointInstability");
+            case GlobalizationFailure:
+                return Matlab::enumToMxArray(
+                    "OptimizationStop","GlobalizationFailure");
             case UserDefined:
                 return Matlab::enumToMxArray(
-                    "StoppingCondition","UserDefined");
+                    "OptimizationStop","UserDefined");
             default:
                 throw;
             }
@@ -71,59 +74,66 @@ namespace Optizelle {
             // Convert the member to a Natural 
             Natural m(*mxGetPr(member));
 
-            if(m==Matlab::enumToNatural("StoppingCondition","NotConverged"))
+            if(m==Matlab::enumToNatural("OptimizationStop","NotConverged"))
                 return NotConverged;
             else if(m==Matlab::enumToNatural(
-                "StoppingCondition","GradientSmall")
+                "OptimizationStop","GradientSmall")
             )
                 return GradientSmall;
             else if(m==Matlab::enumToNatural(
-                "StoppingCondition","StepSmall")
+                "OptimizationStop","StepSmall")
             )
                 return StepSmall;
             else if(m==Matlab::enumToNatural(
-                "StoppingCondition","MaxItersExceeded")
+                "OptimizationStop","MaxItersExceeded")
             )
                 return MaxItersExceeded;
             else if(m==Matlab::enumToNatural(
-                "StoppingCondition","InteriorPointInstability")
+                "OptimizationStop","InteriorPointInstability")
             )
                 return InteriorPointInstability;
-            else if(m==Matlab::enumToNatural("StoppingCondition","UserDefined"))
+            else if(m==Matlab::enumToNatural(
+                "OptimizationStop","GlobalizationFailure")
+            )
+                return GlobalizationFailure;
+            else if(m==Matlab::enumToNatural("OptimizationStop","UserDefined"))
                 return UserDefined;
             else
                 throw;
         }
     }
     
-    namespace KrylovStop { 
+    namespace TruncatedStop { 
         // Converts t to a Matlab enumerated type
-        mxArray * toMatlab(t const & krylov_stop) {
+        mxArray * toMatlab(t const & trunc_stop) {
             // Do the conversion
-            switch(krylov_stop){
+            switch(trunc_stop){
             case NotConverged:
-                return Matlab::enumToMxArray("KrylovStop","NotConverged");
+                return Matlab::enumToMxArray(
+                    "TruncatedStop","NotConverged");
             case NegativeCurvature:
-                return Matlab::enumToMxArray("KrylovStop","NegativeCurvature");
+                return Matlab::enumToMxArray(
+                    "TruncatedStop","NegativeCurvature");
             case RelativeErrorSmall:
                 return Matlab::enumToMxArray(
-                    "KrylovStop","RelativeErrorSmall");
+                    "TruncatedStop","RelativeErrorSmall");
             case MaxItersExceeded:
-                return Matlab::enumToMxArray("KrylovStop","MaxItersExceeded");
+                return Matlab::enumToMxArray(
+                    "TruncatedStop","MaxItersExceeded");
             case TrustRegionViolated:
                 return Matlab::enumToMxArray(
-                    "KrylovStop","TrustRegionViolated");
+                    "TruncatedStop","TrustRegionViolated");
             case NanDetected:
-                return Matlab::enumToMxArray("KrylovStop","NanDetected");
+                return Matlab::enumToMxArray("TruncatedStop","NanDetected");
             case LossOfOrthogonality:
                 return Matlab::enumToMxArray(
-                    "KrylovStop","LossOfOrthogonality");
+                    "TruncatedStop","LossOfOrthogonality");
             case InvalidTrustRegionOffset:
                 return Matlab::enumToMxArray(
-                    "KrylovStop","InvalidTrustRegionOffset");
+                    "TruncatedStop","InvalidTrustRegionOffset");
             case TooManyFailedSafeguard:
                 return Matlab::enumToMxArray(
-                    "KrylovStop","TooManyFailedSafeguard");
+                    "TruncatedStop","TooManyFailedSafeguard");
             default:
                 throw;
             }
@@ -134,30 +144,36 @@ namespace Optizelle {
             // Convert the member to a Natural 
             Natural m(*mxGetPr(member));
 
-            if(m==Matlab::enumToNatural("KrylovStop","NotConverged"))
+            if(m==Matlab::enumToNatural("TruncatedStop","NotConverged"))
                 return NotConverged;
-            else if(m==Matlab::enumToNatural("KrylovStop","NegativeCurvature"))
+            else if(m==Matlab::enumToNatural(
+                "TruncatedStop","NegativeCurvature")
+            )
                 return NegativeCurvature;
-            else if(m==Matlab::enumToNatural("KrylovStop","RelativeErrorSmall"))
+            else if(m==Matlab::enumToNatural(
+                "TruncatedStop","RelativeErrorSmall")
+            )
                 return RelativeErrorSmall;
-            else if(m==Matlab::enumToNatural("KrylovStop","MaxItersExceeded"))
+            else if(m==Matlab::enumToNatural(
+                "TruncatedStop","MaxItersExceeded")
+            )
                 return MaxItersExceeded;
             else if(m==Matlab::enumToNatural(
-                "KrylovStop","TrustRegionViolated")
+                "TruncatedStop","TrustRegionViolated")
             )
                 return TrustRegionViolated;
-            else if(m==Matlab::enumToNatural("KrylovStop","NanDetected"))
+            else if(m==Matlab::enumToNatural("TruncatedStop","NanDetected"))
                 return NanDetected;
             else if(m==Matlab::enumToNatural(
-                "KrylovStop","LossOfOrthogonality")
+                "TruncatedStop","LossOfOrthogonality")
             )
                 return LossOfOrthogonality;
             else if(m==Matlab::enumToNatural(
-                "KrylovStop","InvalidTrustRegionOffset")
+                "TruncatedStop","InvalidTrustRegionOffset")
             )
                 return InvalidTrustRegionOffset;
             else if(m==Matlab::enumToNatural(
-                "KrylovStop","TooManyFailedSafeguard")
+                "TruncatedStop","TooManyFailedSafeguard")
             )
                 return TooManyFailedSafeguard;
             else
@@ -398,9 +414,6 @@ namespace Optizelle {
             case BeforeActualVersusPredicted:
                 return Matlab::enumToMxArray(
                     "OptimizationLocation","BeforeActualVersusPredicted");
-            case EndOfKrylovIteration:
-                return Matlab::enumToMxArray(
-                    "OptimizationLocation","EndOfKrylovIteration");
             case EndOfOptimization:
                 return Matlab::enumToMxArray(
                     "OptimizationLocation","EndOfOptimization");
@@ -471,9 +484,6 @@ namespace Optizelle {
             else if(m==Matlab::enumToNatural(
                 "OptimizationLocation","BeforeActualVersusPredicted"))
                 return BeforeActualVersusPredicted;
-            else if(m==Matlab::enumToNatural(
-                "OptimizationLocation","EndOfKrylovIteration"))
-                return EndOfKrylovIteration;
             else if(m==Matlab::enumToNatural(
                 "OptimizationLocation","EndOfOptimization"))
                 return EndOfOptimization;
@@ -1907,17 +1917,19 @@ namespace Optizelle {
                         "eps_grad",
                         "eps_dx",
                         "stored_history",
-                        "history_reset",
                         "iter",
                         "iter_max",
+                        "glob_iter",
+                        "glob_iter_max",
+                        "glob_iter_total",
                         "opt_stop",
-                        "krylov_iter",
-                        "krylov_iter_max",
-                        "krylov_iter_total",
-                        "krylov_orthog_max",
-                        "krylov_stop",
-                        "krylov_rel_err",
-                        "eps_krylov",
+                        "trunc_iter",
+                        "trunc_iter_max",
+                        "trunc_iter_total",
+                        "trunc_orthog_max",
+                        "trunc_stop",
+                        "trunc_err",
+                        "eps_trunc",
                         "algorithm_class",
                         "PH_type",
                         "H_type",
@@ -1944,13 +1956,12 @@ namespace Optizelle {
                         "eta2",
                         "ared",
                         "pred",
-                        "rejected_trustregion",
                         "alpha0",
                         "alpha",
                         "c1",
-                        "linesearch_iter",
-                        "linesearch_iter_max",
-                        "linesearch_iter_total",
+                        "ls_iter",
+                        "ls_iter_max",
+                        "ls_iter_total",
                         "eps_ls",
                         "dir",
                         "kind",
@@ -1983,30 +1994,33 @@ namespace Optizelle {
                     toMatlab::Real("eps_dx",state.eps_dx,mxstate);
                     toMatlab::Natural("stored_history",
                         state.stored_history,mxstate);
-                    toMatlab::Natural("history_reset",
-                        state.history_reset,mxstate);
                     toMatlab::Natural("iter",state.iter,mxstate);
                     toMatlab::Natural("iter_max",state.iter_max,mxstate);
-                    toMatlab::Param <StoppingCondition::t> (
+                    toMatlab::Natural("glob_iter",state.glob_iter,mxstate);
+                    toMatlab::Natural("glob_iter_max",
+                        state.glob_iter_max,mxstate);
+                    toMatlab::Natural("glob_iter_total",
+                        state.glob_iter_total,mxstate);
+                    toMatlab::Param <OptimizationStop::t> (
                         "opt_stop",
-                        StoppingCondition::toMatlab,
+                        OptimizationStop::toMatlab,
                         state.opt_stop,
                         mxstate);
-                    toMatlab::Natural("krylov_iter",state.krylov_iter,mxstate);
-                    toMatlab::Natural("krylov_iter_max",
-                        state.krylov_iter_max,mxstate);
-                    toMatlab::Natural("krylov_iter_total",
-                        state.krylov_iter_total,mxstate);
-                    toMatlab::Natural("krylov_orthog_max",
-                        state.krylov_orthog_max,mxstate);
-                    toMatlab::Param <KrylovStop::t> (
-                        "krylov_stop",
-                        KrylovStop::toMatlab,
-                        state.krylov_stop,
+                    toMatlab::Natural("trunc_iter",state.trunc_iter,mxstate);
+                    toMatlab::Natural("trunc_iter_max",
+                        state.trunc_iter_max,mxstate);
+                    toMatlab::Natural("trunc_iter_total",
+                        state.trunc_iter_total,mxstate);
+                    toMatlab::Natural("trunc_orthog_max",
+                        state.trunc_orthog_max,mxstate);
+                    toMatlab::Param <TruncatedStop::t> (
+                        "trunc_stop",
+                        TruncatedStop::toMatlab,
+                        state.trunc_stop,
                         mxstate);
-                    toMatlab::Real("krylov_rel_err",
-                        state.krylov_rel_err,mxstate);
-                    toMatlab::Real("eps_krylov",state.eps_krylov,mxstate);
+                    toMatlab::Real("trunc_err",
+                        state.trunc_err,mxstate);
+                    toMatlab::Real("eps_trunc",state.eps_trunc,mxstate);
                     toMatlab::Param <AlgorithmClass::t> (
                         "algorithm_class",
                         AlgorithmClass::toMatlab,
@@ -2048,17 +2062,15 @@ namespace Optizelle {
                     toMatlab::Real("eta2",state.eta2,mxstate);
                     toMatlab::Real("ared",state.ared,mxstate);
                     toMatlab::Real("pred",state.pred,mxstate);
-                    toMatlab::Natural("rejected_trustregion",
-                        state.rejected_trustregion,mxstate);
                     toMatlab::Real("alpha0",state.alpha0,mxstate);
                     toMatlab::Real("alpha",state.alpha,mxstate);
                     toMatlab::Real("c1",state.c1,mxstate);
-                    toMatlab::Natural("linesearch_iter",
-                        state.linesearch_iter,mxstate);
-                    toMatlab::Natural("linesearch_iter_max",
-                        state.linesearch_iter_max,mxstate);
-                    toMatlab::Natural("linesearch_iter_total",
-                        state.linesearch_iter_total,mxstate);
+                    toMatlab::Natural("ls_iter",
+                        state.ls_iter,mxstate);
+                    toMatlab::Natural("ls_iter_max",
+                        state.ls_iter_max,mxstate);
+                    toMatlab::Natural("ls_iter_total",
+                        state.ls_iter_total,mxstate);
                     toMatlab::Real("eps_ls",state.eps_ls,mxstate);
                     toMatlab::Param <LineSearchDirection::t> (
                         "dir",
@@ -2113,31 +2125,35 @@ namespace Optizelle {
                     fromMatlab::Real("eps_dx",mxstate,state.eps_dx);
                     fromMatlab::Natural("stored_history",
                         mxstate,state.stored_history);
-                    fromMatlab::Natural("history_reset",
-                        mxstate,state.history_reset);
                     fromMatlab::Natural("iter",mxstate,state.iter);
                     fromMatlab::Natural("iter_max",mxstate,state.iter_max);
-                    fromMatlab::Param <StoppingCondition::t> (
+                    fromMatlab::Natural("glob_iter",
+                        mxstate,state.glob_iter);
+                    fromMatlab::Natural("glob_iter_max",
+                        mxstate,state.glob_iter_max);
+                    fromMatlab::Natural("glob_iter_total",
+                        mxstate,state.glob_iter_total);
+                    fromMatlab::Param <OptimizationStop::t> (
                         "opt_stop",
-                        StoppingCondition::fromMatlab,
+                        OptimizationStop::fromMatlab,
                         mxstate,
                         state.opt_stop);
-                    fromMatlab::Natural("krylov_iter",
-                        mxstate,state.krylov_iter);
-                    fromMatlab::Natural("krylov_iter_max",
-                        mxstate,state.krylov_iter_max);
-                    fromMatlab::Natural("krylov_iter_total",
-                        mxstate,state.krylov_iter_total);
-                    fromMatlab::Natural("krylov_orthog_max",
-                        mxstate,state.krylov_orthog_max);
-                    fromMatlab::Param <KrylovStop::t> (
-                        "krylov_stop",
-                        KrylovStop::fromMatlab,
+                    fromMatlab::Natural("trunc_iter",
+                        mxstate,state.trunc_iter);
+                    fromMatlab::Natural("trunc_iter_max",
+                        mxstate,state.trunc_iter_max);
+                    fromMatlab::Natural("trunc_iter_total",
+                        mxstate,state.trunc_iter_total);
+                    fromMatlab::Natural("trunc_orthog_max",
+                        mxstate,state.trunc_orthog_max);
+                    fromMatlab::Param <TruncatedStop::t> (
+                        "trunc_stop",
+                        TruncatedStop::fromMatlab,
                         mxstate,
-                        state.krylov_stop);
-                    fromMatlab::Real("krylov_rel_err",
-                        mxstate,state.krylov_rel_err);
-                    fromMatlab::Real("eps_krylov",mxstate,state.eps_krylov);
+                        state.trunc_stop);
+                    fromMatlab::Real("trunc_err",
+                        mxstate,state.trunc_err);
+                    fromMatlab::Real("eps_trunc",mxstate,state.eps_trunc);
                     fromMatlab::Param <AlgorithmClass::t> (
                         "algorithm_class",
                         AlgorithmClass::fromMatlab,
@@ -2180,17 +2196,15 @@ namespace Optizelle {
                     fromMatlab::Real("eta2",mxstate,state.eta2);
                     fromMatlab::Real("ared",mxstate,state.ared);
                     fromMatlab::Real("pred",mxstate,state.pred);
-                    fromMatlab::Natural("rejected_trustregion",
-                        mxstate,state.rejected_trustregion);
                     fromMatlab::Real("alpha0",mxstate,state.alpha0);
                     fromMatlab::Real("alpha",mxstate,state.alpha);
                     fromMatlab::Real("c1",mxstate,state.c1);
-                    fromMatlab::Natural("linesearch_iter",
-                        mxstate,state.linesearch_iter);
-                    fromMatlab::Natural("linesearch_iter_max",
-                        mxstate,state.linesearch_iter_max);
-                    fromMatlab::Natural("linesearch_iter_total",mxstate,
-                        state.linesearch_iter_total);
+                    fromMatlab::Natural("ls_iter",
+                        mxstate,state.ls_iter);
+                    fromMatlab::Natural("ls_iter_max",
+                        mxstate,state.ls_iter_max);
+                    fromMatlab::Natural("ls_iter_total",mxstate,
+                        state.ls_iter_total);
                     fromMatlab::Real("eps_ls",mxstate,state.eps_ls);
                     fromMatlab::Param <LineSearchDirection::t> (
                         "dir",

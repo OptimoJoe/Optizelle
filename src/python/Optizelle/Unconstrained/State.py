@@ -46,44 +46,47 @@ class t(object):
     stored_history = Optizelle.createNatProperty(
         "stored_history", 
         "Number of control objects to store in a quasi-Newton method")
-    history_reset = Optizelle.createNatProperty(
-        "history_reset", 
-            "Number of failed iterations before we reset the "
-            "history for quasi-Newton methods")
     iter = Optizelle.createNatProperty(
         "iter",
         "Current iteration")
     iter_max = Optizelle.createNatProperty(
         "iter_max",
         "Maximum number of optimization iterations")
+    glob_iter = Optizelle.createNatProperty(
+        "glob_iter",
+        "Globalization iteration")
+    glob_iter_max = Optizelle.createNatProperty(
+        "glob_iter_max",
+        "Maximum number of globalization iterations before we quit")
+    glob_iter_total = Optizelle.createNatProperty(
+        "glob_iter_total",
+        "Total number of globalization iterations taken")
     opt_stop = Optizelle.createEnumProperty(
         "opt_stop",
-        Optizelle.StoppingCondition,
+        Optizelle.OptimizationStop,
         "Why we've stopped the optimization")
-    krylov_iter = Optizelle.createNatProperty(
-        "krylov_iter",
-        "Current number of Krylov iterations taken")
-    krylov_iter_max = Optizelle.createNatProperty(
-        "krylov_iter_max",
-        "Maximum number of iterations in the Krylov method")
-    krylov_iter_total = Optizelle.createNatProperty(
-        "krylov_iter_total",
-        "Total number of Krylov iterations taken")
-    krylov_orthog_max = Optizelle.createNatProperty(
-        "krylov_orthog_max",
-        ("The maximum number of vectors we orthogonalize "
-        "against in the Krylov method.  For something like "
-        "CG, this is 1."))
-    krylov_stop = Optizelle.createEnumProperty(
-        "krylov_stop",
-        Optizelle.KrylovStop,
-        "Why the Krylov method was last stopped")
-    krylov_rel_err = Optizelle.createFloatProperty(
-        "krylov_rel_err",
-        "Relative error in the Krylov method")
-    eps_krylov = Optizelle.createFloatProperty(
-        "eps_krylov",
-        "Stopping tolerance for the Krylov method")
+    trunc_iter = Optizelle.createNatProperty(
+        "trunc_iter",
+        "Current number of truncated-CG iterations taken")
+    trunc_iter_max = Optizelle.createNatProperty(
+        "trunc_iter_max",
+        "Maximum number of iterations used by truncated CG")
+    trunc_iter_total = Optizelle.createNatProperty(
+        "trunc_iter_total",
+        "Total number of truncated-CG iterations taken")
+    trunc_orthog_max = Optizelle.createNatProperty(
+        "trunc_orthog_max",
+        "Maximum number of vectors we orthogonalize against in truncated CG")
+    trunc_stop = Optizelle.createEnumProperty(
+        "trunc_stop",
+        Optizelle.TruncatedStop,
+        "Why truncated CG was last stopped")
+    trunc_err = Optizelle.createFloatProperty(
+        "trunc_err",
+        "Relative error in truncated CG")
+    eps_trunc = Optizelle.createFloatProperty(
+        "eps_trunc",
+        "Stopping tolerance for truncated CG")
     algorithm_class = Optizelle.createEnumProperty(
         "algorithm_class",
         Optizelle.AlgorithmClass,
@@ -171,9 +174,6 @@ class t(object):
     pred = Optizelle.createFloatProperty(
         "pred",
         "Predicted reduction")
-    rejected_trustregion = Optizelle.createNatProperty(
-        "rejected_trustregion",
-        "Number of rejected trust-region steps")
     alpha0 = Optizelle.createFloatProperty(
         "alpha0",
         "Base line-search step length")
@@ -183,14 +183,14 @@ class t(object):
     c1 = Optizelle.createFloatProperty(
         "c1",
         "Parameter that helps govern the sufficient decrease")
-    linesearch_iter = Optizelle.createNatProperty(
-        "linesearch_iter",
+    ls_iter = Optizelle.createNatProperty(
+        "ls_iter",
         "Current number of iterations used in the line-search")
-    linesearch_iter_max = Optizelle.createNatProperty(
-        "linesearch_iter_max",
+    ls_iter_max = Optizelle.createNatProperty(
+        "ls_iter_max",
         "Maximum number of iterations used in the line-search")
-    linesearch_iter_total = Optizelle.createNatProperty(
-        "linesearch_iter_total",
+    ls_iter_total = Optizelle.createNatProperty(
+        "ls_iter_total",
         "Total number of line-search iterations computed")
     eps_ls = Optizelle.createFloatProperty(
         "eps_ls",

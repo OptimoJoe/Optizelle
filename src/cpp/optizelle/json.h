@@ -377,34 +377,34 @@ namespace Optizelle {
                         "stored_history",
                         Json::Value::UInt64(state.stored_history)),
                     "stored_history");
-                state.history_reset=read::natural(
-                    msg,
-                    root["Optizelle"].get(
-                        "history_reset",
-                        Json::Value::UInt64(state.history_reset)),
-                    "history_reset");
                 state.iter_max=read::natural(
                     msg,
                     root["Optizelle"].get(
                         "iter_max",
                         Json::Value::UInt64(state.iter_max)),
                     "iter_max");
-                state.krylov_iter_max=read::natural(
+                state.glob_iter_max=read::natural(
                     msg,
                     root["Optizelle"].get(
-                        "krylov_iter_max",
-                        Json::Value::UInt64(state.krylov_iter_max)),
-                    "krylov_iter_max");
-                state.krylov_orthog_max=read::natural(
+                        "glob_iter_max",
+                        Json::Value::UInt64(state.glob_iter_max)),
+                    "glob_iter_max");
+                state.trunc_iter_max=read::natural(
                     msg,
                     root["Optizelle"].get(
-                        "krylov_orthog_max",
-                        Json::Value::UInt64(state.krylov_orthog_max)),
-                    "krylov_orthog_max");
-                state.eps_krylov=read::real <Real> (
+                        "trunc_iter_max",
+                        Json::Value::UInt64(state.trunc_iter_max)),
+                    "trunc_iter_max");
+                state.trunc_orthog_max=read::natural(
                     msg,
-                    root["Optizelle"].get("eps_krylov",state.eps_krylov),
-                    "eps_krylov");
+                    root["Optizelle"].get(
+                        "trunc_orthog_max",
+                        Json::Value::UInt64(state.trunc_orthog_max)),
+                    "trunc_orthog_max");
+                state.eps_trunc=read::real <Real> (
+                    msg,
+                    root["Optizelle"].get("eps_trunc",state.eps_trunc),
+                    "eps_trunc");
                 state.algorithm_class=read::param <AlgorithmClass::t> (
                     msg,
                     root["Optizelle"].get("algorithm_class",
@@ -458,12 +458,12 @@ namespace Optizelle {
                     msg,
                     root["Optizelle"].get("c1",state.c1),
                     "c1");
-                state.linesearch_iter_max=read::natural(
+                state.ls_iter_max=read::natural(
                     msg,
                     root["Optizelle"].get(
-                        "linesearch_iter_max",
-                        Json::Value::UInt64(state.linesearch_iter_max)),
-                    "linesearch_iter_max");
+                        "ls_iter_max",
+                        Json::Value::UInt64(state.ls_iter_max)),
+                    "ls_iter_max");
                 state.eps_ls=read::real <Real> (
                     msg,
                     root["Optizelle"].get("eps_ls",state.eps_ls),
@@ -540,14 +540,14 @@ namespace Optizelle {
                 root["Optizelle"]["eps_dx"]=write::real(state.eps_dx);
                 root["Optizelle"]["stored_history"]=write::natural(
                     state.stored_history);
-                root["Optizelle"]["history_reset"]=write::natural(
-                    state.history_reset);
                 root["Optizelle"]["iter_max"]=write::natural(state.iter_max);
-                root["Optizelle"]["krylov_iter_max"]=write::natural(
-                    state.krylov_iter_max);
-                root["Optizelle"]["krylov_orthog_max"]=write::natural(
-                    state.krylov_orthog_max);
-                root["Optizelle"]["eps_krylov"]=write::real(state.eps_krylov);
+                root["Optizelle"]["glob_iter_max"]=write::natural(
+                    state.glob_iter_max);
+                root["Optizelle"]["trunc_iter_max"]=write::natural(
+                    state.trunc_iter_max);
+                root["Optizelle"]["trunc_orthog_max"]=write::natural(
+                    state.trunc_orthog_max);
+                root["Optizelle"]["eps_trunc"]=write::real(state.eps_trunc);
                 root["Optizelle"]["algorithm_class"]=write_param(
                     AlgorithmClass::to_string,state.algorithm_class);
                 root["Optizelle"]["PH_type"]=write_param(
@@ -562,8 +562,8 @@ namespace Optizelle {
                 root["Optizelle"]["eta2"]=write::real(state.eta2);
                 root["Optizelle"]["alpha0"]=write::real(state.alpha0);
                 root["Optizelle"]["c1"]=write::real(state.c1);
-                root["Optizelle"]["linesearch_iter_max"]=write::natural(
-                    state.linesearch_iter_max);
+                root["Optizelle"]["ls_iter_max"]=write::natural(
+                    state.ls_iter_max);
                 root["Optizelle"]["eps_ls"]=write::real(state.eps_ls);
                 root["Optizelle"]["dir"]=write_param(
                     LineSearchDirection::to_string,state.dir);

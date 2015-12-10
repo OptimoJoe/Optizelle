@@ -263,16 +263,17 @@ namespace Optizelle{
     }
 
     // Reasons why we stop the algorithm
-    namespace StoppingCondition{
+    namespace OptimizationStop{
         enum t : Natural{
-            //---StoppingCondition0---
+            //---OptimizationStop0---
             NotConverged,            // Algorithm did not converge
             GradientSmall,           // Gradient was sufficiently small
             StepSmall,               // Change in the step is small
             MaxItersExceeded,        // Maximum number of iterations exceeded
             InteriorPointInstability,// Instability in the interior point method
+            GlobalizationFailure,    // Too many failed globalization iterations
             UserDefined              // Some user defined stopping condition 
-            //---StoppingCondition1---
+            //---OptimizationStop1---
         };
 
         // Converts the stopping condition to a string 
@@ -431,9 +432,6 @@ namespace Optizelle{
             // This occurs prior to checking the predicted versus actual
             // reduction in a trust-region method.
             BeforeActualVersusPredicted,
-
-            // This occurs at the end of a Krylov iteration
-            EndOfKrylovIteration,
 
             // This occurs at the end of all optimization 
             EndOfOptimization
@@ -1603,8 +1601,6 @@ namespace Optizelle{
                     // Get the headers 
                     std::list <std::string> out;
                     ProblemClass::Diagnostics::getStateHeader(state,out);
-                    if(false && msg_level >= 3)
-                        ProblemClass::Diagnostics::getKrylovHeader(state,out);
 
                     // Output the result
                     msg.print(std::accumulate (
@@ -1651,29 +1647,6 @@ namespace Optizelle{
                     else 
                         ProblemClass::Diagnostics
                             ::getState(fns,state,false,false,out);
-
-                    // Print out blank Krylov information 
-                    if(false && msg_level >=3)
-                        ProblemClass::Diagnostics::getKrylov(state,true,out);
-
-                    // Output the result
-                    msg.print(std::accumulate (
-                        out.begin(),out.end(),std::string()));
-                }
-                break;
-
-            // Output information at the end of each Krylov iteration
-            case OptimizationLocation::EndOfKrylovIteration:
-                if(false && msg_level >= 3) {
-                    // Get the diagonstic information
-                    std::list <std::string> out;
-
-                    // Print out blank state information
-                    ProblemClass::Diagnostics::getState(
-                        fns,state,true,false,out);
-
-                    // Print out the Krylov information 
-                    ProblemClass::Diagnostics::getKrylov(state,false,out);
 
                     // Output the result
                     msg.print(std::accumulate (
@@ -1762,7 +1735,7 @@ namespace Optizelle{
         std::string atos(const double& x);
         std::string atos(Natural const & x);
         std::string atos(std::string const & x);
-        std::string atos(KrylovStop::t const & x);
+        std::string atos(TruncatedStop::t const & x);
         std::string atos(QuasinormalStop::t const & x);
 
         // Blank separator for printing
@@ -1778,17 +1751,12 @@ namespace Optizelle{
             typename ProblemClass::State::t const & state
         ) {
             // Create some shortcuts
-            Natural const & iter=state.iter;
-            Natural const & linesearch_iter=state.linesearch_iter;
-            Natural const & rejected_trustregion=state.rejected_trustregion;
-            AlgorithmClass::t const & algorithm_class=state.algorithm_class;
+            auto const & iter=state.iter;
+            auto const & glob_iter_total=state.glob_iter_total;
 
-            return (iter==1) &&
-                ((algorithm_class == AlgorithmClass::LineSearch &&
-                    linesearch_iter==0) ||
-                ((algorithm_class == AlgorithmClass::TrustRegion ||
-                  algorithm_class == AlgorithmClass::UserDefined) &&
-                    rejected_trustregion == 0));
+            // Return true if we're on iteration 1 and we've not globalized
+            // anything yet
+            return (iter==1) && (glob_iter_total==0);
         }
     }
        
@@ -1846,7 +1814,13 @@ namespace Optizelle{
                 // inside of the restart section.
                 NO_DEFAULT_COPY_ASSIGNMENT(t)
 
-                // ------------- GENERIC ------------- 
+                // ---------- Generic -----------
+
+                // Algorithm class
+                AlgorithmClass::t algorithm_class;
+
+                // Why we've stopped the optimization
+                OptimizationStop::t opt_stop;
 
                 // Tolerance for the gradient stopping condition
                 Real eps_grad;
@@ -1854,46 +1828,20 @@ namespace Optizelle{
                 // Tolerance for the step length stopping criteria
                 Real eps_dx;
 
-                // Number of control objects to store in a quasi-Newton method
-                Natural stored_history;
-
-                // Number of failed iterations before we reset the history for
-                // quasi-Newton methods
-                Natural history_reset;
-
                 // Current iteration
                 Natural iter;
 
                 // Maximum number of optimization iterations
                 Natural iter_max;
 
-                // Why we've stopped the optimization
-                StoppingCondition::t opt_stop;
+                // Globalization iteration
+                Natural glob_iter;
 
-                // Current number of Krylov iterations taken
-                Natural krylov_iter;
+                // Maximum number of globalization iterations before we quit
+                Natural glob_iter_max;
 
-                // Maximum number of iterations in the Krylov method
-                Natural krylov_iter_max;
-
-                // Total number of Krylov iterations taken
-                Natural krylov_iter_total;
-
-                // The maximum number of vectors we orthogonalize against in 
-                // the Krylov method.  For something like CG, this is 1.
-                Natural krylov_orthog_max;
-
-                // Why the Krylov method was last stopped
-                KrylovStop::t krylov_stop;
-
-                // Relative error in the Krylov method
-                Real krylov_rel_err;
-
-                // Stopping tolerance for the Krylov method
-                Real eps_krylov;
-
-                // Algorithm class
-                AlgorithmClass::t algorithm_class;
+                // Total number of globalization iterations taken
+                Natural glob_iter_total;
 
                 // Preconditioner for the Hessian
                 Operators::t PH_type;
@@ -1907,7 +1855,7 @@ namespace Optizelle{
                 // Norm of a typical trial step
                 Real norm_dxtyp;
 
-                // Optimization variable 
+                // Optimization iterate 
                 X_Vector x; 
                 
                 // Gradient of the objective
@@ -1916,7 +1864,7 @@ namespace Optizelle{
                 // Optimization step 
                 X_Vector dx;
                 
-                // Old optimization variable 
+                // Old iterate 
                 X_Vector x_old; 
                 
                 // Old gradient 
@@ -1924,12 +1872,6 @@ namespace Optizelle{
                 
                 // Old trial step 
                 X_Vector dx_old;
-
-                // Difference in prior gradients
-                std::list <X_Vector> oldY;
-
-                // Difference in prior steps
-                std::list <X_Vector> oldS;
 
                 // Current value of the objective function 
                 Real f_x;
@@ -1939,6 +1881,60 @@ namespace Optizelle{
 
                 // Messaging level
                 Natural msg_level;
+
+                // Kind of stopping tolerance
+                ToleranceKind::t eps_kind;
+
+                // ----------- Diagnostics ----------
+
+                // Function diagnostics on f
+                FunctionDiagnostics::t f_diag;
+
+                // Function diagnostics on the Lagrangian
+                FunctionDiagnostics::t L_diag;
+
+                // Vector space diagnostics on X 
+                VectorSpaceDiagnostics::t x_diag;
+
+                // Diagnostic scheme 
+                DiagnosticScheme::t dscheme;
+
+                // ---------- Quasi-Newton Methods ----------
+
+                // Number of control objects to store in a quasi-Newton method
+                Natural stored_history;
+
+                // Difference in prior gradients
+                std::list <X_Vector> oldY;
+
+                // Difference in prior steps
+                std::list <X_Vector> oldS;
+
+                // ---------- Truncated CG ----------
+
+                // Current number of truncated-CG iterations taken
+                Natural trunc_iter;
+
+                // Maximum number of iterations used by truncated CG 
+                Natural trunc_iter_max;
+
+                // Total number of truncated-CG iterations taken
+                Natural trunc_iter_total;
+
+                // Maximum number of vectors we orthogonalize against in 
+                // truncated CG
+                Natural trunc_orthog_max;
+
+                // Why truncated CG was last stopped
+                TruncatedStop::t trunc_stop;
+
+                // Relative error in truncated CG 
+                Real trunc_err;
+
+                // Stopping tolerance for truncated CG 
+                Real eps_trunc;
+
+                // ---------- Inequality Safeguards ----------
 
                 // Number of failed safe-guard steps before quitting the method
                 Natural failed_safeguard_max;
@@ -1958,11 +1954,8 @@ namespace Optizelle{
                 // with respect to the safeguard, which probably relates to
                 // the inequailty constraint
                 Real alpha_x_qn;
-
-                // Kind of stopping tolerance
-                ToleranceKind::t eps_kind;
                 
-                // ------------- TRUST-REGION ------------- 
+                // ---------- Trust Region ----------
 
                 // Trust region radius
                 Real delta;
@@ -1981,10 +1974,7 @@ namespace Optizelle{
                 // Predicted reduction
                 Real pred;
 
-                // Number of rejected trust-region steps
-                Natural rejected_trustregion;
-
-                // ------------- LINE-SEARCH ------------- 
+                // ---------- Line Search  ----------
 
                 // Base line-search step length
                 Real alpha0;
@@ -1996,13 +1986,13 @@ namespace Optizelle{
                 Real c1;
 
                 // Current number of iterations used in the line-search
-                Natural linesearch_iter;
+                Natural ls_iter;
 
                 // Maximum number of iterations used in the line-search
-                Natural linesearch_iter_max;
+                Natural ls_iter_max;
 
                 // Total number of line-search iterations computed
-                Natural linesearch_iter_total;
+                Natural ls_iter_total;
 
                 // Stopping tolerance for the line-search
                 Real eps_ls;
@@ -2012,18 +2002,6 @@ namespace Optizelle{
 
                 // Type of line-search 
                 LineSearchKind::t kind;
-
-                // Function diagnostics on f
-                FunctionDiagnostics::t f_diag;
-
-                // Function diagnostics on the Lagrangian
-                FunctionDiagnostics::t L_diag;
-
-                // Vector space diagnostics on X 
-                VectorSpaceDiagnostics::t x_diag;
-
-                // Diagnostic scheme 
-                DiagnosticScheme::t dscheme;
 
                 // Initialization constructors
                 explicit t(X_Vector const & x_user) :
@@ -2042,11 +2020,6 @@ namespace Optizelle{
                         0
                         //---stored_history1---
                     ),
-                    history_reset(
-                        //---history_reset0---
-                        5
-                        //---history_reset1---
-                    ),
                     iter(
                         //---iter0---
                         1
@@ -2057,45 +2030,60 @@ namespace Optizelle{
                         std::numeric_limits <Natural>::max() 
                         //---iter_max1---
                     ),
+                    glob_iter(
+                        //---glob_iter0---
+                        0
+                        //---glob_iter1---
+                    ),
+                    glob_iter_max(
+                        //---glob_iter_max0---
+                        10
+                        //---glob_iter_max1---
+                    ),
+                    glob_iter_total(
+                        //---glob_iter_total0---
+                        0
+                        //---glob_iter_total1---
+                    ),
                     opt_stop(
                         //---opt_stop0---
-                        StoppingCondition::NotConverged
+                        OptimizationStop::NotConverged
                         //---opt_stop1---
                     ),
-                    krylov_iter(
-                        //---krylov_iter0---
+                    trunc_iter(
+                        //---trunc_iter0---
                         0
-                        //---krylov_iter1---
+                        //---trunc_iter1---
                     ),
-                    krylov_iter_max(
-                        //---krylov_iter_max0---
+                    trunc_iter_max(
+                        //---trunc_iter_max0---
                         10
-                        //---krylov_iter_max1---
+                        //---trunc_iter_max1---
                     ),
-                    krylov_iter_total(
-                        //---krylov_iter_total0---
+                    trunc_iter_total(
+                        //---trunc_iter_total0---
                         0
-                        //---krylov_iter_total1---
+                        //---trunc_iter_total1---
                     ),
-                    krylov_orthog_max(
-                        //---krylov_orthog_max0---
+                    trunc_orthog_max(
+                        //---trunc_orthog_max0---
                         1
-                        //---krylov_orthog_max1---
+                        //---trunc_orthog_max1---
                     ),
-                    krylov_stop(
-                        //---krylov_stop0---
-                        KrylovStop::RelativeErrorSmall
-                        //---krylov_stop1---
+                    trunc_stop(
+                        //---trunc_stop0---
+                        TruncatedStop::RelativeErrorSmall
+                        //---trunc_stop1---
                     ),
-                    krylov_rel_err(
-                        //---krylov_rel_err0---
+                    trunc_err(
+                        //---trunc_err0---
                         std::numeric_limits<Real>::quiet_NaN()
-                        //---krylov_rel_err1---
+                        //---trunc_err1---
                     ),
-                    eps_krylov(
-                        //---eps_krylov0---
+                    eps_trunc(
+                        //---eps_trunc0---
                         1e-2
-                        //---eps_krylov1---
+                        //---eps_trunc1---
                     ),
                     algorithm_class(
                         //---algorithm_class0---
@@ -2228,11 +2216,6 @@ namespace Optizelle{
                         std::numeric_limits<Real>::quiet_NaN()
                         //---pred1---
                     ),
-                    rejected_trustregion(
-                        //---rejected_trustregion0---
-                        0
-                        //---rejected_trustregion1---
-                    ),
                     alpha0(
                         //---alpha00---
                         1.
@@ -2248,20 +2231,20 @@ namespace Optizelle{
                         1e-4
                         //---c11---
                     ),
-                    linesearch_iter(
-                        //---linesearch_iter0---
+                    ls_iter(
+                        //---ls_iter0---
                         0
-                        //---linesearch_iter1---
+                        //---ls_iter1---
                     ),
-                    linesearch_iter_max(
-                        //---linesearch_iter_max0---
+                    ls_iter_max(
+                        //---ls_iter_max0---
                         5
-                        //---linesearch_iter_max1---
+                        //---ls_iter_max1---
                     ),
-                    linesearch_iter_total(
-                        //---linesearch_iter_total0---
+                    ls_iter_total(
+                        //---ls_iter_total0---
                         0
-                        //---linesearch_iter_total1---
+                        //---ls_iter_total1---
                     ),
                     eps_ls(
                         //---eps_ls0---
@@ -2338,10 +2321,6 @@ namespace Optizelle{
                     // Any 
                     //---stored_history_valid1---
                     
-                    //---history_reset_valid0---
-                    // Any 
-                    //---history_reset_valid1---
-        
                 // Check that the current iteration is positive
                 else if(!(
                     //---iter_valid0---
@@ -2359,57 +2338,74 @@ namespace Optizelle{
                 ))
                     ss << "The maximum optimization iteration must be "
                         "positive: iter_max = " << state.iter_max;
+
+                    //---glob_iter_valid0---
+                    // Any 
+                    //---glob_iter_valid1---
+
+                // Check that the maximum globalization iteration is positive 
+                else if(!(
+                    //---glob_iter_max_valid0---
+                    state.glob_iter_max > 0
+                    //---glob_iter_max_valid1---
+                ))
+                    ss << "The maximum globalization iteration must be "
+                        "positive: glob_iter_max = " << state.glob_iter_max;
+                    
+                    //---glob_iter_total_valid0---
+                    // Any 
+                    //---glob_iter_total_valid1---
                     
                     //---opt_stop_valid0---
                     // Any 
                     //---opt_stop_valid1---
                     
-                    //---krylov_iter_valid0---
+                    //---trunc_iter_valid0---
                     // Any 
-                    //---krylov_iter_valid1---
+                    //---trunc_iter_valid1---
 
-                // Check that the maximum Krylov iteration is positive
+                // Check that the maximum truncated-CG iteration is positive
                 else if(!(
-                    //---krylov_iter_max_valid0---
-                    state.krylov_iter_max > 0
-                    //---krylov_iter_max_valid1---
+                    //---trunc_iter_max_valid0---
+                    state.trunc_iter_max > 0
+                    //---trunc_iter_max_valid1---
                 ))
-                    ss << "The maximum Krylov iteration must be "
-                        "positive: krylov_iter_max = " << state.krylov_iter_max;
+                    ss << "The maximum truncated-CG iteration must be "
+                        "positive: trunc_iter_max = " << state.trunc_iter_max;
                     
-                    //---krylov_iter_total_valid0---
+                    //---trunc_iter_total_valid0---
                     // Any 
-                    //---krylov_iter_total_valid1---
+                    //---trunc_iter_total_valid1---
 
                 // Check that the number of vectors we orthogonalize against
                 // is at least 1.
                 else if(!(
-                    //---krylov_orthog_max_valid0---
-                    state.krylov_orthog_max > 0
-                    //---krylov_orthog_max_valid1---
+                    //---trunc_orthog_max_valid0---
+                    state.trunc_orthog_max > 0
+                    //---trunc_orthog_max_valid1---
                 ))
-                    ss << "The maximum number of vectors the Krylov method"
+                    ss << "The maximum number of vectors truncated-CG "
                     "orthogonalizes against must be positive: "
-                    "krylov_orthog_max = " << state.krylov_orthog_max;
+                    "trunc_orthog_max = " << state.trunc_orthog_max;
                     
-                    //---krylov_stop_valid0---
+                    //---trunc_stop_valid0---
                     // Any 
-                    //---krylov_stop_valid1---
+                    //---trunc_stop_valid1---
 
-                    //---krylov_rel_err_valid0---
+                    //---trunc_err_valid0---
                     // Any 
-                    //---krylov_rel_err_valid1---
+                    //---trunc_err_valid1---
                 
-                // Check that the stopping tolerance for the Krylov method is
+                // Check that the stopping tolerance for truncated CG is
                 // positive
                 else if(!(
-                    //---eps_krylov_valid0---
-                    state.eps_krylov > Real(0.)
-                    //---eps_krylov_valid1---
+                    //---eps_trunc_valid0---
+                    state.eps_trunc > Real(0.)
+                    //---eps_trunc_valid1---
                 ))
-                    ss << "The tolerance for the Krylov method stopping "
-                        "condition must be positive: eps_krylov = "
-                    << state.eps_krylov;
+                    ss << "The tolerance for the truncated-CG stopping "
+                        "condition must be positive: eps_trunc = "
+                    << state.eps_trunc;
                     
                     //---algorithm_class_valid0---
                     // Any 
@@ -2573,10 +2569,6 @@ namespace Optizelle{
                     // Any 
                     //---pred_valid1---
                     
-                    //---rejected_trustregion_valid0---
-                    // Any 
-                    //---rejected_trustregion_valid1---
-
                 // Check that the base line-search step length is nonnegative 
                 else if(!(
                     //---alpha0_valid0---
@@ -2600,23 +2592,23 @@ namespace Optizelle{
                     ss << "The sufficient decrease parameter must lie between "
                         "0 and 1: c1 = " << state.c1;
                     
-                    //---linesearch_iter_valid0---
+                    //---ls_iter_valid0---
                     // Any 
-                    //---linesearch_iter_valid1---
+                    //---ls_iter_valid1---
 
                 // Check that the number of line-search iterations is positve 
                 else if(!(
-                    //---linesearch_iter_max_valid0---
-                    state.linesearch_iter_max > 0
-                    //---linesearch_iter_max_valid1---
+                    //---ls_iter_max_valid0---
+                    state.ls_iter_max > 0
+                    //---ls_iter_max_valid1---
                 ))
                     ss << "The maximum number of line-search iterations must "
-                        "be positive: linesearch_iter_max = "
-                        << state.linesearch_iter_max;
+                        "be positive: ls_iter_max = "
+                        << state.ls_iter_max;
                     
-                    //---linesearch_iter_total_valid0---
+                    //---ls_iter_total_valid0---
                     // Any 
-                    //---linesearch_iter_total_valid1---
+                    //---ls_iter_total_valid1---
 
                 // Check that the stopping tolerance for the line-search
                 // methods is positive
@@ -2639,15 +2631,15 @@ namespace Optizelle{
                 else if(!(
                     //---kind_valid0---
                     (state.kind!=LineSearchKind::GoldenSection 
-                        || state.linesearch_iter_max >= 2) &&
+                        || state.ls_iter_max >= 2) &&
                     (state.kind!=LineSearchKind::TwoPointA ||
                         state.kind!=LineSearchKind::TwoPointB ||
                         state.dir==LineSearchDirection::SteepestDescent)
                     //---kind_valid1---
                 )) {
                     ss << "When using a golden-section search, we require at "
-                        "least 2 line-search iterations: linesearch_iter_max = "
-                        << state.linesearch_iter_max << std::endl << std::endl;
+                        "least 2 line-search iterations: ls_iter_max = "
+                        << state.ls_iter_max << std::endl << std::endl;
                     
                     ss << "When using the Barzilai-Borwein two point Hessian "
                         "approximation line-search, the search direction must "
@@ -2695,8 +2687,8 @@ namespace Optizelle{
             ) {
                 if( item.first == "eps_grad" || 
                     item.first == "eps_dx" || 
-                    item.first == "krylov_rel_err" || 
-                    item.first == "eps_krylov" || 
+                    item.first == "trunc_err" || 
+                    item.first == "eps_trunc" || 
                     item.first == "norm_gradtyp" || 
                     item.first == "norm_dxtyp" || 
                     item.first == "f_x" || 
@@ -2723,21 +2715,22 @@ namespace Optizelle{
                 typename RestartPackage <Natural>::tuple const & item
             ) {
                 if( item.first == "stored_history" ||
-                    item.first == "history_reset" || 
                     item.first == "iter" || 
                     item.first == "iter_max" || 
-                    item.first == "krylov_iter" || 
-                    item.first == "krylov_iter_max" ||
-                    item.first == "krylov_iter_total" || 
-                    item.first == "krylov_orthog_max" ||
+                    item.first == "glob_iter" || 
+                    item.first == "glob_iter_max" ||
+                    item.first == "glob_iter_total" || 
+                    item.first == "trunc_iter" || 
+                    item.first == "trunc_iter_max" ||
+                    item.first == "trunc_iter_total" || 
+                    item.first == "trunc_orthog_max" ||
                     item.first == "msg_level" ||
                     item.first == "failed_safeguard_max" ||
                     item.first == "failed_safeguard" ||
                     item.first == "failed_safeguard_total" ||
-                    item.first == "rejected_trustregion" || 
-                    item.first == "linesearch_iter" || 
-                    item.first == "linesearch_iter_max" ||
-                    item.first == "linesearch_iter_total" 
+                    item.first == "ls_iter" || 
+                    item.first == "ls_iter_max" ||
+                    item.first == "ls_iter_total" 
                 ) 
                     return true;
                 else
@@ -2751,9 +2744,9 @@ namespace Optizelle{
                 if( (item.first=="algorithm_class" &&
                         AlgorithmClass::is_valid(item.second)) ||
                     (item.first=="opt_stop" &&
-                        StoppingCondition::is_valid(item.second)) ||
-                    (item.first=="krylov_stop" &&
-                        KrylovStop::is_valid(item.second)) ||
+                        OptimizationStop::is_valid(item.second)) ||
+                    (item.first=="trunc_stop" &&
+                        TruncatedStop::is_valid(item.second)) ||
                     (item.first=="H_type" &&
                         Operators::is_valid(item.second)) ||
                     (item.first=="PH_type" &&
@@ -2864,9 +2857,9 @@ namespace Optizelle{
                 // Copy in all the real numbers
                 reals.emplace_back("eps_grad",std::move(state.eps_grad));
                 reals.emplace_back("eps_dx",std::move(state.eps_dx));
-                reals.emplace_back("krylov_rel_err",
-                    std::move(state.krylov_rel_err));
-                reals.emplace_back("eps_krylov",std::move(state.eps_krylov));
+                reals.emplace_back("trunc_err",
+                    std::move(state.trunc_err));
+                reals.emplace_back("eps_trunc",std::move(state.eps_trunc));
                 reals.emplace_back("norm_gradtyp",
                     std::move(state.norm_gradtyp));
                 reals.emplace_back("norm_dxtyp",std::move(state.norm_dxtyp));
@@ -2887,17 +2880,20 @@ namespace Optizelle{
                 // Copy in all the natural numbers
                 nats.emplace_back("stored_history",
                     std::move(state.stored_history));
-                nats.emplace_back("history_reset",
-                    std::move(state.history_reset));
                 nats.emplace_back("iter",std::move(state.iter));
                 nats.emplace_back("iter_max",std::move(state.iter_max));
-                nats.emplace_back("krylov_iter",std::move(state.krylov_iter));
-                nats.emplace_back("krylov_iter_max",
-                    std::move(state.krylov_iter_max));
-                nats.emplace_back("krylov_iter_total",
-                    std::move(state.krylov_iter_total));
-                nats.emplace_back("krylov_orthog_max",
-                    std::move(state.krylov_orthog_max));
+                nats.emplace_back("glob_iter",std::move(state.glob_iter));
+                nats.emplace_back("glob_iter_max",
+                    std::move(state.glob_iter_max));
+                nats.emplace_back("glob_iter_total",
+                    std::move(state.glob_iter_total));
+                nats.emplace_back("trunc_iter",std::move(state.trunc_iter));
+                nats.emplace_back("trunc_iter_max",
+                    std::move(state.trunc_iter_max));
+                nats.emplace_back("trunc_iter_total",
+                    std::move(state.trunc_iter_total));
+                nats.emplace_back("trunc_orthog_max",
+                    std::move(state.trunc_orthog_max));
                 nats.emplace_back("msg_level",std::move(state.msg_level));
                 nats.emplace_back("failed_safeguard_max",
                     std::move(state.failed_safeguard_max));
@@ -2905,22 +2901,20 @@ namespace Optizelle{
                     std::move(state.failed_safeguard));
                 nats.emplace_back("failed_safeguard_total",
                     std::move(state.failed_safeguard_total));
-                nats.emplace_back("rejected_trustregion",
-                    std::move(state.rejected_trustregion));
-                nats.emplace_back("linesearch_iter",
-                    std::move(state.linesearch_iter));
-                nats.emplace_back("linesearch_iter_max",
-                    std::move(state.linesearch_iter_max));
-                nats.emplace_back("linesearch_iter_total",
-                    std::move(state.linesearch_iter_total));
+                nats.emplace_back("ls_iter",
+                    std::move(state.ls_iter));
+                nats.emplace_back("ls_iter_max",
+                    std::move(state.ls_iter_max));
+                nats.emplace_back("ls_iter_total",
+                    std::move(state.ls_iter_total));
 
                 // Copy in all the parameters
                 params.emplace_back("algorithm_class",
                     AlgorithmClass::to_string(state.algorithm_class));
                 params.emplace_back("opt_stop",
-                    StoppingCondition::to_string(state.opt_stop));
-                params.emplace_back("krylov_stop",
-                    KrylovStop::to_string(state.krylov_stop));
+                    OptimizationStop::to_string(state.opt_stop));
+                params.emplace_back("trunc_stop",
+                    TruncatedStop::to_string(state.trunc_stop));
                 params.emplace_back("H_type",
                     Operators::to_string(state.H_type));
                 params.emplace_back("PH_type",
@@ -2992,10 +2986,10 @@ namespace Optizelle{
                         state.eps_grad=std::move(item->second);
                     else if(item->first=="eps_dx")
                         state.eps_dx=std::move(item->second);
-                    else if(item->first=="krylov_rel_err")
-                        state.krylov_rel_err=std::move(item->second);
-                    else if(item->first=="eps_krylov")
-                        state.eps_krylov=std::move(item->second);
+                    else if(item->first=="trunc_err")
+                        state.trunc_err=std::move(item->second);
+                    else if(item->first=="eps_trunc")
+                        state.eps_trunc=std::move(item->second);
                     else if(item->first=="norm_gradtyp")
                         state.norm_gradtyp=std::move(item->second);
                     else if(item->first=="norm_dxtyp")
@@ -3035,20 +3029,24 @@ namespace Optizelle{
                 ){
                     if(item->first=="stored_history")
                         state.stored_history=std::move(item->second);
-                    else if(item->first=="history_reset")
-                        state.history_reset=std::move(item->second);
                     else if(item->first=="iter")
                         state.iter=std::move(item->second);
                     else if(item->first=="iter_max")
                         state.iter_max=std::move(item->second);
-                    else if(item->first=="krylov_iter")
-                        state.krylov_iter=std::move(item->second);
-                    else if(item->first=="krylov_iter_max")
-                        state.krylov_iter_max=std::move(item->second);
-                    else if(item->first=="krylov_iter_total")
-                        state.krylov_iter_total=std::move(item->second);
-                    else if(item->first=="krylov_orthog_max")
-                        state.krylov_orthog_max=std::move(item->second);
+                    else if(item->first=="glob_iter")
+                        state.glob_iter=std::move(item->second);
+                    else if(item->first=="glob_iter_max")
+                        state.glob_iter_max=std::move(item->second);
+                    else if(item->first=="glob_iter_total")
+                        state.glob_iter_total=std::move(item->second);
+                    else if(item->first=="trunc_iter")
+                        state.trunc_iter=std::move(item->second);
+                    else if(item->first=="trunc_iter_max")
+                        state.trunc_iter_max=std::move(item->second);
+                    else if(item->first=="trunc_iter_total")
+                        state.trunc_iter_total=std::move(item->second);
+                    else if(item->first=="trunc_orthog_max")
+                        state.trunc_orthog_max=std::move(item->second);
                     else if(item->first=="msg_level")
                         state.msg_level=std::move(item->second);
                     else if(item->first=="failed_safeguard_max")
@@ -3057,14 +3055,12 @@ namespace Optizelle{
                         state.failed_safeguard=std::move(item->second);
                     else if(item->first=="failed_safeguard_total")
                         state.failed_safeguard_total=std::move(item->second);
-                    else if(item->first=="rejected_trustregion")
-                        state.rejected_trustregion=std::move(item->second);
-                    else if(item->first=="linesearch_iter")
-                        state.linesearch_iter=std::move(item->second);
-                    else if(item->first=="linesearch_iter_max")
-                        state.linesearch_iter_max=std::move(item->second);
-                    else if(item->first=="linesearch_iter_total")
-                        state.linesearch_iter_total=std::move(item->second);
+                    else if(item->first=="ls_iter")
+                        state.ls_iter=std::move(item->second);
+                    else if(item->first=="ls_iter_max")
+                        state.ls_iter_max=std::move(item->second);
+                    else if(item->first=="ls_iter_total")
+                        state.ls_iter_total=std::move(item->second);
                 }
                     
                 // Next, copy in any parameters 
@@ -3077,9 +3073,10 @@ namespace Optizelle{
                             = AlgorithmClass::from_string(item->second);
                     else if(item->first=="opt_stop")
                         state.opt_stop
-                            = StoppingCondition::from_string(item->second);
-                    else if(item->first=="krylov_stop")
-                        state.krylov_stop=KrylovStop::from_string(item->second);
+                            = OptimizationStop::from_string(item->second);
+                    else if(item->first=="trunc_stop")
+                        state.trunc_stop=TruncatedStop::from_string(
+                            item->second);
                     else if(item->first=="H_type")
                         state.H_type=Operators::from_string(item->second);
                     else if(item->first=="PH_type")
@@ -3876,38 +3873,40 @@ namespace Optizelle{
                 if(msg_level >= 2) {
                     out.emplace_back(Utility::atos("merit(x)"));
 
-                    // In case we're using a Krylov method
+                    // In case we're using truncated-CG 
                     if(    algorithm_class==AlgorithmClass::TrustRegion
                         || dir==LineSearchDirection::NewtonCG
                     ){
-                        out.emplace_back(Utility::atos("kry_iter"));
-                        out.emplace_back(Utility::atos("kry_err"));
-                        out.emplace_back(Utility::atos("kry_stop"));
+                        out.emplace_back(Utility::atos("trunc_iter"));
+                        out.emplace_back(Utility::atos("trunc_err"));
+                        out.emplace_back(Utility::atos("trunc_stop"));
                     }
 
                     // In case we're using a line-search method
                     if(algorithm_class==AlgorithmClass::LineSearch) {
-                        out.emplace_back(Utility::atos("ls_iter"));
                         out.emplace_back(Utility::atos("alpha0"));
                         out.emplace_back(Utility::atos("alpha"));
+                        out.emplace_back(Utility::atos("ls_iter"));
                     }
 
                     // In case we're using a trust-region method 
                     if(algorithm_class==AlgorithmClass::TrustRegion) {
+                        out.emplace_back(Utility::atos("delta"));
                         out.emplace_back(Utility::atos("ared"));
                         out.emplace_back(Utility::atos("pred"));
                         out.emplace_back(Utility::atos("ared/pred"));
-                        out.emplace_back(Utility::atos("delta"));
                     }
                 }
 
                 // Even more detailed information
                 if(msg_level >= 3) {
-                    // In case we're using a Krylov method
+                    out.emplace_back(Utility::atos("glb_itr_tot"));
+
+                    // In case we're using truncated CG 
                     if(    algorithm_class==AlgorithmClass::TrustRegion
                         || dir==LineSearchDirection::NewtonCG
                     ){
-                        out.emplace_back(Utility::atos("kry_itr_tot"));
+                        out.emplace_back(Utility::atos("trc_itr_tot"));
                     }
                 }
             }
@@ -3937,12 +3936,14 @@ namespace Optizelle{
                 X_Vector const & dx=state.dx;
                 X_Vector const & grad=state.grad;
                 Natural const & iter=state.iter;
+                auto const & glob_iter = state.glob_iter;
+                auto const & glob_iter_total = state.glob_iter_total;
                 Real const & f_x=state.f_x;
-                Natural const & krylov_iter=state.krylov_iter;
-                Natural const & krylov_iter_total=state.krylov_iter_total;
-                Real const & krylov_rel_err=state.krylov_rel_err;
-                KrylovStop::t const & krylov_stop=state.krylov_stop;
-                Natural const & linesearch_iter=state.linesearch_iter;
+                Natural const & trunc_iter=state.trunc_iter;
+                Natural const & trunc_iter_total=state.trunc_iter_total;
+                Real const & trunc_err=state.trunc_err;
+                TruncatedStop::t const & trunc_stop=state.trunc_stop;
+                Natural const & ls_iter=state.ls_iter;
                 Real const & alpha0=state.alpha0;
                 Real const & alpha=state.alpha;
                 Real const & ared=state.ared;
@@ -3950,7 +3951,6 @@ namespace Optizelle{
                 Real const & delta=state.delta;
                 AlgorithmClass::t const & algorithm_class=state.algorithm_class;
                 LineSearchDirection::t const & dir=state.dir;
-                Natural const & rejected_trustregion=state.rejected_trustregion;
                 Natural const & msg_level=state.msg_level;
 
                 // Figure out if we're at the absolute beginning of the
@@ -3972,7 +3972,7 @@ namespace Optizelle{
                 if(!noiter)
                     out.emplace_back(Utility::atos(iter));
                 else
-                    out.emplace_back(Utility::atos("."));
+                    out.emplace_back(Utility::blankSeparator);
                 out.emplace_back(Utility::atos(f_x));
                 out.emplace_back(Utility::atos(norm_grad));
                 if(!opt_begin) 
@@ -3984,14 +3984,14 @@ namespace Optizelle{
                 if(msg_level >=2) {
                     out.emplace_back(Utility::atos(merit_x));
 
-                    // In case we're using a Krylov method
+                    // In case we're using truncated-CG 
                     if(    algorithm_class==AlgorithmClass::TrustRegion
                         || dir==LineSearchDirection::NewtonCG
                     ){
-                        if(!opt_begin) {
-                            out.emplace_back(Utility::atos(krylov_iter));
-                            out.emplace_back(Utility::atos(krylov_rel_err));
-                            out.emplace_back(Utility::atos(krylov_stop));
+                        if(glob_iter==1) {
+                            out.emplace_back(Utility::atos(trunc_iter));
+                            out.emplace_back(Utility::atos(trunc_err));
+                            out.emplace_back(Utility::atos(trunc_stop));
                         } else 
                             for(Natural i=0;i<3;i++)
                                 out.emplace_back(Utility::blankSeparator);
@@ -3999,36 +3999,41 @@ namespace Optizelle{
 
                     // In case we're using a line-search method
                     if(algorithm_class==AlgorithmClass::LineSearch) {
+                        out.emplace_back(Utility::atos(alpha0));
                         if(!opt_begin) {
-                            out.emplace_back(Utility::atos(linesearch_iter));
-                            out.emplace_back(Utility::atos(alpha0));
                             out.emplace_back(Utility::atos(alpha));
+                            out.emplace_back(Utility::atos(ls_iter));
                         } else 
-                            for(Natural i=0;i<3;i++)
+                            for(Natural i=0;i<2;i++)
                                 out.emplace_back(Utility::blankSeparator);
                     }
                     
                     // In case we're using a trust-region method
                     if(algorithm_class==AlgorithmClass::TrustRegion) {
+                        out.emplace_back(Utility::atos(delta));
                         if(!opt_begin) {
                             out.emplace_back(Utility::atos(ared));
                             out.emplace_back(Utility::atos(pred));
                             out.emplace_back(Utility::atos(ared/pred));
-                            out.emplace_back(Utility::atos(delta));
                         } else  
-                            for(Natural i=0;i<4;i++)
+                            for(Natural i=0;i<3;i++)
                                 out.emplace_back(Utility::blankSeparator);
                     }
                 }
                 
                 // Even more detail 
                 if(msg_level >=3) {
-                    // In case we're using a Krylov method
+                    if(!opt_begin)
+                        out.emplace_back(Utility::atos(glob_iter_total));
+                    else
+                        out.emplace_back(Utility::blankSeparator);
+
+                    // In case we're using truncated-CG 
                     if(    algorithm_class==AlgorithmClass::TrustRegion
                         || dir==LineSearchDirection::NewtonCG
                     ){
-                        if(!opt_begin) {
-                            out.emplace_back(Utility::atos(krylov_iter_total));
+                        if(glob_iter==1) {
+                            out.emplace_back(Utility::atos(trunc_iter_total));
                         } else 
                             for(Natural i=0;i<1;i++)
                                 out.emplace_back(Utility::blankSeparator);
@@ -4055,75 +4060,6 @@ namespace Optizelle{
             ) {
                 Unconstrained <Real,XX>::Diagnostics
                     ::getState_(fns,state,blank,noiter,out);
-            }
-
-            // Get the header for the Krylov iteration
-            static void getKrylovHeader_(
-                typename State::t const & state,
-                std::list <std::string> & out
-            ) {
-                // Create some shortcuts
-                AlgorithmClass::t const & algorithm_class=state.algorithm_class;
-                LineSearchDirection::t const & dir=state.dir;
-
-                // In case we're using a Krylov method
-                if(    algorithm_class==AlgorithmClass::TrustRegion
-                    || dir==LineSearchDirection::NewtonCG
-                ){
-                    out.emplace_back(Utility::atos("KrySubItr"));
-                    out.emplace_back(Utility::atos("KryTotItr"));
-                    out.emplace_back(Utility::atos("KrySubErr"));
-                }
-            }
-
-            // Combines all of the Krylov headers
-            static void getKrylovHeader(
-                typename State::t const & state,
-                std::list <std::string> & out
-            ) {
-                Unconstrained <Real,XX>::Diagnostics::getKrylovHeader_(
-                    state,out);
-            }
-            
-            // Get the information for the Krylov iteration
-            static void getKrylov_(
-                typename State::t const & state,
-                bool const & blank,
-                std::list <std::string> & out
-            ) {
-                // Create some shortcuts
-                Natural const & krylov_iter=state.krylov_iter;
-                Natural const & krylov_iter_total=state.krylov_iter_total;
-                Real const & krylov_rel_err=state.krylov_rel_err;
-
-                // Get a iterator to the last element prior to inserting
-                // elements
-                std::list <std::string>::iterator prior=out.end(); prior--;
-
-                // Basic information
-                out.emplace_back(Utility::atos(krylov_iter));
-                out.emplace_back(Utility::atos(krylov_iter_total));
-                out.emplace_back(Utility::atos(krylov_rel_err));
-                
-                // If we needed to do blank insertions, overwrite the elements
-                // with nothing
-                if(blank) {
-                    for(std::list <std::string>::iterator x=++prior;
-                        x!=out.end();
-                        x++
-                    )
-                        x->clear();
-                }
-            }
-
-            // Combines all of the Krylov information
-            static void getKrylov(
-                typename State::t const & state,
-                bool const & blank,
-                std::list <std::string> & out
-            ) {
-                Unconstrained <Real,XX>::Diagnostics::getKrylov_(
-                    state,blank,out);
             }
 
             // Runs the specified function diagnostics 
@@ -4233,7 +4169,7 @@ namespace Optizelle{
             NO_CONSTRUCTORS(Algorithms)
 
             // Checks a set of stopping conditions
-            static StoppingCondition::t checkStop(
+            static OptimizationStop::t checkStop(
                 typename Functions::t const & fns, 
                 typename State::t const & state
             ){
@@ -4250,6 +4186,8 @@ namespace Optizelle{
                 Natural const & iter_max=state.iter_max;
                 Real const & eps_grad=state.eps_grad;
                 Real const & eps_dx=state.eps_dx;
+                auto const & glob_iter = state.glob_iter;
+                auto const & glob_iter_max = state.glob_iter_max;
 
                 // Find both the norm of the gradient and the step
                 X_Vector grad_stop(X::init(grad));
@@ -4257,25 +4195,30 @@ namespace Optizelle{
                 const Real norm_grad=sqrt(X::innr(grad_stop,grad_stop));
                 const Real norm_dx=sqrt(X::innr(dx,dx));
 
+                // Check whether or not we have too many failed globalization
+                // iterations
+                if(glob_iter > glob_iter_max)
+                    return OptimizationStop::GlobalizationFailure;
+
                 // Check if we've exceeded the number of iterations
                 if(iter>=iter_max)
-                    return StoppingCondition::MaxItersExceeded;
+                    return OptimizationStop::MaxItersExceeded;
 
                 // Check whether the change in the step length has become too
                 // small relative to some typical step
                 if(norm_dx< eps_dx * absrel(norm_dxtyp))
-                    return StoppingCondition::StepSmall;
+                    return OptimizationStop::StepSmall;
                 
                 // Check whether the norm is small relative to some typical
                 // gradient
                 if(norm_grad < eps_grad * absrel(norm_gradtyp))
-                    return StoppingCondition::GradientSmall;
+                    return OptimizationStop::GradientSmall;
 
                 // Otherwise, return that we're not converged 
-                return StoppingCondition::NotConverged;
+                return OptimizationStop::NotConverged;
             }
 
-            // Sets up the Hessian operator for use in the Krylov methods.  In
+            // Sets up the Hessian operator for use in truncated CG.  In
             // other words, this sets up the application H(x)dx.
             struct HessianOperator : public Operator <Real,XX,XX> {
             private:
@@ -4326,7 +4269,7 @@ namespace Optizelle{
                 Real const & eta1=state.eta1;
                 Real const & eta2=state.eta2;
                 Real const & f_x=state.f_x;
-                KrylovStop::t const & krylov_stop=state.krylov_stop;
+                TruncatedStop::t const & trunc_stop=state.trunc_stop;
                 Real & delta=state.delta;
                 Real & ared=state.ared;
                 Real & pred=state.pred;
@@ -4382,10 +4325,10 @@ namespace Optizelle{
                 // Update the trust region radius and return whether or not we
                 // accept the step
                 if(ared >= eta2*pred){
-                    // Increase the size of the trust-region if the Krylov
-                    // solver reached the boundary.
-                    if( krylov_stop==KrylovStop::NegativeCurvature ||
-                        krylov_stop==KrylovStop::TrustRegionViolated
+                    // Increase the size of the trust-region if truncated CG 
+                    // reached the boundary.
+                    if( trunc_stop==TruncatedStop::NegativeCurvature ||
+                        trunc_stop==TruncatedStop::TrustRegionViolated
                     ) 
                         delta*=Real(2.);
                     return true;
@@ -4413,34 +4356,37 @@ namespace Optizelle{
                 Operator <Real,XX,XX> const & PH=*(fns.PH);
                 auto const & safeguard = *(fns.safeguard); 
                 Real const & eps_dx=state.eps_dx;
-                Real const & eps_krylov=state.eps_krylov;
-                Natural const & krylov_iter_max=state.krylov_iter_max;
-                Natural const & krylov_orthog_max=state.krylov_orthog_max;
+                Real const & eps_trunc=state.eps_trunc;
+                Natural const & trunc_iter_max=state.trunc_iter_max;
+                Natural const & trunc_orthog_max=state.trunc_orthog_max;
                 Real const & delta=state.delta;
                 X_Vector const & x=state.x;
                 X_Vector const & grad=state.grad;
                 Real const & norm_dxtyp=state.norm_dxtyp;
                 auto const & failed_safeguard_max = state.failed_safeguard_max;
-                Natural & rejected_trustregion=state.rejected_trustregion;
+                auto const & glob_iter_max = state.glob_iter_max;
                 X_Vector & dx=state.dx;
-                Natural & krylov_iter=state.krylov_iter;
-                Natural & krylov_iter_total=state.krylov_iter_total;
-                Real & krylov_rel_err=state.krylov_rel_err;
-                KrylovStop::t& krylov_stop=state.krylov_stop;
+                Natural & trunc_iter=state.trunc_iter;
+                Natural & trunc_iter_total=state.trunc_iter_total;
+                Real & trunc_err=state.trunc_err;
+                TruncatedStop::t& trunc_stop=state.trunc_stop;
                 std::list <X_Vector>& oldY=state.oldY; 
                 std::list <X_Vector>& oldS=state.oldS; 
-                Natural & history_reset=state.history_reset;
                 Real & alpha = state.alpha;
                 Real & alpha0 = state.alpha0;
                 auto & failed_safeguard = state.failed_safeguard;
                 auto & failed_safeguard_total = state.failed_safeguard_total;
                 auto & alpha_x = state.alpha_x;
+                auto & glob_iter = state.glob_iter;
+                auto & glob_iter_total = state.glob_iter_total;
 
                 // Allocate a little bit of work space
                 X_Vector x_tmp1(X::init(x));
 
-                // Allocate memory for the Cauchy point
-                X_Vector dx_cp(X::init(x));
+                // Allocate memory for the Cauchy point and truncated Newton
+                // points
+                auto dx_cp = X::init(x);
+                auto dx_n = X::init(x);
 
                 // Find -grad f(x)
                 X_Vector grad_step(X::init(x));
@@ -4454,56 +4400,109 @@ namespace Optizelle{
                 // Create the Hessian operator
                 HessianOperator H(fns,x);
 
+                // Manipulate the state if required
+                smanip.eval(fns,state,OptimizationLocation::BeforeGetStep);
+
+                // Set the trust-region center
+                X::zero(x_tmp1);
+
+                // Keep track of the residual errors
+                Real residual_err0(std::numeric_limits <Real>::quiet_NaN());
+                Real residual_err(std::numeric_limits <Real>::quiet_NaN());
+
+                // Create the simplified safeguard function
+                auto simplified_safeguard =
+                    SafeguardSimplified <Real,XX>(std::bind(
+                        safeguard,
+                        std::placeholders::_1,
+                        std::placeholders::_2,
+                        Real(1.)));
+
+                // Find the trial step 
+                truncated_cg(
+                    H,
+                    minus_grad,
+                    PH,
+                    eps_trunc,
+                    trunc_iter_max,
+                    trunc_orthog_max,
+                    delta,
+                    x_tmp1,
+                    false,
+                    failed_safeguard_max,
+                    simplified_safeguard,
+                    dx_n,
+                    dx_cp,
+                    residual_err0,
+                    residual_err,
+                    trunc_iter,
+                    trunc_stop,
+                    failed_safeguard,
+                    alpha_x);
+
+                // Calculate the truncated CG error
+                trunc_err = residual_err / residual_err0;
+                trunc_iter_total += trunc_iter;
+
+                // Keep track of the number of failed safeguard steps
+                failed_safeguard_total+=failed_safeguard;
+
+                // Find the Newton shift, dx_dnewton = dx_newton-dx_cp.  We
+                // use this in the dogleg computation if required.
+                auto dx_dnewton = X::init(x);
+                X::copy(dx_n,dx_dnewton);
+                X::axpy(Real(-1.),dx_cp,dx_dnewton);
+                
+                // Find || dx_cp|| and || dx_n ||.  We use this in the dogleg
+                // computation if required.
+                auto norm_dxcp = std::sqrt(X::innr(dx_cp,dx_cp));
+                auto norm_dxn = std::sqrt(X::innr(dx_n,dx_n));
+
                 // Continue to look for a step until one comes back as valid
-                for(rejected_trustregion=0;
-                    true; 
+                for( glob_iter=1;
+                     glob_iter<=glob_iter_max;
+                     glob_iter++
                 ) {
-                    // Manipulate the state if required
-                    smanip.eval(fns,state,OptimizationLocation::BeforeGetStep);
+                    // Keep track of the number of globalization iterations
+                    glob_iter_total++;
 
-                    // Set the trust-region center
-                    X::zero(x_tmp1);
-
-                    // Keep track of the residual errors
-                    Real residual_err0(std::numeric_limits <Real>::quiet_NaN());
-                    Real residual_err(std::numeric_limits <Real>::quiet_NaN());
-
-                    // Create the simplified safeguard function
-                    auto simplified_safeguard =
-                        SafeguardSimplified <Real,XX>(std::bind(
-                            safeguard,
-                            std::placeholders::_1,
-                            std::placeholders::_2,
-                            Real(1.)));
-
-                    // Find the trial step 
-                    truncated_cg(
-                        H,
-                        minus_grad,
-                        PH,
-                        eps_krylov,
-                        krylov_iter_max,
-                        krylov_orthog_max,
-                        delta,
-                        x_tmp1,
-                        false,
-                        failed_safeguard_max,
-                        simplified_safeguard,
-                        dx,
-                        dx_cp,
-                        residual_err0,
-                        residual_err,
-                        krylov_iter,
-                        krylov_stop,
-                        failed_safeguard,
-                        alpha_x);
-
-                    // Calculate the Krylov error
-                    krylov_rel_err = residual_err / residual_err0;
-                    krylov_iter_total += krylov_iter;
-
-                    // Keep track of the number of failed safeguard steps
-                    failed_safeguard_total+=failed_safeguard;
+                    // Compute the dogleg step.  There are three cases
+                    //
+                    // 1.  || dx_cp || >= delta
+                    //
+                    //     Here, we set
+                    //
+                    //     dx = (delta / || dx_cp || ) dx_np
+                    //
+                    // 2.  || dx_n || <= delta
+                    //
+                    //     Here, we set
+                    //
+                    //     dx = dx_n
+                    //
+                    // 3.  || dx_n || > delta > || dx_cp ||
+                    //
+                    //     Here, we find theta such that 
+                    //
+                    //     || dx_cp + theta dx_dnewton || = delta
+                    //
+                    //     and then set
+                    //
+                    //     dx = dx_ncp + theta dx_dnewton
+                    if(norm_dxcp >= delta) {
+                        X::copy(dx_cp,dx);
+                        X::scal(delta/norm_dxcp,dx);
+                    } else if(norm_dxn <= delta) {
+                        X::copy(dx_n,dx);
+                    } else {
+                        auto aa = X::innr(dx_dnewton,dx_dnewton);
+                        auto bb = Real(2.) * X::innr(dx_dnewton,dx_cp);
+                        auto cc = norm_dxcp*norm_dxcp - delta*delta;
+                        auto roots = quad_equation(aa,bb,cc);
+                        auto theta = roots[0] > roots[1] ? roots[0] : roots[1];
+                        X::copy(dx_cp,dx);
+                        X::axpy(theta,dx_dnewton,dx);
+                    }
 
                     // Manipulate the state if required
                     smanip.eval(fns,state,
@@ -4512,24 +4511,14 @@ namespace Optizelle{
                     // Check whether the step is good
                     if(checkStep(fns,state))
                         break;
-                    else
-                        rejected_trustregion++;
                     
-                    // If the number of rejected steps is above the
-                    // history_reset threshold, destroy the quasi-Newton
-                    // information
-                    if(rejected_trustregion > history_reset){
-                        oldY.clear();
-                        oldS.clear();
-                    }
-
                     // Manipulate the state if required
                     smanip.eval(fns,state,
                         OptimizationLocation::AfterRejectedTrustRegion);
 
                     // Alternatively, check if the step becomes so small
                     // that we're not making progress or if we have a step
-                    // with Nans in it.  In this case, break and allow the
+                    // with nans in it.  In this case, break and allow the
                     // stopping conditions to terminate optimization.  We use a
                     // zero length step so that we do not modify the current
                     // iterate.
@@ -4538,14 +4527,14 @@ namespace Optizelle{
                         X::zero(dx);
                         break;
                     }
-                } 
-                
+                }
+
                 // Set line-search parameters in such a way that they are
                 // consistent to what just happened in the trust-region
                 // method.  This helps keep this consistent if we ever switch
                 // to a line-search method.
-                alpha = Real(1.);
-                alpha0 = delta/Real(2.);
+                alpha = delta;
+                alpha0 = delta;
             }
         
             // Steepest descent search direction
@@ -4774,10 +4763,10 @@ namespace Optizelle{
                     f_mod=*(fns.f_mod);
                 X_Vector const & x=state.x;
                 X_Vector const & dx=state.dx;
-                Natural const & iter_max=state.linesearch_iter_max;
+                Natural const & iter_max=state.ls_iter_max;
                 Real const & alpha0=state.alpha0;
-                Natural & iter_total=state.linesearch_iter_total;
-                Natural & iter=state.linesearch_iter;
+                Natural & iter_total=state.ls_iter_total;
+                Natural & iter=state.ls_iter;
                 Real & f_xpdx=state.f_xpdx;
                 Real & alpha=state.alpha;
                 
@@ -4885,8 +4874,8 @@ namespace Optizelle{
                 X_Vector const & x=state.x;
                 X_Vector const & dx=state.dx;
                 Real const & alpha0=state.alpha0;
-                Natural & iter_total=state.linesearch_iter_total;
-                Natural & iter=state.linesearch_iter;
+                Natural & iter_total=state.ls_iter_total;
+                Natural & iter=state.ls_iter;
                 Real & f_xpdx=state.f_xpdx;
                 Real & alpha=state.alpha;
                             
@@ -4923,8 +4912,8 @@ namespace Optizelle{
                 LineSearchKind::t const & kind=state.kind;
                 Real & alpha=state.alpha;
                 X_Vector & dx=state.dx;
-                Natural & iter_total=state.linesearch_iter_total;
-                Natural & iter=state.linesearch_iter;
+                Natural & iter_total=state.ls_iter_total;
+                Natural & iter=state.ls_iter;
                 Real & f_xpdx=state.f_xpdx;
 
                 // Find delta_x
@@ -4985,23 +4974,26 @@ namespace Optizelle{
                 Real const & f_x=state.f_x;
                 Real const & eps_dx=state.eps_dx;
                 Real const & norm_dxtyp=state.norm_dxtyp;
-                Real const & eps_krylov=state.eps_krylov;
-                Natural const & krylov_iter_max=state.krylov_iter_max;
-                Natural const & krylov_orthog_max=state.krylov_orthog_max;
+                Real const & eps_trunc=state.eps_trunc;
+                Natural const & trunc_iter_max=state.trunc_iter_max;
+                Natural const & trunc_orthog_max=state.trunc_orthog_max;
                 Real const & c1=state.c1;
                 auto const & failed_safeguard_max = state.failed_safeguard_max;
+                auto const & glob_iter_max = state.glob_iter_max;
                 X_Vector & dx=state.dx;
                 Real & f_xpdx=state.f_xpdx;
                 Real & alpha0=state.alpha0;
                 Real & alpha=state.alpha;
-                Real & krylov_rel_err=state.krylov_rel_err;
-                Natural & krylov_iter=state.krylov_iter;
-                Natural & krylov_iter_total=state.krylov_iter_total;
-                KrylovStop::t& krylov_stop=state.krylov_stop;
+                Real & trunc_err=state.trunc_err;
+                Natural & trunc_iter=state.trunc_iter;
+                Natural & trunc_iter_total=state.trunc_iter_total;
+                TruncatedStop::t& trunc_stop=state.trunc_stop;
                 Real & delta=state.delta;
                 auto & failed_safeguard = state.failed_safeguard;
                 auto & failed_safeguard_total = state.failed_safeguard_total;
                 auto & alpha_x = state.alpha_x;
+                auto & glob_iter = state.glob_iter;
+                auto & glob_iter_total = state.glob_iter_total;
                 
                 // Manipulate the state if required
                 smanip.eval(fns,state,OptimizationLocation::BeforeGetStep);
@@ -5066,9 +5058,9 @@ namespace Optizelle{
                         H,
                         minus_grad,
                         PH,
-                        eps_krylov,
-                        krylov_iter_max,
-                        krylov_orthog_max,
+                        eps_trunc,
+                        trunc_iter_max,
+                        trunc_orthog_max,
                         std::numeric_limits <Real>::infinity(),
                         x_offset,
                         false,
@@ -5078,14 +5070,14 @@ namespace Optizelle{
                         dx_cp,
                         residual_err0,
                         residual_err,
-                        krylov_iter,
-                        krylov_stop,
+                        trunc_iter,
+                        trunc_stop,
                         failed_safeguard,
                         alpha_x);
 
-                    // Calculate the Krylov error
-                    krylov_rel_err = residual_err / residual_err0;
-                    krylov_iter_total += krylov_iter;
+                    // Calculate the truncated CG error 
+                    trunc_err = residual_err / residual_err0;
+                    trunc_iter_total += trunc_iter;
 
                     // Keep track of the number of failed safeguard steps
                     failed_safeguard_total+=failed_safeguard;
@@ -5109,7 +5101,7 @@ namespace Optizelle{
 
                     // Keep track of whether or not we hit a bound with the
                     // line-search
-                    typename LineSearchTermination::t ls_why
+                    typename LineSearchTermination::t ls_stop
                         = LineSearchTermination::Between;
 
                     // Save the original line search base
@@ -5133,13 +5125,21 @@ namespace Optizelle{
                     // Keep track of whether the sufficient decrease condition
                     // is satisfied.
                     bool sufficient_decrease=false;
-                    do {
+
+                    // Continue to look for a step until one comes back as valid
+                    for( glob_iter = 1;
+                         glob_iter <= glob_iter_max;
+                         glob_iter++
+                    ) { 
+                        // Keep track of the number of globalization iterations
+                        glob_iter_total++;
+
                         // Do the line-search
                         if(kind==LineSearchKind::GoldenSection ||
                             (!LineSearchKind::is_sufficient_decrease(kind) &&
                             iter==1)
                         )
-                            ls_why=goldenSection(fns,state);
+                            ls_stop=goldenSection(fns,state);
                         else if(kind==LineSearchKind::BackTracking)
                             backTracking(fns,state);
 
@@ -5160,46 +5160,42 @@ namespace Optizelle{
                             (merit_xpdx==merit_xpdx) &&
                             (merit_xpdx <= merit_pred);
 
-                        // If we've not satisfied the sufficient decrease
-                        // condition, cut the step
-                        if( !sufficient_decrease ) {
+                        // If we have sufficient decrease, quit
+                        if(sufficient_decrease)
+                            break;
 
-                            // Decrease the size of the base line-search
-                            // parameter 
-                            alpha0/=Real(2.);
+                        // Decrease the size of the base line-search
+                        // parameter 
+                        alpha0/=Real(2.);
 
-                            // Scale the search direction for the the state
-                            // manipulator, which produces output
-                            X::scal(alpha,dx);
+                        // Scale the search direction for the the state
+                        // manipulator, which produces output
+                        X::scal(alpha,dx);
 
-                            // Check if the step becomes so small that we're not
-                            // making progress or if we have a step with NaNs in
-                            // it.  In this case, take a zero step and allow
-                            // the stopping conditions to exit
-                            Real norm_dx = sqrt(X::innr(dx,dx));
-                            if( norm_dx < eps_dx * absrel(norm_dxtyp) ||
-                                norm_dx != norm_dx
-                            ) {
-                                X::zero(dx);
-                                break;
-                            }
-
-                            // Manipulate the state if required
-                            smanip.eval(fns,state,
-                                OptimizationLocation::AfterRejectedLineSearch);
-
-                            // Rescale the search direction in case we're not
-                            // quite done searching yet.
-                            X::scal(Real(1.0)/alpha,dx);
+                        // Check if the step becomes so small that we're not
+                        // making progress or if we have a step with NaNs in
+                        // it.  In this case, take a zero step and allow
+                        // the stopping conditions to exit
+                        Real norm_dx = sqrt(X::innr(dx,dx));
+                        if( norm_dx < eps_dx * absrel(norm_dxtyp) ||
+                            norm_dx != norm_dx
+                        ) {
+                            X::zero(dx);
+                            break;
                         }
 
-                    // Continue as long as we haven't satisfied the sufficient
-                    // decrease condition.
-                    } while( !sufficient_decrease );
+                        // Manipulate the state if required
+                        smanip.eval(fns,state,
+                            OptimizationLocation::AfterRejectedLineSearch);
+
+                        // Rescale the search direction in case we're not
+                        // quite done searching yet.
+                        X::scal(Real(1.0)/alpha,dx);
+                    } 
                 
                     // If the line-search hit one of the bounds, change the base
                     // line-search parameter.
-                    switch(ls_why){
+                    switch(ls_stop){
                     case LineSearchTermination::Min:
                         alpha0/=Real(2.);
                         break;
@@ -5222,8 +5218,11 @@ namespace Optizelle{
 
                 // Do the line-searches that are not based on sufficient
                 // decrease
-                } else 
+                } else {
                     twoPoint(fns,state);
+                    glob_iter = 1;
+                    glob_iter_total++;
+                }
 
                 // Adjust the size of the step (apply the line-search 
                 // parameter.)
@@ -5233,7 +5232,7 @@ namespace Optizelle{
                 // consistent to what just happened in the line-search method 
                 // method.  This helps keep this consistent if we ever switch
                 // to a trust-region method.
-                delta = Real(2.)*alpha0;
+                delta = alpha0;
             }
 
             // Finds a new trial step
@@ -5415,7 +5414,7 @@ namespace Optizelle{
                 Real & norm_gradtyp=state.norm_gradtyp;
                 Real & norm_dxtyp=state.norm_dxtyp;
                 Natural & iter=state.iter;
-                StoppingCondition::t & opt_stop=state.opt_stop;
+                OptimizationStop::t & opt_stop=state.opt_stop;
                 
                 // Manipulate the state if required
                 smanip.eval(fns,state,
@@ -5459,7 +5458,7 @@ namespace Optizelle{
                     OptimizationLocation::BeforeOptimizationLoop);
 
                 // Primary optimization loop
-                while(opt_stop==StoppingCondition::NotConverged &&
+                while(opt_stop==OptimizationStop::NotConverged &&
                       dscheme!=DiagnosticScheme::DiagnosticsOnly
                 ) {
 
@@ -7259,15 +7258,15 @@ namespace Optizelle{
                 // More detailed information
                 if(msg_level>=2) {
                     // Trust-region information
+                    out.emplace_back(Utility::atos("delta"));
                     out.emplace_back(Utility::atos("ared"));
                     out.emplace_back(Utility::atos("pred"));
                     out.emplace_back(Utility::atos("ared/pred"));
-                    out.emplace_back(Utility::atos("delta"));
                        
-                    // Krylov method information
-                    out.emplace_back(Utility::atos("kry_iter"));
-                    out.emplace_back(Utility::atos("kry_err"));
-                    out.emplace_back(Utility::atos("kry_why"));
+                    // Truncated-CG information
+                    out.emplace_back(Utility::atos("trunc_iter"));
+                    out.emplace_back(Utility::atos("trunc_err"));
+                    out.emplace_back(Utility::atos("trunc_stop"));
 
                     // Quasinormal step information
                     out.emplace_back(Utility::atos("qn_stop"));
@@ -7279,8 +7278,8 @@ namespace Optizelle{
                     out.emplace_back(Utility::atos("|| dx_n ||"));
                     out.emplace_back(Utility::atos("|| dx_t ||"));
 
-                    // Total number of Krylov iterations
-                    out.emplace_back(Utility::atos("kry_itr_tot"));
+                    // Total number of truncated-CG iterations
+                    out.emplace_back(Utility::atos("trc_itr_tot"));
 
                     // Augmented system solves 
                     out.emplace_back(Utility::atos("qn_iter"));
@@ -7331,16 +7330,17 @@ namespace Optizelle{
             ) {
                 // Create some shortcuts
                 Y_Vector const & g_x = state.g_x;
-                Natural const & krylov_iter=state.krylov_iter;
-                Natural const & krylov_iter_total=state.krylov_iter_total;
-                Real const & krylov_rel_err=state.krylov_rel_err;
-                KrylovStop::t const & krylov_stop=state.krylov_stop;
+                Natural const & trunc_iter=state.trunc_iter;
+                Natural const & trunc_iter_total=state.trunc_iter_total;
+                Real const & trunc_err=state.trunc_err;
+                TruncatedStop::t const & trunc_stop=state.trunc_stop;
                 Real const & pred = state.pred;
                 Real const & ared = state.ared;
                 Real const & delta = state.delta;
                 Natural const & msg_level = state.msg_level;
                 auto const & algorithm_class = state.algorithm_class;
                 auto const & qn_stop = state.qn_stop;
+                auto const & glob_iter = state.glob_iter;
 
                 auto const & dx_n = state.dx_n;
                 auto const & dx_t = state.dx_t;
@@ -7393,21 +7393,21 @@ namespace Optizelle{
                     
                 // More detailed information
                 if(msg_level >=2) {
+                    out.emplace_back(Utility::atos(delta));
                     // Actual vs. predicted reduction 
                     if(!opt_begin) {
                         out.emplace_back(Utility::atos(ared));
                         out.emplace_back(Utility::atos(pred));
                         out.emplace_back(Utility::atos(ared/pred));
-                        out.emplace_back(Utility::atos(delta));
                     } else 
-                        for(Natural i=0;i<4;i++)
+                        for(Natural i=0;i<3;i++)
                             out.emplace_back(Utility::blankSeparator);
                     
-                    // Krylov method information
-                    if(!opt_begin) {
-                        out.emplace_back(Utility::atos(krylov_iter));
-                        out.emplace_back(Utility::atos(krylov_rel_err));
-                        out.emplace_back(Utility::atos(krylov_stop));
+                    // Truncated-CG information
+                    if(glob_iter==1) {
+                        out.emplace_back(Utility::atos(trunc_iter));
+                        out.emplace_back(Utility::atos(trunc_err));
+                        out.emplace_back(Utility::atos(trunc_stop));
                     } else 
                         for(Natural i=0;i<3;i++)
                             out.emplace_back(Utility::blankSeparator);
@@ -7428,8 +7428,11 @@ namespace Optizelle{
                         out.emplace_back(Utility::atos(norm_dxn));
                         out.emplace_back(Utility::atos(norm_dxt));
 
-                        // Total number of Krylov iterations
-                        out.emplace_back(Utility::atos(krylov_iter_total));
+                        // Total number of truncated-CG iterations 
+                        if(glob_iter==1)
+                            out.emplace_back(Utility::atos(trunc_iter_total));
+                        else
+                            out.emplace_back(Utility::blankSeparator);
 
                         // Augmented system solves 
                         out.emplace_back(Utility::atos(augsys_qn_iter));
@@ -7489,42 +7492,6 @@ namespace Optizelle{
                     ::getState_(fns,state,blank,out);
             }
             
-            // Get the header for the Krylov iteration
-            static void getKrylovHeader_(
-                typename State::t const & state,
-                std::list <std::string> & out
-            ) { }
-
-            // Combines all of the Krylov headers
-            static void getKrylovHeader(
-                typename State::t const & state,
-                std::list <std::string> & out
-            ) {
-                Unconstrained <Real,XX>::Diagnostics::getKrylovHeader_(
-                    state,out);
-                EqualityConstrained <Real,XX,YY>::Diagnostics::getKrylovHeader_(
-                    state,out);
-            }
-            
-            // Get the information for the Krylov iteration
-            static void getKrylov_(
-                typename State::t const & state,
-                bool const & blank,
-                std::list <std::string> & out
-            ) { }
-
-            // Combines all of the Krylov information
-            static void getKrylov(
-                typename State::t const & state,
-                bool const & blank,
-                std::list <std::string> & out
-            ) {
-                Unconstrained <Real,XX>::Diagnostics::getKrylov_(
-                    state,blank,out);
-                EqualityConstrained <Real,XX,YY>::Diagnostics::getKrylov_(
-                    state,blank,out);
-            }
-           
             // Runs the specified function diagnostics 
             static void checkFunctions_(
                 Messaging const & msg,
@@ -8128,8 +8095,8 @@ namespace Optizelle{
             }
             
             // Sets the tolerances for the nullspace projector that projects
-            // the current direction in the projected Krylov method. 
-            struct NullspaceProjForKrylovMethodManipulator
+            // the current direction in truncated CG 
+            struct NullspaceProjForTruncManipulator
                 : public GMRESManipulator <Real,XXxYY> {
             private:
                 typename State::t & state;
@@ -8137,10 +8104,10 @@ namespace Optizelle{
             public:
                 // Disallow constructors
                 NO_DEFAULT_COPY_ASSIGNMENT(
-                    NullspaceProjForKrylovMethodManipulator)
+                    NullspaceProjForTruncManipulator)
 
                 // Grab the states and fns on construction
-                explicit NullspaceProjForKrylovMethodManipulator (
+                explicit NullspaceProjForTruncManipulator (
                     typename State::t & state_,
                     typename Functions::t const & fns_
                 ) : state(state_), fns(fns_) {}
@@ -8175,9 +8142,10 @@ namespace Optizelle{
                     // In this case, try to detect the condition and bail early.
                     // Specifically, sometimes the right hand side is
                     // a decent size, but the solution is small.  Therefore,
-                    // we exit when the norm of the projected Krylov iterate 
-                    // is smaller than the norm of the unprojected iterate 
-                    // by two orders of magnitude larger than machine precision.
+                    // we exit when the norm of the projected truncated CG
+                    // iterate is smaller than the norm of the unprojected
+                    // iterate by two orders of magnitude larger than machine
+                    // precision.
                     if(iter >= 2
                         && norm_Wdxt_uncorrected
                             < std::numeric_limits <Real>::epsilon()
@@ -8190,14 +8158,14 @@ namespace Optizelle{
                 }
             };
             
-            // Nullspace projector that projects the current direction in the
-            // projected Krylov method. 
-            struct NullspaceProjForKrylovMethod: public Operator <Real,XX,XX> {
+            // Nullspace projector that projects the current direction in
+            // projected truncated CG
+            struct NullspaceProjForTrunc: public Operator <Real,XX,XX> {
             private:
                 typename State::t & state;
                 typename Functions::t const & fns;
             public:
-                NullspaceProjForKrylovMethod(
+                NullspaceProjForTrunc(
                     typename State::t & state_,
                     typename Functions::t const & fns_
                 ) : state(state_), fns(fns_) {}
@@ -8245,7 +8213,7 @@ namespace Optizelle{
                             augsys_rst_freq,
                             PAugSys_l,
                             PAugSys_r,
-                            NullspaceProjForKrylovMethodManipulator(state,fns),
+                            NullspaceProjForTruncManipulator(state,fns),
                             x0 
                         );
                     augsys_proj_iter+=iter;
@@ -8271,16 +8239,16 @@ namespace Optizelle{
                 X_Vector const & dx_n=state.dx_n;
                 X_Vector const & W_gradpHdxn=state.W_gradpHdxn;
                 Real const & delta = state.delta;
-                Real const & eps_krylov=state.eps_krylov;
-                Natural const & krylov_iter_max=state.krylov_iter_max;
-                Natural const & krylov_orthog_max=state.krylov_orthog_max;
+                Real const & eps_trunc=state.eps_trunc;
+                Natural const & trunc_iter_max=state.trunc_iter_max;
+                Natural const & trunc_orthog_max=state.trunc_orthog_max;
                 auto const & failed_safeguard_max = state.failed_safeguard_max;
                 X_Vector & dx_t_uncorrected=state.dx_t_uncorrected;
                 X_Vector & dx_tcp_uncorrected=state.dx_tcp_uncorrected;
-                Real & krylov_rel_err=state.krylov_rel_err;
-                Natural & krylov_iter=state.krylov_iter;
-                Natural & krylov_iter_total=state.krylov_iter_total;
-                KrylovStop::t& krylov_stop=state.krylov_stop;
+                Real & trunc_err=state.trunc_err;
+                Natural & trunc_iter=state.trunc_iter;
+                Natural & trunc_iter_total=state.trunc_iter_total;
+                TruncatedStop::t& trunc_stop=state.trunc_stop;
                 Natural & augsys_proj_iter = state.augsys_proj_iter;
                 auto & failed_safeguard = state.failed_safeguard;
                 auto & failed_safeguard_total = state.failed_safeguard_total;
@@ -8318,10 +8286,10 @@ namespace Optizelle{
                 truncated_cg(
                     H,
                     minus_W_gradpHdxn,
-                    NullspaceProjForKrylovMethod(state,fns), // Add in PH?
-                    eps_krylov,
-                    krylov_iter_max,
-                    krylov_orthog_max,
+                    NullspaceProjForTrunc(state,fns), // Add in PH?
+                    eps_trunc,
+                    trunc_iter_max,
+                    trunc_orthog_max,
                     delta,
                     dx_n,
                     true,
@@ -8331,14 +8299,14 @@ namespace Optizelle{
                     dx_tcp_uncorrected,
                     residual_err0,
                     residual_err,
-                    krylov_iter,
-                    krylov_stop,
+                    trunc_iter,
+                    trunc_stop,
                     failed_safeguard,
                     alpha_x);
 
-                // Calculate the Krylov error
-                krylov_rel_err = residual_err / residual_err0;
-                krylov_iter_total += krylov_iter;
+                // Calculate the truncated CG error 
+                trunc_err = residual_err / residual_err0;
+                trunc_iter_total += trunc_iter;
 
                 // Keep track of the number of failed safeguard steps
                 failed_safeguard_total+=failed_safeguard;
@@ -8842,7 +8810,7 @@ namespace Optizelle{
                 Real const & eta1=state.eta1;
                 Real const & eta2=state.eta2;
                 Real const & f_x=state.f_x;
-                KrylovStop::t const & krylov_stop=state.krylov_stop;
+                TruncatedStop::t const & trunc_stop=state.trunc_stop;
                 auto const & qn_stop = state.qn_stop;
                 Y_Vector & y=state.y;
                 Real & delta=state.delta;
@@ -8896,8 +8864,8 @@ namespace Optizelle{
                 if(ared >= eta2*pred){
                     // Increase the size of the trust-region if either the
                     // tangential or quasinormal steps have reached the boundary
-                    if( krylov_stop==KrylovStop::NegativeCurvature ||
-                        krylov_stop==KrylovStop::TrustRegionViolated ||
+                    if( trunc_stop==TruncatedStop::NegativeCurvature ||
+                        trunc_stop==TruncatedStop::TrustRegionViolated ||
                         qn_stop==QuasinormalStop::CauchyTrustRegion ||
                         qn_stop==QuasinormalStop::DoglegTrustRegion
                     ) 
@@ -8934,10 +8902,11 @@ namespace Optizelle{
                 Real const & eps_dx=state.eps_dx;
                 Real const & norm_dxtyp=state.norm_dxtyp;
                 Real const & rho_old=state.rho_old;
-                Natural const & history_reset=state.history_reset;
                 auto const & eps_constr = state.eps_constr;
                 auto const & norm_gxtyp = state.norm_gxtyp;
                 auto const & W_gradpHdxn = state.W_gradpHdxn;
+                auto const & glob_iter_max = state.glob_iter_max;
+                auto const & delta = state.delta;
                 X_Vector & dx=state.dx;
                 X_Vector & dx_t_uncorrected=state.dx_t_uncorrected;
                 X_Vector & H_dxn=state.H_dxn;
@@ -8956,18 +8925,24 @@ namespace Optizelle{
                 Real & pred=state.pred;
                 Real & rpred=state.rpred;
                 Real & rho=state.rho;
-                Real & alpha0=state.alpha0;
-                Natural & rejected_trustregion=state.rejected_trustregion;
                 auto & alpha_x = state.alpha_x;
                 auto & dx_t=state.dx_t;
+                auto & glob_iter = state.glob_iter;
+                auto & glob_iter_total = state.glob_iter_total;
+                auto & alpha = state.alpha; 
+                auto & alpha0 = state.alpha0; 
 
                 // Create a single temporary vector
                 X_Vector x_tmp1(X::init(x));
 
-                // Continue to look for a step until our actual vs. predicted
-                // reduction is good.
-                rejected_trustregion=0;
-                while(true) {
+                // Continue to look for a step until one comes back as valid
+                for( glob_iter = 1;
+                     glob_iter <= glob_iter_max;
+                     glob_iter++
+                ) { 
+                    // Keep track of the number of globalization iterations
+                    glob_iter_total++;
+
                     // Manipulate the state if required
                     smanip.eval(fns,state,OptimizationLocation::BeforeGetStep);
 
@@ -9117,16 +9092,6 @@ namespace Optizelle{
                     // Check whether the step is good
                     if(checkStep(fns,state))
                         break;
-                    else
-                        rejected_trustregion++;
-                    
-                    // If the number of rejected steps is above the
-                    // history_reset threshold, destroy the quasi-Newton
-                    // information
-                    if(rejected_trustregion > history_reset){
-                        oldY.clear();
-                        oldS.clear();
-                    }
 
                     // Manipulate the state if required
                     smanip.eval(fns,state,
@@ -9146,6 +9111,13 @@ namespace Optizelle{
                         break;
                     }
                 } 
+                
+                // Set line-search parameters in such a way that they are
+                // consistent to what just happened in the trust-region
+                // method.  This helps keep this consistent if we ever switch
+                // to a line-search method.
+                alpha = delta;
+                alpha0 = delta;
             }
             
             // Adjust the stopping conditions unless
@@ -9159,14 +9131,14 @@ namespace Optizelle{
                 Y_Vector const & g_x = state.g_x;
                 Real const & eps_constr=state.eps_constr;
                 Real const & norm_gxtyp=state.norm_gxtyp; 
-                StoppingCondition::t & opt_stop=state.opt_stop;
+                OptimizationStop::t & opt_stop=state.opt_stop;
                 
                 // Prevent convergence unless the infeasibility is small. 
                 Real norm_gx=sqrt(Y::innr(g_x,g_x));
-                if( opt_stop==StoppingCondition::GradientSmall &&
+                if( opt_stop==OptimizationStop::GradientSmall &&
                     !(norm_gx < eps_constr * absrel(norm_gxtyp)) 
                 )
-                    opt_stop=StoppingCondition::NotConverged;
+                    opt_stop=OptimizationStop::NotConverged;
             }
 
             
@@ -9220,7 +9192,7 @@ namespace Optizelle{
                     X_Vector const & x=state.x;
                     Y_Vector const & dy=state.dy;
                     Real const & rho = state.rho;
-                    Natural const & krylov_iter_max = state.krylov_iter_max;
+                    Natural const & trunc_iter_max = state.trunc_iter_max;
                     AlgorithmClass::t& algorithm_class=state.algorithm_class;
                     X_Vector & grad=state.grad;
                     Y_Vector & y=state.y;
@@ -9228,7 +9200,7 @@ namespace Optizelle{
                     Real & norm_gxtyp = state.norm_gxtyp;
                     Real & rho_old = state.rho_old;
                     Real & norm_gradtyp = state.norm_gradtyp;
-                    Natural & krylov_orthog_max = state.krylov_orthog_max;
+                    Natural & trunc_orthog_max = state.trunc_orthog_max;
 
                     switch(loc){
                     case OptimizationLocation::BeforeInitialFuncAndGrad:
@@ -9236,9 +9208,9 @@ namespace Optizelle{
                         // routines to find the new step.
                         algorithm_class=AlgorithmClass::UserDefined;
 
-                        // Make sure that we do full orthogonalization in our
-                        // truncated Krylov method
-                        krylov_orthog_max = krylov_iter_max;
+                        // Make sure that we do full orthogonalization in
+                        // truncated CG 
+                        trunc_orthog_max = trunc_iter_max;
                         break;
                 
                     case OptimizationLocation::AfterInitialFuncAndGrad: {
@@ -10459,42 +10431,6 @@ namespace Optizelle{
                     ::getState_(fns,state,blank,out);
             }
             
-            // Get the header for the Krylov iteration
-            static void getKrylovHeader_(
-                typename State::t const & state,
-                std::list <std::string> & out
-            ) { }
-
-            // Combines all of the Krylov headers
-            static void getKrylovHeader(
-                typename State::t const & state,
-                std::list <std::string> & out
-            ) {
-                Unconstrained <Real,XX>::Diagnostics::getKrylovHeader_(
-                    state,out);
-                InequalityConstrained<Real,XX,ZZ>::Diagnostics::getKrylovHeader_
-                    (state,out);
-            }
-            
-            // Get the information for the Krylov iteration
-            static void getKrylov_(
-                typename State::t const & state,
-                bool const & blank,
-                std::list <std::string> & out
-            ) { }
-
-            // Combines all of the Krylov information
-            static void getKrylov(
-                typename State::t const & state,
-                bool const & blank,
-                std::list <std::string> & out
-            ) {
-                Unconstrained <Real,XX>::Diagnostics
-                    ::getKrylov_(state,blank,out);
-                InequalityConstrained <Real,XX,ZZ>::Diagnostics
-                    ::getKrylov_(state,blank,out);
-            }
-           
             // Runs the specified function diagnostics 
             static void checkFunctions_(
                 Messaging const & msg,
@@ -10858,11 +10794,11 @@ namespace Optizelle{
                 Real const & mu_typ=state.mu_typ;
                 Real const & eps_mu=state.eps_mu;
                 Natural const & iter=state.iter;
-                StoppingCondition::t & opt_stop=state.opt_stop;
+                OptimizationStop::t & opt_stop=state.opt_stop;
 
                 // If the estimated interior point paramter is negative, exit
                 if(mu_est < Real(0.)) {
-                    opt_stop=StoppingCondition::InteriorPointInstability;
+                    opt_stop=OptimizationStop::InteriorPointInstability;
                     return;
                 }
 
@@ -10874,10 +10810,10 @@ namespace Optizelle{
                 auto mu_converged =
                     std::fabs(mu-absrel(mu_typ)*eps_mu) <=absrel(mu_typ)*eps_mu;
                 auto mu_est_converged = std::fabs(mu-mu_est) <= mu;
-                if( opt_stop==StoppingCondition::GradientSmall &&
+                if( opt_stop==OptimizationStop::GradientSmall &&
                     !(mu_converged && mu_est_converged)
                 ) {
-                    opt_stop=StoppingCondition::NotConverged;
+                    opt_stop=OptimizationStop::NotConverged;
                     return;
                 }
             }
@@ -11713,33 +11649,6 @@ namespace Optizelle{
                     ::getState_(fns,state,blank,out);
             }
 
-            // Combines all of the Krylov headers
-            static void getKrylovHeader(
-                typename State::t const & state,
-                std::list <std::string> & out
-            ) {
-                Unconstrained <Real,XX>::Diagnostics::getKrylovHeader_(
-                    state,out);
-                EqualityConstrained <Real,XX,YY>::Diagnostics::getKrylovHeader_(
-                    state,out);
-                InequalityConstrained<Real,XX,ZZ>::Diagnostics::getKrylovHeader_
-                    (state,out);
-            }
-
-            // Combines all of the Krylov information
-            static void getKrylov(
-                typename State::t const & state,
-                bool const & blank,
-                std::list <std::string> & out
-            ) {
-                Unconstrained <Real,XX>::Diagnostics::getKrylov_(
-                    state,blank,out);
-                EqualityConstrained <Real,XX,YY>::Diagnostics::getKrylov_(
-                    state,blank,out);
-                InequalityConstrained <Real,XX,ZZ>::Diagnostics::getKrylov_(
-                    state,blank,out);
-            }
-            
             // Runs the specified function diagnostics 
             static void checkFunctions(
                 Messaging const & msg,

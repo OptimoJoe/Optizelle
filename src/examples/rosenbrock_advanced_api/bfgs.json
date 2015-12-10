@@ -4,7 +4,7 @@
       "algorithm_class" : "LineSearch",
       "dir" : "BFGS",
       "iter_max" : 50,
-      "eps_krylov" : 1e-2,
+      "eps_trunc" : 1e-2,
       "eps_dx" : 1e-16,
       "stored_history" : 10
    },

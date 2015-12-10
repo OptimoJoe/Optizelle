@@ -1011,7 +1011,7 @@ int main(int argc,char* argv[]) {
 
         // Tell us why the problem converged
         std::cout << "Phase-1 problem converged due to: "
-            << Optizelle::StoppingCondition::to_string(phase1_state.opt_stop)
+            << Optizelle::OptimizationStop::to_string(phase1_state.opt_stop)
             << std::endl;
 
         // Check if we're feasible
@@ -1059,7 +1059,7 @@ int main(int argc,char* argv[]) {
 
     // Tell us why the problem converged
     std::cout << "SDP problem converged due to: "
-        << Optizelle::StoppingCondition::to_string(state.opt_stop)
+        << Optizelle::OptimizationStop::to_string(state.opt_stop)
         << std::endl;
 
     // Return the objective function

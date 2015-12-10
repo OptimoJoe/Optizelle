@@ -88,7 +88,7 @@ namespace Optizelle{
     }
 
     // Reasons why we stop the algorithm
-    namespace StoppingCondition{
+    namespace OptimizationStop{
         // Converts the stopping condition to a string 
         std::string to_string(t const & opt_stop) {
             switch(opt_stop){
@@ -102,6 +102,8 @@ namespace Optizelle{
                 return "MaxItersExceeded";
             case InteriorPointInstability:
                 return "InteriorPointInstability";
+            case GlobalizationFailure:
+                return "GlobalizationFailure";
             case UserDefined:
                 return "UserDefined";
             default:
@@ -121,6 +123,8 @@ namespace Optizelle{
                 return MaxItersExceeded;
             else if(opt_stop=="InteriorPointInstability")
                 return InteriorPointInstability; 
+            else if(opt_stop=="GlobalizationFailure")
+                return GlobalizationFailure;
             else if(opt_stop=="UserDefined")
                 return UserDefined;
             else
@@ -134,6 +138,7 @@ namespace Optizelle{
                 name=="StepSmall" ||
                 name=="MaxItersExceeded" ||
                 name=="InteriorPointInstability" ||
+                name=="GlobalizationFailure" ||
                 name=="UserDefined"
             )
                 return true;
@@ -361,8 +366,6 @@ namespace Optizelle{
                 return "AfterRejectedLineSearch";
             case BeforeActualVersusPredicted:
                 return "BeforeActualVersusPredicted";
-            case EndOfKrylovIteration:
-                return "EndOfKrylovIteration";
             case EndOfOptimization:
                 return "EndOfOptimization";
             default:
@@ -408,8 +411,6 @@ namespace Optizelle{
                 return AfterRejectedLineSearch;
             else if(loc=="BeforeActualVersusPredicted")
                 return BeforeActualVersusPredicted;
-            else if(loc=="EndOfKrylovIteration")
-                return EndOfKrylovIteration;
             else if(loc=="EndOfOptimization")
                 return EndOfOptimization;
             else
@@ -436,7 +437,6 @@ namespace Optizelle{
                 name=="AfterRejectedTrustRegion" ||
                 name=="AfterRejectedLineSearch" ||
                 name=="BeforeActualVersusPredicted" ||
-                name=="EndOfKrylovIteration" ||
                 name=="EndOfOptimization"
             )
                 return true;
@@ -734,27 +734,27 @@ namespace Optizelle{
         ss << formatString << x;
         return ss.str();
     }
-    std::string Utility::atos(KrylovStop::t const & x){
+    std::string Utility::atos(TruncatedStop::t const & x){
         std::stringstream ss;
-        // Converts the Krylov stopping condition to a shorter string 
+        // Converts the truncated CG stopping condition to a shorter string 
         switch(x){
-        case KrylovStop::NotConverged:
+        case TruncatedStop::NotConverged:
             return atos("NotConv");
-        case KrylovStop::NegativeCurvature:
+        case TruncatedStop::NegativeCurvature:
             return atos("NegCurv");
-        case KrylovStop::RelativeErrorSmall:
+        case TruncatedStop::RelativeErrorSmall:
             return atos("RelErrSml");
-        case KrylovStop::MaxItersExceeded:
+        case TruncatedStop::MaxItersExceeded:
             return atos("IterExcd");
-        case KrylovStop::TrustRegionViolated:
+        case TruncatedStop::TrustRegionViolated:
             return atos("TrstReg");
-        case KrylovStop::NanDetected:
+        case TruncatedStop::NanDetected:
             return atos("NaN");
-        case KrylovStop::LossOfOrthogonality:
+        case TruncatedStop::LossOfOrthogonality:
             return atos("OrthogLost");
-        case KrylovStop::InvalidTrustRegionOffset:
+        case TruncatedStop::InvalidTrustRegionOffset:
             return atos("InvldCnt");
-        case KrylovStop::TooManyFailedSafeguard:
+        case TruncatedStop::TooManyFailedSafeguard:
             return atos("Safeguard");
         default:
             throw;

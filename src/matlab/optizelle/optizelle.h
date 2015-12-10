@@ -37,7 +37,7 @@ Author: Joseph Young (joe@optimojoe.com)
 #include "optizelle/json.h"
 
 namespace Optizelle {
-    namespace StoppingCondition { 
+    namespace OptimizationStop { 
         // Converts t to a Matlab enumerated type
         mxArray * toMatlab(t const & opt_stop);
 
@@ -45,9 +45,9 @@ namespace Optizelle {
         t fromMatlab(mxArray * const member);
     }
 
-    namespace KrylovStop {
+    namespace TruncatedStop {
         // Converts t to a Matlab enumerated type
-        mxArray * toMatlab(t const & krylov_stop);
+        mxArray * toMatlab(t const & trunc_stop);
 
         // Converts a Matlab enumerated type to t 
         t fromMatlab(mxArray * const member);

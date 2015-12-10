@@ -5,8 +5,8 @@
       "H_type" : "UserDefined",
       "dir" : "NewtonCG",
       "iter_max" : 50,
-      "linesearch_iter_max" : 200,
-      "eps_krylov" : 1e-2
+      "ls_iter_max" : 200,
+      "eps_trunc" : 1e-2
    },
    "Naturals" : {
       "iter" : 2 

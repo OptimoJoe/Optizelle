@@ -12,7 +12,7 @@ int main() {
     Natural m = 5;
 
     // Set the stopping tolerance
-    double eps_krylov = 1e-12;
+    double eps_trunc = 1e-12;
 
     // Set the maximum number of iterations
     Natural iter_max = 200;
@@ -54,13 +54,13 @@ int main() {
     // Solve this linear system
     double residual_err0, residual_err; 
     Natural iter;
-    Optizelle::KrylovStop::t krylov_stop;
+    Optizelle::TruncatedStop::t trunc_stop;
     auto failed_safeguard = Natural(0);
     auto alpha_safeguard = double(0.);
     Optizelle::truncated_cg <double,Optizelle::Rm>
-        (A,b,W,eps_krylov,iter_max,1,delta,x_offset,false,1,
+        (A,b,W,eps_trunc,iter_max,1,delta,x_offset,false,1,
             no_safeguard <double,Optizelle::Rm>,x,x_cp,
-            residual_err0,residual_err,iter,krylov_stop,failed_safeguard,
+            residual_err0,residual_err,iter,trunc_stop,failed_safeguard,
             alpha_safeguard);
 
     // Check that the size of x is just the trust-region radius

@@ -91,7 +91,7 @@ function main(fname)
 
     % Print out the reason for convergence
     fprintf('The algorithm converged due to: %s\n', ...
-        Optizelle.StoppingCondition.to_string(state.opt_stop));
+        Optizelle.OptimizationStop.to_string(state.opt_stop));
 
     % Form the solution operator.  The user must specify this
     phi.eval=@(x)phi_eval(A,b,x);
@@ -119,7 +119,7 @@ function main(fname)
 
     % Print out the reason for convergence
     fprintf('The algorithm converged due to: %s\n', ...
-        Optizelle.StoppingCondition.to_string(state.opt_stop));
+        Optizelle.OptimizationStop.to_string(state.opt_stop));
 end
 
 % Create the functions for the constraint
