@@ -792,7 +792,7 @@ as a zipped archive.  Here, we also provide direct access to our source code rep
 {\bf Dependency} & {\bf Version} & {\bf Optional?} & {\bf Purpose} \\\hline
 \hyperref[tbl:compilers]{C++14} & & No & Compilation of the core library\\\hline
 \hyperref[tbl:compilers]{FORTRAN 77} & & No & Determines the name mangling scheme for BLAS and LAPACK\\\hline
-\href{http://cmake.org}{CMake} & $\geq$ 2.8.9 & No & Build system\\\hline
+\href{http://cmake.org}{CMake} & $\geq$ 3.1.3 & No & Build system\\\hline
 \hyperref[tbl:make]{Make} & & No & Build system\\\hline
 \href{https://github.com/open-source-parsers/jsoncpp}{JsonCpp} & 0.10.5 & No & Parsing of the configuration files and the default archive/restart engine\\\hline
 \hyperref[tbl:blaslapack]{BLAS and LAPACK} & & No & Dense kernels for the default vector spaces in the C++ interface\\\hline
@@ -803,14 +803,14 @@ as a zipped archive.  Here, we also provide direct access to our source code rep
 \href{http://www.mathworks.com/products/matlab}{MATLAB} & & Yes & MATLAB/Octave interface\\\hline
 \end{tabular}\end{center}
 
-        As far as C++11 and FORTRAN 77 compilers, in theory, any valid compiler should work.  A small list of these compilers is
+        As far as C++14 and FORTRAN 77 compilers, in theory, any valid compiler should work.  A small list of these compilers is
 \phantomsection\label{tbl:compilers}
 \begin{center}\begin{tabular}{|l|l|l|l|}\hline
 {\bf Compiler} & {\bf Version} & {\bf Language} & {\bf Platform}\\\hline
 \href{http://gcc.gnu.org}{GCC} & $\geq 4.9$ & C++14, FORTRAN 77 & Linux, Unix, OS X \\\hline
-\href{http://clang.llvm.org}{Clang} & & C++11 & Linux, Unix, OS X \\\hline
+\href{http://clang.llvm.org}{Clang} & & C++14 & Linux, Unix, OS X \\\hline
 \href{http://dragonegg.llvm.org}{DragonEgg} & & C++14, FORTRAN 77 & Linux, Unix, OS X \\\hline
-\href{http://www.mingw.org}{MinGW} & & C++11, FORTRAN 77 & Windows \\\hline
+\href{http://www.mingw.org}{MinGW} & & C++14, FORTRAN 77 & Windows \\\hline
 \href{http://www.cygwin.com}{Cygwin} (GCC) & & C++14, FORTRAN 77 & Windows \\\hline
 \end{tabular}\end{center}
 On Windows, Visual Studio does not compile prepackaged with a FORTRAN 77 compiler.  Though, one can be purchased from a commercial vendor.  As a result, we recommend using either MinGW or Cygwin on Windows.  The primary difference between the two is that Cygwin will create a dependency to the Cygwin runtime libraries during compilation, but MinGW will not.  This becomes important when distributing applications built with Optizelle.  On OS X, the default compilers tend to use old versions of LLVM-GCC (4.2), which is not sufficient to compile Optizelle.  Newer versions of GCC can be found through \href{https://www.macports.org}{MacPorts} or \href{http://hpc.sourceforge.net}{HPC Mac OS X}.
@@ -927,8 +927,7 @@ On Windows, if not using Cygwin, execute the following commands:
         {\textctref{ENABLE_CPP}}
         {None}
         {No}
-        {C++ compiler specific flags.  Note, we usually require a special flag
-        to enable C++11 compilation such as \textct{-std=c++11} on GCC.}
+        {C++ compiler specific flags.}
 
     \cmakeitem
         {CMAKE_BUILD_TYPE}

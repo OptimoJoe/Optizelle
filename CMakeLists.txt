@@ -2,8 +2,9 @@
 project(Optizelle)
 
 # This is the minimum required for the install.  Basically, we need
-# set(CMAKE_POSITION_INDEPENDENT_CODE ON) and this was added in 2.8.9.
-cmake_minimum_required(VERSION 2.8.9)
+# CXX_STANDARD_REQUIRED and this looks to have been added at 3.1.  I think
+# 3.1.3 is what the current bug fix is, so that looks good enough. 
+cmake_minimum_required(VERSION 3.1.3 FATAL_ERROR)
 
 # Set the CPack options
 set(CPACK_GENERATOR "TGZ")

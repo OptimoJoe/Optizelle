@@ -34,6 +34,10 @@ endif()
 set(ENABLE_CPP OFF CACHE BOOL "Enable libraries for C++?")
 if(ENABLE_CPP)
 
+    # Force C++14 on all targets
+    set(CMAKE_CXX_STANDARD 14)
+    set_property(GLOBAL PROPERTY CXX_STANDARD_REQUIRED)
+
     # Turn on position independent code.  This simplifies building both static
     # and shared libraries.
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
