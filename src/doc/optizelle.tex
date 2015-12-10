@@ -523,7 +523,7 @@
 
 % Optizelle output
 \lstdefinestyle{OptizelleOutput}{
-    morekeywords={iter,f,x,merit,grad,dx,kry_why,kry_err,kry_iter,ared,pred,
+    morekeywords={iter,f,x,merit,grad,dx,trunc_why,trunc_err,trunc_iter,ared,pred,
         ared/pred,mu,mu_est,g,alpha,alpha0,delta},
     sensitive=false,
     literate=
@@ -720,30 +720,30 @@ In order to optimize this function, we use the following code and parameters, wh
 iter        f(x)        ||grad||    ||dx||      
 1           2.42e+01    2.33e+02    .           
 2           4.73e+00    4.64e+00    3.81e-01    
-*           4.73e+00    4.64e+00    1.00e+00    
+.           4.73e+00    4.64e+00    1.00e+00    
 3           4.00e+00    1.74e+01    5.00e-01    
 4           3.34e+00    2.33e+01    5.00e-01    
 5           2.58e+00    8.77e+00    2.04e-01    
-*           2.58e+00    8.77e+00    4.91e-01    
+.           2.58e+00    8.77e+00    4.91e-01    
 6           2.09e+00    8.48e+00    2.45e-01    
-7           1.75e+00    1.37e+01    3.06e-01    
-8           1.20e+00    2.99e+00    9.50e-02    
-*           1.20e+00    2.99e+00    4.15e-01    
-9           9.13e-01    7.24e+00    2.08e-01    
-10          6.17e-01    2.36e+00    1.23e-01    
-11          4.64e-01    8.01e+00    2.08e-01    
-12          2.69e-01    1.17e+00    1.23e-01    
-13          1.83e-01    6.37e+00    2.08e-01    
-14          9.23e-02    1.23e+00    1.30e-01    
-15          5.33e-02    5.17e+00    2.08e-01    
-16          1.85e-02    6.67e-01    1.03e-01    
-17          9.22e-03    3.68e+00    1.88e-01    
-18          6.89e-04    5.82e-02    4.05e-02    
-19          4.05e-05    2.78e-01    5.50e-02    
-20          1.62e-08    2.58e-04    2.83e-03    
-21          2.64e-14    7.13e-06    2.84e-04    
-22          6.98e-27    1.67e-13    7.27e-08    
-The algorithm converged due to: StepSmall
+7           1.65e+00    9.60e+00    2.45e-01    
+8           1.22e+00    5.00e+00    1.46e-01    
+9           9.64e-01    9.06e+00    2.13e-01    
+10          6.22e-01    1.77e+00    1.10e-01    
+.           6.22e-01    1.77e+00    3.44e-01    
+11          4.40e-01    4.42e+00    1.72e-01    
+12          2.81e-01    3.72e+00    1.68e-01    
+13          1.71e-01    3.60e+00    1.72e-01    
+14          9.43e-02    3.58e+00    1.80e-01    
+15          4.49e-02    2.47e+00    1.60e-01    
+16          1.82e-02    2.40e+00    1.58e-01    
+17          5.16e-03    1.02e+00    1.11e-01    
+18          8.94e-04    7.81e-01    9.41e-02    
+19          4.86e-05    1.17e-01    3.89e-02    
+20          2.49e-07    1.55e-02    1.36e-02    
+21          7.47e-12    4.80e-05    7.98e-04    
+22          7.06e-21    2.62e-09    5.63e-06    
+The algorithm converged due to: GradientSmall
 The optimal point is: (1,1) 
 \end{filecontents*}
 
@@ -790,11 +790,11 @@ as a zipped archive.  Here, we also provide direct access to our source code rep
         Optizelle depends on the following software packages
 \begin{center}\begin{tabular}{|l|l|l|p{.5\textwidth}|}\hline
 {\bf Dependency} & {\bf Version} & {\bf Optional?} & {\bf Purpose} \\\hline
-\hyperref[tbl:compilers]{C++11} & & No & Compilation of the core library\\\hline
+\hyperref[tbl:compilers]{C++14} & & No & Compilation of the core library\\\hline
 \hyperref[tbl:compilers]{FORTRAN 77} & & No & Determines the name mangling scheme for BLAS and LAPACK\\\hline
 \href{http://cmake.org}{CMake} & $\geq$ 2.8.9 & No & Build system\\\hline
 \hyperref[tbl:make]{Make} & & No & Build system\\\hline
-\href{https://github.com/open-source-parsers/jsoncpp}{JsonCpp} & Master & No & Parsing of the configuration files and the default archive/restart engine\\\hline
+\href{https://github.com/open-source-parsers/jsoncpp}{JsonCpp} & 0.10.5 & No & Parsing of the configuration files and the default archive/restart engine\\\hline
 \hyperref[tbl:blaslapack]{BLAS and LAPACK} & & No & Dense kernels for the default vector spaces in the C++ interface\\\hline
 \href{http://www.ctan.org}{pdflatex} & & Yes & Documentation generation \\\hline
 \href{http://python.org}{Python} & 2.7.x & Yes & Python interface \\\hline
@@ -807,11 +807,11 @@ as a zipped archive.  Here, we also provide direct access to our source code rep
 \phantomsection\label{tbl:compilers}
 \begin{center}\begin{tabular}{|l|l|l|l|}\hline
 {\bf Compiler} & {\bf Version} & {\bf Language} & {\bf Platform}\\\hline
-\href{http://gcc.gnu.org}{GCC} & $\geq 4.7$ & C++11, FORTRAN 77 & Linux, Unix, OS X \\\hline
+\href{http://gcc.gnu.org}{GCC} & $\geq 4.9$ & C++14, FORTRAN 77 & Linux, Unix, OS X \\\hline
 \href{http://clang.llvm.org}{Clang} & & C++11 & Linux, Unix, OS X \\\hline
-\href{http://dragonegg.llvm.org}{DragonEgg} & & C++11, FORTRAN 77 & Linux, Unix, OS X \\\hline
+\href{http://dragonegg.llvm.org}{DragonEgg} & & C++14, FORTRAN 77 & Linux, Unix, OS X \\\hline
 \href{http://www.mingw.org}{MinGW} & & C++11, FORTRAN 77 & Windows \\\hline
-\href{http://www.cygwin.com}{Cygwin} (GCC) & & C++11, FORTRAN 77 & Windows \\\hline
+\href{http://www.cygwin.com}{Cygwin} (GCC) & & C++14, FORTRAN 77 & Windows \\\hline
 \end{tabular}\end{center}
 On Windows, Visual Studio does not compile prepackaged with a FORTRAN 77 compiler.  Though, one can be purchased from a commercial vendor.  As a result, we recommend using either MinGW or Cygwin on Windows.  The primary difference between the two is that Cygwin will create a dependency to the Cygwin runtime libraries during compilation, but MinGW will not.  This becomes important when distributing applications built with Optizelle.  On OS X, the default compilers tend to use old versions of LLVM-GCC (4.2), which is not sufficient to compile Optizelle.  Newer versions of GCC can be found through \href{https://www.macports.org}{MacPorts} or \href{http://hpc.sourceforge.net}{HPC Mac OS X}.
 
@@ -990,7 +990,7 @@ On Windows, if not using Cygwin, execute the following commands:
         {None}
         {No}
         {Location of the JsonCpp archive downloaded from
-        \href{http://jsoncpp.sourceforge.net}{SourceForge}.}
+        \href{https://github.com/open-source-parsers/jsoncpp}{GitHub}.}
 
     \cmakeitem
         {BLAS_LIBRARY}
@@ -2236,7 +2236,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
 \begin{boldlist}
     \enumitem {AlgorithmClass}
 
-    \enumitem {StoppingCondition}
+    \enumitem {OptimizationStop}
     
     \enumitem {Operators}
     
@@ -2258,7 +2258,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
     
     \enumitem {QuasinormalStop}
     
-    \enumitemlinalg {KrylovStop}
+    \enumitemlinalg {TruncatedStop}
     
     \enumitemvspace {Cone}
 \end{boldlist}
@@ -2296,12 +2296,6 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {Number of vectors stored for use with quasi-Newton methods such as SR1 and BFGS.}
 
     \paramitemu
-        {history_reset}
-        {Natural}
-        {Yes}
-        {Number of failed trust-region iterations or line-search batches before we discard the quasi-Newton information and take a step in the steepest descent direction.}
-
-    \paramitemu
         {iter}
         {Natural}
         {No}
@@ -2315,10 +2309,28 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         $$
                 \textctref{iter}\geq \textctref{iter_max}
         $$}
+    
+    \paramitemu
+        {glob_iter}
+        {Natural}
+        {No}
+        {Current globalization iteration.  Here, globalization means the current iteration of the trust-region or line-search method and involves operations such as checking the actual versus predicted reduction or the sufficient decrease condition.} 
+    
+    \paramitemu
+        {glob_iter_max}
+        {Natural}
+        {Yes}
+        {Maximum number of globalization iterations that we take before we exit the optimization.  In other words, we only allow this many failed trust-region or line-search iterations before we exit the algorithm.} 
+    
+    \paramitemu
+        {glob_iter_total}
+        {Natural}
+        {No}
+        {Total number of globalization iterations taken across all iterations.  This information is helpful when determining the overall expense of the algorithm.  When we properly setup an equality constrained problem, we generally do one factorization of $g^\prime(x)g^\prime(x)^*$ every globalization iteration.  In addition, evaluating the globalization routines for trust-region methods requires one Hessian-vector product every globalization iteration.  We output \textctref{glob_iter_total} at each iteration under the label \textctrefalt{glb_itr_tot}.}
 
     \paramitemu
         {opt_stop}
-        {StoppingCondition}
+        {OptimizationStop}
         {No}
         {Why we've stopping the optimization.  We use the following logic when determining when to stop
         \begin{enumerate}
@@ -2333,46 +2345,46 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         \end{enumerate}}
     
     \paramitemu
-        {krylov_iter}
+        {trunc_iter}
         {Natural}
         {No}
-        {Current number of iterations taken by the truncated Krylov solver when solving the optimality conditions.  We output \textctref{krylov_iter} at each iteration under the label \textctrefalt{kry_iter}.} 
+        {Current number of iterations taken by truncated CG when solving the optimality conditions.  We output \textctref{trunc_iter} at each iteration under the label \textctrefalt{trunc_iter}.} 
     
     \paramitemu
-        {krylov_iter_max}
+        {trunc_iter_max}
         {Natural}
         {Yes}
-        {Maximum number of iterations taken by the truncated Krylov solver when solving the optimality conditions.} 
+        {Maximum number of iterations taken by truncated CG when solving the optimality conditions.} 
     
     \paramitemu
-        {krylov_iter_total}
+        {trunc_iter_total}
         {Natural}
         {No}
-        {Total number of iterations ever taken by the truncated Krylov when solving the optimality conditions.  This gives information about the total amount computational effort taken by Optizelle.  We output \textctref{krylov_iter_total} at each iteration under the label \textctrefalt{kry_iter_total}.}
+        {Total number of iterations ever taken by the truncated CG when solving the optimality conditions.  This gives information about the total amount computational effort taken by Optizelle as we evaluate one Hessian-vector product each iteration.  We output \textctref{trunc_iter_total} at each iteration under the label \textctrefalt{trc_itr_tot}.}
     
     \paramitemu
-        {krylov_orthog_max}
+        {trunc_orthog_max}
         {Natural}
         {Yes}
-        {Numbers of vectors stored and used in the orthogonalization of our truncated Krylov solver.  In order to turn conjugate direction into conjugate gradient, set this to parameter to $1$.  In practice, if memory is available, it may be worthwhile to over orthogonalize.} 
+        {Numbers of vectors stored and used in the orthogonalization of truncated CG.  In theory, we only need $1$ for unconstrained and inequality constrained problems, but this leads to numerical instabilities.  In practice, if memory is available, it may be worthwhile to over orthogonalize.} 
     
     \paramitemu
-        {krylov_stop}
-        {KrylovStop}
+        {trunc_stop}
+        {TruncatedStop}
         {No}
-        {Reason why the truncated Krylov solver exited when solving the optimality system.  We output \textctref{krylov_stop} at each iteration under the label \textctrefalt{kry_stop}.}
+        {Reason why truncated CG exited when solving the optimality system.  We output \textctref{trunc_stop} at each iteration under the label \textctrefalt{trunc_stop}.}
     
     \paramitemu
-        {krylov_rel_err}
+        {trunc_err}
         {Real}
         {No}
-        {Relative error in the solution returned by the truncated Krylov solver when solving the optimality system.  We output \textctref{krylov_rel_err} at each iteration under the label \textctrefalt{kry_err}.}
+        {Relative error in the solution returned by the truncated CG when solving the optimality system.  We output \textctref{trunc_err} at each iteration under the label \textctrefalt{trunc_err}.}
     
     \paramitemu
-        {eps_krylov}
+        {eps_trunc}
         {Real}
         {Yes}
-        {Relative stopping criteria for our truncated Krylov solver.  In truncated CG, when solving the system $Ax=b$ with preconditioner $B$, we use the stopping criteria  $\|B(Ax_k-b)\|\leq \textctref{eps_krylov}\|B(Ax_0-b)\|$.}
+        {Relative stopping criteria for truncated CG.  In truncated CG, when solving the system $Ax=b$ with preconditioner $B$, we use the stopping criteria  $\|B(Ax_k-b)\|\leq \textctref{eps_trunc}\|B(Ax_0-b)\|$.}
     
     \paramitemu
         {algorithm_class}
@@ -2490,7 +2502,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {failed_safeguard_max}
         {Natural}
         {Yes}
-        {Number of failed safe-guard steps before exiting the truncated-Krylov method.  We use this exclusively for our inequality constraints.}
+        {Number of failed safe-guard steps before exiting truncated CG.  We use this exclusively for our inequality constraints.}
 
     \paramitemu
         {failed_safeguard}
@@ -2593,12 +2605,6 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         Here, $\circ$ denotes the Jordan product, \textctref{prod}; $L(h(x))^{-1}$ denotes the inverse of the linear operator induced by the Jordan product, \textctref{linv}; $e$ denotes the identity element in the pseudo-Euclidean-Jordan algebra, \textctref{id}; and \textctref{barr} denotes the barrier function.  We describe each of these operations further in the section \hyperref[sec:customvector]{\seccustomvector}.  As a note, we output \textctref{pred} at each iteration under the label \textctrefalt{pred}.}
 
     \paramitemu
-        {rejected_trustregion}
-        {Natural}
-        {No}
-        {Number of rejected trust-region steps.  We use this quantity to help gauge the performance of the trust-region algorithms.}
-
-    \paramitemu
         {alpha0}
         {Real}
         {Yes}
@@ -2625,19 +2631,19 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         Here, $L(h(x))^{-1}$ denotes the inverse of the linear operator induced by the Jordan product, \textctref{linv}; and $e$ denotes the identity element in the pseudo-Euclidean-Jordan algebra, \textctref{id}.  We describe each of these operations further in the section \hyperref[sec:customvector]{\seccustomvector}.}
 
     \paramitemu
-        {linesearch_iter}
+        {ls_iter}
         {Natural}
         {No}
-        {Current number of iterations used in the line search.  We use this to determine the amount of computational effort used by Optizelle during the last iteration.   As a note, we output \textctref{linesearch_iter} at each iteration under the label \textctrefalt{ls_iter}.}
+        {Current number of iterations used in the line search.  We use this to determine the amount of computational effort used by Optizelle during the last iteration.   As a note, we output \textctref{ls_iter} at each iteration under the label \textctrefalt{ls_iter}.}
 
     \paramitemu
-        {linesearch_iter_max}
+        {ls_iter_max}
         {Natural}
         {Yes}
         {Maximum number of iterations used in the line search before checking the sufficient decrease condition.  We use this to tune the amount of work done by the line search.} 
 
     \paramitemu
-        {linesearch_iter_total}
+        {ls_iter_total}
         {Natural}
         {No}
         {Total number of iterations ever taken by the line search.  We use this to determine the amount of computational effort used by Optizelle.}
@@ -3182,22 +3188,22 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {Value of the merit function at the start of the specified iteration.  We specify the various merit functions in the description of the parameter \textctref{ared}.}
 
     \outputitemu
-        {kry_iter}
-        {\textctref{krylov_iter}}
+        {trunc_iter}
+        {\textctref{trunc_iter}}
         {2}
-        {Number of iterations used by the truncated Krylov methods when solving the optimality system.   We tune the maximum number of Krylov iterations with the parameter \textctref{krylov_iter_max}.}
+        {Number of iterations used by truncated CG when solving the optimality system.   We tune the maximum number of truncated CG iterations with the parameter \textctref{trunc_iter_max}.}
 
     \outputitemu
-        {kry_err}
-        {\textctref{krylov_rel_err}}
+        {trunc_err}
+        {\textctref{trunc_err}}
         {2}
-        {Error in the truncated Krylov method when solving the optimality system.  We control this error with the parameter \textctref{eps_krylov} and indirectly affect it with the parameter \textctref{krylov_orthog_max}.}
+        {Error in truncated CG when solving the optimality system.  We control this error with the parameter \textctref{eps_trunc} and indirectly affect it with the parameter \textctref{trunc_orthog_max}.}
 
     \outputitemu
-        {kry_stop}
-        {\textctref{krylov_stop}}
+        {trunc_stop}
+        {\textctref{trunc_stop}}
         {2}
-        {Why the truncated Krylov solver terminated.  Although we shorten the strings, we describe each possible outcome in the enumerated type \textctref{KrylovStop}.}
+        {Why truncated CG terminated.  Although we shorten the strings, we describe each possible outcome in the enumerated type \textctref{TruncatedStop}.}
         
     \outputitemu
         {ared}
@@ -3225,9 +3231,9 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
 
     \outputitemu
         {ls_iter}
-        {\textctref{linesearch_iter}}
+        {\textctref{ls_iter}}
         {2}
-        {Number of iterations taken by the line search.  We tune the maximum number of line-search iterations with the parameter \textctref{linesearch_iter_max} and indirectly control the number of iterations with the parameter \textctref{eps_ls}.}
+        {Number of iterations taken by the line search.  We tune the maximum number of line-search iterations with the parameter \textctref{ls_iter_max} and indirectly control the number of iterations with the parameter \textctref{eps_ls}.}
 
     \outputitemu
         {alpha}
@@ -3278,10 +3284,16 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {Amount we truncate \textctref{dx_n} in order to maintain feasibility with respect to the inequality constraint.}
 
     \outputitemu
-        {kry_iter_total}
-        {\textctref{krylov_iter_total}}
+        {glb_itr_tot}
+        {\textctref{glob_iter_total}}
         {3}
-        {Total number of iterations used by the truncated Krylov methods when solving the optimality system.  We typically use this to determine how many Hessian-vector products we've computed over the entire optimization run.}
+        {Total number of globalization iterations taken across all iterations.} 
+
+    \outputitemu
+        {trc_itr_tot}
+        {\textctref{trunc_iter_total}}
+        {3}
+        {Total number of iterations used by truncated CG when solving the optimality system.  We typically use this to determine how many Hessian-vector products we've computed over the entire optimization run.}
 
     \outputitemraw
         {\index{Outputs!\textct{"|"| dx_n "|"|}}{\textctlabelalt{||dx_n||}}}
@@ -4233,7 +4245,7 @@ which uses the same formulation as our example \exampleref{\secconstrained}{sec:
 
     \algorithmitem
         {Trust-region Newton}
-        {Our trust-region Newton implementation uses a truncated-Krylov method in order to solve the trust-region subproblem.  Both Conn, Gould, and Toint's as well as Nocedal and Wright's book give good descriptions of the algorithm.
+        {Our trust-region Newton implementation uses truncated-CG to solve the trust-region subproblem.  Both Conn, Gould, and Toint's as well as Nocedal and Wright's book give good descriptions of the algorithm.
     \begin{itemize}
         \item \bibentry{conn2000trust_region_methods}.
         \item \bibentry{nocedal2006numerical_optimization}.
@@ -4241,18 +4253,20 @@ which uses the same formulation as our example \exampleref{\secconstrained}{sec:
 
     \algorithmitem
         {Newton-CG}
-        {We base our Newton-CG algorithm on a truncated-Krylov method and not a Hessian modification.  Nocedal and Wright's book describes this algorithm.
+        {We base our Newton-CG algorithm on truncated CG and not a Hessian modification.  Nocedal and Wright's book describes this algorithm.
     \begin{itemize}
         \item \bibentry{nocedal2006numerical_optimization}.
     \end{itemize}}
 
     \algorithmitem
-        {Truncated-Krylov methods}
-        {By truncated-Krylov method, we mean truncated-CG.  Our version of truncated-CG actually implements the conjugate direction algorithm, but it reduces to truncated-CG when we set \textctref{krylov_orthog_max} to 1.  Historically, Toint and Steihaug give a description of truncated-CG in their respective papers.  For a modern treatment of truncated-CG see Conn, Gould, and Toint's book.
+        {Truncated CG}
+        {Our version of truncated CG actually possesses the ability to over orthogonalize against previous Krylov vectors, which is controlled by the parameter \textctref{trunc_orthog_max}.  In addition, we have added a safeguard procedure for the interior point method that insures truncated CG always produces a solution feasible with respect to the inequality constraint.  This safeguard process is similar to the one used by Byrd, Hribar, and Nocedal in their NITRO algorithm.  Finally, for the inexact composite-step SQP method, we use the heuristic described in appendix B by Heinkenschloss and Ridzal to detect instability in the algorithm.  Historically, Toint and Steihaug give a description of truncated-CG in their respective papers.  For a modern treatment of truncated-CG see Conn, Gould, and Toint's book.
     \begin{itemize}
         \item \bibentry{toint1981truncated_cg}.
         \item \bibentry{steihaug1983truncated_cg}.
         \item \bibentry{conn2000trust_region_methods}.
+        \item \bibentry{byrd1999interior_point_trust_region}.
+        \item \bibentry{heinkenschloss2014inexact_sqp}.
     \end{itemize}}
 
     \algorithmitem
@@ -4331,7 +4345,7 @@ where $L(h(x))^{-1}$ denotes the inverse of the linear operator induced by the J
     $$
         [\textnormal{hess}(x,y) + h^\prime(x)^* (L(h(x))^{-1} (h^\prime(x) \cdot \circ z)) ] \delta x =  -\textnormal{grad}(x,y) + \mu h^\prime(x)^* (L(h(x))^{-1} e).
     $$
-    At this point, we solve the Newton system using our truncated-Krylov methods.  As a note, when using a line-search method that is not Newton-CG, we using a different scheme and instead set
+    At this point, we solve the Newton system using truncated CG.  As a note, when using a line-search method that is not Newton-CG, we using a different scheme and instead set
     $$
         \textctref{z} =  \textctref{mu} \cdot L(h(\textctref{x}))^{-1} e.
     $$
@@ -4343,9 +4357,9 @@ This gives us a log-barrier algorithm for these methods.  In short, without solv
         \textctref{z} + \textctref{alpha_z}\cdot\textctref{dz} \geq& (1-\textctref{gamma}) z)\\
         h(\textctref{x} + \textctref{alpha_x_qn}\cdot\textctref{dx_n}) \geq& (1-\textctref{gamma}\cdot\textctref{zeta}) h(x)
 \end{align*}
-Note, the last inequality only occurs in constrained problems.  When we enforce these rules depends on the algorithm.  Specifically, trust-region methods enforce these bounds during the truncated-Krylov solve of the optimality conditions.  Since the Krylov solver may violate the inequality bounds periodically throughout the optimality solve, we save the last feasible iterate during the computation.  When we exit, we take the last feasible iterate and step and compute the safeguard search, which satisfies the fraction to the boundary rule above.  In order to prevent too many discarded steps due to the safeguard, we limit the maximum number of infeasible steps that we allow to be \textctref{failed_safeguard_max}.  In a line-search method, we safeguard the step prior to the line search.  Specifically, we shorten \textctref{alpha0} so that the maximum step length taken by the line search does not exceed our fraction to the boundary rule.  Finally, in the inexact composite step SQP method, we also safeguard our quasi-normal step by enforcing the fraction to the boundary rule during the dogleg computation.  In each case, we calculate the distance to the boundary with the user-defined function \textctref{srch}.  In our \textctref{Rm} and \textctref{SQL} vector spaces, we use a closed form formula for linear and second-order cones and the Arnoldi algorithm for semidefinite cones.
+Note, the last inequality only occurs in constrained problems.  When we enforce these rules depends on the algorithm.  Specifically, trust-region methods enforce these bounds during the truncated-CG solve of the optimality conditions.  Since truncated CG may violate the inequality bounds periodically throughout the optimality solve, we save the last feasible iterate during the computation.  When we exit, we take the last feasible iterate and step and compute the safeguard search, which satisfies the fraction to the boundary rule above.  In order to prevent too many discarded steps due to the safeguard, we limit the maximum number of infeasible steps that we allow to be \textctref{failed_safeguard_max}.  Although our process is slightly different than their paper, how we embed the safeguard into truncated CG is similar to what Byrd, Hribar, and Nocedal do in their implementation of NITRO.  In a line-search method, we safeguard the step prior to the line search.  Specifically, we shorten \textctref{alpha0} so that the maximum step length taken by the line search does not exceed our fraction to the boundary rule.  Finally, in the inexact composite step SQP method, we also safeguard our quasi-normal step by enforcing the fraction to the boundary rule during the dogleg computation.  In each case, we calculate the distance to the boundary with the user-defined function \textctref{srch}.  In our \textctref{Rm} and \textctref{SQL} vector spaces, we use a closed form formula for linear and second-order cones and the Arnoldi algorithm for semidefinite cones.
 
-        We reduce \textctref{mu} prior to the truncated-Krylov solve for the optimality system and set $\textctref{mu} = \textctref{sigma}\cdot \textctref{mu}$ when one of the following global or local convergence criteria is satisfied
+        We reduce \textctref{mu} prior to the truncated-CG solve for the optimality system and set $\textctref{mu} = \textctref{sigma}\cdot \textctref{mu}$ when one of the following global or local convergence criteria is satisfied
         \begin{enumerate}
             \item $\log(\textctref{norm_gradtyp}) - \log(\|\textnormal{gradstep}(x,y,z)\|) < \log(\textctref{mu_typ}) - \log(\textctref{mu_est})$
 
@@ -4368,7 +4382,13 @@ Note, the last inequality only occurs in constrained problems.  When we enforce 
                     \nabla f(x) + W(\nabla^2 f(x)\textctref{dx_n}) + g^\prime(x)^*y - \mu h^\prime(x)^* L(h(x))^{-1} e & \textnormal{Constrained.}
                 \end{array}\right.
         \end{align*}
-        and $W$ denotes the projection onto nullspace of $g^\prime(x)$.  In addition, we must converge \textctref{mu_est} locally
+        and $W$ denotes the projection onto nullspace of $g^\prime(x)$.  Next, we must satisfy one of the following global or local convergence criteria
+        \begin{enumerate}
+            \item $\log(\textctref{norm_gxtyp}) - \log(\|g(\textctref{x})\|) < \log(\textctref{mu_typ}) - \log(\textctref{mu_est})$
+
+            \item $\|g(\textctref{x})\| < \textctref{eps_constr}\cdot \textctref{norm_gxtyp}$
+        \end{enumerate}
+        In addition, we must converge \textctref{mu_est} locally
         $$
                 | \textctref{mu} - \textctref{mu_est} | < \textctref{mu}
         $$
@@ -4409,6 +4429,7 @@ In other words, our initial inequality multiplier puts us on the central path sp
         \item \bibentry{alizadeh2003socp}.
         \item \bibentry{helmberg1996interior_point_sdp}.
         \item \bibentry{zhang1998sdp_symmetrization}.
+        \item \bibentry{byrd1999interior_point_trust_region}.
     \end{itemize}}
 
     \algorithmitem
@@ -4417,6 +4438,7 @@ In other words, our initial inequality multiplier puts us on the central path sp
     \begin{itemize}
         \item \bibentry{ridzal2006trust_region_sqp}.
         \item \bibentry{ridzal2011inexact_sqp}.
+        \item \bibentry{heinkenschloss2014inexact_sqp}.
     \end{itemize}}
 \end{boldlist}
 

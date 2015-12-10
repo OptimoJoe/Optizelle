@@ -4459,7 +4459,12 @@ namespace Optizelle{
                 auto norm_dxn = std::sqrt(X::innr(dx_n,dx_n));
 
                 // Continue to look for a step until one comes back as valid
-                for(glob_iter=1;glob_iter<=glob_iter_max;glob_iter++) {
+                for( glob_iter=1;
+                     glob_iter<=glob_iter_max;
+                     glob_iter++
+                ) {
+                    // Keep track of the number of globalization iterations
+                    glob_iter_total++;
 
                     // Compute the dogleg step.  There are three cases
                     //
@@ -4524,9 +4529,6 @@ namespace Optizelle{
                     }
                 }
 
-                // Keep track of the number of globalization iterations
-                glob_iter_total += std::max(glob_iter,glob_iter_max);
-                
                 // Set line-search parameters in such a way that they are
                 // consistent to what just happened in the trust-region
                 // method.  This helps keep this consistent if we ever switch
@@ -5125,7 +5127,12 @@ namespace Optizelle{
                     bool sufficient_decrease=false;
 
                     // Continue to look for a step until one comes back as valid
-                    for(glob_iter=1;glob_iter<=glob_iter_max;glob_iter++) {
+                    for( glob_iter = 1;
+                         glob_iter <= glob_iter_max;
+                         glob_iter++
+                    ) { 
+                        // Keep track of the number of globalization iterations
+                        glob_iter_total++;
 
                         // Do the line-search
                         if(kind==LineSearchKind::GoldenSection ||
@@ -5214,10 +5221,8 @@ namespace Optizelle{
                 } else {
                     twoPoint(fns,state);
                     glob_iter = 1;
+                    glob_iter_total++;
                 }
-
-                // Keep track of the number of globalization iterations
-                glob_iter_total += std::max(glob_iter,glob_iter_max);
 
                 // Adjust the size of the step (apply the line-search 
                 // parameter.)
@@ -8931,7 +8936,13 @@ namespace Optizelle{
                 X_Vector x_tmp1(X::init(x));
 
                 // Continue to look for a step until one comes back as valid
-                for(glob_iter = 1; glob_iter <= glob_iter_max; glob_iter++) { 
+                for( glob_iter = 1;
+                     glob_iter <= glob_iter_max;
+                     glob_iter++
+                ) { 
+                    // Keep track of the number of globalization iterations
+                    glob_iter_total++;
+
                     // Manipulate the state if required
                     smanip.eval(fns,state,OptimizationLocation::BeforeGetStep);
 
@@ -9100,9 +9111,6 @@ namespace Optizelle{
                         break;
                     }
                 } 
-
-                // Keep track of the number of globalization iterations
-                glob_iter_total += std::max(glob_iter,glob_iter_max);
                 
                 // Set line-search parameters in such a way that they are
                 // consistent to what just happened in the trust-region

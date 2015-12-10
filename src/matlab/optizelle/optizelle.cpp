@@ -2000,7 +2000,7 @@ namespace Optizelle {
                     toMatlab::Natural("glob_iter_max",
                         state.glob_iter_max,mxstate);
                     toMatlab::Natural("glob_iter_total",
-                        state.trunc_iter_total,mxstate);
+                        state.glob_iter_total,mxstate);
                     toMatlab::Param <OptimizationStop::t> (
                         "opt_stop",
                         OptimizationStop::toMatlab,
