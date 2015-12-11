@@ -292,6 +292,12 @@ namespace Optizelle{
             //---Operators0---
             Identity,          // Identity approximation
             ScaledIdentity,    // Scaled identity approximation
+                               //
+                               // || grad || / (2 delta) I
+                               //
+                               // Use this for trust-region steepest descent
+                               // rather than Identity since it forces the
+                               // iterate into the trust region 
             BFGS,              // BFGS approximation
             InvBFGS,           // Inverse BFGS approximation
             SR1,               // SR1 approximation
