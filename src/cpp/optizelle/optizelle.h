@@ -321,6 +321,12 @@ namespace Optizelle{
     namespace LineSearchDirection{
         enum t : Natural{
             //---LineSearchDirection0---
+            // Note, all methods here, save BFGS, are preconditioned.  This
+            // includes steepest descent, where dx = -PH grad.  This is a good
+            // way to implement a user-defined search direction.  For example,
+            // when we define PH to be the inverse of the Hessian, we get
+            // a globalized Newton method.
+
             SteepestDescent,          // SteepestDescent 
             FletcherReeves,           // Fletcher-Reeves CG
             PolakRibiere,             // Polak-Ribiere CG
