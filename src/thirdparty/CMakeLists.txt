@@ -78,6 +78,7 @@ if(ENABLE_BUILD_BLAS_AND_LAPACK)
     mark_as_advanced(FORCE LAPACK_ARCHIVE)
 
     include(ExternalProject)
+    enable_language(Fortran)
     ExternalProject_Add(
         LAPACK 
         URL ${LAPACK_ARCHIVE}
