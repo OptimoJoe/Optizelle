@@ -143,3 +143,41 @@ set(LAPACK_LIBRARIES ${LAPACK_LIBRARIES} PARENT_SCOPE)
 if(ENABLE_BUILD_JSONCPP OR ENABLE_BUILD_BLAS_AND_LAPACK)
     install(DIRECTORY ${CMAKE_BINARY_DIR}/thirdparty/ DESTINATION .)
 endif()
+
+# Build jsonlab
+if(ENABLE_MATLAB)
+    mark_as_advanced(CLEAR ENABLE_BUILD_JSONLAB)
+    set(ENABLE_BUILD_JSONLAB OFF CACHE BOOL "Build jsonlab from source?")
+    if(ENABLE_BUILD_JSONLAB)
+        # Determine the location of the jsonlab archive
+        set(JSONLAB_ARCHIVE_UNDEFINED "JSONLAB_ARCHIVE-UNDEFINED")
+        set(JSONLAB_ARCHIVE ${JSONLAB_ARCHIVE_UNDEFINED} CACHE FILEPATH 
+            "Jsonlab archive with full path.")
+        # Make sure that it is defined and throw an error message if it is not
+        if(JSONLAB_ARCHIVE STREQUAL JSONLAB_ARCHIVE_UNDEFINED) 
+            mark_as_advanced(CLEAR JSONLAB_ARCHIVE)
+            message(FATAL_ERROR
+                "The jsonlab archive with full path must be defined in the variable JSONLAB_ARCHIVE.")
+        endif()
+        mark_as_advanced(FORCE JSONLAB_ARCHIVE)
+
+        include(ExternalProject)
+        ExternalProject_Add(
+            jsonlab
+            URL ${JSONLAB_ARCHIVE} 
+            PATCH_COMMAND ${CMAKE_COMMAND} -E copy
+                "${CMAKE_CURRENT_SOURCE_DIR}/jsonlab/CMakeLists.txt"
+                CMakeLists.txt
+        CMAKE_ARGS
+            -DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_BINARY_DIR}/thirdparty
+        )
+
+        # Set the location of jsoncpp
+        set(JSONLAB_DIR
+            "${CMAKE_BINARY_DIR}/thirdparty/share/optizelle/matlab/jsonlab"
+            CACHE FILEPATH "Path to a library." FORCE)
+        mark_as_advanced(JSONLAB_DIR)
+    else()
+        find_package(Jsonlab REQUIRED)
+    endif()
+endif()

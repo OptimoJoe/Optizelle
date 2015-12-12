@@ -57,6 +57,12 @@ if(ENABLE_MATLAB_UNIT)
         COMMAND ${CMAKE_COMMAND} -E copy
             ${CMAKE_SOURCE_DIR}/src/matlab/setupOptizelle.m
             ${CMAKE_BINARY_DIR}/src/matlab)
+    add_custom_target(
+        matlab_jsonlab
+        ALL
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${JSONLAB_DIR}
+            ${CMAKE_BINARY_DIR}/src/matlab/jsonlab)
 endif()
 
 install(FILES
