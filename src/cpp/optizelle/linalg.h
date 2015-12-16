@@ -1105,7 +1105,10 @@ namespace Optizelle {
                                       // the trust-region radius.  This means
                                       // that our starting solution of 0
                                       // violates the trust-region.
-            TooManyFailedSafeguard    // Too many safeguarded steps have failed
+            TooManyFailedSafeguard,   // Too many safeguarded steps have failed
+            ObjectiveIncrease         // CG objective, 0.5 <ABx,Bx> - <b,Bx>
+                                      // increased between iterations, which
+                                      // shouldn't happen.
             //---TruncatedStop1---
         };
 
@@ -1316,6 +1319,46 @@ namespace Optizelle {
         auto shifted_iterate_safe = X::init(x);
         X::copy(shifted_iterate,shifted_iterate_safe);
 
+        // Track the amount that we're about to reduce the CG objective
+        //
+        // 0.5 <ABdx,Bdx> - <b,Bdx>
+        //
+        // when we take the step x+Bdx, which is
+        //
+        // alpha^2/2 <ABdx,Bdx> + alpha <ABdx,x> - alpha <b,Bdx>
+        //
+        // or
+        //
+        // alpha ( <ABdx,x+alpha/2 Bdx> - <b,Bdx)
+        //
+        // Note, there's probably a better way to group terms for numerical
+        // error.  Anyway, CG should monotonically decrease its objective.
+        // However, there's a number of things that could go wrong such as
+        //
+        // 1. If we exceed our precision, the algorithm sometimes tries
+        //    to add new Krylov vectors beyond what should constitute a basis
+        //    for the entire space.  This confuses the algorithm and the
+        //    objective goes up.  If the user told us how many iterations to
+        //    run, we could possibly avoid this.
+        //
+        // 2. Breakdown in the algorithm, by finding a solution early in the
+        //    iterations, but one that numerically can't exceed our stopping
+        //    tolerance. 
+        // 
+        // Anyway, this reduction is really what we care about
+        // for optimization since as long as the CG objective goes down, we
+        // know we'll get a positive predicted reduction or a descent
+        // direction.
+        auto x_p_ao2Bdx = X::init(x);
+        auto obj_red = [&](auto const & alpha) {
+            X::copy(x,x_p_ao2Bdx);
+            X::axpy(Real(0.5)*alpha,Bdx,x_p_ao2Bdx);
+            auto red1 = X::innr(ABdx,x_p_ao2Bdx);
+            auto red2 = X::innr(b,Bdx);
+            auto red3 = alpha*(red1-red2);
+            return red3;
+        };
+
         // Loop until we converge (or don't)
         iter = 1;
         while(stop == TruncatedStop::NotConverged) {
@@ -1482,13 +1525,19 @@ namespace Optizelle {
                 }
             }
 
+            // Check that our proposed direction is going to give us decrease
+            // in the CG objective
+            if(obj_red(alpha) > Real(0.) && stop==TruncatedStop::NotConverged)
+                stop=TruncatedStop::ObjectiveIncrease;
+
             // If our last iterate was safe, then keep the current search
-            // direction as long as it didn't arise from some NaN or loss of
-            // orthogonality.  In these cases, we set our saved trial steps
-            // to zero.
+            // direction as long as it didn't arise from a NaN, loss of
+            // orthogonality, or we're actually going to make the CG objective
+            // worse.  In these cases, we set our saved trial steps to zero.
             if( failed_safeguard==0 ) {
                 if( stop != TruncatedStop::NanDetected && 
-                    stop != TruncatedStop::LossOfOrthogonality
+                    stop != TruncatedStop::LossOfOrthogonality &&
+                    stop != TruncatedStop::ObjectiveIncrease
                 ) {
                     X::copy(Bdx,Bdx_safe);
                     X::scal(alpha,Bdx_safe);
@@ -1569,19 +1618,24 @@ namespace Optizelle {
                     } else 
                         alpha_safeguard = Real(1.);
 
-                    // Take the step and find its residual
-                    X::axpy(alpha_safeguard*sigma,Bdx,x);
-                    X::axpy(alpha_safeguard*sigma,Bdx,shifted_iterate);
-                    X::axpy(alpha_safeguard*sigma,ABdx,r);
-                    B.eval(r,Br);
-                    norm_Br=std::sqrt(X::innr(Br,Br));
+                    // Take the step and find its residual as long as it
+                    // decreases the objective
+                    if(obj_red(alpha_safeguard*sigma) <= Real(0.)) {
+                        X::axpy(alpha_safeguard*sigma,Bdx,x);
+                        X::axpy(alpha_safeguard*sigma,Bdx,shifted_iterate);
+                        X::axpy(alpha_safeguard*sigma,ABdx,r);
+                        B.eval(r,Br);
+                        norm_Br=std::sqrt(X::innr(Br,Br));
+                    }
                     break;
 
                 // When we find a NaN, we can't really trust our step.
                 // Alternatively, when we lose orthogonality, we can't really
-                // trust anything either.
+                // trust anything either.  Finally, if the objective goes up,
+                // that's also not good, so don't modify anything.
                 } case TruncatedStop::NanDetected:
                 case TruncatedStop::LossOfOrthogonality:
+                case TruncatedStop::ObjectiveIncrease:
                     break;
                 }
 
@@ -1590,15 +1644,15 @@ namespace Optizelle {
                 break;
             }
 
+            // Determine the objective reduction
+            auto ored = obj_red(alpha);
+
             // Take a step in this direction
             X::axpy(alpha,Bdx,x);
 
             // Update the shifted iterate
             X::copy(shifted_trial,shifted_iterate);
             norm_shifted_iterate = norm_shifted_trial;
-
-            // If this is the first iteration, save the Cauchy-Point
-            if(iter==1) X::copy(x,x_cp);
 
             // Find the new residual and projected residual
             X::axpy(alpha,ABdx,r);
@@ -1619,6 +1673,14 @@ namespace Optizelle {
                 X::copy(x,x_safe);
                 X::copy(r,r_safe);
                 X::copy(shifted_iterate,shifted_iterate_safe);
+            }
+
+            // If this is the first iteration, save the Cauchy-Point.  Make sure
+            // to truncate it if it violates the safeguard
+            if(iter==1) {
+                X::copy(x,x_cp);
+                if(failed_safeguard>0)
+                    X::scal(alpha_safeguard,x_cp);
             }
 
             // Find the projected steepest descent direction
@@ -1659,12 +1721,15 @@ namespace Optizelle {
             // Determine how far we can go safely in the saved direction
             alpha_safeguard= std::min(safeguard(shifted_iterate,Bdx),Real(1.0));
 
-            // Take the safeguarded step and update our residuals
-            X::axpy(alpha_safeguard,Bdx,x);
-            X::axpy(alpha_safeguard,Bdx,shifted_iterate);
-            X::axpy(alpha_safeguard,ABdx,r);
-            B.eval(r,Br);
-            norm_Br=std::sqrt(X::innr(Br,Br));
+            // Take the safeguarded step and update our residuals as long as
+            // this step decreases our CG objective
+            if(obj_red(alpha_safeguard) <= Real(0.)) {
+                X::axpy(alpha_safeguard,Bdx,x);
+                X::axpy(alpha_safeguard,Bdx,shifted_iterate);
+                X::axpy(alpha_safeguard,ABdx,r);
+                B.eval(r,Br);
+                norm_Br=std::sqrt(X::innr(Br,Br));
+            }
         }
     }
 

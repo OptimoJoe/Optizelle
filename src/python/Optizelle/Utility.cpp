@@ -128,6 +128,9 @@ namespace Optizelle {
             case TooManyFailedSafeguard:
                 return Python::enumToPyObject(
                     "TruncatedStop","TooManyFailedSafeguard");
+            case ObjectiveIncrease:
+                return Python::enumToPyObject(
+                    "TruncatedStop","ObjectiveIncrease");
             default:
                 throw;
             }
@@ -170,6 +173,10 @@ namespace Optizelle {
                 "TruncatedStop","TooManyFailedSafeguard")
             )
                 return TooManyFailedSafeguard;
+            else if(m==Python::enumToNatural(
+                "TruncatedStop","ObjectiveIncrease")
+            )
+                return ObjectiveIncrease;
             else
                 throw;
         }

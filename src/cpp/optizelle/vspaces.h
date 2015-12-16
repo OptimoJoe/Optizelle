@@ -365,9 +365,9 @@ namespace Optizelle {
                 types=std::move(x.types);
                 sizes=std::move(x.sizes);
                 inverse=std::move(x.inverse);
-                inverse_offsets=std::move(inverse_offsets);
-                inverse_base=std::move(inverse_base);
-                inverse_base_offsets=std::move(inverse_base_offsets);
+                inverse_offsets=std::move(x.inverse_offsets);
+                inverse_base=std::move(x.inverse_base);
+                inverse_base_offsets=std::move(x.inverse_base_offsets);
                 return *this;
             }
 

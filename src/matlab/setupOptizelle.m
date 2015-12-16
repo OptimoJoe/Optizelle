@@ -40,7 +40,8 @@ Optizelle.TruncatedStop = createEnum( { ...
     'NanDetected', ...
     'LossOfOrthogonality', ...
     'InvalidTrustRegionOffset', ...
-    'TooManyFailedSafeguard' } );
+    'TooManyFailedSafeguard', ...
+    'ObjectiveIncrease'} );
 
 % Which algorithm Optizelle.do we use
 Optizelle.AlgorithmClass = createEnum( { ...
@@ -212,7 +213,7 @@ Optizelle.Rm = struct( ...
     'id',@(x)ones(size(x)), ...
     'linv',@(x,y)y./x, ...
     'barr',@(x)sum(log(x)), ...
-    'srch',@(x,y) feval(@(z)min([min(z(find(z>0)));inf]),-y./x), ...
+    'srch',@(x,y)rm_srch(x,y), ...
     'symm',@(x)x);
 
 % A vector spaces consisting of a finite product of semidefinite,
@@ -261,11 +262,11 @@ Optizelle.json.Serialization.deserialize( ...
     @(x)isvector(x) && isnumeric(x));
 
 % For the moment, do an empty deserialization of the SQL vector space 
-Optizelle.json.Serialization.serialize( ...
+Optizelle.json.Serialization.deserialize( ...
     'register', ...
     @(x,x_json)loadjson(x_json), ...
-    @(x)isfield('data',x) && isfield('types',x) && isfield('sizes',x) && ...
-        isfield('inverse',x) && isfield('inverse_base',x));
+    @(x)isfield(x,'data') && isfield(x,'types') && isfield(x,'sizes') && ...
+        isfield(x,'inverse') && isfield(x,'inverse_base'));
 
 %Creates an unconstrained state
 Optizelle.Unconstrained.State.t = @UnconstrainedStateCreate;
@@ -417,6 +418,23 @@ Optizelle.json.Constrained.write_restart = @ConstrainedRestartWriteRestart;
 Optizelle.json.Constrained.read_restart = @ConstrainedRestartReadRestart;
 end
 
+end
+
+% Rm line search, srch <- argmax {alpha \in Real >= 0 : alpha x + y >= 0}
+% where y > 0
+function alpha = rm_srch(x,y)
+    % Grab the indices of x less than zero
+    i = find(x<0);
+
+    % If we're not moving toward the boundary of the cone in any direction, exit
+    if length(i) == 0
+        alpha = inf;
+        return
+    end
+
+    % Find -y / x for the indices where x < 0.  The smallest such number is how
+    % far we can travel.
+    alpha = min(-y(i)./x(i));
 end
 
 % Merges two structures
@@ -665,8 +683,15 @@ function z = sql_barr(x)
         % log(det(x)) = log(det(u'u)) = log(det(u')det(u))
         %             = log(det(u)^2) = 2 log(det(u))
         else
-            u = chol(x.data{blk});
-            z = z + 2. * log(prod(diag(u)));
+            [u p] = chol(x.data{blk});
+            
+            % Make sure to check if p is not positive definite.  If not, throw
+            % and inf.
+            if p
+                z = inf;
+            else
+                z = z + 2. * log(prod(diag(u)));
+            end
         end
     end
 end
@@ -686,8 +711,7 @@ function alpha = sql_srch(x,y)
         % Pointwise, alpha_i = -y_i / x_i.  If this number is positive,
         % then we need to restrict how far we travel.
         if x.types(blk)==Optizelle.Cone.Linear
-            alpha0 = feval(@(z)min([min(z(find(z>0)));inf]), ...
-                -y.data{blk}./x.data{blk});
+            alpha0 = rm_srch(x.data{blk},y.data{blk});
                 
         % We choose the smallest positive number between:
         % -y0/x0, and the roots of alpha^2 a + alpha b + c
@@ -707,7 +731,11 @@ function alpha = sql_srch(x,y)
             % of the second order cone problem remains nonnegative.
             % This number tells us how far we can step before this
             % is not true.
-            alpha0 = -y.data{blk}(1)/x.data{blk}(1);
+            if x.data{blk}(1) < 0
+                alpha0 = -y.data{blk}(1)/x.data{blk}(1);
+            else
+                alpha0 = inf;
+            end
 
             % Next, assuming that the leading coefficient is fine,
             % figure out how far we can step before we violate the
@@ -720,7 +748,8 @@ function alpha = sql_srch(x,y)
             alpha0 = [alpha0;roots([a,b,c])];
 
             % Now, determine the step length.
-            alpha0 = feval(@(z)min([min(z(find(z>0)));inf]),alpha0);
+            i = find(alpha0 > 0);
+            alpha0 = min(alpha0(i));
 
         % We need to find the solution of the generalized eigenvalue
         % problem alpha X v + Y v = 0.  Since Y is positive definite,
