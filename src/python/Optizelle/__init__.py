@@ -60,8 +60,9 @@ class TruncatedStop(EnumeratedType):
     NanDetected, \
     LossOfOrthogonality, \
     InvalidTrustRegionOffset, \
-    TooManyFailedSafeguard \
-    = range(9)
+    TooManyFailedSafeguard, \
+    ObjectiveIncrease \
+    = range(10)
 
 class AlgorithmClass(EnumeratedType):
     """Which algorithm class do we use"""

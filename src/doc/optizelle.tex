@@ -801,6 +801,7 @@ as a zipped archive.  Here, we also provide direct access to our source code rep
 \href{http://www.numpy.org}{NumPy} & $\geq$ 1.8 & Yes & Dense kernels for the default vector spaces in the Python interface\\\hline
 \href{https://www.gnu.org/software/octave}{Octave} & & Yes & MATLAB/Octave interface\\\hline
 \href{http://www.mathworks.com/products/matlab}{MATLAB} & & Yes & MATLAB/Octave interface\\\hline
+\href{https://github.com/fangq/jsonlab}{jsonlab} & Master & Yes & MATLAB/Octave default archive/restart engine\\\hline
 \end{tabular}\end{center}
 
         As far as C++14 and FORTRAN 77 compilers, in theory, any valid compiler should work.  A small list of these compilers is
@@ -875,6 +876,8 @@ cmake \
     -DMATLAB_INCLUDE_DIR:PATH=/path/to/include/octave \
     -DMATLAB_LIBRARY:FILEPATH=/path/to/lib/liboctinterp.so \
     -DMATLAB_MEX_EXTENSION:STRING=mex \
+    -DENABLE_BUILD_JSONLAB:BOOL=ON \
+    -DJSONLAB_ARCHIVE:FILEPATH=/path/to/jsonlab.zip \
     -DENABLE_MATLAB_EXAMPLES:BOOL=ON \
     -DENABLE_MATLAB_UNIT:BOOL=ON \
     ..
@@ -1161,6 +1164,8 @@ where the actual paths, libraries, and archives depend on the individual system.
             \textctref{MATLAB_INCLUDE_DIR},
             \textctref{MATLAB_LIBRARY},
             \textctref{MATLAB_EXECUTABLE},\linebreak
+            \textctref{ENABLE_BUILD_JSONLAB},
+            \textctref{JSONLAB_DIR},\linebreak
             \textctref{ENABLE_MATLAB_EXAMPLES},
             \textctref{ENABLE_MATLAB_UNIT}}
         {No}
@@ -1216,6 +1221,35 @@ where the actual paths, libraries, and archives depend on the individual system.
         {None}
         {No}
         {Complete path and executable for MATLAB/Octave. }
+
+    \cmakeitem
+        {ENABLE_BUILD_JSONLAB}
+        {BOOL}
+        {\textct{OFF}}
+        {\textctref{ENABLE_MATLAB}}
+        {\textctref{JSONLAB_ARCHIVE}}
+        {No}
+        {Builds jsonlab from source.} 
+
+    \cmakeitem
+        {JSONLAB_ARCHIVE}
+        {FILEPATH}
+        {None}
+        {\textctref{ENABLE_BUILD_JSONLAB}}
+        {None}
+        {No}
+        {Location of the json archive downloaded from
+        \href{https://github.com/fangq/jsonlab}{GitHub}.}
+
+    \cmakeitem
+        {JSONLAB_DIR}
+        {PATH}
+        {None}
+        {\textctref{ENABLE_MATLAB}}
+        {None}
+        {Yes}
+        {A path that indicates where the jsonlab library has been 
+        installed.  This is automatically set when \textctref{ENABLE_BUILD_JSONLAB} is enabled.}
 
     \cmakeitem
         {ENABLE_MATLAB_EXAMPLES}
@@ -3751,28 +3785,42 @@ where we require $P$ to be nonsingular.}
 \end{boldlist}
 
 \section{\seccone}        
-
-        In the case of C++, we provide a built-in vector space for semidefinite, second-order cone, and linear (SQL) programs:
 \phantomsection\label{itm:SQL}
 \phantomsection\label{itm:Optizelle::SQL}
+
+        In the case of C++ and MATLAB/Octave, we provide a built-in vector space for semidefinite, second-order cone, and linear (SQL) programs:
 \begin{boldlist}
     \vsitem
         {C++}
         {\textct{Optizelle::SQL::Vector}}
         {\textct{Optizelle::SQL}}
+    \vsitem
+        {MATLAB/Octave}
+        {\textct{Optizelle.SQL.create} (produces a structure array)}
+        {\textct{Optizelle.SQL}}
 \end{boldlist}
 
-        In order to create an \textct{SQL::Vector}, we use the following constructor
+        In order to create a C++ \textct{SQL::Vector}, we use the following constructor
 \begin{flushleft}
     \lstinputlisting[style=C++,linerange={Optizelle0-Optizelle1,SQL0-SQL1,SQLVector0-SQLVector1,SQLVector2-SQLVector3,SQLVector4-SQLVector5,SQL2-SQL3,Optizelle2-Optizelle3}]{@OPTIZELLECPPPATH@/vspaces.h}
 \end{flushleft}
-Here, \textct{Cone::t} corresponds to the enumerated type \textctref{Cone} and \textct{Natural} refers to the architecture specific unsigned integer defined in \textct{Optizelle::Natural}.  The constructor creates an SQL variable with the specified types and sizes of cones.  Specifically, a linear cone of size $m$ denotes a vector in $\re^m$ that lies in the nonnegative orthant.  A quadratic cone of size $m$ denotes a vector in $\re^m$ that lies in the quadratic cone.  Finally, a semidefinite cone of size $m$ denotes a matrix in $\re^{m\times m}$ that lies in the cone of positive semidefinite matrices.  Note, even though we ultimately find a symmetric matrix, we compute with a full $m\times m$ matrix and not just the upper or lower half.  Using a full matrix affects how we define the derivatives of our inequality constraint $h$, so take care.
+Here, \textct{Cone::t} corresponds to the enumerated type \textctref{Cone} and \textct{Natural} refers to the architecture specific unsigned integer defined in \textct{Optizelle::Natural}.  The constructor creates an SQL variable with the specified types and sizes of cones.  Specifically, a linear cone of size $m$ denotes a vector in $\re^m$ that lies in the nonnegative orthant.  A quadratic cone of size $m$ denotes a vector in $\re^m$ that lies in the quadratic cone.  Finally, a semidefinite cone of size $m$ denotes a matrix in $\re^{m\times m}$ that lies in the cone of positive semidefinite matrices.  Note, even though we ultimately find a symmetric matrix, we compute with a full $m\times m$ matrix and not just the upper or lower half.  Using a full matrix affects how we define the derivatives of our inequality constraint $h$, so take care.  Specifically, $h^\prime(x)$ and $h^\prime(x)^*$ need to assume that their arguments are not symmetric, so consider both upper and lower triangular parts of the matrices.
 
-        In order to access the elements of an SQL vector, \textct{x}, we use the following indexing functions
+        In order to create a MATLAB/Octave \textct{SQL} vector, we use the function
+\begin{flushleft}
+    \lstinputlisting[style=Matlab,linerange={SQLVector0-SQLVector1}]{@SQLRESTARTPATH@/sql_restart.m}
+\end{flushleft}
+where \textct{types} is a vector containing elements from the enumerated type \textctref{Cone} and \textct{sizes} is a vector denoting the size of the cones.  For example, in order to define a \textct{SQL} vector with a semidefinite, quadratic, and linear cone with sizes 2, 2, and 1, we use the syntax 
+\begin{flushleft}
+    \lstinputlisting[style=Matlab,linerange={SQLSpec0-SQLSpec1}]{@SQLRESTARTPATH@/sql_restart.m}
+\end{flushleft}
+Otherwise, we define the meaning of each of these cones to be the same as the C++ case above. 
+
+        In order to access the elements of a C++ SQL vector, \textct{x}, we use the following indexing functions
 \begin{center}\begin{tabular}{llll}
 Number of cones & Type of cone & Type of Indexing & Use\\\hline
-Single  & Quadratic/Linear & Specific element & \textct{x(i)}\\
-Multiple  & Quadratic/Linear & Specific element & \textct{x(k,i)}\\
+Single & Quadratic/Linear & Specific element & \textct{x(i)}\\
+Multiple & Quadratic/Linear & Specific element & \textct{x(k,i)}\\
 Multiple & Semidefinite & Specific element & \textct{x(k,i,j)}\\
 Multiple & Semidefinite/Quadratic/Linear & First element & \textct{x.front(k)}\\
 Multiple & Quadratic & First element & \textct{x.naught(k)}\\
@@ -3786,12 +3834,18 @@ Type of block & \textct{x.blkType(k)}\\
 Number of blocks & \textct{x.numblocks()}
 \end{tabular}\end{center}
 
+        In order to access the elements of a MATLAB/Octave SQL vector, \textct{x}, we note that the cones are stored in the cell array \textct{x.data} where each element in the cell array denotes a different cone.  We store quadratic and linear elements as column vectors and semidefinite elements as matrices.  For example, to access the $i$th element of the $k$th block when this block is quadratic or linear, we use the syntax \textct{x.data\{k\}(i)}.  To access the $(i,j)$th element of the $k$th block when the block is semidefinite, we use the syntax \textct{x.data\{k\}(i,j)}.
+
         As an example, we setup and solve a simple second-order cone program in our simple quadratic cone example:
 \examplelabel{\secquadratic}{sec:quadratic}
 \begin{boldlist}
     \exampleitem
         {C++}
         {\lstinputlisting[style=C++]{@SIMPLEQUADRATICCONEPATH@/simple_quadratic_cone.cpp}}
+    
+    \exampleitem
+        {MATLAB/Octave}
+        {\lstinputlisting[style=Matlab]{@SIMPLEQUADRATICCONEPATH@/simple_quadratic_cone.m}}
 \end{boldlist}
 \noindent Similarly, we setup and solve a simple semidefinite program in our simple SDP cone example:
 \examplelabel{\secsdp}{sec:sdp}
@@ -3799,6 +3853,10 @@ Number of blocks & \textct{x.numblocks()}
     \exampleitem
         {C++}
         {\lstinputlisting[style=C++]{@SIMPLESDPCONEPATH@/simple_sdp_cone.cpp}}
+    
+    \exampleitem
+        {MATLAB/Octave}
+        {\lstinputlisting[style=C++]{@SIMPLESDPCONEPATH@/simple_sdp_cone.m}}
 \end{boldlist}
 
 \section{\secsmanip}\label{sec:smanip}

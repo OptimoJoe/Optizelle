@@ -756,6 +756,8 @@ namespace Optizelle{
             return atos("InvldCnt");
         case TruncatedStop::TooManyFailedSafeguard:
             return atos("Safeguard");
+        case TruncatedStop::ObjectiveIncrease:
+            return atos("ObjIncr");
         default:
             throw;
         }

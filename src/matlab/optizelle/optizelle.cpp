@@ -134,6 +134,9 @@ namespace Optizelle {
             case TooManyFailedSafeguard:
                 return Matlab::enumToMxArray(
                     "TruncatedStop","TooManyFailedSafeguard");
+            case ObjectiveIncrease:
+                return Matlab::enumToMxArray(
+                    "TruncatedStop","ObjectiveIncrease");
             default:
                 throw;
             }
@@ -176,6 +179,10 @@ namespace Optizelle {
                 "TruncatedStop","TooManyFailedSafeguard")
             )
                 return TooManyFailedSafeguard;
+            else if(m==Matlab::enumToNatural(
+                "TruncatedStop","ObjectiveIncrease")
+            )
+                return ObjectiveIncrease;
             else
                 throw;
         }

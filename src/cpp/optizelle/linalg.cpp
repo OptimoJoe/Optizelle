@@ -856,6 +856,8 @@ namespace Optizelle {
                 return "InvalidTrustRegionOffset";
             case TooManyFailedSafeguard:
                 return "TooManyFailedSafeguard";
+            case ObjectiveIncrease:
+                return "ObjectiveIncrease";
             default:
                 throw;
             }
@@ -881,6 +883,8 @@ namespace Optizelle {
                 return InvalidTrustRegionOffset;
             else if(trunc_stop=="TooManyFailedSafeguard")
                 return TooManyFailedSafeguard;
+            else if(trunc_stop=="ObjectiveIncrease")
+                return ObjectiveIncrease;
             else
                 throw;
         }
@@ -895,7 +899,8 @@ namespace Optizelle {
                 name=="NanDetected" ||
                 name=="LossOfOrthogonality" ||
                 name=="InvalidTrustRegionOffset" ||
-                name=="TooManyFailedSafeguard"
+                name=="TooManyFailedSafeguard" ||
+                name=="ObjectiveIncrease"
             )
                 return true;
             else

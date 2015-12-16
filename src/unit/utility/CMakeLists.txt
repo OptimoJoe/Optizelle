@@ -1,7 +1,7 @@
 project(utility)
 
 # If any unit test is enabled, we compile this
-if(ENABLE_CPP_UNIT)
+if(ENABLE_CPP_UNIT OR ENABLE_MATLAB_UNIT OR ENABLE_PYTHON_UNIT)
 
     # Common include files
     include_directories(${OPTIZELLE_INCLUDE_DIRS})
