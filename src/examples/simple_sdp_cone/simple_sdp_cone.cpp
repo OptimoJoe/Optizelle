@@ -15,24 +15,24 @@ struct MyObj : public Optizelle::ScalarValuedFunction <double,Optizelle::Rm> {
     typedef Optizelle::Rm <Real> X;
 
     // Evaluation 
-    double eval(const X::Vector& x) const {
+    double eval(X::Vector const & x) const {
         return -x[0]+x[1]; 
     }
 
     // Gradient
     void grad(
-        const X::Vector& x,
-        X::Vector& g
+        X::Vector const & x,
+        X::Vector & grad
     ) const {
-        g[0]=Real(-1.);
-        g[1]=Real(1.);
+        grad[0]=Real(-1.);
+        grad[1]=Real(1.);
     }
 
     // Hessian-vector product
     void hessvec(
-        const X::Vector& x,
-        const X::Vector& dx,
-        X::Vector& H_dx
+        X::Vector const & x,
+        X::Vector const & dx,
+        X::Vector & H_dx
     ) const {
         H_dx[0]= Real(0.);
         H_dx[1]= Real(0.);
@@ -49,57 +49,62 @@ struct MyIneq
         <double,Optizelle::Rm,Optizelle::SQL> 
 {
     typedef Optizelle::Rm <double> X;
-    typedef Optizelle::SQL <double> Y;
+    typedef Optizelle::SQL <double> Z;
     typedef double Real;
 
-    // y=h(x) 
+    // z=h(x) 
     void eval(
-        const X::Vector& x,
-        Y::Vector& y
+        X::Vector const & x,
+        Z::Vector & z
     ) const {
-        y(1,1,1)=x[1];
-        y(1,1,2)=x[0];
-        y(1,2,1)=x[0];
-        y(1,2,2)=Real(1.);
+        z(1,1,1)=x[1];
+        z(1,1,2)=x[0];
+        z(1,2,1)=x[0];
+        z(1,2,2)=Real(1.);
     }
 
-    // y=h'(x)dx
+    // z=h'(x)dx
     void p(
-        const X::Vector& x,
-        const X::Vector& dx,
-        Y::Vector& y
+        X::Vector const & x,
+        X::Vector const & dx,
+        Z::Vector & z
     ) const {
-        y(1,1,1)=dx[1];
-        y(1,1,2)=dx[0];
-        y(1,2,1)=dx[0];
-        y(1,2,2)=Real(0.);
+        z(1,1,1)=dx[1];
+        z(1,1,2)=dx[0];
+        z(1,2,1)=dx[0];
+        z(1,2,2)=Real(0.);
     }
 
-    // z=h'(x)*dy
+    // xhat=h'(x)*dz
     void ps(
-        const X::Vector& x,
-        const Y::Vector& dy,
-        X::Vector& z
+        X::Vector const & x,
+        Z::Vector const & dz,
+        X::Vector & xhat 
     ) const {
-        z[0]= dy(1,1,2)+dy(1,2,1);
-        z[1]= dy(1,1,1);
+        xhat[0]= dz(1,1,2)+dz(1,2,1);
+        xhat[1]= dz(1,1,1);
     }
 
-    // z=(h''(x)dx)*dy
+    // xhat=(h''(x)dx)*dz
     void pps(
-        const X::Vector& x,
-        const X::Vector& dx,
-        const Y::Vector& dy,
-        X::Vector& z
+        X::Vector const & x,
+        X::Vector const & dx,
+        Z::Vector const & dz,
+        X::Vector & xhat 
     ) const {
-        X::zero(z);
+        X::zero(xhat);
     }
 };
-    
+
+// Create some type shortcuts
+template <typename Real> using XX = Optizelle::Rm <Real>;
+template <typename Real> using ZZ = Optizelle::SQL <Real>;
+
 int main(int argc,char* argv[]){
-    // Create some type shortcuts
-    typedef Optizelle::Rm <double> X;
-    typedef Optizelle::SQL <double> Z;
+    // Create some more type shortcuts
+    typedef double Real;
+    typedef XX <Real> X;
+    typedef ZZ <Real> Z;
     typedef X::Vector X_Vector;
     typedef Z::Vector Z_Vector;
 
@@ -111,32 +116,25 @@ int main(int argc,char* argv[]){
     std::string fname(argv[1]);
 
     // Generate an initial guess for the primal
-    X_Vector x(2);
-    x[0]=1.2; x[1]=3.1;
+    auto x = X_Vector({1.2,3.1});
 
-    // Generate an initial guess for the dual
-    std::vector <Optizelle::Natural> sizes(1);
-        sizes[0]=2;
-    std::vector <Optizelle::Cone::t> types(1);
-        types[0]=Optizelle::Cone::Semidefinite;
-    Z_Vector z(types,sizes);
+    // Allocate memory for the dual
+    auto z = Z_Vector ({Optizelle::Cone::Semidefinite},{2});
 
     // Create an optimization state
-    Optizelle::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>
-        ::State::t state(x,z);
+    Optizelle::InequalityConstrained <Real,XX,ZZ>::State::t state(x,z);
     
     // Read the parameters from file
-    Optizelle::json::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>
+    Optizelle::json::InequalityConstrained <Real,XX,ZZ>
         ::read(Optizelle::Messaging(),fname,state);
 
     // Create a bundle of functions
-    Optizelle::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>
-        ::Functions::t fns;
+    Optizelle::InequalityConstrained <Real,XX,ZZ>::Functions::t fns;
     fns.f.reset(new MyObj);
     fns.h.reset(new MyIneq);
 
     // Solve the optimization problem
-    Optizelle::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>
+    Optizelle::InequalityConstrained <Real,XX,ZZ>
         ::Algorithms::getMin(Optizelle::Messaging(),fns,state);
 
     // Print out the reason for convergence
@@ -149,7 +147,7 @@ int main(int argc,char* argv[]){
         << state.x[1] << ')' << std::endl;
 
     // Write out the final answer to file
-    Optizelle::json::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>
+    Optizelle::json::InequalityConstrained <Real,XX,ZZ>
         ::write_restart(Optizelle::Messaging(),"solution.json",state);
 
     // Successful termination

@@ -346,30 +346,9 @@ namespace Optizelle {
                 inverse_base.resize(inverse_base_offsets.back());
             }
             
-            // Move constructor 
-            Vector(Vector&& x) noexcept : 
-                data(std::move(x.data)),
-                offsets(std::move(x.offsets)),
-                types(std::move(x.types)),
-                sizes(std::move(x.sizes)),
-                inverse(std::move(x.inverse)),
-                inverse_offsets(std::move(x.inverse_offsets)),
-                inverse_base(std::move(x.inverse_base)),
-                inverse_base_offsets(std::move(x.inverse_base_offsets))
-            {}
-
-            // Move assignment operator
-            Vector const & operator = (Vector&& x) noexcept {
-                data=std::move(x.data);
-                offsets=std::move(x.offsets);
-                types=std::move(x.types);
-                sizes=std::move(x.sizes);
-                inverse=std::move(x.inverse);
-                inverse_offsets=std::move(x.inverse_offsets);
-                inverse_base=std::move(x.inverse_base);
-                inverse_base_offsets=std::move(x.inverse_base_offsets);
-                return *this;
-            }
+            // Move semantics 
+            Vector (Vector && x) = default; 
+            Vector & operator = (Vector && x) = default;
 
             // Simple indexing.
             Real & operator () (Natural const & i) {
