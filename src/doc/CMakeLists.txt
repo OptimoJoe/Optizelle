@@ -30,8 +30,8 @@ set(SIMPLEQUADRATICCONEPATH
     "${CMAKE_SOURCE_DIR}/src/examples/simple_quadratic_cone/")
 set(SIMPLESDPCONEPATH
     "${CMAKE_SOURCE_DIR}/src/examples/simple_sdp_cone/")
-set(RESTARTPATH
-    "${CMAKE_SOURCE_DIR}/src/unit/restart/")
+set(RESTARTPATH "${CMAKE_SOURCE_DIR}/src/unit/restart/")
+set(SQLRESTARTPATH "${CMAKE_SOURCE_DIR}/src/examples/sql_restart/")
 
 # Compile the manual
 add_latex_document(optizelle.tex DEFAULT_PDF

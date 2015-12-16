@@ -111,11 +111,16 @@ function main(fname)
     x = [5.5; 3.3; 2.2];
 
     % Generate an initial guess for the dual
-    z = Optizelle.SQL.create( ...
+    %---SQLSpec0---
+    types = ...
         [Optizelle.Cone.Semidefinite, ...
          Optizelle.Cone.Quadratic, ...
-         Optizelle.Cone.Linear], ...
-        [2,2,1]);
+         Optizelle.Cone.Linear];
+    sizes = [2,2,1];
+    %---SQLSpec1---
+    %---SQLVector0---
+    z = Optizelle.SQL.create(types,sizes);
+    %---SQLVector1---
 
     % Create an optimization state
     state=Optizelle.InequalityConstrained.State.t( ...
