@@ -7420,7 +7420,7 @@ namespace Optizelle{
                             out.emplace_back(Utility::blankSeparator);
                     
                     // Truncated-CG information
-                    if(glob_iter==1) {
+                    if(!opt_begin) {
                         out.emplace_back(Utility::atos(trunc_iter));
                         out.emplace_back(Utility::atos(trunc_err));
                         out.emplace_back(Utility::atos(trunc_stop));
@@ -7445,10 +7445,7 @@ namespace Optizelle{
                         out.emplace_back(Utility::atos(norm_dxt));
 
                         // Total number of truncated-CG iterations 
-                        if(glob_iter==1)
-                            out.emplace_back(Utility::atos(trunc_iter_total));
-                        else
-                            out.emplace_back(Utility::blankSeparator);
+                        out.emplace_back(Utility::atos(trunc_iter_total));
 
                         // Augmented system solves 
                         out.emplace_back(Utility::atos(augsys_qn_iter));
