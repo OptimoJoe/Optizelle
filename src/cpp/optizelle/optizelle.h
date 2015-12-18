@@ -565,16 +565,14 @@ namespace Optizelle{
         enum t{
             //---QuasinormalStop0---
             Newton,                   // Obtained the full Newton point
-            CauchyTrustRegion,        // Cauchy point truncated by the
-                                      // trust-region
-            DoglegTrustRegion,        // Dogleg point truncated by the
-                                      // trust-region
+            CauchyTrustRegion,        // Cauchy point truncated by the TR
             CauchySafeguard,          // Cauchy point truncated by the safeguard
+            DoglegTrustRegion,        // Dogleg point truncated by the TR
             DoglegSafeguard,          // Dogleg point truncated by the safeguard
-            NewtonTrustRegion,        // Newton point truncated by the
-                                      // trust-region
+            NewtonTrustRegion,        // Newton point truncated by the TR
             NewtonSafeguard,          // Newton point truncated by the safeguard
-            Skipped                   // Skipped due to feasibility
+            Skipped,                  // Skipped due to feasibility
+            CauchySolved              // Cauchy point solved g'(x)dx_cp+g(x)=0
             //---QuasinormalStop1---
         };
 
@@ -7872,20 +7870,32 @@ namespace Optizelle{
                 auto zero = X::init(x);
                 X::zero(zero);
 
-                // Tracks whether we become feasible
-                auto gpxdxnpgx = Y::init(g_x);
+                // Initialize our stopping condition to skipped
+                qn_stop = QuasinormalStop::Skipped;
+
+                // Calculates the linearized feasibility || g'(x)dx + g(x) ||
+                auto gpxdxpgx = Y::init(g_x);
+                auto lin_feas = [&](auto const & dx) {
+                    g.p(x,dx,gpxdxpgx);
+                    Y::axpy(Real(1.),g_x,gpxdxpgx);
+                    auto norm_gpxdxpgx=std::sqrt(Y::innr(gpxdxpgx,gpxdxpgx));
+                    return norm_gpxdxpgx;
+                };
+
+                // Grab the raw Newton point if we get there
+                auto dx_newton = X::init(x);
+                X::zero(dx_newton);
 
                 // We only have two points to search in a dogleg method
                 auto iter = Natural(1);
                 for(; iter<=2; iter++) {
                     // If we ever solve g'(x)dx_n + g(x) = 0, we quit 
-                    g.p(x,dx_n,gpxdxnpgx);
-                    Y::axpy(Real(1.),g_x,gpxdxnpgx);
-                    auto norm_gpxdxnpgx=std::sqrt(Y::innr(gpxdxnpgx,gpxdxnpgx));
+                    auto norm_gpxdxnpgx=lin_feas(dx_n);
                     if(norm_gpxdxnpgx < eps_constr * absrel(norm_gxtyp)) {
-                        // Makes tracking the stopping condition later easier
                         if(iter==1)
-                            iter=0;
+                            qn_stop = QuasinormalStop::Skipped;
+                        else
+                            qn_stop = QuasinormalStop::CauchySolved;
                         break;
                     }
 
@@ -7964,6 +7974,10 @@ namespace Optizelle{
                     X::axpy(Real(1.),ddx_n,trial);
                     auto norm_trial = std::sqrt(X::innr(trial,trial));
 
+                    // Save the Newton point if we're on the second iteration
+                    if(iter==2)
+                        X::copy(trial,dx_newton);
+
                     // If we exceed our trust-region, truncate the step and
                     // exit
                     if(norm_trial >=  zeta*delta) {
@@ -8004,6 +8018,12 @@ namespace Optizelle{
                             X::axpy(alpha_x_qn,ddx_n,dx_n);
                         }
 
+                        // Set the stopping condition
+                        if(iter == 1)
+                            qn_stop = QuasinormalStop::CauchyTrustRegion;
+                        else
+                            qn_stop = QuasinormalStop::DoglegTrustRegion;
+
                         // If we're on the first iteration, save the Cauchy
                         // point
                         if(iter==1)
@@ -8035,15 +8055,56 @@ namespace Optizelle{
                 }
 
                 // If our last dx_n was safe, we assume that we have truncated
-                // things appropriately  and that our solution dx_n is feasible
+                // things appropriately and that our solution dx_n is feasible
                 // with respect to our safeguard.  If our last dx_n was not
-                // safe, then we jgo back to our last safe dx_n and grab its
+                // safe, then we go back to our last safe dx_n and grab its
                 // ddx_n.  Then, we truncate ddx_n to meet our safeguard.
                 if(failed_safeguard>0) {
                     X::copy(dxn_safe,dx_n);
                     X::copy(ddxn_safe,ddx_n);
                     alpha_x_qn = std::min(safeguard(dx_n,ddx_n),Real(1.0));
                     X::axpy(alpha_x_qn,ddx_n,dx_n);
+
+                    // Set the stopping condition
+                    if(iter == 1)
+                        qn_stop = QuasinormalStop::CauchySafeguard;
+                    else
+                        qn_stop = QuasinormalStop::DoglegSafeguard;
+                }
+
+                // If we made it to our final iteration and we're feasible,
+                // then we took the Newton step
+                if(iter==3 && failed_safeguard==0)
+                    qn_stop = QuasinormalStop::Newton;
+
+                // If we computed a Newton point, try truncating straight
+                // toward 0 and check if that gives us a better answer
+                if(qn_stop == QuasinormalStop::DoglegSafeguard ||
+                   qn_stop == QuasinormalStop::DoglegTrustRegion
+                ) {
+                    // Shorten the step to the trust region
+                    auto norm_dxnewton= std::sqrt(X::innr(dx_newton,dx_newton));
+                    X::scal(delta*zeta/norm_dxnewton,dx_newton);
+
+                    // Safeguard the step if necessary 
+                    auto alpha = std::min(safeguard(zero,dx_newton),Real(1.0));
+                    if(alpha < Real(1.))
+                        X::scal(alpha,dx_newton);
+
+                    // Check the linearized feasibility of the current step and
+                    // the Newton step
+                    auto lf_dxn = lin_feas(dx_n);
+                    auto lf_dxnewton = lin_feas(dx_newton);
+
+                    // If the linearized feasibility of the Newton step is
+                    // smaller, take that step instead
+                    if(lf_dxnewton < lf_dxn) {
+                        X::copy(dx_newton,dx_n);
+                        if(alpha < Real(1.))
+                            qn_stop = QuasinormalStop::NewtonSafeguard;
+                        else
+                            qn_stop = QuasinormalStop::NewtonTrustRegion;
+                    }
                 }
 
                 // Figure out why we stopped

@@ -662,12 +662,12 @@ namespace Optizelle {
             case CauchyTrustRegion:
                 return Matlab::enumToMxArray("QuasinormalStop",
                     "CauchyTrustRegion");
-            case DoglegTrustRegion:
-                return Matlab::enumToMxArray("QuasinormalStop",
-                    "DoglegTrustRegion");
             case CauchySafeguard:
                 return Matlab::enumToMxArray("QuasinormalStop",
                     "CauchySafeguard");
+            case DoglegTrustRegion:
+                return Matlab::enumToMxArray("QuasinormalStop",
+                    "DoglegTrustRegion");
             case DoglegSafeguard:
                 return Matlab::enumToMxArray("QuasinormalStop",
                     "DoglegSafeguard");
@@ -680,6 +680,9 @@ namespace Optizelle {
             case Skipped:
                 return Matlab::enumToMxArray("QuasinormalStop",
                     "Skipped");
+            case CauchySolved:
+                return Matlab::enumToMxArray("QuasinormalStop",
+                    "CauchySolved");
             default:
                 throw;
             }
@@ -699,13 +702,13 @@ namespace Optizelle {
             )
                 return CauchyTrustRegion;
             else if(m==Matlab::enumToNatural("QuasinormalStop",
-                "DoglegTrustRegion")
-            )
-                return DoglegTrustRegion;
-            else if(m==Matlab::enumToNatural("QuasinormalStop",
                 "CauchySafeguard")
             )
                 return CauchySafeguard;
+            else if(m==Matlab::enumToNatural("QuasinormalStop",
+                "DoglegTrustRegion")
+            )
+                return DoglegTrustRegion;
             else if(m==Matlab::enumToNatural("QuasinormalStop",
                 "DoglegSafeguard")
             )
@@ -722,6 +725,10 @@ namespace Optizelle {
                 "Skipped")
             )
                 return Skipped;
+            else if(m==Matlab::enumToNatural("QuasinormalStop",
+                "CauchySolved")
+            )
+                return CauchySolved;
             else
                 throw;
         }
