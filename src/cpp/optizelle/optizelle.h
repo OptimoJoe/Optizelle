@@ -8988,21 +8988,27 @@ namespace Optizelle{
                 // Allocate memory for temporaries that we need
                 X_Vector x_p_dx(X::init(x));
 
+                // Determine the merit function at x
+                auto merit_x = f_mod.merit(x,f_x);
+
+                // Determine the merit function at x + dx and y+dy.  Due to how
+                // the function modifications works, we need to set y=y+dy
+                // before we apply the modification and then we revert it back.
+                //
                 // Determine x+dx 
                 X::copy(dx,x_p_dx);
                 X::axpy(Real(1.),x,x_p_dx);
 
                 // Save the old equality multiplier
-                Y_Vector y_old(Y::init(y));
-                    Y::copy(y,y_old);
+                auto y_old = Y::init(y);
+                Y::copy(y,y_old);
 
                 // Determine y + dy
                 Y::axpy(Real(1.),dy,y);
 
-                // Determine the merit function at x and x+dx
-                Real merit_x = f_mod.merit(x,f_x);
+                // Determine the merit function at x+dx and y+dy
                 f_xpdx = f.eval(x_p_dx);
-                Real merit_xpdx = f_mod.merit(x_p_dx,f_xpdx);
+                auto merit_xpdx = f_mod.merit(x_p_dx,f_xpdx);
 
                 // Restore the old equality multiplier
                 Y::copy(y_old,y);
