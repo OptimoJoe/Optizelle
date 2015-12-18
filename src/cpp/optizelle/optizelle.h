@@ -567,10 +567,13 @@ namespace Optizelle{
             Newton,                   // Obtained the full Newton point
             CauchyTrustRegion,        // Cauchy point truncated by the
                                       // trust-region
-            CauchySafeguard,          // Cauchy point truncated by the safeguard
             DoglegTrustRegion,        // Dogleg point truncated by the
                                       // trust-region
+            CauchySafeguard,          // Cauchy point truncated by the safeguard
             DoglegSafeguard,          // Dogleg point truncated by the safeguard
+            NewtonTrustRegion,        // Newton point truncated by the
+                                      // trust-region
+            NewtonSafeguard,          // Newton point truncated by the safeguard
             Skipped                   // Skipped due to feasibility
             //---QuasinormalStop1---
         };
@@ -4500,7 +4503,10 @@ namespace Optizelle{
                     //
                     //     and then set
                     //
-                    //     dx = dx_ncp + theta dx_dnewton
+                    //     dx = dx_cp + theta dx_dnewton
+                    //
+                    // Note, this only works when both dx_n and dx_cp are both
+                    // feasible with respect to the safeguard.
                     if(norm_dxcp >= delta) {
                         X::copy(dx_cp,dx);
                         X::scal(delta/norm_dxcp,dx);
@@ -7818,151 +7824,242 @@ namespace Optizelle{
                 typename State::t & state
             ) {
                 // Create some shortcuts
-                VectorValuedFunction <Real,XX,YY> const & g=*(fns.g);
-                auto const & safeguard = *(fns.safeguard); 
+                auto const & g=*(fns.g);
+                auto const & safeguard_ = *(fns.safeguard); 
                 auto const & absrel = *(fns.absrel);
-                X_Vector const & x=state.x;
-                Y_Vector const & g_x=state.g_x;
-                Natural const & augsys_iter_max=state.augsys_iter_max;
-                Natural const & augsys_rst_freq=state.augsys_rst_freq;
-                Real const & delta = state.delta;
-                Real const & zeta = state.zeta;
-                Real const & norm_gxtyp = state.norm_gxtyp;
-                Real const & eps_constr = state.eps_constr;
-                X_Vector & dx_ncp=state.dx_ncp;
-                X_Vector & dx_n=state.dx_n;
-                Real & augsys_qn_err = state.augsys_qn_err;
-                Natural & augsys_qn_iter = state.augsys_qn_iter;
-                Natural & augsys_qn_iter_total = state.augsys_qn_iter_total;
-                Natural & augsys_iter_total = state.augsys_iter_total;
+                auto const & x=state.x;
+                auto const & g_x=state.g_x;
+                auto const & augsys_iter_max=state.augsys_iter_max;
+                auto const & augsys_rst_freq=state.augsys_rst_freq;
+                auto const & delta = state.delta;
+                auto const & zeta = state.zeta;
+                auto const & norm_gxtyp = state.norm_gxtyp;
+                auto const & eps_constr = state.eps_constr;
+                auto & dx_ncp=state.dx_ncp;
+                auto & dx_n=state.dx_n;
+                auto & augsys_qn_err = state.augsys_qn_err;
+                auto & augsys_qn_iter = state.augsys_qn_iter;
+                auto & augsys_qn_iter_total = state.augsys_qn_iter_total;
+                auto & augsys_iter_total = state.augsys_iter_total;
                 auto & alpha_x_qn = state.alpha_x_qn;
                 auto & qn_stop = state.qn_stop;
 
-                // If we're already feasible, don't even bother with the
-                // quasi-Newton step.  In fact, if g(x)=0, the equation for
-                // the Cauchy point divides by zero, which causes all sorts
-                // of headaches later on.
-                Real norm_gx = sqrt(X::innr(g_x,g_x));
-                if(norm_gx < eps_constr * absrel(norm_gxtyp)) {
-                    X::zero(dx_ncp);
-                    X::zero(dx_n);
-                    qn_stop = QuasinormalStop::Skipped;
-                    return;
-                }
+                // Create the simplified safeguard function
+                auto safeguard =
+                    SafeguardSimplified <Real,XX>(std::bind(
+                        safeguard_,
+                        std::placeholders::_1,
+                        std::placeholders::_2,
+                        zeta));
 
-                // Find the Cauchy point.
+                // Keep track of the safe steps and safeguarding
+                auto dxn_safe = X::init(x);
+                X::zero(dxn_safe);
+                auto ddxn_safe = X::init(x);
+                auto failed_safeguard = Natural(0);
 
-                // Find g'(x)*g(x)
-                X_Vector gps_g(X::init(x));
-                g.ps(x,g_x,gps_g);
+                // We build dx_n from ddx_n
+                auto ddx_n = X::init(x);
 
-                // Find g'(x)g'(x)*g(x)
-                Y_Vector gp_gps_g(Y::init(g_x));
-                g.p(x,gps_g,gp_gps_g);
+                // Zero out our initial directions
+                X::zero(dx_n);
+                X::zero(dx_ncp);
 
-                // Find || g'(x)*g(x) ||^2
-                Real norm_gpsg_2 = X::innr(gps_g,gps_g);
+                // Store our trial step, dx_n + ddx_n
+                auto trial = X::init(x);
 
-                // Find || g'(x)g'(x)*g(x) ||^2
-                Real norm_gpgpsg_2 = Y::innr(gp_gps_g,gp_gps_g);
-
-                // Find the Cauchy point,
-                // -|| g'(x)*g(x) ||^2 / || g'(x)g'(x)*g(x) ||^2 g'(x)*g(x)
-                X::copy(gps_g,dx_ncp);
-                X::scal(-norm_gpsg_2/norm_gpgpsg_2,dx_ncp);
-
-                // Safeguard the Cauchy point
+                // Create a zero vector
                 auto zero = X::init(x);
                 X::zero(zero);
-                alpha_x_qn = std::min(safeguard(zero,dx_ncp,zeta),Real(1.));
 
-                // If || dx_ncp || >= zeta delta, scale it back to zeta
-                // delta and return.  Alternatively, if the safeguard truncates
-                // things, scale things back and return.
-                Real norm_dxncp = sqrt(X::innr(dx_ncp,dx_ncp));
-                auto alpha_tr = zeta*delta/norm_dxncp;
-                auto alpha = std::min(alpha_tr,alpha_x_qn);
-                if(alpha < Real(1.0)) {
-                    qn_stop = alpha_tr <= alpha_x_qn ?
-                        QuasinormalStop::CauchyTrustRegion :
-                        QuasinormalStop::CauchySafeguard;
-                    X::scal(alpha,dx_ncp);
-                    X::copy(dx_ncp,dx_n);
-                    return;
+                // Tracks whether we become feasible
+                auto gpxdxnpgx = Y::init(g_x);
+
+                // We only have two points to search in a dogleg method
+                auto iter = Natural(1);
+                for(; iter<=2; iter++) {
+                    // If we ever solve g'(x)dx_n + g(x) = 0, we quit 
+                    g.p(x,dx_n,gpxdxnpgx);
+                    Y::axpy(Real(1.),g_x,gpxdxnpgx);
+                    auto norm_gpxdxnpgx=std::sqrt(Y::innr(gpxdxnpgx,gpxdxnpgx));
+                    if(norm_gpxdxnpgx < eps_constr * absrel(norm_gxtyp)) {
+                        // Makes tracking the stopping condition later easier
+                        if(iter==1)
+                            iter=0;
+                        break;
+                    }
+
+                    // Find the Cauchy point
+                    if(iter==1) {
+                        // Find g'(x)*g(x)
+                        auto gps_g = X::init(x);
+                        g.ps(x,g_x,gps_g);
+
+                        // Find g'(x)g'(x)*g(x)
+                        auto gp_gps_g = Y::init(g_x);
+                        g.p(x,gps_g,gp_gps_g);
+
+                        // Find || g'(x)*g(x) ||^2
+                        auto norm_gpsg_2 = X::innr(gps_g,gps_g);
+
+                        // Find || g'(x)g'(x)*g(x) ||^2
+                        auto norm_gpgpsg_2 = Y::innr(gp_gps_g,gp_gps_g);
+
+                        // Find the Cauchy point,
+                        // -||g'(x)*g(x)||^2 / ||g'(x)g'(x)*g(x)||^2 g'(x)*g(x)
+                        X::copy(gps_g,ddx_n);
+                        X::scal(-norm_gpsg_2/norm_gpgpsg_2,ddx_n);
+
+                    // Find the Newton step, dx_newton = dx_cp + ddx_n. 
+                    } else {
+                        // Create the initial guess, x0=(0,0)
+                        auto x0 = XxY_Vector(X::init(x),Y::init(g_x));
+                        XxY::zero(x0);
+
+                        // Create the rhs, b0=(-ddx_n,-g'(x)ddx_n-g(x)).  Note,
+                        // dx_n should contain the unscaled Cauchy point.
+                        auto b0 = XxY_Vector(XxY::init(x0));
+                        X::copy(dx_n,b0.first);
+                        X::scal(Real(-1.),b0.first);
+                        g.p(x,dx_n,b0.second);
+                        Y::scal(Real(-1.),b0.second);
+                        Y::axpy(Real(-1.),g_x,b0.second);
+
+                        // Build Schur style preconditioners
+                        auto I = typename
+                            Unconstrained <Real,XX>::Functions::Identity();
+                        auto PAugSys_l =
+                            BlockDiagonalPreconditioner (I,*(fns.PSchur_left));
+                        auto PAugSys_r =
+                            BlockDiagonalPreconditioner (I,*(fns.PSchur_right));
+
+                        // Solve the augmented system for the Newton step
+                        std::tie(augsys_qn_err,augsys_qn_iter) =
+                            Optizelle::gmres <Real,XXxYY> (
+                                AugmentedSystem(state,fns,x),
+                                b0,
+                                // This will be overwritten by the manipulator
+                                Real(1.),
+                                augsys_iter_max,
+                                augsys_rst_freq,
+                                PAugSys_l,
+                                PAugSys_r,
+                                QNManipulator(state,fns),
+                                x0 
+                            );
+                        augsys_qn_iter_total+=augsys_qn_iter;
+                        augsys_iter_total+=augsys_qn_iter;
+
+                        // Pull the solution out
+                        X::copy(x0.first,ddx_n);
+                    }
+
+                    // If our last iterate was safe, then keep our current
+                    // search direction
+                    if(failed_safeguard==0)
+                        X::copy(ddx_n,ddxn_safe);
+
+                    // Determine the norm of our trial step, dx_n+ddx_n
+                    X::copy(dx_n,trial);
+                    X::axpy(Real(1.),ddx_n,trial);
+                    auto norm_trial = std::sqrt(X::innr(trial,trial));
+
+                    // If we exceed our trust-region, truncate the step and
+                    // exit
+                    if(norm_trial >=  zeta*delta) {
+                        // In order to accomplish this, we need to find theta
+                        // so that
+                        //
+                        // || dx_n + theta ddx_n || = zeta*delta
+                        auto norm_dxn = std::sqrt(X::innr(dx_n,dx_n)); 
+                        auto aa = X::innr(ddx_n,ddx_n);
+                        auto bb = Real(2.) * X::innr(dx_n,ddx_n);
+                        auto cc = norm_dxn*norm_dxn - zeta*zeta*delta*delta;
+                        auto roots = quad_equation(aa,bb,cc);
+                        auto theta = roots[0] > roots[1] ? roots[0] : roots[1];
+                            
+                        // Shorten the step we'll take to fit inside the TR
+                        X::scal(theta,ddx_n);
+
+                        // Check if this new iterate is safe
+                        X::copy(dx_n,trial);
+                        X::axpy(Real(1.),ddx_n,trial);
+                        alpha_x_qn = std::min(safeguard(zero,trial),Real(1.0));
+
+                        // If the trial step is safe, set the number of failed
+                        // safeguard steps to zero and move 
+                        if(alpha_x_qn>=Real(1.)) {
+                            failed_safeguard = 0;
+                            X::copy(trial,dx_n);
+
+                        // If the current iterate is not safe, but the last one
+                        // was, see how far we can go in this direction
+                        } else if(failed_safeguard==0) {
+
+                            // Safeguard the step
+                            alpha_x_qn = std::min(
+                                safeguard(dx_n,ddx_n),Real(1.0));
+
+                            // Finally, take the step
+                            X::axpy(alpha_x_qn,ddx_n,dx_n);
+                        }
+
+                        // If we're on the first iteration, save the Cauchy
+                        // point
+                        if(iter==1)
+                            X::copy(dx_n,dx_ncp);
+                        break;
+                    }
+
+                    // At this point, we know that we haven't exceeded the
+                    // trust-reigon yet, so take a step in this direction
+                    X::copy(trial,dx_n);
+
+                    // Determine if this new iterate is feasible with respect
+                    // to our safeguard
+                    alpha_x_qn = std::min(safeguard(zero,dx_n),Real(1.0));
+                    if(alpha_x_qn < Real(1.))
+                        failed_safeguard += 1;
+                    else {
+                        failed_safeguard = 0;
+                        X::copy(dx_n,dxn_safe);
+                    }
+
+                    // If this is the first iteration, save the Cauchy-Point.
+                    // Make sure to truncate it if it violates the safeguard.
+                    if(iter==1) {
+                        X::copy(dx_n,dx_ncp);
+                        if(failed_safeguard>0)
+                            X::scal(alpha_x_qn,dx_ncp);
+                    }
                 }
 
-                // Find the Newton step
+                // If our last dx_n was safe, we assume that we have truncated
+                // things appropriately  and that our solution dx_n is feasible
+                // with respect to our safeguard.  If our last dx_n was not
+                // safe, then we jgo back to our last safe dx_n and grab its
+                // ddx_n.  Then, we truncate ddx_n to meet our safeguard.
+                if(failed_safeguard>0) {
+                    X::copy(dxn_safe,dx_n);
+                    X::copy(ddxn_safe,ddx_n);
+                    alpha_x_qn = std::min(safeguard(dx_n,ddx_n),Real(1.0));
+                    X::axpy(alpha_x_qn,ddx_n,dx_n);
+                }
 
-                // Create the initial guess, x0=(0,0)
-                XxY_Vector x0(X::init(x),Y::init(g_x));
-                XxY::zero(x0);
-
-                // Create the rhs, b0=(-dx_ncp,-g'(x)dx_ncp-g(x)) 
-                XxY_Vector b0(XxY::init(x0));
-                X::copy(dx_ncp,b0.first);
-                X::scal(Real(-1.),b0.first);
-                g.p(x,dx_ncp,b0.second);
-                Y::scal(Real(-1.),b0.second);
-                Y::axpy(Real(-1.),g_x,b0.second);
-
-                // Build Schur style preconditioners
-                typename Unconstrained <Real,XX>::Functions::Identity I;
-                BlockDiagonalPreconditioner PAugSys_l (I,*(fns.PSchur_left));
-                BlockDiagonalPreconditioner PAugSys_r (I,*(fns.PSchur_right));
-
-                // Solve the augmented system for the Newton step
-                std::tie(augsys_qn_err,augsys_qn_iter) =
-                    Optizelle::gmres <Real,XXxYY> (
-                        AugmentedSystem(state,fns,x),
-                        b0,
-                        Real(1.), // This will be overwritten by the manipulator
-                        augsys_iter_max,
-                        augsys_rst_freq,
-                        PAugSys_l,
-                        PAugSys_r,
-                        QNManipulator(state,fns),
-                        x0 
-                    );
-                augsys_qn_iter_total+=augsys_qn_iter;
-                augsys_iter_total+=augsys_qn_iter;
-
-                // Find the Newton shift, dx_dnewton = dx_newton-dx_ncp
-                X_Vector & dx_dnewton = x0.first;
-
-                // Find the Newton step
-                X::copy(dx_ncp,dx_n);
-                X::axpy(Real(1.),dx_dnewton,dx_n);
-
-                // Safeguard the Newton step 
-                alpha_x_qn=std::min(Real(1.),safeguard(dx_ncp,dx_dnewton,zeta));
-
-                // If the dx_n is smaller than zeta delta and we don't have to
-                // safeguard, then return it as the quasi-normal step
-                Real norm_dxn = sqrt(X::innr(dx_n,dx_n));
-                if(norm_dxn <= zeta*delta && alpha_x_qn >= Real(1.)) {
+                // Figure out why we stopped
+                if(iter==0)
+                    qn_stop = QuasinormalStop::Skipped;
+                else if(failed_safeguard==2)
+                    qn_stop = QuasinormalStop::CauchySafeguard;
+                else if(failed_safeguard==1)
+                    qn_stop = QuasinormalStop::DoglegSafeguard;
+                else if(failed_safeguard==0 && iter==1)
+                    qn_stop = QuasinormalStop::CauchyTrustRegion;
+                else if(failed_safeguard==0 && iter==2)
+                    qn_stop = QuasinormalStop::DoglegTrustRegion;
+                else if(failed_safeguard==0 && iter==3)
                     qn_stop = QuasinormalStop::Newton;
-                    return;
-                }
 
-                // Otherwise, compute the dogleg step.  In order to accomplish
-                // this, we need to find theta so that
-                //
-                // || dx_ncp + theta dx_dnewton || = zeta*delta
-                //
-                // and then set
-                //
-                // dx_n = dx_ncp + min(theta,alpha_x_qn) dx_dnewton.
-                Real aa = X::innr(dx_dnewton,dx_dnewton);
-                Real bb = Real(2.) * X::innr(dx_dnewton,dx_ncp);
-                Real cc = norm_dxncp*norm_dxncp - zeta*zeta*delta*delta;
-                auto roots = quad_equation(aa,bb,cc);
-                Real theta = roots[0] > roots[1] ? roots[0] : roots[1];
-                alpha = std::min(theta,alpha_x_qn);
-                X::copy(dx_ncp,dx_n);
-                X::axpy(alpha,dx_dnewton,dx_n);
-                qn_stop = theta <= alpha_x_qn ?
-                    QuasinormalStop::DoglegTrustRegion :
-                    QuasinormalStop::DoglegSafeguard;
             }
             
             // Sets the tolerances for projecting 

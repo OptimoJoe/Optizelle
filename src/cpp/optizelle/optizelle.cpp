@@ -660,12 +660,16 @@ namespace Optizelle{
                 return "Newton";
             case CauchyTrustRegion: 
                 return "CauchyTrustRegion";
-            case CauchySafeguard: 
-                return "CauchySafeguard";
             case DoglegTrustRegion: 
                 return "DoglegTrustRegion";
+            case CauchySafeguard: 
+                return "CauchySafeguard";
             case DoglegSafeguard: 
                 return "DoglegSafeguard";
+            case NewtonTrustRegion: 
+                return "NewtonTrustRegion";
+            case NewtonSafeguard: 
+                return "NewtonSafeguard";
             case Skipped: 
                 return "Skipped";
             default:
@@ -679,12 +683,16 @@ namespace Optizelle{
                 return Newton; 
             else if(qn_stop=="CauchyTrustRegion")
                 return CauchyTrustRegion;
-            else if(qn_stop=="CauchySafeguard")
-                return CauchySafeguard;
             else if(qn_stop=="DoglegTrustRegion")
                 return DoglegTrustRegion;
+            else if(qn_stop=="CauchySafeguard")
+                return CauchySafeguard;
             else if(qn_stop=="DoglegSafeguard")
                 return DoglegSafeguard;
+            else if(qn_stop=="NewtonTrustRegion")
+                return NewtonTrustRegion;
+            else if(qn_stop=="NewtonSafeguard")
+                return NewtonSafeguard;
             else if(qn_stop=="Skipped")
                 return Skipped;
             else
@@ -695,9 +703,11 @@ namespace Optizelle{
         bool is_valid(std::string const & name) {
             if( name=="Newton" ||
                 name=="CauchyTrustRegion" ||
-                name=="CauchySafeguard" ||
                 name=="DoglegTrustRegion" ||
+                name=="CauchySafeguard" ||
                 name=="DoglegSafeguard" ||
+                name=="NewtonTrustRegion" ||
+                name=="NewtonSafeguard" ||
                 name=="Skipped"
             )
                 return true;
@@ -770,12 +780,16 @@ namespace Optizelle{
             return atos("Newton");
         case QuasinormalStop::CauchyTrustRegion:
             return atos("CauchyTR");
-        case QuasinormalStop::CauchySafeguard:
-            return atos("CauchySafe");
         case QuasinormalStop::DoglegTrustRegion:
             return atos("DoglegTR");
+        case QuasinormalStop::CauchySafeguard:
+            return atos("CauchySafe");
         case QuasinormalStop::DoglegSafeguard:
             return atos("DoglegSafe");
+        case QuasinormalStop::NewtonTrustRegion:
+            return atos("NewtonTR");
+        case QuasinormalStop::NewtonSafeguard:
+            return atos("NewtonSafe");
         case QuasinormalStop::Skipped:
             return atos("Skipped");
         default:

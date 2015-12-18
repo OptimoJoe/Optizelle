@@ -662,15 +662,21 @@ namespace Optizelle {
             case CauchyTrustRegion:
                 return Matlab::enumToMxArray("QuasinormalStop",
                     "CauchyTrustRegion");
-            case CauchySafeguard:
-                return Matlab::enumToMxArray("QuasinormalStop",
-                    "CauchySafeguard");
             case DoglegTrustRegion:
                 return Matlab::enumToMxArray("QuasinormalStop",
                     "DoglegTrustRegion");
+            case CauchySafeguard:
+                return Matlab::enumToMxArray("QuasinormalStop",
+                    "CauchySafeguard");
             case DoglegSafeguard:
                 return Matlab::enumToMxArray("QuasinormalStop",
                     "DoglegSafeguard");
+            case NewtonTrustRegion:
+                return Matlab::enumToMxArray("QuasinormalStop",
+                    "NewtonTrustRegion");
+            case NewtonSafeguard:
+                return Matlab::enumToMxArray("QuasinormalStop",
+                    "NewtonSafeguard");
             case Skipped:
                 return Matlab::enumToMxArray("QuasinormalStop",
                     "Skipped");
@@ -693,17 +699,25 @@ namespace Optizelle {
             )
                 return CauchyTrustRegion;
             else if(m==Matlab::enumToNatural("QuasinormalStop",
-                "CauchySafeguard")
-            )
-                return CauchySafeguard;
-            else if(m==Matlab::enumToNatural("QuasinormalStop",
                 "DoglegTrustRegion")
             )
                 return DoglegTrustRegion;
             else if(m==Matlab::enumToNatural("QuasinormalStop",
+                "CauchySafeguard")
+            )
+                return CauchySafeguard;
+            else if(m==Matlab::enumToNatural("QuasinormalStop",
                 "DoglegSafeguard")
             )
                 return DoglegSafeguard;
+            else if(m==Matlab::enumToNatural("QuasinormalStop",
+                "NewtonTrustRegion")
+            )
+                return NewtonTrustRegion;
+            else if(m==Matlab::enumToNatural("QuasinormalStop",
+                "NewtonSafeguard")
+            )
+                return NewtonSafeguard;
             else if(m==Matlab::enumToNatural("QuasinormalStop",
                 "Skipped")
             )

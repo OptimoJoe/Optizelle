@@ -1306,7 +1306,6 @@ namespace Optizelle {
         // of the last successful iterate and step 
         auto shifted_iterate0 = X::init(x);
         X::copy(shifted_iterate,shifted_iterate0);
-        auto dx_aggregate = X::init(x);
         failed_safeguard = 0;
         auto x_safe = X::init(x);
         X::copy(x,x_safe);
@@ -1606,10 +1605,23 @@ namespace Optizelle {
                         sigma = Real(1.);
                     }
 
-                    // If the current iterate is safe, see how far we can go
+                    // Determine if this new iterate is feasible with respect
+                    // to our safeguard.  We calculate this from x_offset,
+                    // which we assume to be a safe starting place.  In any
+                    // case, if the new iterate is safe, set failed_safeguard
+                    // to zero and let the code take the step down below.
+                    auto trial = X::init(x);
+                    X::copy(x,trial);
+                    X::axpy(sigma,Bdx,trial);
+                    alpha_safeguard =
+                        std::min(safeguard(x_offset,trial),Real(1.0));
+                    if(alpha_safeguard < Real(1.)) {
+                        failed_safeguard = 0;
+
+                    // If the last iterate is safe, see how far we can go
                     // in the current direction.  If this amount truncates us
                     // more than sigma, then we reduce the size of sigma.
-                    if(failed_safeguard==0) { 
+                    } else if(failed_safeguard==0) { 
                         auto sigma_Bdx = X::init(x);
                         X::copy(Bdx,sigma_Bdx);
                         X::scal(sigma,sigma_Bdx);
@@ -1663,8 +1675,6 @@ namespace Optizelle {
             // safeguard.  We calculate this from x_offset, which we assume to
             // be a safe starting place.  In any case, if the new iterate is
             // safe, save it for potential use later
-            X::copy(x,dx_aggregate);
-            X::axpy(Real(-1.),shifted_iterate0,dx_aggregate);
             alpha_safeguard = std::min(safeguard(x_offset,x),Real(1.0));
             if(alpha_safeguard < Real(1.))
                 failed_safeguard += 1;
@@ -1676,7 +1686,7 @@ namespace Optizelle {
             }
 
             // If this is the first iteration, save the Cauchy-Point.  Make sure
-            // to truncate it if it violates the safeguard
+            // to truncate it if it violates the safeguard.
             if(iter==1) {
                 X::copy(x,x_cp);
                 if(failed_safeguard>0)
@@ -1706,7 +1716,7 @@ namespace Optizelle {
         }
 
         // If our last x was safe, we assume at this point that we have
-        // truncated things appropriating and that our solution in x is
+        // truncated things appropriately and that our solution in x is
         // feasible with respect to our safeguard.  If our last x was not
         // safe, then go back to our last safe x and grab its Bdx.  Then,
         // we truncate Bdx until we meet our safeguard.

@@ -656,15 +656,21 @@ namespace Optizelle {
             case CauchyTrustRegion:
                 return Python::enumToPyObject("QuasinormalStop",
                     "CauchyTrustRegion");
-            case CauchySafeguard:
-                return Python::enumToPyObject("QuasinormalStop",
-                    "CauchySafeguard");
             case DoglegTrustRegion:
                 return Python::enumToPyObject("QuasinormalStop",
                     "DoglegTrustRegion");
+            case CauchySafeguard:
+                return Python::enumToPyObject("QuasinormalStop",
+                    "CauchySafeguard");
             case DoglegSafeguard:
                 return Python::enumToPyObject("QuasinormalStop",
                     "DoglegSafeguard");
+            case NewtonTrustRegion:
+                return Python::enumToPyObject("QuasinormalStop",
+                    "NewtonTrustRegion");
+            case NewtonSafeguard:
+                return Python::enumToPyObject("QuasinormalStop",
+                    "NewtonSafeguard");
             case Skipped:
                 return Python::enumToPyObject("QuasinormalStop",
                     "Skipped");
@@ -687,17 +693,25 @@ namespace Optizelle {
             )
                 return CauchyTrustRegion;
             else if(m==Python::enumToNatural("QuasinormalStop",
-                "CauchySafeguard")
-            )
-                return CauchySafeguard;
-            else if(m==Python::enumToNatural("QuasinormalStop",
                 "DoglegTrustRegion")
             )
                 return DoglegTrustRegion;
             else if(m==Python::enumToNatural("QuasinormalStop",
+                "CauchySafeguard")
+            )
+                return CauchySafeguard;
+            else if(m==Python::enumToNatural("QuasinormalStop",
                 "DoglegSafeguard")
             )
                 return DoglegSafeguard;
+            else if(m==Python::enumToNatural("QuasinormalStop",
+                "NewtonTrustRegion")
+            )
+                return NewtonTrustRegion;
+            else if(m==Python::enumToNatural("QuasinormalStop",
+                "NewtonSafeguard")
+            )
+                return NewtonSafeguard;
             else if(m==Python::enumToNatural("QuasinormalStop",
                 "Skipped")
             )
