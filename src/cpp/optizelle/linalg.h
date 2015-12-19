@@ -1615,7 +1615,7 @@ namespace Optizelle {
                     X::axpy(sigma,Bdx,trial);
                     alpha_safeguard =
                         std::min(safeguard(x_offset,trial),Real(1.0));
-                    if(alpha_safeguard < Real(1.)) {
+                    if(alpha_safeguard >= Real(1.)) {
                         failed_safeguard = 0;
 
                     // If the last iterate is safe, see how far we can go

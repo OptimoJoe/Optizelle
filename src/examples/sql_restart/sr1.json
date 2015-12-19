@@ -10,7 +10,7 @@
       "mu" : 10
    },
    "Naturals" : {
-      "iter" : 30
+      "iter" : 39
    },
    "X_Vectors" : {
       "x" : [ 1.0, 1.0, 1.0] 
