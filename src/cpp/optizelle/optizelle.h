@@ -8074,8 +8074,9 @@ namespace Optizelle{
                             );
                         augsys_qn_iter_total+=augsys_qn_iter;
                         augsys_iter_total+=augsys_qn_iter;
-                        augsys_qn_failed += augsys_qn_err>augsys_qn_err_target;
-                        augsys_failed_total += augsys_qn_failed;
+                        auto augsys_failed = augsys_qn_err>augsys_qn_err_target;
+                        augsys_qn_failed += augsys_failed;
+                        augsys_failed_total += augsys_failed; 
 
                         // Pull the solution out
                         X::copy(x0.first,ddx_n);
@@ -8379,8 +8380,9 @@ namespace Optizelle{
                     );
                 augsys_pg_iter_total+=augsys_pg_iter;
                 augsys_iter_total+=augsys_pg_iter;
-                augsys_pg_failed += augsys_pg_err>augsys_pg_err_target;
-                augsys_failed_total += augsys_pg_failed;
+                auto augsys_failed = augsys_pg_err>augsys_pg_err_target;
+                augsys_pg_failed += augsys_failed; 
+                augsys_failed_total += augsys_failed;
 
                 // Copy out the solution
                 X::copy(x0.first,W_gradpHdxn);
@@ -8514,8 +8516,9 @@ namespace Optizelle{
                     augsys_proj_iter+=iter;
                     augsys_proj_iter_total+=iter;
                     augsys_iter_total+=iter;
-                    augsys_proj_failed+= augsys_proj_err>augsys_proj_err_target;
-                    augsys_failed_total += augsys_proj_failed;
+                    auto augsys_failed = augsys_proj_err>augsys_proj_err_target;
+                    augsys_proj_failed += augsys_failed;
+                    augsys_failed_total += augsys_failed;
 
                     // Copy out the solution
                     X::copy(x0.first,result);
@@ -8713,8 +8716,9 @@ namespace Optizelle{
                     );
                 augsys_tang_iter_total += augsys_tang_iter;
                 augsys_iter_total += augsys_tang_iter;
-                augsys_tang_failed += augsys_tang_err>augsys_tang_err_target;
-                augsys_failed_total += augsys_tang_failed;
+                auto augsys_failed = augsys_tang_err>augsys_tang_err_target;
+                augsys_tang_failed += augsys_failed;
+                augsys_failed_total += augsys_failed;
 
                 // Copy out the tangential step
                 X::copy(x0.first,dx_t);
@@ -8822,8 +8826,9 @@ namespace Optizelle{
                     );
                 augsys_lmh_iter_total+=augsys_lmh_iter;
                 augsys_iter_total+=augsys_lmh_iter;
-                augsys_lmh_failed += augsys_lmh_err>augsys_lmh_err_target;
-                augsys_failed_total += augsys_lmh_failed;
+                auto augsys_failed = augsys_lmh_err>augsys_lmh_err_target;
+                augsys_lmh_failed += augsys_failed;
+                augsys_failed_total += augsys_failed;
 
                 // Find the equality multiplier based on this step
                 Y::axpy(Real(1.),x0.second,y);
@@ -8910,8 +8915,9 @@ namespace Optizelle{
                     );
                 augsys_lmh_iter_total+=augsys_lmh_iter;
                 augsys_iter_total+=augsys_lmh_iter;
-                augsys_lmh_failed += augsys_lmh_err>augsys_lmh_err_target;
-                augsys_failed_total += augsys_lmh_failed;
+                auto augsys_failed = augsys_lmh_err>augsys_lmh_err_target;
+                augsys_lmh_failed += augsys_failed;
+                augsys_failed_total += augsys_failed;
 
                 // Restore our current iterate
                 X::copy(x_save,x);
