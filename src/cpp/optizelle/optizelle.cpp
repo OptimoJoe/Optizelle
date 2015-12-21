@@ -666,8 +666,14 @@ namespace Optizelle{
                 return "DoglegTrustRegion";
             case DoglegSafeguard: 
                 return "DoglegSafeguard";
+            case NewtonTrustRegion: 
+                return "NewtonTrustRegion";
+            case NewtonSafeguard: 
+                return "NewtonSafeguard";
             case Skipped: 
                 return "Skipped";
+            case CauchySolved: 
+                return "CauchySolved";
             default:
                 throw;
             }
@@ -685,8 +691,14 @@ namespace Optizelle{
                 return DoglegTrustRegion;
             else if(qn_stop=="DoglegSafeguard")
                 return DoglegSafeguard;
+            else if(qn_stop=="NewtonTrustRegion")
+                return NewtonTrustRegion;
+            else if(qn_stop=="NewtonSafeguard")
+                return NewtonSafeguard;
             else if(qn_stop=="Skipped")
                 return Skipped;
+            else if(qn_stop=="CauchySolved")
+                return CauchySolved;
             else
                 throw;
         }
@@ -698,7 +710,10 @@ namespace Optizelle{
                 name=="CauchySafeguard" ||
                 name=="DoglegTrustRegion" ||
                 name=="DoglegSafeguard" ||
-                name=="Skipped"
+                name=="NewtonTrustRegion" ||
+                name=="NewtonSafeguard" ||
+                name=="Skipped" ||
+                name=="CauchySolved"
             )
                 return true;
             else
@@ -776,8 +791,14 @@ namespace Optizelle{
             return atos("DoglegTR");
         case QuasinormalStop::DoglegSafeguard:
             return atos("DoglegSafe");
+        case QuasinormalStop::NewtonTrustRegion:
+            return atos("NewtonTR");
+        case QuasinormalStop::NewtonSafeguard:
+            return atos("NewtonSafe");
         case QuasinormalStop::Skipped:
             return atos("Skipped");
+        case QuasinormalStop::CauchySolved:
+            return atos("CauchySlv");
         default:
             throw;
         }

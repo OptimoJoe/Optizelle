@@ -151,7 +151,10 @@ Optizelle.QuasinormalStop = createEnum( { ...
     'CauchySafeguard', ...
     'DoglegTrustRegion', ...
     'DoglegSafeguard', ...
-    'Skipped'});
+    'NewtonTrustRegion', ...
+    'NewtonSafeguard', ...
+    'Skipped', ...
+    'CauchySolved'});
 
 % Different cones used in SQL problems 
 Optizelle.Cone = createEnum( { ...
@@ -249,8 +252,7 @@ Optizelle.json.Serialization.serialize( ...
 Optizelle.json.Serialization.serialize( ...
     'register', ...
     @(x,name,iter)savejson('',x), ...
-    @(x)isfield(x,'data') && isfield(x,'types') && isfield(x,'sizes') && ...
-        isfield(x,'inverse') && isfield(x,'inverse_base'));
+    @(x)isfield(x,'data') && isfield(x,'types') && isfield(x,'sizes'));
 
 % Converts a JSON formatted string to a vector 
 Optizelle.json.Serialization.deserialize = @deserialize;
@@ -265,8 +267,7 @@ Optizelle.json.Serialization.deserialize( ...
 Optizelle.json.Serialization.deserialize( ...
     'register', ...
     @(x,x_json)loadjson(x_json), ...
-    @(x)isfield(x,'data') && isfield(x,'types') && isfield(x,'sizes') && ...
-        isfield(x,'inverse') && isfield(x,'inverse_base'));
+    @(x)isfield(x,'data') && isfield(x,'types') && isfield(x,'sizes'));
 
 %Creates an unconstrained state
 Optizelle.Unconstrained.State.t = @UnconstrainedStateCreate;
@@ -495,19 +496,6 @@ function x = sql_create(types,sizes)
             x.data{i}=zeros(x.sizes(i));
         end
     end
-
-    % Create the memory required for the cached inverses (and where we computed
-    % them.)
-    for i=1:length(x.sizes)
-        if  x.types(i)==Optizelle.Cone.Linear || ...
-            x.types(i)==Optizelle.Cone.Quadratic
-            x.inverse{i}=zeros(0);
-            x.inverse_base{i}=zeros(0);
-        else
-            x.inverse{i}=zeros(x.sizes(i));
-            x.inverse_base{i}=zeros(x.sizes(i));
-        end
-    end
 end
 
 % SQL scalar multiply, x <- alpha * x
@@ -649,12 +637,7 @@ function z = sql_linv(x,y)
 
         % z = inv(x)y 
         else
-            % Get the inverse of the block.  If we're lucky, this is cached.
-            if ~isequal(x.data{blk},x.inverse_base{blk})
-               x.inverse{blk} = inv(x.data{blk});
-            end
-
-            z.data{blk}=x.inverse{blk}*y.data{blk};
+            z.data{blk}=x.data{blk}\y.data{blk};
         end
     end
 end
@@ -763,7 +746,13 @@ function alpha = sql_srch(x,y)
         % However, since we get an absolute estimate of the error
         % in lambda, we can just back off of it by a small amount.
         else
-            lambda = eigs(x.data{blk},y.data{blk},1,'sa',struct('tol',1e-2));
+            % For whatever reason, eigs is being really flaky and will error
+            % that we're not symmetric when we're off of symmetry by 1e-16 or
+            % so.  Hence, we force our matrices to be symmetric even though
+            % they should be at this point.
+            symm=@(x)triu(x)+triu(x,1)';
+            lambda = eigs(symm(x.data{blk}),symm(y.data{blk}), ...
+                1,'sa',struct('tol',1e-2));
             if lambda < 0
                 alpha0 = -1/lambda;
             else

@@ -665,9 +665,18 @@ namespace Optizelle {
             case DoglegSafeguard:
                 return Python::enumToPyObject("QuasinormalStop",
                     "DoglegSafeguard");
+            case NewtonTrustRegion:
+                return Python::enumToPyObject("QuasinormalStop",
+                    "NewtonTrustRegion");
+            case NewtonSafeguard:
+                return Python::enumToPyObject("QuasinormalStop",
+                    "NewtonSafeguard");
             case Skipped:
                 return Python::enumToPyObject("QuasinormalStop",
                     "Skipped");
+            case CauchySolved:
+                return Python::enumToPyObject("QuasinormalStop",
+                    "CauchySolved");
             default:
                 throw;
             }
@@ -699,9 +708,21 @@ namespace Optizelle {
             )
                 return DoglegSafeguard;
             else if(m==Python::enumToNatural("QuasinormalStop",
+                "NewtonTrustRegion")
+            )
+                return NewtonTrustRegion;
+            else if(m==Python::enumToNatural("QuasinormalStop",
+                "NewtonSafeguard")
+            )
+                return NewtonSafeguard;
+            else if(m==Python::enumToNatural("QuasinormalStop",
                 "Skipped")
             )
                 return Skipped;
+            else if(m==Python::enumToNatural("QuasinormalStop",
+                "CauchySolved")
+            )
+                return CauchySolved;
             else
                 throw;
         }

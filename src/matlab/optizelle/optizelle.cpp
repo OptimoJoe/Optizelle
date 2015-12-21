@@ -671,9 +671,18 @@ namespace Optizelle {
             case DoglegSafeguard:
                 return Matlab::enumToMxArray("QuasinormalStop",
                     "DoglegSafeguard");
+            case NewtonTrustRegion:
+                return Matlab::enumToMxArray("QuasinormalStop",
+                    "NewtonTrustRegion");
+            case NewtonSafeguard:
+                return Matlab::enumToMxArray("QuasinormalStop",
+                    "NewtonSafeguard");
             case Skipped:
                 return Matlab::enumToMxArray("QuasinormalStop",
                     "Skipped");
+            case CauchySolved:
+                return Matlab::enumToMxArray("QuasinormalStop",
+                    "CauchySolved");
             default:
                 throw;
             }
@@ -705,9 +714,21 @@ namespace Optizelle {
             )
                 return DoglegSafeguard;
             else if(m==Matlab::enumToNatural("QuasinormalStop",
+                "NewtonTrustRegion")
+            )
+                return NewtonTrustRegion;
+            else if(m==Matlab::enumToNatural("QuasinormalStop",
+                "NewtonSafeguard")
+            )
+                return NewtonSafeguard;
+            else if(m==Matlab::enumToNatural("QuasinormalStop",
                 "Skipped")
             )
                 return Skipped;
+            else if(m==Matlab::enumToNatural("QuasinormalStop",
+                "CauchySolved")
+            )
+                return CauchySolved;
             else
                 throw;
         }

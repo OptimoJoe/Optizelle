@@ -177,8 +177,11 @@ class QuasinormalStop(EnumeratedType):
     CauchySafeguard, \
     DoglegTrustRegion, \
     DoglegSafeguard, \
-    Skipped \
-    = range(6)
+    NewtonTrustRegion, \
+    NewtonSafeguard, \
+    Skipped, \
+    CauchySolved \
+    = range(9)
 
 def checkFloat(name,value):
     """Checks that an input is a floating-point number"""
