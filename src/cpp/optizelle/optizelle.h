@@ -5755,6 +5755,14 @@ namespace Optizelle{
                 Real augsys_proj_err_target;
                 Real augsys_tang_err_target;
                 Real augsys_lmh_err_target;
+
+                // Number of failed augmented system solves
+                Natural augsys_failed_total;
+                Natural augsys_qn_failed;
+                Natural augsys_pg_failed;
+                Natural augsys_proj_failed;
+                Natural augsys_tang_failed;
+                Natural augsys_lmh_failed;
                 
                 // Equality constraint evaluated at x.  We use this in the
                 // quasinormal step as well as in the computation of the
@@ -6030,6 +6038,36 @@ namespace Optizelle{
                         //---augsys_lmh_err_target0---
                         0.
                         //---augsys_lmh_err_target1---
+                    ),
+                    augsys_failed_total(
+                        //---augsys_failed_total0---
+                        0.
+                        //---augsys_failed_total1---
+                    ),
+                    augsys_qn_failed(
+                        //---augsys_qn_failed0---
+                        0.
+                        //---augsys_qn_failed1---
+                    ),
+                    augsys_pg_failed(
+                        //---augsys_pg_failed0---
+                        0.
+                        //---augsys_pg_failed1---
+                    ),
+                    augsys_proj_failed(
+                        //---augsys_proj_failed0---
+                        0.
+                        //---augsys_proj_failed1---
+                    ),
+                    augsys_tang_failed(
+                        //---augsys_tang_failed0---
+                        0.
+                        //---augsys_tang_failed1---
+                    ),
+                    augsys_lmh_failed(
+                        //---augsys_lmh_failed0---
+                        0.
+                        //---augsys_lmh_failed1---
                     ),
                     g_x(
                         //---g_x0---
@@ -6400,6 +6438,30 @@ namespace Optizelle{
                     // Any
                     //---augsys_lmh_err_target_valid1---
                     
+                    //---augsys_failed_total_valid0---
+                    // Any
+                    //---augsys_failed_total_valid1---
+                    
+                    //---augsys_qn_failed_valid0---
+                    // Any
+                    //---augsys_qn_failed_valid1---
+                    
+                    //---augsys_pg_failed_valid0---
+                    // Any
+                    //---augsys_pg_failed_valid1---
+                    
+                    //---augsys_proj_failed_valid0---
+                    // Any
+                    //---augsys_proj_failed_valid1---
+
+                    //---augsys_tang_failed_valid0---
+                    // Any
+                    //---augsys_tang_failed_valid1---
+
+                    //---augsys_lmh_failed_valid0---
+                    // Any
+                    //---augsys_lmh_failed_valid1---
+                    
                     //---g_x_valid0---
                     // Any
                     //---g_x_valid1---
@@ -6546,7 +6608,13 @@ namespace Optizelle{
                     item.first == "augsys_proj_iter_total" ||
                     item.first == "augsys_tang_iter_total" ||
                     item.first == "augsys_lmh_iter_total" ||
-                    item.first == "augsys_iter_total"
+                    item.first == "augsys_iter_total" ||
+                    item.first == "augsys_failed_total" ||
+                    item.first == "augsys_qn_failed" ||
+                    item.first == "augsys_pg_failed" ||
+                    item.first == "augsys_proj_failed" ||
+                    item.first == "augsys_tang_failed" ||
+                    item.first == "augsys_lmh_failed"
                 )
                     return true;
                 else
@@ -6727,6 +6795,18 @@ namespace Optizelle{
                     std::move(state.augsys_lmh_iter_total));
                 nats.emplace_back("augsys_iter_total",
                     std::move(state.augsys_iter_total));
+                nats.emplace_back("augsys_failed_total",
+                    std::move(state.augsys_failed_total));
+                nats.emplace_back("augsys_qn_failed",
+                    std::move(state.augsys_qn_failed));
+                nats.emplace_back("augsys_pg_failed",
+                    std::move(state.augsys_pg_failed));
+                nats.emplace_back("augsys_proj_failed",
+                    std::move(state.augsys_proj_failed));
+                nats.emplace_back("augsys_tang_failed",
+                    std::move(state.augsys_tang_failed));
+                nats.emplace_back("augsys_lmh_failed",
+                    std::move(state.augsys_lmh_failed));
 
                 // Copy in all the parameters
                 params.emplace_back("PSchur_left_type",
@@ -6883,6 +6963,18 @@ namespace Optizelle{
                         state.augsys_lmh_iter_total=std::move(item->second);
                     else if(item->first=="augsys_iter_total")
                         state.augsys_iter_total=std::move(item->second);
+                    else if(item->first=="augsys_failed_total")
+                        state.augsys_failed_total=std::move(item->second);
+                    else if(item->first=="augsys_qn_failed")
+                        state.augsys_qn_failed=std::move(item->second);
+                    else if(item->first=="augsys_pg_failed")
+                        state.augsys_pg_failed=std::move(item->second);
+                    else if(item->first=="augsys_proj_failed")
+                        state.augsys_proj_failed=std::move(item->second);
+                    else if(item->first=="augsys_tang_failed")
+                        state.augsys_tang_failed=std::move(item->second);
+                    else if(item->first=="augsys_lmh_failed")
+                        state.augsys_lmh_failed=std::move(item->second);
                 }
                 
                 // Next, copy in any parameters 
@@ -7286,6 +7378,9 @@ namespace Optizelle{
 
                     // Quasinormal step information
                     out.emplace_back(Utility::atos("qn_stop"));
+
+                    // Failed augmented system solves
+                    out.emplace_back(Utility::atos("aug_fail"));
                 }
 
                 // Even more detail
@@ -7302,26 +7397,31 @@ namespace Optizelle{
                     out.emplace_back(Utility::atos("qn_iter_tot"));
                     out.emplace_back(Utility::atos("qn_err"));
                     out.emplace_back(Utility::atos("qn_err_trg"));
+                    out.emplace_back(Utility::atos("qn_fail"));
                     
                     out.emplace_back(Utility::atos("pg_iter"));
                     out.emplace_back(Utility::atos("pg_iter_tot"));
                     out.emplace_back(Utility::atos("pg_err"));
                     out.emplace_back(Utility::atos("pg_err_trg"));
+                    out.emplace_back(Utility::atos("pg_fail"));
                     
                     out.emplace_back(Utility::atos("pr_iter"));
                     out.emplace_back(Utility::atos("pr_iter_tot"));
                     out.emplace_back(Utility::atos("pr_err"));
                     out.emplace_back(Utility::atos("pr_err_trg"));
+                    out.emplace_back(Utility::atos("pr_fail"));
                     
                     out.emplace_back(Utility::atos("tg_iter"));
                     out.emplace_back(Utility::atos("tg_iter_tot"));
                     out.emplace_back(Utility::atos("tg_err"));
                     out.emplace_back(Utility::atos("tg_err_trg"));
+                    out.emplace_back(Utility::atos("tg_fail"));
                     
                     out.emplace_back(Utility::atos("lm_iter"));
                     out.emplace_back(Utility::atos("lm_iter_tot"));
                     out.emplace_back(Utility::atos("lm_err"));
                     out.emplace_back(Utility::atos("lm_err_trg"));
+                    out.emplace_back(Utility::atos("lm_fail"));
                     
                     out.emplace_back(Utility::atos("aug_itr_tot"));
                 }
@@ -7365,11 +7465,13 @@ namespace Optizelle{
                 auto const & augsys_qn_iter_total=state.augsys_qn_iter_total;
                 auto const & augsys_qn_err = state.augsys_qn_err;
                 auto const & augsys_qn_err_target= state.augsys_qn_err_target;
+                auto const & augsys_qn_failed = state.augsys_qn_failed;
 
                 auto const & augsys_pg_iter = state.augsys_pg_iter;
                 auto const & augsys_pg_iter_total=state.augsys_pg_iter_total;
                 auto const & augsys_pg_err = state.augsys_pg_err;
                 auto const & augsys_pg_err_target= state.augsys_pg_err_target;
+                auto const & augsys_pg_failed = state.augsys_pg_failed;
 
                 auto const & augsys_proj_iter = state.augsys_proj_iter;
                 auto const & augsys_proj_iter_total =
@@ -7377,6 +7479,7 @@ namespace Optizelle{
                 auto const & augsys_proj_err = state.augsys_proj_err;
                 auto const & augsys_proj_err_target =
                     state.augsys_proj_err_target;
+                auto const & augsys_proj_failed = state.augsys_proj_failed;
 
                 auto const & augsys_tang_iter = state.augsys_tang_iter;
                 auto const & augsys_tang_iter_total =
@@ -7384,6 +7487,7 @@ namespace Optizelle{
                 auto const & augsys_tang_err = state.augsys_tang_err;
                 auto const & augsys_tang_err_target =
                     state.augsys_tang_err_target;
+                auto const & augsys_tang_failed = state.augsys_tang_failed;
 
                 auto const & augsys_lmh_iter = state.augsys_lmh_iter;
                 auto const & augsys_lmh_iter_total =
@@ -7391,8 +7495,10 @@ namespace Optizelle{
                 auto const & augsys_lmh_err = state.augsys_lmh_err;
                 auto const & augsys_lmh_err_target =
                     state.augsys_lmh_err_target;
+                auto const & augsys_lmh_failed = state.augsys_lmh_failed;
                 
                 auto const & augsys_iter_total = state.augsys_iter_total;
+                auto const & augsys_failed_total = state.augsys_failed_total;
 
                 // Figure out if we're at the absolute beginning of the
                 // optimization.
@@ -7433,6 +7539,12 @@ namespace Optizelle{
                         out.emplace_back(Utility::atos(qn_stop));
                     else 
                         out.emplace_back(Utility::blankSeparator);
+
+                    // Number of failed augmented system solves 
+                    if(!opt_begin)
+                        out.emplace_back(Utility::atos(augsys_failed_total));
+                    else 
+                        out.emplace_back(Utility::blankSeparator);
                 }
                 
                 // Even more detail
@@ -7452,32 +7564,35 @@ namespace Optizelle{
                         out.emplace_back(Utility::atos(augsys_qn_iter_total));
                         out.emplace_back(Utility::atos(augsys_qn_err));
                         out.emplace_back(Utility::atos(augsys_qn_err_target));
+                        out.emplace_back(Utility::atos(augsys_qn_failed));
                         
                         out.emplace_back(Utility::atos(augsys_pg_iter));
                         out.emplace_back(Utility::atos(augsys_pg_iter_total));
                         out.emplace_back(Utility::atos(augsys_pg_err));
                         out.emplace_back(Utility::atos(augsys_pg_err_target));
+                        out.emplace_back(Utility::atos(augsys_pg_failed));
                         
                         out.emplace_back(Utility::atos(augsys_proj_iter));
                         out.emplace_back(Utility::atos(augsys_proj_iter_total));
                         out.emplace_back(Utility::atos(augsys_proj_err));
-                        out.emplace_back(
-                            Utility::atos(augsys_proj_err_target));
+                        out.emplace_back(Utility::atos(augsys_proj_err_target));
+                        out.emplace_back(Utility::atos(augsys_proj_failed));
                         
                         out.emplace_back(Utility::atos(augsys_tang_iter));
                         out.emplace_back(Utility::atos(augsys_tang_iter_total));
                         out.emplace_back(Utility::atos(augsys_tang_err));
-                        out.emplace_back(
-                            Utility::atos(augsys_tang_err_target));
+                        out.emplace_back(Utility::atos(augsys_tang_err_target));
+                        out.emplace_back(Utility::atos(augsys_tang_failed));
                         
                         out.emplace_back(Utility::atos(augsys_lmh_iter));
                         out.emplace_back(Utility::atos(augsys_lmh_iter_total));
                         out.emplace_back(Utility::atos(augsys_lmh_err));
                         out.emplace_back(Utility::atos(augsys_lmh_err_target));
+                        out.emplace_back(Utility::atos(augsys_lmh_failed));
                         
                         out.emplace_back(Utility::atos(augsys_iter_total));
                     } else 
-                        for(Natural i=0;i<24;i++)
+                        for(Natural i=0;i<29;i++)
                             out.emplace_back(Utility::blankSeparator);
                 }
 
@@ -7830,12 +7945,15 @@ namespace Optizelle{
                 auto const & zeta = state.zeta;
                 auto const & norm_gxtyp = state.norm_gxtyp;
                 auto const & eps_constr = state.eps_constr;
+                auto const & augsys_qn_err_target = state.augsys_qn_err_target;
                 auto & dx_ncp=state.dx_ncp;
                 auto & dx_n=state.dx_n;
                 auto & augsys_qn_err = state.augsys_qn_err;
                 auto & augsys_qn_iter = state.augsys_qn_iter;
                 auto & augsys_qn_iter_total = state.augsys_qn_iter_total;
+                auto & augsys_qn_failed = state.augsys_qn_failed;
                 auto & augsys_iter_total = state.augsys_iter_total;
+                auto & augsys_failed_total = state.augsys_failed_total;
                 auto & alpha_x_qn = state.alpha_x_qn;
                 auto & qn_stop = state.qn_stop;
 
@@ -7956,6 +8074,8 @@ namespace Optizelle{
                             );
                         augsys_qn_iter_total+=augsys_qn_iter;
                         augsys_iter_total+=augsys_qn_iter;
+                        augsys_qn_failed += augsys_qn_err>augsys_qn_err_target;
+                        augsys_failed_total += augsys_qn_failed;
 
                         // Pull the solution out
                         X::copy(x0.first,ddx_n);
@@ -8206,11 +8326,14 @@ namespace Optizelle{
                 Y_Vector const & y=state.y;
                 Natural const & augsys_iter_max=state.augsys_iter_max;
                 Natural const & augsys_rst_freq=state.augsys_rst_freq;
+                auto const & augsys_pg_err_target = state.augsys_pg_err_target;
                 X_Vector & W_gradpHdxn=state.W_gradpHdxn;
-                Real & augsys_pg_err = state.augsys_pg_err;
-                Natural & augsys_pg_iter = state.augsys_pg_iter;
-                Natural & augsys_pg_iter_total = state.augsys_pg_iter_total;
-                Natural & augsys_iter_total = state.augsys_iter_total;
+                auto & augsys_pg_err = state.augsys_pg_err;
+                auto & augsys_pg_iter = state.augsys_pg_iter;
+                auto & augsys_pg_iter_total = state.augsys_pg_iter_total;
+                auto & augsys_pg_failed = state.augsys_pg_failed;
+                auto & augsys_iter_total = state.augsys_iter_total;
+                auto & augsys_failed_total = state.augsys_failed_total;
 
                 // Find the gradient modifications for the step computation
                 X_Vector grad_step(X::init(grad));
@@ -8256,6 +8379,8 @@ namespace Optizelle{
                     );
                 augsys_pg_iter_total+=augsys_pg_iter;
                 augsys_iter_total+=augsys_pg_iter;
+                augsys_pg_failed += augsys_pg_err>augsys_pg_err_target;
+                augsys_failed_total += augsys_pg_failed;
 
                 // Copy out the solution
                 X::copy(x0.first,W_gradpHdxn);
@@ -8347,11 +8472,14 @@ namespace Optizelle{
                     Y_Vector const & y=state.y;
                     Natural const & augsys_iter_max=state.augsys_iter_max;
                     Natural const & augsys_rst_freq=state.augsys_rst_freq;
-                    Real & augsys_proj_err = state.augsys_proj_err;
-                    Natural & augsys_proj_iter = state.augsys_proj_iter;
-                    Natural & augsys_proj_iter_total = 
-                        state.augsys_proj_iter_total;
-                    Natural & augsys_iter_total = state.augsys_iter_total;
+                    auto const & augsys_proj_err_target =
+                        state.augsys_proj_err_target;
+                    auto & augsys_proj_err = state.augsys_proj_err;
+                    auto & augsys_proj_iter = state.augsys_proj_iter;
+                    auto & augsys_proj_iter_total =state.augsys_proj_iter_total;
+                    auto & augsys_proj_failed = state.augsys_proj_failed;
+                    auto & augsys_iter_total = state.augsys_iter_total;
+                    auto & augsys_failed_total =state.augsys_failed_total;
 
                     // Create the initial guess, x0=(0,0)
                     XxY_Vector x0(X::init(x),Y::init(y));
@@ -8386,6 +8514,8 @@ namespace Optizelle{
                     augsys_proj_iter+=iter;
                     augsys_proj_iter_total+=iter;
                     augsys_iter_total+=iter;
+                    augsys_proj_failed+= augsys_proj_err>augsys_proj_err_target;
+                    augsys_failed_total += augsys_proj_failed;
 
                     // Copy out the solution
                     X::copy(x0.first,result);
@@ -8545,10 +8675,14 @@ namespace Optizelle{
                 Natural const & augsys_rst_freq=state.augsys_rst_freq;
                 X_Vector const & dx_t_uncorrected=state.dx_t_uncorrected;
                 X_Vector & dx_t=state.dx_t;
-                Real & augsys_tang_err = state.augsys_tang_err;
-                Natural & augsys_tang_iter = state.augsys_tang_iter;
-                Natural & augsys_tang_iter_total = state.augsys_tang_iter_total;
-                Natural & augsys_iter_total = state.augsys_iter_total;
+                auto const & augsys_tang_err_target
+                    = state.augsys_tang_err_target;
+                auto & augsys_tang_err = state.augsys_tang_err;
+                auto & augsys_tang_iter = state.augsys_tang_iter;
+                auto & augsys_tang_iter_total = state.augsys_tang_iter_total;
+                auto & augsys_tang_failed = state.augsys_tang_failed;
+                auto & augsys_iter_total = state.augsys_iter_total;
+                auto & augsys_failed_total = state.augsys_failed_total;
 
                 // Create the initial guess, x0=(0,0)
                 XxY_Vector x0(X::init(x),Y::init(y));
@@ -8577,8 +8711,10 @@ namespace Optizelle{
                         TangentialStepManipulator(state,fns),
                         x0 
                     );
-                augsys_tang_iter_total+=augsys_tang_iter;
-                augsys_iter_total+=augsys_tang_iter;
+                augsys_tang_iter_total += augsys_tang_iter;
+                augsys_iter_total += augsys_tang_iter;
+                augsys_tang_failed += augsys_tang_err>augsys_tang_err_target;
+                augsys_failed_total += augsys_tang_failed;
 
                 // Copy out the tangential step
                 X::copy(x0.first,dx_t);
@@ -8641,10 +8777,14 @@ namespace Optizelle{
                 Natural const & augsys_rst_freq=state.augsys_rst_freq;
                 X_Vector const & grad=state.grad;
                 Y_Vector & y=state.y;
-                Real & augsys_lmh_err = state.augsys_lmh_err;
-                Natural & augsys_lmh_iter = state.augsys_lmh_iter;
-                Natural & augsys_lmh_iter_total = state.augsys_lmh_iter_total;
-                Natural & augsys_iter_total = state.augsys_iter_total;
+                auto const & augsys_lmh_err_target
+                    = state.augsys_lmh_err_target;
+                auto & augsys_lmh_err = state.augsys_lmh_err;
+                auto & augsys_lmh_iter = state.augsys_lmh_iter;
+                auto & augsys_lmh_iter_total = state.augsys_lmh_iter_total;
+                auto & augsys_lmh_failed = state.augsys_lmh_failed;
+                auto & augsys_iter_total = state.augsys_iter_total;
+                auto & augsys_failed_total = state.augsys_failed_total;
 
                 // Find the gradient modifications for the equality multiplier
                 // computation
@@ -8682,6 +8822,8 @@ namespace Optizelle{
                     );
                 augsys_lmh_iter_total+=augsys_lmh_iter;
                 augsys_iter_total+=augsys_lmh_iter;
+                augsys_lmh_failed += augsys_lmh_err>augsys_lmh_err_target;
+                augsys_failed_total += augsys_lmh_failed;
 
                 // Find the equality multiplier based on this step
                 Y::axpy(Real(1.),x0.second,y);
@@ -8702,10 +8844,13 @@ namespace Optizelle{
                 Natural const & augsys_rst_freq=state.augsys_rst_freq;
                 X_Vector & x=state.x;
                 Y_Vector & dy=state.dy;
-                Real & augsys_lmh_err = state.augsys_lmh_err;
-                Natural & augsys_lmh_iter = state.augsys_lmh_iter;
-                Natural & augsys_lmh_iter_total = state.augsys_lmh_iter_total;
-                Natural & augsys_iter_total = state.augsys_iter_total;
+                auto const & augsys_lmh_err_target= state.augsys_lmh_err_target;
+                auto & augsys_lmh_err = state.augsys_lmh_err;
+                auto & augsys_lmh_iter = state.augsys_lmh_iter;
+                auto & augsys_lmh_iter_total = state.augsys_lmh_iter_total;
+                auto & augsys_lmh_failed = state.augsys_lmh_failed;
+                auto & augsys_iter_total = state.augsys_iter_total;
+                auto & augsys_failed_total = state.augsys_failed_total;
 
                 // x_p_dx <- x + dx
                 X_Vector x_p_dx(X::init(x));
@@ -8765,6 +8910,8 @@ namespace Optizelle{
                     );
                 augsys_lmh_iter_total+=augsys_lmh_iter;
                 augsys_iter_total+=augsys_lmh_iter;
+                augsys_lmh_failed += augsys_lmh_err>augsys_lmh_err_target;
+                augsys_failed_total += augsys_lmh_failed;
 
                 // Restore our current iterate
                 X::copy(x_save,x);
@@ -8773,69 +8920,6 @@ namespace Optizelle{
                 Y::copy(x0.second,dy);
             }
             
-            // Does a check on how far off the equality multiplier is 
-            static Real equalityMultiplierCheck(
-                typename Functions::t const & fns,
-                typename State::t & state
-            ) {
-                // Create some shortcuts
-                ScalarValuedFunction <Real,XX> const & f=*(fns.f);
-                ScalarValuedFunctionModifications <Real,XX> const & f_mod
-                    = *(fns.f_mod);
-                X_Vector const & grad=state.grad; 
-                Natural const & augsys_iter_max=state.augsys_iter_max;
-                Natural const & augsys_rst_freq=state.augsys_rst_freq;
-                X_Vector & x=state.x;
-                Y_Vector & dy=state.dy;
-                Real & augsys_lmh_err = state.augsys_lmh_err;
-                Natural & augsys_lmh_iter = state.augsys_lmh_iter;
-                Natural & augsys_lmh_iter_total = state.augsys_lmh_iter_total;
-                Natural & augsys_iter_total = state.augsys_iter_total;
-
-                // grad_x <- L(x,y) = grad f(x) + g'(x)*y
-                X_Vector grad_x(X::init(x));
-                    f.grad(x,grad_x);
-
-                // Find the gradient modifications for the equality multiplier
-                // computation
-                X_Vector grad_x_mult(X::init(grad));
-                    f_mod.grad_mult(x,grad_x,grad_x_mult);
-
-                // Create the initial guess, x0=(0,0)
-                XxY_Vector x0(X::init(x),Y::init(dy));
-                    XxY::zero(x0);
-
-                // Create the rhs, b0=(-grad L(x,y),0);
-                XxY_Vector b0(XxY::init(x0));
-                    X::copy(grad_x_mult,b0.first);
-                    X::scal(Real(-1.),b0.first);
-                    Y::zero(b0.second);
-
-                // Build Schur style preconditioners
-                typename Unconstrained <Real,XX>::Functions::Identity I;
-                BlockDiagonalPreconditioner PAugSys_l(I,*(fns.PSchur_left));
-                BlockDiagonalPreconditioner PAugSys_r(I,*(fns.PSchur_right));
-
-                // Solve the augmented system for the equality multiplier step 
-                std::tie(augsys_lmh_err,augsys_lmh_iter) =
-                    Optizelle::gmres <Real,XXxYY> (
-                        AugmentedSystem(state,fns,x),
-                        b0,
-                        Real(1.), // This will be overwritten by the manipulator
-                        augsys_iter_max,
-                        augsys_rst_freq,
-                        PAugSys_l,
-                        PAugSys_r,
-                        EqualityMultiplierStepManipulator(state,fns),
-                        x0 
-                    );
-                augsys_lmh_iter_total+=augsys_lmh_iter;
-                augsys_iter_total+=augsys_lmh_iter;
-
-                // Copy out the equality multiplier step
-                return sqrt(Y::innr(x0.second,x0.second));
-            }
-
             // Computes the predicted reduction 
             static void predictedReduction(
                 typename Functions::t const & fns,

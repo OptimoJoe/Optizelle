@@ -195,6 +195,24 @@ class t(Optizelle.Unconstrained.State.t):
         "augsys_iter_total",
         ("Total number of augmented system solve iterations used in all "
         "solves"))
+    augsys_qn_failed = Optizelle.createNatProperty(
+        "augsys_qn_failed",
+        ("Number of failed quasinormal augmented system solves"))
+    augsys_pg_failed = Optizelle.createNatProperty(
+        "augsys_pg_failed",
+        ("Number of failed projected gradient augmented system solves"))
+    augsys_proj_failed = Optizelle.createNatProperty(
+        "augsys_proj_failed",
+        ("Number of failed nullspace projection augmented system solves"))
+    augsys_tang_failed = Optizelle.createNatProperty(
+        "augsys_tang_failed",
+        ("Number of failed tangential step augmented system solves"))
+    augsys_lmh_failed = Optizelle.createNatProperty(
+        "augsys_lmh_failed",
+        ("Number of failed equality multiplier augmented system solves"))
+    augsys_failed_total = Optizelle.createNatProperty(
+        "augsys_failed_total",
+        ("Total number of failed augmented system solves"))
     g_x = Optizelle.createVectorProperty(
         "g_x",
         ("Equality constraint evaluated at x.  This is used in the quasinormal "

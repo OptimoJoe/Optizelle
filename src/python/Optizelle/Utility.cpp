@@ -2637,6 +2637,18 @@ namespace Optizelle {
                         state.augsys_lmh_err_target,pystate);
                     toPython::Natural("augsys_iter_total",
                         state.augsys_iter_total,pystate);
+                    toPython::Natural("augsys_qn_failed",
+                        state.augsys_qn_failed,pystate);
+                    toPython::Natural("augsys_pg_failed",
+                        state.augsys_pg_failed,pystate);
+                    toPython::Natural("augsys_proj_failed",
+                        state.augsys_proj_failed,pystate);
+                    toPython::Natural("augsys_tang_failed",
+                        state.augsys_tang_failed,pystate);
+                    toPython::Natural("augsys_lmh_failed",
+                        state.augsys_lmh_failed,pystate);
+                    toPython::Natural("augsys_failed_total",
+                        state.augsys_failed_total,pystate);
                     toPython::Vector("g_x",state.g_x,pystate);
                     toPython::Real("norm_gxtyp",state.norm_gxtyp,pystate);
                     toPython::Vector("gpxdxn_p_gx",state.gpxdxn_p_gx,pystate);
@@ -2755,6 +2767,18 @@ namespace Optizelle {
                         pystate,state.augsys_lmh_err_target);
                     fromPython::Natural("augsys_iter_total",
                         pystate,state.augsys_iter_total);
+                    fromPython::Natural("augsys_qn_failed",
+                        pystate,state.augsys_qn_failed);
+                    fromPython::Natural("augsys_pg_failed",
+                        pystate,state.augsys_pg_failed);
+                    fromPython::Natural("augsys_proj_failed",
+                        pystate,state.augsys_proj_failed);
+                    fromPython::Natural("augsys_tang_failed",
+                        pystate,state.augsys_tang_failed);
+                    fromPython::Natural("augsys_lmh_failed",
+                        pystate,state.augsys_lmh_failed);
+                    fromPython::Natural("augsys_failed_total",
+                        pystate,state.augsys_failed_total);
                     fromPython::Vector("g_x",pystate,state.g_x);
                     fromPython::Real("norm_gxtyp",pystate,state.norm_gxtyp);
                     fromPython::Vector("gpxdxn_p_gx",pystate,state.gpxdxn_p_gx);
