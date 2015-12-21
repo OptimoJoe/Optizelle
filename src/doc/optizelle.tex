@@ -3011,6 +3011,42 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {Target error in the last augmented system solve during the equality multiplier solve.}
 
     \paramiteme
+        {augsys_qn_failed}
+        {Real}
+        {No}
+        {Number of failed quasinormal augmented system solves.}
+
+    \paramiteme
+        {augsys_pg_failed}
+        {Real}
+        {No}
+        {Number of failed projected gradient augmented system solves.}
+
+    \paramiteme
+        {augsys_proj_failed}
+        {Real}
+        {No}
+        {Number of failed nullspace projection augmented system solves.}
+
+    \paramiteme
+        {augsys_tang_failed}
+        {Real}
+        {No}
+        {Number of tangential step augmented system solves.}
+
+    \paramiteme
+        {augsys_lmh_failed}
+        {Real}
+        {No}
+        {Number of equality multiplier augmented system solves.}
+
+    \paramiteme
+        {augsys_failed_total}
+        {Real}
+        {No}
+        {Total number of failed augmented system solves.  In short, the theory for convergence to a local minima requires that augmented system solves meet their specified tolerance.  Sometimes, a lower tolerance can be used and these tolerances are controlled by \textctref{xi_all}, \textctref{xi_qn}, \textctref{xi_pg}, \textctref{xi_proj}, \textctref{xi_tang}, and \textctref{xi_lmh}.  However, even with a lower specified tolerance, the inexact composite step SQP method can still require a tighter tolerance in order to guarantee convergence.  Generally, the algorithms are tolerant to a few failed solves.  However, if there are failed solves at every iteration, then there's a problem with the given preconditioner or no preconditioner was specified.  See the section \hyperref[sec:preconditioners]{\secpreconditioners} for more information on how to implement an appropriate preconditioner.}
+
+    \paramiteme
         {g_x}
         {Y_Vector}
         {No}
@@ -3311,6 +3347,12 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {2}
         {Reason why the quasinormal problem exited.}
 
+    \outputiteme
+        {aug_fail}
+        {\textctref{augsys_failed_total}}
+        {2}
+        {Total number of failed augmented system solves.}
+
     \outputitemi
         {mu}
         {\textctref{mu}}
@@ -3392,6 +3434,12 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {Target error in the last augmented system solve for the quasi-normal step.}
 
     \outputiteme
+        {qn_fail}
+        {\textctref{augsys_qn_failed}}
+        {3}
+        {Number of failed quasinormal augmented system solves.}
+
+    \outputiteme
         {pg_iter}
         {\textctref{augsys_pg_iter}}
         {3}
@@ -3414,6 +3462,12 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {\textctref{augsys_pg_err_target}}
         {3}
         {Target error in the last augmented system solve when projecting the gradient prior to the tangential subproblem.}
+
+    \outputiteme
+        {pg_fail}
+        {\textctref{augsys_pg_failed}}
+        {3}
+        {Number of failed projected gradient augmented system solves.}
 
     \outputiteme
         {pr_iter}
@@ -3440,6 +3494,12 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {Target error in the last augmented system solve during the tangential step.}
 
     \outputiteme
+        {pr_fail}
+        {\textctref{augsys_pr_failed}}
+        {3}
+        {Number of failed nullspace projection augmented system solves.}
+
+    \outputiteme
         {tg_iter}
         {\textctref{augsys_tang_iter}}
         {3}
@@ -3464,6 +3524,12 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {Target error in the last augmented system solve during the tangential step.}
 
     \outputiteme
+        {tg_fail}
+        {\textctref{augsys_tg_failed}}
+        {3}
+        {Number of failed tangential step augmented system solves.}
+
+    \outputiteme
         {lm_iter}
         {\textctref{augsys_lmh_iter}}
         {3}
@@ -3486,6 +3552,12 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {\textctref{augsys_lmh_err_target}}
         {3}
         {Target error in the last augmented system solve during the equality multiplier solve.}
+
+    \outputiteme
+        {lm_fail}
+        {\textctref{augsys_lmh_failed}}
+        {3}
+        {Number of failed equality multiplier augmented system solves.}
 
     \outputiteme
         {aug_itr_tot}
