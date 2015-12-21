@@ -65,12 +65,12 @@ int main() {
     double residual_err0, residual_err; 
     Natural iter;
     Optizelle::TruncatedStop::t trunc_stop;
-    auto failed_safeguard = Natural(0);
+    auto safeguard_failed = Natural(0);
     auto alpha_safeguard = double(0.);
     Optizelle::truncated_cg <double,Optizelle::Rm>
         (A,b,W,eps_trunc,iter_max,1,delta,x_offset,true,1,
             no_safeguard <double,Optizelle::Rm>,x,x_cp,
-            residual_err0,residual_err,iter,trunc_stop,failed_safeguard,
+            residual_err0,residual_err,iter,trunc_stop,safeguard_failed,
             alpha_safeguard);
 
     // Check the error is less than our tolerance 

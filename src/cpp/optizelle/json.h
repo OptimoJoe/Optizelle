@@ -432,12 +432,12 @@ namespace Optizelle {
                         "msg_level",
                         Json::Value::UInt64(state.msg_level)),
                     "msg_level");
-                state.failed_safeguard_max=read::natural(
+                state.safeguard_failed_max=read::natural(
                     msg,
                     root["Optizelle"].get(
-                        "failed_safeguard_max",
-                        Json::Value::UInt64(state.failed_safeguard_max)),
-                    "failed_safeguard_max");
+                        "safeguard_failed_max",
+                        Json::Value::UInt64(state.safeguard_failed_max)),
+                    "safeguard_failed_max");
                 state.delta=read::real <Real> (
                     msg,
                     root["Optizelle"].get("delta",state.delta),
@@ -555,8 +555,8 @@ namespace Optizelle {
                 root["Optizelle"]["H_type"]=write_param(
                     Operators::to_string,state.H_type);
                 root["Optizelle"]["msg_level"]=write::natural(state.msg_level);
-                root["Optizelle"]["failed_safeguard_max"]=write::natural(
-                    state.failed_safeguard_max);
+                root["Optizelle"]["safeguard_failed_max"]=write::natural(
+                    state.safeguard_failed_max);
                 root["Optizelle"]["delta"]=write::real(state.delta);
                 root["Optizelle"]["eta1"]=write::real(state.eta1);
                 root["Optizelle"]["eta2"]=write::real(state.eta2);

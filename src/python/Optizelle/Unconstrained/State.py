@@ -139,14 +139,14 @@ class t(object):
     msg_level = Optizelle.createNatProperty(
         "msg_level",
         "Messaging level")
-    failed_safeguard_max = Optizelle.createNatProperty(
-        "failed_safeguard_max",
+    safeguard_failed_max = Optizelle.createNatProperty(
+        "safeguard_failed_max",
         "Number of failed safe-guard steps before quitting the method")
-    failed_safeguard = Optizelle.createNatProperty(
-        "failed_safeguard",
+    safeguard_failed = Optizelle.createNatProperty(
+        "safeguard_failed",
         "Number of failed safeguard steps during the last iteration")
-    failed_safeguard_total = Optizelle.createNatProperty(
-        "failed_safeguard_total",
+    safeguard_failed_total = Optizelle.createNatProperty(
+        "safeguard_failed_total",
         "Total number of failed safeguard steps")
     alpha_x = Optizelle.createFloatProperty(
         "alpha_x",

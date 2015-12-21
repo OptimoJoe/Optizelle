@@ -1974,9 +1974,9 @@ namespace Optizelle {
                         "f_x",
                         "f_xpdx",
                         "msg_level",
-                        "failed_safeguard_max",
-                        "failed_safeguard",
-                        "failed_safeguard_total",
+                        "safeguard_failed_max",
+                        "safeguard_failed",
+                        "safeguard_failed_total",
                         "alpha_x",
                         "alpha_x_qn",
                         "delta",
@@ -2077,12 +2077,12 @@ namespace Optizelle {
                     toMatlab::Real("f_x",state.f_x,mxstate);
                     toMatlab::Real("f_xpdx",state.f_xpdx,mxstate);
                     toMatlab::Natural("msg_level",state.msg_level,mxstate);
-                    toMatlab::Natural("failed_safeguard_max",
-                        state.failed_safeguard_max,mxstate);
-                    toMatlab::Natural("failed_safeguard",
-                        state.failed_safeguard,mxstate);
-                    toMatlab::Natural("failed_safeguard_total",
-                        state.failed_safeguard_total,mxstate);
+                    toMatlab::Natural("safeguard_failed_max",
+                        state.safeguard_failed_max,mxstate);
+                    toMatlab::Natural("safeguard_failed",
+                        state.safeguard_failed,mxstate);
+                    toMatlab::Natural("safeguard_failed_total",
+                        state.safeguard_failed_total,mxstate);
                     toMatlab::Real("alpha_x",state.alpha_x,mxstate);
                     toMatlab::Real("alpha_x_qn",state.alpha_x_qn,mxstate);
                     toMatlab::Real("delta",state.delta,mxstate);
@@ -2211,12 +2211,12 @@ namespace Optizelle {
                     fromMatlab::Real("f_x",mxstate,state.f_x);
                     fromMatlab::Real("f_xpdx",mxstate,state.f_xpdx);
                     fromMatlab::Natural("msg_level",mxstate,state.msg_level);
-                    fromMatlab::Natural("failed_safeguard_max",
-                        mxstate,state.failed_safeguard_max);
-                    fromMatlab::Natural("failed_safeguard",
-                        mxstate,state.failed_safeguard);
-                    fromMatlab::Natural("failed_safeguard_total",
-                        mxstate,state.failed_safeguard_total);
+                    fromMatlab::Natural("safeguard_failed_max",
+                        mxstate,state.safeguard_failed_max);
+                    fromMatlab::Natural("safeguard_failed",
+                        mxstate,state.safeguard_failed);
+                    fromMatlab::Natural("safeguard_failed_total",
+                        mxstate,state.safeguard_failed_total);
                     fromMatlab::Real("alpha_x",mxstate,state.alpha_x);
                     fromMatlab::Real("alpha_x_qn",mxstate,state.alpha_x_qn);
                     fromMatlab::Real("delta",mxstate,state.delta);

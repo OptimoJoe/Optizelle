@@ -1969,12 +1969,12 @@ namespace Optizelle {
                     toPython::Real("f_x",state.f_x,pystate);
                     toPython::Real("f_xpdx",state.f_xpdx,pystate);
                     toPython::Natural("msg_level",state.msg_level,pystate);
-                    toPython::Natural("failed_safeguard_max",
-                        state.failed_safeguard_max,pystate);
-                    toPython::Natural("failed_safeguard",
-                        state.failed_safeguard,pystate);
-                    toPython::Natural("failed_safeguard_total",
-                        state.failed_safeguard_total,pystate);
+                    toPython::Natural("safeguard_failed_max",
+                        state.safeguard_failed_max,pystate);
+                    toPython::Natural("safeguard_failed",
+                        state.safeguard_failed,pystate);
+                    toPython::Natural("safeguard_failed_total",
+                        state.safeguard_failed_total,pystate);
                     toPython::Real("alpha_x",state.alpha_x,pystate);
                     toPython::Real("alpha_x_qn",state.alpha_x_qn,pystate);
                     toPython::Real("delta",state.delta,pystate);
@@ -2103,12 +2103,12 @@ namespace Optizelle {
                     fromPython::Real("f_x",pystate,state.f_x);
                     fromPython::Real("f_xpdx",pystate,state.f_xpdx);
                     fromPython::Natural("msg_level",pystate,state.msg_level);
-                    fromPython::Natural("failed_safeguard_max",
-                        pystate,state.failed_safeguard_max);
-                    fromPython::Natural("failed_safeguard",
-                        pystate,state.failed_safeguard);
-                    fromPython::Natural("failed_safeguard_total",
-                        pystate,state.failed_safeguard_total);
+                    fromPython::Natural("safeguard_failed_max",
+                        pystate,state.safeguard_failed_max);
+                    fromPython::Natural("safeguard_failed",
+                        pystate,state.safeguard_failed);
+                    fromPython::Natural("safeguard_failed_total",
+                        pystate,state.safeguard_failed_total);
                     fromPython::Real("alpha_x",pystate,state.alpha_x);
                     fromPython::Real("alpha_x_qn",pystate,state.alpha_x_qn);
                     fromPython::Real("delta",pystate,state.delta);

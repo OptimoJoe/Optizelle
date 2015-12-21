@@ -1950,13 +1950,13 @@ namespace Optizelle{
                 // ---------- Inequality Safeguards ----------
 
                 // Number of failed safe-guard steps before quitting the method
-                Natural failed_safeguard_max;
+                Natural safeguard_failed_max;
 
                 // Number of failed safeguard steps during the last iteration 
-                Natural failed_safeguard;
+                Natural safeguard_failed;
 
                 // Total number of failed safeguard steps
-                Natural failed_safeguard_total;
+                Natural safeguard_failed_total;
 
                 // Amount we truncate dx in order to maintain feasibility
                 // with respect to the safeguard, which probably relates to
@@ -2174,20 +2174,20 @@ namespace Optizelle{
                         1
                         //---msg_level1---
                     ),
-                    failed_safeguard_max(
-                        //---failed_safeguard_max0---
+                    safeguard_failed_max(
+                        //---safeguard_failed_max0---
                         5 
-                        //---failed_safeguard_max1---
+                        //---safeguard_failed_max1---
                     ),
-                    failed_safeguard(
-                        //---failed_safeguard0---
+                    safeguard_failed(
+                        //---safeguard_failed0---
                         0 
-                        //---failed_safeguard1---
+                        //---safeguard_failed1---
                     ),
-                    failed_safeguard_total(
-                        //---failed_safeguard_total0---
+                    safeguard_failed_total(
+                        //---safeguard_failed_total0---
                         0 
-                        //---failed_safeguard_total1---
+                        //---safeguard_failed_total1---
                     ),
                     alpha_x(
                         //---alpha_x0---
@@ -2515,21 +2515,21 @@ namespace Optizelle{
                 // Check that the maximum number of failed safeguard points is
                 // at least 1.
                 else if(!(
-                    //---failed_safeguard_max_valid0---
-                    state.failed_safeguard_max >=1
-                    //---failed_safeguard_max_valid1---
+                    //---safeguard_failed_max_valid0---
+                    state.safeguard_failed_max >=1
+                    //---safeguard_failed_max_valid1---
                 ))
                     ss << "The maximum number of failed safeguard steps must "
-                        "be positive: failed_safeguard_max = "
-                        << state.failed_safeguard_max;
+                        "be positive: safeguard_failed_max = "
+                        << state.safeguard_failed_max;
 
-                    //---failed_safeguard_valid0---
+                    //---safeguard_failed_valid0---
                     // Any 
-                    //---failed_safeguard_valid1---
+                    //---safeguard_failed_valid1---
 
-                    //---failed_safeguard_total_valid0---
+                    //---safeguard_failed_total_valid0---
                     // Any 
-                    //---failed_safeguard_total_valid1---
+                    //---safeguard_failed_total_valid1---
 
                     //---alpha_x_valid0---
                     // Any
@@ -2738,9 +2738,9 @@ namespace Optizelle{
                     item.first == "trunc_iter_total" || 
                     item.first == "trunc_orthog_max" ||
                     item.first == "msg_level" ||
-                    item.first == "failed_safeguard_max" ||
-                    item.first == "failed_safeguard" ||
-                    item.first == "failed_safeguard_total" ||
+                    item.first == "safeguard_failed_max" ||
+                    item.first == "safeguard_failed" ||
+                    item.first == "safeguard_failed_total" ||
                     item.first == "ls_iter" || 
                     item.first == "ls_iter_max" ||
                     item.first == "ls_iter_total" 
@@ -2908,12 +2908,12 @@ namespace Optizelle{
                 nats.emplace_back("trunc_orthog_max",
                     std::move(state.trunc_orthog_max));
                 nats.emplace_back("msg_level",std::move(state.msg_level));
-                nats.emplace_back("failed_safeguard_max",
-                    std::move(state.failed_safeguard_max));
-                nats.emplace_back("failed_safeguard",
-                    std::move(state.failed_safeguard));
-                nats.emplace_back("failed_safeguard_total",
-                    std::move(state.failed_safeguard_total));
+                nats.emplace_back("safeguard_failed_max",
+                    std::move(state.safeguard_failed_max));
+                nats.emplace_back("safeguard_failed",
+                    std::move(state.safeguard_failed));
+                nats.emplace_back("safeguard_failed_total",
+                    std::move(state.safeguard_failed_total));
                 nats.emplace_back("ls_iter",
                     std::move(state.ls_iter));
                 nats.emplace_back("ls_iter_max",
@@ -3062,12 +3062,12 @@ namespace Optizelle{
                         state.trunc_orthog_max=std::move(item->second);
                     else if(item->first=="msg_level")
                         state.msg_level=std::move(item->second);
-                    else if(item->first=="failed_safeguard_max")
-                        state.failed_safeguard_max=std::move(item->second);
-                    else if(item->first=="failed_safeguard")
-                        state.failed_safeguard=std::move(item->second);
-                    else if(item->first=="failed_safeguard_total")
-                        state.failed_safeguard_total=std::move(item->second);
+                    else if(item->first=="safeguard_failed_max")
+                        state.safeguard_failed_max=std::move(item->second);
+                    else if(item->first=="safeguard_failed")
+                        state.safeguard_failed=std::move(item->second);
+                    else if(item->first=="safeguard_failed_total")
+                        state.safeguard_failed_total=std::move(item->second);
                     else if(item->first=="ls_iter")
                         state.ls_iter=std::move(item->second);
                     else if(item->first=="ls_iter_max")
@@ -4376,7 +4376,7 @@ namespace Optizelle{
                 X_Vector const & x=state.x;
                 X_Vector const & grad=state.grad;
                 Real const & norm_dxtyp=state.norm_dxtyp;
-                auto const & failed_safeguard_max = state.failed_safeguard_max;
+                auto const & safeguard_failed_max = state.safeguard_failed_max;
                 auto const & glob_iter_max = state.glob_iter_max;
                 X_Vector & dx=state.dx;
                 Natural & trunc_iter=state.trunc_iter;
@@ -4387,8 +4387,8 @@ namespace Optizelle{
                 std::list <X_Vector>& oldS=state.oldS; 
                 Real & alpha = state.alpha;
                 Real & alpha0 = state.alpha0;
-                auto & failed_safeguard = state.failed_safeguard;
-                auto & failed_safeguard_total = state.failed_safeguard_total;
+                auto & safeguard_failed = state.safeguard_failed;
+                auto & safeguard_failed_total = state.safeguard_failed_total;
                 auto & alpha_x = state.alpha_x;
                 auto & glob_iter = state.glob_iter;
                 auto & glob_iter_total = state.glob_iter_total;
@@ -4442,7 +4442,7 @@ namespace Optizelle{
                     delta,
                     x_tmp1,
                     false,
-                    failed_safeguard_max,
+                    safeguard_failed_max,
                     simplified_safeguard,
                     dx_n,
                     dx_cp,
@@ -4450,7 +4450,7 @@ namespace Optizelle{
                     residual_err,
                     trunc_iter,
                     trunc_stop,
-                    failed_safeguard,
+                    safeguard_failed,
                     alpha_x);
 
                 // Calculate the truncated CG error
@@ -4458,7 +4458,7 @@ namespace Optizelle{
                 trunc_iter_total += trunc_iter;
 
                 // Keep track of the number of failed safeguard steps
-                failed_safeguard_total+=failed_safeguard;
+                safeguard_failed_total+=safeguard_failed;
 
                 // Find the Newton shift, dx_dnewton = dx_newton-dx_cp.  We
                 // use this in the dogleg computation if required.
@@ -4994,7 +4994,7 @@ namespace Optizelle{
                 Natural const & trunc_iter_max=state.trunc_iter_max;
                 Natural const & trunc_orthog_max=state.trunc_orthog_max;
                 Real const & c1=state.c1;
-                auto const & failed_safeguard_max = state.failed_safeguard_max;
+                auto const & safeguard_failed_max = state.safeguard_failed_max;
                 auto const & glob_iter_max = state.glob_iter_max;
                 X_Vector & dx=state.dx;
                 Real & f_xpdx=state.f_xpdx;
@@ -5005,8 +5005,8 @@ namespace Optizelle{
                 Natural & trunc_iter_total=state.trunc_iter_total;
                 TruncatedStop::t& trunc_stop=state.trunc_stop;
                 Real & delta=state.delta;
-                auto & failed_safeguard = state.failed_safeguard;
-                auto & failed_safeguard_total = state.failed_safeguard_total;
+                auto & safeguard_failed = state.safeguard_failed;
+                auto & safeguard_failed_total = state.safeguard_failed_total;
                 auto & alpha_x = state.alpha_x;
                 auto & glob_iter = state.glob_iter;
                 auto & glob_iter_total = state.glob_iter_total;
@@ -5080,7 +5080,7 @@ namespace Optizelle{
                         std::numeric_limits <Real>::infinity(),
                         x_offset,
                         false,
-                        failed_safeguard_max,
+                        safeguard_failed_max,
                         simplified_safeguard,
                         dx,
                         dx_cp,
@@ -5088,7 +5088,7 @@ namespace Optizelle{
                         residual_err,
                         trunc_iter,
                         trunc_stop,
-                        failed_safeguard,
+                        safeguard_failed,
                         alpha_x);
 
                     // Calculate the truncated CG error 
@@ -5096,7 +5096,7 @@ namespace Optizelle{
                     trunc_iter_total += trunc_iter;
 
                     // Keep track of the number of failed safeguard steps
-                    failed_safeguard_total+=failed_safeguard;
+                    safeguard_failed_total+=safeguard_failed;
                     break;
                 }}
 
@@ -7969,7 +7969,7 @@ namespace Optizelle{
                 auto dxn_safe = X::init(x);
                 X::zero(dxn_safe);
                 auto ddxn_safe = X::init(x);
-                auto failed_safeguard = Natural(0);
+                auto safeguard_failed = Natural(0);
 
                 // We build dx_n from ddx_n
                 auto ddx_n = X::init(x);
@@ -8083,7 +8083,7 @@ namespace Optizelle{
 
                     // If our last iterate was safe, then keep our current
                     // search direction
-                    if(failed_safeguard==0)
+                    if(safeguard_failed==0)
                         X::copy(ddx_n,ddxn_safe);
 
                     // Determine the norm of our trial step, dx_n+ddx_n
@@ -8120,12 +8120,12 @@ namespace Optizelle{
                         // If the trial step is safe, set the number of failed
                         // safeguard steps to zero and move 
                         if(alpha_x_qn>=Real(1.)) {
-                            failed_safeguard = 0;
+                            safeguard_failed = 0;
                             X::copy(trial,dx_n);
 
                         // If the current iterate is not safe, but the last one
                         // was, see how far we can go in this direction
-                        } else if(failed_safeguard==0) {
+                        } else if(safeguard_failed==0) {
 
                             // Safeguard the step
                             alpha_x_qn = std::min(
@@ -8156,9 +8156,9 @@ namespace Optizelle{
                     // to our safeguard
                     alpha_x_qn = std::min(safeguard(zero,dx_n),Real(1.0));
                     if(alpha_x_qn < Real(1.))
-                        failed_safeguard += 1;
+                        safeguard_failed += 1;
                     else {
-                        failed_safeguard = 0;
+                        safeguard_failed = 0;
                         X::copy(dx_n,dxn_safe);
                     }
 
@@ -8166,7 +8166,7 @@ namespace Optizelle{
                     // Make sure to truncate it if it violates the safeguard.
                     if(iter==1) {
                         X::copy(dx_n,dx_ncp);
-                        if(failed_safeguard>0)
+                        if(safeguard_failed>0)
                             X::scal(alpha_x_qn,dx_ncp);
                     }
                 }
@@ -8176,7 +8176,7 @@ namespace Optizelle{
                 // with respect to our safeguard.  If our last dx_n was not
                 // safe, then we go back to our last safe dx_n and grab its
                 // ddx_n.  Then, we truncate ddx_n to meet our safeguard.
-                if(failed_safeguard>0) {
+                if(safeguard_failed>0) {
                     X::copy(dxn_safe,dx_n);
                     X::copy(ddxn_safe,ddx_n);
                     alpha_x_qn = std::min(safeguard(dx_n,ddx_n),Real(1.0));
@@ -8191,7 +8191,7 @@ namespace Optizelle{
 
                 // If we made it to our final iteration and we're feasible,
                 // then we took the Newton step
-                if(iter==3 && failed_safeguard==0)
+                if(iter==3 && safeguard_failed==0)
                     qn_stop = QuasinormalStop::Newton;
 
                 // If we computed a Newton point, try truncating straight
@@ -8227,15 +8227,15 @@ namespace Optizelle{
                 // Figure out why we stopped
                 if(iter==0)
                     qn_stop = QuasinormalStop::Skipped;
-                else if(failed_safeguard==2)
+                else if(safeguard_failed==2)
                     qn_stop = QuasinormalStop::CauchySafeguard;
-                else if(failed_safeguard==1)
+                else if(safeguard_failed==1)
                     qn_stop = QuasinormalStop::DoglegSafeguard;
-                else if(failed_safeguard==0 && iter==1)
+                else if(safeguard_failed==0 && iter==1)
                     qn_stop = QuasinormalStop::CauchyTrustRegion;
-                else if(failed_safeguard==0 && iter==2)
+                else if(safeguard_failed==0 && iter==2)
                     qn_stop = QuasinormalStop::DoglegTrustRegion;
-                else if(failed_safeguard==0 && iter==3)
+                else if(safeguard_failed==0 && iter==3)
                     qn_stop = QuasinormalStop::Newton;
 
             }
@@ -8539,7 +8539,7 @@ namespace Optizelle{
                 Real const & eps_trunc=state.eps_trunc;
                 Natural const & trunc_iter_max=state.trunc_iter_max;
                 Natural const & trunc_orthog_max=state.trunc_orthog_max;
-                auto const & failed_safeguard_max = state.failed_safeguard_max;
+                auto const & safeguard_failed_max = state.safeguard_failed_max;
                 X_Vector & dx_t_uncorrected=state.dx_t_uncorrected;
                 X_Vector & dx_tcp_uncorrected=state.dx_tcp_uncorrected;
                 Real & trunc_err=state.trunc_err;
@@ -8547,8 +8547,8 @@ namespace Optizelle{
                 Natural & trunc_iter_total=state.trunc_iter_total;
                 TruncatedStop::t& trunc_stop=state.trunc_stop;
                 Natural & augsys_proj_iter = state.augsys_proj_iter;
-                auto & failed_safeguard = state.failed_safeguard;
-                auto & failed_safeguard_total = state.failed_safeguard_total;
+                auto & safeguard_failed = state.safeguard_failed;
+                auto & safeguard_failed_total = state.safeguard_failed_total;
                 auto & alpha_x = state.alpha_x;
                 
                 // Setup the Hessian operator and allocate memory for the
@@ -8590,7 +8590,7 @@ namespace Optizelle{
                     delta,
                     dx_n,
                     true,
-                    failed_safeguard_max,
+                    safeguard_failed_max,
                     simplified_safeguard,
                     dx_t_uncorrected,
                     dx_tcp_uncorrected,
@@ -8598,7 +8598,7 @@ namespace Optizelle{
                     residual_err,
                     trunc_iter,
                     trunc_stop,
-                    failed_safeguard,
+                    safeguard_failed,
                     alpha_x);
 
                 // Calculate the truncated CG error 
@@ -8606,7 +8606,7 @@ namespace Optizelle{
                 trunc_iter_total += trunc_iter;
 
                 // Keep track of the number of failed safeguard steps
-                failed_safeguard_total+=failed_safeguard;
+                safeguard_failed_total+=safeguard_failed;
             }
             
             // Sets the tolerances for the computation of the tangential
@@ -10599,7 +10599,7 @@ namespace Optizelle{
                     if(Algorithms::usePrimalDual(state))
                         out.emplace_back(Utility::atos("alpha_z"));
                     if(algorithm_class!=AlgorithmClass::LineSearch)
-                        out.emplace_back(Utility::atos("failed_safe"));
+                        out.emplace_back(Utility::atos("safe_fail"));
                 }
             }
 
@@ -10627,7 +10627,7 @@ namespace Optizelle{
                 auto const & mu_est=state.mu_est; 
                 auto const & alpha_x =state.alpha_x;
                 auto const & alpha_z =state.alpha_z;
-                auto const & failed_safeguard=state.failed_safeguard;
+                auto const & safeguard_failed=state.safeguard_failed;
                 auto const & msg_level = state.msg_level;
                 auto const & algorithm_class = state.algorithm_class;
 
@@ -10652,7 +10652,7 @@ namespace Optizelle{
                         if(Algorithms::usePrimalDual(state))
                             out.emplace_back(Utility::atos(alpha_z));
                         if(algorithm_class!=AlgorithmClass::LineSearch)
-                            out.emplace_back(Utility::atos(failed_safeguard));
+                            out.emplace_back(Utility::atos(safeguard_failed));
                     } else {
                         auto nblank = 1;
                         if(Algorithms::usePrimalDual(state))
