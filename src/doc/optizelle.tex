@@ -2557,19 +2557,19 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {Messaging level.  To turn messages off, use $0$.  For normal messaging, set to $1$.  For more detailed information, set to $2$.  For linear solver information, set to $3$.  To see precise information about what information we display, refer to the chapter entitled \hyperref[ch:output]{\choutput}.}
     
     \paramitemu
-        {failed_safeguard_max}
+        {safeguard_failed_max}
         {Natural}
         {Yes}
         {Number of failed safe-guard steps before exiting truncated CG.  We use this exclusively for our inequality constraints.}
 
     \paramitemu
-        {failed_safeguard}
+        {safeguard_failed}
         {Natural}
         {No}
-        {Number of failed safe-guard steps during the last iteration.  We output \textctref{failed_safeguard} at each iteration under the label \textctrefalt{failed_safe}.}
+        {Number of failed safe-guard steps during the last iteration.  We output \textctref{safeguard_failed} at each iteration under the label \textctrefalt{failed_safe}.}
 
     \paramitemu
-        {failed_safeguard_total}
+        {safeguard_failed_total}
         {Natural}
         {No}
         {Total number of failed safe-guard steps.} 
@@ -3011,6 +3011,42 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {Target error in the last augmented system solve during the equality multiplier solve.}
 
     \paramiteme
+        {augsys_qn_failed}
+        {Real}
+        {No}
+        {Number of failed quasinormal augmented system solves.}
+
+    \paramiteme
+        {augsys_pg_failed}
+        {Real}
+        {No}
+        {Number of failed projected gradient augmented system solves.}
+
+    \paramiteme
+        {augsys_proj_failed}
+        {Real}
+        {No}
+        {Number of failed nullspace projection augmented system solves.}
+
+    \paramiteme
+        {augsys_tang_failed}
+        {Real}
+        {No}
+        {Number of tangential step augmented system solves.}
+
+    \paramiteme
+        {augsys_lmh_failed}
+        {Real}
+        {No}
+        {Number of equality multiplier augmented system solves.}
+
+    \paramiteme
+        {augsys_failed_total}
+        {Real}
+        {No}
+        {Total number of failed augmented system solves.  In short, the theory for convergence to a local minima requires that augmented system solves meet their specified tolerance.  Sometimes, a lower tolerance can be used and these tolerances are controlled by \textctref{xi_all}, \textctref{xi_qn}, \textctref{xi_pg}, \textctref{xi_proj}, \textctref{xi_tang}, and \textctref{xi_lmh}.  However, even with a lower specified tolerance, the inexact composite step SQP method can still require a tighter tolerance in order to guarantee convergence.  Generally, the algorithms are tolerant to a few failed solves.  However, if there are failed solves at every iteration, then there's a problem with the given preconditioner or no preconditioner was specified.  See the section \hyperref[sec:preconditioners]{\secpreconditioners} for more information on how to implement an appropriate preconditioner.}
+
+    \paramiteme
         {g_x}
         {Y_Vector}
         {No}
@@ -3311,6 +3347,12 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {2}
         {Reason why the quasinormal problem exited.}
 
+    \outputiteme
+        {aug_fail}
+        {\textctref{augsys_failed_total}}
+        {2}
+        {Total number of failed augmented system solves.}
+
     \outputitemi
         {mu}
         {\textctref{mu}}
@@ -3330,8 +3372,8 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {Amount we truncate \textctref{dz} in order to maintain feasibility with respect to the inequality multiplier.  Note, we only reference this when we are using a primal-dual interior point method.}
 
     \outputitemi
-        {failed_safe}
-        {\textctref{failed_safeguard}}
+        {safe_fail}
+        {\textctref{safeguard_failed}}
         {2}
         {Number of failed safe-guard steps during the last iteration.  Note, we only reference this when using a trust-region method.}
 
@@ -3392,6 +3434,12 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {Target error in the last augmented system solve for the quasi-normal step.}
 
     \outputiteme
+        {qn_fail}
+        {\textctref{augsys_qn_failed}}
+        {3}
+        {Number of failed quasinormal augmented system solves.}
+
+    \outputiteme
         {pg_iter}
         {\textctref{augsys_pg_iter}}
         {3}
@@ -3414,6 +3462,12 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {\textctref{augsys_pg_err_target}}
         {3}
         {Target error in the last augmented system solve when projecting the gradient prior to the tangential subproblem.}
+
+    \outputiteme
+        {pg_fail}
+        {\textctref{augsys_pg_failed}}
+        {3}
+        {Number of failed projected gradient augmented system solves.}
 
     \outputiteme
         {pr_iter}
@@ -3440,6 +3494,12 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {Target error in the last augmented system solve during the tangential step.}
 
     \outputiteme
+        {pr_fail}
+        {\textctref{augsys_pr_failed}}
+        {3}
+        {Number of failed nullspace projection augmented system solves.}
+
+    \outputiteme
         {tg_iter}
         {\textctref{augsys_tang_iter}}
         {3}
@@ -3464,6 +3524,12 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {Target error in the last augmented system solve during the tangential step.}
 
     \outputiteme
+        {tg_fail}
+        {\textctref{augsys_tg_failed}}
+        {3}
+        {Number of failed tangential step augmented system solves.}
+
+    \outputiteme
         {lm_iter}
         {\textctref{augsys_lmh_iter}}
         {3}
@@ -3486,6 +3552,12 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {\textctref{augsys_lmh_err_target}}
         {3}
         {Target error in the last augmented system solve during the equality multiplier solve.}
+
+    \outputiteme
+        {lm_fail}
+        {\textctref{augsys_lmh_failed}}
+        {3}
+        {Number of failed equality multiplier augmented system solves.}
 
     \outputiteme
         {aug_itr_tot}
@@ -4439,7 +4511,7 @@ This gives us a log-barrier algorithm for these methods.  In short, without solv
         \textctref{z} + \textctref{alpha_z}\cdot\textctref{dz} \geq& (1-\textctref{gamma}) z)\\
         h(\textctref{x} + \textctref{alpha_x_qn}\cdot\textctref{dx_n}) \geq& (1-\textctref{gamma}\cdot\textctref{zeta}) h(x)
 \end{align*}
-Note, the last inequality only occurs in constrained problems.  When we enforce these rules depends on the algorithm.  Specifically, trust-region methods enforce these bounds during the truncated-CG solve of the optimality conditions.  Since truncated CG may violate the inequality bounds periodically throughout the optimality solve, we save the last feasible iterate during the computation.  When we exit, we take the last feasible iterate and step and compute the safeguard search, which satisfies the fraction to the boundary rule above.  In order to prevent too many discarded steps due to the safeguard, we limit the maximum number of infeasible steps that we allow to be \textctref{failed_safeguard_max}.  Although our process is slightly different than their paper, how we embed the safeguard into truncated CG is similar to what Byrd, Hribar, and Nocedal do in their implementation of NITRO.  In a line-search method, we safeguard the step prior to the line search.  Specifically, we shorten \textctref{alpha0} so that the maximum step length taken by the line search does not exceed our fraction to the boundary rule.  Finally, in the inexact composite step SQP method, we also safeguard our quasi-normal step by enforcing the fraction to the boundary rule during the dogleg computation.  In each case, we calculate the distance to the boundary with the user-defined function \textctref{srch}.  In our \textctref{Rm} and \textctref{SQL} vector spaces, we use a closed form formula for linear and second-order cones and the Arnoldi algorithm for semidefinite cones.
+Note, the last inequality only occurs in constrained problems.  When we enforce these rules depends on the algorithm.  Specifically, trust-region methods enforce these bounds during the truncated-CG solve of the optimality conditions.  Since truncated CG may violate the inequality bounds periodically throughout the optimality solve, we save the last feasible iterate during the computation.  When we exit, we take the last feasible iterate and step and compute the safeguard search, which satisfies the fraction to the boundary rule above.  In order to prevent too many discarded steps due to the safeguard, we limit the maximum number of infeasible steps that we allow to be \textctref{safeguard_failed_max}.  Although our process is slightly different than their paper, how we embed the safeguard into truncated CG is similar to what Byrd, Hribar, and Nocedal do in their implementation of NITRO.  In a line-search method, we safeguard the step prior to the line search.  Specifically, we shorten \textctref{alpha0} so that the maximum step length taken by the line search does not exceed our fraction to the boundary rule.  Finally, in the inexact composite step SQP method, we also safeguard our quasi-normal step by enforcing the fraction to the boundary rule during the dogleg computation.  In each case, we calculate the distance to the boundary with the user-defined function \textctref{srch}.  In our \textctref{Rm} and \textctref{SQL} vector spaces, we use a closed form formula for linear and second-order cones and the Arnoldi algorithm for semidefinite cones.
 
         We reduce \textctref{mu} prior to the truncated-CG solve for the optimality system and set $\textctref{mu} = \textctref{sigma}\cdot \textctref{mu}$ when one of the following global or local convergence criteria is satisfied
         \begin{enumerate}

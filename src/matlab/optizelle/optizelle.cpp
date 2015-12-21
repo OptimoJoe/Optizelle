@@ -1974,9 +1974,9 @@ namespace Optizelle {
                         "f_x",
                         "f_xpdx",
                         "msg_level",
-                        "failed_safeguard_max",
-                        "failed_safeguard",
-                        "failed_safeguard_total",
+                        "safeguard_failed_max",
+                        "safeguard_failed",
+                        "safeguard_failed_total",
                         "alpha_x",
                         "alpha_x_qn",
                         "delta",
@@ -2077,12 +2077,12 @@ namespace Optizelle {
                     toMatlab::Real("f_x",state.f_x,mxstate);
                     toMatlab::Real("f_xpdx",state.f_xpdx,mxstate);
                     toMatlab::Natural("msg_level",state.msg_level,mxstate);
-                    toMatlab::Natural("failed_safeguard_max",
-                        state.failed_safeguard_max,mxstate);
-                    toMatlab::Natural("failed_safeguard",
-                        state.failed_safeguard,mxstate);
-                    toMatlab::Natural("failed_safeguard_total",
-                        state.failed_safeguard_total,mxstate);
+                    toMatlab::Natural("safeguard_failed_max",
+                        state.safeguard_failed_max,mxstate);
+                    toMatlab::Natural("safeguard_failed",
+                        state.safeguard_failed,mxstate);
+                    toMatlab::Natural("safeguard_failed_total",
+                        state.safeguard_failed_total,mxstate);
                     toMatlab::Real("alpha_x",state.alpha_x,mxstate);
                     toMatlab::Real("alpha_x_qn",state.alpha_x_qn,mxstate);
                     toMatlab::Real("delta",state.delta,mxstate);
@@ -2211,12 +2211,12 @@ namespace Optizelle {
                     fromMatlab::Real("f_x",mxstate,state.f_x);
                     fromMatlab::Real("f_xpdx",mxstate,state.f_xpdx);
                     fromMatlab::Natural("msg_level",mxstate,state.msg_level);
-                    fromMatlab::Natural("failed_safeguard_max",
-                        mxstate,state.failed_safeguard_max);
-                    fromMatlab::Natural("failed_safeguard",
-                        mxstate,state.failed_safeguard);
-                    fromMatlab::Natural("failed_safeguard_total",
-                        mxstate,state.failed_safeguard_total);
+                    fromMatlab::Natural("safeguard_failed_max",
+                        mxstate,state.safeguard_failed_max);
+                    fromMatlab::Natural("safeguard_failed",
+                        mxstate,state.safeguard_failed);
+                    fromMatlab::Natural("safeguard_failed_total",
+                        mxstate,state.safeguard_failed_total);
                     fromMatlab::Real("alpha_x",mxstate,state.alpha_x);
                     fromMatlab::Real("alpha_x_qn",mxstate,state.alpha_x_qn);
                     fromMatlab::Real("delta",mxstate,state.delta);
@@ -2771,6 +2771,12 @@ namespace Optizelle {
                         "augsys_tang_err_target",
                         "augsys_lmh_err_target",
                         "augsys_iter_total",
+                        "augsys_qn_failed",
+                        "augsys_pg_failed",
+                        "augsys_proj_failed",
+                        "augsys_tang_failed",
+                        "augsys_lmh_failed",
+                        "augsys_failed_total",
                         "g_x",
                         "norm_gxtyp",
                         "gpxdxn_p_gx",
@@ -2884,6 +2890,18 @@ namespace Optizelle {
                         state.augsys_lmh_err_target,mxstate);
                     toMatlab::Natural("augsys_iter_total",
                         state.augsys_iter_total,mxstate);
+                    toMatlab::Natural("augsys_qn_failed",
+                        state.augsys_qn_failed,mxstate);
+                    toMatlab::Natural("augsys_pg_failed",
+                        state.augsys_pg_failed,mxstate);
+                    toMatlab::Natural("augsys_proj_failed",
+                        state.augsys_proj_failed,mxstate);
+                    toMatlab::Natural("augsys_tang_failed",
+                        state.augsys_tang_failed,mxstate);
+                    toMatlab::Natural("augsys_lmh_failed",
+                        state.augsys_lmh_failed,mxstate);
+                    toMatlab::Natural("augsys_failed_total",
+                        state.augsys_failed_total,mxstate);
                     toMatlab::Vector("g_x",state.g_x,mxstate);
                     toMatlab::Real("norm_gxtyp",state.norm_gxtyp,mxstate);
                     toMatlab::Vector("gpxdxn_p_gx",state.gpxdxn_p_gx,mxstate);
@@ -3002,6 +3020,18 @@ namespace Optizelle {
                         mxstate,state.augsys_lmh_err_target);
                     fromMatlab::Natural("augsys_iter_total",
                         mxstate,state.augsys_iter_total);
+                    fromMatlab::Natural("augsys_qn_failed",
+                        mxstate,state.augsys_qn_failed);
+                    fromMatlab::Natural("augsys_pg_failed",
+                        mxstate,state.augsys_pg_failed);
+                    fromMatlab::Natural("augsys_proj_failed",
+                        mxstate,state.augsys_proj_failed);
+                    fromMatlab::Natural("augsys_tang_failed",
+                        mxstate,state.augsys_tang_failed);
+                    fromMatlab::Natural("augsys_lmh_failed",
+                        mxstate,state.augsys_lmh_failed);
+                    fromMatlab::Natural("augsys_failed_total",
+                        mxstate,state.augsys_failed_total);
                     fromMatlab::Vector("g_x",mxstate,state.g_x);
                     fromMatlab::Real("norm_gxtyp",mxstate,state.norm_gxtyp);
                     fromMatlab::Vector("gpxdxn_p_gx",mxstate,state.gpxdxn_p_gx);

@@ -1166,7 +1166,7 @@ namespace Optizelle {
     //     do not scale the final step if we detect negative curvature.
     // (input) x_offset : Offset for checking the TR radius 
     // (input) do_orthog_check : Orthogonality check for projected algorithms 
-    // (input) failed_safeguard_max : Maximum number of failed safeguard steps
+    // (input) safeguard_failed_max : Maximum number of failed safeguard steps
     //     before exiting
     // (input) safeguard : Our safeguard function
     // (output) x : Final solution x
@@ -1175,7 +1175,7 @@ namespace Optizelle {
     // (output) norm_Br : The norm ||B r|| of the final residual
     // (output) iter : The number of iterations required to converge.
     // (output) stop : The reason why the method was terminated
-    // (output) failed_safeguard : Number of failed safeguard steps upon exiting
+    // (output) safeguard_failed : Number of failed safeguard steps upon exiting
     // (output) alpha_safeguard : Amount we truncated the last iteration
     template <
         typename Real,
@@ -1191,7 +1191,7 @@ namespace Optizelle {
         Real const & delta,
         typename XX <Real>::Vector const & x_offset,
 	bool const & do_orthog_check,
-        Natural const & failed_safeguard_max,
+        Natural const & safeguard_failed_max,
         SafeguardSimplified <Real,XX> const & safeguard,
         typename XX <Real>::Vector & x,
         typename XX <Real>::Vector & x_cp,
@@ -1199,7 +1199,7 @@ namespace Optizelle {
         Real & norm_Br,
         Natural & iter,
         TruncatedStop::t & stop,
-        Natural & failed_safeguard,
+        Natural & safeguard_failed,
         Real & alpha_safeguard
     ){
 
@@ -1306,7 +1306,7 @@ namespace Optizelle {
         // of the last successful iterate and step 
         auto shifted_iterate0 = X::init(x);
         X::copy(shifted_iterate,shifted_iterate0);
-        failed_safeguard = 0;
+        safeguard_failed = 0;
         auto x_safe = X::init(x);
         X::copy(x,x_safe);
         auto Bdx_safe = X::init(x);
@@ -1533,7 +1533,7 @@ namespace Optizelle {
             // direction as long as it didn't arise from a NaN, loss of
             // orthogonality, or we're actually going to make the CG objective
             // worse.  In these cases, we set our saved trial steps to zero.
-            if( failed_safeguard==0 ) {
+            if( safeguard_failed==0 ) {
                 if( stop != TruncatedStop::NanDetected && 
                     stop != TruncatedStop::LossOfOrthogonality &&
                     stop != TruncatedStop::ObjectiveIncrease
@@ -1608,7 +1608,7 @@ namespace Optizelle {
                     // Determine if this new iterate is feasible with respect
                     // to our safeguard.  We calculate this from x_offset,
                     // which we assume to be a safe starting place.  In any
-                    // case, if the new iterate is safe, set failed_safeguard
+                    // case, if the new iterate is safe, set safeguard_failed
                     // to zero and let the code take the step down below.
                     auto trial = X::init(x);
                     X::copy(x,trial);
@@ -1616,12 +1616,12 @@ namespace Optizelle {
                     alpha_safeguard =
                         std::min(safeguard(x_offset,trial),Real(1.0));
                     if(alpha_safeguard >= Real(1.)) {
-                        failed_safeguard = 0;
+                        safeguard_failed = 0;
 
                     // If the last iterate is safe, see how far we can go
                     // in the current direction.  If this amount truncates us
                     // more than sigma, then we reduce the size of sigma.
-                    } else if(failed_safeguard==0) { 
+                    } else if(safeguard_failed==0) { 
                         auto sigma_Bdx = X::init(x);
                         X::copy(Bdx,sigma_Bdx);
                         X::scal(sigma,sigma_Bdx);
@@ -1677,9 +1677,9 @@ namespace Optizelle {
             // safe, save it for potential use later
             alpha_safeguard = std::min(safeguard(x_offset,x),Real(1.0));
             if(alpha_safeguard < Real(1.))
-                failed_safeguard += 1;
+                safeguard_failed += 1;
             else {
-                failed_safeguard = 0;
+                safeguard_failed = 0;
                 X::copy(x,x_safe);
                 X::copy(r,r_safe);
                 X::copy(shifted_iterate,shifted_iterate_safe);
@@ -1689,7 +1689,7 @@ namespace Optizelle {
             // to truncate it if it violates the safeguard.
             if(iter==1) {
                 X::copy(x,x_cp);
-                if(failed_safeguard>0)
+                if(safeguard_failed>0)
                     X::scal(alpha_safeguard,x_cp);
             }
 
@@ -1698,7 +1698,7 @@ namespace Optizelle {
             X::scal(Real(-1.),Bdx);	
 
             // If we have too many failed safeguard steps, exit
-            if(failed_safeguard >= failed_safeguard_max)
+            if(safeguard_failed >= safeguard_failed_max)
                 stop = TruncatedStop::TooManyFailedSafeguard;
         
             // If the norm of the residual is small relative to the starting
@@ -1720,7 +1720,7 @@ namespace Optizelle {
         // feasible with respect to our safeguard.  If our last x was not
         // safe, then go back to our last safe x and grab its Bdx.  Then,
         // we truncate Bdx until we meet our safeguard.
-        if(failed_safeguard>0) {
+        if(safeguard_failed>0) {
             // Grab our old iterate, steps, and residual
             X::copy(x_safe,x);
             X::copy(r_safe,r);

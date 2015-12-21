@@ -1950,13 +1950,13 @@ namespace Optizelle{
                 // ---------- Inequality Safeguards ----------
 
                 // Number of failed safe-guard steps before quitting the method
-                Natural failed_safeguard_max;
+                Natural safeguard_failed_max;
 
                 // Number of failed safeguard steps during the last iteration 
-                Natural failed_safeguard;
+                Natural safeguard_failed;
 
                 // Total number of failed safeguard steps
-                Natural failed_safeguard_total;
+                Natural safeguard_failed_total;
 
                 // Amount we truncate dx in order to maintain feasibility
                 // with respect to the safeguard, which probably relates to
@@ -2174,20 +2174,20 @@ namespace Optizelle{
                         1
                         //---msg_level1---
                     ),
-                    failed_safeguard_max(
-                        //---failed_safeguard_max0---
+                    safeguard_failed_max(
+                        //---safeguard_failed_max0---
                         5 
-                        //---failed_safeguard_max1---
+                        //---safeguard_failed_max1---
                     ),
-                    failed_safeguard(
-                        //---failed_safeguard0---
+                    safeguard_failed(
+                        //---safeguard_failed0---
                         0 
-                        //---failed_safeguard1---
+                        //---safeguard_failed1---
                     ),
-                    failed_safeguard_total(
-                        //---failed_safeguard_total0---
+                    safeguard_failed_total(
+                        //---safeguard_failed_total0---
                         0 
-                        //---failed_safeguard_total1---
+                        //---safeguard_failed_total1---
                     ),
                     alpha_x(
                         //---alpha_x0---
@@ -2515,21 +2515,21 @@ namespace Optizelle{
                 // Check that the maximum number of failed safeguard points is
                 // at least 1.
                 else if(!(
-                    //---failed_safeguard_max_valid0---
-                    state.failed_safeguard_max >=1
-                    //---failed_safeguard_max_valid1---
+                    //---safeguard_failed_max_valid0---
+                    state.safeguard_failed_max >=1
+                    //---safeguard_failed_max_valid1---
                 ))
                     ss << "The maximum number of failed safeguard steps must "
-                        "be positive: failed_safeguard_max = "
-                        << state.failed_safeguard_max;
+                        "be positive: safeguard_failed_max = "
+                        << state.safeguard_failed_max;
 
-                    //---failed_safeguard_valid0---
+                    //---safeguard_failed_valid0---
                     // Any 
-                    //---failed_safeguard_valid1---
+                    //---safeguard_failed_valid1---
 
-                    //---failed_safeguard_total_valid0---
+                    //---safeguard_failed_total_valid0---
                     // Any 
-                    //---failed_safeguard_total_valid1---
+                    //---safeguard_failed_total_valid1---
 
                     //---alpha_x_valid0---
                     // Any
@@ -2738,9 +2738,9 @@ namespace Optizelle{
                     item.first == "trunc_iter_total" || 
                     item.first == "trunc_orthog_max" ||
                     item.first == "msg_level" ||
-                    item.first == "failed_safeguard_max" ||
-                    item.first == "failed_safeguard" ||
-                    item.first == "failed_safeguard_total" ||
+                    item.first == "safeguard_failed_max" ||
+                    item.first == "safeguard_failed" ||
+                    item.first == "safeguard_failed_total" ||
                     item.first == "ls_iter" || 
                     item.first == "ls_iter_max" ||
                     item.first == "ls_iter_total" 
@@ -2908,12 +2908,12 @@ namespace Optizelle{
                 nats.emplace_back("trunc_orthog_max",
                     std::move(state.trunc_orthog_max));
                 nats.emplace_back("msg_level",std::move(state.msg_level));
-                nats.emplace_back("failed_safeguard_max",
-                    std::move(state.failed_safeguard_max));
-                nats.emplace_back("failed_safeguard",
-                    std::move(state.failed_safeguard));
-                nats.emplace_back("failed_safeguard_total",
-                    std::move(state.failed_safeguard_total));
+                nats.emplace_back("safeguard_failed_max",
+                    std::move(state.safeguard_failed_max));
+                nats.emplace_back("safeguard_failed",
+                    std::move(state.safeguard_failed));
+                nats.emplace_back("safeguard_failed_total",
+                    std::move(state.safeguard_failed_total));
                 nats.emplace_back("ls_iter",
                     std::move(state.ls_iter));
                 nats.emplace_back("ls_iter_max",
@@ -3062,12 +3062,12 @@ namespace Optizelle{
                         state.trunc_orthog_max=std::move(item->second);
                     else if(item->first=="msg_level")
                         state.msg_level=std::move(item->second);
-                    else if(item->first=="failed_safeguard_max")
-                        state.failed_safeguard_max=std::move(item->second);
-                    else if(item->first=="failed_safeguard")
-                        state.failed_safeguard=std::move(item->second);
-                    else if(item->first=="failed_safeguard_total")
-                        state.failed_safeguard_total=std::move(item->second);
+                    else if(item->first=="safeguard_failed_max")
+                        state.safeguard_failed_max=std::move(item->second);
+                    else if(item->first=="safeguard_failed")
+                        state.safeguard_failed=std::move(item->second);
+                    else if(item->first=="safeguard_failed_total")
+                        state.safeguard_failed_total=std::move(item->second);
                     else if(item->first=="ls_iter")
                         state.ls_iter=std::move(item->second);
                     else if(item->first=="ls_iter_max")
@@ -4376,7 +4376,7 @@ namespace Optizelle{
                 X_Vector const & x=state.x;
                 X_Vector const & grad=state.grad;
                 Real const & norm_dxtyp=state.norm_dxtyp;
-                auto const & failed_safeguard_max = state.failed_safeguard_max;
+                auto const & safeguard_failed_max = state.safeguard_failed_max;
                 auto const & glob_iter_max = state.glob_iter_max;
                 X_Vector & dx=state.dx;
                 Natural & trunc_iter=state.trunc_iter;
@@ -4387,8 +4387,8 @@ namespace Optizelle{
                 std::list <X_Vector>& oldS=state.oldS; 
                 Real & alpha = state.alpha;
                 Real & alpha0 = state.alpha0;
-                auto & failed_safeguard = state.failed_safeguard;
-                auto & failed_safeguard_total = state.failed_safeguard_total;
+                auto & safeguard_failed = state.safeguard_failed;
+                auto & safeguard_failed_total = state.safeguard_failed_total;
                 auto & alpha_x = state.alpha_x;
                 auto & glob_iter = state.glob_iter;
                 auto & glob_iter_total = state.glob_iter_total;
@@ -4442,7 +4442,7 @@ namespace Optizelle{
                     delta,
                     x_tmp1,
                     false,
-                    failed_safeguard_max,
+                    safeguard_failed_max,
                     simplified_safeguard,
                     dx_n,
                     dx_cp,
@@ -4450,7 +4450,7 @@ namespace Optizelle{
                     residual_err,
                     trunc_iter,
                     trunc_stop,
-                    failed_safeguard,
+                    safeguard_failed,
                     alpha_x);
 
                 // Calculate the truncated CG error
@@ -4458,7 +4458,7 @@ namespace Optizelle{
                 trunc_iter_total += trunc_iter;
 
                 // Keep track of the number of failed safeguard steps
-                failed_safeguard_total+=failed_safeguard;
+                safeguard_failed_total+=safeguard_failed;
 
                 // Find the Newton shift, dx_dnewton = dx_newton-dx_cp.  We
                 // use this in the dogleg computation if required.
@@ -4994,7 +4994,7 @@ namespace Optizelle{
                 Natural const & trunc_iter_max=state.trunc_iter_max;
                 Natural const & trunc_orthog_max=state.trunc_orthog_max;
                 Real const & c1=state.c1;
-                auto const & failed_safeguard_max = state.failed_safeguard_max;
+                auto const & safeguard_failed_max = state.safeguard_failed_max;
                 auto const & glob_iter_max = state.glob_iter_max;
                 X_Vector & dx=state.dx;
                 Real & f_xpdx=state.f_xpdx;
@@ -5005,8 +5005,8 @@ namespace Optizelle{
                 Natural & trunc_iter_total=state.trunc_iter_total;
                 TruncatedStop::t& trunc_stop=state.trunc_stop;
                 Real & delta=state.delta;
-                auto & failed_safeguard = state.failed_safeguard;
-                auto & failed_safeguard_total = state.failed_safeguard_total;
+                auto & safeguard_failed = state.safeguard_failed;
+                auto & safeguard_failed_total = state.safeguard_failed_total;
                 auto & alpha_x = state.alpha_x;
                 auto & glob_iter = state.glob_iter;
                 auto & glob_iter_total = state.glob_iter_total;
@@ -5080,7 +5080,7 @@ namespace Optizelle{
                         std::numeric_limits <Real>::infinity(),
                         x_offset,
                         false,
-                        failed_safeguard_max,
+                        safeguard_failed_max,
                         simplified_safeguard,
                         dx,
                         dx_cp,
@@ -5088,7 +5088,7 @@ namespace Optizelle{
                         residual_err,
                         trunc_iter,
                         trunc_stop,
-                        failed_safeguard,
+                        safeguard_failed,
                         alpha_x);
 
                     // Calculate the truncated CG error 
@@ -5096,7 +5096,7 @@ namespace Optizelle{
                     trunc_iter_total += trunc_iter;
 
                     // Keep track of the number of failed safeguard steps
-                    failed_safeguard_total+=failed_safeguard;
+                    safeguard_failed_total+=safeguard_failed;
                     break;
                 }}
 
@@ -5755,6 +5755,14 @@ namespace Optizelle{
                 Real augsys_proj_err_target;
                 Real augsys_tang_err_target;
                 Real augsys_lmh_err_target;
+
+                // Number of failed augmented system solves
+                Natural augsys_failed_total;
+                Natural augsys_qn_failed;
+                Natural augsys_pg_failed;
+                Natural augsys_proj_failed;
+                Natural augsys_tang_failed;
+                Natural augsys_lmh_failed;
                 
                 // Equality constraint evaluated at x.  We use this in the
                 // quasinormal step as well as in the computation of the
@@ -6030,6 +6038,36 @@ namespace Optizelle{
                         //---augsys_lmh_err_target0---
                         0.
                         //---augsys_lmh_err_target1---
+                    ),
+                    augsys_failed_total(
+                        //---augsys_failed_total0---
+                        0.
+                        //---augsys_failed_total1---
+                    ),
+                    augsys_qn_failed(
+                        //---augsys_qn_failed0---
+                        0.
+                        //---augsys_qn_failed1---
+                    ),
+                    augsys_pg_failed(
+                        //---augsys_pg_failed0---
+                        0.
+                        //---augsys_pg_failed1---
+                    ),
+                    augsys_proj_failed(
+                        //---augsys_proj_failed0---
+                        0.
+                        //---augsys_proj_failed1---
+                    ),
+                    augsys_tang_failed(
+                        //---augsys_tang_failed0---
+                        0.
+                        //---augsys_tang_failed1---
+                    ),
+                    augsys_lmh_failed(
+                        //---augsys_lmh_failed0---
+                        0.
+                        //---augsys_lmh_failed1---
                     ),
                     g_x(
                         //---g_x0---
@@ -6400,6 +6438,30 @@ namespace Optizelle{
                     // Any
                     //---augsys_lmh_err_target_valid1---
                     
+                    //---augsys_failed_total_valid0---
+                    // Any
+                    //---augsys_failed_total_valid1---
+                    
+                    //---augsys_qn_failed_valid0---
+                    // Any
+                    //---augsys_qn_failed_valid1---
+                    
+                    //---augsys_pg_failed_valid0---
+                    // Any
+                    //---augsys_pg_failed_valid1---
+                    
+                    //---augsys_proj_failed_valid0---
+                    // Any
+                    //---augsys_proj_failed_valid1---
+
+                    //---augsys_tang_failed_valid0---
+                    // Any
+                    //---augsys_tang_failed_valid1---
+
+                    //---augsys_lmh_failed_valid0---
+                    // Any
+                    //---augsys_lmh_failed_valid1---
+                    
                     //---g_x_valid0---
                     // Any
                     //---g_x_valid1---
@@ -6546,7 +6608,13 @@ namespace Optizelle{
                     item.first == "augsys_proj_iter_total" ||
                     item.first == "augsys_tang_iter_total" ||
                     item.first == "augsys_lmh_iter_total" ||
-                    item.first == "augsys_iter_total"
+                    item.first == "augsys_iter_total" ||
+                    item.first == "augsys_failed_total" ||
+                    item.first == "augsys_qn_failed" ||
+                    item.first == "augsys_pg_failed" ||
+                    item.first == "augsys_proj_failed" ||
+                    item.first == "augsys_tang_failed" ||
+                    item.first == "augsys_lmh_failed"
                 )
                     return true;
                 else
@@ -6727,6 +6795,18 @@ namespace Optizelle{
                     std::move(state.augsys_lmh_iter_total));
                 nats.emplace_back("augsys_iter_total",
                     std::move(state.augsys_iter_total));
+                nats.emplace_back("augsys_failed_total",
+                    std::move(state.augsys_failed_total));
+                nats.emplace_back("augsys_qn_failed",
+                    std::move(state.augsys_qn_failed));
+                nats.emplace_back("augsys_pg_failed",
+                    std::move(state.augsys_pg_failed));
+                nats.emplace_back("augsys_proj_failed",
+                    std::move(state.augsys_proj_failed));
+                nats.emplace_back("augsys_tang_failed",
+                    std::move(state.augsys_tang_failed));
+                nats.emplace_back("augsys_lmh_failed",
+                    std::move(state.augsys_lmh_failed));
 
                 // Copy in all the parameters
                 params.emplace_back("PSchur_left_type",
@@ -6883,6 +6963,18 @@ namespace Optizelle{
                         state.augsys_lmh_iter_total=std::move(item->second);
                     else if(item->first=="augsys_iter_total")
                         state.augsys_iter_total=std::move(item->second);
+                    else if(item->first=="augsys_failed_total")
+                        state.augsys_failed_total=std::move(item->second);
+                    else if(item->first=="augsys_qn_failed")
+                        state.augsys_qn_failed=std::move(item->second);
+                    else if(item->first=="augsys_pg_failed")
+                        state.augsys_pg_failed=std::move(item->second);
+                    else if(item->first=="augsys_proj_failed")
+                        state.augsys_proj_failed=std::move(item->second);
+                    else if(item->first=="augsys_tang_failed")
+                        state.augsys_tang_failed=std::move(item->second);
+                    else if(item->first=="augsys_lmh_failed")
+                        state.augsys_lmh_failed=std::move(item->second);
                 }
                 
                 // Next, copy in any parameters 
@@ -7286,6 +7378,9 @@ namespace Optizelle{
 
                     // Quasinormal step information
                     out.emplace_back(Utility::atos("qn_stop"));
+
+                    // Failed augmented system solves
+                    out.emplace_back(Utility::atos("aug_fail"));
                 }
 
                 // Even more detail
@@ -7302,26 +7397,31 @@ namespace Optizelle{
                     out.emplace_back(Utility::atos("qn_iter_tot"));
                     out.emplace_back(Utility::atos("qn_err"));
                     out.emplace_back(Utility::atos("qn_err_trg"));
+                    out.emplace_back(Utility::atos("qn_fail"));
                     
                     out.emplace_back(Utility::atos("pg_iter"));
                     out.emplace_back(Utility::atos("pg_iter_tot"));
                     out.emplace_back(Utility::atos("pg_err"));
                     out.emplace_back(Utility::atos("pg_err_trg"));
+                    out.emplace_back(Utility::atos("pg_fail"));
                     
                     out.emplace_back(Utility::atos("pr_iter"));
                     out.emplace_back(Utility::atos("pr_iter_tot"));
                     out.emplace_back(Utility::atos("pr_err"));
                     out.emplace_back(Utility::atos("pr_err_trg"));
+                    out.emplace_back(Utility::atos("pr_fail"));
                     
                     out.emplace_back(Utility::atos("tg_iter"));
                     out.emplace_back(Utility::atos("tg_iter_tot"));
                     out.emplace_back(Utility::atos("tg_err"));
                     out.emplace_back(Utility::atos("tg_err_trg"));
+                    out.emplace_back(Utility::atos("tg_fail"));
                     
                     out.emplace_back(Utility::atos("lm_iter"));
                     out.emplace_back(Utility::atos("lm_iter_tot"));
                     out.emplace_back(Utility::atos("lm_err"));
                     out.emplace_back(Utility::atos("lm_err_trg"));
+                    out.emplace_back(Utility::atos("lm_fail"));
                     
                     out.emplace_back(Utility::atos("aug_itr_tot"));
                 }
@@ -7365,11 +7465,13 @@ namespace Optizelle{
                 auto const & augsys_qn_iter_total=state.augsys_qn_iter_total;
                 auto const & augsys_qn_err = state.augsys_qn_err;
                 auto const & augsys_qn_err_target= state.augsys_qn_err_target;
+                auto const & augsys_qn_failed = state.augsys_qn_failed;
 
                 auto const & augsys_pg_iter = state.augsys_pg_iter;
                 auto const & augsys_pg_iter_total=state.augsys_pg_iter_total;
                 auto const & augsys_pg_err = state.augsys_pg_err;
                 auto const & augsys_pg_err_target= state.augsys_pg_err_target;
+                auto const & augsys_pg_failed = state.augsys_pg_failed;
 
                 auto const & augsys_proj_iter = state.augsys_proj_iter;
                 auto const & augsys_proj_iter_total =
@@ -7377,6 +7479,7 @@ namespace Optizelle{
                 auto const & augsys_proj_err = state.augsys_proj_err;
                 auto const & augsys_proj_err_target =
                     state.augsys_proj_err_target;
+                auto const & augsys_proj_failed = state.augsys_proj_failed;
 
                 auto const & augsys_tang_iter = state.augsys_tang_iter;
                 auto const & augsys_tang_iter_total =
@@ -7384,6 +7487,7 @@ namespace Optizelle{
                 auto const & augsys_tang_err = state.augsys_tang_err;
                 auto const & augsys_tang_err_target =
                     state.augsys_tang_err_target;
+                auto const & augsys_tang_failed = state.augsys_tang_failed;
 
                 auto const & augsys_lmh_iter = state.augsys_lmh_iter;
                 auto const & augsys_lmh_iter_total =
@@ -7391,8 +7495,10 @@ namespace Optizelle{
                 auto const & augsys_lmh_err = state.augsys_lmh_err;
                 auto const & augsys_lmh_err_target =
                     state.augsys_lmh_err_target;
+                auto const & augsys_lmh_failed = state.augsys_lmh_failed;
                 
                 auto const & augsys_iter_total = state.augsys_iter_total;
+                auto const & augsys_failed_total = state.augsys_failed_total;
 
                 // Figure out if we're at the absolute beginning of the
                 // optimization.
@@ -7433,6 +7539,12 @@ namespace Optizelle{
                         out.emplace_back(Utility::atos(qn_stop));
                     else 
                         out.emplace_back(Utility::blankSeparator);
+
+                    // Number of failed augmented system solves 
+                    if(!opt_begin)
+                        out.emplace_back(Utility::atos(augsys_failed_total));
+                    else 
+                        out.emplace_back(Utility::blankSeparator);
                 }
                 
                 // Even more detail
@@ -7452,32 +7564,35 @@ namespace Optizelle{
                         out.emplace_back(Utility::atos(augsys_qn_iter_total));
                         out.emplace_back(Utility::atos(augsys_qn_err));
                         out.emplace_back(Utility::atos(augsys_qn_err_target));
+                        out.emplace_back(Utility::atos(augsys_qn_failed));
                         
                         out.emplace_back(Utility::atos(augsys_pg_iter));
                         out.emplace_back(Utility::atos(augsys_pg_iter_total));
                         out.emplace_back(Utility::atos(augsys_pg_err));
                         out.emplace_back(Utility::atos(augsys_pg_err_target));
+                        out.emplace_back(Utility::atos(augsys_pg_failed));
                         
                         out.emplace_back(Utility::atos(augsys_proj_iter));
                         out.emplace_back(Utility::atos(augsys_proj_iter_total));
                         out.emplace_back(Utility::atos(augsys_proj_err));
-                        out.emplace_back(
-                            Utility::atos(augsys_proj_err_target));
+                        out.emplace_back(Utility::atos(augsys_proj_err_target));
+                        out.emplace_back(Utility::atos(augsys_proj_failed));
                         
                         out.emplace_back(Utility::atos(augsys_tang_iter));
                         out.emplace_back(Utility::atos(augsys_tang_iter_total));
                         out.emplace_back(Utility::atos(augsys_tang_err));
-                        out.emplace_back(
-                            Utility::atos(augsys_tang_err_target));
+                        out.emplace_back(Utility::atos(augsys_tang_err_target));
+                        out.emplace_back(Utility::atos(augsys_tang_failed));
                         
                         out.emplace_back(Utility::atos(augsys_lmh_iter));
                         out.emplace_back(Utility::atos(augsys_lmh_iter_total));
                         out.emplace_back(Utility::atos(augsys_lmh_err));
                         out.emplace_back(Utility::atos(augsys_lmh_err_target));
+                        out.emplace_back(Utility::atos(augsys_lmh_failed));
                         
                         out.emplace_back(Utility::atos(augsys_iter_total));
                     } else 
-                        for(Natural i=0;i<24;i++)
+                        for(Natural i=0;i<29;i++)
                             out.emplace_back(Utility::blankSeparator);
                 }
 
@@ -7830,12 +7945,15 @@ namespace Optizelle{
                 auto const & zeta = state.zeta;
                 auto const & norm_gxtyp = state.norm_gxtyp;
                 auto const & eps_constr = state.eps_constr;
+                auto const & augsys_qn_err_target = state.augsys_qn_err_target;
                 auto & dx_ncp=state.dx_ncp;
                 auto & dx_n=state.dx_n;
                 auto & augsys_qn_err = state.augsys_qn_err;
                 auto & augsys_qn_iter = state.augsys_qn_iter;
                 auto & augsys_qn_iter_total = state.augsys_qn_iter_total;
+                auto & augsys_qn_failed = state.augsys_qn_failed;
                 auto & augsys_iter_total = state.augsys_iter_total;
+                auto & augsys_failed_total = state.augsys_failed_total;
                 auto & alpha_x_qn = state.alpha_x_qn;
                 auto & qn_stop = state.qn_stop;
 
@@ -7851,7 +7969,7 @@ namespace Optizelle{
                 auto dxn_safe = X::init(x);
                 X::zero(dxn_safe);
                 auto ddxn_safe = X::init(x);
-                auto failed_safeguard = Natural(0);
+                auto safeguard_failed = Natural(0);
 
                 // We build dx_n from ddx_n
                 auto ddx_n = X::init(x);
@@ -7956,6 +8074,9 @@ namespace Optizelle{
                             );
                         augsys_qn_iter_total+=augsys_qn_iter;
                         augsys_iter_total+=augsys_qn_iter;
+                        auto augsys_failed = augsys_qn_err>augsys_qn_err_target;
+                        augsys_qn_failed += augsys_failed;
+                        augsys_failed_total += augsys_failed; 
 
                         // Pull the solution out
                         X::copy(x0.first,ddx_n);
@@ -7963,7 +8084,7 @@ namespace Optizelle{
 
                     // If our last iterate was safe, then keep our current
                     // search direction
-                    if(failed_safeguard==0)
+                    if(safeguard_failed==0)
                         X::copy(ddx_n,ddxn_safe);
 
                     // Determine the norm of our trial step, dx_n+ddx_n
@@ -8000,12 +8121,12 @@ namespace Optizelle{
                         // If the trial step is safe, set the number of failed
                         // safeguard steps to zero and move 
                         if(alpha_x_qn>=Real(1.)) {
-                            failed_safeguard = 0;
+                            safeguard_failed = 0;
                             X::copy(trial,dx_n);
 
                         // If the current iterate is not safe, but the last one
                         // was, see how far we can go in this direction
-                        } else if(failed_safeguard==0) {
+                        } else if(safeguard_failed==0) {
 
                             // Safeguard the step
                             alpha_x_qn = std::min(
@@ -8036,9 +8157,9 @@ namespace Optizelle{
                     // to our safeguard
                     alpha_x_qn = std::min(safeguard(zero,dx_n),Real(1.0));
                     if(alpha_x_qn < Real(1.))
-                        failed_safeguard += 1;
+                        safeguard_failed += 1;
                     else {
-                        failed_safeguard = 0;
+                        safeguard_failed = 0;
                         X::copy(dx_n,dxn_safe);
                     }
 
@@ -8046,7 +8167,7 @@ namespace Optizelle{
                     // Make sure to truncate it if it violates the safeguard.
                     if(iter==1) {
                         X::copy(dx_n,dx_ncp);
-                        if(failed_safeguard>0)
+                        if(safeguard_failed>0)
                             X::scal(alpha_x_qn,dx_ncp);
                     }
                 }
@@ -8056,7 +8177,7 @@ namespace Optizelle{
                 // with respect to our safeguard.  If our last dx_n was not
                 // safe, then we go back to our last safe dx_n and grab its
                 // ddx_n.  Then, we truncate ddx_n to meet our safeguard.
-                if(failed_safeguard>0) {
+                if(safeguard_failed>0) {
                     X::copy(dxn_safe,dx_n);
                     X::copy(ddxn_safe,ddx_n);
                     alpha_x_qn = std::min(safeguard(dx_n,ddx_n),Real(1.0));
@@ -8071,7 +8192,7 @@ namespace Optizelle{
 
                 // If we made it to our final iteration and we're feasible,
                 // then we took the Newton step
-                if(iter==3 && failed_safeguard==0)
+                if(iter==3 && safeguard_failed==0)
                     qn_stop = QuasinormalStop::Newton;
 
                 // If we computed a Newton point, try truncating straight
@@ -8107,15 +8228,15 @@ namespace Optizelle{
                 // Figure out why we stopped
                 if(iter==0)
                     qn_stop = QuasinormalStop::Skipped;
-                else if(failed_safeguard==2)
+                else if(safeguard_failed==2)
                     qn_stop = QuasinormalStop::CauchySafeguard;
-                else if(failed_safeguard==1)
+                else if(safeguard_failed==1)
                     qn_stop = QuasinormalStop::DoglegSafeguard;
-                else if(failed_safeguard==0 && iter==1)
+                else if(safeguard_failed==0 && iter==1)
                     qn_stop = QuasinormalStop::CauchyTrustRegion;
-                else if(failed_safeguard==0 && iter==2)
+                else if(safeguard_failed==0 && iter==2)
                     qn_stop = QuasinormalStop::DoglegTrustRegion;
-                else if(failed_safeguard==0 && iter==3)
+                else if(safeguard_failed==0 && iter==3)
                     qn_stop = QuasinormalStop::Newton;
 
             }
@@ -8206,11 +8327,14 @@ namespace Optizelle{
                 Y_Vector const & y=state.y;
                 Natural const & augsys_iter_max=state.augsys_iter_max;
                 Natural const & augsys_rst_freq=state.augsys_rst_freq;
+                auto const & augsys_pg_err_target = state.augsys_pg_err_target;
                 X_Vector & W_gradpHdxn=state.W_gradpHdxn;
-                Real & augsys_pg_err = state.augsys_pg_err;
-                Natural & augsys_pg_iter = state.augsys_pg_iter;
-                Natural & augsys_pg_iter_total = state.augsys_pg_iter_total;
-                Natural & augsys_iter_total = state.augsys_iter_total;
+                auto & augsys_pg_err = state.augsys_pg_err;
+                auto & augsys_pg_iter = state.augsys_pg_iter;
+                auto & augsys_pg_iter_total = state.augsys_pg_iter_total;
+                auto & augsys_pg_failed = state.augsys_pg_failed;
+                auto & augsys_iter_total = state.augsys_iter_total;
+                auto & augsys_failed_total = state.augsys_failed_total;
 
                 // Find the gradient modifications for the step computation
                 X_Vector grad_step(X::init(grad));
@@ -8256,6 +8380,9 @@ namespace Optizelle{
                     );
                 augsys_pg_iter_total+=augsys_pg_iter;
                 augsys_iter_total+=augsys_pg_iter;
+                auto augsys_failed = augsys_pg_err>augsys_pg_err_target;
+                augsys_pg_failed += augsys_failed; 
+                augsys_failed_total += augsys_failed;
 
                 // Copy out the solution
                 X::copy(x0.first,W_gradpHdxn);
@@ -8347,11 +8474,14 @@ namespace Optizelle{
                     Y_Vector const & y=state.y;
                     Natural const & augsys_iter_max=state.augsys_iter_max;
                     Natural const & augsys_rst_freq=state.augsys_rst_freq;
-                    Real & augsys_proj_err = state.augsys_proj_err;
-                    Natural & augsys_proj_iter = state.augsys_proj_iter;
-                    Natural & augsys_proj_iter_total = 
-                        state.augsys_proj_iter_total;
-                    Natural & augsys_iter_total = state.augsys_iter_total;
+                    auto const & augsys_proj_err_target =
+                        state.augsys_proj_err_target;
+                    auto & augsys_proj_err = state.augsys_proj_err;
+                    auto & augsys_proj_iter = state.augsys_proj_iter;
+                    auto & augsys_proj_iter_total =state.augsys_proj_iter_total;
+                    auto & augsys_proj_failed = state.augsys_proj_failed;
+                    auto & augsys_iter_total = state.augsys_iter_total;
+                    auto & augsys_failed_total =state.augsys_failed_total;
 
                     // Create the initial guess, x0=(0,0)
                     XxY_Vector x0(X::init(x),Y::init(y));
@@ -8386,6 +8516,9 @@ namespace Optizelle{
                     augsys_proj_iter+=iter;
                     augsys_proj_iter_total+=iter;
                     augsys_iter_total+=iter;
+                    auto augsys_failed = augsys_proj_err>augsys_proj_err_target;
+                    augsys_proj_failed += augsys_failed;
+                    augsys_failed_total += augsys_failed;
 
                     // Copy out the solution
                     X::copy(x0.first,result);
@@ -8409,7 +8542,7 @@ namespace Optizelle{
                 Real const & eps_trunc=state.eps_trunc;
                 Natural const & trunc_iter_max=state.trunc_iter_max;
                 Natural const & trunc_orthog_max=state.trunc_orthog_max;
-                auto const & failed_safeguard_max = state.failed_safeguard_max;
+                auto const & safeguard_failed_max = state.safeguard_failed_max;
                 X_Vector & dx_t_uncorrected=state.dx_t_uncorrected;
                 X_Vector & dx_tcp_uncorrected=state.dx_tcp_uncorrected;
                 Real & trunc_err=state.trunc_err;
@@ -8417,8 +8550,8 @@ namespace Optizelle{
                 Natural & trunc_iter_total=state.trunc_iter_total;
                 TruncatedStop::t& trunc_stop=state.trunc_stop;
                 Natural & augsys_proj_iter = state.augsys_proj_iter;
-                auto & failed_safeguard = state.failed_safeguard;
-                auto & failed_safeguard_total = state.failed_safeguard_total;
+                auto & safeguard_failed = state.safeguard_failed;
+                auto & safeguard_failed_total = state.safeguard_failed_total;
                 auto & alpha_x = state.alpha_x;
                 
                 // Setup the Hessian operator and allocate memory for the
@@ -8460,7 +8593,7 @@ namespace Optizelle{
                     delta,
                     dx_n,
                     true,
-                    failed_safeguard_max,
+                    safeguard_failed_max,
                     simplified_safeguard,
                     dx_t_uncorrected,
                     dx_tcp_uncorrected,
@@ -8468,7 +8601,7 @@ namespace Optizelle{
                     residual_err,
                     trunc_iter,
                     trunc_stop,
-                    failed_safeguard,
+                    safeguard_failed,
                     alpha_x);
 
                 // Calculate the truncated CG error 
@@ -8476,7 +8609,7 @@ namespace Optizelle{
                 trunc_iter_total += trunc_iter;
 
                 // Keep track of the number of failed safeguard steps
-                failed_safeguard_total+=failed_safeguard;
+                safeguard_failed_total+=safeguard_failed;
             }
             
             // Sets the tolerances for the computation of the tangential
@@ -8545,10 +8678,14 @@ namespace Optizelle{
                 Natural const & augsys_rst_freq=state.augsys_rst_freq;
                 X_Vector const & dx_t_uncorrected=state.dx_t_uncorrected;
                 X_Vector & dx_t=state.dx_t;
-                Real & augsys_tang_err = state.augsys_tang_err;
-                Natural & augsys_tang_iter = state.augsys_tang_iter;
-                Natural & augsys_tang_iter_total = state.augsys_tang_iter_total;
-                Natural & augsys_iter_total = state.augsys_iter_total;
+                auto const & augsys_tang_err_target
+                    = state.augsys_tang_err_target;
+                auto & augsys_tang_err = state.augsys_tang_err;
+                auto & augsys_tang_iter = state.augsys_tang_iter;
+                auto & augsys_tang_iter_total = state.augsys_tang_iter_total;
+                auto & augsys_tang_failed = state.augsys_tang_failed;
+                auto & augsys_iter_total = state.augsys_iter_total;
+                auto & augsys_failed_total = state.augsys_failed_total;
 
                 // Create the initial guess, x0=(0,0)
                 XxY_Vector x0(X::init(x),Y::init(y));
@@ -8577,8 +8714,11 @@ namespace Optizelle{
                         TangentialStepManipulator(state,fns),
                         x0 
                     );
-                augsys_tang_iter_total+=augsys_tang_iter;
-                augsys_iter_total+=augsys_tang_iter;
+                augsys_tang_iter_total += augsys_tang_iter;
+                augsys_iter_total += augsys_tang_iter;
+                auto augsys_failed = augsys_tang_err>augsys_tang_err_target;
+                augsys_tang_failed += augsys_failed;
+                augsys_failed_total += augsys_failed;
 
                 // Copy out the tangential step
                 X::copy(x0.first,dx_t);
@@ -8641,10 +8781,14 @@ namespace Optizelle{
                 Natural const & augsys_rst_freq=state.augsys_rst_freq;
                 X_Vector const & grad=state.grad;
                 Y_Vector & y=state.y;
-                Real & augsys_lmh_err = state.augsys_lmh_err;
-                Natural & augsys_lmh_iter = state.augsys_lmh_iter;
-                Natural & augsys_lmh_iter_total = state.augsys_lmh_iter_total;
-                Natural & augsys_iter_total = state.augsys_iter_total;
+                auto const & augsys_lmh_err_target
+                    = state.augsys_lmh_err_target;
+                auto & augsys_lmh_err = state.augsys_lmh_err;
+                auto & augsys_lmh_iter = state.augsys_lmh_iter;
+                auto & augsys_lmh_iter_total = state.augsys_lmh_iter_total;
+                auto & augsys_lmh_failed = state.augsys_lmh_failed;
+                auto & augsys_iter_total = state.augsys_iter_total;
+                auto & augsys_failed_total = state.augsys_failed_total;
 
                 // Find the gradient modifications for the equality multiplier
                 // computation
@@ -8682,6 +8826,9 @@ namespace Optizelle{
                     );
                 augsys_lmh_iter_total+=augsys_lmh_iter;
                 augsys_iter_total+=augsys_lmh_iter;
+                auto augsys_failed = augsys_lmh_err>augsys_lmh_err_target;
+                augsys_lmh_failed += augsys_failed;
+                augsys_failed_total += augsys_failed;
 
                 // Find the equality multiplier based on this step
                 Y::axpy(Real(1.),x0.second,y);
@@ -8702,10 +8849,13 @@ namespace Optizelle{
                 Natural const & augsys_rst_freq=state.augsys_rst_freq;
                 X_Vector & x=state.x;
                 Y_Vector & dy=state.dy;
-                Real & augsys_lmh_err = state.augsys_lmh_err;
-                Natural & augsys_lmh_iter = state.augsys_lmh_iter;
-                Natural & augsys_lmh_iter_total = state.augsys_lmh_iter_total;
-                Natural & augsys_iter_total = state.augsys_iter_total;
+                auto const & augsys_lmh_err_target= state.augsys_lmh_err_target;
+                auto & augsys_lmh_err = state.augsys_lmh_err;
+                auto & augsys_lmh_iter = state.augsys_lmh_iter;
+                auto & augsys_lmh_iter_total = state.augsys_lmh_iter_total;
+                auto & augsys_lmh_failed = state.augsys_lmh_failed;
+                auto & augsys_iter_total = state.augsys_iter_total;
+                auto & augsys_failed_total = state.augsys_failed_total;
 
                 // x_p_dx <- x + dx
                 X_Vector x_p_dx(X::init(x));
@@ -8765,6 +8915,9 @@ namespace Optizelle{
                     );
                 augsys_lmh_iter_total+=augsys_lmh_iter;
                 augsys_iter_total+=augsys_lmh_iter;
+                auto augsys_failed = augsys_lmh_err>augsys_lmh_err_target;
+                augsys_lmh_failed += augsys_failed;
+                augsys_failed_total += augsys_failed;
 
                 // Restore our current iterate
                 X::copy(x_save,x);
@@ -8773,69 +8926,6 @@ namespace Optizelle{
                 Y::copy(x0.second,dy);
             }
             
-            // Does a check on how far off the equality multiplier is 
-            static Real equalityMultiplierCheck(
-                typename Functions::t const & fns,
-                typename State::t & state
-            ) {
-                // Create some shortcuts
-                ScalarValuedFunction <Real,XX> const & f=*(fns.f);
-                ScalarValuedFunctionModifications <Real,XX> const & f_mod
-                    = *(fns.f_mod);
-                X_Vector const & grad=state.grad; 
-                Natural const & augsys_iter_max=state.augsys_iter_max;
-                Natural const & augsys_rst_freq=state.augsys_rst_freq;
-                X_Vector & x=state.x;
-                Y_Vector & dy=state.dy;
-                Real & augsys_lmh_err = state.augsys_lmh_err;
-                Natural & augsys_lmh_iter = state.augsys_lmh_iter;
-                Natural & augsys_lmh_iter_total = state.augsys_lmh_iter_total;
-                Natural & augsys_iter_total = state.augsys_iter_total;
-
-                // grad_x <- L(x,y) = grad f(x) + g'(x)*y
-                X_Vector grad_x(X::init(x));
-                    f.grad(x,grad_x);
-
-                // Find the gradient modifications for the equality multiplier
-                // computation
-                X_Vector grad_x_mult(X::init(grad));
-                    f_mod.grad_mult(x,grad_x,grad_x_mult);
-
-                // Create the initial guess, x0=(0,0)
-                XxY_Vector x0(X::init(x),Y::init(dy));
-                    XxY::zero(x0);
-
-                // Create the rhs, b0=(-grad L(x,y),0);
-                XxY_Vector b0(XxY::init(x0));
-                    X::copy(grad_x_mult,b0.first);
-                    X::scal(Real(-1.),b0.first);
-                    Y::zero(b0.second);
-
-                // Build Schur style preconditioners
-                typename Unconstrained <Real,XX>::Functions::Identity I;
-                BlockDiagonalPreconditioner PAugSys_l(I,*(fns.PSchur_left));
-                BlockDiagonalPreconditioner PAugSys_r(I,*(fns.PSchur_right));
-
-                // Solve the augmented system for the equality multiplier step 
-                std::tie(augsys_lmh_err,augsys_lmh_iter) =
-                    Optizelle::gmres <Real,XXxYY> (
-                        AugmentedSystem(state,fns,x),
-                        b0,
-                        Real(1.), // This will be overwritten by the manipulator
-                        augsys_iter_max,
-                        augsys_rst_freq,
-                        PAugSys_l,
-                        PAugSys_r,
-                        EqualityMultiplierStepManipulator(state,fns),
-                        x0 
-                    );
-                augsys_lmh_iter_total+=augsys_lmh_iter;
-                augsys_iter_total+=augsys_lmh_iter;
-
-                // Copy out the equality multiplier step
-                return sqrt(Y::innr(x0.second,x0.second));
-            }
-
             // Computes the predicted reduction 
             static void predictedReduction(
                 typename Functions::t const & fns,
@@ -10515,7 +10605,7 @@ namespace Optizelle{
                     if(Algorithms::usePrimalDual(state))
                         out.emplace_back(Utility::atos("alpha_z"));
                     if(algorithm_class!=AlgorithmClass::LineSearch)
-                        out.emplace_back(Utility::atos("failed_safe"));
+                        out.emplace_back(Utility::atos("safe_fail"));
                 }
             }
 
@@ -10543,7 +10633,7 @@ namespace Optizelle{
                 auto const & mu_est=state.mu_est; 
                 auto const & alpha_x =state.alpha_x;
                 auto const & alpha_z =state.alpha_z;
-                auto const & failed_safeguard=state.failed_safeguard;
+                auto const & safeguard_failed=state.safeguard_failed;
                 auto const & msg_level = state.msg_level;
                 auto const & algorithm_class = state.algorithm_class;
 
@@ -10568,7 +10658,7 @@ namespace Optizelle{
                         if(Algorithms::usePrimalDual(state))
                             out.emplace_back(Utility::atos(alpha_z));
                         if(algorithm_class!=AlgorithmClass::LineSearch)
-                            out.emplace_back(Utility::atos(failed_safeguard));
+                            out.emplace_back(Utility::atos(safeguard_failed));
                     } else {
                         auto nblank = 1;
                         if(Algorithms::usePrimalDual(state))
