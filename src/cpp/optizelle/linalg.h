@@ -1943,7 +1943,7 @@ namespace Optizelle {
         Real const * const R,
         Real const * const Qt_e1,
         std::list <typename XX <Real>::Vector> const & vs,
-        Operator <Real,XX,XX> const & Mr_inv,
+        Operator <Real,XX,XX> const & B_right,
         typename XX <Real>::Vector const & x,
         typename XX <Real>::Vector & dx
     ) {
@@ -1982,7 +1982,7 @@ namespace Optizelle {
         }
 
         // Right recondition the above linear combination
-        Mr_inv.eval(V_y,dx);
+        B_right.eval(V_y,dx);
     }
 
     // Resets the GMRES method.  This does a number of things
@@ -2000,7 +2000,7 @@ namespace Optizelle {
     >
     void resetGMRES(
         typename XX <Real>::Vector const & rtrue,
-        Operator <Real,XX,XX> const & Ml_inv,
+        Operator <Real,XX,XX> const & B_left,
         Natural const & rst_freq,
         typename XX <Real>::Vector & v,
         std::list <typename XX <Real>::Vector> & vs,
@@ -2014,7 +2014,7 @@ namespace Optizelle {
 
         // Apply the left preconditioner to the true residual.  This
         // completes #1
-        Ml_inv.eval(rtrue,r);
+        B_left.eval(rtrue,r);
 
         // Store the norm of the preconditioned residual.  This completes #2.
         norm_r = std::sqrt(X::innr(r,r));
@@ -2093,8 +2093,8 @@ namespace Optizelle {
     // (input) iter_max : Maximum number of iterations
     // (input) rst_freq : Restarts GMRES every rst_freq iterations.  If we don't
     //    want restarting, set this to zero. 
-    // (input) Ml_inv : Operator that computes the left preconditioner
-    // (input) Mr_inv : Operator that computes the right preconditioner
+    // (input) B_left : Operator that computes the left preconditioner
+    // (input) B_right : Operator that computes the right preconditioner
     // (input/output) x : Initial guess of the solution.  Returns the final
     //    solution.
     // (return) (norm_rtrue,iter) : Final norm of the true residual and
@@ -2109,8 +2109,8 @@ namespace Optizelle {
         Real eps,
         Natural iter_max,
         Natural rst_freq,
-        Operator <Real,XX,XX> const & Ml_inv,
-        Operator <Real,XX,XX> const & Mr_inv,
+        Operator <Real,XX,XX> const & B_left,
+        Operator <Real,XX,XX> const & B_right,
         GMRESManipulator <Real,XX> const & gmanip,
         typename XX <Real>::Vector & x
     ){
@@ -2180,7 +2180,7 @@ namespace Optizelle {
         norm_rtrue = std::sqrt(X::innr(rtrue,rtrue));
 
         // Initialize the GMRES algorithm
-        resetGMRES<Real,XX> (rtrue,Ml_inv,rst_freq,v,vs,r,norm_r,
+        resetGMRES<Real,XX> (rtrue,B_left,rst_freq,v,vs,r,norm_r,
             Qt_e1,Qts);
             
         // If for some bizarre reason, we're already optimal, don't do any work 
@@ -2201,9 +2201,9 @@ namespace Optizelle {
             if(i == 0) i = rst_freq;
 
             // Find the next Krylov vector
-            Mr_inv.eval(v,w);
+            B_right.eval(v,w);
             A.eval(w,A_Mrinv_v);
-            Ml_inv.eval(A_Mrinv_v,w);
+            B_left.eval(A_Mrinv_v,w);
 
             // Orthogonalize this Krylov vector with respect to the rest
             orthogonalize <Real,XX> (vs,w,&(R[(i-1)*i/2]));
@@ -2247,7 +2247,7 @@ namespace Optizelle {
             norm_r = fabs(Qt_e1[i]);
                 
             // Solve for the new iterate update
-            solveInKrylov <Real,XX> (i,&(R[0]),&(Qt_e1[0]),vs,Mr_inv,x,dx);
+            solveInKrylov <Real,XX> (i,&(R[0]),&(Qt_e1[0]),vs,B_right,x,dx);
 
             // Find the current iterate, its residual, the residual's norm
             X::copy(x,x_p_dx);
@@ -2272,7 +2272,7 @@ namespace Optizelle {
                 X::copy(x_p_dx,x);
 
                 // Reset the GMRES algorithm
-                resetGMRES<Real,XX> (rtrue,Ml_inv,rst_freq,v,vs,r,norm_r,
+                resetGMRES<Real,XX> (rtrue,B_left,rst_freq,v,vs,r,norm_r,
                     Qt_e1,Qts);
 
                 // Make sure to correctly indicate that we're now working on
@@ -2289,7 +2289,7 @@ namespace Optizelle {
         // As long as we didn't just solve for our new ierate, go ahead and
         // solve for it now.
         if(i > 0){ 
-            solveInKrylov <Real,XX> (i,&(R[0]),&(Qt_e1[0]),vs,Mr_inv,x,dx);
+            solveInKrylov <Real,XX> (i,&(R[0]),&(Qt_e1[0]),vs,B_right,x,dx);
             X::axpy(Real(1.),dx,x);
         }
 

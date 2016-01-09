@@ -328,8 +328,8 @@ namespace Unit {
         Natural rst_freq;
 
         // Preconditioners
-        std::unique_ptr <Optizelle::Operator <Real,XX,XX>> Ml_inv;
-        std::unique_ptr <Optizelle::Operator <Real,XX,XX>> Mr_inv;
+        std::unique_ptr <Optizelle::Operator <Real,XX,XX>> B_left;
+        std::unique_ptr <Optizelle::Operator <Real,XX,XX>> B_right;
 
         // GMRES manipulator
         std::unique_ptr <Optizelle::GMRESManipulator <Real,XX>> gmanip;
@@ -338,9 +338,9 @@ namespace Unit {
         gmres():
             Solver <Real,XX> (),
             rst_freq(0),
-            Ml_inv(new typename Optizelle::Unconstrained <Real,XX>::
+            B_left(new typename Optizelle::Unconstrained <Real,XX>::
                 Functions::Identity()),
-            Mr_inv(new typename Optizelle::Unconstrained <Real,XX>::
+            B_right(new typename Optizelle::Unconstrained <Real,XX>::
                 Functions::Identity()),
             gmanip(new Optizelle::EmptyGMRESManipulator <Real,XX>())
         {}
@@ -423,8 +423,8 @@ namespace Unit {
             setup.eps,
             setup.iter_max,
             setup.rst_freq,
-            *setup.Ml_inv,
-            *setup.Mr_inv,
+            *setup.B_left,
+            *setup.B_right,
             *setup.gmanip,
             *setup.x);
 

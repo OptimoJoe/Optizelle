@@ -8,7 +8,7 @@ int main() {
     setup.A = std::make_unique <Matrix>(
         Unit::Matrix <Real>::diagonal(setup.m));
     setup.b = std::make_unique <Vector>(Unit::Vector<Real>::alternate(setup.m));
-    setup.Ml_inv = std::make_unique <Matrix>(
+    setup.B_left = std::make_unique <Matrix>(
         Unit::Matrix <Real>::diagonal_inv(setup.m));
     setup.x_star = std::make_unique <Vector> (Vector({
         1.0,

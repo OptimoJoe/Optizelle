@@ -8,9 +8,9 @@ int main() {
     setup.A = std::make_unique <Matrix>(
         Unit::Matrix <Real>::nonsymmetric(setup.m,0));
     setup.b = std::make_unique <Vector> (Unit::Vector <Real>::basic(setup.m));
-    setup.Ml_inv = std::make_unique <Matrix>(
+    setup.B_left = std::make_unique <Matrix>(
         Unit::Matrix <Real>::nonsymmetric(setup.m,30));
-    setup.Mr_inv = std::make_unique <Matrix>(
+    setup.B_right = std::make_unique <Matrix>(
         Unit::Matrix <Real>::nonsymmetric(setup.m,55));
     setup.x_star = std::make_unique <Vector> (Vector({
         6.71115708873876e-01,
