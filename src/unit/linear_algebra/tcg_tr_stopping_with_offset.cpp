@@ -26,6 +26,7 @@ int main() {
     setup.iter_star = 1;
     setup.check_tr = true;
     setup.check_res = false;
+    setup.stop_star = Optizelle::TruncatedStop::TrustRegionViolated;
 
     // Check the solver 
     Unit::run_and_verify <Real,XX> (setup);

@@ -16,6 +16,7 @@ int main() {
     setup.check_cp = true;
     setup.check_sol = false;
     setup.check_res = false;
+    setup.stop_star = Optizelle::TruncatedStop::MaxItersExceeded;
 
     // Check the solver 
     Unit::run_and_verify <Real,XX> (setup);

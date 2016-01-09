@@ -383,6 +383,12 @@ namespace Unit {
         // Tolerance for the TR check
         Real eps_tr;
 
+        // Stopping condition check
+        bool check_stop;
+
+        // Desired stopping condition
+        Optizelle::TruncatedStop::t stop_star;
+
         // Setup some simple parameters
         tcg():
             Solver <Real,XX> (),
@@ -397,7 +403,9 @@ namespace Unit {
             orthog_check(false),
             check_cp(false),
             check_tr(false),
-            eps_tr(this->eps)
+            eps_tr(this->eps),
+            check_stop(true),
+            stop_star(Optizelle::TruncatedStop::NotConverged)
         {}
     };
 
@@ -543,6 +551,11 @@ namespace Unit {
             auto norm_xpoffset = std::sqrt(X::innr(x_p_offset,x_p_offset));
             CHECK(std::abs(norm_xpoffset-setup.delta) <
                 setup.eps_tr * setup.delta);
+        }
+
+        // Check that the stopping condition matches what we expect
+        if(setup.check_stop) {
+            CHECK(setup.stop_star == stop);
         }
     }
 }

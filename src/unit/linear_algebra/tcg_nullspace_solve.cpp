@@ -21,6 +21,7 @@ int main() {
         0.0,
         0.0}));
     setup.iter_star = 2;
+    setup.stop_star = Optizelle::TruncatedStop::RelativeErrorSmall;
 
     // Check the solver 
     Unit::run_and_verify <Real,XX> (setup);
