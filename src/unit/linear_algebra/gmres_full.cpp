@@ -1,3 +1,6 @@
+// Run GMRES with both preconditioners set to something random.  We want to
+// verify that we'll eventually find a solution. 
+
 #include "linear_algebra.h"
 #include "spaces.h"
 

@@ -1,3 +1,7 @@
+// Run GMRES with a perfect left preconditioner.  Note, the operator here is
+// singular, but this allows us to verify that we still converge in a single
+// iteration.
+
 #include "linear_algebra.h"
 #include "spaces.h"
 

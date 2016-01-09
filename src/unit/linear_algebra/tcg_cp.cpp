@@ -1,3 +1,6 @@
+// Run TCG, but limit ourselves to a single iteration.  This verifies that this
+// solution is the Cauchy point.
+
 #include "linear_algebra.h"
 #include "spaces.h"
 

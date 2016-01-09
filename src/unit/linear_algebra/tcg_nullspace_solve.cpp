@@ -1,3 +1,7 @@
+// Run TCG with a projection operator.  This verifies that with a projection
+// operator, we'll converge in a smaller number of iterations and that
+// projections that are singular don't break anything too badly.
+
 #include "linear_algebra.h"
 #include "spaces.h"
 

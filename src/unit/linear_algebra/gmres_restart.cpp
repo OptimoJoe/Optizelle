@@ -1,3 +1,6 @@
+// Run GMRES with the restart mechanism turned off.  This verifies that we can
+// still converge even if we throw out Krylov vectors.
+
 #include "linear_algebra.h"
 #include "spaces.h"
 

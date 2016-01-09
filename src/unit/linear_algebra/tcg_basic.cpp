@@ -1,3 +1,6 @@
+// Run TCG with no preconditioners.  This verifies that TCG will solve a linear
+// system.
+
 #include "linear_algebra.h"
 #include "spaces.h"
 

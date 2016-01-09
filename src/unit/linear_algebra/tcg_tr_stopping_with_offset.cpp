@@ -1,3 +1,7 @@
+// Run TCG with a small trust-region radius and an offset.  This verifies that
+// the algorithm will not violate the trust-region radius even with an offset
+// and that the combination of the two vectors touches the radius. 
+
 #include "linear_algebra.h"
 #include "spaces.h"
 

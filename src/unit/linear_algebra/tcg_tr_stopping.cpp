@@ -1,3 +1,7 @@
+// Run TCG with a small trust-region radius.  This verifies that the algorithm
+// will not violate the trust-region radius and that the final solution will
+// touch the radius.
+
 #include "linear_algebra.h"
 #include "spaces.h"
 
