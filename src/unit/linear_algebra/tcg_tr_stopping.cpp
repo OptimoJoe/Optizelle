@@ -1,71 +1,23 @@
-#include "optizelle/optizelle.h"
-#include "optizelle/vspaces.h"
-#include "optizelle/linalg.h"
 #include "linear_algebra.h"
-#include "unit.h"
+#include "spaces.h"
 
 int main() {
-    // Create a type shortcut
-    typedef Optizelle::Rm <double> X;
+    // Setup the problem 
+    auto setup = Unit::tcg <Real,XX> ();
 
-    // Set the size of the problem
-    Natural m = 5;
+    setup.A = std::make_unique <Matrix>(
+        Unit::Matrix <Real>::symmetric(setup.m,0));
+    setup.b = std::make_unique <Vector> (Unit::Vector <Real>::basic(setup.m));
+    setup.iter_max = 1;
+    setup.iter_star = 1;
+    setup.delta = Real(0.1);
+    setup.check_cp = true;
+    setup.check_tr = true;
+    setup.check_sol = false;
+    setup.check_res = false;
 
-    // Set the stopping tolerance
-    double eps_trunc = 1e-12;
-
-    // Set the maximum number of iterations
-    Natural iter_max = 200;
-
-    // Set the trust-reregion radius 
-    double delta = 0.1;
-
-    // Create some operator 
-    BasicOperator <double> A(m);
-    for(Natural j=1;j<=m;j++)
-        for(Natural i=1;i<=m;i++) {
-            Natural I = j+(i-1)*m;
-            Natural J = i+(j-1)*m;
-            if(i>j) {
-                A.A[I-1]=cos(pow(I,m-1));
-                A.A[J-1]=A.A[I-1];
-            } else if(i==j)
-                A.A[I-1]=cos(pow(I,m-1))+10;
-        }
-    
-    // Create some right hand side
-    std::vector <double> b(m);
-    for(Natural i=1;i<=m;i++) b[i-1] = cos(i+25); 
-    
-    // Create some empty null-space projection 
-    IdentityOperator <double> W;
-
-    // Create an initial guess at the solution
-    std::vector <double> x(m);
-    X::zero (x);
-
-    // Create a vector for the Cauchy point
-    std::vector <double> x_cp(m);
-
-    // Create a vector for the offset of the trust-region
-    std::vector <double> x_offset(m);
-    Optizelle::Rm <double>::zero(x_offset);
-
-    // Solve this linear system
-    double residual_err0, residual_err; 
-    Natural iter;
-    Optizelle::TruncatedStop::t trunc_stop;
-    auto safeguard_failed = Natural(0);
-    auto alpha_safeguard = double(0.);
-    Optizelle::truncated_cg <double,Optizelle::Rm>
-        (A,b,W,eps_trunc,iter_max,1,delta,x_offset,false,1,
-            no_safeguard <double,Optizelle::Rm>,x,x_cp,
-            residual_err0,residual_err,iter,trunc_stop,safeguard_failed,
-            alpha_safeguard);
-
-    // Check that the size of x is just the trust-region radius
-    double norm_x = sqrt(X::innr(x,x));
-    CHECK(std::abs(norm_x-delta) < 1e-8);
+    // Check the solver 
+    Unit::run_and_verify <Real,XX> (setup);
 
     // Declare success
     return EXIT_SUCCESS;
