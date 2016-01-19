@@ -1934,9 +1934,18 @@ namespace Optizelle{
                 // Total number of truncated-CG iterations taken
                 Natural trunc_iter_total;
 
-                // Maximum number of vectors we orthogonalize against in 
-                // truncated CG
-                Natural trunc_orthog_max;
+                // Maximum number of previous search directions that we
+                // store.  We use these vectors to orthogonalize the current
+                // search direction against.  In theory, we need 1.  In
+                // practice, we may need several.  The inexact composite-step
+                // SQP method overwrites this term and uses full
+                // orthogonalization (sets this to trunc_iter_max.)
+                Natural trunc_orthog_storage_max;
+
+                // Maximum number of orthogonalization iterations when
+                // orthogonalizing the current search direction against the
+                // previous.  In theory, we need 1.  In practice, 2 may help.
+                Natural trunc_orthog_iter_max;
 
                 // Why truncated CG was last stopped
                 TruncatedStop::t trunc_stop;
@@ -2078,10 +2087,15 @@ namespace Optizelle{
                         0
                         //---trunc_iter_total1---
                     ),
-                    trunc_orthog_max(
-                        //---trunc_orthog_max0---
+                    trunc_orthog_storage_max(
+                        //---trunc_orthog_storage_max0---
                         1
-                        //---trunc_orthog_max1---
+                        //---trunc_orthog_storage_max1---
+                    ),
+                    trunc_orthog_iter_max(
+                        //---trunc_orthog_iter_max0---
+                        1
+                        //---trunc_orthog_iter_max1---
                     ),
                     trunc_stop(
                         //---trunc_stop0---
@@ -2393,13 +2407,25 @@ namespace Optizelle{
                 // Check that the number of vectors we orthogonalize against
                 // is at least 1.
                 else if(!(
-                    //---trunc_orthog_max_valid0---
-                    state.trunc_orthog_max > 0
-                    //---trunc_orthog_max_valid1---
+                    //---trunc_orthog_storage_max_valid0---
+                    state.trunc_orthog_storage_max > 0
+                    //---trunc_orthog_storage_max_valid1---
                 ))
                     ss << "The maximum number of vectors truncated-CG "
-                    "orthogonalizes against must be positive: "
-                    "trunc_orthog_max = " << state.trunc_orthog_max;
+                        "orthogonalizes against must be positive: "
+                        "trunc_orthog_storage_max = " <<
+                        state.trunc_orthog_storage_max;
+
+                // Check that the maximum number of orthogonalization
+                // iterations is at least 1
+                else if(!(
+                    //---trunc_orthog_iter_max_valid0---
+                    state.trunc_orthog_iter_max > 0
+                    //---trunc_orthog_iter_max_valid1---
+                ))
+                    ss << "The maximum number of orthogonalization iterations "
+                        "that truncated-CG computes must be positive: " <<
+                        state.trunc_orthog_iter_max;
                     
                     //---trunc_stop_valid0---
                     // Any 
@@ -2736,7 +2762,8 @@ namespace Optizelle{
                     item.first == "trunc_iter" || 
                     item.first == "trunc_iter_max" ||
                     item.first == "trunc_iter_total" || 
-                    item.first == "trunc_orthog_max" ||
+                    item.first == "trunc_orthog_storage_max" ||
+                    item.first == "trunc_orthog_iter_max" ||
                     item.first == "msg_level" ||
                     item.first == "safeguard_failed_max" ||
                     item.first == "safeguard_failed" ||
@@ -2905,8 +2932,10 @@ namespace Optizelle{
                     std::move(state.trunc_iter_max));
                 nats.emplace_back("trunc_iter_total",
                     std::move(state.trunc_iter_total));
-                nats.emplace_back("trunc_orthog_max",
-                    std::move(state.trunc_orthog_max));
+                nats.emplace_back("trunc_orthog_storage_max",
+                    std::move(state.trunc_orthog_storage_max));
+                nats.emplace_back("trunc_orthog_iter_max",
+                    std::move(state.trunc_orthog_iter_max));
                 nats.emplace_back("msg_level",std::move(state.msg_level));
                 nats.emplace_back("safeguard_failed_max",
                     std::move(state.safeguard_failed_max));
@@ -3058,8 +3087,10 @@ namespace Optizelle{
                         state.trunc_iter_max=std::move(item->second);
                     else if(item->first=="trunc_iter_total")
                         state.trunc_iter_total=std::move(item->second);
-                    else if(item->first=="trunc_orthog_max")
-                        state.trunc_orthog_max=std::move(item->second);
+                    else if(item->first=="trunc_orthog_storage_max")
+                        state.trunc_orthog_storage_max=std::move(item->second);
+                    else if(item->first=="trunc_orthog_iter_max")
+                        state.trunc_orthog_iter_max=std::move(item->second);
                     else if(item->first=="msg_level")
                         state.msg_level=std::move(item->second);
                     else if(item->first=="safeguard_failed_max")
@@ -4371,7 +4402,10 @@ namespace Optizelle{
                 Real const & eps_dx=state.eps_dx;
                 Real const & eps_trunc=state.eps_trunc;
                 Natural const & trunc_iter_max=state.trunc_iter_max;
-                Natural const & trunc_orthog_max=state.trunc_orthog_max;
+                Natural const & trunc_orthog_storage_max
+                    = state.trunc_orthog_storage_max;
+                auto const & trunc_orthog_iter_max
+                    = state.trunc_orthog_iter_max;
                 Real const & delta=state.delta;
                 X_Vector const & x=state.x;
                 X_Vector const & grad=state.grad;
@@ -4438,7 +4472,8 @@ namespace Optizelle{
                     PH,
                     eps_trunc,
                     trunc_iter_max,
-                    trunc_orthog_max,
+                    trunc_orthog_storage_max,
+                    trunc_orthog_iter_max,
                     delta,
                     x_tmp1,
                     false,
@@ -4992,7 +5027,10 @@ namespace Optizelle{
                 Real const & norm_dxtyp=state.norm_dxtyp;
                 Real const & eps_trunc=state.eps_trunc;
                 Natural const & trunc_iter_max=state.trunc_iter_max;
-                Natural const & trunc_orthog_max=state.trunc_orthog_max;
+                Natural const & trunc_orthog_storage_max
+                    = state.trunc_orthog_storage_max;
+                auto const & trunc_orthog_iter_max
+                    = state.trunc_orthog_iter_max;
                 Real const & c1=state.c1;
                 auto const & safeguard_failed_max = state.safeguard_failed_max;
                 auto const & glob_iter_max = state.glob_iter_max;
@@ -5076,7 +5114,8 @@ namespace Optizelle{
                         PH,
                         eps_trunc,
                         trunc_iter_max,
-                        trunc_orthog_max,
+                        trunc_orthog_storage_max,
+                        trunc_orthog_iter_max,
                         std::numeric_limits <Real>::infinity(),
                         x_offset,
                         false,
@@ -8541,7 +8580,10 @@ namespace Optizelle{
                 Real const & delta = state.delta;
                 Real const & eps_trunc=state.eps_trunc;
                 Natural const & trunc_iter_max=state.trunc_iter_max;
-                Natural const & trunc_orthog_max=state.trunc_orthog_max;
+                Natural const & trunc_orthog_storage_max
+                    = state.trunc_orthog_storage_max;
+                auto const & trunc_orthog_iter_max
+                    = state.trunc_orthog_iter_max;
                 auto const & safeguard_failed_max = state.safeguard_failed_max;
                 X_Vector & dx_t_uncorrected=state.dx_t_uncorrected;
                 X_Vector & dx_tcp_uncorrected=state.dx_tcp_uncorrected;
@@ -8589,7 +8631,8 @@ namespace Optizelle{
                     NullspaceProjForTrunc(state,fns), // Add in PH?
                     eps_trunc,
                     trunc_iter_max,
-                    trunc_orthog_max,
+                    trunc_orthog_storage_max,
+                    trunc_orthog_iter_max,
                     delta,
                     dx_n,
                     true,
@@ -9463,7 +9506,8 @@ namespace Optizelle{
                     Real & norm_gxtyp = state.norm_gxtyp;
                     Real & rho_old = state.rho_old;
                     Real & norm_gradtyp = state.norm_gradtyp;
-                    Natural & trunc_orthog_max = state.trunc_orthog_max;
+                    Natural & trunc_orthog_storage_max
+                        = state.trunc_orthog_storage_max;
 
                     switch(loc){
                     case OptimizationLocation::BeforeInitialFuncAndGrad:
@@ -9473,7 +9517,7 @@ namespace Optizelle{
 
                         // Make sure that we do full orthogonalization in
                         // truncated CG 
-                        trunc_orthog_max = trunc_iter_max;
+                        trunc_orthog_storage_max = trunc_iter_max;
                         break;
                 
                     case OptimizationLocation::AfterInitialFuncAndGrad: {

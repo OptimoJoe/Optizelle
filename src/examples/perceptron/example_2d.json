@@ -4,7 +4,7 @@
       "iter_max" : 300,
       "eps_grad" : 1e-5,
       "trunc_iter_max" : 100,
-      "trunc_orthog_max" : 100,
+      "trunc_orthog_storage_max" : 100,
       "eps_trunc" : 1e-5,
       "delta" : 100
    }

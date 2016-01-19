@@ -368,8 +368,11 @@ namespace Unit {
         // Maximum number of failed safeguard iterations
         Natural failed_max;
 
+        // Number of vectors we orthogonalize against 
+        Natural orthog_storage_max; 
+
         // Number of orthogonalization iterations
-        Natural orthog_max; 
+        Natural orthog_iter_max; 
 
         // Whether we do the projector check
         bool proj_check;
@@ -399,7 +402,8 @@ namespace Unit {
             safeguard(std::make_unique<Optizelle::SafeguardSimplified<Real,XX>>(
                 no_safeguard <Real,XX>)),
             failed_max(std::numeric_limits <Natural>::max()),
-            orthog_max(1),
+            orthog_storage_max(1),
+            orthog_iter_max(1),
             proj_check(false),
             check_cp(false),
             check_tr(false),
@@ -495,7 +499,8 @@ namespace Unit {
             *setup.B,
             setup.eps,
             setup.iter_max,
-            setup.orthog_max,
+            setup.orthog_storage_max,
+            setup.orthog_iter_max,
             setup.delta,
             *setup.x_offset,
             setup.proj_check,

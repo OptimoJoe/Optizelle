@@ -1962,7 +1962,8 @@ namespace Optizelle {
                         "trunc_iter",
                         "trunc_iter_max",
                         "trunc_iter_total",
-                        "trunc_orthog_max",
+                        "trunc_orthog_storage_max",
+                        "trunc_orthog_iter_max",
                         "trunc_stop",
                         "trunc_err",
                         "eps_trunc",
@@ -2047,8 +2048,10 @@ namespace Optizelle {
                         state.trunc_iter_max,mxstate);
                     toMatlab::Natural("trunc_iter_total",
                         state.trunc_iter_total,mxstate);
-                    toMatlab::Natural("trunc_orthog_max",
-                        state.trunc_orthog_max,mxstate);
+                    toMatlab::Natural("trunc_orthog_storage_max",
+                        state.trunc_orthog_storage_max,mxstate);
+                    toMatlab::Natural("trunc_orthog_iter_max",
+                        state.trunc_orthog_iter_max,mxstate);
                     toMatlab::Param <TruncatedStop::t> (
                         "trunc_stop",
                         TruncatedStop::toMatlab,
@@ -2180,8 +2183,10 @@ namespace Optizelle {
                         mxstate,state.trunc_iter_max);
                     fromMatlab::Natural("trunc_iter_total",
                         mxstate,state.trunc_iter_total);
-                    fromMatlab::Natural("trunc_orthog_max",
-                        mxstate,state.trunc_orthog_max);
+                    fromMatlab::Natural("trunc_orthog_storage_max",
+                        mxstate,state.trunc_orthog_storage_max);
+                    fromMatlab::Natural("trunc_orthog_iter_max",
+                        mxstate,state.trunc_orthog_iter_max);
                     fromMatlab::Param <TruncatedStop::t> (
                         "trunc_stop",
                         TruncatedStop::fromMatlab,

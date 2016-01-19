@@ -17,7 +17,7 @@ int main() {
     setup.stop_star = Optizelle::TruncatedStop::NonSymmetric;
     setup.check_sol = false;
     setup.check_res = false;
-    setup.orthog_max = 3;
+    setup.orthog_storage_max = 3;
 
     // Check the solver 
     Unit::run_and_verify <Real,XX> (setup);

@@ -74,9 +74,12 @@ class t(object):
     trunc_iter_total = Optizelle.createNatProperty(
         "trunc_iter_total",
         "Total number of truncated-CG iterations taken")
-    trunc_orthog_max = Optizelle.createNatProperty(
-        "trunc_orthog_max",
+    trunc_orthog_storage_max = Optizelle.createNatProperty(
+        "trunc_orthog_storage_max",
         "Maximum number of vectors we orthogonalize against in truncated CG")
+    trunc_orthog_iter_max = Optizelle.createNatProperty(
+        "trunc_orthog_iter_max",
+        "Maximum number of orthogonalization iterations in truncated CG")
     trunc_stop = Optizelle.createEnumProperty(
         "trunc_stop",
         Optizelle.TruncatedStop,

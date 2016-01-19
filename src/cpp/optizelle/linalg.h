@@ -1167,7 +1167,7 @@ namespace Optizelle {
     // (input) C : Operator that modifies the shape of the trust-region
     // (input) eps : Stopping tolerance
     // (input) iter_max :  Maximum number of iterations
-    // (input) orthog_max : Maximum number of orthgonalizations.  If this
+    // (input) orthog_storage_max : Maximum number of orthgonalizations.  If this
     //     number is 1, then we do the conjugate gradient algorithm.
     // (input) delta : Trust region radius.  If this number is infinity, we
     //     do not scale the final step if we detect negative curvature.
@@ -1194,7 +1194,8 @@ namespace Optizelle {
         Operator <Real,XX,XX> const & B,
         Real const & eps,
         Natural const & iter_max,
-        Natural const & orthog_max,
+        Natural const & orthog_storage_max,
+        Natural const & orthog_iter_max,
         Real const & delta,
         typename XX <Real>::Vector const & x_offset,
 	bool const & proj_check,
@@ -1371,7 +1372,7 @@ namespace Optizelle {
             A.eval(Bdx,ABdx);
 
             // Orthogonalize this direction to the previous directions
-            Aorthogonalize <Real,XX> (Bdxs,ABdxs,1,Bdx,ABdx); 
+            Aorthogonalize <Real,XX> (Bdxs,ABdxs,orthog_iter_max,Bdx,ABdx); 
 
             // Check if this direction is a descent direction.  If it is not,
             // flip it so that it is.  In truth, this really shouldn't ever
@@ -1405,7 +1406,7 @@ namespace Optizelle {
 
                 // Check if we need to eliminate any vectors for
                 // orthogonalization
-                if(Bdxs.size()==orthog_max) {
+                if(Bdxs.size()==orthog_storage_max) {
                     Bdxs.pop_front();
                     ABdxs.pop_front();
                 }
@@ -1444,7 +1445,7 @@ namespace Optizelle {
 
                     // Check if we need to prune elements from our residuals 
                     // and orthogonality check matrix
-                    if(rs.size()==orthog_max) {
+                    if(rs.size()==orthog_storage_max) {
 
                         // Eliminate our residuals and projected residuals
                         rs.pop_front();

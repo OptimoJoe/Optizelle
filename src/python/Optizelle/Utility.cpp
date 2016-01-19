@@ -1939,8 +1939,10 @@ namespace Optizelle {
                         state.trunc_iter_max,pystate);
                     toPython::Natural("trunc_iter_total",
                         state.trunc_iter_total,pystate);
-                    toPython::Natural("trunc_orthog_max",
-                        state.trunc_orthog_max,pystate);
+                    toPython::Natural("trunc_orthog_storage_max",
+                        state.trunc_orthog_storage_max,pystate);
+                    toPython::Natural("trunc_orthog_iter_max",
+                        state.trunc_orthog_iter_max,pystate);
                     toPython::Param <TruncatedStop::t> (
                         "trunc_stop",
                         TruncatedStop::toPython,
@@ -2072,8 +2074,10 @@ namespace Optizelle {
                         pystate,state.trunc_iter_max);
                     fromPython::Natural("trunc_iter_total",
                         pystate,state.trunc_iter_total);
-                    fromPython::Natural("trunc_orthog_max",
-                        pystate,state.trunc_orthog_max);
+                    fromPython::Natural("trunc_orthog_storage_max",
+                        pystate,state.trunc_orthog_storage_max);
+                    fromPython::Natural("trunc_orthog_iter_max",
+                        pystate,state.trunc_orthog_iter_max);
                     fromPython::Param <TruncatedStop::t> (
                         "trunc_stop",
                         TruncatedStop::fromPython,
