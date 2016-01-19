@@ -850,6 +850,10 @@ namespace Optizelle {
                 return "TrustRegionViolated";
             case NanDetected:
                 return "NanDetected";
+            case NonProjector:
+                return "NonProjector";
+            case NonSymmetric:
+                return "NonSymmetric";
             case LossOfOrthogonality:
                 return "LossOfOrthogonality";
             case InvalidTrustRegionOffset:
@@ -877,6 +881,10 @@ namespace Optizelle {
                 return TrustRegionViolated;
             else if(trunc_stop=="NanDetected")
                 return NanDetected;
+            else if(trunc_stop=="NonProjector")
+                return NonProjector;
+            else if(trunc_stop=="NonSymmetric")
+                return NonSymmetric;
             else if(trunc_stop=="LossOfOrthogonality")
                 return LossOfOrthogonality;
             else if(trunc_stop=="InvalidTrustRegionOffset")
@@ -897,6 +905,8 @@ namespace Optizelle {
                 name=="MaxItersExceeded" ||
                 name=="TrustRegionViolated" ||
                 name=="NanDetected" ||
+                name=="NonProjector" ||
+                name=="NonSymmetric" ||
                 name=="LossOfOrthogonality" ||
                 name=="InvalidTrustRegionOffset" ||
                 name=="TooManyFailedSafeguard" ||

@@ -125,6 +125,10 @@ namespace Optizelle {
                     "TruncatedStop","TrustRegionViolated");
             case NanDetected:
                 return Matlab::enumToMxArray("TruncatedStop","NanDetected");
+            case NonProjector:
+                return Matlab::enumToMxArray("TruncatedStop","NonProjector");
+            case NonSymmetric:
+                return Matlab::enumToMxArray("TruncatedStop","NonSymmetric");
             case LossOfOrthogonality:
                 return Matlab::enumToMxArray(
                     "TruncatedStop","LossOfOrthogonality");
@@ -167,6 +171,10 @@ namespace Optizelle {
                 return TrustRegionViolated;
             else if(m==Matlab::enumToNatural("TruncatedStop","NanDetected"))
                 return NanDetected;
+            else if(m==Matlab::enumToNatural("TruncatedStop","NonProjector"))
+                return NonProjector;
+            else if(m==Matlab::enumToNatural("TruncatedStop","NonSymmetric"))
+                return NonSymmetric;
             else if(m==Matlab::enumToNatural(
                 "TruncatedStop","LossOfOrthogonality")
             )

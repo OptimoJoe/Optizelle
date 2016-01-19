@@ -11,16 +11,13 @@ int main() {
     setup.A = std::make_unique <Matrix>(
         Unit::Matrix <Real>::symmetric(setup.m,0));
     setup.B = std::make_unique <Matrix>(
-        Unit::Matrix <Real>::symmetric(setup.m,25));
+        Unit::Matrix <Real>::nonsymmetric(setup.m,0));
     setup.b = std::make_unique <Vector> (Unit::Vector <Real>::basic(setup.m));
-    setup.x_star = std::make_unique <Vector> (Vector({
-        9.56220622356691e-02,
-        3.82201576243788e-03,
-        -1.66128455554842e-01,
-        -1.76933207992568e-01,
-        1.79489652213403e-02}));
-    setup.iter_star = 5;
-    setup.stop_star = Optizelle::TruncatedStop::RelativeErrorSmall;
+    setup.iter_star = 3;
+    setup.stop_star = Optizelle::TruncatedStop::NonSymmetric;
+    setup.check_sol = false;
+    setup.check_res = false;
+    setup.orthog_max = 3;
 
     // Check the solver 
     Unit::run_and_verify <Real,XX> (setup);

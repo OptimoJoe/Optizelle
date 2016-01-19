@@ -765,6 +765,10 @@ namespace Optizelle{
             return atos("TrstReg");
         case TruncatedStop::NanDetected:
             return atos("NaN");
+        case TruncatedStop::NonProjector:
+            return atos("NonProj");
+        case TruncatedStop::NonSymmetric:
+            return atos("NonSymm");
         case TruncatedStop::LossOfOrthogonality:
             return atos("OrthogLost");
         case TruncatedStop::InvalidTrustRegionOffset:

@@ -34,6 +34,7 @@ Author: Joseph Young (joe@optimojoe.com)
 
 #include <vector>
 #include <list>
+#include <deque>
 #include <cmath>
 #include <limits>
 #include <utility>
@@ -1099,7 +1100,13 @@ namespace Optizelle {
             TrustRegionViolated,      // Trust-region radius violated
             NanDetected,              // NaN detected in the operator or 
                                       // preconditioner application 
-            LossOfOrthogonality,      // Loss of orthogonality detected
+            NonProjector,             // Detected a nonprojecting preconditioner
+                                      // when one is required.  Too much
+                                      // inexactness in the composite-step SQP
+                                      // method can trigger this.
+            NonSymmetric,             // Detected a nonsymmetric preconditioner
+            LossOfOrthogonality,      // Loss of orthogonality between the
+                                      // Krylov vectors detected
             InvalidTrustRegionOffset, // Trust-region offset is chosen such that
                                       // || x_offset || > delta where delta is
                                       // the trust-region radius.  This means
@@ -1130,6 +1137,7 @@ namespace Optizelle {
     void Aorthogonalize(
         std::list <typename XX <Real>::Vector> const & vs,
         std::list <typename XX <Real>::Vector> const & Avs,
+        Natural const & iter_max,
         typename XX <Real>::Vector & x,
         typename XX <Real>::Vector & Ax
     ) {
@@ -1138,15 +1146,14 @@ namespace Optizelle {
         typedef typename X::Vector X_Vector;
 
         // Orthogonalize the vectors
-        for(typename std::list <X_Vector>::const_iterator
-                v=vs.begin(),
-                Av=Avs.begin();
-            v!=vs.end();
-            v++,Av++
-        ) {
-            Real beta=X::innr(*Av,x);
-            X::axpy(Real(-1.)*beta,*v,x);
-            X::axpy(Real(-1.)*beta,*Av,Ax);
+        for(auto iter = Natural(1);iter <= iter_max;iter++) {
+            auto Av = Avs.cbegin();
+            for(auto const & v : vs) {
+                auto beta=X::innr(*Av,x);
+                X::axpy(Real(-1.)*beta,v,x);
+                X::axpy(Real(-1.)*beta,*Av,Ax);
+                Av++;
+            }
         }
     }
 
@@ -1165,7 +1172,7 @@ namespace Optizelle {
     // (input) delta : Trust region radius.  If this number is infinity, we
     //     do not scale the final step if we detect negative curvature.
     // (input) x_offset : Offset for checking the TR radius 
-    // (input) do_orthog_check : Orthogonality check for projected algorithms 
+    // (input) do_proj_check : Projector check for preconditioners 
     // (input) safeguard_failed_max : Maximum number of failed safeguard steps
     //     before exiting
     // (input) safeguard : Our safeguard function
@@ -1190,7 +1197,7 @@ namespace Optizelle {
         Natural const & orthog_max,
         Real const & delta,
         typename XX <Real>::Vector const & x_offset,
-	bool const & do_orthog_check,
+	bool const & proj_check,
         Natural const & safeguard_failed_max,
         SafeguardSimplified <Real,XX> const & safeguard,
         typename XX <Real>::Vector & x,
@@ -1213,49 +1220,46 @@ namespace Optizelle {
         // We also haven't truncated anything at the start
         alpha_safeguard = Real(1.0);
 
-        // Allocate memory for the orthogonality check, which only makes sense
-        // when the preconditioner B is really a projection and not a
-        // preconditioner.  This is
+        // Allocate memory for a matrix where
         //
-        // O =  inv(D) ( Brs' rs - D^2 ) inv(D) = inv(D) Brs' rs inv(D) - I
-        // 
-        // where D = diag(||Br_i||).  In other words
+        // O_ij = <B ri, rj> / (|| B ri || || rj ||)    i!=j
+        //      = <B ri, ri> / || Bri ||^2 - 1          i=j, proj_check=true
+        //      = 0.0                                   i=j, proj_check=false
         //
-        // O_ij  = <B ri,rj> / || B ri || || B rj||
+        // From this matrix, we check the following in order
         //
-        // for i != j and
+        // 1. || Diag(O) || > epsilon 
         //
-        // O_ii  = (<B ri,ri> / || B ri || || B ri|| ) - 1
+        //    B is not a projector. Needed in the composite step SQP method.
+        //    Note, when B is a projector we have || Bri ||^2 = <Bri,Bri> =
+        //    <B*Bri,ri> = <B^2ri,ri> = <Bri,ri>, so we really should get 0.
         //
-        // In theory, two things should happen
+        // 2. || O - O' || > epsilon
         //
-        // 1.  The projected/preconditioned residuals should be orthogonal to
-        //     the residuals, which means the off diagonal elements of O
-        //     should be zero 
+        //    B is not symmetric.  Hard requirement, but users give strange
+        //    things.  Basically, <Bri,rj> = <ri,B*rj> = <ri,Brj> when B is
+        //    symmetric.  Hence, O should really be symmetric.
         //
-        // 2.  Our preconditioner B is really an orthogonal projection, so
-        //     B* = B and B*B=B^2=B.  Therefore, the diagonal elements of
-        //     O should be 0
+        // 3. || O || > epsilon
         //
-        // In practice, this is probably not the case if
+        //    Vectors are not orthogonal.  In theory, the
+        //    preconditioned/projected residuals are orthogonal to each other
+        //    and the diagonal elements should be 0 due to the discussion
+        //    above.  As such, O should be zero, but it becomes not the case
+        //    when one of the checks above fails or, barring that, we don't
+        //    have orthogonality in the preconditioned residuals.  We're using
+        //    a variant of Gram-Schmidt, so this will happen eventually due to
+        //    numerical error.
         //
-        // 1.  We're getting an inexact projection, so B really isn't
-        //     an orthogonal projector
-        //
-        // 2.  We run too many CG iterations with bad orthgonalization
-        //
-        // Basically, the matrix O should be zero, so we bail if it gets too
-        // big.  Note, because we may not be doing full orthgonalization, the
-        // matrix O is stored as a number of columns separate in memory.  When
-        // we truncate our history we eliminate the first column and first row,
-        // which means dumping the first column entirely and the first element
-        // in the subsequent
-        // columns 
-        Real const eps_orthog(0.5);
-        std::list <X_Vector> rs;
-        std::list <X_Vector> Brs;
-        std::list <Real> norm_Brs;
-        std::list <std::list <Real>> O;
+        // As far as epsilon, we pick the magic number 0.5.  There's probably a
+        // better number as this is sort of one of those, "Well, that looks
+        // good," numbers.  Also, for reference, we store O by columns.
+        auto const eps_O = Real(0.5);
+        auto rs = std::list <X_Vector> ();
+        auto norm_rs = std::list <Real> ();
+        auto Brs = std::list <X_Vector> ();
+        auto norm_Brs = std::list <Real> ();
+        auto O = std::deque <std::deque <Real>> ();
 
         // Initialize x to zero. 
         X::zero(x);
@@ -1280,6 +1284,7 @@ namespace Optizelle {
         X::scal(Real(-1.),r);
         X_Vector Br(X::init(x));
         B.eval(r,Br);
+        auto norm_r = std::sqrt(X::innr(r,r));
         norm_Br0 = std::sqrt(X::innr(Br,Br));
         norm_Br = norm_Br0; 
 
@@ -1328,7 +1333,7 @@ namespace Optizelle {
         //
         // or
         //
-        // alpha ( <ABdx,x+alpha/2 Bdx> - <b,Bdx)
+        // alpha ( <ABdx,x+alpha/2 Bdx> - <b,Bdx>)
         //
         // Note, there's probably a better way to group terms for numerical
         // error.  Anyway, CG should monotonically decrease its objective.
@@ -1366,7 +1371,7 @@ namespace Optizelle {
             A.eval(Bdx,ABdx);
 
             // Orthogonalize this direction to the previous directions
-            Aorthogonalize <Real,XX> (Bdxs,ABdxs,Bdx,ABdx); 
+            Aorthogonalize <Real,XX> (Bdxs,ABdxs,1,Bdx,ABdx); 
 
             // Check if this direction is a descent direction.  If it is not,
             // flip it so that it is.  In truth, this really shouldn't ever
@@ -1434,8 +1439,8 @@ namespace Optizelle {
                 if(norm_shifted_trial >= delta)
                     stop = TruncatedStop::TrustRegionViolated;
 
-                // Do our orthogonality check work when requested 
-                if(do_orthog_check) {
+                // Do our numerical error checks 
+                {
 
                     // Check if we need to prune elements from our residuals 
                     // and orthogonality check matrix
@@ -1443,6 +1448,7 @@ namespace Optizelle {
 
                         // Eliminate our residuals and projected residuals
                         rs.pop_front();
+                        norm_rs.pop_front();
                         Brs.pop_front();
                         norm_Brs.pop_front();
 
@@ -1457,33 +1463,29 @@ namespace Optizelle {
                     // Store the previous residuals
                     rs.emplace_back(std::move(X::init(x)));
                     X::copy(r,rs.back());
+                    norm_rs.emplace_back(norm_r);
 
                     Brs.emplace_back(std::move(X::init(x)));
                     X::copy(Br,Brs.back());
-
                     norm_Brs.emplace_back(norm_Br);
 
-                    // Build new pieces of the orthogonality check matrix where
-                    // 
-                    // O_ij  = <B ri,rj> / || B ri || || B rj||
-                    //
-                    // for i != j and
-                    //
-                    // O_ii  = (<B ri,ri> / || B ri || || B ri|| ) - 1
+                    // Build new pieces of the orthogonality check matrix in
+                    // the manner we described above when we allocated memory
+                    // for O
 
                     // First add a new column to O
                     {
-                        O.push_back(std::list <Real>());
+                        O.push_back(std::deque <Real>());
                         auto const & rj = rs.back();
-                        auto const & norm_Brj = norm_Brs.back();
+                        auto const & norm_rj = norm_rs.back();
                         auto norm_Bri = norm_Brs.cbegin();
                         for(auto const & Bri : Brs) {
-                            // Bail if we're on the last row. We'll do that next 
+                            // Bail if we're on the last row. We'll do that next
                             if(&Bri == &(Brs.back())) break;
 
                             // Add in the components
                             O.back().push_back(
-                                X::innr(Bri,rj) / (*norm_Bri * norm_Brj));
+                                X::innr(Bri,rj) / (*norm_Bri * norm_rj));
 
                             // Make sure to iterate norm_Bri to match Bri
                             norm_Bri++;
@@ -1492,34 +1494,64 @@ namespace Optizelle {
                     
                     // Now, add a new row to O 
                     {
+                        auto const & ri = rs.back();
+                        auto norm_rj = norm_rs.cbegin();
                         auto const & Bri = Brs.back();
                         auto const & norm_Bri = norm_Brs.back();
-                        auto norm_Brj = norm_Brs.cbegin();
                         auto Oj = O.begin();
                         for(auto const & rj : rs) {
-                            // Add in the components
-                            Oj->push_back(
-                                X::innr(Bri,rj) / (norm_Bri * (*norm_Brj)));
+                            // Not on the last element
+                            if(&rj != &(rs.back()))
+                                Oj->push_back(
+                                    X::innr(Bri,rj) / (norm_Bri * (*norm_rj)));
+                            
+                            // On the last element, a diagonal
+                            else if(proj_check)
+                                Oj->push_back(
+                                    X::innr(Bri,ri) / sq(norm_Bri) - Real(1.));
+                            else
+                                Oj->push_back(Real(0.));
 
-                            // Make sure to iterate norm_Brj and Oj to match Brj
-                            norm_Brj++;
+                            // Make sure to iterate norm_rj and Oj to match rj
+                            norm_rj++;
                             Oj++;
                         }
                     }
 
-                    // Finally, don't forget to pull off the 1 on our new
-                    // diagonal element
-                    O.back().back()-= Real(1.);
+                    // Squares items
+                    auto sq = [](auto const & x) { return x*x; };
 
-                    // Calculate the Frobenius norm of O
+                    // Calculate the norm of the diagonal
+                    auto norm_diag = Real(0.);
+                    for(Natural i=0;i<O.size();i++) {
+                        auto Oii = O[i][i];
+                        norm_diag += sq(Oii); 
+                    }
+                    norm_diag = std::sqrt(norm_diag);
+
+                    // Cacluate the norm of the antisymmetric part
+                    auto norm_anti = Real(0.);
+                    for(Natural i=1;i<O.size();i++)
+                        for(Natural j=0;j<i;j++) {
+                            auto Oij = O[i][j];
+                            auto Oji = O[j][i];
+                            norm_anti += Real(2.)*sq(Oij-Oji);
+                        }
+                    norm_anti = std::sqrt(norm_anti);
+
+                    // Calculate the norm of O
                     auto norm_O = Real(0.);
                     for(auto const & Oj : O)
                         for(auto const & Oij : Oj)
-                            norm_O+=Oij*Oij;
+                            norm_O+=sq(Oij);
                     norm_O = std::sqrt(norm_O);
 
-                    // Check if we have lost orthogonality 
-                    if(norm_O > eps_orthog)
+                    // Check our error states 
+                    if(norm_diag > eps_O)
+                        stop = TruncatedStop::NonProjector;
+                    else if(norm_anti > eps_O)
+                        stop = TruncatedStop::NonSymmetric;
+                    else if(norm_O > eps_O)
                         stop = TruncatedStop::LossOfOrthogonality;
                 }
             }
@@ -1535,6 +1567,8 @@ namespace Optizelle {
             // worse.  In these cases, we set our saved trial steps to zero.
             if( safeguard_failed==0 ) {
                 if( stop != TruncatedStop::NanDetected && 
+                    stop != TruncatedStop::NonProjector &&
+                    stop != TruncatedStop::NonSymmetric  &&
                     stop != TruncatedStop::LossOfOrthogonality &&
                     stop != TruncatedStop::ObjectiveIncrease
                 ) {
@@ -1637,6 +1671,7 @@ namespace Optizelle {
                         X::axpy(alpha_safeguard*sigma,Bdx,shifted_iterate);
                         X::axpy(alpha_safeguard*sigma,ABdx,r);
                         B.eval(r,Br);
+                        norm_r=std::sqrt(X::innr(r,r));
                         norm_Br=std::sqrt(X::innr(Br,Br));
                     }
                     break;
@@ -1646,6 +1681,8 @@ namespace Optizelle {
                 // trust anything either.  Finally, if the objective goes up,
                 // that's also not good, so don't modify anything.
                 } case TruncatedStop::NanDetected:
+                case TruncatedStop::NonProjector:
+                case TruncatedStop::NonSymmetric:
                 case TruncatedStop::LossOfOrthogonality:
                 case TruncatedStop::ObjectiveIncrease:
                     break;
@@ -1669,6 +1706,7 @@ namespace Optizelle {
             // Find the new residual and projected residual
             X::axpy(alpha,ABdx,r);
             B.eval(r,Br);
+            norm_r = std::sqrt(X::innr(r,r));
             norm_Br = std::sqrt(X::innr(Br,Br));
                 
             // Determine if this new iterate is feasible with respect to our

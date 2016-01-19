@@ -75,7 +75,7 @@ namespace Unit {
         //
         // Again, we just need something arbitrary, but fixed for testing.
         // Since we need something for CG, the m factor is there to force
-        // things to be diagonall dominant and hence positive definite.
+        // things to be diagonally dominant and hence positive definite.
         static t symmetric(Natural const & size,Natural const & offset) {
             auto A = t(size);
             for(auto j=1;j<=size;j++)
@@ -371,8 +371,8 @@ namespace Unit {
         // Number of orthogonalization iterations
         Natural orthog_max; 
 
-        // Whether we do the orthogonalization check
-        bool orthog_check;
+        // Whether we do the projector check
+        bool proj_check;
 
         // Cauchy-Point check
         bool check_cp;
@@ -400,7 +400,7 @@ namespace Unit {
                 no_safeguard <Real,XX>)),
             failed_max(std::numeric_limits <Natural>::max()),
             orthog_max(1),
-            orthog_check(false),
+            proj_check(false),
             check_cp(false),
             check_tr(false),
             eps_tr(this->eps),
@@ -498,7 +498,7 @@ namespace Unit {
             setup.orthog_max,
             setup.delta,
             *setup.x_offset,
-            setup.orthog_check,
+            setup.proj_check,
             setup.failed_max,
             *setup.safeguard,
             *setup.x,
