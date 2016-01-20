@@ -64,30 +64,34 @@ namespace Unit {
 
         // Creates a matrix with the scheme where the (i,j)th element is
         //
-        // cos(I^2))      when i>j
-        // cos(I^2)) + m  when i==j
-        // (i,j)th element   when j<i
+        // cos(I^2))                  when i>j
+        // abs(cos(I^2))) + m + i^2   when i==j
+        // (i,j)th element            when j<i
         //
         // where
         //
-        // I = j+(i-1)*(m+1)
+        // I = i+(j-1)*m
         // m the matrix size
         //
         // Again, we just need something arbitrary, but fixed for testing.
         // Since we need something for CG, the m factor is there to force
-        // things to be diagonally dominant and hence positive definite.
+        // things to be diagonally dominant and hence positive definite wheras
+        // the element i^2 is there to make sure the spectrum is spread out, so
+        // we don't converge too quickly.
         static t symmetric(Natural const & size,Natural const & offset) {
             auto A = t(size);
             for(auto j=1;j<=size;j++)
-                for(auto i=1;i<=size;i++) {
-                    auto I = j+(i-1)*size;
-                    auto J = i+(j-1)*size;
-                    if(i>j) {
+                for(auto i=1;i<=j;i++) {
+                    auto I = i+(j-1)*size;
+                    auto J = j+(i-1)*size;
+                    if(i!=j) {
+                        auto ele0 = std::pow(I+offset,2);
                         auto ele = cos(std::pow(I+offset,2));
                         A.data[I-1] = ele;
                         A.data[J-1] = ele;
                     } else if(i==j)
-                        A.data[I-1]=cos(std::pow(I+offset,2))+size+1;
+                        A.data[I-1]=std::fabs(cos(std::pow(I+offset,2)))+size
+                            + i*i;
                 }
             return A;
         }

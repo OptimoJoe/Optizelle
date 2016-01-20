@@ -14,7 +14,7 @@ int main() {
     setup.b = std::make_unique <Vector> (Unit::Vector <Real>::basic(setup.m));
     setup.iter_max = 1;
     setup.iter_star = 1;
-    setup.delta = Real(0.1);
+    setup.delta = Real(1e-3);
     setup.check_cp = true;
     setup.check_tr = true;
     setup.check_sol = false;
