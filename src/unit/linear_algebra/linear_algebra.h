@@ -145,6 +145,31 @@ namespace Unit {
             }
             return A;
         }
+
+        // Creates a mostly diagonally dominant matrix, with a single negative
+        // eigenvalue.  We set the (i,j) element to
+        //
+        // 2    when i=j, i>1 
+        // -2   when i=j, i=1
+        // 1    when i-1=j
+        // 1    when i=j-1
+        static t mostly_dd_indef(Natural const & size) {
+            auto A = t(size);
+            A.data.assign(size*size,Real(0.));
+            for(auto i=1;i<=size;i++) {
+                auto I = i-1+(i-1)*size;
+                auto up = i-2+(i-1)*size;
+                auto left = i-1+(i-2)*size;
+                if(i == 1) 
+                    A.data[I] = Real(-2.);
+                else {
+                    A.data[I] = Real(2.); 
+                    A.data[up] = Real(1.); 
+                    A.data[left] = Real(1.); 
+                }
+            }
+            return A;
+        }
     };
 
     // Identity operator
@@ -200,6 +225,19 @@ namespace Unit {
             }
             auto b = std::vector <double>(size);
             A.eval(x,b);
+            return b;
+        }
+
+        // Create a vector of all ones 
+        static std::vector <Real> ones(Natural & size) {
+            auto b = std::vector <double>(size,Real(1.));
+            return b;
+        }
+
+        // Create a vector where the last element is 1 and the others are 0 
+        static std::vector <Real> elast(Natural & size) {
+            auto b = std::vector <double>(size,Real(0.));
+            b[size-1]=Real(1.);
             return b;
         }
     };
