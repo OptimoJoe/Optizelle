@@ -459,8 +459,8 @@ namespace Unit {
             auto norm_b = Real(0.);
             std::tie(norm_r,norm_b) =
                 residual <Real,XX>(*setup.A,*setup.x,*setup.b);
-            CHECK(norm_r < setup.eps_res*norm_b);
-            CHECK(std::fabs(norm_r-err) < setup.eps_res);
+            CHECK(norm_r <= setup.eps_res*norm_b);
+            CHECK(std::fabs(norm_r-err) <= setup.eps_res);
         }
 
         // Check that the solution is correct
@@ -468,7 +468,7 @@ namespace Unit {
             auto norm_r = Real(0.);
             auto norm_xstar = Real(0.);
             std::tie(norm_r,norm_xstar)=error <Real,XX>(*setup.x,*setup.x_star);
-            CHECK(norm_r < setup.eps_sol*norm_xstar);
+            CHECK(norm_r <= setup.eps_sol*norm_xstar);
         }
     }
 
@@ -533,8 +533,8 @@ namespace Unit {
             auto Bnorm_b = Real(0.);
             std::tie(Bnorm_r,Bnorm_b) =
                 residual <Real,XX>(*setup.A,*setup.x,*setup.b,*setup.B);
-            CHECK(Bnorm_r < setup.eps_res*Bnorm_b);
-            CHECK(std::fabs(Bnorm_r-err) < setup.eps_res);
+            CHECK(Bnorm_r <= setup.eps_res*Bnorm_b);
+            CHECK(std::fabs(Bnorm_r-err) <= setup.eps_res);
         }
 
         // Check that the solution is correct
@@ -542,7 +542,7 @@ namespace Unit {
             auto norm_r = Real(0.);
             auto norm_xstar = Real(0.);
             std::tie(norm_r,norm_xstar)=error <Real,XX>(*setup.x,*setup.x_star);
-            CHECK(norm_r < setup.eps_sol*norm_xstar);
+            CHECK(norm_r <= setup.eps_sol*norm_xstar);
         }
 
         // Check that the solution is the Cauchy point
@@ -550,7 +550,7 @@ namespace Unit {
             auto norm_r = Real(0.);
             auto norm_xcp = Real(0.);
             std::tie(norm_r,norm_xcp)=error <Real,XX>(*setup.x,x_cp);
-            CHECK(norm_r < setup.eps_sol*norm_xcp);
+            CHECK(norm_r <= setup.eps_sol*norm_xcp);
         }
 
         // Check that the length of the solution plus the offset is the size
@@ -560,7 +560,7 @@ namespace Unit {
             X::copy(*setup.x,x_p_offset);
             X::axpy(Real(1.),*setup.x_offset,x_p_offset);
             auto norm_xpoffset = std::sqrt(X::innr(x_p_offset,x_p_offset));
-            CHECK(std::abs(norm_xpoffset-setup.delta) <
+            CHECK(std::abs(norm_xpoffset-setup.delta) <=
                 setup.eps_tr * setup.delta);
         }
 
