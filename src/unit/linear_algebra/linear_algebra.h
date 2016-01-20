@@ -319,9 +319,9 @@ namespace Unit {
                 std::log10(std::numeric_limits <Real>::epsilon())
                     *Real(0.70))),
             eps_res(eps),
-            check_iter(true),
-            check_sol(true),
-            check_res(true)
+            check_iter(false),
+            check_sol(false),
+            check_res(false)
         {}
     };
 
@@ -416,7 +416,7 @@ namespace Unit {
             check_cp(false),
             check_tr(false),
             eps_tr(this->eps),
-            check_stop(true),
+            check_stop(false),
             stop_star(Optizelle::TruncatedStop::NotConverged)
         {}
     };

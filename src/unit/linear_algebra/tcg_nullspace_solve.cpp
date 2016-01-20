@@ -14,6 +14,7 @@ int main() {
     setup.B = std::make_unique <Matrix>(
         Unit::Matrix <Real>::project_2(setup.m));
     setup.b = std::make_unique <Vector> (Unit::Vector <Real>::sum_2(setup.m,0));
+
     setup.x_star = std::make_unique <Vector> (Vector({
         1.0,
         1.0,
@@ -22,6 +23,11 @@ int main() {
         0.0}));
     setup.iter_star = 2;
     setup.stop_star = Optizelle::TruncatedStop::RelativeErrorSmall;
+
+    setup.check_sol = true;
+    setup.check_iter = true;
+    setup.check_res = true;
+    setup.check_stop = true;
 
     // Check the solver 
     Unit::run_and_verify <Real,XX> (setup);

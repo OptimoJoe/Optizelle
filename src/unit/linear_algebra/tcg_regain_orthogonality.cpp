@@ -10,16 +10,17 @@ int main() {
     auto setup = Unit::tcg <Real,XX> ();
 
     setup.m=500;
-    setup.eps=1e-13;
     setup.A = std::make_unique <Matrix>(
         Unit::Matrix <Real>::symmetric(setup.m,0));
-    setup.b=std::make_unique <Vector> (Unit::Vector <Real>::alternate(setup.m));
+    setup.b=std::make_unique <Vector> (Unit::Vector <Real>::basic(setup.m));
+    setup.eps=1e-13;
     setup.orthog_storage_max=setup.m;
     setup.orthog_iter_max=2;
+
     setup.stop_star = Optizelle::TruncatedStop::RelativeErrorSmall;
-    setup.check_iter=false;
-    setup.check_sol=false;
-    setup.check_stop=true;
+
+    setup.check_res = true;
+    setup.check_stop = true;
 
     // Check the solver 
     Unit::run_and_verify <Real,XX> (setup);

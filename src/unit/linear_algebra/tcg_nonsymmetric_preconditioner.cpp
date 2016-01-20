@@ -14,10 +14,9 @@ int main() {
         Unit::Matrix <Real>::nonsymmetric(setup.m,0));
     setup.b = std::make_unique <Vector> (Unit::Vector <Real>::basic(setup.m));
     setup.orthog_storage_max = 3;
+
     setup.stop_star = Optizelle::TruncatedStop::NonSymmetric;
-    setup.check_sol = false;
-    setup.check_iter = false;
-    setup.check_res = false;
+
     setup.check_stop = true;
 
     // Check the solver 

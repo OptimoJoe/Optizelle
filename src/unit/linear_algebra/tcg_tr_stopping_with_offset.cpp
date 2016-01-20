@@ -20,13 +20,17 @@ int main() {
     auto norm_b = std::sqrt(X::innr(*setup.b,*setup.b));
     setup.x_offset=std::make_unique<Vector>(Unit::Vector<Real>::basic(setup.m));
     X::scal(Real(0.4)/norm_b*setup.delta,*setup.x_offset);
+    setup.iter_max = 1;
+
     setup.x_star =std::make_unique<Vector>(Unit::Vector <Real>::basic(setup.m));
     X::scal(Real(0.6)/norm_b*setup.delta,*setup.x_star);
-    setup.iter_max = 1;
     setup.iter_star = 1;
-    setup.check_tr = true;
-    setup.check_res = false;
     setup.stop_star = Optizelle::TruncatedStop::TrustRegionViolated;
+
+    setup.check_tr = true;
+    setup.check_stop = true;
+    setup.check_iter = true;
+    setup.check_sol = true;
 
     // Check the solver 
     Unit::run_and_verify <Real,XX> (setup);

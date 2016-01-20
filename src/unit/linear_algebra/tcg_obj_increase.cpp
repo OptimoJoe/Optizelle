@@ -16,10 +16,9 @@ int main() {
         Unit::Matrix <Real>::symmetric(setup.m,25));
     setup.b = std::make_unique <Vector> (Unit::Vector <Real>::basic(setup.m));
     setup.eps = 1e-24;
+
     setup.stop_star = Optizelle::TruncatedStop::ObjectiveIncrease;
-    setup.check_sol = false;
-    setup.check_iter = false;
-    setup.check_res = false;
+
     setup.check_stop = true;
 
     // Check the solver 
@@ -28,10 +27,12 @@ int main() {
     // Extract the solution that we generated.  This should be the answer at
     // the iteration prior to this.  Pull these in as the answers and then
     // rerun the example
-    setup.x_star = std::make_unique <Vector> (*setup.x);
     setup.iter_max = setup.iter-1;
+
+    setup.x_star = std::make_unique <Vector> (*setup.x);
     setup.iter_star = setup.iter-1;
     setup.stop_star = Optizelle::TruncatedStop::MaxItersExceeded;
+
     setup.check_stop = true;
     setup.check_sol = true;
     setup.check_iter = true;

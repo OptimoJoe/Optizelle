@@ -13,6 +13,7 @@ int main() {
     setup.B = std::make_unique <Matrix>(
         Unit::Matrix <Real>::symmetric(setup.m,25));
     setup.b = std::make_unique <Vector> (Unit::Vector <Real>::basic(setup.m));
+
     setup.x_star = std::make_unique <Vector> (Vector({
         9.75321699253918e-02,
         -2.05661763246187e-02,
@@ -21,6 +22,11 @@ int main() {
         4.63421647030109e-03}));
     setup.iter_star = 5;
     setup.stop_star = Optizelle::TruncatedStop::RelativeErrorSmall;
+
+    setup.check_sol = true;
+    setup.check_iter = true;
+    setup.check_res = true;
+    setup.check_stop = true;
 
     // Check the solver 
     Unit::run_and_verify <Real,XX> (setup);
