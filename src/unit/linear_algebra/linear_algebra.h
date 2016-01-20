@@ -273,8 +273,11 @@ namespace Unit {
         // Right hand side
         std::unique_ptr <X_Vector> b;
 
-        // Starting solution
+        // Final solution
         std::unique_ptr <X_Vector> x;
+
+        // Final number of iterations
+        Natural iter;
 
         // Desired solution
         std::unique_ptr <X_Vector> x_star;
@@ -308,6 +311,7 @@ namespace Unit {
             A(),
             b(),
             x(),
+            iter(0),
             x_star(),
             iter_star(0),
             eps_sol(std::pow(
@@ -432,8 +436,7 @@ namespace Unit {
 
         // Solve this linear system
         auto err = Real(0.);
-        auto iter = Natural(0);
-        std::tie(err,iter) = Optizelle::gmres <Real,XX> (
+        std::tie(err,setup.iter) = Optizelle::gmres <Real,XX> (
             *setup.A,
             *setup.b,
             setup.eps,
@@ -446,7 +449,7 @@ namespace Unit {
 
         // Check that the number of iterations matches 
         if(setup.check_iter)
-            CHECK(iter == setup.iter_star);
+            CHECK(setup.iter == setup.iter_star);
 
         // Check the residual is less than our tolerance.  We do this two
         // different ways in case our solver is lying to us.
@@ -491,7 +494,6 @@ namespace Unit {
         // Solve this linear system
         auto x_cp = X::init(*setup.b);
         auto err = Real(0.);
-        auto iter = Natural(0);
         auto norm_Br0 = Real(0.);
         auto norm_Br = Real(0.);
         auto stop = Optizelle::TruncatedStop::NotConverged;
@@ -514,14 +516,14 @@ namespace Unit {
             x_cp,
             norm_Br0,
             norm_Br,
-            iter,
+            setup.iter,
             stop,
             failed,
             alpha);
 
         // Check that the number of iterations matches 
         if(setup.check_iter)
-            CHECK(iter == setup.iter_star);
+            CHECK(setup.iter == setup.iter_star);
 
         // Check the preconditioned residual is less than our tolerance.  We do
         // this two different ways in case our solver is lying to us.
