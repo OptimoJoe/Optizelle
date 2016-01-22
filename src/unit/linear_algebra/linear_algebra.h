@@ -96,6 +96,15 @@ namespace Unit {
             return A;
         }
 
+        // Create a symmetric negative definite matrix
+        static t symm_nd(Natural const & size,Natural const & offset) {
+            auto A = symmetric(size,offset);
+            for(auto k=0;k<A.data.size();k++) {
+                A.data[k] = -A.data[k];
+            }
+            return A;
+        }
+
         // Fills the matrix with diagonal matrix where the (i,i)th element is
         //
         // (i+1)/2     when i is odd
@@ -606,5 +615,26 @@ namespace Unit {
         if(setup.check_stop) {
             CHECK(setup.stop_star == stop);
         }
+    }
+
+    // Reset the different checks 
+    template <typename Real,template <typename> class XX>
+    void reset_checks(Solver <Real,XX> & setup) {
+        setup.check_iter = false;
+        setup.check_sol = false;
+        setup.check_res = false;
+    }
+
+    template <typename Real,template <typename> class XX>
+    void reset_checks(gmres <Real,XX> & setup) {
+        reset_checks(dynamic_cast <Solver <Real,XX> &>(setup));
+    }
+
+    template <typename Real,template <typename> class XX>
+    void reset_checks(tcg <Real,XX> & setup) {
+        reset_checks(dynamic_cast <Solver <Real,XX> &>(setup));
+        setup.check_cp = false;
+        setup.check_tr = false;
+        setup.check_stop = false;
     }
 }
