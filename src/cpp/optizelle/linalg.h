@@ -1098,8 +1098,8 @@ namespace Optizelle {
             RelativeErrorSmall,       // Relative error is small
             MaxItersExceeded,         // Maximum number of iterations exceeded
             TrustRegionViolated,      // Trust-region radius violated
-            NanDetected,              // NaN detected in the operator or 
-                                      // preconditioner application 
+            NanOperator,              // NaN detected in the operator
+            NanPreconditioner,        // NaN detected in the preconditioner
             NonProjector,             // Detected a nonprojecting preconditioner
                                       // when one is required.  Too much
                                       // inexactness in the composite-step SQP
@@ -1289,6 +1289,16 @@ namespace Optizelle {
         norm_Br0 = std::sqrt(X::innr(Br,Br));
         norm_Br = norm_Br0; 
 
+        // Check for NaNs in the preconditioner.  If there's a problem here, we
+        // have a difficult time recovering later, so just zero out everything
+        // and quit.
+        if(norm_Br!=norm_Br) {
+            X::zero(x_cp);
+            iter=0;
+            stop = TruncatedStop::NanPreconditioner;
+            return;
+        }
+
         // Find the projected search direction and make sure that we have memory
         // for the operator applied to the projected search direction
         auto Bdx = X::init(x);
@@ -1328,7 +1338,7 @@ namespace Optizelle {
         //
         // 0.5 <ABdx,Bdx> - <b,Bdx>
         //
-        // when we take the step x+Bdx, which is
+        // when we take the step x+alpha Bdx, which is
         //
         // alpha^2/2 <ABdx,Bdx> + alpha <ABdx,x> - alpha <b,Bdx>
         //
@@ -1385,12 +1395,9 @@ namespace Optizelle {
             // Find || Bdx ||_A^2
             Real Anorm_Bdx_2 = X::innr(Bdx,ABdx);
 
-            // Check for NaNs, || Bdx ||_A^2=NaN.  Technically, the NaN could
-            // have occured in either A or B.  We could differentiate the
-            // two by finding the norm of our operator A applied to the step,
-            // but I don't think that information matters at the moment.
+            // Check for NaNs in the operator
             if(Anorm_Bdx_2!=Anorm_Bdx_2)
-                stop = TruncatedStop::NanDetected;
+                stop = TruncatedStop::NanOperator;
 
             // Check for negative curvature, when || Bdx ||_A^2 <= 0.  Note,
             // this also encapsulates zero curvature, which is also bad.
@@ -1567,7 +1574,8 @@ namespace Optizelle {
             // orthogonality, or we're actually going to make the CG objective
             // worse.  In these cases, we set our saved trial steps to zero.
             if( safeguard_failed==0 ) {
-                if( stop != TruncatedStop::NanDetected && 
+                if( stop != TruncatedStop::NanOperator && 
+                    stop != TruncatedStop::NanPreconditioner && 
                     stop != TruncatedStop::NonProjector &&
                     stop != TruncatedStop::NonSymmetric  &&
                     stop != TruncatedStop::LossOfOrthogonality &&
@@ -1605,7 +1613,8 @@ namespace Optizelle {
                     // Amount that we cut back the step
                     auto sigma = Real(0.);
 
-                    // When we have a trust-region
+                    // When we have a trust-region, run in the current
+                    // direction, Bdx, until we hit the boundary
                     if(delta < std::numeric_limits <Real>::infinity()) {
                         // Find sigma so that
                         // 
@@ -1633,10 +1642,12 @@ namespace Optizelle {
                                 sigma = root;
 
                     // When we don't have a trust region, but we're on
-                    // iteration 1
+                    // iteration 1, move in the preconditioned steepest-descent
+                    // direction
                     } else if(iter == 1) {
-                        // Note, dx already contains -r, since we're on the
-                        // first iteration, so we just take a unit step
+                        // Note, Bdx contains -Br, since we're on the first
+                        // iteration, so we just take a unit step in order to
+                        // move in the steepest descent direction
                         sigma = Real(1.);
                     }
 
@@ -1681,7 +1692,8 @@ namespace Optizelle {
                 // Alternatively, when we lose orthogonality, we can't really
                 // trust anything either.  Finally, if the objective goes up,
                 // that's also not good, so don't modify anything.
-                } case TruncatedStop::NanDetected:
+                } case TruncatedStop::NanOperator:
+                case TruncatedStop::NanPreconditioner:
                 case TruncatedStop::NonProjector:
                 case TruncatedStop::NonSymmetric:
                 case TruncatedStop::LossOfOrthogonality:
@@ -1709,6 +1721,10 @@ namespace Optizelle {
             B.eval(r,Br);
             norm_r = std::sqrt(X::innr(r,r));
             norm_Br = std::sqrt(X::innr(Br,Br));
+
+            // Check for NaNs in the preconditioner 
+            if(norm_Br!=norm_Br)
+                stop = TruncatedStop::NanPreconditioner;
                 
             // Determine if this new iterate is feasible with respect to our
             // safeguard.  We calculate this from x_offset, which we assume to

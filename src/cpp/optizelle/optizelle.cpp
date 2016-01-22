@@ -763,8 +763,10 @@ namespace Optizelle{
             return atos("IterExcd");
         case TruncatedStop::TrustRegionViolated:
             return atos("TrstReg");
-        case TruncatedStop::NanDetected:
-            return atos("NaN");
+        case TruncatedStop::NanOperator:
+            return atos("NanOp");
+        case TruncatedStop::NanPreconditioner:
+            return atos("NanPre");
         case TruncatedStop::NonProjector:
             return atos("NonProj");
         case TruncatedStop::NonSymmetric:

@@ -117,8 +117,11 @@ namespace Optizelle {
             case TrustRegionViolated:
                 return Python::enumToPyObject(
                     "TruncatedStop","TrustRegionViolated");
-            case NanDetected:
-                return Python::enumToPyObject("TruncatedStop","NanDetected");
+            case NanOperator:
+                return Python::enumToPyObject("TruncatedStop","NanOperator");
+            case NanPreconditioner:
+                return Python::enumToPyObject(
+                    "TruncatedStop","NanPreconditioner");
             case NonProjector:
                 return Python::enumToPyObject("TruncatedStop","NonProjector");
             case NonSymmetric:
@@ -163,8 +166,12 @@ namespace Optizelle {
                 "TruncatedStop","TrustRegionViolated")
             )
                 return TrustRegionViolated;
-            else if(m==Python::enumToNatural("TruncatedStop","NanDetected"))
-                return NanDetected;
+            else if(m==Python::enumToNatural("TruncatedStop","NanOperator"))
+                return NanOperator;
+            else if(m==Python::enumToNatural(
+                "TruncatedStop","NanPreconditioner")
+            )
+                return NanPreconditioner;
             else if(m==Python::enumToNatural("TruncatedStop","NonProjector"))
                 return NonProjector;
             else if(m==Python::enumToNatural("TruncatedStop","NonSymmetric"))

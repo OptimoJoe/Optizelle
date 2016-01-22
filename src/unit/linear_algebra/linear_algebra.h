@@ -181,12 +181,46 @@ namespace Unit {
         }
     };
 
-    // Identity operator
+    // Operators
     template <typename Real,template <typename> class XX>
-    typename Optizelle::Unconstrained <Real,XX>::Functions::Identity identity(){
-        return typename Optizelle::Unconstrained <Real,XX>::Functions
-            ::Identity();
-    }
+    struct Operator {
+        // Create some type shortcuts
+        typedef Optizelle::Rm<Real> X;
+        typedef typename X::Vector X_Vector;
+        typedef Optizelle::Operator <Real,XX,XX> t;
+
+        // Throw a NaN after a specified number of calls
+        struct Nan: public t { 
+        private:
+            // Track the number of times the operator is called
+            mutable Natural calls;
+
+            // Track the maximum number of calls
+            Natural const calls_max;
+
+            // Track the internal matrix
+            typename Matrix <Real>::t A;
+        public:
+            // On creation, set the number of calls before NaNing
+            Nan(typename Matrix <Real>::t const& A_,Natural const& calls_max_) :
+                calls(0),
+                calls_max(calls_max_),
+                A(A_)
+            {}
+                
+            // Apply the matrix until we NaN 
+            void eval(X_Vector const & x,X_Vector & y) const {
+                A.eval(x,y);
+                if(calls >= calls_max)
+                    X::scal(std::numeric_limits <Real>::quiet_NaN(),y);
+                calls++;
+            }
+        };
+
+        // Identity operator
+        typedef typename Optizelle::Unconstrained <Real,XX>::Functions::Identity
+            Identity;
+    };
 
     // A bunch of structured vectors
     template <typename Real>

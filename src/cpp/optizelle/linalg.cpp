@@ -848,8 +848,10 @@ namespace Optizelle {
                 return "MaxItersExceeded";
             case TrustRegionViolated:
                 return "TrustRegionViolated";
-            case NanDetected:
-                return "NanDetected";
+            case NanOperator:
+                return "NanOperator";
+            case NanPreconditioner:
+                return "NanPreconditioner";
             case NonProjector:
                 return "NonProjector";
             case NonSymmetric:
@@ -879,8 +881,10 @@ namespace Optizelle {
                 return MaxItersExceeded;
             else if(trunc_stop=="TrustRegionViolated")
                 return TrustRegionViolated;
-            else if(trunc_stop=="NanDetected")
-                return NanDetected;
+            else if(trunc_stop=="NanOperator")
+                return NanOperator;
+            else if(trunc_stop=="NanPreconditioner")
+                return NanPreconditioner;
             else if(trunc_stop=="NonProjector")
                 return NonProjector;
             else if(trunc_stop=="NonSymmetric")
@@ -904,7 +908,8 @@ namespace Optizelle {
                 name=="RelativeErrorSmall" ||
                 name=="MaxItersExceeded" ||
                 name=="TrustRegionViolated" ||
-                name=="NanDetected" ||
+                name=="NanOperator" ||
+                name=="NanPreconditioner" ||
                 name=="NonProjector" ||
                 name=="NonSymmetric" ||
                 name=="LossOfOrthogonality" ||

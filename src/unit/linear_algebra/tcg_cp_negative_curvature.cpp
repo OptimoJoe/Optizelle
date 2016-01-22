@@ -23,6 +23,9 @@ int main() {
         // Target solutions
         setup.iter_star = 1;
         setup.stop_star = Optizelle::TruncatedStop::NegativeCurvature;
+        setup.x_star = std::make_unique <Vector> (*setup.b);
+        auto norm_b = std::sqrt(X::innr(*setup.b,*setup.b));
+        X::scal((setup.delta-norm_b)/norm_b,*setup.x_star);
 
         // Tests
         Unit::reset_checks <Real,XX> (setup);
@@ -30,6 +33,7 @@ int main() {
         setup.check_stop = true;
         setup.check_tr = true;
         setup.check_cp = true;
+        setup.check_sol = true;
 
         // Check the solver 
         Unit::run_and_verify <Real,XX> (setup);
