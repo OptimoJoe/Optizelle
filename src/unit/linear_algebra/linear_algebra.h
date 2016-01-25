@@ -463,8 +463,14 @@ namespace Unit {
         // Number of orthogonalization iterations
         Natural orthog_iter_max; 
 
-        // Whether we do the projector check
-        bool proj_check;
+        // Whether we do the preconditioner projector check
+        bool check_B_projector;
+
+        // Whether we do the preconditioner properties check 
+        bool check_B_properties;
+
+        // Whether we do the operator properties check 
+        bool check_A_properties;
 
         // Cauchy-Point check
         bool check_cp;
@@ -493,7 +499,9 @@ namespace Unit {
             failed_max(std::numeric_limits <Natural>::max()),
             orthog_storage_max(1),
             orthog_iter_max(1),
-            proj_check(false),
+            check_B_projector(false),
+            check_B_properties(true),
+            check_A_properties(true),
             check_cp(false),
             check_tr(false),
             eps_tr(this->eps),
@@ -590,9 +598,11 @@ namespace Unit {
             setup.orthog_iter_max,
             setup.delta,
             *setup.x_offset,
-            setup.proj_check,
             setup.failed_max,
             *setup.safeguard,
+            setup.check_B_projector,
+            setup.check_B_properties,
+            setup.check_A_properties,
             *setup.x,
             x_cp,
             norm_Br0,

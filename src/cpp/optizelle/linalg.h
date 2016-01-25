@@ -1135,8 +1135,8 @@ namespace Optizelle {
         template <typename> class XX
     >
     void Aorthogonalize(
-        std::list <typename XX <Real>::Vector> const & vs,
-        std::list <typename XX <Real>::Vector> const & Avs,
+        std::deque <typename XX <Real>::Vector> const & vs,
+        std::deque <typename XX <Real>::Vector> const & Avs,
         Natural const & iter_max,
         typename XX <Real>::Vector & x,
         typename XX <Real>::Vector & Ax
@@ -1198,9 +1198,11 @@ namespace Optizelle {
         Natural const & orthog_iter_max,
         Real const & delta,
         typename XX <Real>::Vector const & x_offset,
-	bool const & proj_check,
         Natural const & safeguard_failed_max,
         SafeguardSimplified <Real,XX> const & safeguard,
+	bool const & check_B_projector,
+	bool const & check_B_properties,
+	bool const & check_A_properties,
         typename XX <Real>::Vector & x,
         typename XX <Real>::Vector & x_cp,
         Real & norm_Br0,
@@ -1215,55 +1217,333 @@ namespace Optizelle {
         typedef XX <Real> X;
         typedef typename X::Vector X_Vector;
 
+        // Initialize x to zero. 
+        X::zero(x);
+
         // At the start, we haven't converged
         stop = TruncatedStop::NotConverged;
 
         // We also haven't truncated anything at the start
         alpha_safeguard = Real(1.0);
 
+        // Set a tolerance for our diagnostic checks.  For this, we pick the
+        // magic number 0.5.  There's probably a better number as this is sort
+        // of one of those, "Well, that looks good," numbers.
+        auto const eps_diag = Real(0.5);
+
+        // Normalization and curvature quantity
+        auto Anorm_Bdx_2 = Real(0.);
+        auto Anorm_Bdx = Real(0.);
+
+        // Constant normalization, when we don't need one
+        auto const one = Real(1.);
+        
+        // Residual for the sytem 
+        auto r = X::init(x); 
+        auto norm_r = Real(0.);
+        auto rs = std::deque <X_Vector> ();
+        auto norm_rs = std::deque <Real> ();
+
+        // Preconditioned residual for the sytem
+        auto Br = X::init(x);
+        // norm_Br returned from function
+        auto Brs = std::deque <X_Vector> ();
+        auto norm_Brs = std::deque <Real> ();
+       
+        // Preconditioned directions
+        auto Bdx = X::init(x);
+        auto norm_Bdx = Real(0.);
+        auto Bdxs = std::deque <X_Vector> ();
+        auto norm_Bdxs = std::deque <Real> ();
+        
+        // Operator applied to the preconditioned directions
+        auto ABdx = X::init(x);
+        auto norm_ABdx = Real(0.);
+        auto ABdxs = std::deque <X_Vector> ();
+        auto norm_ABdxs = std::deque <Real> ();
+
+        // Rotate a container, so that the first element is the last
+        auto rotate = [](auto & xs) {
+            xs.emplace_back(std::move(xs.front()));
+            xs.pop_front();
+        };
+
+        // Store a vector as well as its norm
+        auto archive = [&](
+            auto const & maxsize,
+            auto const & normalization,
+            auto & xs,
+            auto & norm_xs,
+            auto const & x
+        ) {
+            return [maxsize,&normalization,&xs,&norm_xs,&x,&rotate]() {
+                // If we're not storing anything, exit
+                if(maxsize <= 0) return;
+
+                // If we've too many elements, rotate the containers
+                if(norm_xs.size()==maxsize) {
+                    rotate(xs);
+                    rotate(norm_xs);
+
+                // Otherwise, allocate more memory
+                } else {
+                    xs.emplace_back(X::init(x));
+                    norm_xs.emplace_back(Real(0.));
+                }
+                
+                // Copy the element into place and normalize the vector
+                X::copy(x,xs.back());
+                X::scal(1/normalization,xs.back());
+                norm_xs.back() = std::sqrt(X::innr(xs.back(),xs.back()));
+            };
+        };
+
+        // Setup a bunch of functions to store elements
+        auto archive_r = archive(
+            check_B_projector || check_B_properties ? orthog_storage_max : 0,
+            one,
+            rs,
+            norm_rs,
+            r);
+        auto archive_Br = archive(
+            check_B_projector || check_B_properties ? orthog_storage_max : 0,
+            one,
+            Brs,
+            norm_Brs,
+            Br);
+        auto archive_Bdx = archive(
+            orthog_storage_max,
+            Anorm_Bdx, 
+            Bdxs,
+            norm_Bdxs,
+            Bdx);
+        auto archive_ABdx = archive(
+            orthog_storage_max,
+            Anorm_Bdx, 
+            ABdxs,
+            norm_ABdxs,
+            ABdx);
+
+        // Grow a matrix of reals in both the rows and columns until we hit a
+        // certain size
+        auto grow_matrix = [&](
+            auto const & maxsize,
+            auto & X
+        ) {
+            return [maxsize,&X,&rotate]() {
+                // If we're not storing anything, exit
+                if(maxsize <= 0) return;
+
+                // If we've hit the max number of rows, rotate items
+                if(X.size()==maxsize) {
+
+                    // Rotate the first row to the back
+                    rotate(X);
+
+                    // Rotate the elements of each row 
+                    for(auto & Xi : X)
+                        rotate(Xi);
+
+                // Otherwise, allocate more memory
+                } else {
+                    // Allocate a new row that's the same size as the first
+                    if(X.size()>=1)
+                        X.push_back(X.front());
+
+                    // If we have no rows, allocate an empty container
+                    else
+                        X.emplace_back(typename
+                            std::remove_reference<decltype(X)>
+                                ::type::value_type());
+
+                    // Allocate a new colum to each row 
+                    for(auto & Xj : X)
+                        Xj.emplace_back(Real(0.));
+                }
+            };
+        };
+
+        // Grow a vector of reals until we hit a certain size
+        auto grow_vector = [&](
+            auto const & maxsize,
+            auto & x
+        ) {
+            return [maxsize,&x,&rotate]() {
+                // If we're not storing anything, exit
+                if(maxsize <= 0) return;
+
+                // If we've hit the max number of columns, rotate items
+                if(x.size()==maxsize) 
+                    rotate(x);
+
+                // Otherwise, allocate more memory
+                else 
+                    x.emplace_back(Real(0.));
+            };
+        };
+
+        // 2-norm of a vector
+        auto norm_2 = [](auto const & x) {
+            auto sum = Real(0.);
+            for(auto & ele : x)
+                sum += sq(ele);
+            return std::sqrt(sum);
+        };
+
+        // Frobenius-norm of a matrix 
+        auto norm_F = [](auto const & X) {
+            auto sum = Real(0.);
+            for(auto const & Xi : X)
+                for(auto const & Xij : Xi)
+                    sum += sq(Xij);
+            return std::sqrt(sum);
+        };
+
+        // Frobenius-norm of the antisymmetric part of a matrix 
+        auto norm_anti_F = [](auto const & X) {
+            auto sum = Real(0.);
+            for(auto i=Natural(1);i<X.size();i++)
+                for(auto j=Natural(0);j<i;j++)
+                    sum += sq(X[i][j]-X[j][i]);
+            return std::sqrt(sum);
+        };
+                
+        // Allocate memory for a vector where
+        //
+        // X_i = <B ri, ri> / || Bri ||^2 - 1
+        //
+        // From this vector, we check the following
+        //
+        // 1. || X ||_2 > epsilon 
+        //
+        //    B is not a projector, which we need for the composite step SQP
+        //    method.  Note, when B is a projector we have || Bri ||^2 =
+        //    <Bri,Bri> = <B*Bri,ri> = <B^2ri,ri> = <Bri,ri>, so we really
+        //    should get 0.
+        auto B_projector = std::deque <Real> ();
+        auto allocate_B_projector = grow_vector(
+            check_B_projector ? orthog_storage_max : 0,
+            B_projector);
+        auto update_B_projector = [&]() {
+            // Allocate additional memory when required
+            allocate_B_projector();
+
+            // Exit if we're not doing the check 
+            if(!check_B_projector) return;
+            
+            // Update the elements
+            auto const & Bri = Brs.back();
+            auto const norm_Bri = norm_Brs.back();
+            auto const & ri = rs.back();
+            B_projector.back() = X::innr(Bri,ri) / sq(norm_Bri) - Real(1.);
+        };
+        auto is_B_projector = [&]() {
+            return norm_2(B_projector) <= eps_diag;
+        };
+
         // Allocate memory for a matrix where
         //
-        // O_ij = <B ri, rj> / (|| B ri || || rj ||)    i!=j
-        //      = <B ri, ri> / || Bri ||^2 - 1          i=j, proj_check=true
-        //      = 0.0                                   i=j, proj_check=false
+        // X_ij = <B ri, rj> / (|| B ri || || rj ||)    i!=j
+        //      = 0                                     i==j
         //
         // From this matrix, we check the following in order
         //
-        // 1. || Diag(O) || > epsilon 
+        // 1. || (X - X*)/2 ||_F > epsilon
         //
-        //    B is not a projector. Needed in the composite step SQP method.
-        //    Note, when B is a projector we have || Bri ||^2 = <Bri,Bri> =
-        //    <B*Bri,ri> = <B^2ri,ri> = <Bri,ri>, so we really should get 0.
+        //    B is not symmetric.  In truth, this should always be true, but
+        //    users give strange things.  Basically, <Bri,rj> = <ri,B*rj> =
+        //    <ri,Brj> when B is symmetric.  Hence, the norm of the
+        //    anti-symmetric part should be zero.
         //
-        // 2. || O - O' || > epsilon
+        // 2. || X ||_F > epsilon
         //
-        //    B is not symmetric.  Hard requirement, but users give strange
-        //    things.  Basically, <Bri,rj> = <ri,B*rj> = <ri,Brj> when B is
-        //    symmetric.  Hence, O should really be symmetric.
+        //    Residuals are not orthogonal.  In theory, <B ri, rj> = 0 for
+        //    i!=j.  As such, the matrix should be zero.  Nevertheless, since
+        //    we're using a variant of Gram-Schmidt, we accumulate error here
+        //    overtime.  We can mitigate this somewhat by increasing
+        //    orthog_iter_max. 
         //
-        // 3. || O || > epsilon
-        //
-        //    Vectors are not orthogonal.  In theory, the
-        //    preconditioned/projected residuals are orthogonal to each other
-        //    and the diagonal elements should be 0 due to the discussion
-        //    above.  As such, O should be zero, but it becomes not the case
-        //    when one of the checks above fails or, barring that, we don't
-        //    have orthogonality in the preconditioned residuals.  We're using
-        //    a variant of Gram-Schmidt, so this will happen eventually due to
-        //    numerical error.
-        //
-        // As far as epsilon, we pick the magic number 0.5.  There's probably a
-        // better number as this is sort of one of those, "Well, that looks
-        // good," numbers.  Also, for reference, we store O by columns.
-        auto const eps_O = Real(0.5);
-        auto rs = std::list <X_Vector> ();
-        auto norm_rs = std::list <Real> ();
-        auto Brs = std::list <X_Vector> ();
-        auto norm_Brs = std::list <Real> ();
-        auto O = std::deque <std::deque <Real>> ();
+        // For reference, we store X in row-major format.
+        auto B_properties = std::deque <std::deque <Real>> ();
+        auto allocate_B_properties = grow_matrix(
+            check_B_properties ? orthog_storage_max : 0,
+            B_properties);
+        auto update_B_properties = [&]() {
+            // Allocate additional memory when required
+            allocate_B_properties();
 
-        // Initialize x to zero. 
-        X::zero(x);
+            // Exit if we're not doing the check 
+            if(!check_B_properties) return;
+
+            // Update the elements
+            auto i = rs.size()-1;
+            B_properties[i][i] = Real(0.);
+            auto ele = [&](auto const & i,auto const & j) {
+                return X::innr(Brs[i],rs[j]) / (norm_Brs[i] * norm_rs[j]);
+            };
+            for(auto j = Natural(0);j<i;j++) {
+                B_properties[i][j]=ele(i,j);
+                B_properties[j][i]=ele(j,i);
+            }
+        };
+        auto is_B_symmetric = [&]() {
+            return norm_anti_F(B_properties) <= eps_diag;
+        };
+        auto is_rs_orthogonal = [&]() {
+            return norm_F(B_properties) <= eps_diag;
+        };
+
+        // Allocate memory for a matrix where
+        //
+        // X_ij = <A B dxi, B dxj> / (|| A B dxi || || B dxj ||)   i!=j
+        //      = 0                                                i==j
+        //
+        // From this matrix, we check the following in order
+        //
+        // 1. || (X - X*)/2 ||_F > epsilon
+        //
+        //    A is not symmetric.  In truth, this should always be true, but
+        //    users give strange things.  Basically, <ABdxi,ABdxj> =
+        //    <Bdxi,A*Bdxj> = <Bdxi,ABdxj> when A is symmetric.  Hence, the
+        //    norm of the anti-symmetric part should be zero. 
+        //
+        // 2. || X ||_F > epsilon
+        //
+        //    Preconditioned directions are not A-orthogonal.  In theory, 
+        //    <A B dxi, B dxj> = 0 for i!=j.  As such, the matrix should be
+        //    zero.  Nevertheless, since we're using a variant of Gram-Schmidt,
+        //    we accumulate error here overtime.  We can mitigate this somewhat
+        //    by increasing orthog_iter_max. 
+        //
+        // For reference, we store X in row-major format.
+        auto A_properties = std::deque <std::deque <Real>> ();
+        auto allocate_A_properties = grow_matrix(
+            check_A_properties ? orthog_storage_max : 0,
+            A_properties);
+        auto update_A_properties = [&]() {
+            // Allocate additional memory when required
+            allocate_A_properties();
+
+            // Exit if we're not doing the check 
+            if(!check_A_properties) return;
+            
+            // Update the elements
+            auto i = Bdxs.size()-1;
+            A_properties[i][i] = Real(0.);
+            auto ele = [&](auto const & i,auto const & j) {
+                return X::innr(ABdxs[i],Bdxs[j])/(norm_ABdxs[i]*norm_Bdxs[j]);
+            };
+            for(auto j = Natural(0);j<i;j++) {
+                A_properties[i][j]=ele(i,j);
+                A_properties[j][i]=ele(j,i);
+            }
+        };
+        auto is_A_symmetric = [&]() {
+            return norm_anti_F(A_properties) <= eps_diag;
+        };
+        auto is_Bdxs_Aorthogonal = [&]() {
+            return norm_F(A_properties) <= eps_diag;
+        };
 
         // Verify that || x0 + x_offset || = || x_offset || <= delta.  This
         // insures that our initial iterate lies inside the trust-region.  If
@@ -1280,12 +1560,10 @@ namespace Optizelle {
         }
         
         // Find the initial residual and projected residual, A*x-b = -b
-        auto r = X::init(x);
         X::copy(b,r);
         X::scal(Real(-1.),r);
-        X_Vector Br(X::init(x));
         B.eval(r,Br);
-        auto norm_r = std::sqrt(X::innr(r,r));
+        norm_r = std::sqrt(X::innr(r,r));
         norm_Br0 = std::sqrt(X::innr(Br,Br));
         norm_Br = norm_Br0; 
 
@@ -1299,17 +1577,10 @@ namespace Optizelle {
             return;
         }
 
-        // Find the projected search direction and make sure that we have memory
-        // for the operator applied to the projected search direction
-        auto Bdx = X::init(x);
+        // Find the projected search direction 
         X::copy(Br,Bdx);
         X::scal(Real(-1.),Bdx);
-        auto ABdx = X::init(x);
        
-        // Allocate memory for the previous search directions
-        auto Bdxs = std::list <X_Vector> ();
-        auto ABdxs = std::list <X_Vector> ();
-
         // Allocate memory for the shifted trial step
         //
         // || (x + x_offset) + alpha Bdx ||
@@ -1393,7 +1664,7 @@ namespace Optizelle {
             }
 
             // Find || Bdx ||_A^2
-            Real Anorm_Bdx_2 = X::innr(Bdx,ABdx);
+            Anorm_Bdx_2 = X::innr(Bdx,ABdx);
 
             // Check for NaNs in the operator
             if(Anorm_Bdx_2!=Anorm_Bdx_2)
@@ -1405,30 +1676,42 @@ namespace Optizelle {
                 stop = TruncatedStop::NegativeCurvature;
 
             // Allocate memory for the line-search to the trust-region bound 
-            Real alpha(std::numeric_limits<Real>::quiet_NaN());
+            auto alpha = std::numeric_limits<Real>::quiet_NaN();
 
             // We only compute the following when we have not detected some
             // kind of exiting condition
             if(stop == TruncatedStop::NotConverged) {
+                // Figure out the normalization for the directions 
+                // orthogonalization.
+                Anorm_Bdx = std::sqrt(Anorm_Bdx_2);
 
-                // Check if we need to eliminate any vectors for
-                // orthogonalization
-                if(Bdxs.size()==orthog_storage_max) {
-                    Bdxs.pop_front();
-                    ABdxs.pop_front();
-                }
-                   
-                // Store the previous directions
-                Real Anorm_Bdx = std::sqrt(Anorm_Bdx_2);
+                // Store our history
+                archive_Bdx();
+                archive_ABdx();
+                archive_r();
+                archive_Br();
+                
+                // Update our numerical error checks
+                update_B_projector();
+                update_B_properties();
+                update_A_properties();
 
-                Bdxs.emplace_back(std::move(X::init(x)));
-                X::copy(Bdx,Bdxs.back());
-                X::scal(Real(1.)/Anorm_Bdx,Bdxs.back());
-                
-                ABdxs.emplace_back(std::move(X::init(x)));
-                X::copy(ABdx,ABdxs.back());
-                X::scal(Real(1.)/Anorm_Bdx,ABdxs.back());
-                
+                // Look for numerical errors
+                if(check_B_projector && !is_B_projector())
+                    stop = TruncatedStop::NonProjector;
+                else if(check_B_properties && !is_B_symmetric())
+                    stop = TruncatedStop::NonSymmetric;
+                else if(check_B_properties && !is_rs_orthogonal())
+                    stop = TruncatedStop::LossOfOrthogonality;
+                else if(check_A_properties && !is_A_symmetric())
+                    stop = TruncatedStop::NonSymmetric;
+                else if(check_A_properties && !is_Bdxs_Aorthogonal())
+                    stop = TruncatedStop::LossOfOrthogonality;
+
+                // Exit now if we have any numerical errors
+                if(stop != TruncatedStop::NotConverged)
+                    break;
+
                 // Do an exact linesearch in the computed direction
                 alpha = -X::innr(r,Bdx) / Anorm_Bdx_2;
 
@@ -1446,122 +1729,6 @@ namespace Optizelle {
                 // Check if we've met or exceeded the trust-region radius
                 if(norm_shifted_trial >= delta)
                     stop = TruncatedStop::TrustRegionViolated;
-
-                // Do our numerical error checks 
-                {
-
-                    // Check if we need to prune elements from our residuals 
-                    // and orthogonality check matrix
-                    if(rs.size()==orthog_storage_max) {
-
-                        // Eliminate our residuals and projected residuals
-                        rs.pop_front();
-                        norm_rs.pop_front();
-                        Brs.pop_front();
-                        norm_Brs.pop_front();
-
-                        // Delete the first columns 
-                        O.pop_front();
-                        
-                        // Delete the first element of the subsequent columns 
-                        for(auto & Oj : O)
-                            Oj.pop_front();
-                    }
-
-                    // Store the previous residuals
-                    rs.emplace_back(std::move(X::init(x)));
-                    X::copy(r,rs.back());
-                    norm_rs.emplace_back(norm_r);
-
-                    Brs.emplace_back(std::move(X::init(x)));
-                    X::copy(Br,Brs.back());
-                    norm_Brs.emplace_back(norm_Br);
-
-                    // Build new pieces of the orthogonality check matrix in
-                    // the manner we described above when we allocated memory
-                    // for O
-
-                    // First add a new column to O
-                    {
-                        O.push_back(std::deque <Real>());
-                        auto const & rj = rs.back();
-                        auto const & norm_rj = norm_rs.back();
-                        auto norm_Bri = norm_Brs.cbegin();
-                        for(auto const & Bri : Brs) {
-                            // Bail if we're on the last row. We'll do that next
-                            if(&Bri == &(Brs.back())) break;
-
-                            // Add in the components
-                            O.back().push_back(
-                                X::innr(Bri,rj) / (*norm_Bri * norm_rj));
-
-                            // Make sure to iterate norm_Bri to match Bri
-                            norm_Bri++;
-                        }
-                    }
-                    
-                    // Now, add a new row to O 
-                    {
-                        auto const & ri = rs.back();
-                        auto norm_rj = norm_rs.cbegin();
-                        auto const & Bri = Brs.back();
-                        auto const & norm_Bri = norm_Brs.back();
-                        auto Oj = O.begin();
-                        for(auto const & rj : rs) {
-                            // Not on the last element
-                            if(&rj != &(rs.back()))
-                                Oj->push_back(
-                                    X::innr(Bri,rj) / (norm_Bri * (*norm_rj)));
-                            
-                            // On the last element, a diagonal
-                            else if(proj_check)
-                                Oj->push_back(
-                                    X::innr(Bri,ri) / sq(norm_Bri) - Real(1.));
-                            else
-                                Oj->push_back(Real(0.));
-
-                            // Make sure to iterate norm_rj and Oj to match rj
-                            norm_rj++;
-                            Oj++;
-                        }
-                    }
-
-                    // Squares items
-                    auto sq = [](auto const & x) { return x*x; };
-
-                    // Calculate the norm of the diagonal
-                    auto norm_diag = Real(0.);
-                    for(Natural i=0;i<O.size();i++) {
-                        auto Oii = O[i][i];
-                        norm_diag += sq(Oii); 
-                    }
-                    norm_diag = std::sqrt(norm_diag);
-
-                    // Cacluate the norm of the antisymmetric part
-                    auto norm_anti = Real(0.);
-                    for(Natural i=1;i<O.size();i++)
-                        for(Natural j=0;j<i;j++) {
-                            auto Oij = O[i][j];
-                            auto Oji = O[j][i];
-                            norm_anti += Real(2.)*sq(Oij-Oji);
-                        }
-                    norm_anti = std::sqrt(norm_anti);
-
-                    // Calculate the norm of O
-                    auto norm_O = Real(0.);
-                    for(auto const & Oj : O)
-                        for(auto const & Oij : Oj)
-                            norm_O+=sq(Oij);
-                    norm_O = std::sqrt(norm_O);
-
-                    // Check our error states 
-                    if(norm_diag > eps_O)
-                        stop = TruncatedStop::NonProjector;
-                    else if(norm_anti > eps_O)
-                        stop = TruncatedStop::NonSymmetric;
-                    else if(norm_O > eps_O)
-                        stop = TruncatedStop::LossOfOrthogonality;
-                }
             }
 
             // Check that our proposed direction is going to give us decrease
