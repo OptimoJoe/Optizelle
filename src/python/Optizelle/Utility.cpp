@@ -122,10 +122,15 @@ namespace Optizelle {
             case NanPreconditioner:
                 return Python::enumToPyObject(
                     "TruncatedStop","NanPreconditioner");
-            case NonProjector:
-                return Python::enumToPyObject("TruncatedStop","NonProjector");
-            case NonSymmetric:
-                return Python::enumToPyObject("TruncatedStop","NonSymmetric");
+            case NonProjectorPreconditioner:
+                return Python::enumToPyObject(
+                    "TruncatedStop","NonProjectorPreconditioner");
+            case NonSymmetricPreconditioner:
+                return Python::enumToPyObject(
+                    "TruncatedStop","NonSymmetricPreconditioner");
+            case NonSymmetricOperator:
+                return Python::enumToPyObject(
+                    "TruncatedStop","NonSymmetricOperator");
             case LossOfOrthogonality:
                 return Python::enumToPyObject(
                     "TruncatedStop","LossOfOrthogonality");
@@ -172,10 +177,18 @@ namespace Optizelle {
                 "TruncatedStop","NanPreconditioner")
             )
                 return NanPreconditioner;
-            else if(m==Python::enumToNatural("TruncatedStop","NonProjector"))
-                return NonProjector;
-            else if(m==Python::enumToNatural("TruncatedStop","NonSymmetric"))
-                return NonSymmetric;
+            else if(m==Python::enumToNatural(
+                "TruncatedStop","NonProjectorPreconditioner")
+            )
+                return NonProjectorPreconditioner;
+            else if(m==Python::enumToNatural(
+                "TruncatedStop","NonSymmetricPreconditioner")
+            )
+                return NonSymmetricPreconditioner;
+            else if(m==Python::enumToNatural(
+                "TruncatedStop","NonSymmetricOperator")
+            )
+                return NonSymmetricOperator;
             else if(m==Python::enumToNatural(
                 "TruncatedStop","LossOfOrthogonality")
             )

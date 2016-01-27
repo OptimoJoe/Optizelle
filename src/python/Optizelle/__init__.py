@@ -59,13 +59,14 @@ class TruncatedStop(EnumeratedType):
     TrustRegionViolated, \
     NanOperator, \
     NanPreconditioner, \
-    NonProjector, \
-    NonSymmetric, \
+    NonProjectorPreconditioner, \
+    NonSymmetricPreconditioner, \
+    NonSymmetricOperator, \
     LossOfOrthogonality, \
     InvalidTrustRegionOffset, \
     TooManyFailedSafeguard, \
     ObjectiveIncrease \
-    = range(13)
+    = range(14)
 
 class AlgorithmClass(EnumeratedType):
     """Which algorithm class do we use"""

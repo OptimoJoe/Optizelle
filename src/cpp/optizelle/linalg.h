@@ -1093,29 +1093,31 @@ namespace Optizelle {
     namespace TruncatedStop{
         enum t{
             //---TruncatedStop0---
-            NotConverged,             // Algorithm has not converged
-            NegativeCurvature,        // Negative curvature detected
-            RelativeErrorSmall,       // Relative error is small
-            MaxItersExceeded,         // Maximum number of iterations exceeded
-            TrustRegionViolated,      // Trust-region radius violated
-            NanOperator,              // NaN detected in the operator
-            NanPreconditioner,        // NaN detected in the preconditioner
-            NonProjector,             // Detected a nonprojecting preconditioner
-                                      // when one is required.  Too much
-                                      // inexactness in the composite-step SQP
-                                      // method can trigger this.
-            NonSymmetric,             // Detected a nonsymmetric preconditioner
-            LossOfOrthogonality,      // Loss of orthogonality between the
-                                      // Krylov vectors detected
-            InvalidTrustRegionOffset, // Trust-region offset is chosen such that
-                                      // || x_offset || > delta where delta is
-                                      // the trust-region radius.  This means
-                                      // that our starting solution of 0
-                                      // violates the trust-region.
-            TooManyFailedSafeguard,   // Too many safeguarded steps have failed
-            ObjectiveIncrease         // CG objective, 0.5 <ABx,Bx> - <b,Bx>
-                                      // increased between iterations, which
-                                      // shouldn't happen.
+            NotConverged,              // Algorithm has not converged
+            NegativeCurvature,         // Negative curvature detected
+            RelativeErrorSmall,        // Relative error is small
+            MaxItersExceeded,          // Maximum number of iterations exceeded
+            TrustRegionViolated,       // Trust-region radius violated
+            NanOperator,               // NaN detected in the operator
+            NanPreconditioner,         // NaN detected in the preconditioner
+            NonProjectorPreconditioner,// Detected a nonprojecting
+                                       // preconditioner when one is required.
+                                       // Too much inexactness in the
+                                       // composite-step SQP method can trigger
+                                       // this.
+            NonSymmetricPreconditioner,// Detected a nonsymmetric preconditioner
+            NonSymmetricOperator,      // Detected a nonsymmetric operator 
+            LossOfOrthogonality,       // Loss of orthogonality between the
+                                       // Krylov vectors detected
+            InvalidTrustRegionOffset,  // Trust-region offset is chosen such
+                                       // that || x_offset || > delta where
+                                       // delta is the trust-region radius.
+                                       // This means that our starting solution
+                                       // of 0 violates the trust-region.
+            TooManyFailedSafeguard,    // Too many safeguarded steps have failed
+            ObjectiveIncrease          // CG objective, 0.5 <ABx,Bx> - <b,Bx>
+                                       // increased between iterations, which
+                                       // shouldn't happen.
             //---TruncatedStop1---
         };
 
@@ -1698,13 +1700,13 @@ namespace Optizelle {
 
                 // Look for numerical errors
                 if(check_B_projector && !is_B_projector())
-                    stop = TruncatedStop::NonProjector;
+                    stop = TruncatedStop::NonProjectorPreconditioner;
                 else if(check_B_properties && !is_B_symmetric())
-                    stop = TruncatedStop::NonSymmetric;
+                    stop = TruncatedStop::NonSymmetricPreconditioner;
                 else if(check_B_properties && !is_rs_orthogonal())
                     stop = TruncatedStop::LossOfOrthogonality;
                 else if(check_A_properties && !is_A_symmetric())
-                    stop = TruncatedStop::NonSymmetric;
+                    stop = TruncatedStop::NonSymmetricOperator;
                 else if(check_A_properties && !is_Bdxs_Aorthogonal())
                     stop = TruncatedStop::LossOfOrthogonality;
 
@@ -1743,8 +1745,9 @@ namespace Optizelle {
             if( safeguard_failed==0 ) {
                 if( stop != TruncatedStop::NanOperator && 
                     stop != TruncatedStop::NanPreconditioner && 
-                    stop != TruncatedStop::NonProjector &&
-                    stop != TruncatedStop::NonSymmetric  &&
+                    stop != TruncatedStop::NonProjectorPreconditioner &&
+                    stop != TruncatedStop::NonSymmetricPreconditioner &&
+                    stop != TruncatedStop::NonSymmetricOperator &&
                     stop != TruncatedStop::LossOfOrthogonality &&
                     stop != TruncatedStop::ObjectiveIncrease
                 ) {
@@ -1861,8 +1864,9 @@ namespace Optizelle {
                 // that's also not good, so don't modify anything.
                 } case TruncatedStop::NanOperator:
                 case TruncatedStop::NanPreconditioner:
-                case TruncatedStop::NonProjector:
-                case TruncatedStop::NonSymmetric:
+                case TruncatedStop::NonProjectorPreconditioner:
+                case TruncatedStop::NonSymmetricPreconditioner:
+                case TruncatedStop::NonSymmetricOperator:
                 case TruncatedStop::LossOfOrthogonality:
                 case TruncatedStop::ObjectiveIncrease:
                     break;

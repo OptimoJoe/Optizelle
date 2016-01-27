@@ -8,6 +8,7 @@ int main() {
     // Setup the problem 
     auto setup = Unit::tcg <Real,XX> ();
 
+    // Problem setup 
     setup.A = std::make_unique <Matrix>(
         Unit::Matrix <Real>::symmetric(setup.m,0));
     setup.B = std::make_unique <Matrix>(
@@ -15,8 +16,10 @@ int main() {
     setup.b = std::make_unique <Vector> (Unit::Vector <Real>::basic(setup.m));
     setup.orthog_storage_max = 3;
 
-    setup.stop_star = Optizelle::TruncatedStop::NonSymmetric;
+    // Target solutions
+    setup.stop_star = Optizelle::TruncatedStop::NonSymmetricPreconditioner;
 
+    // Tests
     setup.check_stop = true;
 
     // Check the solver 

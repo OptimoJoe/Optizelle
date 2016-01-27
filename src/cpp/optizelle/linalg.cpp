@@ -852,10 +852,12 @@ namespace Optizelle {
                 return "NanOperator";
             case NanPreconditioner:
                 return "NanPreconditioner";
-            case NonProjector:
-                return "NonProjector";
-            case NonSymmetric:
-                return "NonSymmetric";
+            case NonProjectorPreconditioner:
+                return "NonProjectorPreconditioner";
+            case NonSymmetricPreconditioner:
+                return "NonSymmetricPreconditioner";
+            case NonSymmetricOperator:
+                return "NonSymmetricOperator";
             case LossOfOrthogonality:
                 return "LossOfOrthogonality";
             case InvalidTrustRegionOffset:
@@ -885,10 +887,12 @@ namespace Optizelle {
                 return NanOperator;
             else if(trunc_stop=="NanPreconditioner")
                 return NanPreconditioner;
-            else if(trunc_stop=="NonProjector")
-                return NonProjector;
-            else if(trunc_stop=="NonSymmetric")
-                return NonSymmetric;
+            else if(trunc_stop=="NonProjectorPreconditioner")
+                return NonProjectorPreconditioner;
+            else if(trunc_stop=="NonSymmetricPreconditioner")
+                return NonSymmetricPreconditioner;
+            else if(trunc_stop=="NonSymmetricOperator")
+                return NonSymmetricOperator;
             else if(trunc_stop=="LossOfOrthogonality")
                 return LossOfOrthogonality;
             else if(trunc_stop=="InvalidTrustRegionOffset")
@@ -910,8 +914,9 @@ namespace Optizelle {
                 name=="TrustRegionViolated" ||
                 name=="NanOperator" ||
                 name=="NanPreconditioner" ||
-                name=="NonProjector" ||
-                name=="NonSymmetric" ||
+                name=="NonProjectorPreconditioner" ||
+                name=="NonSymmetricPreconditioner" ||
+                name=="NonSymmetricOperator" ||
                 name=="LossOfOrthogonality" ||
                 name=="InvalidTrustRegionOffset" ||
                 name=="TooManyFailedSafeguard" ||

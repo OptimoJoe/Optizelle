@@ -767,10 +767,12 @@ namespace Optizelle{
             return atos("NanOp");
         case TruncatedStop::NanPreconditioner:
             return atos("NanPre");
-        case TruncatedStop::NonProjector:
-            return atos("NonProj");
-        case TruncatedStop::NonSymmetric:
-            return atos("NonSymm");
+        case TruncatedStop::NonProjectorPreconditioner:
+            return atos("NonProjPre");
+        case TruncatedStop::NonSymmetricPreconditioner:
+            return atos("NonSymmPre");
+        case TruncatedStop::NonSymmetricOperator:
+            return atos("NonSymmOp");
         case TruncatedStop::LossOfOrthogonality:
             return atos("OrthogLost");
         case TruncatedStop::InvalidTrustRegionOffset:

@@ -1,5 +1,7 @@
-// Run TCG with with a nonprojector preconditioner and show that we can detect
-// it. 
+// Run TCG with with a nonsymmetric operator and show that we can detect
+// it.  Note, this requires us to overorthogonalize.  Note, this test is a
+// little touchy since a nonsymmetric operator may cause the negative curvature
+// or objective increase conditions to trigger first.
 
 #include "linear_algebra.h"
 #include "spaces.h"
@@ -10,15 +12,14 @@ int main() {
 
     // Problem setup 
     setup.A = std::make_unique <Matrix>(
-        Unit::Matrix <Real>::symmetric(setup.m,0));
+        Unit::Matrix <Real>::nonsymmetric(setup.m,4));
     setup.B = std::make_unique <Matrix>(
-        Unit::Matrix <Real>::symmetric(setup.m,25));
+        Unit::Matrix <Real>::symmetric(setup.m,0));
     setup.b = std::make_unique <Vector> (Unit::Vector <Real>::basic(setup.m));
     setup.orthog_storage_max = 3;
-    setup.check_B_projector = true;
 
     // Target solutions
-    setup.stop_star = Optizelle::TruncatedStop::NonProjectorPreconditioner;
+    setup.stop_star = Optizelle::TruncatedStop::NonSymmetricOperator;
 
     // Tests
     setup.check_stop = true;
