@@ -1131,6 +1131,50 @@ namespace Optizelle {
         bool is_valid(std::string const & name);
     }
 
+    // Rotate a container, so that the first element is the last
+    template <typename Xs>
+    void rotate(Xs & xs) {
+        xs.emplace_back(std::move(xs.front()));
+        xs.pop_front();
+    }
+
+    // Store a normalized vector as well as its norm
+    template <
+        typename Real,
+        template <typename> class XX
+    >
+    auto archive(
+        Natural const & maxsize,
+        Real const & normalization,
+        typename XX <Real>::Vector const & x,
+        std::deque <typename XX <Real>::Vector> & xs,
+        std::deque <Real> & norm_xs
+    ) -> std::function<void()> {
+        // Create some type shortcuts
+        typedef XX <Real> X;
+
+        return [maxsize,&normalization,&xs,&norm_xs,&x]() {
+            // If we're not storing anything, exit
+            if(maxsize <= 0) return;
+
+            // If we've too many elements, rotate the containers
+            if(norm_xs.size()==maxsize) {
+                rotate(xs);
+                rotate(norm_xs);
+
+            // Otherwise, allocate more memory
+            } else {
+                xs.emplace_back(X::init(x));
+                norm_xs.emplace_back(Real(0.));
+            }
+            
+            // Copy the element into place and normalize the vector
+            X::copy(x,xs.back());
+            X::scal(1/normalization,xs.back());
+            norm_xs.back() = std::sqrt(X::innr(xs.back(),xs.back()));
+        };
+    };
+
     // A orthogonalizes a vector x to a list of other xs.  
     template <
         typename Real,
@@ -1159,6 +1203,94 @@ namespace Optizelle {
         }
     }
 
+    // Grow a matrix of reals in both the rows and columns until we hit a
+    // certain size
+    template <typename Real,typename X>
+    auto grow_matrix(
+        Natural const & maxsize,
+        X & x
+    ) -> std::function <void()> {
+        return [maxsize,&x]() {
+            // If we're not storing anything, exit
+            if(maxsize <= 0) return;
+
+            // If we've hit the max number of rows, rotate items
+            if(x.size()==maxsize) {
+
+                // Rotate the first row to the back
+                rotate(x);
+
+                // Rotate the elements of each row 
+                for(auto & xi : x)
+                    rotate(xi);
+
+            // Otherwise, allocate more memory
+            } else {
+                // Allocate a new row that's the same size as the first
+                if(x.size()>=1)
+                    x.push_back(x.front());
+
+                // If we have no rows, allocate an empty container
+                else
+                    x.emplace_back(typename std::remove_reference<decltype(x)>
+                        ::type::value_type());
+
+                // Allocate a new colum to each row 
+                for(auto & xj : x)
+                    xj.emplace_back(Real(0.));
+            }
+        };
+    }
+
+    // Grow a vector of reals until we hit a certain size
+    template <typename Real,typename X>
+    auto grow_vector(
+        Natural const & maxsize,
+        X & x
+    ) -> std::function <void()> {
+        return [maxsize,&x]() {
+            // If we're not storing anything, exit
+            if(maxsize <= 0) return;
+
+            // If we've hit the max number of columns, rotate items
+            if(x.size()==maxsize) 
+                rotate(x);
+
+            // Otherwise, allocate more memory
+            else 
+                x.emplace_back(Real(0.));
+        };
+    }
+
+    // 2-norm of a vector
+    template <typename Real,typename X>
+    auto norm_2(X const & x) -> Real {
+        auto sum = Real(0.);
+        for(auto & ele : x)
+            sum += sq(ele);
+        return std::sqrt(sum);
+    };
+
+    // Frobenius-norm of a matrix 
+    template <typename Real,typename X>
+    auto norm_F(X const & x) -> Real{
+        auto sum = Real(0.);
+        for(auto const & xi : x)
+            for(auto const & xij : xi)
+                sum += sq(xij);
+        return std::sqrt(sum);
+    }
+
+    // Frobenius-norm of the antisymmetric part of a matrix 
+    template <typename Real,typename X>
+    auto norm_anti_F(X const & x) -> Real{
+        auto sum = Real(0.);
+        for(auto i=Natural(1);i<x.size();i++)
+            for(auto j=Natural(0);j<i;j++)
+                sum += sq(x[i][j]-x[j][i]);
+        return std::sqrt(sum);
+    }
+
     // Computes the truncated projected conjugate gradient algorithm in order
     // to solve Ax=b where we restrict x to be in the range of B and that
     // || x + x_offset || <= delta.  The parameters are as follows.
@@ -1169,15 +1301,17 @@ namespace Optizelle {
     // (input) C : Operator that modifies the shape of the trust-region
     // (input) eps : Stopping tolerance
     // (input) iter_max :  Maximum number of iterations
-    // (input) orthog_storage_max : Maximum number of orthgonalizations.  If this
-    //     number is 1, then we do the conjugate gradient algorithm.
+    // (input) orthog_storage_max : Maximum number of orthgonalizations.  If
+    //     this number is 1, then we do the conjugate gradient algorithm.
     // (input) delta : Trust region radius.  If this number is infinity, we
     //     do not scale the final step if we detect negative curvature.
     // (input) x_offset : Offset for checking the TR radius 
-    // (input) do_proj_check : Projector check for preconditioners 
     // (input) safeguard_failed_max : Maximum number of failed safeguard steps
     //     before exiting
     // (input) safeguard : Our safeguard function
+    // (input) check_B_projector: Check preconditioner that is a projector 
+    // (input) check_B_properties: Check other properties of the preconditioner 
+    // (input) check_A_properties: Check properties of the operator 
     // (output) x : Final solution x
     // (output) x_cp : The Cauchy-Point, which is defined as the solution x
     //     after a single iteration
@@ -1264,151 +1398,31 @@ namespace Optizelle {
         auto ABdxs = std::deque <X_Vector> ();
         auto norm_ABdxs = std::deque <Real> ();
 
-        // Rotate a container, so that the first element is the last
-        auto rotate = [](auto & xs) {
-            xs.emplace_back(std::move(xs.front()));
-            xs.pop_front();
-        };
-
-        // Store a vector as well as its norm
-        auto archive = [&](
-            auto const & maxsize,
-            auto const & normalization,
-            auto & xs,
-            auto & norm_xs,
-            auto const & x
-        ) {
-            return [maxsize,&normalization,&xs,&norm_xs,&x,&rotate]() {
-                // If we're not storing anything, exit
-                if(maxsize <= 0) return;
-
-                // If we've too many elements, rotate the containers
-                if(norm_xs.size()==maxsize) {
-                    rotate(xs);
-                    rotate(norm_xs);
-
-                // Otherwise, allocate more memory
-                } else {
-                    xs.emplace_back(X::init(x));
-                    norm_xs.emplace_back(Real(0.));
-                }
-                
-                // Copy the element into place and normalize the vector
-                X::copy(x,xs.back());
-                X::scal(1/normalization,xs.back());
-                norm_xs.back() = std::sqrt(X::innr(xs.back(),xs.back()));
-            };
-        };
-
         // Setup a bunch of functions to store elements
-        auto archive_r = archive(
+        auto archive_r = archive <Real,XX> (
             check_B_projector || check_B_properties ? orthog_storage_max : 0,
             one,
+            r,
             rs,
-            norm_rs,
-            r);
-        auto archive_Br = archive(
+            norm_rs);
+        auto archive_Br = archive <Real,XX> (
             check_B_projector || check_B_properties ? orthog_storage_max : 0,
             one,
+            Br,
             Brs,
-            norm_Brs,
-            Br);
-        auto archive_Bdx = archive(
+            norm_Brs);
+        auto archive_Bdx = archive <Real,XX> (
             orthog_storage_max,
             Anorm_Bdx, 
+            Bdx,
             Bdxs,
-            norm_Bdxs,
-            Bdx);
-        auto archive_ABdx = archive(
+            norm_Bdxs);
+        auto archive_ABdx = archive <Real,XX> (
             orthog_storage_max,
             Anorm_Bdx, 
+            ABdx,
             ABdxs,
-            norm_ABdxs,
-            ABdx);
-
-        // Grow a matrix of reals in both the rows and columns until we hit a
-        // certain size
-        auto grow_matrix = [&](
-            auto const & maxsize,
-            auto & X
-        ) {
-            return [maxsize,&X,&rotate]() {
-                // If we're not storing anything, exit
-                if(maxsize <= 0) return;
-
-                // If we've hit the max number of rows, rotate items
-                if(X.size()==maxsize) {
-
-                    // Rotate the first row to the back
-                    rotate(X);
-
-                    // Rotate the elements of each row 
-                    for(auto & Xi : X)
-                        rotate(Xi);
-
-                // Otherwise, allocate more memory
-                } else {
-                    // Allocate a new row that's the same size as the first
-                    if(X.size()>=1)
-                        X.push_back(X.front());
-
-                    // If we have no rows, allocate an empty container
-                    else
-                        X.emplace_back(typename
-                            std::remove_reference<decltype(X)>
-                                ::type::value_type());
-
-                    // Allocate a new colum to each row 
-                    for(auto & Xj : X)
-                        Xj.emplace_back(Real(0.));
-                }
-            };
-        };
-
-        // Grow a vector of reals until we hit a certain size
-        auto grow_vector = [&](
-            auto const & maxsize,
-            auto & x
-        ) {
-            return [maxsize,&x,&rotate]() {
-                // If we're not storing anything, exit
-                if(maxsize <= 0) return;
-
-                // If we've hit the max number of columns, rotate items
-                if(x.size()==maxsize) 
-                    rotate(x);
-
-                // Otherwise, allocate more memory
-                else 
-                    x.emplace_back(Real(0.));
-            };
-        };
-
-        // 2-norm of a vector
-        auto norm_2 = [](auto const & x) {
-            auto sum = Real(0.);
-            for(auto & ele : x)
-                sum += sq(ele);
-            return std::sqrt(sum);
-        };
-
-        // Frobenius-norm of a matrix 
-        auto norm_F = [](auto const & X) {
-            auto sum = Real(0.);
-            for(auto const & Xi : X)
-                for(auto const & Xij : Xi)
-                    sum += sq(Xij);
-            return std::sqrt(sum);
-        };
-
-        // Frobenius-norm of the antisymmetric part of a matrix 
-        auto norm_anti_F = [](auto const & X) {
-            auto sum = Real(0.);
-            for(auto i=Natural(1);i<X.size();i++)
-                for(auto j=Natural(0);j<i;j++)
-                    sum += sq(X[i][j]-X[j][i]);
-            return std::sqrt(sum);
-        };
+            norm_ABdxs);
                 
         // Allocate memory for a vector where
         //
@@ -1423,7 +1437,7 @@ namespace Optizelle {
         //    <Bri,Bri> = <B*Bri,ri> = <B^2ri,ri> = <Bri,ri>, so we really
         //    should get 0.
         auto B_projector = std::deque <Real> ();
-        auto allocate_B_projector = grow_vector(
+        auto allocate_B_projector = grow_vector <Real>(
             check_B_projector ? orthog_storage_max : 0,
             B_projector);
         auto update_B_projector = [&]() {
@@ -1440,7 +1454,7 @@ namespace Optizelle {
             B_projector.back() = X::innr(Bri,ri) / sq(norm_Bri) - Real(1.);
         };
         auto is_B_projector = [&]() {
-            return norm_2(B_projector) <= eps_diag;
+            return norm_2 <Real>(B_projector) <= eps_diag;
         };
 
         // Allocate memory for a matrix where
@@ -1467,7 +1481,7 @@ namespace Optizelle {
         //
         // For reference, we store X in row-major format.
         auto B_properties = std::deque <std::deque <Real>> ();
-        auto allocate_B_properties = grow_matrix(
+        auto allocate_B_properties = grow_matrix <Real> (
             check_B_properties ? orthog_storage_max : 0,
             B_properties);
         auto update_B_properties = [&]() {
@@ -1489,10 +1503,10 @@ namespace Optizelle {
             }
         };
         auto is_B_symmetric = [&]() {
-            return norm_anti_F(B_properties) <= eps_diag;
+            return norm_anti_F <Real> (B_properties) <= eps_diag;
         };
         auto is_rs_orthogonal = [&]() {
-            return norm_F(B_properties) <= eps_diag;
+            return norm_F <Real> (B_properties) <= eps_diag;
         };
 
         // Allocate memory for a matrix where
@@ -1519,7 +1533,7 @@ namespace Optizelle {
         //
         // For reference, we store X in row-major format.
         auto A_properties = std::deque <std::deque <Real>> ();
-        auto allocate_A_properties = grow_matrix(
+        auto allocate_A_properties = grow_matrix <Real> (
             check_A_properties ? orthog_storage_max : 0,
             A_properties);
         auto update_A_properties = [&]() {
@@ -1541,10 +1555,10 @@ namespace Optizelle {
             }
         };
         auto is_A_symmetric = [&]() {
-            return norm_anti_F(A_properties) <= eps_diag;
+            return norm_anti_F <Real> (A_properties) <= eps_diag;
         };
         auto is_Bdxs_Aorthogonal = [&]() {
-            return norm_F(A_properties) <= eps_diag;
+            return norm_F <Real> (A_properties) <= eps_diag;
         };
 
         // Verify that || x0 + x_offset || = || x_offset || <= delta.  This
