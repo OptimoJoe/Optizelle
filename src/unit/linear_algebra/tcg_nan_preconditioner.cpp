@@ -62,7 +62,7 @@ int main() {
 
         // Target solutions
         setup.x_star = std::make_unique<Vector>(*setup.x);
-        setup.iter_star = 2;
+        setup.iter_star = 1;
         setup.stop_star = Optizelle::TruncatedStop::NanPreconditioner;
 
         // Tests

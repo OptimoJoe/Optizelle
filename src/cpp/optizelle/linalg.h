@@ -1109,11 +1109,10 @@ namespace Optizelle {
             NonSymmetricOperator,      // Detected a nonsymmetric operator 
             LossOfOrthogonality,       // Loss of orthogonality between the
                                        // Krylov vectors detected
-            InvalidTrustRegionOffset,  // Trust-region offset is chosen such
-                                       // that || x_offset || > delta where
-                                       // delta is the trust-region radius.
-                                       // This means that our starting solution
-                                       // of 0 violates the trust-region.
+            OffsetViolatesTrustRegion, // Offset is chosen such that
+                                       // || x_offset || > delta where
+                                       // delta is the trust-region radius
+            OffsetViolatesSafeguard,   // Offset violates the safeguard
             TooManyFailedSafeguard,    // Too many safeguarded steps have failed
             ObjectiveIncrease          // CG objective, 0.5 <ABx,Bx> - <b,Bx>
                                        // increased between iterations, which
@@ -1291,6 +1290,18 @@ namespace Optizelle {
         return std::sqrt(sum);
     }
 
+    // Returns whether or not a truncated-CG direction is salvagable based on
+    // the current stopping condition.  Basically, salvagable directions are
+    // directions that exceed the trust-region, have negative curvature, 
+    // violated the safeguard, or have nothing wrong with them.  Non-salvagable
+    // situations are where Bdx has something like a NaN or the operators we
+    // used to calculate it have something bad going on.
+    auto is_Bdx_salvagable(TruncatedStop::t const & stop) -> bool;
+
+    // Returns whether or not the exit condition is related to the truncated-CG
+    // direction, Bdx
+    auto is_Bdx_related(TruncatedStop::t const & stop) -> bool;
+
     // Computes the truncated projected conjugate gradient algorithm in order
     // to solve Ax=b where we restrict x to be in the range of B and that
     // || x + x_offset || <= delta.  The parameters are as follows.
@@ -1353,8 +1364,16 @@ namespace Optizelle {
         typedef XX <Real> X;
         typedef typename X::Vector X_Vector;
 
-        // Initialize x to zero. 
+        // Initialize x to zero
         X::zero(x);
+
+        // Initialize the initial Cauch point to zero
+        X::zero(x_cp);
+
+        // Initialize our iteration to zero.  If we exit during setup, we
+        // report the number of iterations as zero.  Otherwise, we report
+        // the number of iterations the algorithm performs.
+        iter = 0;
 
         // At the start, we haven't converged
         stop = TruncatedStop::NotConverged;
@@ -1560,22 +1579,34 @@ namespace Optizelle {
         auto is_Bdxs_Aorthogonal = [&]() {
             return norm_F <Real> (A_properties) <= eps_diag;
         };
+        
+        // Allocate memory for the shifted iterate, x + x_offset.  Generally,
+        // we care if this quantity violates the safeguard or the trust-region,
+        // not whether x does directly
+        auto shifted_iterate = X::init(x);
+        X::copy(x_offset,shifted_iterate);
+        auto norm_shifted_iterate =
+            std::sqrt(X::innr(shifted_iterate,shifted_iterate));
 
         // Verify that || x0 + x_offset || = || x_offset || <= delta.  This
         // insures that our initial iterate lies inside the trust-region.  If
         // it does not, we exit.
-        auto shifted_iterate(X::init(x));
-        X::copy(x_offset,shifted_iterate);
-        auto norm_shifted_iterate =
-            std::sqrt(X::innr(shifted_iterate,shifted_iterate));
         if(norm_shifted_iterate > delta) {
-            X::zero(x_cp);
-            iter=0;
-            stop = TruncatedStop::InvalidTrustRegionOffset;
+            stop = TruncatedStop::OffsetViolatesTrustRegion;
             return;
         }
-        
-        // Find the initial residual and projected residual, A*x-b = -b
+
+        // Verify that x_offset obeys the safeguard.  This insures that our
+        // initial iterate obeys the safeguard, which we need in order to exit
+        // with a safe step later.  If it does not, we exit.
+        auto zero = X::init(x);
+        X::zero(zero);
+        if(safeguard(zero,x_offset)<Real(1.)) {
+            stop = TruncatedStop::OffsetViolatesSafeguard;
+            return;
+        }
+
+        // Find the initial residual, r = A*x-b = -b, and projected residual, Br
         X::copy(b,r);
         X::scal(Real(-1.),r);
         B.eval(r,Br);
@@ -1584,11 +1615,8 @@ namespace Optizelle {
         norm_Br = norm_Br0; 
 
         // Check for NaNs in the preconditioner.  If there's a problem here, we
-        // have a difficult time recovering later, so just zero out everything
-        // and quit.
+        // have a difficult time recovering later, so just quit. 
         if(norm_Br!=norm_Br) {
-            X::zero(x_cp);
-            iter=0;
             stop = TruncatedStop::NanPreconditioner;
             return;
         }
@@ -1604,22 +1632,58 @@ namespace Optizelle {
         // and its norm
         auto shifted_trial = X::init(x);
         auto norm_shifted_trial = std::numeric_limits <Real>::quiet_NaN();
-
-        // Track the number of failed safeguard steps and also keep a copy
-        // of the last successful iterate and step 
-        auto shifted_iterate0 = X::init(x);
-        X::copy(shifted_iterate,shifted_iterate0);
+        
+        // Track the number of iterations in a row where we violated the
+        // safeguard 
         safeguard_failed = 0;
-        auto x_safe = X::init(x);
-        X::copy(x,x_safe);
-        auto Bdx_safe = X::init(x);
-        X::zero(Bdx_safe);
-        auto ABdx_safe = X::init(x);
-        X::zero(ABdx_safe);
-        auto r_safe = X::init(x);
-        X::copy(r,r_safe);
-        auto shifted_iterate_safe = X::init(x);
-        X::copy(shifted_iterate,shifted_iterate_safe);
+
+        // Given an iterate feasible with respect to the safeguard, save copies
+        // of everything we need from that iteration of truncated-CG.  Well,
+        // not everything needed to continue the algorithm.  Really, we want to
+        // save everything we need in order to:
+        //
+        // 1. Calculate the error in the safeguarded solution
+        //
+        // 2. Acutally be able to calculate a point between this safe point
+        //    and whereever the algorithm currently is
+        auto x_safe = X::init(x);                    // Last safe iterate
+        auto r_safe = X::init(x);                    // Last safe residual
+        auto shifted_iterate_safe = X::init(x); // For finding a new safe step 
+        auto Bdx_safe = X::init(x);    // For new iterate, x = x + alpha Bdx
+        auto ABdx_safe = X::init(x);   // For new residual, r = r + alpha ABdx
+
+        // Archives a set of safe iterate information 
+        auto archive_iterate = [&]() {
+            // Save the iterate information
+            X::copy(x,x_safe);
+            X::copy(r,r_safe);
+            X::copy(shifted_iterate,shifted_iterate_safe);
+
+            // Don't store the direction information.  We don't know if
+            // it's good yet.
+            X::zero(Bdx_safe);
+            X::zero(ABdx_safe);
+        };
+
+        // Archives a set of safe direction information
+        auto archive_direction = [&](auto const & alpha) {
+            // If the direction looks good, keep it
+            if(stop == TruncatedStop::NotConverged) {
+                X::copy(Bdx,Bdx_safe);
+                X::scal(alpha,Bdx_safe);
+                X::copy(ABdx,ABdx_safe);
+                X::scal(alpha,ABdx_safe);
+
+            // If not, dump it
+            } else {
+                X::zero(Bdx_safe);
+                X::zero(ABdx_safe);
+            }
+        };
+
+        // At this point, we know we have a good starting iterate.  As such,
+        // save everything off.
+        archive_iterate();
 
         // Track the amount that we're about to reduce the CG objective
         //
@@ -1661,6 +1725,19 @@ namespace Optizelle {
             return red3;
         };
 
+        // Given a safe iterate and step, take a step as long as the CG
+        // objective function gets reduced
+        auto step_if_obj_red = [&](auto const & alpha) {
+            if(obj_red(alpha) <= Real(0.)) {
+                X::axpy(alpha,Bdx,x);
+                X::axpy(alpha,Bdx,shifted_iterate);
+                X::axpy(alpha,ABdx,r);
+                B.eval(r,Br);
+                norm_r=std::sqrt(X::innr(r,r));
+                norm_Br=std::sqrt(X::innr(Br,Br));
+            }
+        };
+
         // Loop until we converge (or don't)
         iter = 1;
         while(stop == TruncatedStop::NotConverged) {
@@ -1691,7 +1768,8 @@ namespace Optizelle {
             if(Anorm_Bdx_2 <= Real(0.)&& stop ==TruncatedStop::NotConverged)
                 stop = TruncatedStop::NegativeCurvature;
 
-            // Allocate memory for the line-search to the trust-region bound 
+            // Allocate memory for the line-search for the optimal step
+            // in the direction Bdx.
             auto alpha = std::numeric_limits<Real>::quiet_NaN();
 
             // We only compute the following when we have not detected some
@@ -1731,6 +1809,13 @@ namespace Optizelle {
                 // Do an exact linesearch in the computed direction
                 alpha = -X::innr(r,Bdx) / Anorm_Bdx_2;
 
+                // Check that our proposed direction is going to give us
+                // decrease in the CG objective
+                if(obj_red(alpha)>Real(0.)&&stop==TruncatedStop::NotConverged){
+                    stop=TruncatedStop::ObjectiveIncrease;
+                    break;
+                }
+
                 // Determine the norm of the shifted trial step
                 //
                 // || (x + x_offset) + alpha Bdx ||
@@ -1747,53 +1832,32 @@ namespace Optizelle {
                     stop = TruncatedStop::TrustRegionViolated;
             }
 
-            // Check that our proposed direction is going to give us decrease
-            // in the CG objective
-            if(obj_red(alpha) > Real(0.) && stop==TruncatedStop::NotConverged)
-                stop=TruncatedStop::ObjectiveIncrease;
+            // If our last iterate was safe and the direction isn't corrupted
+            // for any reason, store the search direction adjusted by alpha
+            if(safeguard_failed == 0)
+                archive_direction(alpha);
 
-            // If our last iterate was safe, then keep the current search
-            // direction as long as it didn't arise from a NaN, loss of
-            // orthogonality, or we're actually going to make the CG objective
-            // worse.  In these cases, we set our saved trial steps to zero.
-            if( safeguard_failed==0 ) {
-                if( stop != TruncatedStop::NanOperator && 
-                    stop != TruncatedStop::NanPreconditioner && 
-                    stop != TruncatedStop::NonProjectorPreconditioner &&
-                    stop != TruncatedStop::NonSymmetricPreconditioner &&
-                    stop != TruncatedStop::NonSymmetricOperator &&
-                    stop != TruncatedStop::LossOfOrthogonality &&
-                    stop != TruncatedStop::ObjectiveIncrease
-                ) {
-                    X::copy(Bdx,Bdx_safe);
-                    X::scal(alpha,Bdx_safe);
-                    X::copy(ABdx,ABdx_safe);
-                    X::scal(alpha,ABdx_safe);
-                } else {
-                    X::zero(Bdx_safe);
-                    X::zero(ABdx_safe);
-                }
-            }
-
-            // If we detect any kind of exit condition, resolve it here
+            // If we detect any kind of exit condition at this point, resolve
+            // it here.  In theory, these should be exit conditions related
+            // to the search direction, Bdx.
             if( stop != TruncatedStop::NotConverged ) {
-                switch(stop) {
-
-                // These are cases should not be able to occur here 
-                case TruncatedStop::NotConverged:
-                case TruncatedStop::MaxItersExceeded:
-                case TruncatedStop::InvalidTrustRegionOffset:
-                case TruncatedStop::RelativeErrorSmall:
-                case TruncatedStop::TooManyFailedSafeguard:
+                // If our stopping condition isn't related to Bdx, then we
+                // shouldn't be here and we have a bug.  Exit poorly enough to
+                // cause attention.
+                if(!is_Bdx_related(stop))
                     throw;
 
-                // When we have negative curvature or have hit the trust-region
-                // bound, we extend the step to the trust-region when one
+                // If our direction is corrupted for any reason, don't try
+                // to recover
+                if(!is_Bdx_salvagable(stop)) {
+
+                // If the situation is salvagable, then we have negative
+                // curvature or have hit the trust-region bound.  To fix
+                // things, we extend the step to the trust-region when one
                 // exists.  Otherwise, we retreat to the last step.  In the
                 // case we're on iteration 1, we use the steepest descent
                 // direction.
-                case TruncatedStop::TrustRegionViolated:
-                case TruncatedStop::NegativeCurvature: {
+                } else {
                     // Amount that we cut back the step
                     auto sigma = Real(0.);
 
@@ -1848,46 +1912,36 @@ namespace Optizelle {
                     if(alpha_safeguard >= Real(1.)) {
                         safeguard_failed = 0;
 
-                    // If the last iterate is safe, see how far we can go
-                    // in the current direction.  If this amount truncates us
-                    // more than sigma, then we reduce the size of sigma.
+                    // If this new iterate isn't safe, but the last one was,
+                    // see how far we can go in the current direction.  If this
+                    // amount truncates us more than sigma, then we reduce the
+                    // size of sigma.
                     } else if(safeguard_failed==0) { 
                         auto sigma_Bdx = X::init(x);
                         X::copy(Bdx,sigma_Bdx);
                         X::scal(sigma,sigma_Bdx);
                         alpha_safeguard = std::min(
                             safeguard(shifted_iterate,sigma_Bdx),Real(1.0));
-                    } else 
-                        alpha_safeguard = Real(1.);
 
-                    // Take the step and find its residual as long as it
-                    // decreases the objective
-                    if(obj_red(alpha_safeguard*sigma) <= Real(0.)) {
-                        X::axpy(alpha_safeguard*sigma,Bdx,x);
-                        X::axpy(alpha_safeguard*sigma,Bdx,shifted_iterate);
-                        X::axpy(alpha_safeguard*sigma,ABdx,r);
-                        B.eval(r,Br);
-                        norm_r=std::sqrt(X::innr(r,r));
-                        norm_Br=std::sqrt(X::innr(Br,Br));
-                    }
-                    break;
+                    // Finally, if neither the current iterate or the last
+                    // iterate are safe, then exit.  Our final exit code
+                    // should resolve things.
+                    } else
+                        break;
 
-                // When we find a NaN, we can't really trust our step.
-                // Alternatively, when we lose orthogonality, we can't really
-                // trust anything either.  Finally, if the objective goes up,
-                // that's also not good, so don't modify anything.
-                } case TruncatedStop::NanOperator:
-                case TruncatedStop::NanPreconditioner:
-                case TruncatedStop::NonProjectorPreconditioner:
-                case TruncatedStop::NonSymmetricPreconditioner:
-                case TruncatedStop::NonSymmetricOperator:
-                case TruncatedStop::LossOfOrthogonality:
-                case TruncatedStop::ObjectiveIncrease:
-                    break;
+                    // At this point, we should know that
+                    //
+                    // (x + x_offset) + sigma * alpha_safeguard Bdx
+                    //
+                    // is safe.  Therefore, we take the step as long as it
+                    // decreases the CG objective.
+                    step_if_obj_red(alpha_safeguard*sigma);
+
+                    // If we're on the first iteration, save the Cauchy-Point 
+                    if(iter==1) X::copy(x,x_cp);
                 }
 
-                // If this is the first iteration, save the Cauchy-Point
-                if(iter==1) X::copy(x,x_cp);
+                // We've hit an exit criteria, so exit from the routine 
                 break;
             }
 
@@ -1906,13 +1960,9 @@ namespace Optizelle {
             B.eval(r,Br);
             norm_r = std::sqrt(X::innr(r,r));
             norm_Br = std::sqrt(X::innr(Br,Br));
-
-            // Check for NaNs in the preconditioner 
-            if(norm_Br!=norm_Br)
-                stop = TruncatedStop::NanPreconditioner;
                 
             // Determine if this new iterate is feasible with respect to our
-            // safeguard.  We calculate this from x_offset, which we assume to
+            // safeguard.  We calculate this from x_offset, which we checked to 
             // be a safe starting place.  In any case, if the new iterate is
             // safe, save it for potential use later
             alpha_safeguard = std::min(safeguard(x_offset,x),Real(1.0));
@@ -1920,9 +1970,7 @@ namespace Optizelle {
                 safeguard_failed += 1;
             else {
                 safeguard_failed = 0;
-                X::copy(x,x_safe);
-                X::copy(r,r_safe);
-                X::copy(shifted_iterate,shifted_iterate_safe);
+                archive_iterate();
             }
 
             // If this is the first iteration, save the Cauchy-Point.  Make sure
@@ -1937,8 +1985,12 @@ namespace Optizelle {
             X::copy(Br,Bdx);
             X::scal(Real(-1.),Bdx);	
 
+            // If we have a NaN in the preconditioner, exit 
+            if(norm_Br!=norm_Br)
+                stop = TruncatedStop::NanPreconditioner;
+
             // If we have too many failed safeguard steps, exit
-            if(safeguard_failed >= safeguard_failed_max)
+            else if(safeguard_failed >= safeguard_failed_max)
                 stop = TruncatedStop::TooManyFailedSafeguard;
         
             // If the norm of the residual is small relative to the starting
@@ -1973,13 +2025,7 @@ namespace Optizelle {
 
             // Take the safeguarded step and update our residuals as long as
             // this step decreases our CG objective
-            if(obj_red(alpha_safeguard) <= Real(0.)) {
-                X::axpy(alpha_safeguard,Bdx,x);
-                X::axpy(alpha_safeguard,Bdx,shifted_iterate);
-                X::axpy(alpha_safeguard,ABdx,r);
-                B.eval(r,Br);
-                norm_Br=std::sqrt(X::innr(Br,Br));
-            }
+            step_if_obj_red(alpha_safeguard);
         }
     }
 

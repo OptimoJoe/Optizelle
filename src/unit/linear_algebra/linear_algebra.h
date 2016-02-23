@@ -285,14 +285,56 @@ namespace Unit {
         }
     };
 
-    // Turns off safeguarding
+    // A couple of different safeguards 
     template <typename Real,template <typename> class XX>
-    Real no_safeguard(
-        typename XX <Real>::Vector const & dx_base,
-        typename XX <Real>::Vector const & dx_dir
-    ) {
-        return Real(1.0);
-    }
+    struct Safeguard {
+        // Type shortcuts
+        typedef XX <Real> X;
+        typedef typename X::Vector X_Vector;
+
+        // Turns off safeguarding
+        static Real none(
+            X_Vector const & dx_base,
+            X_Vector const & dx_dir
+        ) {
+            return Real(1.0);
+        }
+
+        // Creates a safeguard that enforces a lower bound
+        struct lower {
+            // Current iterate
+            X_Vector x;
+
+            // Lower bound for the constraint
+            X_Vector lb;
+
+            // Grab the iterate and lower bound
+            lower(X_Vector const & x_,X_Vector const & lb_) :
+                x(X::init(x_)),
+                lb(X::init(x_))
+            {
+                X::copy(x_,x);
+                X::copy(lb_,lb); 
+            }
+
+            // Setup a constraint and safeguard that enforces a lower bound
+            // where (x + dx_base - lb) + alpha dx_dir >= 0
+            Real operator () (
+                X_Vector const & dx_base,
+                X_Vector const & dx_dir
+            ) {
+                // base <- x + dx_base - lb 
+                auto base = X::init(x);
+                X::copy(x,base);
+                X::axpy(Real(1.),dx_base,base);
+                X::axpy(Real(-1.),lb,base);
+
+                // Find the largest alpha so that
+                // (x + dx_base - lb) + alpha dx_dir >= 0
+                return X::srch(dx_dir,base);
+            }
+        };
+    };
 
     // Calculates a error between two vectors.  The second number returned 
     // is the norm of the second vector, which we use to calculate the relative
@@ -495,7 +537,7 @@ namespace Unit {
                 Functions::Identity()),
             x_offset(),
             safeguard(std::make_unique<Optizelle::SafeguardSimplified<Real,XX>>(
-                no_safeguard <Real,XX>)),
+                Safeguard <Real,XX>::none)),
             failed_max(std::numeric_limits <Natural>::max()),
             orthog_storage_max(1),
             orthog_iter_max(1),

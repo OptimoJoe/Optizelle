@@ -140,9 +140,12 @@ namespace Optizelle {
             case LossOfOrthogonality:
                 return Matlab::enumToMxArray(
                     "TruncatedStop","LossOfOrthogonality");
-            case InvalidTrustRegionOffset:
+            case OffsetViolatesTrustRegion:
                 return Matlab::enumToMxArray(
-                    "TruncatedStop","InvalidTrustRegionOffset");
+                    "TruncatedStop","OffsetViolatesTrustRegion");
+            case OffsetViolatesSafeguard:
+                return Matlab::enumToMxArray(
+                    "TruncatedStop","OffsetViolatesSafeguard");
             case TooManyFailedSafeguard:
                 return Matlab::enumToMxArray(
                     "TruncatedStop","TooManyFailedSafeguard");
@@ -200,9 +203,13 @@ namespace Optizelle {
             )
                 return LossOfOrthogonality;
             else if(m==Matlab::enumToNatural(
-                "TruncatedStop","InvalidTrustRegionOffset")
+                "TruncatedStop","OffsetViolatesTrustRegion")
             )
-                return InvalidTrustRegionOffset;
+                return OffsetViolatesTrustRegion;
+            else if(m==Matlab::enumToNatural(
+                "TruncatedStop","OffsetViolatesSafeguard")
+            )
+                return OffsetViolatesSafeguard;
             else if(m==Matlab::enumToNatural(
                 "TruncatedStop","TooManyFailedSafeguard")
             )

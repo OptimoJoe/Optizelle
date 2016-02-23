@@ -134,9 +134,12 @@ namespace Optizelle {
             case LossOfOrthogonality:
                 return Python::enumToPyObject(
                     "TruncatedStop","LossOfOrthogonality");
-            case InvalidTrustRegionOffset:
+            case OffsetViolatesTrustRegion:
                 return Python::enumToPyObject(
-                    "TruncatedStop","InvalidTrustRegionOffset");
+                    "TruncatedStop","OffsetViolatesTrustRegion");
+            case OffsetViolatesSafeguard:
+                return Python::enumToPyObject(
+                    "TruncatedStop","OffsetViolatesSafeguard");
             case TooManyFailedSafeguard:
                 return Python::enumToPyObject(
                     "TruncatedStop","TooManyFailedSafeguard");
@@ -194,9 +197,13 @@ namespace Optizelle {
             )
                 return LossOfOrthogonality;
             else if(m==Python::enumToNatural(
-                "TruncatedStop","InvalidTrustRegionOffset")
+                "TruncatedStop","OffsetViolatesTrustRegion")
             )
-                return InvalidTrustRegionOffset;
+                return OffsetViolatesTrustRegion;
+            else if(m==Python::enumToNatural(
+                "TruncatedStop","OffsetViolatesSafeguard")
+            )
+                return OffsetViolatesSafeguard;
             else if(m==Python::enumToNatural(
                 "TruncatedStop","TooManyFailedSafeguard")
             )

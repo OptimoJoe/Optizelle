@@ -775,8 +775,10 @@ namespace Optizelle{
             return atos("NonSymmOp");
         case TruncatedStop::LossOfOrthogonality:
             return atos("OrthogLost");
-        case TruncatedStop::InvalidTrustRegionOffset:
-            return atos("InvldCnt");
+        case TruncatedStop::OffsetViolatesTrustRegion:
+            return atos("OffsetTR");
+        case TruncatedStop::OffsetViolatesSafeguard:
+            return atos("OffsetSafe");
         case TruncatedStop::TooManyFailedSafeguard:
             return atos("Safeguard");
         case TruncatedStop::ObjectiveIncrease:

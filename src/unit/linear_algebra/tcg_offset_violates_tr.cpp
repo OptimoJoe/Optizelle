@@ -1,4 +1,4 @@
-// Run TCG with a small trust-region radius and an invalid offset.  
+// Run TCG with a small trust-region radius and an offset that violates it 
 
 #include "linear_algebra.h"
 #include "spaces.h"
@@ -20,7 +20,7 @@ int main() {
     setup.x_star =std::make_unique<Vector>(Unit::Vector <Real>::basic(setup.m));
     X::zero(*setup.x_star);
     setup.iter_star = 0;
-    setup.stop_star = Optizelle::TruncatedStop::InvalidTrustRegionOffset;
+    setup.stop_star = Optizelle::TruncatedStop::OffsetViolatesTrustRegion;
 
     // Tests
     setup.check_stop = true;
