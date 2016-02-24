@@ -1687,7 +1687,7 @@ namespace Optizelle {
 
         // Track the amount that we're about to reduce the CG objective
         //
-        // 0.5 <ABdx,Bdx> - <b,Bdx>
+        // 0.5 <ABx,Bx> - <b,Bx>
         //
         // when we take the step x+alpha Bdx, which is
         //
@@ -1716,8 +1716,17 @@ namespace Optizelle {
         // know we'll get a positive predicted reduction or a descent
         // direction.
         auto x_p_ao2Bdx = X::init(x);
-        auto obj_red = [&](auto const & alpha) {
-            X::copy(x,x_p_ao2Bdx);
+        auto obj_red = [&](auto const & alpha, bool const & cp=false) {
+            // In general, we want this term 
+            if(!cp)
+                X::copy(x,x_p_ao2Bdx);
+
+            // When we do the calculation for the Cauchy point, we've
+            // already updated x, so this is a hack to undue that update
+            else
+                X::zero(x_p_ao2Bdx);
+
+            // Finish the calculation
             X::axpy(Real(0.5)*alpha,Bdx,x_p_ao2Bdx);
             auto red1 = X::innr(ABdx,x_p_ao2Bdx);
             auto red2 = X::innr(b,Bdx);
@@ -1725,8 +1734,8 @@ namespace Optizelle {
             return red3;
         };
 
-        // Given a safe iterate and step, take a step as long as the CG
-        // objective function gets reduced
+        // Given a step length, take a step as long as the CG objective
+        // function gets reduced.  Note, this does not consider the safeguard.
         auto step_if_obj_red = [&](auto const & alpha) {
             if(obj_red(alpha) <= Real(0.)) {
                 X::axpy(alpha,Bdx,x);
@@ -1735,6 +1744,8 @@ namespace Optizelle {
                 B.eval(r,Br);
                 norm_r=std::sqrt(X::innr(r,r));
                 norm_Br=std::sqrt(X::innr(Br,Br));
+                norm_shifted_iterate =
+                    std::sqrt(X::innr(shifted_iterate,shifted_iterate));
             }
         };
 
@@ -1947,22 +1958,10 @@ namespace Optizelle {
                 break;
             }
 
-            // Determine the objective reduction
-            auto ored = obj_red(alpha);
+            // As long as we reduce the CG objective, and we should at this
+            // point, take a step
+            step_if_obj_red(alpha);
 
-            // Take a step in this direction
-            X::axpy(alpha,Bdx,x);
-
-            // Update the shifted iterate
-            X::copy(shifted_trial,shifted_iterate);
-            norm_shifted_iterate = norm_shifted_trial;
-
-            // Find the new residual and projected residual
-            X::axpy(alpha,ABdx,r);
-            B.eval(r,Br);
-            norm_r = std::sqrt(X::innr(r,r));
-            norm_Br = std::sqrt(X::innr(Br,Br));
-                
             // Determine if this new iterate is feasible with respect to our
             // safeguard.  We calculate this from x_offset, which we checked to 
             // be a safe starting place.  In any case, if the new iterate is
@@ -1975,12 +1974,11 @@ namespace Optizelle {
                 archive_iterate();
             }
 
-            // If this is the first iteration, save the Cauchy-Point.  Make sure
-            // to truncate it if it violates the safeguard.
-            if(iter==1) {
+            // If this is the first iteration and the Cauchy-point reduces the
+            // CG objective, save it.
+            if(iter==1 && obj_red(alpha*alpha_safeguard,true)) {
                 X::copy(x,x_cp);
-                if(safeguard_failed>0)
-                    X::scal(alpha_safeguard,x_cp);
+                X::scal(alpha_safeguard,x_cp);
             }
 
             // Find the projected steepest descent direction
@@ -2574,7 +2572,7 @@ namespace Optizelle {
         // Adjust the iteration number if we ran out of iterations
         iter = iter > iter_max ? iter_max : iter;
 
-        // As long as we didn't just solve for our new ierate, go ahead and
+        // As long as we didn't just solve for our new iterate, go ahead and
         // solve for it now.
         if(i > 0){ 
             solveInKrylov <Real,XX> (i,&(R[0]),&(Qt_e1[0]),vs,B_right,x,dx);
