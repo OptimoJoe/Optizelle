@@ -41,7 +41,6 @@ int main() {
     X::scal((setup.delta-norm_b)/norm_b,*setup.x_star);
 
     // Tests
-    Unit::reset_checks <Real,XX> (setup);
     setup.check_iter = true;
     setup.check_stop = true;
     setup.check_cp = true;
