@@ -46,12 +46,14 @@ int main() {
     // Target solutions
     setup.iter_star = 5;
     setup.stop_star = Optizelle::TruncatedStop::NegativeCurvature;
+    setup.safeguard_failed_star = 0;
 
     // Tests
     Unit::reset_checks <Real,XX> (setup);
     setup.check_iter = true;
     setup.check_stop = true;
     setup.check_tr = true;
+    setup.check_safeguard_failed = true;
 
     // Check the solver 
     Unit::run_and_verify <Real,XX> (setup);

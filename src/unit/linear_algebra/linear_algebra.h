@@ -516,7 +516,7 @@ namespace Unit {
         Natural orthog_storage_max; 
 
         // Number of orthogonalization iterations
-        Natural orthog_iter_max; 
+        Natural orthog_iter_max;
 
         // Whether we do the preconditioner projector check
         bool check_B_projector;
@@ -542,6 +542,15 @@ namespace Unit {
         // Desired stopping condition
         Optizelle::TruncatedStop::t stop_star;
 
+        // Checks the number of failed safeguard steps
+        bool check_safeguard_failed;
+
+        // Number of failed safeguard steps
+        Natural safeguard_failed_star;
+
+        // Checks that the safeguard truncated the step
+        bool check_safeguard_alpha;
+
         // Setup some simple parameters
         tcg():
             Solver <Real,XX> (),
@@ -561,7 +570,10 @@ namespace Unit {
             check_tr(false),
             eps_tr(this->eps),
             check_stop(false),
-            stop_star(Optizelle::TruncatedStop::NotConverged)
+            stop_star(Optizelle::TruncatedStop::NotConverged),
+            check_safeguard_failed(false),
+            safeguard_failed_star(0),
+            check_safeguard_alpha(false)
         {}
     };
 
@@ -713,6 +725,16 @@ namespace Unit {
         // Check that the stopping condition matches what we expect
         if(setup.check_stop) {
             CHECK(setup.stop_star == stop);
+        }
+
+        // Check that the number of failed safeguard steps matches 
+        if(setup.check_safeguard_failed) {
+            CHECK(setup.safeguard_failed_star == failed);
+        }
+
+        // Check that the safeguard truncated the step 
+        if(setup.check_safeguard_alpha) {
+            CHECK(alpha < Real(1.));
         }
     }
 
