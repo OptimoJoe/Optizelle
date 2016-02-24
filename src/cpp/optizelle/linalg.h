@@ -1925,7 +1925,9 @@ namespace Optizelle {
 
                     // Finally, if neither the current iterate or the last
                     // iterate are safe, then exit.  Our final exit code
-                    // should resolve things.
+                    // should resolve things.  If we're on the first iteration,
+                    // the last iterate should be safe, so we'll capture
+                    // the Cauchy point below.
                     } else
                         break;
 
