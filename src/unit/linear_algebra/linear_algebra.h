@@ -3,6 +3,7 @@
 #include "optizelle/optizelle.h"
 #include "optizelle/vspaces.h"
 #include "unit.h"
+#include <set>
 
 // For the time being, just lump everything in the unit namespace 
 namespace Unit {
@@ -300,38 +301,50 @@ namespace Unit {
             return Real(1.0);
         }
 
-        // Creates a safeguard that enforces a lower bound
+        // Creates a safeguard that enforces a lower bound on a weighted sum
+        // of elements
         struct lower {
             // Current iterate
             X_Vector x;
 
             // Lower bound for the constraint
-            X_Vector lb;
+            Real lb;
+
+            // Weighting 
+            X_Vector w;
 
             // Grab the iterate and lower bound
-            lower(X_Vector const & x_,X_Vector const & lb_) :
+            lower(
+                X_Vector const & x_,
+                Real const & lb_,
+                X_Vector const & w_
+            ) :
                 x(X::init(x_)),
-                lb(X::init(x_))
+                lb(lb_),
+                w(X::init(w_)) 
             {
                 X::copy(x_,x);
-                X::copy(lb_,lb); 
+                X::copy(w_,w);
             }
 
             // Setup a constraint and safeguard that enforces a lower bound
-            // where (x + dx_base - lb) + alpha dx_dir >= 0
+            // where <x + dx_base,w> - lb + alpha <dx_dir,w> >= 0
             Real operator () (
                 X_Vector const & dx_base,
                 X_Vector const & dx_dir
             ) {
-                // base <- x + dx_base - lb 
+                // base_ <- <x + dx_base,w> - lb 
                 auto base = X::init(x);
                 X::copy(x,base);
                 X::axpy(Real(1.),dx_base,base);
-                X::axpy(Real(-1.),lb,base);
+                auto base_ = std::vector <Real> {X::innr(base,w)-lb};
+
+                // dx_dir_ <- <w,dx_dir>
+                auto dx_dir_ = std::vector <Real> {X::innr(dx_dir,w)}; 
 
                 // Find the largest alpha so that
-                // (x + dx_base - lb) + alpha dx_dir >= 0
-                return X::srch(dx_dir,base);
+                // <x + dx_base,w> - lb + alpha <dx_dir,w> >= 0
+                return X::srch(dx_dir_,base_);
             }
         };
     };

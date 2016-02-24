@@ -1,4 +1,12 @@
-// Run TCG with a offset that violates the safeguard 
+// Run TCG with a offset that violates the safeguard.  Specifically,
+//
+// x = (1,1,1,1,1)
+// x_offset = (-2,-2,-2,-2,-2)
+// w = (0,0,0,0,1)
+// lb = 0
+//
+// Hence, <x,w> = 1 >= 0, but <x+x_offset,w> = -1 ~>= 0, which violates the
+// bound.
 
 #include "linear_algebra.h"
 #include "spaces.h"
@@ -14,10 +22,11 @@ int main() {
     auto norm_b = std::sqrt(X::innr(*setup.b,*setup.b));
     setup.x_offset=std::make_unique<Vector>(Unit::Vector<Real>::ones(setup.m));
     X::scal(Real(-2.),*setup.x_offset);
-    auto lb = Unit::Vector<Real>::zero(setup.m);
+    auto lb = Real(0.); 
     auto x = Unit::Vector<Real>::ones(setup.m);
+    auto w = std::vector <Real> {0,0,0,0,1};
     setup.safeguard = std::make_unique<Optizelle::SafeguardSimplified<Real,XX>>(
-        Unit::Safeguard <Real,XX>::lower(x,lb));
+        Unit::Safeguard <Real,XX>::lower(x,lb,w));
 
     // Target solutions
     setup.x_star =std::make_unique<Vector>(Unit::Vector <Real>::basic(setup.m));
