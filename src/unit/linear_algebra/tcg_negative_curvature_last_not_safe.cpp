@@ -1,9 +1,10 @@
-// Run TCG with a safeguard where the last point prior to convergence violates
-// the safeguard.  Specifically
+// Run TCG with a safeguard where the point prior to negative curvature is
+// not safe and nor is the final point.  This means that we must retreat to the
+// last safe point and do a safeguard step from there.  Specifically,
 //
 // x_offset = (0,0,0,0,0)
 // w = (0,0,0,0,-1)
-// lb = -10 
+// lb = -31/40
 //
 // The sequence of solutions produced by CG is approximately
 //
@@ -18,10 +19,9 @@
 //
 // -1/2, -2/3, -3/4, -4/5, -13000 
 //
-// As such, we require that <x + x_offset,w> >= -10, which means that we
-// violate the safeguard on the last step.  However, the step prior to that is
-// feasible, so we just do a linesearch as far as possible after detecting
-// negative curvature.
+// As such, we require that <x + x_offset,w> >= -31/40, which means that we
+// violate the safeguard on the last two steps.  This forces us to retreat
+// to step 3 where <x + x_offset,w> is -3/4 and safeguard from there.
 
 #include "linear_algebra.h"
 #include "spaces.h"
@@ -34,7 +34,7 @@ int main() {
     setup.A = std::make_unique <Matrix>(
         Unit::Matrix <Real>::mostly_dd_indef(setup.m));
     setup.b = std::make_unique <Vector> (Unit::Vector <Real>::elast(setup.m));
-    auto lb = Real(-10.); 
+    auto lb = Real(-31./40.); 
     auto x = Unit::Vector<Real>::zero(setup.m);
     auto w = std::vector <Real> {0,0,0,0,-1};
     setup.safeguard = std::make_unique<Optizelle::SafeguardSimplified<Real,XX>>(
@@ -47,7 +47,7 @@ int main() {
     // Target solutions
     setup.iter_star = 5;
     setup.stop_star = Optizelle::TruncatedStop::NegativeCurvature;
-    setup.safeguard_failed_star = 0;
+    setup.safeguard_failed_star = 1;
 
     // Tests
     Unit::reset_checks <Real,XX> (setup);
