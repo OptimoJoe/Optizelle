@@ -40,9 +40,6 @@ int main() {
     auto w = std::vector <Real> {4,4,1,1,1};
     setup.safeguard = std::make_unique<Optizelle::SafeguardSimplified<Real,XX>>(
         Unit::Safeguard <Real,XX>::lower(x,lb,w));
-
-    // Make the TR radius large enough to not constrain ourselves until we
-    // hit the negative curvature. 
     setup.delta = 1e5; 
 
     // Target solutions

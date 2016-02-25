@@ -22,11 +22,13 @@ int main() {
     X::scal(Real(0.4)/norm_b*setup.delta,*setup.x_offset);
     setup.iter_max = 1;
 
+    // Target solutions
     setup.x_star =std::make_unique<Vector>(Unit::Vector <Real>::basic(setup.m));
     X::scal(Real(0.6)/norm_b*setup.delta,*setup.x_star);
     setup.iter_star = 1;
     setup.stop_star = Optizelle::TruncatedStop::TrustRegionViolated;
 
+    // Tests
     setup.check_tr = true;
     setup.check_stop = true;
     setup.check_iter = true;

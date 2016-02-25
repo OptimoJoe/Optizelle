@@ -10,6 +10,7 @@ int main() {
     // Setup the problem 
     auto setup = Unit::tcg <Real,XX> ();
 
+    // Problem setup 
     setup.A = std::make_unique <Matrix>(
         Unit::Matrix <Real>::symmetric(setup.m,0));
     setup.B = std::make_unique <Matrix>(
@@ -17,8 +18,10 @@ int main() {
     setup.b = std::make_unique <Vector> (Unit::Vector <Real>::basic(setup.m));
     setup.eps = 1e-24;
 
+    // Target solutions
     setup.stop_star = Optizelle::TruncatedStop::ObjectiveIncrease;
 
+    // Tests
     setup.check_stop = true;
 
     // Check the solver 
@@ -29,10 +32,12 @@ int main() {
     // rerun the example
     setup.iter_max = setup.iter-1;
 
+    // Target solutions
     setup.x_star = std::make_unique <Vector> (*setup.x);
     setup.iter_star = setup.iter-1;
     setup.stop_star = Optizelle::TruncatedStop::MaxItersExceeded;
 
+    // Tests
     setup.check_stop = true;
     setup.check_sol = true;
     setup.check_iter = true;

@@ -8,12 +8,14 @@ int main() {
     // Setup the problem 
     auto setup = Unit::tcg <Real,XX> ();
 
+    // Problem setup 
     setup.A = std::make_unique <Matrix>(
         Unit::Matrix <Real>::symmetric(setup.m,0));
     setup.B = std::make_unique <Matrix>(
         Unit::Matrix <Real>::symmetric(setup.m,25));
     setup.b = std::make_unique <Vector> (Unit::Vector <Real>::basic(setup.m));
 
+    // Target solutions
     setup.x_star = std::make_unique <Vector> (Vector({
         9.75321699253918e-02,
         -2.05661763246187e-02,
@@ -23,6 +25,7 @@ int main() {
     setup.iter_star = 5;
     setup.stop_star = Optizelle::TruncatedStop::RelativeErrorSmall;
 
+    // Tests
     setup.check_sol = true;
     setup.check_iter = true;
     setup.check_res = true;
