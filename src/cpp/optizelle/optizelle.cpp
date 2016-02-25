@@ -763,12 +763,22 @@ namespace Optizelle{
             return atos("IterExcd");
         case TruncatedStop::TrustRegionViolated:
             return atos("TrstReg");
-        case TruncatedStop::NanDetected:
-            return atos("NaN");
+        case TruncatedStop::NanOperator:
+            return atos("NanOp");
+        case TruncatedStop::NanPreconditioner:
+            return atos("NanPre");
+        case TruncatedStop::NonProjectorPreconditioner:
+            return atos("NonProjPre");
+        case TruncatedStop::NonSymmetricPreconditioner:
+            return atos("NonSymmPre");
+        case TruncatedStop::NonSymmetricOperator:
+            return atos("NonSymmOp");
         case TruncatedStop::LossOfOrthogonality:
             return atos("OrthogLost");
-        case TruncatedStop::InvalidTrustRegionOffset:
-            return atos("InvldCnt");
+        case TruncatedStop::OffsetViolatesTrustRegion:
+            return atos("OffsetTR");
+        case TruncatedStop::OffsetViolatesSafeguard:
+            return atos("OffsetSafe");
         case TruncatedStop::TooManyFailedSafeguard:
             return atos("Safeguard");
         case TruncatedStop::ObjectiveIncrease:

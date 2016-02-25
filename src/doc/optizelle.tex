@@ -2421,10 +2421,16 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {Total number of iterations ever taken by the truncated CG when solving the optimality conditions.  This gives information about the total amount computational effort taken by Optizelle as we evaluate one Hessian-vector product each iteration.  We output \textctref{trunc_iter_total} at each iteration under the label \textctrefalt{trc_itr_tot}.}
     
     \paramitemu
-        {trunc_orthog_max}
+        {trunc_orthog_storage_max}
         {Natural}
         {Yes}
-        {Numbers of vectors stored and used in the orthogonalization of truncated CG.  In theory, we only need $1$ for unconstrained and inequality constrained problems, but this leads to numerical instabilities.  In practice, if memory is available, it may be worthwhile to over orthogonalize.} 
+        {Number of vectors stored and used in the orthogonalization of truncated CG.  In theory, we only need $1$ for unconstrained and inequality constrained problems, but this leads to numerical instabilities.  In practice, if memory is available, it may be worthwhile to over orthogonalize.} 
+    
+    \paramitemu
+        {trunc_orthog_iter_max}
+        {Natural}
+        {Yes}
+        {Maximum number of orthogonalization iterations that we use in truncated-CG.  In theory, $1$ should be enough, which means that we orgthogonalize against all the stored previous directions once.  In practice, we'll eventually lose orthgonality, so using $2$ may help at the cost of additional computation.} 
     
     \paramitemu
         {trunc_stop}
@@ -3291,7 +3297,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {trunc_err}
         {\textctref{trunc_err}}
         {2}
-        {Error in truncated CG when solving the optimality system.  We control this error with the parameter \textctref{eps_trunc} and indirectly affect it with the parameter \textctref{trunc_orthog_max}.}
+        {Error in truncated CG when solving the optimality system.  We control this error with the parameter \textctref{eps_trunc} and indirectly affect it with the parameters \textctref{trunc_orthog_storage_max} and \textctref{trunc_orthog_iter_max}.}
 
     \outputitemu
         {trunc_stop}
@@ -4414,7 +4420,7 @@ which uses the same formulation as our example \exampleref{\secconstrained}{sec:
 
     \algorithmitem
         {Truncated CG}
-        {Our version of truncated CG actually possesses the ability to over orthogonalize against previous Krylov vectors, which is controlled by the parameter \textctref{trunc_orthog_max}.  In addition, we have added a safeguard procedure for the interior point method that insures truncated CG always produces a solution feasible with respect to the inequality constraint.  This safeguard process is similar to the one used by Byrd, Hribar, and Nocedal in their NITRO algorithm.  Finally, for the inexact composite-step SQP method, we use the heuristic described in appendix B by Heinkenschloss and Ridzal to detect instability in the algorithm.  Historically, Toint and Steihaug give a description of truncated-CG in their respective papers.  For a modern treatment of truncated-CG see Conn, Gould, and Toint's book.
+        {Our version of truncated CG actually possesses the ability to over orthogonalize against previous Krylov vectors, which is controlled by the parameters \textctref{trunc_orthog_storage_max} and \textctref{trunc_orthog_iter_max}.  In addition, we have added a safeguard procedure for the interior point method that insures truncated CG always produces a solution feasible with respect to the inequality constraint.  This safeguard process is similar to the one used by Byrd, Hribar, and Nocedal in their NITRO algorithm.  Finally, for the inexact composite-step SQP method, we use the heuristic described in appendix B by Heinkenschloss and Ridzal to detect instability in the algorithm.  Historically, Toint and Steihaug give a description of truncated-CG in their respective papers.  For a modern treatment of truncated-CG see Conn, Gould, and Toint's book.
     \begin{itemize}
         \item \bibentry{toint1981truncated_cg}.
         \item \bibentry{steihaug1983truncated_cg}.

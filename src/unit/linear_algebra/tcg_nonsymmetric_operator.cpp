@@ -1,6 +1,7 @@
-// Run TCG with a small trust-region radius.  This verifies that the algorithm
-// will not violate the trust-region radius and that the final solution will
-// touch the radius.
+// Run TCG with with a nonsymmetric operator and show that we can detect
+// it.  Note, this requires us to overorthogonalize.  Note, this test is a
+// little touchy since a nonsymmetric operator may cause the negative curvature
+// or objective increase conditions to trigger first.
 
 #include "linear_algebra.h"
 #include "spaces.h"
@@ -11,19 +12,16 @@ int main() {
 
     // Problem setup 
     setup.A = std::make_unique <Matrix>(
+        Unit::Matrix <Real>::nonsymmetric(setup.m,4));
+    setup.B = std::make_unique <Matrix>(
         Unit::Matrix <Real>::symmetric(setup.m,0));
     setup.b = std::make_unique <Vector> (Unit::Vector <Real>::basic(setup.m));
-    setup.delta = Real(1e-3);
-    setup.iter_max = 1;
+    setup.orthog_storage_max = 3;
 
     // Target solutions
-    setup.iter_star = 1;
-    setup.stop_star = Optizelle::TruncatedStop::TrustRegionViolated;
+    setup.stop_star = Optizelle::TruncatedStop::NonSymmetricOperator;
 
     // Tests
-    setup.check_cp = true;
-    setup.check_tr = true;
-    setup.check_iter = true;
     setup.check_stop = true;
 
     // Check the solver 

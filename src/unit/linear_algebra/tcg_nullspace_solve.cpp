@@ -1,105 +1,39 @@
-#include "optizelle/optizelle.h"
-#include "optizelle/vspaces.h"
-#include "optizelle/linalg.h"
+// Run TCG with a projection operator.  This verifies that with a projection
+// operator, we'll converge in a smaller number of iterations and that
+// projections that are singular don't break anything too badly.
+
 #include "linear_algebra.h"
-#include "unit.h"
+#include "spaces.h"
 
 int main() {
-    // Create a type shortcut
-    typedef Optizelle::Rm <double> X;
+    // Setup the problem 
+    auto setup = Unit::tcg <Real,XX> ();
 
-    // Set the size of the problem
-    Natural m = 5;
+    // Problem setup 
+    setup.A = std::make_unique <Matrix>(
+        Unit::Matrix <Real>::symmetric(setup.m,0));
+    setup.B = std::make_unique <Matrix>(
+        Unit::Matrix <Real>::project_2(setup.m));
+    setup.b = std::make_unique <Vector> (Unit::Vector <Real>::sum_2(setup.m,0));
 
-    // Set the stopping tolerance
-    double eps_trunc = 1e-12;
+    // Target solutions
+    setup.x_star = std::make_unique <Vector> (Vector({
+        1.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0}));
+    setup.iter_star = 2;
+    setup.stop_star = Optizelle::TruncatedStop::RelativeErrorSmall;
 
-    // Set the maximum number of iterations
-    Natural iter_max = 200;
+    // Tests
+    setup.check_sol = true;
+    setup.check_iter = true;
+    setup.check_res = true;
+    setup.check_stop = true;
 
-    // Set the trust-reregion radius 
-    double delta = 100.;
-
-    // Create some operator 
-    BasicOperator <double> A(m);
-    for(Natural j=1;j<=m;j++)
-        for(Natural i=1;i<=m;i++) {
-            Natural I = j+(i-1)*m;
-            Natural J = i+(j-1)*m;
-            if(i>j) {
-                A.A[I-1]=cos(pow(I,m-1));
-                A.A[J-1]=A.A[I-1];
-            } else if(i==j)
-                A.A[I-1]=cos(pow(I,m-1))+10;
-        }
-    
-    // Create a simple nullspace projector.  This projects out the first
-    // two elements
-    BasicOperator <double> W(m);
-    for(Natural j=1;j<=m;j++)
-        for(Natural i=1;i<=m;i++) {
-            Natural I = j+(i-1)*m;
-            W.A[I-1]=(i==j && i<=2) ? 1. : 0.;
-        }
-
-    // Create some right hand side.  Make sure that this is in the range
-    // of A*W.
-    std::vector <double> b(m);
-    for(Natural i=1;i<=m;i++) b[i-1] = A.A[i-1]+A.A[i-1+m];
-
-    // Get the norm of the RHS
-    double norm_b = std::sqrt(X::innr(b,b));
-    
-    // Create an initial guess at the solution
-    std::vector <double> x(m);
-    X::zero (x);
-
-    // Create a vector for the Cauchy point
-    std::vector <double> x_cp(m);
-
-    // Create a vector for the offset of the trust-region
-    std::vector <double> x_offset(m);
-    Optizelle::Rm <double>::zero(x_offset);
-
-    // Solve this linear system
-    double residual_err0, residual_err; 
-    Natural iter;
-    Optizelle::TruncatedStop::t trunc_stop;
-    auto safeguard_failed = Natural(0);
-    auto alpha_safeguard = double(0.);
-    Optizelle::truncated_cg <double,Optizelle::Rm>
-        (A,b,W,eps_trunc,iter_max,1,delta,x_offset,true,1,
-            no_safeguard <double,Optizelle::Rm>,x,x_cp,
-            residual_err0,residual_err,iter,trunc_stop,safeguard_failed,
-            alpha_safeguard);
-
-    // Check the error is less than our tolerance 
-    CHECK(residual_err < eps_trunc*norm_b);
-
-    // Check that we completed in two iterations.  This is due to the
-    // nullspace projection
-    CHECK(iter == 2);
-    
-    // Check the relative error between the true solution and that
-    // returned from TPCG. 
-    std::vector <double> x_star(5);
-    x_star[0] = 1.0; 
-    x_star[1] = 1.0; 
-    x_star[2] = 0.0;
-    x_star[3] = 0.0;
-    x_star[4] = 0.0;
-    std::vector <double> residual = x_star;
-    Optizelle::Rm <double>::axpy(-1,x,residual);
-    double err=std::sqrt(Optizelle::Rm <double>::innr(residual,residual))
-        /(1+sqrt(Optizelle::Rm <double>::innr(x_star,x_star)));
-    CHECK(err < 1e-14);
-
-    // Check that the returned solution is different than the Cauchy point
-    Optizelle::Rm <double>::copy(x_cp,residual);
-    Optizelle::Rm <double>::axpy(-1,x,residual);
-    err=std::sqrt(Optizelle::Rm <double>::innr(residual,residual))
-        /(1+sqrt(Optizelle::Rm <double>::innr(x_cp,x_cp)));
-    CHECK(err > 1e-4);
+    // Check the solver 
+    Unit::run_and_verify <Real,XX> (setup);
 
     // Declare success
     return EXIT_SUCCESS;

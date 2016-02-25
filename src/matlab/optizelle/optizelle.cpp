@@ -123,14 +123,29 @@ namespace Optizelle {
             case TrustRegionViolated:
                 return Matlab::enumToMxArray(
                     "TruncatedStop","TrustRegionViolated");
-            case NanDetected:
-                return Matlab::enumToMxArray("TruncatedStop","NanDetected");
+            case NanOperator:
+                return Matlab::enumToMxArray("TruncatedStop","NanOperator");
+            case NanPreconditioner:
+                return Matlab::enumToMxArray(
+                    "TruncatedStop","NanPreconditioner");
+            case NonProjectorPreconditioner:
+                return Matlab::enumToMxArray(
+                    "TruncatedStop","NonProjectorPreconditioner");
+            case NonSymmetricPreconditioner:
+                return Matlab::enumToMxArray(
+                    "TruncatedStop","NonSymmetricPreconditioner");
+            case NonSymmetricOperator:
+                return Matlab::enumToMxArray(
+                    "TruncatedStop","NonSymmetricOperator");
             case LossOfOrthogonality:
                 return Matlab::enumToMxArray(
                     "TruncatedStop","LossOfOrthogonality");
-            case InvalidTrustRegionOffset:
+            case OffsetViolatesTrustRegion:
                 return Matlab::enumToMxArray(
-                    "TruncatedStop","InvalidTrustRegionOffset");
+                    "TruncatedStop","OffsetViolatesTrustRegion");
+            case OffsetViolatesSafeguard:
+                return Matlab::enumToMxArray(
+                    "TruncatedStop","OffsetViolatesSafeguard");
             case TooManyFailedSafeguard:
                 return Matlab::enumToMxArray(
                     "TruncatedStop","TooManyFailedSafeguard");
@@ -165,16 +180,36 @@ namespace Optizelle {
                 "TruncatedStop","TrustRegionViolated")
             )
                 return TrustRegionViolated;
-            else if(m==Matlab::enumToNatural("TruncatedStop","NanDetected"))
-                return NanDetected;
+            else if(m==Matlab::enumToNatural("TruncatedStop","NanOperator"))
+                return NanOperator;
+            else if(m==Matlab::enumToNatural(
+                "TruncatedStop","NanPreconditioner")
+            )
+                return NanPreconditioner;
+            else if(m==Matlab::enumToNatural(
+                "TruncatedStop","NonProjectorPreconditioner")
+            )
+                return NonProjectorPreconditioner;
+            else if(m==Matlab::enumToNatural(
+                "TruncatedStop","NonSymmetricPreconditioner")
+            )
+                return NonSymmetricPreconditioner;
+            else if(m==Matlab::enumToNatural(
+                "TruncatedStop","NonSymmetricOperator")
+            )
+                return NonSymmetricOperator;
             else if(m==Matlab::enumToNatural(
                 "TruncatedStop","LossOfOrthogonality")
             )
                 return LossOfOrthogonality;
             else if(m==Matlab::enumToNatural(
-                "TruncatedStop","InvalidTrustRegionOffset")
+                "TruncatedStop","OffsetViolatesTrustRegion")
             )
-                return InvalidTrustRegionOffset;
+                return OffsetViolatesTrustRegion;
+            else if(m==Matlab::enumToNatural(
+                "TruncatedStop","OffsetViolatesSafeguard")
+            )
+                return OffsetViolatesSafeguard;
             else if(m==Matlab::enumToNatural(
                 "TruncatedStop","TooManyFailedSafeguard")
             )
@@ -1954,7 +1989,8 @@ namespace Optizelle {
                         "trunc_iter",
                         "trunc_iter_max",
                         "trunc_iter_total",
-                        "trunc_orthog_max",
+                        "trunc_orthog_storage_max",
+                        "trunc_orthog_iter_max",
                         "trunc_stop",
                         "trunc_err",
                         "eps_trunc",
@@ -2039,8 +2075,10 @@ namespace Optizelle {
                         state.trunc_iter_max,mxstate);
                     toMatlab::Natural("trunc_iter_total",
                         state.trunc_iter_total,mxstate);
-                    toMatlab::Natural("trunc_orthog_max",
-                        state.trunc_orthog_max,mxstate);
+                    toMatlab::Natural("trunc_orthog_storage_max",
+                        state.trunc_orthog_storage_max,mxstate);
+                    toMatlab::Natural("trunc_orthog_iter_max",
+                        state.trunc_orthog_iter_max,mxstate);
                     toMatlab::Param <TruncatedStop::t> (
                         "trunc_stop",
                         TruncatedStop::toMatlab,
@@ -2172,8 +2210,10 @@ namespace Optizelle {
                         mxstate,state.trunc_iter_max);
                     fromMatlab::Natural("trunc_iter_total",
                         mxstate,state.trunc_iter_total);
-                    fromMatlab::Natural("trunc_orthog_max",
-                        mxstate,state.trunc_orthog_max);
+                    fromMatlab::Natural("trunc_orthog_storage_max",
+                        mxstate,state.trunc_orthog_storage_max);
+                    fromMatlab::Natural("trunc_orthog_iter_max",
+                        mxstate,state.trunc_orthog_iter_max);
                     fromMatlab::Param <TruncatedStop::t> (
                         "trunc_stop",
                         TruncatedStop::fromMatlab,

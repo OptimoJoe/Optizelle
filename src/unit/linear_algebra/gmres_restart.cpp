@@ -1,58 +1,36 @@
-#include "optizelle/optizelle.h"
-#include "optizelle/vspaces.h"
-#include "optizelle/linalg.h"
+// Run GMRES with the restart mechanism turned off.  This verifies that we can
+// still converge even if we throw out Krylov vectors.
+
 #include "linear_algebra.h"
-#include "unit.h"
+#include "spaces.h"
 
 int main() {
-    // Create a type shortcut
-    typedef Optizelle::Rm <double> X;
+    // Setup the problem 
+    auto setup = Unit::gmres <Real,XX> ();
 
-    // Set the size of the problem
-    Natural m = 5;
+    setup.A = std::make_unique <Matrix>(
+        Unit::Matrix <Real>::nonsymmetric(setup.m,0));
+    setup.b = std::make_unique <Vector> (Unit::Vector <Real>::basic(setup.m));
+    setup.rst_freq = 3;
 
-    // Set the stopping tolerance
-    double eps_krylov = 1e-12;
+    setup.x_star = std::make_unique <Vector> (Vector({
+        6.71115708873876e-01,
+        1.06789410922663e+00,
+        -1.31466092004730e+00,
+        5.25893325732259e-02,
+        9.35912328721990e-01}));
+    // Check our number of iterations.  Really, there's a question if this is
+    // the right right number.  Basically, I just ran the code to create a
+    // baseline and we want to know if this baseline changes.
+    setup.iter_star = 227;
 
-    // Set the maximum number of iterations
-    Natural iter_max = 300;
+    setup.check_sol=true;
+    setup.check_iter=true;
+    setup.check_res=true;
 
-    // Set how often we restart GMRES
-    Natural rst_freq = 3;
+    // Check the solver 
+    Unit::run_and_verify <Real,XX> (setup);
 
-    // Create some operator 
-    BasicOperator <double> A(m);
-    for(Natural i=1;i<=m*m;i++)
-        A.A[i-1]=cos(pow(i,2));
-    
-    // Create some right hand side
-    std::vector <double> b(m);
-    for(Natural i=1;i<=m;i++) b[i-1] = cos(i+25); 
-
-    // Create the left preconditioner
-    IdentityOperator <double> Ml_inv;
-    
-    // Create the right preconditioner
-    IdentityOperator <double> Mr_inv;
-
-    // Create an initial guess at the solution
-    std::vector <double> x(m);
-    X::zero (x);
-
-    // Create an empty GMRES manipulator
-    Optizelle::EmptyGMRESManipulator <double,Optizelle::Rm> gmanip;
-
-    // Solve this linear system
-    std::pair <double,Natural> err_iter =Optizelle::gmres <double,Optizelle::Rm>
-        (A,b,eps_krylov,iter_max,rst_freq,Ml_inv,Mr_inv,gmanip,x);
-
-    // Check the error is less than our tolerance 
-    CHECK(err_iter.first < eps_krylov);
-
-    // Check that we ran to the maximum number of iterations
-    CHECK(err_iter.second == 242);
-    
     // Declare success
     return EXIT_SUCCESS;
 }
-

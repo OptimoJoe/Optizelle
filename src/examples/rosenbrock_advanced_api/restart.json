@@ -5,7 +5,7 @@
       "trunc_iter" : 2,
       "trunc_iter_max" : 10,
       "trunc_iter_total" : 22,
-      "trunc_orthog_max" : 1,
+      "trunc_orthog_storage_max" : 1,
       "ls_iter" : 5,
       "ls_iter_max" : 5,
       "ls_iter_total" : 55,

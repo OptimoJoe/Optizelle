@@ -117,14 +117,29 @@ namespace Optizelle {
             case TrustRegionViolated:
                 return Python::enumToPyObject(
                     "TruncatedStop","TrustRegionViolated");
-            case NanDetected:
-                return Python::enumToPyObject("TruncatedStop","NanDetected");
+            case NanOperator:
+                return Python::enumToPyObject("TruncatedStop","NanOperator");
+            case NanPreconditioner:
+                return Python::enumToPyObject(
+                    "TruncatedStop","NanPreconditioner");
+            case NonProjectorPreconditioner:
+                return Python::enumToPyObject(
+                    "TruncatedStop","NonProjectorPreconditioner");
+            case NonSymmetricPreconditioner:
+                return Python::enumToPyObject(
+                    "TruncatedStop","NonSymmetricPreconditioner");
+            case NonSymmetricOperator:
+                return Python::enumToPyObject(
+                    "TruncatedStop","NonSymmetricOperator");
             case LossOfOrthogonality:
                 return Python::enumToPyObject(
                     "TruncatedStop","LossOfOrthogonality");
-            case InvalidTrustRegionOffset:
+            case OffsetViolatesTrustRegion:
                 return Python::enumToPyObject(
-                    "TruncatedStop","InvalidTrustRegionOffset");
+                    "TruncatedStop","OffsetViolatesTrustRegion");
+            case OffsetViolatesSafeguard:
+                return Python::enumToPyObject(
+                    "TruncatedStop","OffsetViolatesSafeguard");
             case TooManyFailedSafeguard:
                 return Python::enumToPyObject(
                     "TruncatedStop","TooManyFailedSafeguard");
@@ -159,16 +174,36 @@ namespace Optizelle {
                 "TruncatedStop","TrustRegionViolated")
             )
                 return TrustRegionViolated;
-            else if(m==Python::enumToNatural("TruncatedStop","NanDetected"))
-                return NanDetected;
+            else if(m==Python::enumToNatural("TruncatedStop","NanOperator"))
+                return NanOperator;
+            else if(m==Python::enumToNatural(
+                "TruncatedStop","NanPreconditioner")
+            )
+                return NanPreconditioner;
+            else if(m==Python::enumToNatural(
+                "TruncatedStop","NonProjectorPreconditioner")
+            )
+                return NonProjectorPreconditioner;
+            else if(m==Python::enumToNatural(
+                "TruncatedStop","NonSymmetricPreconditioner")
+            )
+                return NonSymmetricPreconditioner;
+            else if(m==Python::enumToNatural(
+                "TruncatedStop","NonSymmetricOperator")
+            )
+                return NonSymmetricOperator;
             else if(m==Python::enumToNatural(
                 "TruncatedStop","LossOfOrthogonality")
             )
                 return LossOfOrthogonality;
             else if(m==Python::enumToNatural(
-                "TruncatedStop","InvalidTrustRegionOffset")
+                "TruncatedStop","OffsetViolatesTrustRegion")
             )
-                return InvalidTrustRegionOffset;
+                return OffsetViolatesTrustRegion;
+            else if(m==Python::enumToNatural(
+                "TruncatedStop","OffsetViolatesSafeguard")
+            )
+                return OffsetViolatesSafeguard;
             else if(m==Python::enumToNatural(
                 "TruncatedStop","TooManyFailedSafeguard")
             )
@@ -1931,8 +1966,10 @@ namespace Optizelle {
                         state.trunc_iter_max,pystate);
                     toPython::Natural("trunc_iter_total",
                         state.trunc_iter_total,pystate);
-                    toPython::Natural("trunc_orthog_max",
-                        state.trunc_orthog_max,pystate);
+                    toPython::Natural("trunc_orthog_storage_max",
+                        state.trunc_orthog_storage_max,pystate);
+                    toPython::Natural("trunc_orthog_iter_max",
+                        state.trunc_orthog_iter_max,pystate);
                     toPython::Param <TruncatedStop::t> (
                         "trunc_stop",
                         TruncatedStop::toPython,
@@ -2064,8 +2101,10 @@ namespace Optizelle {
                         pystate,state.trunc_iter_max);
                     fromPython::Natural("trunc_iter_total",
                         pystate,state.trunc_iter_total);
-                    fromPython::Natural("trunc_orthog_max",
-                        pystate,state.trunc_orthog_max);
+                    fromPython::Natural("trunc_orthog_storage_max",
+                        pystate,state.trunc_orthog_storage_max);
+                    fromPython::Natural("trunc_orthog_iter_max",
+                        pystate,state.trunc_orthog_iter_max);
                     fromPython::Param <TruncatedStop::t> (
                         "trunc_stop",
                         TruncatedStop::fromPython,

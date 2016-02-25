@@ -848,12 +848,22 @@ namespace Optizelle {
                 return "MaxItersExceeded";
             case TrustRegionViolated:
                 return "TrustRegionViolated";
-            case NanDetected:
-                return "NanDetected";
+            case NanOperator:
+                return "NanOperator";
+            case NanPreconditioner:
+                return "NanPreconditioner";
+            case NonProjectorPreconditioner:
+                return "NonProjectorPreconditioner";
+            case NonSymmetricPreconditioner:
+                return "NonSymmetricPreconditioner";
+            case NonSymmetricOperator:
+                return "NonSymmetricOperator";
             case LossOfOrthogonality:
                 return "LossOfOrthogonality";
-            case InvalidTrustRegionOffset:
-                return "InvalidTrustRegionOffset";
+            case OffsetViolatesTrustRegion:
+                return "OffsetViolatesTrustRegion";
+            case OffsetViolatesSafeguard:
+                return "OffsetViolatesSafeguard";
             case TooManyFailedSafeguard:
                 return "TooManyFailedSafeguard";
             case ObjectiveIncrease:
@@ -875,12 +885,22 @@ namespace Optizelle {
                 return MaxItersExceeded;
             else if(trunc_stop=="TrustRegionViolated")
                 return TrustRegionViolated;
-            else if(trunc_stop=="NanDetected")
-                return NanDetected;
+            else if(trunc_stop=="NanOperator")
+                return NanOperator;
+            else if(trunc_stop=="NanPreconditioner")
+                return NanPreconditioner;
+            else if(trunc_stop=="NonProjectorPreconditioner")
+                return NonProjectorPreconditioner;
+            else if(trunc_stop=="NonSymmetricPreconditioner")
+                return NonSymmetricPreconditioner;
+            else if(trunc_stop=="NonSymmetricOperator")
+                return NonSymmetricOperator;
             else if(trunc_stop=="LossOfOrthogonality")
                 return LossOfOrthogonality;
-            else if(trunc_stop=="InvalidTrustRegionOffset")
-                return InvalidTrustRegionOffset;
+            else if(trunc_stop=="OffsetViolatesTrustRegion")
+                return OffsetViolatesTrustRegion;
+            else if(trunc_stop=="OffsetViolatesSafeguard")
+                return OffsetViolatesSafeguard;
             else if(trunc_stop=="TooManyFailedSafeguard")
                 return TooManyFailedSafeguard;
             else if(trunc_stop=="ObjectiveIncrease")
@@ -896,9 +916,14 @@ namespace Optizelle {
                 name=="RelativeErrorSmall" ||
                 name=="MaxItersExceeded" ||
                 name=="TrustRegionViolated" ||
-                name=="NanDetected" ||
+                name=="NanOperator" ||
+                name=="NanPreconditioner" ||
+                name=="NonProjectorPreconditioner" ||
+                name=="NonSymmetricPreconditioner" ||
+                name=="NonSymmetricOperator" ||
                 name=="LossOfOrthogonality" ||
-                name=="InvalidTrustRegionOffset" ||
+                name=="OffsetViolatesTrustRegion" ||
+                name=="OffsetViolatesSafeguard" ||
                 name=="TooManyFailedSafeguard" ||
                 name=="ObjectiveIncrease"
             )
@@ -906,5 +931,39 @@ namespace Optizelle {
             else
                 return false;
         }
+    }
+
+    // Returns whether or not a truncated-CG direction is salvagable based on
+    // the current stopping condition.  Basically, salvagable directions are
+    // directions that exceed the trust-region, have negative curvature, 
+    // violated the safeguard, or have nothing wrong with them.  Non-salvagable
+    // situations are where Bdx has something like a NaN or the operators we
+    // used to calculate it have something bad going on.
+    auto is_Bdx_salvagable(TruncatedStop::t const & stop) -> bool {
+        if( stop == TruncatedStop::TrustRegionViolated ||
+            stop == TruncatedStop::NegativeCurvature ||
+            stop == TruncatedStop::NotConverged 
+        )
+            return true;
+        else
+            return false;
+    }
+    
+    // Returns whether or not the exit condition is related to the truncated-CG
+    // direction, Bdx
+    auto is_Bdx_related(TruncatedStop::t const & stop) -> bool {
+        if( stop == TruncatedStop::TrustRegionViolated ||
+            stop == TruncatedStop::NegativeCurvature ||
+            stop == TruncatedStop::NanOperator ||
+            stop == TruncatedStop::NanPreconditioner ||
+            stop == TruncatedStop::NonProjectorPreconditioner ||
+            stop == TruncatedStop::NonSymmetricPreconditioner ||
+            stop == TruncatedStop::NonSymmetricOperator ||
+            stop == TruncatedStop::LossOfOrthogonality ||
+            stop == TruncatedStop::ObjectiveIncrease
+        )
+            return true;
+        else
+            return false;
     }
 }
