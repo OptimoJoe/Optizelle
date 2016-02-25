@@ -291,6 +291,7 @@ namespace Optizelle{
         enum t : Natural{
             //---Operators0---
             Identity,          // Identity approximation
+            Zero,              // Zero approximation
             ScaledIdentity,    // Scaled identity approximation
                                //
                                // || grad || / (2 delta) I
@@ -3245,6 +3246,13 @@ namespace Optizelle{
                 }
             };
 
+            // The zero operator 
+            struct Zero: public Operator <Real,XX,XX> {
+                void eval(X_Vector const & dx,X_Vector & result) const{
+                    X::zero(result);
+                }
+            };
+
             // The scaled identity Hessian approximation.  Specifically, use use
             // || grad || / (2 delta) I where delta is the current size of the
             // trust-region.  This forces us into the trust-region at each
@@ -3732,6 +3740,9 @@ namespace Optizelle{
                     switch(state.H_type){
                         case Operators::Identity:
                             H.reset(new Identity());
+                            break;
+                        case Operators::Zero:
+                            H.reset(new Zero());
                             break;
                         case Operators::ScaledIdentity:
                             H.reset(new ScaledIdentity (fns,state));

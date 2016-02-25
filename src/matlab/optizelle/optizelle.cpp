@@ -262,6 +262,8 @@ namespace Optizelle {
             switch(op){
             case Identity:
                 return Matlab::enumToMxArray("Operators","Identity");
+            case Zero:
+                return Matlab::enumToMxArray("Operators","Zero");
             case ScaledIdentity:
                 return Matlab::enumToMxArray("Operators","ScaledIdentity");
             case BFGS:
@@ -286,6 +288,8 @@ namespace Optizelle {
 
             if(m==Matlab::enumToNatural("Operators","Identity"))
                 return Identity;
+            else if(m==Matlab::enumToNatural("Operators","Zero"))
+                return Zero;
             else if(m==Matlab::enumToNatural("Operators","ScaledIdentity"))
                 return ScaledIdentity;
             else if(m==Matlab::enumToNatural("Operators","BFGS"))

@@ -256,6 +256,8 @@ namespace Optizelle {
             switch(op){
             case Identity:
                 return Python::enumToPyObject("Operators","Identity");
+            case Zero:
+                return Python::enumToPyObject("Operators","Zero");
             case ScaledIdentity:
                 return Python::enumToPyObject("Operators","ScaledIdentity");
             case BFGS:
@@ -280,6 +282,8 @@ namespace Optizelle {
 
             if(m==Python::enumToNatural("Operators","Identity"))
                 return Identity;
+            else if(m==Python::enumToNatural("Operators","Zero"))
+                return Zero;
             else if(m==Python::enumToNatural("Operators","ScaledIdentity"))
                 return ScaledIdentity;
             else if(m==Python::enumToNatural("Operators","BFGS"))

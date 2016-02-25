@@ -90,13 +90,14 @@ class OptimizationStop(EnumeratedType):
 class Operators(EnumeratedType):
     """Various operators for both Hessian approximations and preconditioners"""
     Identity, \
+    Zero, \
     ScaledIdentity, \
     BFGS, \
     InvBFGS, \
     SR1, \
     InvSR1, \
     UserDefined \
-    = range(7)
+    = range(8)
     
 class LineSearchDirection(EnumeratedType):
     """Different kinds of search directions"""

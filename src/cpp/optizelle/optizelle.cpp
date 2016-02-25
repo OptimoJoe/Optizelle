@@ -154,6 +154,8 @@ namespace Optizelle{
             switch(op){
             case Identity:
                 return "Identity";
+            case Zero:
+                return "Zero";
             case ScaledIdentity:
                 return "ScaledIdentity";
             case BFGS:
@@ -175,6 +177,8 @@ namespace Optizelle{
         t from_string(std::string const & op) {
             if(op=="Identity")
                 return Identity; 
+            else if(op=="Zero")
+                return Zero; 
             else if(op=="ScaledIdentity")
                 return ScaledIdentity; 
             else if(op=="BFGS")
@@ -194,6 +198,7 @@ namespace Optizelle{
         // Checks whether or not a string is valid
         bool is_valid(std::string const & name) {
             if( name=="Identity" ||
+                name=="Zero" ||
                 name=="ScaledIdentity" ||
                 name=="BFGS" ||
                 name=="InvBFGS" ||
