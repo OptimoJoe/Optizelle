@@ -17,4 +17,4 @@ endif()
 add_subdirectory(restart)
 add_subdirectory(linear_algebra)
 add_subdirectory(utility)
-
+add_subdirectory(core)
