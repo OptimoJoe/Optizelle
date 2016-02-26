@@ -8278,21 +8278,6 @@ namespace Optizelle{
                             qn_stop = QuasinormalStop::NewtonTrustRegion;
                     }
                 }
-
-                // Figure out why we stopped
-                if(iter==0)
-                    qn_stop = QuasinormalStop::Skipped;
-                else if(safeguard_failed==2)
-                    qn_stop = QuasinormalStop::CauchySafeguard;
-                else if(safeguard_failed==1)
-                    qn_stop = QuasinormalStop::DoglegSafeguard;
-                else if(safeguard_failed==0 && iter==1)
-                    qn_stop = QuasinormalStop::CauchyTrustRegion;
-                else if(safeguard_failed==0 && iter==2)
-                    qn_stop = QuasinormalStop::DoglegTrustRegion;
-                else if(safeguard_failed==0 && iter==3)
-                    qn_stop = QuasinormalStop::Newton;
-
             }
             
             // Sets the tolerances for projecting 
