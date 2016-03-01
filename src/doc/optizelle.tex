@@ -3065,6 +3065,12 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {Norm of a typical equality constraint, which we define to be the norm of the equality constraint at the first iteration.  Sometimes, we use \textctref{norm_gxtyp} with the stopping criteria described in \textctref{eps_constr}. Specifically, we only refer to this quantity when \textctref{eps_kind} is set to \hyperref[itm:ToleranceKind]{Relative}.  When \textctref{eps_kind} is set to \hyperref[itm:ToleranceKind]{Absolute}, we ignore this value and instead use $1.0$.} 
 
     \paramiteme
+        {norm_gpsgxtyp}
+        {Real}
+        {No}
+        {Norm of a typical value of $g'(\textctref{x})^*g(\textctref{x})$, which we define to be the value of this quantity at the first iteration.  When we compute the quasinormal step, we compute the Cauchy point by finding the least-squares solution to the linearized equality constraint, $\min_{\partial x} \frac{1}{2} \|g'(x)\partial x + g(x)\|^2$.  Here, the gradient is $g^\prime(x)^*g^\prime(x)\partial x + g^\prime(x)^*g(x)$.  Now, for the Cauchy point, we start with $\partial x=0$, so the steepest descent direction becomes $\partial x = -g^\prime(x)^*g(x)$.  We find the Cauchy point, by doing an exact line-search along this direction in the objective for the least-squares problem above.  Now, when $g^\prime(x)^*g(x) = 0$, we sit at a local minima to the least-squares problem above.  Generally, this is bad since we're not feasible and we don't have good information as to where to move to improve our infeasibility.  Nevertheless, the tangential step will likely move us off that point unless we've already achieved optimality with respect to the Lagrangian.  In any case, we require \textctref{norm_gpsgxtyp} to determine when the relative norm of $g^\prime(x)^*g(x)$ is small and hence fall into this local minima.}
+
+    \paramiteme
         {gpxdxn_p_gx}
         {Y_Vector}
         {No}

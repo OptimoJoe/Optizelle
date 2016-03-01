@@ -235,9 +235,12 @@ struct Unit {
         Optizelle::EqualityConstrained <Real,XX,YY>::Functions::init(
             msg,state,fns);
 
-        // Evaluate the function
+        // Evaluate the function and cache information about it
         fns.g->eval(state.x,state.g_x);
         state.norm_gxtyp = std::sqrt(Y::innr(state.g_x,state.g_x));
+        auto gps_g = X::init(state.x);
+        fns.g->ps(state.x,state.g_x,gps_g);
+        state.norm_gpsgxtyp = std::sqrt(X::innr(gps_g,gps_g));
 
         // Compute the quasinormal step
         Optizelle::EqualityConstrained<Real,XX,YY>::Algorithms::quasinormalStep(

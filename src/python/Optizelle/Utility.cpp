@@ -710,12 +710,15 @@ namespace Optizelle {
             case NewtonSafeguard:
                 return Python::enumToPyObject("QuasinormalStop",
                     "NewtonSafeguard");
-            case Skipped:
+            case Feasible:
                 return Python::enumToPyObject("QuasinormalStop",
-                    "Skipped");
+                    "Feasible");
             case CauchySolved:
                 return Python::enumToPyObject("QuasinormalStop",
                     "CauchySolved");
+            case LocalMin:
+                return Python::enumToPyObject("QuasinormalStop",
+                    "LocalMin");
             default:
                 throw;
             }
@@ -755,13 +758,17 @@ namespace Optizelle {
             )
                 return NewtonSafeguard;
             else if(m==Python::enumToNatural("QuasinormalStop",
-                "Skipped")
+                "Feasible")
             )
-                return Skipped;
+                return Feasible;
             else if(m==Python::enumToNatural("QuasinormalStop",
                 "CauchySolved")
             )
                 return CauchySolved;
+            else if(m==Python::enumToNatural("QuasinormalStop",
+                "LocalMin")
+            )
+                return LocalMin;
             else
                 throw;
         }
@@ -2694,6 +2701,7 @@ namespace Optizelle {
                         state.augsys_failed_total,pystate);
                     toPython::Vector("g_x",state.g_x,pystate);
                     toPython::Real("norm_gxtyp",state.norm_gxtyp,pystate);
+                    toPython::Real("norm_gpsgxtyp",state.norm_gpsgxtyp,pystate);
                     toPython::Vector("gpxdxn_p_gx",state.gpxdxn_p_gx,pystate);
                     toPython::Vector("gpxdxt",state.gpxdxt,pystate);
                     toPython::Real("norm_gpxdxnpgx",
@@ -2824,6 +2832,8 @@ namespace Optizelle {
                         pystate,state.augsys_failed_total);
                     fromPython::Vector("g_x",pystate,state.g_x);
                     fromPython::Real("norm_gxtyp",pystate,state.norm_gxtyp);
+                    fromPython::Real("norm_gpsgxtyp",
+                        pystate,state.norm_gpsgxtyp);
                     fromPython::Vector("gpxdxn_p_gx",pystate,state.gpxdxn_p_gx);
                     fromPython::Vector("gpxdxt",pystate,state.gpxdxt);
                     fromPython::Real("norm_gpxdxnpgx",

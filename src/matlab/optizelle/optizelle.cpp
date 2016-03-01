@@ -716,12 +716,15 @@ namespace Optizelle {
             case NewtonSafeguard:
                 return Matlab::enumToMxArray("QuasinormalStop",
                     "NewtonSafeguard");
-            case Skipped:
+            case Feasible:
                 return Matlab::enumToMxArray("QuasinormalStop",
-                    "Skipped");
+                    "Feasible");
             case CauchySolved:
                 return Matlab::enumToMxArray("QuasinormalStop",
                     "CauchySolved");
+            case LocalMin:
+                return Matlab::enumToMxArray("QuasinormalStop",
+                    "LocalMin");
             default:
                 throw;
             }
@@ -761,13 +764,17 @@ namespace Optizelle {
             )
                 return NewtonSafeguard;
             else if(m==Matlab::enumToNatural("QuasinormalStop",
-                "Skipped")
+                "Feasible")
             )
-                return Skipped;
+                return Feasible;
             else if(m==Matlab::enumToNatural("QuasinormalStop",
                 "CauchySolved")
             )
                 return CauchySolved;
+            else if(m==Matlab::enumToNatural("QuasinormalStop",
+                "LocalMin")
+            )
+                return LocalMin;
             else
                 throw;
         }
@@ -2823,6 +2830,7 @@ namespace Optizelle {
                         "augsys_failed_total",
                         "g_x",
                         "norm_gxtyp",
+                        "norm_gpsgxtyp",
                         "gpxdxn_p_gx",
                         "gpxdxt",
                         "norm_gpxdxnpgx",
@@ -2948,6 +2956,7 @@ namespace Optizelle {
                         state.augsys_failed_total,mxstate);
                     toMatlab::Vector("g_x",state.g_x,mxstate);
                     toMatlab::Real("norm_gxtyp",state.norm_gxtyp,mxstate);
+                    toMatlab::Real("norm_gpsgxtyp",state.norm_gpsgxtyp,mxstate);
                     toMatlab::Vector("gpxdxn_p_gx",state.gpxdxn_p_gx,mxstate);
                     toMatlab::Vector("gpxdxt",state.gpxdxt,mxstate);
                     toMatlab::Real("norm_gpxdxnpgx",
@@ -3078,6 +3087,8 @@ namespace Optizelle {
                         mxstate,state.augsys_failed_total);
                     fromMatlab::Vector("g_x",mxstate,state.g_x);
                     fromMatlab::Real("norm_gxtyp",mxstate,state.norm_gxtyp);
+                    fromMatlab::Real("norm_gpsgxtyp",
+                        mxstate,state.norm_gpsgxtyp);
                     fromMatlab::Vector("gpxdxn_p_gx",mxstate,state.gpxdxn_p_gx);
                     fromMatlab::Vector("gpxdxt",mxstate,state.gpxdxt);
                     fromMatlab::Real("norm_gpxdxnpgx",

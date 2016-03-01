@@ -55,6 +55,7 @@
       "norm_gpxdxnpgx" : 2.775557561562891e-16,
       "norm_gradtyp" : 2.101903898849803,
       "norm_gxtyp" : 3.30,
+      "norm_gpsgxtyp" : 3.30,
       "pred" : 0.0009200146544222578,
       "rho" : 1.0,
       "rho_bar" : 1.000000000000000e-08,
