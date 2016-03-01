@@ -92,15 +92,24 @@ struct Unit {
         
         // Define a quadratic constraint
         //
-        // g(x,y)= [ 0.5 x^2 + 0.5 y^2 = 1 ] 
+        // g(x,y)= [ a x^2 + b y^2 = 1 ] 
         //
         struct Quadratic : public Optizelle::VectorValuedFunction<Real,XX,YY> {
+            // Determines the width of the ellipse
+            Real a;
+
+            // Determines the height of the ellpise
+            Real b;
+
+            // Grabs the size of the quadratic
+            Quadratic(Real const & a_, Real const & b_) : a(a_), b(b_) {}
+
             // y=g(x) 
             void eval(
                 X_Vector const & x,
                 Y_Vector & y
             ) const {
-                y[0] = Real(0.5) * sq(x[0]) + Real(0.5) * sq(x[1]) - Real(1.); 
+                y[0] = a * sq(x[0]) + b * sq(x[1]) - Real(1.); 
             }
 
             // y=g'(x)dx
@@ -109,7 +118,7 @@ struct Unit {
                 X_Vector const & dx,
                 Y_Vector & y
             ) const {
-                y[0] = x[0]*dx[0] + x[1]*dx[1];
+                y[0] = Real(2.)*a*x[0]*dx[0] + Real(2.)*b*x[1]*dx[1];
             }
 
             // z=g'(x)*dy
@@ -118,8 +127,8 @@ struct Unit {
                 Y_Vector const & dy,
                 X_Vector & x_hat
             ) const {
-                x_hat[0]=x[0]*dy[0];
-                x_hat[1]=x[1]*dy[0];
+                x_hat[0]=Real(2.)*a*x[0]*dy[0];
+                x_hat[1]=Real(2.)*b*x[1]*dy[0];
             }
 
             // z=(g''(x)dx)*dy
@@ -129,8 +138,161 @@ struct Unit {
                 Y_Vector const & dy,
                 X_Vector & x_hat 
             ) const {
-                x_hat[0]=dx[0]*dy[0];
-                x_hat[1]=dx[1]*dy[0];
+                x_hat[0]=Real(2.)*a*dx[0]*dy[0];
+                x_hat[1]=Real(2.)*b*dx[1]*dy[0];
+            }
+        };
+        
+        // Define a constraint where we intersect two circles 
+        //
+        // g(x,y)= [ (x-a)^2 + (y-b)^2 = 1 ] 
+        //         [ (x-c)^2 + (y-d)^2 = 1 ] 
+        //
+        struct CircleIntersection :
+            public Optizelle::VectorValuedFunction<Real,XX,YY>
+        {
+            // Location of the first circle 
+            Real a;
+            Real b;
+
+            // Location of the second circle 
+            Real c;
+            Real d;
+
+            // Grabs the size of the quadratic
+            CircleIntersection(
+                Real const & a_, 
+                Real const & b_,
+                Real const & c_,
+                Real const & d_
+            ) : a(a_), b(b_), c(c_), d(d_) {}
+
+            // y=g(x) 
+            void eval(
+                X_Vector const & x,
+                Y_Vector & y
+            ) const {
+                y[0] = sq(x[0]-a) + sq(x[1]-b) - Real(1.); 
+                y[1] = sq(x[0]-c) + sq(x[1]-d) - Real(1.); 
+            }
+
+            // y=g'(x)dx
+            void p(
+                X_Vector const & x,
+                X_Vector const & dx,
+                Y_Vector & y
+            ) const {
+                y[0] = Real(2.)*(x[0]-a)*dx[0] + Real(2.)*(x[1]-b)*dx[1];
+                y[1] = Real(2.)*(x[0]-c)*dx[0] + Real(2.)*(x[1]-d)*dx[1];
+            }
+
+            // z=g'(x)*dy
+            void ps(
+                X_Vector const & x,
+                Y_Vector const & dy,
+                X_Vector & x_hat
+            ) const {
+                x_hat[0] = Real(2.)*(x[0]-a)*dy[0] + Real(2.)*(x[1]-c)*dy[1];
+                x_hat[1] = Real(2.)*(x[0]-b)*dy[0] + Real(2.)*(x[1]-d)*dy[1];
+            }
+
+            // z=(g''(x)dx)*dy
+            void pps(
+                X_Vector const & x,
+                X_Vector const & dx,
+                Y_Vector const & dy,
+                X_Vector & x_hat 
+            ) const {
+                x_hat[0] = Real(2.)*dx[0]*dy[0] + Real(2.)*dx[1]*dy[1];
+                x_hat[1] = Real(2.)*dx[0]*dy[0] + Real(2.)*dx[1]*dy[1];
+            }
+        };
+        
+        // Define a trigonometric constraint 
+        //
+        // g(x) = cos(x)
+        //
+        struct Cos : public Optizelle::VectorValuedFunction<Real,XX,YY> {
+            // y=g(x) 
+            void eval(
+                X_Vector const & x,
+                Y_Vector & y
+            ) const {
+                y[0] = std::cos(x[0]); 
+            }
+
+            // y=g'(x)dx
+            void p(
+                X_Vector const & x,
+                X_Vector const & dx,
+                Y_Vector & y
+            ) const {
+                y[0] = -std::sin(x[0])*dx[0];
+            }
+
+            // z=g'(x)*dy
+            void ps(
+                X_Vector const & x,
+                Y_Vector const & dy,
+                X_Vector & x_hat
+            ) const {
+                x_hat[0] = -std::sin(x[0])*dy[0];
+            }
+
+            // z=(g''(x)dx)*dy
+            void pps(
+                X_Vector const & x,
+                X_Vector const & dx,
+                Y_Vector const & dy,
+                X_Vector & x_hat 
+            ) const {
+                x_hat[0] = -std::cos(x[0])*dx[0]*dy[0];
+            }
+        };
+        
+        // Define a polynomial constraint 
+        //
+        // g(x) = (x-1)*(x-2)*(x-3)*(x-4) 
+        //
+        struct Poly : public Optizelle::VectorValuedFunction<Real,XX,YY> {
+            // y=g(x) 
+            void eval(
+                X_Vector const & x,
+                Y_Vector & y
+            ) const {
+                y[0] = (x[0]-Real(1.))*(x[0]-Real(2.))*
+                       (x[0]-Real(3.))*(x[0]-Real(4.));
+            }
+
+            // y=g'(x)dx
+            void p(
+                X_Vector const & x,
+                X_Vector const & dx,
+                Y_Vector & y
+            ) const {
+                y[0] = (Real(2.)*(Real(2.)*x[0]-Real(5.))*
+                           (sq(x[0])-Real(5.)*x[0]+Real(5.)))*dx[0]; 
+            }
+
+            // z=g'(x)*dy
+            void ps(
+                X_Vector const & x,
+                Y_Vector const & dy,
+                X_Vector & x_hat
+            ) const {
+                x_hat[0] = (Real(2.)*(Real(2.)*x[0]-Real(5.))*
+                               (sq(x[0])-Real(5.)*x[0]+Real(5.)))*dy[0]; 
+            }
+
+            // z=(g''(x)dx)*dy
+            void pps(
+                X_Vector const & x,
+                X_Vector const & dx,
+                Y_Vector const & dy,
+                X_Vector & x_hat 
+            ) const {
+                x_hat[0] = Real(2.)*(Real(6.)*sq(x[0])-Real(30.)*x[0]+Real(35.))
+                    *dy[0]*dx[0]; 
             }
         };
     };
@@ -198,7 +360,10 @@ struct Unit {
             check_dx_ncp(false),
             check_feas(false),
             check_alpha_x_qn(false)
-        {}
+        {
+            X::copy(x_,x); 
+            Y::copy(y_,y);
+        }
     };
 
     // Calculates a error between two vectors.  The second number returned 
@@ -222,6 +387,9 @@ struct Unit {
         // Create an optimization state
         typename Optizelle::EqualityConstrained <Real,XX,YY>::State::t
             state(setup.x,setup.y);
+
+        // Set some appropraite state information
+        state.delta = setup.delta;
 
         // Create a bundle of functions
         typename Optizelle::EqualityConstrained <Real,XX,YY>::Functions::t fns;
@@ -256,8 +424,7 @@ struct Unit {
             X::copy(state.x,x_p_dxn);
             X::axpy(Real(1.),state.dx_n,x_p_dxn);
             auto norm_xpdxn = std::sqrt(X::innr(x_p_dxn,x_p_dxn));
-            CHECK(std::abs(norm_xpdxn-state.delta*state.zeta) <=
-                setup.eps * state.delta * state.zeta);
+            CHECK(std::abs(norm_xpdxn-state.delta*state.zeta) <= setup.eps);
         }
 
         // Check that the quasinormal point is correct
@@ -265,7 +432,7 @@ struct Unit {
             auto norm_r = Real(0.);
             auto norm_dxn_star = Real(0.);
             std::tie(norm_r,norm_dxn_star)=error(state.dx_n,*setup.dx_n_star);
-            CHECK(norm_r <= setup.eps*norm_dxn_star);
+            CHECK(norm_r <= setup.eps);
         }
 
         // Check that the cauchy point is correct
@@ -274,7 +441,7 @@ struct Unit {
             auto norm_dxncp_star = Real(0.);
             std::tie(norm_r,norm_dxncp_star)=error(
                 state.dx_ncp,*setup.dx_ncp_star);
-            CHECK(norm_r <= setup.eps*norm_dxncp_star);
+            CHECK(norm_r <= setup.eps);
         }
 
         // Check that our step takes us to feasibility 
@@ -285,7 +452,7 @@ struct Unit {
             auto g_x = Y::init(state.y);
             fns.g->eval(x_p_dxn,g_x);
             auto norm_gx = std::sqrt(X::innr(g_x,g_x));
-            CHECK(norm_gx <= setup.eps * state.norm_gxtyp);
+            CHECK(norm_gx <= setup.eps);
         }
 
         // Check that the safeguard truncated the step 

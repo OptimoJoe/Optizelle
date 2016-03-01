@@ -14,7 +14,7 @@ int main(int argc,char* argv[]){
 
     // Setup the test 
     auto setup = Unit <Real>::QN(x,y);
-    setup.g.reset(new Unit <Real>::Constraint::Quadratic);
+    setup.g.reset(new Unit <Real>::Constraint::Quadratic(1.,1.));
 
     // Set the targets
     setup.qn_stop_star = Optizelle::QuasinormalStop::LocalMin;
