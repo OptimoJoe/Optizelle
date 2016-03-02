@@ -16,8 +16,8 @@ int main(int argc,char* argv[]){
     // Setup the test 
     auto setup = Unit <Real>::QN(x,y);
     setup.g.reset(new Unit <Real>::Constraint::Linear);
-    // || (0.25,0.25) || = sqrt(1/8).  The 0.8 is the value for zeta.
-    setup.delta = std::sqrt(Real(1./8.))/Real(0.8); 
+    // || (0.25,0.25) || = sqrt(1/8)
+    setup.delta = std::sqrt(Real(1./8.))/setup.zeta; 
 
     // Set the targets
     setup.qn_stop_star = Optizelle::QuasinormalStop::CauchyTrustRegion;

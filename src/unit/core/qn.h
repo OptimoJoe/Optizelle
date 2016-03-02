@@ -322,6 +322,9 @@ struct Unit {
         // Desired stopping condition 
         Optizelle::QuasinormalStop::t qn_stop_star;
 
+        // Hard coded zeta for reference
+        Real const zeta;
+
         // Check the stopping condition
         bool check_stop;
 
@@ -354,6 +357,7 @@ struct Unit {
             dx_ncp_star(),
             dx_n_star(),
             qn_stop_star(),
+            zeta(0.8),
             check_stop(false),
             check_tr(false),
             check_dx_n(false),
