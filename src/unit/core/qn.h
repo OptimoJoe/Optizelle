@@ -192,8 +192,8 @@ struct Unit {
                 Y_Vector const & dy,
                 X_Vector & x_hat
             ) const {
-                x_hat[0] = Real(2.)*(x[0]-a)*dy[0] + Real(2.)*(x[1]-c)*dy[1];
-                x_hat[1] = Real(2.)*(x[0]-b)*dy[0] + Real(2.)*(x[1]-d)*dy[1];
+                x_hat[0] = Real(2.)*(x[0]-a)*dy[0] + Real(2.)*(x[0]-c)*dy[1];
+                x_hat[1] = Real(2.)*(x[1]-b)*dy[0] + Real(2.)*(x[1]-d)*dy[1];
             }
 
             // z=(g''(x)dx)*dy
@@ -203,8 +203,8 @@ struct Unit {
                 Y_Vector const & dy,
                 X_Vector & x_hat 
             ) const {
-                x_hat[0] = Real(2.)*dx[0]*dy[0] + Real(2.)*dx[1]*dy[1];
-                x_hat[1] = Real(2.)*dx[0]*dy[0] + Real(2.)*dx[1]*dy[1];
+                x_hat[0] = Real(2.)*dx[0]*dy[0] + Real(2.)*dx[0]*dy[1];
+                x_hat[1] = Real(2.)*dx[1]*dy[0] + Real(2.)*dx[1]*dy[1];
             }
         };
         
@@ -343,6 +343,9 @@ struct Unit {
         // Check that we cut back the step from the safeguard
         bool check_alpha_x_qn; 
 
+        // Do diagonstic checks instead
+        bool do_diagnostics;
+
         // Setup some simple parameters
         QN(X_Vector const & x_,Y_Vector const & y_) :
             eps(std::pow(
@@ -363,7 +366,8 @@ struct Unit {
             check_dx_n(false),
             check_dx_ncp(false),
             check_feas(false),
-            check_alpha_x_qn(false)
+            check_alpha_x_qn(false),
+            do_diagnostics(false)
         {
             X::copy(x_,x); 
             Y::copy(y_,y);
@@ -413,6 +417,16 @@ struct Unit {
         auto gps_g = X::init(state.x);
         fns.g->ps(state.x,state.g_x,gps_g);
         state.norm_gpsgxtyp = std::sqrt(X::innr(gps_g,gps_g));
+
+        // If we're doing diagnostics, run them and then quit.  Really, we
+        // should just be using this for debugging our problem setups.
+        if(setup.do_diagnostics) {
+            state.f_diag = Optizelle::FunctionDiagnostics::SecondOrder;
+            state.g_diag = Optizelle::FunctionDiagnostics::SecondOrder;
+            Optizelle::EqualityConstrained<Real,XX,YY>::Diagnostics
+                ::checkFunctions(msg,fns,state);
+            return;
+        }
 
         // Compute the quasinormal step
         Optizelle::EqualityConstrained<Real,XX,YY>::Algorithms::quasinormalStep(

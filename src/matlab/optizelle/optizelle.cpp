@@ -725,6 +725,9 @@ namespace Optizelle {
             case LocalMin:
                 return Matlab::enumToMxArray("QuasinormalStop",
                     "LocalMin");
+            case NewtonFailed:
+                return Matlab::enumToMxArray("QuasinormalStop",
+                    "NewtonFailed");
             default:
                 throw;
             }
@@ -775,6 +778,10 @@ namespace Optizelle {
                 "LocalMin")
             )
                 return LocalMin;
+            else if(m==Matlab::enumToNatural("QuasinormalStop",
+                "NewtonFailed")
+            )
+                return NewtonFailed;
             else
                 throw;
         }

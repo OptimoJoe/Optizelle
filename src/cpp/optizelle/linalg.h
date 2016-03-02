@@ -2449,7 +2449,7 @@ namespace Optizelle {
         // plus 1.
         std::vector <Real> Qt_e1(rst_freq+1);
 
-        // Allocoate memory for the Givens rotations
+        // Allocate memory for the Givens rotations
         std::list <std::pair<Real,Real> > Qts;
 
         // Allocate a temporary work element
@@ -2468,6 +2468,17 @@ namespace Optizelle {
         // Initialize the GMRES algorithm
         resetGMRES<Real,XX> (rtrue,B_left,rst_freq,v,vs,r,norm_r,
             Qt_e1,Qts);
+
+        // Find the norm of the first Krylov vector
+        auto norm_r0 = norm_r; 
+
+        // Set a stopping tolerance for breakdown
+        auto eps_break = std::pow(
+            Real(10.),
+            std::log10(std::numeric_limits <Real>::epsilon())*Real(0.75));
+
+        // Flag that denotes when breakdown occured, so we can exit
+        auto breakdown = false;
             
         // If for some bizarre reason, we're already optimal, don't do any work 
         gmanip.eval(0,x,b,eps);
@@ -2496,6 +2507,12 @@ namespace Optizelle {
 
             // Find the norm of the remaining, orthogonalized vector
             Real norm_w = std::sqrt(X::innr(w,w));
+
+            // If the norm of w is zero, there's a good chance that we've
+            // broken down, so we should exit gracefully on our next iteration
+            if(breakdown) break;
+            if(norm_w <= eps_break * norm_r0)
+                breakdown = true;
 
             // Normalize the orthogonalized Krylov vector and insert it into the
             // list of Krylov vectros
@@ -2560,6 +2577,9 @@ namespace Optizelle {
                 // Reset the GMRES algorithm
                 resetGMRES<Real,XX> (rtrue,B_left,rst_freq,v,vs,r,norm_r,
                     Qt_e1,Qts);
+       
+                // Grab the norm of the first Krylov vector 
+                norm_r0 = norm_r; 
 
                 // Make sure to correctly indicate that we're now working on
                 // iteration 0 of the next round of GMRES.  If we exit

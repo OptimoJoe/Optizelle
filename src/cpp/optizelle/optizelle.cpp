@@ -681,6 +681,8 @@ namespace Optizelle{
                 return "CauchySolved";
             case LocalMin: 
                 return "LocalMin";
+            case NewtonFailed: 
+                return "NewtonFailed";
             default:
                 throw;
             }
@@ -708,6 +710,8 @@ namespace Optizelle{
                 return CauchySolved;
             else if(qn_stop=="LocalMin")
                 return LocalMin;
+            else if(qn_stop=="NewtonFailed")
+                return NewtonFailed;
             else
                 throw;
         }
@@ -723,7 +727,8 @@ namespace Optizelle{
                 name=="NewtonSafeguard" ||
                 name=="Feasible" ||
                 name=="CauchySolved" ||
-                name=="LocalMin"
+                name=="LocalMin" ||
+                name=="NewtonFailed"
             )
                 return true;
             else
@@ -821,6 +826,8 @@ namespace Optizelle{
             return atos("CauchySlv");
         case QuasinormalStop::LocalMin:
             return atos("LocalMin");
+        case QuasinormalStop::NewtonFailed:
+            return atos("NewtonFail");
         default:
             throw;
         }

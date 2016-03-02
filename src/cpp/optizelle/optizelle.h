@@ -574,9 +574,12 @@ namespace Optizelle{
             NewtonSafeguard,          // Newton point truncated by the safeguard
             Feasible,                 // Skipped due to feasibility
             CauchySolved,             // Cauchy point solved g'(x)dx_cp+g(x)=0
-            LocalMin                  // Skipped due to a local min in the
+            LocalMin,                 // Skipped due to a local min in the
                                       // least-squares formulation, min 0.5 ||
                                       // g'(x)dx + g(x) ||^2, or g'(x)*g(x)=0
+            NewtonFailed              // Augmented system solve for the Newton
+                                      // point failed, so we regressed to the
+                                      // Cauchy point
             //---QuasinormalStop1---
         };
 
@@ -8189,8 +8192,17 @@ namespace Optizelle{
                         augsys_qn_failed += augsys_failed;
                         augsys_failed_total += augsys_failed; 
 
-                        // Pull the solution out
-                        X::copy(x0.first,ddx_n);
+                        // If our quasinormal solve failed to meet the stopping
+                        // tolerance, we don't trust it and go back to the
+                        // Cauchy point.
+                        if(augsys_failed) {
+                            qn_stop = QuasinormalStop::NewtonFailed;
+                            X::copy(dx_ncp,dx_n);
+                            return;
+                        
+                        // Otherwise, pull the solution out
+                        } else
+                            X::copy(x0.first,ddx_n);
                     }
 
                     // If our last iterate was safe, then keep our current
@@ -8261,7 +8273,7 @@ namespace Optizelle{
                     }
 
                     // At this point, we know that we haven't exceeded the
-                    // trust-reigon yet, so take a step in this direction
+                    // trust-region yet, so take a step in this direction
                     X::copy(trial,dx_n);
 
                     // Determine if this new iterate is feasible with respect

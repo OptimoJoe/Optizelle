@@ -719,6 +719,9 @@ namespace Optizelle {
             case LocalMin:
                 return Python::enumToPyObject("QuasinormalStop",
                     "LocalMin");
+            case NewtonFailed:
+                return Python::enumToPyObject("QuasinormalStop",
+                    "NewtonFailed");
             default:
                 throw;
             }
@@ -769,6 +772,10 @@ namespace Optizelle {
                 "LocalMin")
             )
                 return LocalMin;
+            else if(m==Python::enumToNatural("QuasinormalStop",
+                "NewtonFailed")
+            )
+                return NewtonFailed;
             else
                 throw;
         }

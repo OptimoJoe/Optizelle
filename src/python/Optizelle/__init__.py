@@ -187,8 +187,9 @@ class QuasinormalStop(EnumeratedType):
     NewtonSafeguard, \
     Feasible, \
     CauchySolved, \
-    LocalMin \
-    = range(10)
+    LocalMin, \
+    NewtonFailed \
+    = range(11)
 
 def checkFloat(name,value):
     """Checks that an input is a floating-point number"""
