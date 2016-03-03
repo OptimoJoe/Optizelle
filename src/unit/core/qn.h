@@ -402,6 +402,9 @@ struct Unit {
         // Hard coded zeta for reference
         Real const zeta;
 
+        // Hard coded gamma for reference
+        Real const gamma;
+
         // Check the stopping condition
         bool check_stop;
 
@@ -439,6 +442,7 @@ struct Unit {
             dx_n_star(),
             qn_stop_star(),
             zeta(0.8),
+            gamma(0.99),
             check_stop(false),
             check_tr(false),
             check_dx_n(false),
@@ -477,7 +481,6 @@ struct Unit {
 
         // Set some appropraite state information
         state.delta = setup.delta;
-        state.gamma = Real(1.);
 
         // Create a bundle of functions
         typename Optizelle::Constrained <Real,XX,YY,ZZ>::Functions::t fns;
@@ -571,8 +574,40 @@ struct Unit {
             CHECK(state.alpha_x_qn == Real(1.));
         }
 
+        // Check that we're right on the fraction to the boundary rule
+        {
+            // Find h(x+dx_n)
+            auto x_p_dx = X::init(state.x);
+            X::copy(state.x,x_p_dx);
+            X::axpy(Real(1.),state.dx_n,x_p_dx);
+            auto h_xpdx = Z::init(state.z);
+            fns.h->eval(x_p_dx,h_xpdx);
+
+            // Find -h_x
+            auto m_h_x = Z::init(state.h_x);
+            Z::copy(state.h_x,m_h_x);
+            Z::scal(Real(-1.),m_h_x);
+
+            // Search from h(x + dx_n) to -h(x).  The fraction to the
+            // boundary rule states that h(x+dx) >= (1-gamma*zeta) h(x).
+            auto alpha = Z::srch(m_h_x,h_xpdx);
+
+            // When we safeguard, we should hit the fraction to the boundary
+            // exactly
+            if(setup.check_safe) {
+                CHECK(std::abs(alpha-(Real(1.)-state.gamma*state.zeta))
+                    <= setup.eps);
+
+            // When we don't safeguard, we should not be on the fraction to the
+            // boundary
+            } else {
+                CHECK(std::abs(alpha-(Real(1.)-state.gamma*state.zeta)) > 0.1);
+            }
+        }
+
         // Move the function out the bundle of functions and back into setup in
         // case we need it later
         setup.g = std::move(fns.g);
+        setup.h = std::move(fns.h);
     }
 };

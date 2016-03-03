@@ -28,8 +28,9 @@ int main(int argc,char* argv[]){
     X::axpy(alpha,n,dog);
 
     // Create an inequality constraint to cut us off at the dogleg point
+    auto c = setup.zeta * setup.gamma;
     setup.h.reset(new Unit <Real>::Constraint::Box(
-        {-1.,-1.},{Real(2.),dog[1]/setup.zeta}));
+        {-1.,-1.},{Real(2.),dog[1]/c}));
 
     // Set the targets
     setup.qn_stop_star = Optizelle::QuasinormalStop::DoglegSafeguard;

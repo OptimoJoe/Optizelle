@@ -1,7 +1,7 @@
 // Test the quasinormal step where we cut off the Newton step and force a
 // dogleg step on the intersection of two circles constraint.  At the same time,
-// concoct things, so that truncating the Newton step with a safeguard works
-// better than the dogleg step
+// concoct things, so that the truncated Newton step works better than the
+// dogleg step after instituting an inequality constraint.
 
 #include "optizelle/optizelle.h"
 #include "optizelle/vspaces.h"
@@ -17,7 +17,9 @@ int main(int argc,char* argv[]){
     // Setup the test 
     auto setup = Unit <Real>::QN(x,y);
     setup.g.reset(new Unit <Real>::Constraint::CircleIntersection(1.,0.,1.,1.));
-    setup.h.reset(new Unit <Real>::Constraint::Box({-0.6,-10.},{10.,10.}));
+    setup.h.reset(new Unit <Real>::Constraint::Box(
+        {0.3/setup.zeta,-10.},{10.,10.}));
+    setup.delta = 0.8;
 
     // Set the targets
     setup.qn_stop_star = Optizelle::QuasinormalStop::NewtonSafeguard;

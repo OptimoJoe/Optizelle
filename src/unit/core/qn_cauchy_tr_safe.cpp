@@ -18,9 +18,9 @@ int main(int argc,char* argv[]){
     auto setup = Unit <Real>::QN(x,y);
     setup.g.reset(new Unit <Real>::Constraint::Linear);
     // || (0.25,0.25) || = sqrt(1/8)
-    setup.delta = std::sqrt(Real(1./8.))/setup.zeta; 
-    setup.h.reset(new Unit <Real>::Constraint::Box(
-        {-1.,-1.},{0.20/setup.zeta,0.20/setup.zeta}));
+    auto c = setup.zeta * setup.gamma;
+    setup.delta = std::sqrt(Real(1./8.))/c; 
+    setup.h.reset(new Unit <Real>::Constraint::Box({-1.,-1.},{0.20/c,0.20/c}));
 
     // Set the targets
     setup.qn_stop_star = Optizelle::QuasinormalStop::CauchySafeguard;

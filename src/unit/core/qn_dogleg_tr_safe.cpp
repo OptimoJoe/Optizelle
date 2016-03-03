@@ -29,11 +29,12 @@ int main(int argc,char* argv[]){
         X::copy(cp,dog);
         X::scal(Real(1.)-alpha,dog);
         X::axpy(alpha,n,dog);
+        auto c = setup.zeta * setup.gamma;
         if(i==0)
-            setup.delta = std::sqrt(X::innr(dog,dog)) / setup.zeta;
+            setup.delta = std::sqrt(X::innr(dog,dog)) / c;
         else
             setup.h.reset(new Unit <Real>::Constraint::Box(
-                {-1.,-1.},{Real(2.),dog[1]/setup.zeta}));
+                {-1.,-1.},{Real(2.),dog[1]/c}));
     }
     
     // Set the targets

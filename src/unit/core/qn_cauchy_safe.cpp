@@ -16,8 +16,8 @@ int main(int argc,char* argv[]){
     // Setup the test 
     auto setup = Unit <Real>::QN(x,y);
     setup.g.reset(new Unit <Real>::Constraint::Linear);
-    setup.h.reset(new Unit <Real>::Constraint::Box(
-        {-1.,-1.},{0.25/setup.zeta,0.25/setup.zeta}));
+    auto c = setup.zeta * setup.gamma;
+    setup.h.reset(new Unit <Real>::Constraint::Box({-1.,-1.},{0.25/c,0.25/c}));
 
     // Set the targets
     setup.qn_stop_star = Optizelle::QuasinormalStop::CauchySafeguard;
