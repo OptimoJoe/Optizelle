@@ -22,6 +22,13 @@ struct Unit {
     typedef YY <Real> Y;
     typedef typename Y::Vector Y_Vector;
 
+    template <typename Real_>
+    using ZZ = Optizelle::Rm <Real_>;
+    typedef ZZ <Real> Z;
+    typedef typename Z::Vector Z_Vector;
+
+    typedef Optizelle::Natural Natural;
+
     // Various objective functions
     struct Objective {
         // Zero objective function
@@ -69,7 +76,7 @@ struct Unit {
                 y[0] = dx[0] + dx[1];
             }
 
-            // z=g'(x)*dy
+            // x_hat=g'(x)*dy
             void ps(
                 X_Vector const & x,
                 Y_Vector const & dy,
@@ -79,7 +86,7 @@ struct Unit {
                 x_hat[1]=dy[0];
             }
 
-            // z=(g''(x)dx)*dy
+            // x_hat=(g''(x)dx)*dy
             void pps(
                 X_Vector const & x,
                 X_Vector const & dx,
@@ -121,7 +128,7 @@ struct Unit {
                 y[0] = Real(2.)*a*x[0]*dx[0] + Real(2.)*b*x[1]*dx[1];
             }
 
-            // z=g'(x)*dy
+            // x_hat=g'(x)*dy
             void ps(
                 X_Vector const & x,
                 Y_Vector const & dy,
@@ -131,7 +138,7 @@ struct Unit {
                 x_hat[1]=Real(2.)*b*x[1]*dy[0];
             }
 
-            // z=(g''(x)dx)*dy
+            // x_hat=(g''(x)dx)*dy
             void pps(
                 X_Vector const & x,
                 X_Vector const & dx,
@@ -186,7 +193,7 @@ struct Unit {
                 y[1] = Real(2.)*(x[0]-c)*dx[0] + Real(2.)*(x[1]-d)*dx[1];
             }
 
-            // z=g'(x)*dy
+            // x_hat=g'(x)*dy
             void ps(
                 X_Vector const & x,
                 Y_Vector const & dy,
@@ -196,7 +203,7 @@ struct Unit {
                 x_hat[1] = Real(2.)*(x[1]-b)*dy[0] + Real(2.)*(x[1]-d)*dy[1];
             }
 
-            // z=(g''(x)dx)*dy
+            // x_hat=(g''(x)dx)*dy
             void pps(
                 X_Vector const & x,
                 X_Vector const & dx,
@@ -230,7 +237,7 @@ struct Unit {
                 y[0] = -std::sin(x[0])*dx[0];
             }
 
-            // z=g'(x)*dy
+            // x_hat=g'(x)*dy
             void ps(
                 X_Vector const & x,
                 Y_Vector const & dy,
@@ -239,7 +246,7 @@ struct Unit {
                 x_hat[0] = -std::sin(x[0])*dy[0];
             }
 
-            // z=(g''(x)dx)*dy
+            // x_hat=(g''(x)dx)*dy
             void pps(
                 X_Vector const & x,
                 X_Vector const & dx,
@@ -274,7 +281,7 @@ struct Unit {
                            (sq(x[0])-Real(5.)*x[0]+Real(5.)))*dx[0]; 
             }
 
-            // z=g'(x)*dy
+            // x_hat=g'(x)*dy
             void ps(
                 X_Vector const & x,
                 Y_Vector const & dy,
@@ -284,7 +291,7 @@ struct Unit {
                                (sq(x[0])-Real(5.)*x[0]+Real(5.)))*dy[0]; 
             }
 
-            // z=(g''(x)dx)*dy
+            // x_hat=(g''(x)dx)*dy
             void pps(
                 X_Vector const & x,
                 X_Vector const & dx,
@@ -293,6 +300,75 @@ struct Unit {
             ) const {
                 x_hat[0] = Real(2.)*(Real(6.)*sq(x[0])-Real(30.)*x[0]+Real(35.))
                     *dy[0]*dx[0]; 
+            }
+        };
+        
+        // Define a box constraint, which we use for inequality constraints
+        //
+        // h(x) = [ x - lb ] 
+        //      = [ ub - x ]
+        //
+        struct Box: public Optizelle::VectorValuedFunction<Real,XX,YY> {
+            // Lower bound
+            X_Vector lb;
+            
+            // Upper bound
+            X_Vector ub;
+
+            // Number of variables
+            Natural const m;
+
+            // Grab the bounds
+            Box(X_Vector const & lb_,X_Vector const & ub_) :
+                lb(X::init(lb_)),
+                ub(X::init(ub_)),
+                m(lb_.size())
+            {
+                X::copy(lb_,lb);
+                X::copy(ub_,ub);
+            }
+
+            // z=h(x) 
+            void eval(
+                X_Vector const & x,
+                Z_Vector & z
+            ) const {
+                for(Natural i=0;i<m;i++) {
+                    z[i]=x[i]-lb[i];
+                    z[i+m]=ub[i]-x[i];
+                }
+            }
+
+            // z=h'(x)dx
+            void p(
+                X_Vector const & x,
+                X_Vector const & dx,
+                Z_Vector & z
+            ) const {
+                for(Natural i=0;i<m;i++) {
+                    z[i]=dx[i];
+                    z[i+m]=-dx[i];
+                }
+            }
+
+            // x_hat=h'(x)*dz
+            void ps(
+                X_Vector const & x,
+                Z_Vector const & dz,
+                X_Vector & x_hat
+            ) const {
+                for(Natural i=0;i<m;i++)
+                    x_hat[i]=dz[i]-dz[i+m];
+            }
+
+            // x_hat=(h''(x)dx)*dz
+            void pps(
+                X_Vector const & x,
+                X_Vector const & dx,
+                Z_Vector const & dz,
+                X_Vector & x_hat 
+            ) const {
+                X::zero(x_hat);
             }
         };
     };
@@ -305,6 +381,7 @@ struct Unit {
         // Points where we run the test 
         X_Vector x;
         Y_Vector y;
+        Z_Vector z;
 
         // Equality constraint 
         std::unique_ptr <Optizelle::VectorValuedFunction <Real,XX,YY>> g;
@@ -341,7 +418,7 @@ struct Unit {
         bool check_feas;
 
         // Check that we cut back the step from the safeguard
-        bool check_alpha_x_qn; 
+        bool check_safe;
 
         // Do diagonstic checks instead
         bool do_diagnostics;
@@ -354,6 +431,7 @@ struct Unit {
                     *Real(0.75))),
             x(X::init(x_)),
             y(Y::init(y_)),
+            z(),
             g(),
             h(),
             delta(1e16),
@@ -366,11 +444,12 @@ struct Unit {
             check_dx_n(false),
             check_dx_ncp(false),
             check_feas(false),
-            check_alpha_x_qn(false),
+            check_safe(false),
             do_diagnostics(false)
         {
             X::copy(x_,x); 
             Y::copy(y_,y);
+            z.resize(x.size()*2);
         }
     };
 
@@ -393,22 +472,34 @@ struct Unit {
     // Run and verify the problem setup
     static void run_and_verify(QN & setup) {
         // Create an optimization state
-        typename Optizelle::EqualityConstrained <Real,XX,YY>::State::t
-            state(setup.x,setup.y);
+        typename Optizelle::Constrained <Real,XX,YY,ZZ>::State::t
+            state(setup.x,setup.y,setup.z);
 
         // Set some appropraite state information
         state.delta = setup.delta;
+        state.gamma = Real(1.);
 
         // Create a bundle of functions
-        typename Optizelle::EqualityConstrained <Real,XX,YY>::Functions::t fns;
+        typename Optizelle::Constrained <Real,XX,YY,ZZ>::Functions::t fns;
         fns.f.reset(new typename Objective::Zero);
         fns.g = std::move(setup.g);
+        if(setup.h)
+            fns.h = std::move(setup.h);
+        else {
+            auto lb = X::init(setup.x);
+            auto ub = X::init(setup.x);
+            X::id(lb);
+            X::id(ub);
+            X::scal(Real(-1e6),lb);
+            X::scal(Real(1e6),ub);
+            fns.h.reset(new typename Constraint::Box(lb,ub));
+        }
 
         // Create the messaging object
         auto msg = Optizelle::Messaging();
 
         // Fill out the bundle of functions
-        Optizelle::EqualityConstrained <Real,XX,YY>::Functions::init(
+        Optizelle::Constrained <Real,XX,YY,ZZ>::Functions::init(
             msg,state,fns);
 
         // Evaluate the function and cache information about it
@@ -417,13 +508,16 @@ struct Unit {
         auto gps_g = X::init(state.x);
         fns.g->ps(state.x,state.g_x,gps_g);
         state.norm_gpsgxtyp = std::sqrt(X::innr(gps_g,gps_g));
+        fns.g->eval(state.x,state.g_x);
+        fns.h->eval(state.x,state.h_x);
 
         // If we're doing diagnostics, run them and then quit.  Really, we
         // should just be using this for debugging our problem setups.
         if(setup.do_diagnostics) {
             state.f_diag = Optizelle::FunctionDiagnostics::SecondOrder;
             state.g_diag = Optizelle::FunctionDiagnostics::SecondOrder;
-            Optizelle::EqualityConstrained<Real,XX,YY>::Diagnostics
+            state.h_diag = Optizelle::FunctionDiagnostics::SecondOrder;
+            Optizelle::Constrained<Real,XX,YY,ZZ>::Diagnostics
                 ::checkFunctions(msg,fns,state);
             return;
         }
@@ -471,7 +565,7 @@ struct Unit {
         }
 
         // Check that the safeguard truncated the step 
-        if(setup.check_alpha_x_qn) {
+        if(setup.check_safe) {
             CHECK(state.alpha_x_qn < Real(1.));
         }
 

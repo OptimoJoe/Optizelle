@@ -8242,28 +8242,40 @@ namespace Optizelle{
                         alpha_x_qn = std::min(safeguard(zero,trial),Real(1.0));
 
                         // If the trial step is safe, set the number of failed
-                        // safeguard steps to zero and move 
+                        // safeguard steps to zero and let the code take the
+                        // step down below
                         if(alpha_x_qn>=Real(1.)) {
                             safeguard_failed = 0;
-                            X::copy(trial,dx_n);
+
+                            // Set the stopping condition
+                            if(iter == 1)
+                                qn_stop = QuasinormalStop::CauchyTrustRegion;
+                            else
+                                qn_stop = QuasinormalStop::DoglegTrustRegion;
 
                         // If the current iterate is not safe, but the last one
                         // was, see how far we can go in this direction
                         } else if(safeguard_failed==0) {
-
                             // Safeguard the step
                             alpha_x_qn = std::min(
                                 safeguard(dx_n,ddx_n),Real(1.0));
 
-                            // Finally, take the step
-                            X::axpy(alpha_x_qn,ddx_n,dx_n);
-                        }
+                            // Set the stopping condition
+                            if(iter == 1)
+                                qn_stop = QuasinormalStop::CauchySafeguard;
+                            else
+                                qn_stop = QuasinormalStop::DoglegSafeguard;
 
-                        // Set the stopping condition
-                        if(iter == 1)
-                            qn_stop = QuasinormalStop::CauchyTrustRegion;
-                        else
-                            qn_stop = QuasinormalStop::DoglegTrustRegion;
+                        // If neither the current iterate or the last were
+                        // safe, then exit.  Our final exit code should fix
+                        // things.  If we've on the iteration, the last iterate
+                        // should be safe, so we'll capture the Cauchy point
+                        // below. 
+                        } else
+                            break;
+
+                        // Take the step
+                        X::axpy(alpha_x_qn,ddx_n,dx_n);
 
                         // If we're on the first iteration, save the Cauchy
                         // point
@@ -8290,8 +8302,7 @@ namespace Optizelle{
                     // Make sure to truncate it if it violates the safeguard.
                     if(iter==1) {
                         X::copy(dx_n,dx_ncp);
-                        if(safeguard_failed>0)
-                            X::scal(alpha_x_qn,dx_ncp);
+                        X::scal(alpha_x_qn,dx_ncp);
                     }
                 }
 
@@ -8307,7 +8318,7 @@ namespace Optizelle{
                     X::axpy(alpha_x_qn,ddx_n,dx_n);
 
                     // Set the stopping condition
-                    if(iter == 1)
+                    if(iter == 1 || qn_stop == QuasinormalStop::CauchySolved)
                         qn_stop = QuasinormalStop::CauchySafeguard;
                     else
                         qn_stop = QuasinormalStop::DoglegSafeguard;

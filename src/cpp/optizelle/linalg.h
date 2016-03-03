@@ -2469,17 +2469,6 @@ namespace Optizelle {
         resetGMRES<Real,XX> (rtrue,B_left,rst_freq,v,vs,r,norm_r,
             Qt_e1,Qts);
 
-        // Find the norm of the first Krylov vector
-        auto norm_r0 = norm_r; 
-
-        // Set a stopping tolerance for breakdown
-        auto eps_break = std::pow(
-            Real(10.),
-            std::log10(std::numeric_limits <Real>::epsilon())*Real(0.75));
-
-        // Flag that denotes when breakdown occured, so we can exit
-        auto breakdown = false;
-            
         // If for some bizarre reason, we're already optimal, don't do any work 
         gmanip.eval(0,x,b,eps);
         if(norm_rtrue <= eps) iter_max=0;	
@@ -2507,12 +2496,6 @@ namespace Optizelle {
 
             // Find the norm of the remaining, orthogonalized vector
             Real norm_w = std::sqrt(X::innr(w,w));
-
-            // If the norm of w is zero, there's a good chance that we've
-            // broken down, so we should exit gracefully on our next iteration
-            if(breakdown) break;
-            if(norm_w <= eps_break * norm_r0)
-                breakdown = true;
 
             // Normalize the orthogonalized Krylov vector and insert it into the
             // list of Krylov vectros
@@ -2549,16 +2532,38 @@ namespace Optizelle {
                 1,Qts.back().first,Qts.back().second);
             norm_r = fabs(Qt_e1[i]);
                 
-            // Solve for the new iterate update
-            solveInKrylov <Real,XX> (i,&(R[0]),&(Qt_e1[0]),vs,B_right,x,dx);
+            // Do the follow steps twice just in case we detect a NaN
+            bool nan_detected = false;
+            for(Natural ii = 0;ii <= 1;ii++) { 
+                // Solve for the new iterate update
+                solveInKrylov <Real,XX> (i,&(R[0]),&(Qt_e1[0]),vs,B_right,x,dx);
 
-            // Find the current iterate, its residual, the residual's norm
-            X::copy(x,x_p_dx);
-            X::axpy(Real(1.),dx,x_p_dx);
-            A.eval(x_p_dx,rtrue);
-            X::scal(Real(-1.),rtrue);
-            X::axpy(Real(1.),b,rtrue);
-            norm_rtrue = std::sqrt(X::innr(rtrue,rtrue));
+                // Find the current iterate, its residual, the residual's norm
+                X::copy(x,x_p_dx);
+                X::axpy(Real(1.),dx,x_p_dx);
+                A.eval(x_p_dx,rtrue);
+                X::scal(Real(-1.),rtrue);
+                X::axpy(Real(1.),b,rtrue);
+                norm_rtrue = std::sqrt(X::innr(rtrue,rtrue));
+
+                // If our residual is real, quit
+                if(norm_rtrue==norm_rtrue)
+                    break;
+
+                // If we detect a NaN, then something has gone terribly wrong
+                // during the last iteration, so eliminate the last vector and
+                // quit
+                else {
+                    vs.pop_back();
+                    iter--;
+                    i--;
+                    nan_detected=true;
+                    // Note, norm_r will not be correct on the next iteration
+                }
+            }
+
+            // If we find a NaN, quit
+            if(nan_detected) break;
 
             // Adjust the stopping tolerance
             gmanip.eval(i,x_p_dx,b,eps);
@@ -2578,9 +2583,6 @@ namespace Optizelle {
                 resetGMRES<Real,XX> (rtrue,B_left,rst_freq,v,vs,r,norm_r,
                     Qt_e1,Qts);
        
-                // Grab the norm of the first Krylov vector 
-                norm_r0 = norm_r; 
-
                 // Make sure to correctly indicate that we're now working on
                 // iteration 0 of the next round of GMRES.  If we exit
                 // immediately thereafter, we use this check to make sure we
