@@ -567,6 +567,8 @@ struct Unit {
         // Check that the safeguard truncated the step 
         if(setup.check_safe) {
             CHECK(state.alpha_x_qn < Real(1.));
+        } else {
+            CHECK(state.alpha_x_qn == Real(1.));
         }
 
         // Move the function out the bundle of functions and back into setup in

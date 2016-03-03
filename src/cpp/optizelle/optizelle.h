@@ -8089,6 +8089,11 @@ namespace Optizelle{
                 auto dx_newton = X::init(x);
                 X::zero(dx_newton);
 
+                // Make sure our initial safeguard length doesn't restrict
+                // anything.  Mostly, we need this in case we exit early for
+                // stopping conditions like Feasible and LocalMin.
+                alpha_x_qn = Real(1.);
+
                 // We only have two points to search in a dogleg method
                 auto iter = Natural(1);
                 for(; iter<=2; iter++) {
