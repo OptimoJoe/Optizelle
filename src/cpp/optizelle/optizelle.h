@@ -8343,12 +8343,12 @@ namespace Optizelle{
                 if(iter==3 && safeguard_failed==0)
                     qn_stop = QuasinormalStop::Newton;
 
-                // If we computed a Newton point, try truncating straight
-                // toward 0 and check if that gives us a better answer
-                if(qn_stop == QuasinormalStop::DoglegSafeguard ||
-                   qn_stop == QuasinormalStop::DoglegTrustRegion
-                ) {
-                    // Shorten the step to the trust region
+                // If we computed a Newton point, but didn't take a full Newton
+                // step, try truncating straight toward 0 and check if that
+                // gives us a better answer
+                if(augsys_qn_iter > 0 && qn_stop !=QuasinormalStop::Newton) {
+
+                    // Set the Newton step on the trust region
                     auto norm_dxnewton= std::sqrt(X::innr(dx_newton,dx_newton));
                     X::scal(delta*zeta/norm_dxnewton,dx_newton);
 
@@ -8365,6 +8365,7 @@ namespace Optizelle{
                     // If the linearized feasibility of the Newton step is
                     // smaller, take that step instead
                     if(lf_dxnewton < lf_dxn) {
+                        alpha_x_qn = alpha;
                         X::copy(dx_newton,dx_n);
                         if(alpha < Real(1.))
                             qn_stop = QuasinormalStop::NewtonSafeguard;

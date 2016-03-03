@@ -428,6 +428,9 @@ struct Unit {
 
         // Do diagonstic checks instead
         bool do_diagnostics;
+        
+        // Copy of the Cauchy point for some more complicated tests 
+        X_Vector cp;
 
         // Setup some simple parameters
         QN(X_Vector const & x_,Y_Vector const & y_) :
@@ -453,7 +456,8 @@ struct Unit {
             check_feas(false),
             check_safe(false),
             check_augsys(false),
-            do_diagnostics(false)
+            do_diagnostics(false),
+            cp(X::init(x_))
         {
             X::copy(x_,x); 
             Y::copy(y_,y);
@@ -622,5 +626,8 @@ struct Unit {
         // case we need it later
         setup.g = std::move(fns.g);
         setup.h = std::move(fns.h);
+
+        // Copy the Cauchy point
+        X::copy(state.dx_ncp,setup.cp); 
     }
 };
