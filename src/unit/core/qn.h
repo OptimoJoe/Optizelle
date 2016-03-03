@@ -438,11 +438,8 @@ struct Unit {
         
         // Check that we hit the trust-region modified by zeta 
         if(setup.check_tr) {
-            auto x_p_dxn = X::init(state.x);
-            X::copy(state.x,x_p_dxn);
-            X::axpy(Real(1.),state.dx_n,x_p_dxn);
-            auto norm_xpdxn = std::sqrt(X::innr(x_p_dxn,x_p_dxn));
-            CHECK(std::abs(norm_xpdxn-state.delta*state.zeta) <= setup.eps);
+            auto norm_dxn = std::sqrt(X::innr(state.dx_n,state.dx_n));
+            CHECK(std::abs(norm_dxn-state.delta*state.zeta) <= setup.eps);
         }
 
         // Check that the quasinormal point is correct
