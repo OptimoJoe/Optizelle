@@ -1,5 +1,6 @@
-// Test the quasinormal step where we cut off the Newton step and force a
-// dogleg step on the intersection of two circles constraint
+// Test the quasinormal step where we cut off the Newton step using an
+// inequality constraint and force a dogleg step on the intersection of two
+// circles constraint
 
 #include "optizelle/optizelle.h"
 #include "optizelle/vspaces.h"
