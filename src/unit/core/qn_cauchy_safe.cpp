@@ -1,6 +1,8 @@
 // Verifies that we can cut off the Cauchy point with the safeguard.  In this
 // setup, we know the actual Cauchy-point would be (0.5,0.5), so we just
-// cut it halfway to be (0.25,0.25).
+// cut it halfway to be (0.25,0.25).  Note, we don't do any augmented system
+// solves because we obtain optimality with the Cauchy step prior to
+// safeguarding.
 
 #include "optizelle/optizelle.h"
 #include "optizelle/vspaces.h"

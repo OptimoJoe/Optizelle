@@ -423,6 +423,9 @@ struct Unit {
         // Check that we cut back the step from the safeguard
         bool check_safe;
 
+        // Check that we computed augmented system solve iterations 
+        bool check_augsys; 
+
         // Do diagonstic checks instead
         bool do_diagnostics;
 
@@ -449,6 +452,7 @@ struct Unit {
             check_dx_ncp(false),
             check_feas(false),
             check_safe(false),
+            check_augsys(false),
             do_diagnostics(false)
         {
             X::copy(x_,x); 
@@ -603,6 +607,15 @@ struct Unit {
             } else {
                 CHECK(std::abs(alpha-(Real(1.)-state.gamma*state.zeta)) > 0.1);
             }
+        }
+
+        // Check that we computed augmented system solves 
+        if(setup.check_augsys) {
+            CHECK(state.augsys_qn_iter > 0);
+
+        // Otherwise, make sure that we didn't
+        } else {
+            CHECK(state.augsys_qn_iter == 0);
         }
 
         // Move the function out the bundle of functions and back into setup in

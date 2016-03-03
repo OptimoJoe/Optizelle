@@ -26,6 +26,7 @@ int main(int argc,char* argv[]){
     setup.check_stop = true;
     setup.check_dx_n = true;
     setup.check_dx_ncp = true;
+    setup.check_augsys = true;
 
     // Run the test
     Unit <Real>::run_and_verify(setup);

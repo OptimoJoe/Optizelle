@@ -25,6 +25,7 @@ int main(int argc,char* argv[]){
     // Set what tests we want
     setup.check_stop = true;
     setup.check_safe = true;
+    setup.check_augsys = true;
 
     // Run the test
     Unit <Real>::run_and_verify(setup);

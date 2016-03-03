@@ -8273,11 +8273,17 @@ namespace Optizelle{
 
                         // If neither the current iterate or the last were
                         // safe, then exit.  Our final exit code should fix
-                        // things.  If we've on the iteration, the last iterate
-                        // should be safe, so we'll capture the Cauchy point
-                        // below. 
-                        } else
+                        // things.  Really, since the base for the first
+                        // iteration is always safe, we known we're on the
+                        // dogleg step, so we're going to retreat the to Cauchy
+                        // point below.  Therefore, don't worry about saving
+                        // the Cauchy point and set an error code that we
+                        // figure out that we were here (failed_safeguard>1 and
+                        // qn_stop = CauchySafeguard.)
+                        } else {
+                            qn_stop = QuasinormalStop::CauchySafeguard;
                             break;
+                        }
 
                         // Take the step
                         X::axpy(alpha_x_qn,ddx_n,dx_n);
@@ -8323,7 +8329,10 @@ namespace Optizelle{
                     X::axpy(alpha_x_qn,ddx_n,dx_n);
 
                     // Set the stopping condition
-                    if(iter == 1 || qn_stop == QuasinormalStop::CauchySolved)
+                    if( iter == 1 ||
+                        qn_stop == QuasinormalStop::CauchySolved ||
+                        qn_stop == QuasinormalStop::CauchySafeguard
+                    )
                         qn_stop = QuasinormalStop::CauchySafeguard;
                     else
                         qn_stop = QuasinormalStop::DoglegSafeguard;
