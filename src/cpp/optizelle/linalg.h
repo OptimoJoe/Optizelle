@@ -2449,7 +2449,7 @@ namespace Optizelle {
         // plus 1.
         std::vector <Real> Qt_e1(rst_freq+1);
 
-        // Allocoate memory for the Givens rotations
+        // Allocate memory for the Givens rotations
         std::list <std::pair<Real,Real> > Qts;
 
         // Allocate a temporary work element
@@ -2468,7 +2468,7 @@ namespace Optizelle {
         // Initialize the GMRES algorithm
         resetGMRES<Real,XX> (rtrue,B_left,rst_freq,v,vs,r,norm_r,
             Qt_e1,Qts);
-            
+
         // If for some bizarre reason, we're already optimal, don't do any work 
         gmanip.eval(0,x,b,eps);
         if(norm_rtrue <= eps) iter_max=0;	
@@ -2532,16 +2532,38 @@ namespace Optizelle {
                 1,Qts.back().first,Qts.back().second);
             norm_r = fabs(Qt_e1[i]);
                 
-            // Solve for the new iterate update
-            solveInKrylov <Real,XX> (i,&(R[0]),&(Qt_e1[0]),vs,B_right,x,dx);
+            // Do the follow steps twice just in case we detect a NaN
+            bool nan_detected = false;
+            for(Natural ii = 0;ii <= 1;ii++) { 
+                // Solve for the new iterate update
+                solveInKrylov <Real,XX> (i,&(R[0]),&(Qt_e1[0]),vs,B_right,x,dx);
 
-            // Find the current iterate, its residual, the residual's norm
-            X::copy(x,x_p_dx);
-            X::axpy(Real(1.),dx,x_p_dx);
-            A.eval(x_p_dx,rtrue);
-            X::scal(Real(-1.),rtrue);
-            X::axpy(Real(1.),b,rtrue);
-            norm_rtrue = std::sqrt(X::innr(rtrue,rtrue));
+                // Find the current iterate, its residual, the residual's norm
+                X::copy(x,x_p_dx);
+                X::axpy(Real(1.),dx,x_p_dx);
+                A.eval(x_p_dx,rtrue);
+                X::scal(Real(-1.),rtrue);
+                X::axpy(Real(1.),b,rtrue);
+                norm_rtrue = std::sqrt(X::innr(rtrue,rtrue));
+
+                // If our residual is real, quit
+                if(norm_rtrue==norm_rtrue)
+                    break;
+
+                // If we detect a NaN, then something has gone terribly wrong
+                // during the last iteration, so eliminate the last vector and
+                // quit
+                else {
+                    vs.pop_back();
+                    iter--;
+                    i--;
+                    nan_detected=true;
+                    // Note, norm_r will not be correct on the next iteration
+                }
+            }
+
+            // If we find a NaN, quit
+            if(nan_detected) break;
 
             // Adjust the stopping tolerance
             gmanip.eval(i,x_p_dx,b,eps);
@@ -2560,7 +2582,7 @@ namespace Optizelle {
                 // Reset the GMRES algorithm
                 resetGMRES<Real,XX> (rtrue,B_left,rst_freq,v,vs,r,norm_r,
                     Qt_e1,Qts);
-
+       
                 // Make sure to correctly indicate that we're now working on
                 // iteration 0 of the next round of GMRES.  If we exit
                 // immediately thereafter, we use this check to make sure we

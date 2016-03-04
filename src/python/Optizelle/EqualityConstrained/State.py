@@ -220,8 +220,12 @@ class t(Optizelle.Unconstrained.State.t):
         "in the direciton dx_n."))
     norm_gxtyp = Optizelle.createFloatProperty(
         "norm_gxtyp",
-        ("A typical norm for norm_gx.  Generally, we just take the value at "
+        ("A typical norm for g(x).  Generally, we just take the value at "
         "the first iteration."))
+    norm_gpsgxtyp = Optizelle.createFloatProperty(
+        "norm_gpsgxtyp",
+        ("A typical norm for g'(x)*g(x).  Generally, we just take "
+        "the value at the first iteration."))
     gpxdxn_p_gx = Optizelle.createVectorProperty(
         "gpxdxn_p_gx", 
         ("Linear Taylor series at x in the direction dx_n.  This is used both "

@@ -675,10 +675,14 @@ namespace Optizelle{
                 return "NewtonTrustRegion";
             case NewtonSafeguard: 
                 return "NewtonSafeguard";
-            case Skipped: 
-                return "Skipped";
+            case Feasible: 
+                return "Feasible";
             case CauchySolved: 
                 return "CauchySolved";
+            case LocalMin: 
+                return "LocalMin";
+            case NewtonFailed: 
+                return "NewtonFailed";
             default:
                 throw;
             }
@@ -700,10 +704,14 @@ namespace Optizelle{
                 return NewtonTrustRegion;
             else if(qn_stop=="NewtonSafeguard")
                 return NewtonSafeguard;
-            else if(qn_stop=="Skipped")
-                return Skipped;
+            else if(qn_stop=="Feasible")
+                return Feasible;
             else if(qn_stop=="CauchySolved")
                 return CauchySolved;
+            else if(qn_stop=="LocalMin")
+                return LocalMin;
+            else if(qn_stop=="NewtonFailed")
+                return NewtonFailed;
             else
                 throw;
         }
@@ -717,8 +725,10 @@ namespace Optizelle{
                 name=="DoglegSafeguard" ||
                 name=="NewtonTrustRegion" ||
                 name=="NewtonSafeguard" ||
-                name=="Skipped" ||
-                name=="CauchySolved"
+                name=="Feasible" ||
+                name=="CauchySolved" ||
+                name=="LocalMin" ||
+                name=="NewtonFailed"
             )
                 return true;
             else
@@ -810,10 +820,14 @@ namespace Optizelle{
             return atos("NewtonTR");
         case QuasinormalStop::NewtonSafeguard:
             return atos("NewtonSafe");
-        case QuasinormalStop::Skipped:
-            return atos("Skipped");
+        case QuasinormalStop::Feasible:
+            return atos("Feasible");
         case QuasinormalStop::CauchySolved:
             return atos("CauchySlv");
+        case QuasinormalStop::LocalMin:
+            return atos("LocalMin");
+        case QuasinormalStop::NewtonFailed:
+            return atos("NewtonFail");
         default:
             throw;
         }

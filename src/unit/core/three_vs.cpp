@@ -86,7 +86,7 @@
 #define SCALAR_FN(V,v) \
     typedef VS_##V <Real> V; \
     typedef typename V::Vector V##_Vector; \
-    double eval(const V##_Vector & x) const { \
+    Real eval(V##_Vector const & x) const { \
         v.check_##v(); \
         throw; \
     } \

@@ -572,8 +572,14 @@ namespace Optizelle{
             DoglegSafeguard,          // Dogleg point truncated by the safeguard
             NewtonTrustRegion,        // Newton point truncated by the TR
             NewtonSafeguard,          // Newton point truncated by the safeguard
-            Skipped,                  // Skipped due to feasibility
-            CauchySolved              // Cauchy point solved g'(x)dx_cp+g(x)=0
+            Feasible,                 // Skipped due to feasibility
+            CauchySolved,             // Cauchy point solved g'(x)dx_cp+g(x)=0
+            LocalMin,                 // Skipped due to a local min in the
+                                      // least-squares formulation, min 0.5 ||
+                                      // g'(x)dx + g(x) ||^2, or g'(x)*g(x)=0
+            NewtonFailed              // Augmented system solve for the Newton
+                                      // point failed, so we regressed to the
+                                      // Cauchy point
             //---QuasinormalStop1---
         };
 
@@ -5823,9 +5829,13 @@ namespace Optizelle{
                 // linear Taylor series at x in the direciton dx_n.
                 Y_Vector g_x;
 
-                // A typical norm for norm_gx.  Generally, we just take
+                // A typical norm for g(x).  Generally, we just take
                 // the value at the first iteration.
                 Real norm_gxtyp;
+
+                // A typical norm for g'(x)*g(x).  Generally, we just take
+                // the value at the first iteration.
+                Real norm_gpsgxtyp;
                 
                 // Linear Taylor series at x in the direction dx_n.  We use  
                 // this both in the predicted reduction as well as the
@@ -6133,6 +6143,11 @@ namespace Optizelle{
                         std::numeric_limits<Real>::quiet_NaN()
                         //---norm_gxtyp1---
                     ),
+                    norm_gpsgxtyp(
+                        //---norm_gpsgxtyp0---
+                        std::numeric_limits<Real>::quiet_NaN()
+                        //---norm_gpsgxtyp1---
+                    ),
                     gpxdxn_p_gx(
                         //---gpxdxn_p_gx0---
                         Y::init(y_user)
@@ -6200,7 +6215,7 @@ namespace Optizelle{
                     ),
                     qn_stop(
                         //---qn_stop0---
-                        QuasinormalStop::Skipped
+                        QuasinormalStop::Feasible
                         //---qn_stop1---
                     )
                 {
@@ -6531,6 +6546,19 @@ namespace Optizelle{
                     ss << "The norm of a typical constraint must be "
                         "nonnegative: norm_gxtyp = " << state.norm_gxtyp; 
                     
+
+                // Check that the norm of a typical g'(x)*g(x) is nonnegative
+                // or if we're on the first iteration, we allow a NaN
+                else if(!(
+                    //---norm_gpsgxtyp_valid0---
+                    state.norm_gpsgxtyp >= Real(0.)
+                    || (state.iter==1 &&
+                        state.norm_gpsgxtyp!=state.norm_gpsgxtyp)
+                    //---norm_gpsgxtyp_valid1---
+                )) 
+                    ss << "The norm of a typical g'(x)*g(x) must be "
+                        "nonnegative: norm_gpsgxtyp = " << state.norm_gpsgxtyp; 
+
                     //---gpxdxn_p_gx_valid0---
                     // Any
                     //---gpxdxn_p_gx_valid1---
@@ -6628,6 +6656,7 @@ namespace Optizelle{
                     item.first == "xi_4" ||
                     item.first == "rpred" ||
                     item.first == "norm_gxtyp" ||
+                    item.first == "norm_gpsgxtyp" ||
                     item.first == "norm_gpxdxnpgx" ||
                     item.first == "augsys_qn_err" ||
                     item.first == "augsys_pg_err" ||
@@ -6799,6 +6828,8 @@ namespace Optizelle{
                 reals.emplace_back("xi_4",std::move(state.xi_4));
                 reals.emplace_back("rpred",std::move(state.rpred));
                 reals.emplace_back("norm_gxtyp",std::move(state.norm_gxtyp));
+                reals.emplace_back("norm_gpsgxtyp",
+                    std::move(state.norm_gpsgxtyp));
                 reals.emplace_back("norm_gpxdxnpgx",
                     std::move(state.norm_gpxdxnpgx));
                 reals.emplace_back("augsys_qn_err",
@@ -6962,6 +6993,8 @@ namespace Optizelle{
                         state.rpred=std::move(item->second);
                     else if(item->first=="norm_gxtyp")
                         state.norm_gxtyp=std::move(item->second);
+                    else if(item->first=="norm_gpsgxtyp")
+                        state.norm_gpsgxtyp=std::move(item->second);
                     else if(item->first=="norm_gpxdxnpgx")
                         state.norm_gpxdxnpgx=std::move(item->second);
                     else if(item->first=="augsys_qn_err")
@@ -7998,6 +8031,7 @@ namespace Optizelle{
                 auto const & delta = state.delta;
                 auto const & zeta = state.zeta;
                 auto const & norm_gxtyp = state.norm_gxtyp;
+                auto const & norm_gpsgxtyp = state.norm_gpsgxtyp;
                 auto const & eps_constr = state.eps_constr;
                 auto const & augsys_qn_err_target = state.augsys_qn_err_target;
                 auto & dx_ncp=state.dx_ncp;
@@ -8040,7 +8074,7 @@ namespace Optizelle{
                 X::zero(zero);
 
                 // Initialize our stopping condition to skipped
-                qn_stop = QuasinormalStop::Skipped;
+                qn_stop = QuasinormalStop::Feasible;
 
                 // Calculates the linearized feasibility || g'(x)dx + g(x) ||
                 auto gpxdxpgx = Y::init(g_x);
@@ -8055,24 +8089,55 @@ namespace Optizelle{
                 auto dx_newton = X::init(x);
                 X::zero(dx_newton);
 
+                // Make sure our initial safeguard length doesn't restrict
+                // anything.  Mostly, we need this in case we exit early for
+                // stopping conditions like Feasible and LocalMin.
+                alpha_x_qn = Real(1.);
+
                 // We only have two points to search in a dogleg method
                 auto iter = Natural(1);
                 for(; iter<=2; iter++) {
                     // If we ever solve g'(x)dx_n + g(x) = 0, we quit 
                     auto norm_gpxdxnpgx=lin_feas(dx_n);
-                    if(norm_gpxdxnpgx < eps_constr * absrel(norm_gxtyp)) {
+                    if(norm_gpxdxnpgx <= eps_constr * absrel(norm_gxtyp)) {
                         if(iter==1)
-                            qn_stop = QuasinormalStop::Skipped;
+                            qn_stop = QuasinormalStop::Feasible;
                         else
                             qn_stop = QuasinormalStop::CauchySolved;
                         break;
                     }
 
-                    // Find the Cauchy point
+                    // Find the Cauchy point.  This is based on solving the
+                    // problem
+                    //
+                    // min 0.5 || g'(x)dx + g(x) || ^2
+                    //
+                    // which has a gradient of
+                    //
+                    // g'(x)*g'(x) dx + g'(x)*g(x)
+                    //
+                    // Now, since we start with dx=0, we move in the direction
+                    // dx = -g'(x)*g(x), which is the steepest descent
+                    // direction.  Then, we do the optimal line-search plugging
+                    // this dx = -alpha g'(x)*g(x), into the objective above.
+                    // which gives
+                    //
+                    // alpha = ||g'(x)*g(x)||^2 / ||g'(x)g'(x)*g(x)||^2.
                     if(iter==1) {
                         // Find g'(x)*g(x)
                         auto gps_g = X::init(x);
                         g.ps(x,g_x,gps_g);
+
+                        // Check || g'(x)*g(x) ||.  If this is small, then
+                        // the least-square problem we're about to solve is at
+                        // a local-min.  That's, well, bad, but there's a good
+                        // chance that the tangential step will pull us off
+                        // of this point.
+                        auto norm_gpsgx = std::sqrt(X::innr(gps_g,gps_g));
+                        if(norm_gpsgx <= eps_constr * absrel(norm_gpsgxtyp)) {
+                            qn_stop = QuasinormalStop::LocalMin; 
+                            break;
+                        }
 
                         // Find g'(x)g'(x)*g(x)
                         auto gp_gps_g = Y::init(g_x);
@@ -8132,8 +8197,17 @@ namespace Optizelle{
                         augsys_qn_failed += augsys_failed;
                         augsys_failed_total += augsys_failed; 
 
-                        // Pull the solution out
-                        X::copy(x0.first,ddx_n);
+                        // If our quasinormal solve failed to meet the stopping
+                        // tolerance, we don't trust it and go back to the
+                        // Cauchy point.
+                        if(augsys_failed) {
+                            qn_stop = QuasinormalStop::NewtonFailed;
+                            X::copy(dx_ncp,dx_n);
+                            return;
+                        
+                        // Otherwise, pull the solution out
+                        } else
+                            X::copy(x0.first,ddx_n);
                     }
 
                     // If our last iterate was safe, then keep our current
@@ -8173,28 +8247,46 @@ namespace Optizelle{
                         alpha_x_qn = std::min(safeguard(zero,trial),Real(1.0));
 
                         // If the trial step is safe, set the number of failed
-                        // safeguard steps to zero and move 
+                        // safeguard steps to zero and let the code take the
+                        // step down below
                         if(alpha_x_qn>=Real(1.)) {
                             safeguard_failed = 0;
-                            X::copy(trial,dx_n);
+
+                            // Set the stopping condition
+                            if(iter == 1)
+                                qn_stop = QuasinormalStop::CauchyTrustRegion;
+                            else
+                                qn_stop = QuasinormalStop::DoglegTrustRegion;
 
                         // If the current iterate is not safe, but the last one
                         // was, see how far we can go in this direction
                         } else if(safeguard_failed==0) {
-
                             // Safeguard the step
                             alpha_x_qn = std::min(
                                 safeguard(dx_n,ddx_n),Real(1.0));
 
-                            // Finally, take the step
-                            X::axpy(alpha_x_qn,ddx_n,dx_n);
+                            // Set the stopping condition
+                            if(iter == 1)
+                                qn_stop = QuasinormalStop::CauchySafeguard;
+                            else
+                                qn_stop = QuasinormalStop::DoglegSafeguard;
+
+                        // If neither the current iterate or the last were
+                        // safe, then exit.  Our final exit code should fix
+                        // things.  Really, since the base for the first
+                        // iteration is always safe, we known we're on the
+                        // dogleg step, so we're going to retreat the to Cauchy
+                        // point below.  Therefore, don't worry about saving
+                        // the Cauchy point and set an error code that we
+                        // figure out that we were here (failed_safeguard>1 and
+                        // qn_stop = CauchySafeguard.)
+                        } else {
+                            qn_stop = QuasinormalStop::CauchySafeguard;
+                            break;
                         }
 
-                        // Set the stopping condition
-                        if(iter == 1)
-                            qn_stop = QuasinormalStop::CauchyTrustRegion;
-                        else
-                            qn_stop = QuasinormalStop::DoglegTrustRegion;
+                        // Take the step
+                        X::axpy(alpha_x_qn,ddx_n,dx_n);
 
                         // If we're on the first iteration, save the Cauchy
                         // point
@@ -8204,7 +8296,7 @@ namespace Optizelle{
                     }
 
                     // At this point, we know that we haven't exceeded the
-                    // trust-reigon yet, so take a step in this direction
+                    // trust-region yet, so take a step in this direction
                     X::copy(trial,dx_n);
 
                     // Determine if this new iterate is feasible with respect
@@ -8221,8 +8313,7 @@ namespace Optizelle{
                     // Make sure to truncate it if it violates the safeguard.
                     if(iter==1) {
                         X::copy(dx_n,dx_ncp);
-                        if(safeguard_failed>0)
-                            X::scal(alpha_x_qn,dx_ncp);
+                        X::scal(alpha_x_qn,dx_ncp);
                     }
                 }
 
@@ -8238,7 +8329,10 @@ namespace Optizelle{
                     X::axpy(alpha_x_qn,ddx_n,dx_n);
 
                     // Set the stopping condition
-                    if(iter == 1)
+                    if( iter == 1 ||
+                        qn_stop == QuasinormalStop::CauchySolved ||
+                        qn_stop == QuasinormalStop::CauchySafeguard
+                    )
                         qn_stop = QuasinormalStop::CauchySafeguard;
                     else
                         qn_stop = QuasinormalStop::DoglegSafeguard;
@@ -8249,12 +8343,12 @@ namespace Optizelle{
                 if(iter==3 && safeguard_failed==0)
                     qn_stop = QuasinormalStop::Newton;
 
-                // If we computed a Newton point, try truncating straight
-                // toward 0 and check if that gives us a better answer
-                if(qn_stop == QuasinormalStop::DoglegSafeguard ||
-                   qn_stop == QuasinormalStop::DoglegTrustRegion
-                ) {
-                    // Shorten the step to the trust region
+                // If we computed a Newton point, but didn't take a full Newton
+                // step, try truncating straight toward 0 and check if that
+                // gives us a better answer
+                if(augsys_qn_iter > 0 && qn_stop !=QuasinormalStop::Newton) {
+
+                    // Set the Newton step on the trust region
                     auto norm_dxnewton= std::sqrt(X::innr(dx_newton,dx_newton));
                     X::scal(delta*zeta/norm_dxnewton,dx_newton);
 
@@ -8271,6 +8365,7 @@ namespace Optizelle{
                     // If the linearized feasibility of the Newton step is
                     // smaller, take that step instead
                     if(lf_dxnewton < lf_dxn) {
+                        alpha_x_qn = alpha;
                         X::copy(dx_newton,dx_n);
                         if(alpha < Real(1.))
                             qn_stop = QuasinormalStop::NewtonSafeguard;
@@ -8278,21 +8373,6 @@ namespace Optizelle{
                             qn_stop = QuasinormalStop::NewtonTrustRegion;
                     }
                 }
-
-                // Figure out why we stopped
-                if(iter==0)
-                    qn_stop = QuasinormalStop::Skipped;
-                else if(safeguard_failed==2)
-                    qn_stop = QuasinormalStop::CauchySafeguard;
-                else if(safeguard_failed==1)
-                    qn_stop = QuasinormalStop::DoglegSafeguard;
-                else if(safeguard_failed==0 && iter==1)
-                    qn_stop = QuasinormalStop::CauchyTrustRegion;
-                else if(safeguard_failed==0 && iter==2)
-                    qn_stop = QuasinormalStop::DoglegTrustRegion;
-                else if(safeguard_failed==0 && iter==3)
-                    qn_stop = QuasinormalStop::Newton;
-
             }
             
             // Sets the tolerances for projecting 
@@ -9521,6 +9601,7 @@ namespace Optizelle{
                     Y_Vector & y=state.y;
                     Y_Vector & g_x=state.g_x;
                     Real & norm_gxtyp = state.norm_gxtyp;
+                    auto & norm_gpsgxtyp = state.norm_gpsgxtyp;
                     Real & rho_old = state.rho_old;
                     Real & norm_gradtyp = state.norm_gradtyp;
                     Natural & trunc_orthog_storage_max
@@ -9542,6 +9623,11 @@ namespace Optizelle{
                         // on initialization.  
                         g.eval(x,g_x);
                         norm_gxtyp = sqrt(Y::innr(g_x,g_x));
+
+                        // Also cache the value for || g'(x)*g(x) ||
+                        auto gps_g = X::init(x);
+                        g.ps(x,g_x,gps_g);
+                        norm_gpsgxtyp = std::sqrt(X::innr(gps_g,gps_g));
 
                         // Find the initial equality multiplier and then update
                         // the gradient and merit function.
