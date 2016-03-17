@@ -36,3 +36,15 @@ install(TARGETS
     optizelle_static
     optizelle_shared
     DESTINATION lib)    
+
+# Grab required runtime
+if(MINGW)
+    get_filename_component( Mingw_Path ${CMAKE_CXX_COMPILER} PATH )
+    set( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS
+	${Mingw_Path}/libwinpthread-1.dll
+	${Mingw_Path}/libgcc_s_seh-1.dll
+	${Mingw_Path}/libstdc++-6.dll
+	${Mingw_Path}/libgfortran-3.dll
+	${Mingw_Path}/libquadmath-0.dll)
+    install(PROGRAMS ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION lib)
+endif(MINGW)

@@ -15,6 +15,8 @@ set_target_properties(optizelle_python PROPERTIES OUTPUT_NAME Utility)
 set_target_properties(optizelle_python PROPERTIES PREFIX "")
 if(APPLE)
     set_target_properties(optizelle_python PROPERTIES SUFFIX ".so") 
+elseif(WIN32)
+    set_target_properties(optizelle_python PROPERTIES SUFFIX ".pyd")
 endif()
 
 # Copy in the rest of the Python files for the unit tests.  Otherwise, we
