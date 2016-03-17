@@ -1,1 +1,11 @@
-Joseph Young (joe@optimojoe.com)
+Original Author/Current Maintainer
+
+* Joseph Young (joe@optimojoe.com)
+
+Contributers
+
+* Scott Collis
+* Curtis Ober
+* Miguel Aguiló
+* David Menéndez Hurtado
+* Jonas Waage
