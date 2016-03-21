@@ -394,6 +394,9 @@ struct Unit {
 
         // Check that we computed augmented system solve iterations 
         bool check_augsys; 
+
+        // Check that we exited the augmented system solve early
+        bool check_augsys_exit;
         
         // Setup some simple parameters
         Augsys(X_Vector const & x_,Y_Vector const & y_) :
@@ -406,7 +409,8 @@ struct Unit {
             g(),
             delta(1e16),
             do_diagnostics(false),
-            check_augsys(false)
+            check_augsys(false),
+            check_augsys_exit(false)
         {
             X::copy(x_,x); 
             Y::copy(y_,y);
@@ -730,6 +734,11 @@ struct Unit {
         // Otherwise, make sure that we didn't
         } else {
             CHECK(state.augsys_proj_iter == 0);
+        }
+        
+        // Check that we exited the augmented system solve early
+        if(setup.check_augsys_exit) {
+            CHECK(state.augsys_proj_err_target == Real(1.));
         }
 
         // Move the function out the bundle of functions and back into setup in
