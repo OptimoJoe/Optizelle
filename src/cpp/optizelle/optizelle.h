@@ -7961,6 +7961,66 @@ namespace Optizelle{
                 }
             };
 
+            // Adjusts an augmented system solve stopping tolerance from 
+            //
+            // || e1 || + || e2 || <= eps
+            //
+            // to
+            //
+            // sqrt(|| e1 ||^2 + || e2 ||^2) <= eps'
+            //
+            // Basically, GMRES really needs the latter kind of condition, but
+            // often the theory for the inexact composite-step SQP provides the
+            // first.
+            static Real adjust_augsys_stopping_tolerance(
+                typename State::t const & state,
+                typename Functions::t const & fns,
+                typename XXxYY <Real>::Vector const & xx,
+                typename XXxYY <Real>::Vector const & bb,
+                Real const & eps
+            ) {
+                // Create some shortcuts
+                auto const & g=*(fns.g);
+                auto const & x=state.x;
+                auto const & y=state.y;
+
+                // e1 = xx1 + g'(x)*xx2 - bb1
+                auto e1 = X::init(x);
+                g.ps(x,xx.second,e1);
+                X::axpy(Real(1.),xx.first,e1);
+                X::axpy(Real(-1.),bb.first,e1);
+                auto norm_e1 = std::sqrt(X::innr(e1,e1));
+
+                // e2 = g'(x)xx1 - bb2
+                auto e2 = Y::init(y);
+                g.p(x,xx.first,e2);
+                Y::axpy(Real(-1.),bb.second,e2);
+                auto norm_e2 = std::sqrt(Y::innr(e2,e2));
+
+                // From the parallelogram law
+                //
+                // (||e1||+||e2||)^2 + (||e1||-||e2||)^2 = 2(||e1||^2 +||e2||^2)
+                //
+                // Hence, 
+                // 
+                // (||e1||+||e2||)^2
+                //     = -(||e1||-||e2||)^2 + 2(||e1||^2 + ||e2||^2)
+                //
+                // Therefore, if we require that
+                //
+                // -(||e1||-||e2||)^2 + 2(||e1||^2 + ||e2||^2) <= eps^2
+                //
+                // we meet our bound.  In other words, if we require that
+                //
+                // ||e1||^2 + ||e2||^2 <= (eps^2 + (||e1||-||e2||)^2)/2
+                //
+                // we meet our bound.  Therefore, we set
+                //
+                // eps' = sqrt((eps^2 + (||e1||-||e2||)^2)/2)
+                auto sq = [](auto const & x){return x*x;};
+                return std::sqrt((sq(eps) + sq(norm_e1-norm_e2))/Real(2.));
+            }
+
             // Sets the tolerances for the quasi-normal Newton solve
             struct QNManipulator : public GMRESManipulator <Real,XXxYY> {
             private:
@@ -7996,6 +8056,7 @@ namespace Optizelle{
                     // Return xi_qn * || g'(x)dx_ncp + g(x) ||
                     eps = xi_qn * norm_gpxdxncp_p_g;
 
+                    #if 0
                     // If the Cauchy point actually brings us to optimality,
                     // it's hard to hit the tolerance above.  In this case,
                     // try to detect the condition and bail early.  The way
@@ -8009,6 +8070,7 @@ namespace Optizelle{
                     // we bail.
                     if(norm_gpxdxncp_p_g < eps_constr * absrel(norm_gxtyp))
                         eps=Real(1.);
+                    #endif
 
                     // Save this desired error
                     augsys_qn_err_target=eps;
@@ -8420,6 +8482,7 @@ namespace Optizelle{
                     eps = eps < norm_gradpHdxn ? eps : norm_gradpHdxn;
                     eps = xi_pg*eps;
 
+                    #if 1
                     // If the projected gradient is in the nullspace of
                     // the constraints, it's hard to hit the tolerance above.
                     // In this case, try to detect the condition and bail early.
@@ -8434,6 +8497,7 @@ namespace Optizelle{
                               * norm_gradpHdxn * Real(1e2)
                     )
                         eps=Real(1.);
+                    #endif
 
                     // Save this desired error
                     augsys_pg_err_target=eps;
@@ -8548,8 +8612,10 @@ namespace Optizelle{
                     Real & eps
                 ) const {
                     // Create some shortcuts
-                    Real const & xi_proj = state.xi_proj;
-                    Real& augsys_proj_err_target=state.augsys_proj_err_target;
+                    auto const & absrel = *(fns.absrel);
+                    auto const & eps_dx = state.eps_dx;
+                    auto const & xi_proj = state.xi_proj;
+                    auto & augsys_proj_err_target= state.augsys_proj_err_target;
 
                     // Find || W dx_t_uncorrected || = || xx_1 || 
                     Real norm_Wdxt_uncorrected
@@ -8565,21 +8631,19 @@ namespace Optizelle{
                         ? norm_Wdxt_uncorrected : norm_dxt_uncorrected;
                     eps = xi_proj*eps; 
 
+                    // Adjust the stopping tolerance 
+                    eps = adjust_augsys_stopping_tolerance(state,fns,xx,bb,eps);
+
+                    #if 1
                     // If the projected direction is in the nullspace of
                     // the constraints, it's hard to hit the tolerance above.
                     // In this case, try to detect the condition and bail early.
-                    // Specifically, sometimes the right hand side is
-                    // a decent size, but the solution is small.  Therefore,
-                    // we exit when the norm of the projected truncated CG
-                    // iterate is smaller than the norm of the unprojected
-                    // iterate by two orders of magnitude larger than machine
-                    // precision.
-                    if(iter >= 2
-                        && norm_Wdxt_uncorrected
-                            < std::numeric_limits <Real>::epsilon()
-                              * norm_dxt_uncorrected * Real(1e2)
+                    if( iter >= 2 &&
+                        norm_Wdxt_uncorrected
+                            < eps_dx * absrel(norm_dxt_uncorrected)
                     )
                         eps=Real(1.);
+                    #endif
 
                     // Save this desired error
                     augsys_proj_err_target=eps;
@@ -8604,18 +8668,45 @@ namespace Optizelle{
                     X_Vector & result
                 ) const{
                     // Create some shortcuts
-                    X_Vector const & x=state.x;
-                    Y_Vector const & y=state.y;
-                    Natural const & augsys_iter_max=state.augsys_iter_max;
-                    Natural const & augsys_rst_freq=state.augsys_rst_freq;
-                    auto const & augsys_proj_err_target =
-                        state.augsys_proj_err_target;
+                    auto const & absrel = *(fns.absrel);
+                    auto const & g=*(fns.g);
+                    auto const & x=state.x;
+                    auto const & y=state.y;
+                    auto const & xi_proj = state.xi_proj;
+                    auto const & augsys_iter_max=state.augsys_iter_max;
+                    auto const & augsys_rst_freq=state.augsys_rst_freq;
+                    auto const & eps_dx = state.eps_dx;
+                    auto const & norm_dxtyp = state.norm_dxtyp;
+                    auto & augsys_proj_err_target= state.augsys_proj_err_target;
                     auto & augsys_proj_err = state.augsys_proj_err;
                     auto & augsys_proj_iter = state.augsys_proj_iter;
                     auto & augsys_proj_iter_total =state.augsys_proj_iter_total;
                     auto & augsys_proj_failed = state.augsys_proj_failed;
                     auto & augsys_iter_total = state.augsys_iter_total;
                     auto & augsys_failed_total =state.augsys_failed_total;
+
+                    // Test if our direction is already in the nullspace of
+                    // g'(x).  If so, don't do the nullspace solve, just return
+                    // the direction as is.  Note, we do a separate test to
+                    // check whether the direction is zero.  In theory, this
+                    // should be detected by the first test, but that can be
+                    // hard to discern due to numerical error.
+                    #if 1
+                    auto gp_x_dxtuncorrected = Y::init(y);
+                    g.p(x,dx_t_uncorrected,gp_x_dxtuncorrected);
+                    auto norm_gp_x_dxtuncorrected = 
+                        sqrt(Y::innr(gp_x_dxtuncorrected,gp_x_dxtuncorrected));
+                    auto norm_dxtuncorrected = 
+                        sqrt(X::innr(dx_t_uncorrected,dx_t_uncorrected));
+                    if( norm_gp_x_dxtuncorrected<=xi_proj*norm_dxtuncorrected ||
+                        norm_dxtuncorrected <= eps_dx * absrel(norm_dxtyp)
+                    ){
+                        X::copy(dx_t_uncorrected,result);
+                        augsys_proj_err = norm_gp_x_dxtuncorrected;
+                        augsys_proj_err_target = xi_proj * norm_dxtuncorrected;
+                        return;
+                    }
+                    #endif
 
                     // Create the initial guess, x0=(0,0)
                     XxY_Vector x0(X::init(x),Y::init(y));

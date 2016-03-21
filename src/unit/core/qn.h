@@ -487,7 +487,7 @@ struct Unit {
         typename Optizelle::Constrained <Real,XX,YY,ZZ>::State::t
             state(setup.x,setup.y,setup.z);
 
-        // Set some appropraite state information
+        // Set some appropriate state information
         state.delta = setup.delta;
 
         // Create a bundle of functions
@@ -629,5 +629,112 @@ struct Unit {
 
         // Copy the Cauchy point
         X::copy(state.dx_ncp,setup.cp); 
+    }
+
+    // Simple nullspace projection setup 
+    struct Proj {
+        // Tolerance for all our tests
+        Real eps;
+
+        // Points where we run the test 
+        X_Vector x;
+        Y_Vector y;
+
+        // Equality constraint 
+        std::unique_ptr <Optizelle::VectorValuedFunction <Real,XX,YY>> g;
+
+        // Direction to project
+        std::unique_ptr <X_Vector> dx;
+
+        // Desired solution
+        std::unique_ptr <X_Vector> P_dx_star;
+
+        // Check that we're in the nullspace of the constraint
+        bool check_null;
+
+        // Check that we solution that we obtained
+        bool check_sol;
+
+        // Do diagonstic checks instead
+        bool do_diagnostics;
+
+        // Setup some simple parameters
+        Proj(X_Vector const & x_,Y_Vector const & y_) :
+            eps(std::pow(
+                Real(10.),
+                std::log10(std::numeric_limits <Real>::epsilon())
+                    *Real(0.75))),
+            x(X::init(x_)),
+            y(Y::init(y_)),
+            g(),
+            dx(),
+            P_dx_star(),
+            check_null(false),
+            check_sol(false),
+            do_diagnostics(false)
+        {
+            X::copy(x_,x); 
+            Y::copy(y_,y);
+        }
+    };
+
+    // Run and verify the problem setup
+    static void run_and_verify(Proj & setup) {
+        // Create an optimization state
+        typename Optizelle::EqualityConstrained <Real,XX,YY>::State::t
+            state(setup.x,setup.y);
+
+        // Create a bundle of functions
+        typename Optizelle::Constrained <Real,XX,YY,ZZ>::Functions::t fns;
+        fns.f.reset(new typename Objective::Zero);
+        fns.g = std::move(setup.g);
+
+        // Create the messaging object
+        auto msg = Optizelle::Messaging();
+
+        // Fill out the bundle of functions
+        Optizelle::EqualityConstrained <Real,XX,YY>::Functions::init(
+            msg,state,fns);
+
+        // Evaluate the function and cache information about it
+        fns.g->eval(state.x,state.g_x);
+        state.norm_gxtyp = std::sqrt(Y::innr(state.g_x,state.g_x));
+        fns.g->eval(state.x,state.g_x);
+        state.norm_dxtyp = Real(1.);
+
+        // If we're doing diagnostics, run them and then quit.  Really, we
+        // should just be using this for debugging our problem setups.
+        if(setup.do_diagnostics) {
+            state.f_diag = Optizelle::FunctionDiagnostics::SecondOrder;
+            state.g_diag = Optizelle::FunctionDiagnostics::SecondOrder;
+            Optizelle::EqualityConstrained<Real,XX,YY>::Diagnostics
+                ::checkFunctions(msg,fns,state);
+            return;
+        }
+
+        // Compute the nullspace projection
+        auto P_dx = X::init(setup.x);
+        typename Optizelle::EqualityConstrained<Real,XX,YY>::Algorithms
+            ::NullspaceProjForTrunc(state,fns).eval(*setup.dx,P_dx);
+
+        // Check that the quasinormal point is correct
+        if(setup.check_sol) {
+            auto norm_r = Real(0.);
+            auto norm_dx = Real(0.);
+            std::tie(norm_r,norm_dx)=error(P_dx,*setup.P_dx_star);
+            CHECK(norm_r <= setup.eps);
+        }
+
+        // Check that our step takes us into the nullspace 
+        if(setup.check_null) {
+            auto gp_x_Pdx = Y::init(setup.y);
+            fns.g->p(setup.x,P_dx,gp_x_Pdx);
+            auto norm_gpxPdx = std::sqrt(Y::innr(gp_x_Pdx,gp_x_Pdx));
+            CHECK(norm_gpxPdx <= setup.eps);
+        }
+
+        // Move the function out the bundle of functions and back into setup in
+        // case we need it later
+        setup.g = std::move(fns.g);
     }
 };
