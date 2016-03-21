@@ -391,6 +391,9 @@ struct Unit {
 
         // Do diagonstic checks instead
         bool do_diagnostics;
+
+        // Check that we computed augmented system solve iterations 
+        bool check_augsys; 
         
         // Setup some simple parameters
         Augsys(X_Vector const & x_,Y_Vector const & y_) :
@@ -402,7 +405,8 @@ struct Unit {
             y(Y::init(y_)),
             g(),
             delta(1e16),
-            do_diagnostics(false)
+            do_diagnostics(false),
+            check_augsys(false)
         {
             X::copy(x_,x); 
             Y::copy(y_,y);
@@ -449,9 +453,6 @@ struct Unit {
         // Check that we cut back the step from the safeguard
         bool check_safe;
 
-        // Check that we computed augmented system solve iterations 
-        bool check_augsys; 
-        
         // Copy of the Cauchy point for some more complicated tests 
         X_Vector cp;
 
@@ -471,7 +472,6 @@ struct Unit {
             check_dx_ncp(false),
             check_feas(false),
             check_safe(false),
-            check_augsys(false),
             cp(X::init(x_))
         {
             z.resize(x_.size()*2);
@@ -721,6 +721,15 @@ struct Unit {
             fns.g->p(setup.x,P_dx,gp_x_Pdx);
             auto norm_gpxPdx = std::sqrt(Y::innr(gp_x_Pdx,gp_x_Pdx));
             CHECK(norm_gpxPdx <= setup.eps);
+        }
+
+        // Check that we computed augmented system solves 
+        if(setup.check_augsys) {
+            CHECK(state.augsys_proj_iter > 0);
+
+        // Otherwise, make sure that we didn't
+        } else {
+            CHECK(state.augsys_proj_iter == 0);
         }
 
         // Move the function out the bundle of functions and back into setup in

@@ -8056,22 +8056,6 @@ namespace Optizelle{
                     // Return xi_qn * || g'(x)dx_ncp + g(x) ||
                     eps = xi_qn * norm_gpxdxncp_p_g;
 
-                    #if 0
-                    // If the Cauchy point actually brings us to optimality,
-                    // it's hard to hit the tolerance above.  In this case,
-                    // try to detect the condition and bail early.  The way
-                    // we detect this is by noting that
-                    //
-                    // g(x+dx) ~= g(x)+g'(x)dx
-                    //
-                    // Hence, if || g(x)+g'(x)dx || is small, we should be
-                    // feasible after the step.  Therefore, we check if we
-                    // satisfy our stopping condition for feasibility.  If so,
-                    // we bail.
-                    if(norm_gpxdxncp_p_g < eps_constr * absrel(norm_gxtyp))
-                        eps=Real(1.);
-                    #endif
-
                     // Save this desired error
                     augsys_qn_err_target=eps;
                 }
@@ -8482,7 +8466,6 @@ namespace Optizelle{
                     eps = eps < norm_gradpHdxn ? eps : norm_gradpHdxn;
                     eps = xi_pg*eps;
 
-                    #if 1
                     // If the projected gradient is in the nullspace of
                     // the constraints, it's hard to hit the tolerance above.
                     // In this case, try to detect the condition and bail early.
@@ -8497,7 +8480,6 @@ namespace Optizelle{
                               * norm_gradpHdxn * Real(1e2)
                     )
                         eps=Real(1.);
-                    #endif
 
                     // Save this desired error
                     augsys_pg_err_target=eps;
@@ -8634,7 +8616,6 @@ namespace Optizelle{
                     // Adjust the stopping tolerance 
                     eps = adjust_augsys_stopping_tolerance(state,fns,xx,bb,eps);
 
-                    #if 1
                     // If the projected direction is in the nullspace of
                     // the constraints, it's hard to hit the tolerance above.
                     // In this case, try to detect the condition and bail early.
@@ -8643,7 +8624,6 @@ namespace Optizelle{
                             < eps_dx * absrel(norm_dxt_uncorrected)
                     )
                         eps=Real(1.);
-                    #endif
 
                     // Save this desired error
                     augsys_proj_err_target=eps;
@@ -8691,7 +8671,6 @@ namespace Optizelle{
                     // check whether the direction is zero.  In theory, this
                     // should be detected by the first test, but that can be
                     // hard to discern due to numerical error.
-                    #if 1
                     auto gp_x_dxtuncorrected = Y::init(y);
                     g.p(x,dx_t_uncorrected,gp_x_dxtuncorrected);
                     auto norm_gp_x_dxtuncorrected = 
@@ -8706,7 +8685,6 @@ namespace Optizelle{
                         augsys_proj_err_target = xi_proj * norm_dxtuncorrected;
                         return;
                     }
-                    #endif
 
                     // Create the initial guess, x0=(0,0)
                     XxY_Vector x0(X::init(x),Y::init(y));
