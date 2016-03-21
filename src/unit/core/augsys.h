@@ -1,5 +1,6 @@
 #pragma once
-// Supporting functions for testing the quasinormal step code 
+// Supporting functions for testing the augmented systems solves in their
+// various forms
 
 #include "optizelle/optizelle.h"
 #include "optizelle/vspaces.h"
@@ -373,24 +374,49 @@ struct Unit {
         };
     };
 
-    // Simple quasinormal subproblem setup 
-    struct QN {
+    // Generic elements for augmented system solves
+    struct Augsys {
         // Tolerance for all our tests
         Real eps;
 
         // Points where we run the test 
         X_Vector x;
         Y_Vector y;
-        Z_Vector z;
 
         // Equality constraint 
         std::unique_ptr <Optizelle::VectorValuedFunction <Real,XX,YY>> g;
 
-        // Inequality constraint
-        std::unique_ptr <Optizelle::VectorValuedFunction <Real,XX,YY>> h;
-
         // Trust-region radius
         Real delta;
+
+        // Do diagonstic checks instead
+        bool do_diagnostics;
+        
+        // Setup some simple parameters
+        Augsys(X_Vector const & x_,Y_Vector const & y_) :
+            eps(std::pow(
+                Real(10.),
+                std::log10(std::numeric_limits <Real>::epsilon())
+                    *Real(0.75))),
+            x(X::init(x_)),
+            y(Y::init(y_)),
+            g(),
+            delta(1e16),
+            do_diagnostics(false)
+        {
+            X::copy(x_,x); 
+            Y::copy(y_,y);
+        }
+    };
+
+    // Simple quasinormal subproblem setup 
+    struct QN : public Augsys {
+
+        // Points where we run the test 
+        Z_Vector z;
+
+        // Inequality constraint
+        std::unique_ptr <Optizelle::VectorValuedFunction <Real,XX,YY>> h;
 
         // Desired solution
         std::unique_ptr <X_Vector> dx_ncp_star;
@@ -425,25 +451,15 @@ struct Unit {
 
         // Check that we computed augmented system solve iterations 
         bool check_augsys; 
-
-        // Do diagonstic checks instead
-        bool do_diagnostics;
         
         // Copy of the Cauchy point for some more complicated tests 
         X_Vector cp;
 
         // Setup some simple parameters
         QN(X_Vector const & x_,Y_Vector const & y_) :
-            eps(std::pow(
-                Real(10.),
-                std::log10(std::numeric_limits <Real>::epsilon())
-                    *Real(0.75))),
-            x(X::init(x_)),
-            y(Y::init(y_)),
+            Augsys(x_,y_),
             z(),
-            g(),
             h(),
-            delta(1e16),
             dx_ncp_star(),
             dx_n_star(),
             qn_stop_star(),
@@ -456,12 +472,9 @@ struct Unit {
             check_feas(false),
             check_safe(false),
             check_augsys(false),
-            do_diagnostics(false),
             cp(X::init(x_))
         {
-            X::copy(x_,x); 
-            Y::copy(y_,y);
-            z.resize(x.size()*2);
+            z.resize(x_.size()*2);
         }
     };
 
@@ -632,17 +645,7 @@ struct Unit {
     }
 
     // Simple nullspace projection setup 
-    struct Proj {
-        // Tolerance for all our tests
-        Real eps;
-
-        // Points where we run the test 
-        X_Vector x;
-        Y_Vector y;
-
-        // Equality constraint 
-        std::unique_ptr <Optizelle::VectorValuedFunction <Real,XX,YY>> g;
-
+    struct Proj : public Augsys {
         // Direction to project
         std::unique_ptr <X_Vector> dx;
 
@@ -655,27 +658,14 @@ struct Unit {
         // Check that we solution that we obtained
         bool check_sol;
 
-        // Do diagonstic checks instead
-        bool do_diagnostics;
-
         // Setup some simple parameters
         Proj(X_Vector const & x_,Y_Vector const & y_) :
-            eps(std::pow(
-                Real(10.),
-                std::log10(std::numeric_limits <Real>::epsilon())
-                    *Real(0.75))),
-            x(X::init(x_)),
-            y(Y::init(y_)),
-            g(),
+            Augsys(x_,y_),
             dx(),
             P_dx_star(),
             check_null(false),
-            check_sol(false),
-            do_diagnostics(false)
-        {
-            X::copy(x_,x); 
-            Y::copy(y_,y);
-        }
+            check_sol(false)
+        {}
     };
 
     // Run and verify the problem setup
