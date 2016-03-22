@@ -8873,6 +8873,9 @@ namespace Optizelle{
                         ? eps : xi_tang*norm_dxt_uncorrected/delta;
                     eps = eps*delta;
 
+                    // Adjust the stopping tolerance 
+                    eps = adjust_augsys_stopping_tolerance(state,fns,xx,bb,eps);
+
                     // Save this desired error
                     augsys_tang_err_target=eps;
                 }
@@ -8974,6 +8977,9 @@ namespace Optizelle{
                     // The bound is
                     // min( xi_lmg, xi_lmh || grad f(x) + g'(x)*y ||)
                     eps = xi_lmg < norm_grad*xi_lmh ? xi_lmg : norm_grad*xi_lmh;
+
+                    // Adjust the stopping tolerance 
+                    eps = adjust_augsys_stopping_tolerance(state,fns,xx,bb,eps);
 
                     // Save this desired error
                     augsys_lmh_err_target=eps;
