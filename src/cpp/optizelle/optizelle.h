@@ -2041,7 +2041,7 @@ namespace Optizelle{
                     ),
                     eps_dx(
                         //---eps_dx0---
-                        1e-8
+                        1e-16
                         //---eps_dx1---
                     ),
                     stored_history(
@@ -8017,7 +8017,6 @@ namespace Optizelle{
                 // we meet our bound.  Therefore, we set
                 //
                 // eps' = sqrt((eps^2 + (||e1||-||e2||)^2)/2)
-                auto sq = [](auto const & x){return x*x;};
                 return std::sqrt((sq(eps) + sq(norm_e1-norm_e2))/Real(2.));
             }
 
@@ -8420,6 +8419,93 @@ namespace Optizelle{
                     }
                 }
             }
+
+            // Orthogonal projection of a direction into the nullspace of g'(x) 
+            static void NullspaceProj(
+                typename Functions::t const & fns,
+                typename State::t & state,
+                GMRESManipulator <Real,XXxYY> const & gmanip,
+                Real const & xi,
+                Real const & delta,
+                X_Vector const & dx,
+                X_Vector & result,
+                Real & augsys_null_err,
+                Real & augsys_null_err_target,
+                Natural & augsys_null_iter,
+                Natural & augsys_null_iter_total,
+                Natural & augsys_null_failed
+            ) {
+                // Create some shortcuts
+                auto const & absrel = *(fns.absrel);
+                auto const & g=*(fns.g);
+                auto const & x=state.x;
+                auto const & y=state.y;
+                auto const & augsys_iter_max=state.augsys_iter_max;
+                auto const & augsys_rst_freq=state.augsys_rst_freq;
+                auto const & eps_dx = state.eps_dx;
+                auto const & norm_dxtyp = state.norm_dxtyp;
+                auto & augsys_failed_total = state.augsys_failed_total;
+                auto & augsys_iter_total = state.augsys_iter_total;
+
+                // Test if our direction is already in the nullspace of
+                // g'(x).  If so, don't do the nullspace solve, just return
+                // the direction as is.  Note, we do a separate test to
+                // check whether the direction is zero.  In theory, this
+                // should be detected by the first test, but that can be
+                // hard to discern due to numerical error.
+                auto gp_x_dx = Y::init(y);
+                g.p(x,dx,gp_x_dx);
+                auto norm_gp_x_dx = std::sqrt(Y::innr(gp_x_dx,gp_x_dx));
+                auto norm_dx = std::sqrt(X::innr(dx,dx));
+                if( norm_gp_x_dx <= xi*std::min(norm_dx,delta) ||
+                    norm_dx <= eps_dx * absrel(norm_dxtyp)
+                ) {
+                    X::copy(dx,result);
+                    augsys_null_err = norm_gp_x_dx;
+                    augsys_null_err_target = xi * std::min(norm_dx,delta);
+                    return;
+                }
+
+                // Create the initial guess, x0=(0,0)
+                XxY_Vector x0(X::init(x),Y::init(y));
+                    XxY::zero(x0);
+
+                // Create the rhs, b0=(dx,0)
+                XxY_Vector b0(XxY::init(x0));
+                    X::copy(dx,b0.first);
+                    Y::zero(b0.second);
+            
+                // Build Schur style preconditioners
+                typename Unconstrained <Real,XX>::Functions::Identity I;
+                BlockDiagonalPreconditioner
+                    PAugSys_l(I,*(fns.PSchur_left));
+                BlockDiagonalPreconditioner
+                    PAugSys_r(I,*(fns.PSchur_right));
+
+                // Solve the augmented system for the nullspace projection 
+                auto iter = Natural(0);
+                std::tie(augsys_null_err,iter) =
+                    Optizelle::gmres <Real,XXxYY> (
+                        AugmentedSystem(state,fns,x),
+                        b0,
+                        Real(1.), // Overwritten by the manipulator
+                        augsys_iter_max,
+                        augsys_rst_freq,
+                        PAugSys_l,
+                        PAugSys_r,
+                        gmanip,
+                        x0 
+                    );
+                augsys_null_iter+=iter;
+                augsys_null_iter_total+=iter;
+                augsys_iter_total+=iter;
+                auto augsys_failed = augsys_null_err>augsys_null_err_target;
+                augsys_null_failed += augsys_failed;
+                augsys_failed_total += augsys_failed;
+
+                // Copy out the solution
+                X::copy(x0.first,result);
+            }
             
             // Sets the tolerances for projecting 
             //
@@ -8450,9 +8536,11 @@ namespace Optizelle{
                     Real & eps
                 ) const {
                     // Create some shortcuts
-                    Real const & xi_pg = state.xi_pg;
-                    Real const & delta = state.delta;
-                    Real & augsys_pg_err_target = state.augsys_pg_err_target;
+                    auto const & absrel = *(fns.absrel);
+                    auto const & eps_dx = state.eps_dx;
+                    auto const & xi_pg = state.xi_pg;
+                    auto const & delta = state.delta;
+                    auto & augsys_pg_err_target = state.augsys_pg_err_target;
 
                     // Find || W (grad L(x,y) + H dx_n) || = || xx_1 || 
                     Real norm_WgpHdxn = sqrt(X::innr(xx.first,xx.first));
@@ -8466,18 +8554,14 @@ namespace Optizelle{
                     eps = eps < norm_gradpHdxn ? eps : norm_gradpHdxn;
                     eps = xi_pg*eps;
 
+                    // Adjust the stopping tolerance 
+                    eps = adjust_augsys_stopping_tolerance(state,fns,xx,bb,eps);
+
                     // If the projected gradient is in the nullspace of
                     // the constraints, it's hard to hit the tolerance above.
                     // In this case, try to detect the condition and bail early.
-                    // Specifically, sometimes the right hand side is
-                    // a decent size, but the solution is small.  Therefore,
-                    // we exit when the norm of the current projected gradient
-                    // is smaller than the norm of the unprojected gradient
-                    // by two orders of magnitude larger than machine precision.
-                    if(iter >= 2
-                        && norm_WgpHdxn 
-                            < std::numeric_limits <Real>::epsilon()
-                              * norm_gradpHdxn * Real(1e2)
+                    if( iter >= 2 &&
+                        norm_WgpHdxn < eps_dx * absrel(norm_gradpHdxn)
                     )
                         eps=Real(1.);
 
@@ -8498,74 +8582,49 @@ namespace Optizelle{
                 typename State::t & state
             ) {
                 // Create some shortcuts
-                ScalarValuedFunctionModifications <Real,XX> const & f_mod
-                    = *(fns.f_mod);
-                X_Vector const & x=state.x;
-                X_Vector const & dx_n=state.dx_n;
-                X_Vector const & grad=state.grad;
-                X_Vector const & H_dxn=state.H_dxn;
-                Y_Vector const & y=state.y;
-                Natural const & augsys_iter_max=state.augsys_iter_max;
-                Natural const & augsys_rst_freq=state.augsys_rst_freq;
-                auto const & augsys_pg_err_target = state.augsys_pg_err_target;
-                X_Vector & W_gradpHdxn=state.W_gradpHdxn;
+                auto const & f_mod = *(fns.f_mod);
+                auto const & x=state.x;
+                auto const & dx_n=state.dx_n;
+                auto const & grad=state.grad;
+                auto const & H_dxn=state.H_dxn;
+                auto const & xi_pg = state.xi_pg;
+                auto const & delta = state.delta;
+                auto & W_gradpHdxn=state.W_gradpHdxn;
                 auto & augsys_pg_err = state.augsys_pg_err;
+                auto & augsys_pg_err_target = state.augsys_pg_err_target;
                 auto & augsys_pg_iter = state.augsys_pg_iter;
                 auto & augsys_pg_iter_total = state.augsys_pg_iter_total;
                 auto & augsys_pg_failed = state.augsys_pg_failed;
-                auto & augsys_iter_total = state.augsys_iter_total;
-                auto & augsys_failed_total = state.augsys_failed_total;
 
                 // Find the gradient modifications for the step computation
-                X_Vector grad_step(X::init(grad));
+                auto grad_step(X::init(grad));
                     f_mod.grad_step(x,grad,grad_step);
                
                 // Add the Hessian modifications to H(x)dx_n
-                X_Vector Hdxn_step(X::init(x));
+                auto Hdxn_step(X::init(x));
                     f_mod.hessvec_step(x,dx_n,H_dxn,Hdxn_step);
 
                 // grad_p_Hdxn <- H dxn_step
-                X_Vector grad_p_Hdxn(X::init(x));
+                auto grad_p_Hdxn(X::init(x));
                     X::copy(Hdxn_step,grad_p_Hdxn);
 
                 // grad_p_Hdxn <- grad f(x) + H dx_n
                 X::axpy(Real(1.),grad_step,grad_p_Hdxn);
 
-                // Create the initial guess, x0=(0,0)
-                XxY_Vector x0(X::init(x),Y::init(y));
-                    XxY::zero(x0);
-
-                // Create the rhs, b0=(grad f(x) + H dx_n,0)
-                XxY_Vector b0(XxY::init(x0));
-                    X::copy(grad_p_Hdxn,b0.first);
-                    Y::zero(b0.second);
-            
-                // Build Schur style preconditioners
-                typename Unconstrained <Real,XX>::Functions::Identity I;
-                BlockDiagonalPreconditioner PAugSys_l (I,*(fns.PSchur_left));
-                BlockDiagonalPreconditioner PAugSys_r (I,*(fns.PSchur_right));
-
-                // Solve the augmented system for the nullspace projection 
-                std::tie(augsys_pg_err,augsys_pg_iter) =
-                    Optizelle::gmres <Real,XXxYY> (
-                        AugmentedSystem(state,fns,x),
-                        b0,
-                        Real(1.), // This will be overwritten by the manipulator
-                        augsys_iter_max,
-                        augsys_rst_freq,
-                        PAugSys_l,
-                        PAugSys_r,
-                        NullspaceProjForGradLagPlusHdxnManipulator(state,fns),
-                        x0 
-                    );
-                augsys_pg_iter_total+=augsys_pg_iter;
-                augsys_iter_total+=augsys_pg_iter;
-                auto augsys_failed = augsys_pg_err>augsys_pg_err_target;
-                augsys_pg_failed += augsys_failed; 
-                augsys_failed_total += augsys_failed;
-
-                // Copy out the solution
-                X::copy(x0.first,W_gradpHdxn);
+                // Do the nullspace projrection
+                NullspaceProj(
+                    fns,
+                    state,
+                    NullspaceProjForGradLagPlusHdxnManipulator(state,fns),
+                    xi_pg,
+                    delta,
+                    grad_p_Hdxn,
+                    W_gradpHdxn,
+                    augsys_pg_err,
+                    augsys_pg_err_target,
+                    augsys_pg_iter,
+                    augsys_pg_iter_total,
+                    augsys_pg_failed);
             }
             
             // Sets the tolerances for the nullspace projector that projects
@@ -8648,83 +8707,27 @@ namespace Optizelle{
                     X_Vector & result
                 ) const{
                     // Create some shortcuts
-                    auto const & absrel = *(fns.absrel);
-                    auto const & g=*(fns.g);
-                    auto const & x=state.x;
-                    auto const & y=state.y;
                     auto const & xi_proj = state.xi_proj;
-                    auto const & augsys_iter_max=state.augsys_iter_max;
-                    auto const & augsys_rst_freq=state.augsys_rst_freq;
-                    auto const & eps_dx = state.eps_dx;
-                    auto const & norm_dxtyp = state.norm_dxtyp;
-                    auto & augsys_proj_err_target= state.augsys_proj_err_target;
                     auto & augsys_proj_err = state.augsys_proj_err;
+                    auto & augsys_proj_err_target= state.augsys_proj_err_target;
                     auto & augsys_proj_iter = state.augsys_proj_iter;
                     auto & augsys_proj_iter_total =state.augsys_proj_iter_total;
                     auto & augsys_proj_failed = state.augsys_proj_failed;
-                    auto & augsys_iter_total = state.augsys_iter_total;
-                    auto & augsys_failed_total =state.augsys_failed_total;
 
-                    // Test if our direction is already in the nullspace of
-                    // g'(x).  If so, don't do the nullspace solve, just return
-                    // the direction as is.  Note, we do a separate test to
-                    // check whether the direction is zero.  In theory, this
-                    // should be detected by the first test, but that can be
-                    // hard to discern due to numerical error.
-                    auto gp_x_dxtuncorrected = Y::init(y);
-                    g.p(x,dx_t_uncorrected,gp_x_dxtuncorrected);
-                    auto norm_gp_x_dxtuncorrected = 
-                        sqrt(Y::innr(gp_x_dxtuncorrected,gp_x_dxtuncorrected));
-                    auto norm_dxtuncorrected = 
-                        sqrt(X::innr(dx_t_uncorrected,dx_t_uncorrected));
-                    if( norm_gp_x_dxtuncorrected<=xi_proj*norm_dxtuncorrected ||
-                        norm_dxtuncorrected <= eps_dx * absrel(norm_dxtyp)
-                    ){
-                        X::copy(dx_t_uncorrected,result);
-                        augsys_proj_err = norm_gp_x_dxtuncorrected;
-                        augsys_proj_err_target = xi_proj * norm_dxtuncorrected;
-                        return;
-                    }
-
-                    // Create the initial guess, x0=(0,0)
-                    XxY_Vector x0(X::init(x),Y::init(y));
-                        XxY::zero(x0);
-
-                    // Create the rhs, b0=(dx_t_uncorrected,0)
-                    XxY_Vector b0(XxY::init(x0));
-                        X::copy(dx_t_uncorrected,b0.first);
-                        Y::zero(b0.second);
-                
-                    // Build Schur style preconditioners
-                    typename Unconstrained <Real,XX>::Functions::Identity I;
-                    BlockDiagonalPreconditioner
-                        PAugSys_l(I,*(fns.PSchur_left));
-                    BlockDiagonalPreconditioner
-                        PAugSys_r(I,*(fns.PSchur_right));
-
-                    // Solve the augmented system for the nullspace projection 
-                    auto iter = Natural(0);
-                    std::tie(augsys_proj_err,iter) =
-                        Optizelle::gmres <Real,XXxYY> (
-                            AugmentedSystem(state,fns,x),
-                            b0,
-                            Real(1.), // Overwritten by the manipulator
-                            augsys_iter_max,
-                            augsys_rst_freq,
-                            PAugSys_l,
-                            PAugSys_r,
-                            NullspaceProjForTruncManipulator(state,fns),
-                            x0 
-                        );
-                    augsys_proj_iter+=iter;
-                    augsys_proj_iter_total+=iter;
-                    augsys_iter_total+=iter;
-                    auto augsys_failed = augsys_proj_err>augsys_proj_err_target;
-                    augsys_proj_failed += augsys_failed;
-                    augsys_failed_total += augsys_failed;
-
-                    // Copy out the solution
-                    X::copy(x0.first,result);
+                    // Do the nullspace projrection
+                    NullspaceProj(
+                        fns,
+                        state,
+                        NullspaceProjForTruncManipulator(state,fns),
+                        xi_proj,
+                        std::numeric_limits <Real>::infinity(),
+                        dx_t_uncorrected,
+                        result,
+                        augsys_proj_err,
+                        augsys_proj_err_target,
+                        augsys_proj_iter,
+                        augsys_proj_iter_total,
+                        augsys_proj_failed);
                 }
             };
             
