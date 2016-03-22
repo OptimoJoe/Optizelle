@@ -1,5 +1,6 @@
 #pragma once
-// Supporting functions for testing the quasinormal step code 
+// Supporting functions for testing the augmented systems solves in their
+// various forms
 
 #include "optizelle/optizelle.h"
 #include "optizelle/vspaces.h"
@@ -48,6 +49,26 @@ struct Unit {
                 X_Vector & H_dx
             ) const {
                 X::zero(H_dx);
+            }
+        };
+        
+        // Simple quadratic objective function 
+        struct Quadratic : public Optizelle::ScalarValuedFunction <Real,XX> {
+            Real eval(X_Vector const & x) const {
+                return Real(0.5)*X::innr(x,x); 
+            }
+            void grad(
+                X_Vector const & x,
+                X_Vector & grad
+            ) const {
+                X::copy(x,grad);
+            }
+            void hessvec(
+                X_Vector const & x,
+                X_Vector const & dx,
+                X_Vector & H_dx
+            ) const {
+                X::copy(dx,H_dx);
             }
         };
     };
@@ -373,24 +394,57 @@ struct Unit {
         };
     };
 
-    // Simple quasinormal subproblem setup 
-    struct QN {
+    // Generic elements for augmented system solves
+    struct Augsys {
         // Tolerance for all our tests
         Real eps;
 
         // Points where we run the test 
         X_Vector x;
         Y_Vector y;
-        Z_Vector z;
 
         // Equality constraint 
         std::unique_ptr <Optizelle::VectorValuedFunction <Real,XX,YY>> g;
 
-        // Inequality constraint
-        std::unique_ptr <Optizelle::VectorValuedFunction <Real,XX,YY>> h;
-
         // Trust-region radius
         Real delta;
+
+        // Do diagonstic checks instead
+        bool do_diagnostics;
+
+        // Check that we computed augmented system solve iterations 
+        bool check_augsys; 
+
+        // Check that we exited the augmented system solve early
+        bool check_augsys_exit;
+        
+        // Setup some simple parameters
+        Augsys(X_Vector const & x_,Y_Vector const & y_) :
+            eps(std::pow(
+                Real(10.),
+                std::log10(std::numeric_limits <Real>::epsilon())
+                    *Real(0.75))),
+            x(X::init(x_)),
+            y(Y::init(y_)),
+            g(),
+            delta(1e16),
+            do_diagnostics(false),
+            check_augsys(false),
+            check_augsys_exit(false)
+        {
+            X::copy(x_,x); 
+            Y::copy(y_,y);
+        }
+    };
+
+    // Simple quasinormal subproblem setup 
+    struct QN : public Augsys {
+
+        // Points where we run the test 
+        Z_Vector z;
+
+        // Inequality constraint
+        std::unique_ptr <Optizelle::VectorValuedFunction <Real,XX,YY>> h;
 
         // Desired solution
         std::unique_ptr <X_Vector> dx_ncp_star;
@@ -423,27 +477,14 @@ struct Unit {
         // Check that we cut back the step from the safeguard
         bool check_safe;
 
-        // Check that we computed augmented system solve iterations 
-        bool check_augsys; 
-
-        // Do diagonstic checks instead
-        bool do_diagnostics;
-        
         // Copy of the Cauchy point for some more complicated tests 
         X_Vector cp;
 
         // Setup some simple parameters
         QN(X_Vector const & x_,Y_Vector const & y_) :
-            eps(std::pow(
-                Real(10.),
-                std::log10(std::numeric_limits <Real>::epsilon())
-                    *Real(0.75))),
-            x(X::init(x_)),
-            y(Y::init(y_)),
+            Augsys(x_,y_),
             z(),
-            g(),
             h(),
-            delta(1e16),
             dx_ncp_star(),
             dx_n_star(),
             qn_stop_star(),
@@ -455,13 +496,9 @@ struct Unit {
             check_dx_ncp(false),
             check_feas(false),
             check_safe(false),
-            check_augsys(false),
-            do_diagnostics(false),
             cp(X::init(x_))
         {
-            X::copy(x_,x); 
-            Y::copy(y_,y);
-            z.resize(x.size()*2);
+            z.resize(x_.size()*2);
         }
     };
 
@@ -487,7 +524,7 @@ struct Unit {
         typename Optizelle::Constrained <Real,XX,YY,ZZ>::State::t
             state(setup.x,setup.y,setup.z);
 
-        // Set some appropraite state information
+        // Set some appropriate state information
         state.delta = setup.delta;
 
         // Create a bundle of functions
@@ -629,5 +666,122 @@ struct Unit {
 
         // Copy the Cauchy point
         X::copy(state.dx_ncp,setup.cp); 
+    }
+
+    // Simple nullspace projection setup 
+    struct NSP : public Augsys {
+        // Direction to project
+        std::unique_ptr <X_Vector> dx;
+
+        // Desired solution
+        std::unique_ptr <X_Vector> P_dx_star;
+
+        // Check that we're in the nullspace of the constraint
+        bool check_null;
+
+        // Check that we solution that we obtained
+        bool check_sol;
+
+        // Setup some simple parameters
+        NSP(X_Vector const & x_,Y_Vector const & y_) :
+            Augsys(x_,y_),
+            dx(),
+            P_dx_star(),
+            check_null(false),
+            check_sol(false)
+        {}
+    };
+
+    // Run and verify the problem setup
+    static void run_and_verify(NSP & setup) {
+        // Create an optimization state
+        typename Optizelle::EqualityConstrained <Real,XX,YY>::State::t
+            state(setup.x,setup.y);
+
+        // Create a bundle of functions
+        typename Optizelle::Constrained <Real,XX,YY,ZZ>::Functions::t fns;
+        fns.f.reset(new typename Objective::Quadratic);
+        fns.g = std::move(setup.g);
+
+        // Create the messaging object
+        auto msg = Optizelle::Messaging();
+
+        // Fill out the bundle of functions
+        Optizelle::EqualityConstrained <Real,XX,YY>::Functions::init(
+            msg,state,fns);
+
+        // Evaluate the function and cache information about it
+        fns.g->eval(state.x,state.g_x);
+        state.norm_gxtyp = std::sqrt(Y::innr(state.g_x,state.g_x));
+        fns.g->eval(state.x,state.g_x);
+        state.norm_dxtyp = Real(1.);
+        state.eps_dx = Real(1e-8);
+
+        // If we're doing diagnostics, run them and then quit.  Really, we
+        // should just be using this for debugging our problem setups.
+        if(setup.do_diagnostics) {
+            state.f_diag = Optizelle::FunctionDiagnostics::SecondOrder;
+            state.g_diag = Optizelle::FunctionDiagnostics::SecondOrder;
+            Optizelle::EqualityConstrained<Real,XX,YY>::Diagnostics
+                ::checkFunctions(msg,fns,state);
+            return;
+        }
+
+        // Loop over this twice.  In one case, we do the nullspace projection
+        // for truncated-CG.  In the other, we do the projected gradient.
+        for(unsigned i=0;i<=1;i++) {
+            // Compute the nullspace projection
+            auto P_dx = X::init(setup.x);
+            auto augsys_null_iter = Natural(0);
+            auto augsys_null_err_target = Real(0.);
+            if(i==0) {
+                typename Optizelle::EqualityConstrained<Real,XX,YY>::Algorithms
+                    ::NullspaceProjForTrunc(state,fns).eval(*setup.dx,P_dx);
+                augsys_null_iter = state.augsys_proj_iter;
+                augsys_null_err_target = state.augsys_proj_err_target;
+
+            } else {
+                X::copy(*setup.dx,state.H_dxn);
+                Optizelle::EqualityConstrained<Real,XX,YY>::Algorithms
+                    ::projectedGradLagrangianPlusHdxn(fns,state);
+                X::copy(state.W_gradpHdxn,P_dx);
+                augsys_null_iter = state.augsys_pg_iter;
+                augsys_null_err_target = state.augsys_pg_err_target;
+            }
+
+            // Check that the projected point is correct 
+            if(setup.check_sol) {
+                auto norm_r = Real(0.);
+                auto norm_dx = Real(0.);
+                std::tie(norm_r,norm_dx)=error(P_dx,*setup.P_dx_star);
+                CHECK(norm_r <= setup.eps);
+            }
+
+            // Check that our step takes us into the nullspace 
+            if(setup.check_null) {
+                auto gp_x_Pdx = Y::init(setup.y);
+                fns.g->p(setup.x,P_dx,gp_x_Pdx);
+                auto norm_gpxPdx = std::sqrt(Y::innr(gp_x_Pdx,gp_x_Pdx));
+                CHECK(norm_gpxPdx <= setup.eps);
+            }
+
+            // Check that we computed augmented system solves 
+            if(setup.check_augsys) {
+                CHECK(augsys_null_iter > 0);
+
+            // Otherwise, make sure that we didn't
+            } else {
+                CHECK(augsys_null_iter == 0);
+            }
+            
+            // Check that we exited the augmented system solve early
+            if(setup.check_augsys_exit) {
+                CHECK(augsys_null_err_target == Real(1.));
+            }
+        }
+
+        // Move the function out the bundle of functions and back into setup in
+        // case we need it later
+        setup.g = std::move(fns.g);
     }
 };

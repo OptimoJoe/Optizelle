@@ -6,7 +6,7 @@
 
 #include "optizelle/optizelle.h"
 #include "optizelle/vspaces.h"
-#include "qn.h"
+#include "augsys.h"
 #include "spaces.h"
 
 int main(int argc,char* argv[]){
