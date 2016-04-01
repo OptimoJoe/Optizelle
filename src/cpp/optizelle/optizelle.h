@@ -8612,6 +8612,7 @@ namespace Optizelle{
                 X::axpy(Real(1.),grad_step,grad_p_Hdxn);
 
                 // Do the nullspace projrection
+                augsys_pg_iter = 0;
                 NullspaceProj(
                     fns,
                     state,
