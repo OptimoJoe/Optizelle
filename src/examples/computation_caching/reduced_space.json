@@ -1,0 +1,11 @@
+{
+    "Optizelle" : {
+        "msg_level" : 2,
+        "iter_max" : 50,
+        "delta" : 1e0,
+        "eps_grad" : 1e-4,
+        "PH_type" : "UserDefined",
+        "dscheme" : "Never",
+        "f_diag" : "SecondOrder"
+    }
+}
