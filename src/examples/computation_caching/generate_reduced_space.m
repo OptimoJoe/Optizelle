@@ -13,6 +13,7 @@ function [f PH phi] = generate_reduced_space(params)
     phi = @(x)state_uncached(params,x,rhs(params,x));
 end
 
+%---ObjectiveGradient0---
 % Evaluates the objective 
 function z = obj_eval(params,x)
     % Cached objective evaluation.  Really, this only saves us the first
@@ -62,99 +63,12 @@ function grad = obj_grad(params,x)
             -state(params,x,op_p(i,params,x)*u - rhs_p(i,params,x)));
     end
 end
+%---ObjectiveGradient1---
 
+%---Hessian0---
 % Evaluates the Hessian-vector product
 function hv = obj_hv(params,x,dx)
     hv = hessian(params,x)*dx;
-end
-
-% Evaluates the inverse of the Hessian applied to a vector
-function ihv = obj_hv_inv(params,x,dx)
-    % Keep track of where the factorization occurs 
-    persistent cache
-
-    % Performance diagnostics
-    global diagnostics
-
-    % Cache the Hessian factorization when required 
-    if isempty(cache) || ~isequal(x,cache.x)
-        % Save the point we're factorizing the Hessian factorization at 
-        cache.x = x;
-    
-        % Grab the current Hessian
-        H = hessian(params,x);
-
-        % Factorize the Hessian
-        [cache.l cache.u cache.p]=lu(H,'vector');
-        
-        % Keep track that we cache a Hessian factorization
-        diagnostics.hessian_factorization_cached = ...
-            diagnostics.hessian_factorization_cached+1;
-    end
-
-    % Apply the inverse to the direction 
-    ihv = cache.u\(cache.l\dx(cache.p));
-end
-
-% Adjust the forcing function with the pieces for the boundary conditions
-function z = rhs(params,x)
-    z = params.f - x(1)*params.Ahat - x(2)*params.Bhat;
-end
-
-% Finds the derivative of the rhs function adjusted with the boundary
-% conditions
-function z = rhs_p(which,params,x)
-    if which==1
-        z = -params.Ahat;
-    else
-        z = -params.Bhat;
-    end
-end
-
-% Grabs the differential operator
-function z = op(params,x)
-    z = x(1)*params.A+x(2)*params.B;
-end
-
-% Grabs the derivative of the differential operator 
-function z = op_p(which,params,x)
-    if which==1
-        z = params.A;
-    else
-        z = params.B;
-    end
-end
-
-% Solves the discretized PDE with caching
-function z = state(params,x,rhs)
-    % Keep track of where the solve occurs
-    persistent cache
-
-    % Performance diagnostics
-    global diagnostics
-
-    % Cache the factorization when required
-    if isempty(cache) || ~isequal(x,cache.x)
-        % Save the point we're factorizing at
-        cache.x = x;
-
-        % Factorize the operator
-        [cache.l cache.u cache.p cache.q cache.r] = ...
-            lu(op(params,x),'vector');
-        
-        % Keep track that we did a new factorization 
-        diagnostics.state_factorization_cached = ...
-            diagnostics.state_factorization_cached+1;
-    end
-    
-    % Solve the linear system 
-    z = zeros(size(rhs));
-    z(cache.q) = cache.u\(cache.l\(cache.r(:,cache.p)\rhs));
-end
-
-% Solves the discretized PDE without caching
-function z = state_uncached(params,x,rhs)
-    z = op(params,x)\rhs;
 end
 
 % Finds the Hessian 
@@ -207,6 +121,100 @@ function H = hessian(params,x)
 
     % Evaluate the Hessian-vector product
     H = cache.H;
+end
+%---Hessian1---
+
+%---HessianInv0---
+% Evaluates the inverse of the Hessian applied to a vector
+function ihv = obj_hv_inv(params,x,dx)
+    % Keep track of where the factorization occurs 
+    persistent cache
+
+    % Performance diagnostics
+    global diagnostics
+
+    % Cache the Hessian factorization when required 
+    if isempty(cache) || ~isequal(x,cache.x)
+        % Save the point we're factorizing the Hessian factorization at 
+        cache.x = x;
+    
+        % Grab the current Hessian
+        H = hessian(params,x);
+
+        % Factorize the Hessian
+        [cache.l cache.u cache.p]=lu(H,'vector');
+        
+        % Keep track that we cache a Hessian factorization
+        diagnostics.hessian_factorization_cached = ...
+            diagnostics.hessian_factorization_cached+1;
+    end
+
+    % Apply the inverse to the direction 
+    ihv = cache.u\(cache.l\dx(cache.p));
+end
+%---HessianInv1---
+
+% Adjust the forcing function with the pieces for the boundary conditions
+function z = rhs(params,x)
+    z = params.f - x(1)*params.Ahat - x(2)*params.Bhat;
+end
+
+% Finds the derivative of the rhs function adjusted with the boundary
+% conditions
+function z = rhs_p(which,params,x)
+    if which==1
+        z = -params.Ahat;
+    else
+        z = -params.Bhat;
+    end
+end
+
+% Grabs the differential operator
+function z = op(params,x)
+    z = x(1)*params.A+x(2)*params.B;
+end
+
+% Grabs the derivative of the differential operator 
+function z = op_p(which,params,x)
+    if which==1
+        z = params.A;
+    else
+        z = params.B;
+    end
+end
+
+%---StateSolve0---
+% Solves the discretized PDE with caching
+function z = state(params,x,rhs)
+    % Keep track of where the solve occurs
+    persistent cache
+
+    % Performance diagnostics
+    global diagnostics
+
+    % Cache the factorization when required
+    if isempty(cache) || ~isequal(x,cache.x)
+        % Save the point we're factorizing at
+        cache.x = x;
+
+        % Factorize the operator
+        [cache.l cache.u cache.p cache.q cache.r] = ...
+            lu(op(params,x),'vector');
+        
+        % Keep track that we did a new factorization 
+        diagnostics.state_factorization_cached = ...
+            diagnostics.state_factorization_cached+1;
+    end
+    
+    % Solve the linear system 
+    z = zeros(size(rhs));
+    z(cache.q) = cache.u\(cache.l\(cache.r(:,cache.p)\rhs));
+end
+%---StateSolve1---
+
+% Solves the discretized PDE without caching
+function z = state_uncached(params,x,rhs)
+    z = op(params,x)\rhs;
 end
 
 % Inner product for Rm

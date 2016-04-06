@@ -41,6 +41,7 @@ function z = eq_eval(params,x)
     z = op(params,x)*x(params.idx.u)-rhs(params,x);
 end
 
+%---Derivative0---
 % Evaluates the derivative of the equality constraint 
 function z = eq_p(params,x,dx)
     z = deriv(params,x)*dx;
@@ -51,11 +52,115 @@ function z = eq_ps(params,x,dy)
     z = deriv(params,x)'*dy;
 end
 
+% Finds the total derivative of the equality constraints
+function D = deriv(params,x)
+    % Keep track of where the evaluation occurs
+    persistent cache
+
+    % Performance diagnostics
+    global diagnostics
+    
+    % Figure out if we match a cached element
+    [cache iscached]=cache_search(cache,x);
+
+    % If we don't have a match, cache a new factorization 
+    if ~iscached 
+        % Save the current location 
+        cache{1}.x = x;
+
+        % Find the total derivative 
+        cache{1}.D = [ ...
+            op_p(1,params,x)*x(params.idx.u)-rhs_p(1,params,x) ...
+            op_p(2,params,x)*x(params.idx.u)-rhs_p(2,params,x) ...
+            op(params,x)];
+        
+        % Keep track that we cached a derivative 
+        diagnostics.first_derivative_cached = ...
+            diagnostics.first_derivative_cached+1;
+    end
+
+    % Return the derivative
+    D = cache{1}.D;
+end
+
+% Prepares our cached element according to the following scheme
+%
+% 1.  Item not cached, copy first cached element to the second.  Return that no
+%     cached item found.
+%
+% 2.  Item found in first cached element.  Return that cached item found.
+% 
+% 3.  Item found in second cached element.  Exchange first and second cached
+%     elements.  Return that cached item found.
+function [cache iscached] = cache_search(cache,x)
+    % Determine what cached item matches x
+    which = 0;
+    if ~isempty(cache)
+        for i=1:length(cache)
+            if isequal(x,cache{i}.x)
+                which = i;
+                break;
+            end
+        end
+    end
+
+    % No items match
+    if which==0
+        iscached = 0; 
+        if ~isempty(cache)
+            cache{2} = cache{1};
+        end
+
+    % First item matches
+    elseif which==1
+        iscached = 1;
+
+    % Second item matches
+    elseif which==2
+        iscached = 1;
+        cache(2:-1:1)=cache;
+    end
+end
+%---Derivative1---
+
+%---Derivative20---
 % Evaluates the adjoint of second derivative of the equality constraint
 function z = eq_pps(params,x,dx,dy)
     z = deriv2(params,x,dy)*dx;
 end
 
+% Finds the second total derivative adjoint of the equality constraints applied
+% to the equality multiplier
+function D2 = deriv2(params,x,dy)
+    % Keep track of where the evaluation occurs
+    persistent cache
+    global diagnostics
+
+    % Cache the total derivative when possible 
+    if isempty(cache) || ~isequal(x,cache.x) || ~isequal(dy,cache.dy)
+        % Save the current location 
+        cache.x = x;
+        cache.dy = dy;
+
+        % Find the adjoint of the second derivative applied to the equality
+        % multiplier
+        cache.D2 = sparse(params.nx+2,params.nx+2);
+        cache.D2(params.idx.k(1),params.idx.u) = dy'*op_p(1,params,x);
+        cache.D2(params.idx.k(2),params.idx.u) = dy'*op_p(2,params,x);
+        cache.D2(params.idx.u,params.idx.k(1)) = op_p(1,params,x)'*dy;
+        cache.D2(params.idx.u,params.idx.k(2)) = op_p(2,params,x)'*dy;
+        
+        % Keep track that we cache a derivative 
+        diagnostics.second_derivative_cached = ...
+            diagnostics.second_derivative_cached+1;
+    end
+
+    % Return the derivative
+    D2 = cache.D2;
+end
+%---Derivative21---
+
+%---Schur0---
 % Evaluates the Schur preconditioner
 function z = eq_schur(params,x,dx)
     % Keep track of where the evaluation occurs
@@ -106,6 +211,7 @@ function z = eq_schur(params,x,dx)
         z = cache{1}.r(:,cache{1}.p)'\(cache{1}.l'\(cache{1}.u'\z(cache{1}.q)));
     end
 end
+%---Schur1---
 
 % Adjust the forcing function with the pieces for the boundary conditions
 function z = rhs(params,x)
@@ -134,106 +240,6 @@ function z = op_p(which,params,x)
         z = params.A;
     else
         z = params.B;
-    end
-end
-
-% Finds the total derivative of the equality constraints
-function D = deriv(params,x)
-    % Keep track of where the evaluation occurs
-    persistent cache
-
-    % Performance diagnostics
-    global diagnostics
-    
-    % Figure out if we match a cached element
-    [cache iscached]=cache_search(cache,x);
-
-    % If we don't have a match, cache a new factorization 
-    if ~iscached 
-        % Save the current location 
-        cache{1}.x = x;
-
-        % Find the total derivative 
-        cache{1}.D = [ ...
-            op_p(1,params,x)*x(params.idx.u)-rhs_p(1,params,x) ...
-            op_p(2,params,x)*x(params.idx.u)-rhs_p(2,params,x) ...
-            op(params,x)];
-        
-        % Keep track that we cached a derivative 
-        diagnostics.first_derivative_cached = ...
-            diagnostics.first_derivative_cached+1;
-    end
-
-    % Return the derivative
-    D = cache{1}.D;
-end
-
-% Finds the second total derivative adjoint of the equality constraints applied
-% to the equality multiplier
-function D2 = deriv2(params,x,dy)
-    % Keep track of where the evaluation occurs
-    persistent cache
-    global diagnostics
-
-    % Cache the total derivative when possible 
-    if isempty(cache) || ~isequal(x,cache.x) || ~isequal(dy,cache.dy)
-        % Save the current location 
-        cache.x = x;
-        cache.dy = dy;
-
-        % Find the adjoint of the second derivative applied to the equality
-        % multiplier
-        cache.D2 = sparse(params.nx+2,params.nx+2);
-        cache.D2(params.idx.k(1),params.idx.u) = dy'*op_p(1,params,x);
-        cache.D2(params.idx.k(2),params.idx.u) = dy'*op_p(2,params,x);
-        cache.D2(params.idx.u,params.idx.k(1)) = op_p(1,params,x)'*dy;
-        cache.D2(params.idx.u,params.idx.k(2)) = op_p(2,params,x)'*dy;
-        
-        % Keep track that we cache a derivative 
-        diagnostics.second_derivative_cached = ...
-            diagnostics.second_derivative_cached+1;
-    end
-
-    % Return the derivative
-    D2 = cache.D2;
-end
-
-% Prepares our cached element according to the following scheme
-%
-% 1.  Item not cached, copy first cached element to the second.  Return that no
-%     cached item found.
-%
-% 2.  Item found in first cached element.  Return that cached item found.
-% 
-% 3.  Item found in second cached element.  Exchange first and second cached
-%     elements.  Return that cached item found.
-function [cache iscached] = cache_search(cache,x)
-    % Determine what cached item matches x
-    which = 0;
-    if ~isempty(cache)
-        for i=1:length(cache)
-            if isequal(x,cache{i}.x)
-                which = i;
-                break;
-            end
-        end
-    end
-
-    % No items match
-    if which==0
-        iscached = 0; 
-        if ~isempty(cache)
-            cache{2} = cache{1};
-        end
-
-    % First item matches
-    elseif which==1
-        iscached = 1;
-
-    % Second item matches
-    elseif which==2
-        iscached = 1;
-        cache(2:-1:1)=cache;
     end
 end
 
