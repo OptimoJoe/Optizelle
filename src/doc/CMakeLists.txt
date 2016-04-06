@@ -32,6 +32,7 @@ set(SIMPLESDPCONEPATH
     "${CMAKE_SOURCE_DIR}/src/examples/simple_sdp_cone/")
 set(RESTARTPATH "${CMAKE_SOURCE_DIR}/src/unit/restart/")
 set(SQLRESTARTPATH "${CMAKE_SOURCE_DIR}/src/examples/sql_restart/")
+set(CACHEPATH "${CMAKE_SOURCE_DIR}/src/examples/computation_caching/")
 
 # Compile the manual
 add_latex_document(optizelle.tex DEFAULT_PDF
