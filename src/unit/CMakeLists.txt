@@ -12,6 +12,10 @@ if(ENABLE_MATLAB)
     mark_as_advanced(CLEAR ENABLE_MATLAB_UNIT)
     set(ENABLE_MATLAB_UNIT OFF CACHE BOOL "Enable unit tests for MATLAB?")
 endif()
+if(ENABLE_OCTAVE)
+    mark_as_advanced(CLEAR ENABLE_OCTAVE_UNIT)
+    set(ENABLE_OCTAVE_UNIT OFF CACHE BOOL "Enable unit tests for Octave?")
+endif()
 
 # Basic unit tests and utility functions
 add_subdirectory(restart)

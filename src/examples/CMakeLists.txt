@@ -9,6 +9,10 @@ if(ENABLE_MATLAB)
     mark_as_advanced(CLEAR ENABLE_MATLAB_EXAMPLES)
     set(ENABLE_MATLAB_EXAMPLES OFF CACHE BOOL "Enable examples for MATLAB?")
 endif()
+if(ENABLE_OCTAVE)
+    mark_as_advanced(CLEAR ENABLE_OCTAVE_EXAMPLES)
+    set(ENABLE_OCTAVE_EXAMPLES OFF CACHE BOOL "Enable examples for Octave?")
+endif()
 
 # Add all examples or unit tests
 add_subdirectory(diagnostic_checks)

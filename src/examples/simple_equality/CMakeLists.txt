@@ -1,16 +1,11 @@
 project(simple_equality)
 
+# Set what interfaces we're using
+set(interfaces "cpp" "python" "matlab" "octave")
+
 # Compile and install the example
-add_optizelle_example_cpp(${PROJECT_NAME})
-add_optizelle_example_python(${PROJECT_NAME})
-add_optizelle_example_matlab(${PROJECT_NAME})
+add_example(${PROJECT_NAME} "${interfaces}" "")
 
-# Installs the supporting files 
-add_optizelle_example_supporting(${PROJECT_NAME}
-    sr1.json
-    tr_newton.json)
-
-# Add some unit tests
-add_optizelle_json_test_cpp("*.json" ${PROJECT_NAME})
-add_optizelle_json_test_python("*.json" ${PROJECT_NAME})
-add_optizelle_json_test_matlab("*.json" ${PROJECT_NAME})
+# Run the unit tests
+file(GLOB_RECURSE units ${CMAKE_CURRENT_SOURCE_DIR} "*.json")
+add_unit(${PROJECT_NAME} "${interfaces}" "${units}" TRUE)

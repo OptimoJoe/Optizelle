@@ -1,21 +1,41 @@
 # Check if we want to build the MATLAB interface 
 mark_as_advanced(CLEAR ENABLE_MATLAB)
 set(ENABLE_MATLAB OFF CACHE BOOL "Enable the MATLAB build?")
-if(ENABLE_MATLAB)
+
+# Check if we want to build the Octave interface 
+mark_as_advanced(CLEAR ENABLE_OCTAVE)
+set(ENABLE_OCTAVE OFF CACHE BOOL "Enable the Octave build?")
+
+# Options for both
+if(ENABLE_MATLAB OR ENABLE_OCTAVE)
     # Common includes
     include_directories(${OPTIZELLE_INCLUDE_DIRS})
     include_directories(${JSONCPP_INCLUDE_DIRS})
-
-    # Make sure we can find the MATLAB libraries and then add the
-    # directory with the sources.
-    find_package(MATLAB REQUIRED)
+    
+    # Add the directory with the sources 
     add_subdirectory(optizelle)
+endif()
+
+# MATLAB specific options
+if(ENABLE_MATLAB)
+    # Find the MATLAB libraries 
+    find_package(MATLAB REQUIRED)
 
     # Install the setup file
     install(FILES setupOptizelle.m DESTINATION share/optizelle/matlab/)
 
-    # If we're on Windows, install a readme file that explains how to set the MATLAB path
+    # If we're on Windows, install a readme file that explains how to set the
+    # MATLAB path
     if(WIN32)
         install(FILES readme_windows.txt RENAME readme.txt DESTINATION share/optizelle/matlab/)
     endif()
+endif()
+
+# Octave specific options
+if(ENABLE_OCTAVE)
+    # Find the Octave libraries 
+    find_package(Octave REQUIRED)
+
+    # Install the setup file
+    install(FILES setupOptizelle.m DESTINATION share/optizelle/octave/)
 endif()

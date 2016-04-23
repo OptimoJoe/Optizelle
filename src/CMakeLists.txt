@@ -16,7 +16,7 @@ include(AddOptizelleExamplePython)
 include(AddOptizelleExampleMatlab)
 include(AddOptizelleExampleSupporting)
 include(AddOptizelleUnitCpp)
-include(AddOptizelleMex)
+include(AddExample)
 
 # See if we're going to build the documentation for the package
 set(ENABLE_DOCUMENTATION OFF CACHE BOOL "Enable documentation generation?")
