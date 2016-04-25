@@ -51,8 +51,8 @@ if(ENABLE_CPP)
     # Compile our Python pieces
     add_subdirectory(python)
 
-    # Compile our MATLAB pieces
-    add_subdirectory(matlab)
+    # Compile our MATLAB/Octave pieces
+    add_subdirectory(matlab_octave)
     
     # Compile our unit tests
     add_subdirectory(unit)

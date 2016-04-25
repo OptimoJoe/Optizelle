@@ -99,19 +99,19 @@ macro(compile_interface type include libs extension unit)
             ${type}_mex_for_unit
             ALL
             COMMAND ${CMAKE_COMMAND} -E copy_directory
-                ${CMAKE_BINARY_DIR}/src/matlab/optizelle
+                ${CMAKE_BINARY_DIR}/src/matlab_octave/optizelle
                 ${CMAKE_BINARY_DIR}/src/${type}/optizelle)
         add_custom_target(
             ${type}_scripts_for_unit
             ALL
             COMMAND ${CMAKE_COMMAND} -E copy_directory
-                ${CMAKE_SOURCE_DIR}/src/matlab/optizelle
+                ${CMAKE_SOURCE_DIR}/src/matlab_octave/optizelle
                 ${CMAKE_BINARY_DIR}/src/${type}/optizelle)
         add_custom_target(
             ${type}_setup_for_unit
             ALL
             COMMAND ${CMAKE_COMMAND} -E copy
-                ${CMAKE_SOURCE_DIR}/src/matlab/setupOptizelle.m
+                ${CMAKE_SOURCE_DIR}/src/matlab_octave/setupOptizelle.m
                 ${CMAKE_BINARY_DIR}/src/${type})
         add_custom_target(
             ${type}_jsonlab_for_unit
