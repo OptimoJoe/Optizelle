@@ -30,16 +30,6 @@ set(supporting
     restart/z.0008.txt)
 add_example(${PROJECT_NAME} "${interfaces}" "${supporting}")
 
-# Copy the restart files over for the unit tests 
-if(ENABLE_CPP_UNIT OR ENABLE_PYTHON_UNIT OR ENABLE_MATLAB_UNIT)
-    add_custom_target(
-        ${PROJECT_NAME}_restart_files
-        ALL
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-            ${CMAKE_SOURCE_DIR}/src/examples/${PROJECT_NAME}/restart
-            ${CMAKE_BINARY_DIR}/src/examples/${PROJECT_NAME}/restart)
-endif()
-
 # Run the unit tests
 file(GLOB_RECURSE units ${CMAKE_CURRENT_SOURCE_DIR} "*.json")
 list(REMOVE_ITEM units "${CMAKE_CURRENT_SOURCE_DIR}/restart.json") 

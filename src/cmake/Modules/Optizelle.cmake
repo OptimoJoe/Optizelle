@@ -1,48 +1,65 @@
-# Adds an example both for the unit test as well as an exmaple
+# Adds an example both for the unit test as well as an example.  This
+# implicitely installs any *.json files in the directory.
 macro(add_example name interfaces supporting)
     # Set the base installation directory
     set(basedir "share/optizelle/examples/")
 
-    # Grab and install the problem setups
-    file(GLOB_RECURSE setups ${CMAKE_CURRENT_SOURCE_DIR} "*.json")
-    install(FILES ${setups} DESTINATION share/optizelle/examples/${name})
+    # Compiles the example
+    compile_example_unit(${name} ${interfaces})
 
-    # Installs any additional supporting files
-    install(FILES ${supporting} DESTINATION share/optizelle/examples/${name})
+    # Install any json or supporting files
+    is_example("${interfaces}" enable_example)
+    if(enable_example)
+        # Grab and install the problem setups
+        file(GLOB_RECURSE setups ${CMAKE_CURRENT_SOURCE_DIR} "*.json")
+        install(FILES ${setups} DESTINATION share/optizelle/examples/${name})
 
-    # Compile and install the particular problem interface 
+        # Installs any additional supporting files
+        install(FILES ${supporting}
+            DESTINATION share/optizelle/examples/${name})
+    endif()
+
+    # Installs the compiled example and source 
+    foreach(interface ${interfaces})
+        if(${interface} STREQUAL "cpp" AND ENABLE_CPP_EXAMPLES)
+            install(FILES "${name}.cpp" DESTINATION "${basedir}/${name}")
+            install(TARGETS ${name} DESTINATION "${basedir}/${name}")
+
+        elseif(${interface} STREQUAL "python" AND ENABLE_PYTHON_EXAMPLES)
+            install(FILES "${name}.py" DESTINATION "${basedir}/${name}")
+
+        elseif(
+            (${interface} STREQUAL "matlab" AND ENABLE_MATLAB_EXAMPLES) OR
+            (${interface} STREQUAL "octave" AND ENABLE_OCTAVE_EXAMPLES)
+        )
+            install(FILES "${name}.m" DESTINATION "${basedir}/${name}")
+        endif()
+    endforeach()
+endmacro()
+
+# Compiles an example or unit test 
+macro(compile_example_unit name interfaces)
+    # Compile the particular problem interface 
     foreach(interface ${interfaces})
         if(${interface} STREQUAL "cpp")
 
             # Compile and link
-            if(ENABLE_CPP_EXAMPLES OR ENABLE_CPP_UNIT)
+            if(ENABLE_CPP_UNIT)
                 include_directories(${OPTIZELLE_INCLUDE_DIRS})
                 include_directories(${JSONCPP_INCLUDE_DIRS})
                 add_executable(${name} "${name}.cpp")
                 target_link_libraries(${name}
-                    optizelle_static
+                    optizelle_shared
                     ${JSONCPP_LIBRARIES}
                     ${LAPACK_LIBRARIES}
                     ${BLAS_LIBRARIES})
             endif()
                 
-            # Installation
-            if(ENABLE_CPP_EXAMPLES)
-                install(FILES "${name}.cpp" DESTINATION "${basedir}/${name}")
-                install(TARGETS ${name} DESTINATION "${basedir}/${name}")
-            endif()
-
         elseif(${interface} STREQUAL "python")
-            # Installation
-            if(ENABLE_PYTHON_EXAMPLES)
-                install(FILES "${name}.py" DESTINATION "${basedir}/${name}")
-            endif()
+            # Nothing to do
 
         elseif(${interface} STREQUAL "matlab" OR ${interface} STREQUAL "octave")
-            # Installation 
-            if(ENABLE_MATLAB_EXAMPLES OR ENABLE_OCTAVE_EXAMPLES)
-                install(FILES "${name}.m" DESTINATION "${basedir}/${name}")
-            endif()
+            # Nothing to do
         endif()
     endforeach()
 endmacro()
@@ -198,4 +215,58 @@ macro(add_unit name interfaces units validated)
             endif()
         endforeach()
     endif()
+endmacro()
+
+# Compiles and adds a unit test
+macro(compile_add_unit name interfaces)
+    compile_example_unit(${name} "${interfaces}")
+    add_unit(${name} "${interfaces}" "" FALSE)
+endmacro()
+
+# Returns true when there's some kind of unit test active.  We need this to
+# figure out when we need to handle a common file. 
+macro(is_unit interfaces return)
+    # Initially, we set return to false because we don't know if we're doing
+    # any unit tests
+    set(${return} FALSE)
+
+    # Loop over the interfaces to figure out if we have any unit tests 
+    foreach(interface ${interfaces})
+        if(${interface} STREQUAL "cpp" AND ENABLE_CPP_UNIT)
+            set(${return} TRUE)
+
+        elseif(${interface} STREQUAL "python" AND ENABLE_PYTHON_UNIT)
+            set(${return} TRUE)
+
+        elseif(${interface} STREQUAL "matlab" AND ENABLE_MATLAB_UNIT)
+            set(${return} TRUE)
+
+        elseif(${interface} STREQUAL "octave" AND ENABLE_OCTAVE_UNIT)
+            set(${return} TRUE)
+        endif()
+    endforeach()
+endmacro()
+
+# Returns true when there's some kind of example active.  We need this to
+# figure out when we need to handle a common file. 
+macro(is_example interfaces return)
+    # Initially, we set return to false because we don't know if we're doing
+    # any unit tests
+    set(${return} FALSE)
+
+    # Loop over the interfaces to figure out if we have any unit tests 
+    foreach(interface ${interfaces})
+        if(${interface} STREQUAL "cpp" AND ENABLE_CPP_EXAMPLES)
+            set(${return} TRUE)
+
+        elseif(${interface} STREQUAL "python" AND ENABLE_PYTHON_EXAMPLES)
+            set(${return} TRUE)
+
+        elseif(${interface} STREQUAL "matlab" AND ENABLE_MATLAB_EXAMPLES)
+            set(${return} TRUE)
+
+        elseif(${interface} STREQUAL "octave" AND ENABLE_OCTAVE_EXAMPLES)
+            set(${return} TRUE)
+        endif()
+    endforeach()
 endmacro()

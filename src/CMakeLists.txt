@@ -3,20 +3,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
     "${CMAKE_SOURCE_DIR}/src/cmake/Modules/")
     
 # Add some useful macros for examples and unit testing 
-include(AddOptizelleJsonTestCpp)
-include(AddOptizelleJsonTestPython)
-include(AddOptizelleJsonTestMatlab)
-include(AddOptizelleUnvalidatedJsonTestMatlab)
-include(AddOptizelleTestCpp)
-include(AddOptizelleTestPython)
-include(AddOptizelleTestMatlab)
-include(AddOptizelleSDPACpp)
-include(AddOptizelleExampleCpp)
-include(AddOptizelleExamplePython)
-include(AddOptizelleExampleMatlab)
-include(AddOptizelleExampleSupporting)
-include(AddOptizelleUnitCpp)
-include(AddExample)
+include(Optizelle)
 
 # See if we're going to build the documentation for the package
 set(ENABLE_DOCUMENTATION OFF CACHE BOOL "Enable documentation generation?")
