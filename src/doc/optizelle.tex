@@ -755,7 +755,7 @@ In order to optimize this function, we use the following code and parameters, wh
 
     \exampleitem
         {Optizelle Output}
-        {\lstinputlisting[style=OptizelleOutput]{@PROCESSEDPATH@/rosen_output.txt}}
+        {\lstinputlisting[style=OptizelleOutput]{@DOCPATH@/rosen_output.txt}}
 \end{boldlist}
 
 \section{History}
@@ -847,9 +847,11 @@ On Windows, if not using Cygwin, execute the following commands:
 \end{enumerate}
 
         Rather than using \textct{ccmake}, we can also run \textct{cmake} directly in order to configure the build.  This allows us to skip the CMake menu system and configure Optizelle directly, which can be advantageous when compiling Optizelle on multiple, but similar systems.  In order to accomplish this, we execute a command such as
-\begin{center}
-    \lstinputlisting{@PROCESSEDPATH@/mybuild.sh}
-\end{center}
+\begin{center}\begin{lstlisting}
+cmake \
+    %-flags
+..
+\end{lstlisting}\end{center}
 where the actual paths, libraries, and archives depend on the individual system.  Generally, we put this command inside a shell script or batch file in order to make it easier to edit.  As far as the available options, we list them in the next section.
 
 \section{Configuring}

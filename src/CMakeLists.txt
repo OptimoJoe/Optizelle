@@ -13,6 +13,9 @@ set_property(GLOBAL PROPERTY CXX_STANDARD_REQUIRED)
 # and shared libraries.
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+# Add our prepocessing utilities
+add_subdirectory(preprocess)
+
 # Grab our third party library dependencies
 add_subdirectory(thirdparty)
 

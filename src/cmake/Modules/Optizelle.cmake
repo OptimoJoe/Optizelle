@@ -270,3 +270,27 @@ macro(is_example interfaces return)
         endif()
     endforeach()
 endmacro()
+
+# Preprocesses a file prior to compilation
+function(preprocess file data)
+    # Compile the preprocessor
+    include_directories("${CMAKE_SOURCE_DIR}/src/preprocess")
+    add_executable("${file}.pp" "${CMAKE_CURRENT_SOURCE_DIR}/pp/${file}.cpp")
+    target_link_libraries("${file}.pp" preprocess)
+
+    # Run the preprocessor on the source file
+    add_custom_command(
+        OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${file}"
+        COMMAND "${file}.pp"
+            "${data}" 
+            "<${CMAKE_CURRENT_SOURCE_DIR}/${file}"
+            ">${CMAKE_CURRENT_BINARY_DIR}/${file}"
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        COMMENT "Preprocessing ${file}"
+        DEPENDS
+            "${CMAKE_CURRENT_SOURCE_DIR}/pp/${file}.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/${file}"
+            "${data}")
+    add_custom_target("${file}.pp.run" 
+        DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/${file}")
+endfunction()

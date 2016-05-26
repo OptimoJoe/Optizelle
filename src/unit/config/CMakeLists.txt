@@ -5,11 +5,8 @@ project(config)
 # Set the directory name for the configuration
 set(config_dir "config_unit")
 
-# Set the configuration file name
-set(config_name "config.cmake")
-
 # Read in the configuration flags
-file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/${config_name}" flags)
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/flags.txt" flags)
 
 # Create a place for the build 
 add_test(
