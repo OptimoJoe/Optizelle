@@ -14,8 +14,7 @@ if isempty(Optizelle)
 % Add the optizelle directory to the path, which contains a number of helper
 % functions.  In theory, I could just use pwd, but I really want to know where
 % *this* file is and not the current directory.
-dir = mfilename('fullpath');
-dir = dir(1:end-15);
+dir = fileparts(mfilename('fullpath'));
 optizelle_dir = sprintf('%s/optizelle',dir);
 addpath(optizelle_dir);
 

@@ -1,0 +1,27 @@
+# Set the paths to the different pieces in Optizelle needed for the manual 
+set(OPTIZELLECPPPATH "${MY_SOURCE_DIR}/src/cpp/optizelle/")
+set(OPTIZELLEPYTHONPATH "${MY_SOURCE_DIR}/src/python/Optizelle/")
+set(OPTIZELLEMATLABPATH "${MY_SOURCE_DIR}/src/matlab_octave/")
+set(LICENSEPATH "${MY_SOURCE_DIR}")
+set(ROSENBROCKPATH "${MY_SOURCE_DIR}/src/examples/rosenbrock/")
+set(ROSENBROCKADVANCEDAPIPATH
+    "${MY_SOURCE_DIR}/src/examples/rosenbrock_advanced_api/")
+set(SIMPLEEQUALITYPATH "${MY_SOURCE_DIR}/src/examples/simple_equality/")
+set(SIMPLEINEQUALITYPATH "${MY_SOURCE_DIR}/src/examples/simple_inequality/")
+set(SIMPLECONSTRAINEDPATH
+    "${MY_SOURCE_DIR}/src/examples/simple_constrained/")
+set(SIMPLECONSTRAINEDADVANCEDAPIPATH
+    "${MY_SOURCE_DIR}/src/examples/simple_constrained_advanced_api/")
+set(SIMPLEQUADRATICCONEPATH
+    "${MY_SOURCE_DIR}/src/examples/simple_quadratic_cone/")
+set(SIMPLESDPCONEPATH
+    "${MY_SOURCE_DIR}/src/examples/simple_sdp_cone/")
+set(RESTARTPATH "${MY_SOURCE_DIR}/src/unit/restart/")
+set(SQLRESTARTPATH "${MY_SOURCE_DIR}/src/examples/sql_restart/")
+set(CACHEPATH "${MY_SOURCE_DIR}/src/examples/computation_caching/")
+set(DOCPATH "${CMAKE_CURRENT_BINARY_DIR}")
+
+# Configure the preprocessed file
+configure_file(
+    "${MY_CURRENT_BINARY_DIR}/optizelle.tex"
+    "${MY_CURRENT_BINARY_DIR}/optizelle_configured.tex")

@@ -1,7 +1,10 @@
 project(perceptron)
 
-# Installs the supporting files 
-add_optizelle_example_supporting(${PROJECT_NAME}
+# Set what interfaces we're using
+set(interfaces "matlab" "octave")
+
+# Compile and install the example
+set(supporting
     diagnostic_checks_auxiliary.m
     diagnostic_checks_objective.m
     example_1d_extruded.json
@@ -18,17 +21,10 @@ add_optizelle_example_supporting(${PROJECT_NAME}
     generate_parametrization.m
     generate_scaling.m
     generate_scaling_operator.m)
+add_example(${PROJECT_NAME} "${interfaces}" "${supporting}")
 
-# Copy in the rest of the files for the unit tests. 
-if(ENABLE_MATLAB_UNIT)
-    file(GLOB perceptron_json
-        ${CMAKE_SOURCE_DIR}/src/examples/perceptron/*.json)
-    file(COPY
-        ${perceptron_json}
-        DESTINATION ${CMAKE_BINARY_DIR}/src/examples/perceptron)
-endif()
-
-# Add some unit tests
-add_optizelle_test_matlab("example_1d" , TRUE)
-add_optizelle_test_matlab("example_1d_extruded" , TRUE)
-add_optizelle_test_matlab("example_2d" , TRUE)
+# Run the unit tests
+file(COPY ${supporting} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+add_unit("example_1d" "${interfaces}" "" FALSE)
+add_unit("example_1d_extruded" "${interfaces}" "" FALSE)
+add_unit("example_2d" "${interfaces}" "" FALSE)

@@ -1,7 +1,11 @@
 project(restart)
 
+# Set what interfaces we're using
+set(interfaces "cpp" "python" "matlab" "octave")
+
 # Copy in files for our unit tests 
-if(ENABLE_CPP_UNIT OR ENABLE_PYTHON_UNIT OR ENABLE_MATLAB_UNIT)
+is_unit("${interfaces}" enable_unit)
+if(enable_unit) 
     add_custom_target(
         blank
         ALL
@@ -10,18 +14,8 @@ if(ENABLE_CPP_UNIT OR ENABLE_PYTHON_UNIT OR ENABLE_MATLAB_UNIT)
             ${CMAKE_BINARY_DIR}/src/unit/restart/)
 endif()
 
-add_optizelle_unit_cpp(unconstrained)
-add_optizelle_test_python(unconstrained)
-add_optizelle_test_matlab(unconstrained)
-
-add_optizelle_unit_cpp(equality_constrained)
-add_optizelle_test_python(equality_constrained)
-add_optizelle_test_matlab(equality_constrained)
-
-add_optizelle_unit_cpp(inequality_constrained)
-add_optizelle_test_python(inequality_constrained)
-add_optizelle_test_matlab(inequality_constrained)
-
-add_optizelle_unit_cpp(constrained)
-add_optizelle_test_python(constrained)
-add_optizelle_test_matlab(constrained)
+# Compile and add our unit tests 
+compile_add_unit(unconstrained "${interfaces}")
+compile_add_unit(equality_constrained "${interfaces}")
+compile_add_unit(inequality_constrained "${interfaces}")
+compile_add_unit(constrained "${interfaces}")

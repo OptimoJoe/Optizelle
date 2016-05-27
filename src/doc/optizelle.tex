@@ -736,37 +736,6 @@ $$
 $$
 In order to optimize this function, we use the following code and parameters, which generates the subsequent output.
 
-\begin{filecontents*}{rosen_output.txt}
-iter        f(x)        ||grad||    ||dx||      
-1           2.42e+01    2.33e+02    .           
-2           4.73e+00    4.64e+00    3.81e-01    
-.           4.73e+00    4.64e+00    1.00e+00    
-3           4.00e+00    1.74e+01    5.00e-01    
-4           3.34e+00    2.33e+01    5.00e-01    
-5           2.58e+00    8.77e+00    2.04e-01    
-.           2.58e+00    8.77e+00    4.91e-01    
-6           2.09e+00    8.48e+00    2.45e-01    
-7           1.65e+00    9.60e+00    2.45e-01    
-8           1.22e+00    5.00e+00    1.46e-01    
-9           9.64e-01    9.06e+00    2.13e-01    
-10          6.22e-01    1.77e+00    1.10e-01    
-.           6.22e-01    1.77e+00    3.44e-01    
-11          4.40e-01    4.42e+00    1.72e-01    
-12          2.81e-01    3.72e+00    1.68e-01    
-13          1.71e-01    3.60e+00    1.72e-01    
-14          9.43e-02    3.58e+00    1.80e-01    
-15          4.49e-02    2.47e+00    1.60e-01    
-16          1.82e-02    2.40e+00    1.58e-01    
-17          5.16e-03    1.02e+00    1.11e-01    
-18          8.94e-04    7.81e-01    9.41e-02    
-19          4.86e-05    1.17e-01    3.89e-02    
-20          2.49e-07    1.55e-02    1.36e-02    
-21          7.47e-12    4.80e-05    7.98e-04    
-22          7.06e-21    2.62e-09    5.63e-06    
-The algorithm converged due to: GradientSmall
-The optimal point is: (1,1) 
-\end{filecontents*}
-
 \begin{boldlist}
     \exampleitem
         {C++}
@@ -786,7 +755,7 @@ The optimal point is: (1,1)
 
     \exampleitem
         {Optizelle Output}
-        {\lstinputlisting[style=OptizelleOutput]{rosen_output.txt}}
+        {\lstinputlisting[style=OptizelleOutput]{@DOCPATH@/rosen_output.txt}}
 \end{boldlist}
 
 \section{History}
@@ -878,30 +847,11 @@ On Windows, if not using Cygwin, execute the following commands:
 \end{enumerate}
 
         Rather than using \textct{ccmake}, we can also run \textct{cmake} directly in order to configure the build.  This allows us to skip the CMake menu system and configure Optizelle directly, which can be advantageous when compiling Optizelle on multiple, but similar systems.  In order to accomplish this, we execute a command such as
-\begin{center}\begin{verbatim}
+\begin{center}\begin{lstlisting}
 cmake \
-    -DENABLE_CPP:BOOL=ON \
-    -DENABLE_OPENMP:BOOL=ON \
-    -DENABLE_BUILD_JSONCPP:BOOL=ON \
-    -DJSONCPP_ARCHIVE:FILEPATH=/path/to/jsoncpp.zip \
-    -DENABLE_BUILD_BLAS_AND_LAPACK:BOOL=ON \
-    -DLAPACK_ARCHIVE:FILEPATH=/path/to/lapack.tgz \
-    -DENABLE_CPP_EXAMPLES:BOOL=ON \
-    -DENABLE_CPP_UNIT:BOOL=ON \
-    -DENABLE_PYTHON:BOOL=ON \
-    -DENABLE_PYTHON_EXAMPLES:BOOL=ON \
-    -DENABLE_PYTHON_UNIT:BOOL=ON \
-    -DENABLE_MATLAB:BOOL=ON \
-    -DMATLAB_EXECUTABLE:FILEPATH=/path/to/bin/octave \
-    -DMATLAB_INCLUDE_DIR:PATH=/path/to/include/octave \
-    -DMATLAB_LIBRARY:FILEPATH=/path/to/lib/liboctinterp.so \
-    -DMATLAB_MEX_EXTENSION:STRING=mex \
-    -DENABLE_BUILD_JSONLAB:BOOL=ON \
-    -DJSONLAB_ARCHIVE:FILEPATH=/path/to/jsonlab.zip \
-    -DENABLE_MATLAB_EXAMPLES:BOOL=ON \
-    -DENABLE_MATLAB_UNIT:BOOL=ON \
-    ..
-\end{verbatim}\end{center}
+    %-flags
+..
+\end{lstlisting}\end{center}
 where the actual paths, libraries, and archives depend on the individual system.  Generally, we put this command inside a shell script or batch file in order to make it easier to edit.  As far as the available options, we list them in the next section.
 
 \section{Configuring}
@@ -964,7 +914,8 @@ where the actual paths, libraries, and archives depend on the individual system.
             \textctref{ENABLE_CPP_EXAMPLES},
             \textctref{ENABLE_CPP_UNIT},
             \textctref{ENABLE_PYTHON},
-            \textctref{ENABLE_MATLAB}}
+            \textctref{ENABLE_MATLAB},
+            \textctref{ENABLE_OCTAVE}}
         {No}
         {Enables the Optizelle C++ library.}
 
@@ -1189,7 +1140,7 @@ where the actual paths, libraries, and archives depend on the individual system.
             \textctref{ENABLE_MATLAB_EXAMPLES},
             \textctref{ENABLE_MATLAB_UNIT}}
         {No}
-        {Enables the build of the MATLAB/Octave wrappers for Optizelle.}
+        {Enables the build of the MATLAB wrappers for Optizelle.}
 
     \cmakeitem
         {MATLAB_MEX_EXTENSION}
@@ -1199,7 +1150,7 @@ where the actual paths, libraries, and archives depend on the individual system.
         {None}
         {No}
         {Extension of mex files on the system.  This can be found
-        by typing in the command 'mexext' inside of MATLAB/Octave.}
+        by typing in the command 'mexext' inside of MATLAB.}
 
     \cmakeitem
         {MATLAB_INCLUDE_DIR}
@@ -1208,13 +1159,10 @@ where the actual paths, libraries, and archives depend on the individual system.
         {\textctref{ENABLE_MATLAB}}
         {None}
         {Yes }
-        {Path that indicates where the MATLAB/Octave header \textct{mex.h} has
+        {Path that indicates where the MATLAB header \textct{mex.h} has
         been installed.  We do not prefix these headers, so we look directly in
-        the directory provided here.  In MATLAB, this is generally the
-        \textct{extern/include} directory inside the primary MATLAB directory.
-        In Octave, this is the folder called \textct{octave-x.x.x/octave}
-        inside the system \textct{include} directory where \textct{x.x.x}
-        denotes the version number.}
+        the directory provided here.  Generally, this is generally the
+        \textct{extern/include} directory inside the primary MATLAB directory.}
 
     \cmakeitem
         {MATLAB_LIBRARY}
@@ -1223,15 +1171,13 @@ where the actual paths, libraries, and archives depend on the individual system.
         {\textctref{ENABLE_MATLAB}}
         {None}
         {Yes}
-        {Complete path and library for MATLAB/Octave.  Generally, this is
-        \textct{mex} for MATLAB and \textct{octinterp} for Octave.  Sometimes
-        on MATLAB, we have to include the \textct{mx} library as well.  If
-        compilation fails and there are several undefined symbols with prefixed
+        {Complete path and library for MATLAB, \textct{mex}.  Sometimes, we
+        have to include the \textct{mx} library as well.  If compilation fails
+        and there are several undefined symbols with prefixed
         with mx, then add the \textct{mx} library and separate it from
-        \textct{mex} with a semicolon.  For MATLAB, these libraries are
+        \textct{mex} with a semicolon.  Generally, these libraries are
         generally found nested within the \textct{bin} directory in the primary
-        MATLAB folder.  In Octave, these libraries are found nested within the
-        \textct{octave} directory inside the system \textct{lib} directory.}
+        MATLAB folder.} 
 
     \cmakeitem
         {MATLAB_EXECUTABLE}
@@ -1240,7 +1186,97 @@ where the actual paths, libraries, and archives depend on the individual system.
         {\textctref{ENABLE_MATLAB}}
         {None}
         {No}
-        {Complete path and executable for MATLAB/Octave. }
+        {Complete path and executable for MATLAB. }
+
+    \cmakeitem
+        {ENABLE_MATLAB_EXAMPLES}
+        {BOOL}
+        {\textct{OFF}}
+        {\textctref{ENABLE_MATLAB}}
+        {None}
+        {No}
+        {Enables the build and installation of simple examples that 
+        demonstrate the use of the MATLAB wrappers for Optizelle.}
+
+    \cmakeitem
+        {ENABLE_MATLAB_UNIT}
+        {BOOL}
+        {\textct{OFF}}
+        {\textctref{ENABLE_MATLAB}}
+        {None}
+        {No}
+        {Enables the build of unit tests that help validate the 
+        MATLAB wrappers for the Optizelle code.  Execute these unit
+        tests by running \textct{ctest} in the CMake build directory.}
+
+    \cmakeitem
+        {ENABLE_OCTAVE}
+        {BOOL}
+        {\textct{OFF}}
+        {\textctref{ENABLE_CPP}}
+        {\textctref{OCTAVE_INCLUDE_DIR},
+            \textctref{OCTAVE_LIBRARY},
+            \textctref{OCTAVE_EXECUTABLE},\linebreak
+            \textctref{ENABLE_BUILD_JSONLAB},
+            \textctref{JSONLAB_DIR},\linebreak
+            \textctref{ENABLE_OCTAVE_EXAMPLES},
+            \textctref{ENABLE_OCTAVE_UNIT}}
+        {No}
+        {Enables the build of the Octave wrappers for Optizelle.}
+
+    \cmakeitem
+        {OCTAVE_INCLUDE_DIR}
+        {FILEPATH}
+        {None}
+        {\textctref{ENABLE_OCTAVE}}
+        {None}
+        {Yes }
+        {Path that indicates where the Octave header \textct{mex.h} has
+        been installed.  We do not prefix these headers, so we look directly in
+        the directory provided here.  Generally, this is the folder called
+        \textct{octave-x.x.x/octave} inside the system \textct{include}
+        directory where \textct{x.x.x} denotes the version number.}
+
+    \cmakeitem
+        {OCTAVE_LIBRARY}
+        {FILEPATH}
+        {None}
+        {\textctref{ENABLE_OCTAVE}}
+        {None}
+        {Yes}
+        {Complete path and library for Octave, \textct{octinterp}.  Generally,
+        this library is found nested within the \textct{octave} directory
+        inside the system \textct{lib} directory.}
+
+    \cmakeitem
+        {OCTAVE_EXECUTABLE}
+        {FILEPATH}
+        {None}
+        {\textctref{ENABLE_OCTAVE}}
+        {None}
+        {No}
+        {Complete path and executable for Octave. }
+
+    \cmakeitem
+        {ENABLE_OCTAVE_EXAMPLES}
+        {BOOL}
+        {\textct{OFF}}
+        {\textctref{ENABLE_OCTAVE}}
+        {None}
+        {No}
+        {Enables the build and installation of simple examples that 
+        demonstrate the use of the Octave wrappers for Optizelle.}
+
+    \cmakeitem
+        {ENABLE_OCTAVE_UNIT}
+        {BOOL}
+        {\textct{OFF}}
+        {\textctref{ENABLE_OCTAVE}}
+        {None}
+        {No}
+        {Enables the build of unit tests that help validate the Octave wrappers
+        for the Optizelle code.  Execute these unit tests by running
+        \textct{ctest} in the CMake build directory.}
 
     \cmakeitem
         {ENABLE_BUILD_JSONLAB}
@@ -1270,28 +1306,6 @@ where the actual paths, libraries, and archives depend on the individual system.
         {Yes}
         {A path that indicates where the jsonlab library has been 
         installed.  This is automatically set when \textctref{ENABLE_BUILD_JSONLAB} is enabled.}
-
-    \cmakeitem
-        {ENABLE_MATLAB_EXAMPLES}
-        {BOOL}
-        {\textct{OFF}}
-        {\textctref{ENABLE_MATLAB}}
-        {None}
-        {No}
-        {Enables the build and installation of simple examples that 
-        demonstrate the use of the MATLAB/Octave wrappers for
-        Optizelle.}
-
-    \cmakeitem
-        {ENABLE_MATLAB_UNIT}
-        {BOOL}
-        {\textct{OFF}}
-        {\textctref{ENABLE_MATLAB}}
-        {None}
-        {No}
-        {Enables the build of unit tests that help validate the 
-        MATLAB/Octave wrappers for the Optizelle code.  Execute these unit
-        tests by running \textct{ctest} in the CMake build directory.}
 \end{boldlist}
 
 \section{\secinstalling}\label{sec:installing}
@@ -1328,6 +1342,8 @@ located in the CMake build directory.
         .4 python.
         .5 Optizelle.
         .4 matlab.
+        .5 setupOptizelle.m.
+        .4 octave.
         .5 setupOptizelle.m.
         .4 examples.
     }
@@ -1393,7 +1409,7 @@ where \textct{myprog} denotes the program we want to run.
         {\textct{PYTHONPATH}}
         {\$\{\textctref{CMAKE_INSTALL_PREFIX}\}\textct{/share/optizelle/matlab}}
         {\textct{MATLABPATH}}
-        {\$\{\textctref{CMAKE_INSTALL_PREFIX}\}\textct{/share/optizelle/matlab}}
+        {\$\{\textctref{CMAKE_INSTALL_PREFIX}\}\textct{/share/optizelle/octave}}
         {\textct{OCTAVE_PATH}}
 \end{boldlist}
 Note, when we say \$\{\textctref{CMAKE_INSTALL_PREFIX}\}, we mean the actual text stored in the CMake variable and not the literal string.

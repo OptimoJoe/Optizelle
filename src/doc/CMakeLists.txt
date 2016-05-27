@@ -13,34 +13,43 @@ endif()
 # Grab the LaTeX package
 include(UseLATEX)
 
-# Set a couple of paths to source files
-set(OPTIZELLECPPPATH "${CMAKE_SOURCE_DIR}/src/cpp/optizelle/")
-set(OPTIZELLEPYTHONPATH "${CMAKE_SOURCE_DIR}/src/python/Optizelle/")
-set(OPTIZELLEMATLABPATH "${CMAKE_SOURCE_DIR}/src/matlab/")
-set(LICENSEPATH "${CMAKE_SOURCE_DIR}")
-set(ROSENBROCKPATH "${CMAKE_SOURCE_DIR}/src/examples/rosenbrock/")
-set(ROSENBROCKADVANCEDAPIPATH
-    "${CMAKE_SOURCE_DIR}/src/examples/rosenbrock_advanced_api/")
-set(SIMPLEEQUALITYPATH "${CMAKE_SOURCE_DIR}/src/examples/simple_equality/")
-set(SIMPLEINEQUALITYPATH "${CMAKE_SOURCE_DIR}/src/examples/simple_inequality/")
-set(SIMPLECONSTRAINEDPATH "${CMAKE_SOURCE_DIR}/src/examples/simple_constrained/")
-set(SIMPLECONSTRAINEDADVANCEDAPIPATH
-    "${CMAKE_SOURCE_DIR}/src/examples/simple_constrained_advanced_api/")
-set(SIMPLEQUADRATICCONEPATH
-    "${CMAKE_SOURCE_DIR}/src/examples/simple_quadratic_cone/")
-set(SIMPLESDPCONEPATH
-    "${CMAKE_SOURCE_DIR}/src/examples/simple_sdp_cone/")
-set(RESTARTPATH "${CMAKE_SOURCE_DIR}/src/unit/restart/")
-set(SQLRESTARTPATH "${CMAKE_SOURCE_DIR}/src/examples/sql_restart/")
-set(CACHEPATH "${CMAKE_SOURCE_DIR}/src/examples/computation_caching/")
-
-# Compile the manual
-add_latex_document(optizelle.tex DEFAULT_PDF
-    CONFIGURE optizelle.tex
+# Compile the manual.  Note, this file is basically just a stub that includes
+# the prepocessed and configured optizelle.tex below.
+add_latex_document(master.tex
+    CONFIGURE master.tex
+    DEFAULT_PDF
     USE_INDEX
     BIBFILES optizelle.bib
 )
+
+# Process the config file for documentation 
+preprocess(optizelle.tex "${CMAKE_SOURCE_DIR}/src/unit/config/flags.txt")
+add_custom_target(configure_paths
+    COMMAND ${CMAKE_COMMAND}
+        -D MY_SOURCE_DIR:PATH=${CMAKE_SOURCE_DIR}
+        -D MY_CURRENT_BINARY_DIR:PATH=${CMAKE_CURRENT_BINARY_DIR}
+        -D CPACK_PACKAGE_VERSION_MAJOR=${CPACK_PACKAGE_VERSION_MAJOR}
+        -D CPACK_PACKAGE_VERSION_MINOR=${CPACK_PACKAGE_VERSION_MINOR}
+        -D CPACK_PACKAGE_VERSION_PATCH=${CPACK_PACKAGE_VERSION_PATCH}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/CMakePathConfigure.txt)
+add_dependencies(configure_paths optizelle.tex.pp.run)
+add_dependencies(pdf configure_paths)
+
+# Run the Rosenbrock example and write the output to file
+if(NOT ENABLE_CPP_UNIT AND NOT ENABLE_CPP_EXAMPLES)
+    message(FATAL_ERROR "ENABLE_CPP_UNIT or ENABLE_CPP_EXAMPLES must be enabled in order to generate data for the manual")
+endif()
+add_custom_target(run_rosenbrock
+    COMMAND rosenbrock
+        "${CMAKE_SOURCE_DIR}/src/examples/rosenbrock/tr_newton.json"
+        > "${CMAKE_CURRENT_BINARY_DIR}/rosen_output.txt"
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    COMMENT "Running the Rosenbrock example for the manual"
+)
+add_dependencies(pdf run_rosenbrock)
+
+# Install the document with a nicer file name
 install(
-    FILES ${CMAKE_CURRENT_BINARY_DIR}/optizelle.pdf
+    FILES ${CMAKE_CURRENT_BINARY_DIR}/master.pdf
     DESTINATION share/optizelle/doc
     RENAME Optizelle-${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}.pdf)

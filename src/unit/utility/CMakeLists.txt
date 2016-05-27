@@ -1,7 +1,11 @@
 project(utility)
 
+# Set what interfaces we're using
+set(interfaces "cpp" "python" "matlab" "octave")
+
 # If any unit test is enabled, we compile this
-if(ENABLE_CPP_UNIT OR ENABLE_MATLAB_UNIT OR ENABLE_PYTHON_UNIT)
+is_unit("${interfaces}" enable_unit)
+if(enable_unit) 
 
     # Common include files
     include_directories(${OPTIZELLE_INCLUDE_DIRS})
@@ -9,7 +13,5 @@ if(ENABLE_CPP_UNIT OR ENABLE_MATLAB_UNIT OR ENABLE_PYTHON_UNIT)
 
     # Compile and link the diff utility
     add_executable(diff_restart diff_restart.cpp)
-    target_link_libraries(diff_restart
-        optizelle_shared)
-
+    target_link_libraries(diff_restart optizelle_shared)
 endif()

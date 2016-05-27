@@ -1,17 +1,11 @@
 project(simple_constrained_advanced_api)
 
+# Set what interfaces we're using
+set(interfaces "cpp" "python" "matlab" "octave")
+
 # Compile and install the example
-add_optizelle_example_cpp(${PROJECT_NAME})
-add_optizelle_example_python(${PROJECT_NAME})
-add_optizelle_example_matlab(${PROJECT_NAME})
-
-# Installs the supporting files 
-add_optizelle_example_supporting(${PROJECT_NAME}
+set(supporting
     restart.json
-    tr_newton.json
-    sr1.json)
-
-add_optizelle_example_supporting_restart(${PROJECT_NAME}
     restart/dx.0008.txt
     restart/dx_n.0008.txt
     restart/dx_ncp.0008.txt
@@ -34,11 +28,12 @@ add_optizelle_example_supporting_restart(${PROJECT_NAME}
     restart/x_old.0008.txt
     restart/y.0008.txt
     restart/z.0008.txt)
+add_example(${PROJECT_NAME} "${interfaces}" "${supporting}")
 
-# Add some unit tests
-add_optizelle_json_test_cpp("*.json" ${PROJECT_NAME}
-     "${CMAKE_CURRENT_SOURCE_DIR}/restart.json")
-add_optizelle_json_test_python("*.json" ${PROJECT_NAME}
-     "${CMAKE_CURRENT_SOURCE_DIR}/restart.json")
-add_optizelle_json_test_matlab("*.json" ${PROJECT_NAME}
-     "${CMAKE_CURRENT_SOURCE_DIR}/restart.json")
+# Run the unit tests
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/restart
+    DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(GLOB_RECURSE units ${CMAKE_CURRENT_SOURCE_DIR} "*.json")
+list(REMOVE_ITEM units "${CMAKE_CURRENT_SOURCE_DIR}/restart.json") 
+add_unit(${PROJECT_NAME} "${interfaces}" "${units}" TRUE
+    "${CMAKE_CURRENT_SOURCE_DIR}/restart.json")
