@@ -143,14 +143,10 @@ macro(add_unit name interfaces units validated)
                     add_test(
                         "Execution_of_octave_${name}_${uname}"
                         ${OCTAVE_EXECUTABLE}
+                        --path "${CMAKE_BINARY_DIR}/src/octave"
+                        --path "${CMAKE_CURRENT_SOURCE_DIR}"
                         "--eval"
                         "${name}('${octave_unit}'),exit")
-
-                    # Make sure Optizelle is available 
-                    set_tests_properties(
-                        "Execution_of_octave_${name}_${uname}"
-                        PROPERTIES ENVIRONMENT
-                        "OCTAVE_PATH=${CMAKE_BINARY_DIR}/src/octave:${CMAKE_CURRENT_SOURCE_DIR}")
                 endif()
                 
                 # Diff the result of the optimization against the known solution
@@ -204,14 +200,10 @@ macro(add_unit name interfaces units validated)
                 add_test(
                     "Execution_of_octave_${name}"
                     ${OCTAVE_EXECUTABLE}
+                    --path "${CMAKE_BINARY_DIR}/src/octave"
+                    --path "${CMAKE_CURRENT_SOURCE_DIR}"
                     "--eval"
                     "${name},exit")
-
-                # Make sure Optizelle is available 
-                set_tests_properties(
-                    "Execution_of_octave_${name}"
-                    PROPERTIES ENVIRONMENT
-                    "OCTAVE_PATH=${CMAKE_BINARY_DIR}/src/octave:${CMAKE_CURRENT_SOURCE_DIR}")
             endif()
         endforeach()
     endif()

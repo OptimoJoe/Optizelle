@@ -19,5 +19,6 @@ set(supporting
 add_example(${PROJECT_NAME} "${interfaces}" "${supporting}")
 
 # Run the unit tests
+file(COPY ${supporting} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 add_unit("driver_reduced_space" "${interfaces}" "" FALSE)
 add_unit("driver_full_space" "${interfaces}" "" FALSE)

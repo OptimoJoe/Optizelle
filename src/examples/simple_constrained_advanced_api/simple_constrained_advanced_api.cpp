@@ -7,6 +7,7 @@
 #include <iostream>
 #include <iomanip>
 #include <cstdlib>
+#include <cstring>
 
 // Grab Optizelle's Natural type
 using Optizelle::Natural;
@@ -298,12 +299,11 @@ namespace Optizelle {
                         x_json.end());
 
                 // Open the file for reading 
-                std::ifstream fin(x_json.c_str(),std::ifstream::in);
-                if(fin.fail()) {
-                    std::stringstream msg;
-                    msg << "Error while opening the file " << x_json << ".";
-                    Optizelle::Messaging().error(msg.str());
-                }
+                std::ifstream fin(x_json.c_str());
+                if(!fin.is_open())
+                    Optizelle::Messaging().error(
+                        "Error while opening the file " + x_json + ": " +
+                        strerror(errno));
 
                 // Create a new vector that we eventually return
                 std::vector <double> x(x_.size());
@@ -311,9 +311,6 @@ namespace Optizelle {
                 // Read in each of the elements
                 for(Natural i=0;i<x.size();i++)
                     fin >> x[i];
-
-                // Close out the file
-                fin.close();
 
                 // Return the result 
                 return std::move(x);

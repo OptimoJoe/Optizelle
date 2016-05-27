@@ -24,6 +24,7 @@ set(supporting
 add_example(${PROJECT_NAME} "${interfaces}" "${supporting}")
 
 # Run the unit tests
+file(COPY ${supporting} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 add_unit("example_1d" "${interfaces}" "" FALSE)
 add_unit("example_1d_extruded" "${interfaces}" "" FALSE)
 add_unit("example_2d" "${interfaces}" "" FALSE)

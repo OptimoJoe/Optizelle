@@ -58,24 +58,17 @@ namespace Optizelle {
             std::string const & fname,
             Json::Value const & root
         ) {
-            // Create a string with the above output
-            Json::StyledWriter writer;
-            std::string output = writer.write(root);
-
             // Open a file for writing
             std::ofstream fout(fname.c_str());
-            if(fout.fail())
+            if(!fout.is_open())
                 msg.error("While writing the restart file, unable to open "
                     "the file: " + fname + ".");
 
             // Write out the json tree
-            fout << output;
-            if(fout.fail())
+            fout << root;
+            if(fout.bad())
                 msg.error("While writing the restart file, unable to write "
                     "the json tree.");
-
-            // Close the file
-            fout.close();
         }
         
         // Safely reads from a json tree 

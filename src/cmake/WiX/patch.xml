@@ -19,6 +19,16 @@
             System="yes" />
     </CPackWiXFragment>
 
+    <CPackWiXFragment Id="CM_CP_lib.liboptizelle_octave.dll">
+        <Environment Id="OCTAVE_PATH"
+            Name="OCTAVE_PATH"
+            Value="[INSTALL_ROOT]share\optizelle\octave"
+            Permanent="no"
+            Part="last"
+            Action="set"
+            System="yes" />
+    </CPackWiXFragment>
+
     <CPackWiXFragment Id="#PRODUCT">
         <SetProperty Id="WIXUI_EXITDIALOGOPTIONALTEXT"
             Value="For updates, information, and support, please visit us at www.optimojoe.com"

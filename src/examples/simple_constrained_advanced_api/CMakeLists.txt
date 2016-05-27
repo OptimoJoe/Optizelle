@@ -31,6 +31,8 @@ set(supporting
 add_example(${PROJECT_NAME} "${interfaces}" "${supporting}")
 
 # Run the unit tests
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/restart
+    DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(GLOB_RECURSE units ${CMAKE_CURRENT_SOURCE_DIR} "*.json")
 list(REMOVE_ITEM units "${CMAKE_CURRENT_SOURCE_DIR}/restart.json") 
 add_unit(${PROJECT_NAME} "${interfaces}" "${units}" TRUE

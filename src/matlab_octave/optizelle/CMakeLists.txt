@@ -127,7 +127,7 @@ if(ENABLE_MATLAB)
     compile_interface(
         matlab
         ${MATLAB_INCLUDE_DIR}
-        ${MATLAB_LIBRARY}
+        "${MATLAB_LIBRARY}"
         ${MATLAB_MEX_EXTENSION}
         ${ENABLE_MATLAB_UNIT})
 endif()
@@ -137,7 +137,7 @@ if(ENABLE_OCTAVE)
     compile_interface(
         octave 
         ${OCTAVE_INCLUDE_DIR}
-        ${OCTAVE_LIBRARY}
+        "${OCTAVE_LIBRARY}"
         mex
         ${ENABLE_OCTAVE_UNIT})
 endif()
