@@ -9,6 +9,9 @@ cmake_minimum_required(VERSION 3.1.3 FATAL_ERROR)
 # Put together the complete license
 add_subdirectory(licenses)
 
+# Install the authors file 
+install(FILES AUTHORS.txt DESTINATION share/optizelle)
+
 # Set the CPack options
 set(CPACK_GENERATOR "TGZ")
 set(CPACK_PACKAGE_VENDOR "OptimoJoe")

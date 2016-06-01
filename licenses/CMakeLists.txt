@@ -32,3 +32,6 @@ add_license("NumPy" "Python interface" numpy.txt)
 add_license("MATLAB" "MATLAB interface" matlab.txt)
 add_license("JSONlab" "MATLAB and/or Octave interface" jsonlab.txt)
 add_license("Octave" "Octave interface" octave.txt)
+
+# Install the license
+install(FILES ${out} DESTINATION share/optizelle)
