@@ -46,6 +46,9 @@
 \usepackage{natbib}
 \usepackage{bibentry}
 
+% For including license files verbatim
+\usepackage{verbatim}
+
 % Define a computer text environment.  This is monospaced and allows
 % underscores.  Code found at:
 % https://tex.stackexchange.com/questions/20890/define-an-escape-underscore-environment
@@ -86,6 +89,11 @@
     \def\lst@numbersep{\gobblea}%
 }
 \makeatother
+
+% Used for labeling licenses
+\newcommand{\licenselabel}[2]{\phantomsection\index{Licenses!#1}\label{lic:#2}}
+\newcommand{\licenselabelalt}[2]{\index{Licenses!#2}\href{#1}{#2}}
+\newcommand{\licenseref}[2]{\hyperref[lic:#2]{#1}}
 
 % Used for labeling and referring to computer text 
 \newcommand{\textctlabel}[1]{\phantomsection\label{itm:#1}\textct{#1}}
@@ -709,8 +717,8 @@
 \section{Licensing}
 
         Optizelle is copyrighted by OptimoJoe and licensed under the 2-Clause BSD License:
-\begin{flushleft}
-    \texttt{\protect\input{@LICENSEPATH@/LICENSE.txt}}
+\begin{flushleft}\index{Licenses!Optizelle}
+    \texttt{\protect\input{@LICENSEPATH@/optizelle.txt}}
 \end{flushleft}
 \noindent In short, Optizelle is free to use in both open and closed sourced codes.  If you do so, we ask that you provide a citation or link to \url{http://www.optimojoe.com}.
 
@@ -776,55 +784,24 @@ as a zipped archive.  Here, we also provide direct access to our source code rep
 
 \section{Dependencies}
 
-        Optizelle depends on the following software packages
-\begin{center}\begin{tabular}{|l|l|l|p{.5\textwidth}|}\hline
-{\bf Dependency} & {\bf Version} & {\bf Optional?} & {\bf Purpose} \\\hline
-\hyperref[tbl:compilers]{C++14} & & No & Compilation of the core library\\\hline
-\hyperref[tbl:compilers]{FORTRAN 77} & & No & Determines the name mangling scheme for BLAS and LAPACK\\\hline
-\href{http://cmake.org}{CMake} & $\geq$ 3.1.3 & No & Build system\\\hline
-\hyperref[tbl:make]{Make} & & No & Build system\\\hline
-\href{https://github.com/open-source-parsers/jsoncpp}{JsonCpp} & 0.10.5 & No & Parsing of the configuration files and the default archive/restart engine\\\hline
-\hyperref[tbl:blaslapack]{BLAS and LAPACK} & & No & Dense kernels for the default vector spaces in the C++ interface\\\hline
-\href{http://www.ctan.org}{pdflatex} & & Yes & Documentation generation \\\hline
-\href{http://python.org}{Python} & 2.7.x & Yes & Python interface \\\hline
-\href{http://www.numpy.org}{NumPy} & $\geq$ 1.8 & Yes & Dense kernels for the default vector spaces in the Python interface\\\hline
-\href{https://www.gnu.org/software/octave}{Octave} & & Yes & MATLAB/Octave interface\\\hline
-\href{http://www.mathworks.com/products/matlab}{MATLAB} & & Yes & MATLAB/Octave interface\\\hline
-\href{https://github.com/fangq/jsonlab}{jsonlab} & Master & Yes & MATLAB/Octave default archive/restart engine\\\hline
+        Depending on its configuration, Optizelle uses the following software packages
+\begin{center}\begin{tabular}{lll|cccccc}
+    Package & Version & License & C++ & Python & MATLAB & Octave & Docs & Windows\\\hline
+    \licenselabelalt{http://www.optimojoe.com/products/optizelle/}{Optizelle} & @CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@.@CPACK_PACKAGE_VERSION_PATCH@ & \licenseref{BSD}{optizelle} & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$\\
+    \licenselabelalt{https://github.com/open-source-parsers/jsoncpp}{JsonCpp} & 0.10.6 & \licenseref{Public}{jsoncpp} & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ &  & $\checkmark$\\
+    \licenselabelalt{http://netlib.org/lapack/}{BLAS/LAPACK} & 3.5.0 & \licenseref{BSD}{blaslapack} & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ &  & $\checkmark$\\
+    \licenselabelalt{https://cmake.org/}{CMake} & 3.1 & \licenseref{BSD}{cmake} & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ &  $\checkmark$ & $\checkmark$\\
+    \licenselabelalt{http://wixtoolset.org/}{WiX} & 3.10 & \licenseref{MS-RL}{wix} & & & & & & $\checkmark$\\
+    \licenselabelalt{https://gcc.gnu.org/}{GCC} & 4.9 & \licenseref{GPL}{gcc} & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ &  & $\checkmark$\\
+    \licenselabelalt{https://www.tug.org/texlive/}{TeX Live} & 2014 & \licenseref{Various}{texlive} & & & & & $\checkmark$ &\\
+    \licenselabelalt{https://www.python.org/}{Python} & 2.7 & \licenseref{Python}{python} & & $\checkmark$ & & & &\\
+    \licenselabelalt{http://www.numpy.org/}{NumPy} & 1.10 & \licenseref{BSD}{numpy} & & $\checkmark$ & & & &\\
+    \licenselabelalt{https://www.mathworks.com/products/matlab/}{MATLAB} & R2016a & \licenseref{Custom}{matlab} & & & $\checkmark$ & & &\\
+    \licenselabelalt{https://github.com/fangq/jsonlab}{JSONlab} & 1.0-RC1 & \licenseref{BSD}{jsonlab} & & & $\checkmark$ & $\checkmark$ & &\\
+    \licenselabelalt{https://www.gnu.org/software/octave/}{Octave} & 4.0 & \licenseref{GPL}{octave} & & & & $\checkmark$ & &\\
 \end{tabular}\end{center}
 
-        As far as C++14 and FORTRAN 77 compilers, in theory, any valid compiler should work.  A small list of these compilers is
-\phantomsection\label{tbl:compilers}
-\begin{center}\begin{tabular}{|l|l|l|l|}\hline
-{\bf Compiler} & {\bf Version} & {\bf Language} & {\bf Platform}\\\hline
-\href{http://gcc.gnu.org}{GCC} & $\geq 4.9$ & C++14, FORTRAN 77 & Linux, Unix, OS X \\\hline
-\href{http://clang.llvm.org}{Clang} & & C++14 & Linux, Unix, OS X \\\hline
-\href{http://dragonegg.llvm.org}{DragonEgg} & & C++14, FORTRAN 77 & Linux, Unix, OS X \\\hline
-\href{http://www.mingw.org}{MinGW} & & C++14, FORTRAN 77 & Windows \\\hline
-\href{http://www.cygwin.com}{Cygwin} (GCC) & & C++14, FORTRAN 77 & Windows \\\hline
-\end{tabular}\end{center}
-On Windows, Visual Studio does not compile prepackaged with a FORTRAN 77 compiler.  Though, one can be purchased from a commercial vendor.  As a result, we recommend using either MinGW or Cygwin on Windows.  The primary difference between the two is that Cygwin will create a dependency to the Cygwin runtime libraries during compilation, but MinGW will not.  This becomes important when distributing applications built with Optizelle.  On OS X, the default compilers tend to use old versions of LLVM-GCC (4.2), which is not sufficient to compile Optizelle.  Newer versions of GCC can be found through \href{https://www.macports.org}{MacPorts} or \href{http://hpc.sourceforge.net}{HPC Mac OS X}.
-
-       Next, Optizelle requires a Make utility compatible with CMake.  A small selection of such utilities is 
-\phantomsection\label{tbl:make}
-\begin{center}\begin{tabular}{|l|l|}\hline
-{\bf Make} & {\bf Platform}\\\hline
-\href{https://www.gnu.org/software/make}{GNU Make} & Linux, Unix, OS X \\\hline
-\href{http://www.mingw.org}{MSYS} & Windows\\\hline
-\href{http://www.cygwin.com}{Cygwin} (GNU Make) & Windows \\\hline
-\href{http://msdn.microsoft.com/en-us/vstudio}{NMake} & Windows \\\hline
-\end{tabular}\end{center}
-
-        Finally, Optizelle is compatible with high-performance varieties of BLAS and LAPACK as long as they contain support for the newer LAPACK functions.  A small subset of these libraries are
-\phantomsection\label{tbl:blaslapack}
-\begin{center}\begin{tabular}{|l|l|}\hline
-{\bf BLAS/LAPACK Library} & \bf{Version}\\\hline
-\href{http://www.netlib.org/lapack}{FORTRAN 77 Source} & $\geq$ 3.4.2\\\hline
-\href{http://math-atlas.sourceforge.net}{ATLAS} & \\\hline
-\href{http://software.intel.com/en-us/intel-mkl}{Intel MKL} & \\\hline
-\href{http://developer.amd.com/tools-and-sdks/cpu-development/amd-core-math-library-acml}{AMD ACML} & \\\hline
-\href{https://www.tacc.utexas.edu/tacc-projects/gotoblas2}{Goto BLAS} & \\\hline
-\end{tabular}\end{center}
+\noindent Note, we generally depend on GCC for both its C++ and Fortran compiler, but an alternative compiler such as Clang works as well.  Since we do not modify GCC, the GCC Runtime Library Exception applies.  In addition, Optizelle remains compatible with most high-performance varieties of BLAS and LAPACK.
 
 \section{Building}
 
@@ -3286,11 +3263,13 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         Optizelle generates a series of diagnostics while running that give information about the behavior and performance of the underlying algorithm.  This information is organized into columns that are exactly 12 characters wide.  When no information is available, we print a single dot, \textct{.}.  In this way, each column always has some sort of information, which makes the output easy to parse using standard Unix utilities such as \texttt{cut} or \texttt{awk}.  For example, to only print the iteration, objective value, and norm of the step on the Rosenbrock example, we use the following commands on POSIX compliant systems:
 \begin{center}\begin{verbatim}
 ./rosenbrock tr_newton.json | awk '{printf "%-12s%-12s%-12s\n", $1,$2,$4}'
-\end{verbatim}\end{center}
+\end{verbatim}
+\end{center}
 \noindent and
 \begin{center}\begin{verbatim}
 ./rosenbrock tr_newton.json | cut -c1-12,13-24,37-48
-\end{verbatim}\end{center}
+\end{verbatim}
+\end{center}
         
         As far as the information in the columns themselves, we detail their meaning below.  In terms of convergence, we require the values \textctrefalt{||grad||}, \textctrefalt{||g(x)||}, and \textctrefalt{mu_est} be small relative to their starting value and control the relative decrease required with the parameters \textctref{eps_grad}, \textctref{eps_constr}, and \textctref{eps_mu}, respectively.  In addition, if the value \textctrefalt{||dx||} becomes too small relative to its starting value, we terminate the optimization.  We control the amount of relative decrease allowed in \textctrefalt{||dx||} with the parameter \textctref{eps_dx}.
 \begin{boldlist}
@@ -4600,7 +4579,7 @@ $$
 
 \noindent As before, we store the cached information in a persistent variable called \textct{cache}.  The nuance in this case is that we should check both \textct{x} and \textct{dy} when determining whether we've moved to a new point and need to recompute the second derivative.
 
-\chapter{\chexamples}\label{ch:examples}
+\chapter{chexamples}\label{ch:examples}
 
         During the configure process, we compile and install a variety of examples whenever the \textctref{ENABLE_CPP_EXAMPLES}, \textctref{ENABLE_PYTHON_EXAMPLES}, or \textctref{ENABLE_MATLAB_EXAMPLES} are turned to \textct{ON}.  For reference, we include some of these examples here.
 
@@ -4975,6 +4954,71 @@ In other words, our initial inequality multiplier puts us on the central path sp
         \item \bibentry{heinkenschloss2014inexact_sqp}.
     \end{itemize}}
 \end{boldlist}
+
+\chapter{Licenses}\label{ch:licenses}
+
+    In the following chapter, we detail Optizelle's license as well as the license of all of its dependencies.
+
+\section{Optizelle}\licenselabel{Optizelle}{optizelle}
+\begin{flushleft}
+    \texttt{\protect\input{@LICENSEPATH@/optizelle.txt}}
+\end{flushleft}
+
+\section{JsonCpp}\licenselabel{JsonCpp}{jsoncpp}
+\begin{flushleft}
+    \verbatiminput{@LICENSEPATH@/jsoncpp.txt} 
+\end{flushleft}
+
+\section{BLAS/LAPACK}\licenselabel{BLAS/LAPACK}{blaslapack}
+\begin{flushleft}
+    \verbatiminput{@LICENSEPATH@/blas_lapack.txt} 
+\end{flushleft}
+
+\section{CMake}\licenselabel{CMake}{cmake}
+\begin{flushleft}
+    \verbatiminput{@LICENSEPATH@/cmake.txt} 
+\end{flushleft}
+
+\section{WiX}\licenselabel{WiX}{wix}
+\begin{flushleft}
+    \texttt{\protect\input{@LICENSEPATH@/wix.txt}}
+\end{flushleft}
+
+\section{GCC}\licenselabel{GCC}{gcc}
+\begin{flushleft}
+    \verbatiminput{@LICENSEPATH@/gcc.txt}
+    \verbatiminput{@LICENSEPATH@/gcc_runtime.txt} 
+\end{flushleft}
+
+\section{TeX Live}\licenselabel{TeX Live}{texlive}
+\begin{flushleft}
+    \verbatiminput{@LICENSEPATH@/texlive.txt}
+\end{flushleft}
+
+\section{Python}\licenselabel{Python}{python}
+\begin{flushleft}
+    \verbatiminput{@LICENSEPATH@/python.txt}
+\end{flushleft}
+
+\section{NumPy}\licenselabel{NumPy}{numpy}
+\begin{flushleft}
+    \verbatiminput{@LICENSEPATH@/numpy.txt}
+\end{flushleft}
+
+\section{MATLAB}\licenselabel{MATLAB}{matlab}
+\begin{flushleft}
+    \verbatiminput{@LICENSEPATH@/matlab.txt}
+\end{flushleft}
+
+\section{JSONlab}\licenselabel{JSONlab}{jsonlab}
+\begin{flushleft}
+    \verbatiminput{@LICENSEPATH@/jsonlab.txt}
+\end{flushleft}
+
+\section{Octave}\licenselabel{Octave}{octave}
+\begin{flushleft}
+    \verbatiminput{@LICENSEPATH@/octave.txt}
+\end{flushleft}
 
 \clearpage
 \addcontentsline{toc}{chapter}{Index}
