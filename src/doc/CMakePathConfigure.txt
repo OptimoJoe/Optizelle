@@ -2,7 +2,7 @@
 set(OPTIZELLECPPPATH "${MY_SOURCE_DIR}/src/cpp/optizelle/")
 set(OPTIZELLEPYTHONPATH "${MY_SOURCE_DIR}/src/python/Optizelle/")
 set(OPTIZELLEMATLABPATH "${MY_SOURCE_DIR}/src/matlab_octave/")
-set(LICENSEPATH "${MY_SOURCE_DIR}")
+set(LICENSEPATH "${MY_BINARY_DIR}/licenses/")
 set(ROSENBROCKPATH "${MY_SOURCE_DIR}/src/examples/rosenbrock/")
 set(ROSENBROCKADVANCEDAPIPATH
     "${MY_SOURCE_DIR}/src/examples/rosenbrock_advanced_api/")

@@ -20,7 +20,7 @@ endfunction()
 add_license("Optizelle" "all interfaces" optizelle.txt)
 add_license("JsonCpp" "all interfaces" jsoncpp.txt)
 add_license("BLAS/LAPACK" "all interfaces when building default BLAS/LAPACK"
-    lapack_blas.txt)
+    blas_lapack.txt)
 add_license("CMake" "all interfaces" cmake.txt)
 add_license("WiX" "all interfaces when building Windows installer" wix.txt)
 add_license("GCC" "All interfaces when using GCC.  Note, we do *not* modify the compiler.  See the GCC Runtime Library Exception." gcc.txt)
