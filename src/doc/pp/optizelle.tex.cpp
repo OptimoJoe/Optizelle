@@ -1,8 +1,8 @@
 // Stream::macro
-#include "stream.h"
+#include "optizelle/stream.h"
 
 // Exception::print_exception
-#include "exception.h"
+#include "optizelle/exception.h"
 
 // std::ifstream
 #include <fstream>

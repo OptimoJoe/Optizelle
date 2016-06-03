@@ -10,15 +10,24 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${OPTIZELLE_INCLUDE_DIRS})
 include_directories(${JSONCPP_INCLUDE_DIRS})
 
-# Compile the library
+# Utility sources.  We use these routines for things like preprocessing and
+# other pieces that don't need all of Optizelle, so compile them separately.
+set(utility_srcs "exception.cpp" "stream.cpp")
+add_library(utility OBJECT ${utility_srcs})
+
+# Compile the core of Optizelle 
 set(optizelle_cpp_srcs "vspaces.cpp" "optizelle.cpp" "linalg.cpp" "json.cpp")
 add_library(optizelle_cpp OBJECT ${optizelle_cpp_srcs})
     
 # Package everything together 
-add_library(optizelle_static STATIC $<TARGET_OBJECTS:optizelle_cpp>)
+add_library(optizelle_static STATIC
+    $<TARGET_OBJECTS:utility>
+    $<TARGET_OBJECTS:optizelle_cpp>)
 set_target_properties(optizelle_static PROPERTIES OUTPUT_NAME optizelle)
 
-add_library(optizelle_shared SHARED $<TARGET_OBJECTS:optizelle_cpp>)
+add_library(optizelle_shared SHARED
+    $<TARGET_OBJECTS:utility>
+    $<TARGET_OBJECTS:optizelle_cpp>)
 set_target_properties(optizelle_shared PROPERTIES OUTPUT_NAME optizelle)
 target_link_libraries(optizelle_shared
     ${JSONCPP_LIBRARIES}
@@ -31,6 +40,8 @@ install(FILES
     optizelle.h
     json.h
     linalg.h
+    exception.h
+    stream.h
     DESTINATION include/optizelle)
 install(TARGETS
     optizelle_static

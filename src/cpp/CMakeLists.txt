@@ -1,5 +1,15 @@
 # Enable C++
 enable_language(CXX)
+        
+# Force C++14 on all targets
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 14 PARENT_SCOPE)
+set_property(GLOBAL PROPERTY CXX_STANDARD_REQUIRED)
+
+# Turn on position independent code.  This simplifies building both static
+# and shared libraries.
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON PARENT_SCOPE)
 
 # Figure out if we should look for OpenMP
 mark_as_advanced(CLEAR ENABLE_OPENMP)

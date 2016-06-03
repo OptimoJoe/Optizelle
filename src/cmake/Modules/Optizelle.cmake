@@ -266,9 +266,9 @@ endmacro()
 # Preprocesses a file prior to compilation
 function(preprocess file data)
     # Compile the preprocessor
-    include_directories("${CMAKE_SOURCE_DIR}/src/preprocess")
-    add_executable("${file}.pp" "${CMAKE_CURRENT_SOURCE_DIR}/pp/${file}.cpp")
-    target_link_libraries("${file}.pp" preprocess)
+    include_directories(${OPTIZELLE_INCLUDE_DIRS})
+    add_executable("${file}.pp" "${CMAKE_CURRENT_SOURCE_DIR}/pp/${file}.cpp"
+        $<TARGET_OBJECTS:utility>)
 
     # Run the preprocessor on the source file
     add_custom_command(
