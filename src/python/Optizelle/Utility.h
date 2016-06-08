@@ -127,8 +127,8 @@ namespace Optizelle {
 
     namespace Python {
         namespace Exception {
-            struct t : public Optizelle::Exception::t {
-                using Optizelle::Exception::t::t;
+            struct t : public std::runtime_error {
+                using std::runtime_error::runtime_error;
             };
         }
 
