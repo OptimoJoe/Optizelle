@@ -1,13 +1,7 @@
 # Optimize a simple optimization problem with an optimal solution
 # of (1/3,1/3)
 
-from __future__ import print_function
 import Optizelle 
-import Optizelle.Constrained.State
-import Optizelle.Constrained.Functions
-import Optizelle.Constrained.Algorithms
-import Optizelle.json.Constrained
-import Optizelle.json.Serialization
 import sys
 import copy
 import array
@@ -130,14 +124,14 @@ class MyEq(Optizelle.VectorValuedFunction):
     def p(self,x,dx,y):
         y[0]= dx[0]+2.*dx[1]
 
-    # z=g'(x)*dy
-    def ps(self,x,dy,z):
-        z[0]= dy[0]
-        z[1]= 2.*dy[0]
+    # xhat=g'(x)*dy
+    def ps(self,x,dy,xhat):
+        xhat[0]= dy[0]
+        xhat[1]= 2.*dy[0]
 
-    # z=(g''(x)dx)*dy
-    def pps(self,x,dx,dy,z):
-        MyVS.zero(z)
+    # xhat=(g''(x)dx)*dy
+    def pps(self,x,dx,dy,xhat):
+        MyVS.zero(xhat)
 
 # Define simple inequalities 
 #
@@ -145,22 +139,22 @@ class MyEq(Optizelle.VectorValuedFunction):
 #
 class MyIneq(Optizelle.VectorValuedFunction):
 
-    # y=h(x) 
-    def eval(self,x,y):
-        y[0]=2.*x[0]+x[1]-1.
+    # z=h(x) 
+    def eval(self,x,z):
+        z[0]=2.*x[0]+x[1]-1.
 
-    # y=h'(x)dx
-    def p(self,x,dx,y):
-        y[0]= 2.*dx[0]+dx[1]
+    # z=h'(x)dx
+    def p(self,x,dx,z):
+        z[0]= 2.*dx[0]+dx[1]
 
-    # z=h'(x)*dy
-    def ps(self,x,dy,z):
-        z[0]= 2.*dy[0]
-        z[1]= dy[0]
+    # xhat=h'(x)*dz
+    def ps(self,x,dz,xhat):
+        xhat[0]= 2.*dz[0]
+        xhat[1]= dz[0]
 
-    # z=(h''(x)dx)*dy
-    def pps(self,x,dx,dy,z):
-        MyVS.zero(z)
+    # xhat=(h''(x)dx)*dz
+    def pps(self,x,dx,dz,xhat):
+        MyVS.zero(xhat)
 
 #---Serialization0---
 def serialize_MyVS(x,name,iter):
@@ -225,7 +219,7 @@ class MyRestartManipulator(Optizelle.StateManipulator):
                 
             # Write the restart file
             Optizelle.json.Constrained.write_restart( 
-               MyVS,MyVS,MyVS,Optizelle.Messaging(),ss,state)
+               MyVS,MyVS,MyVS,ss,state)
 
 # Register the serialization routines
 MySerialization()
@@ -247,17 +241,14 @@ y = array.array('d',[0.])
 z = array.array('d',[0.])
 
 # Create an optimization state
-state=Optizelle.Constrained.State.t(
-    MyVS,MyVS,MyVS,Optizelle.Messaging(),x,y,z)
+state=Optizelle.Constrained.State.t(MyVS,MyVS,MyVS,x,y,z)
 
 # If we have a restart file, read in the parameters 
 if len(sys.argv)==3:
-    Optizelle.json.Constrained.read_restart(
-        MyVS,MyVS,MyVS,Optizelle.Messaging(),rname,x,y,z,state)
+    Optizelle.json.Constrained.read_restart(MyVS,MyVS,MyVS,rname,x,y,z,state)
 
 # Read the parameters from file
-Optizelle.json.Constrained.read(
-    MyVS,MyVS,MyVS,Optizelle.Messaging(),pname,state)
+Optizelle.json.Constrained.read(MyVS,MyVS,MyVS,pname,state)
 
 # Create a bundle of functions
 fns=Optizelle.Constrained.Functions.t()
@@ -267,7 +258,7 @@ fns.h=MyIneq()
 
 # Solve the optimization problem
 Optizelle.Constrained.Algorithms.getMin(
-    MyVS,MyVS,MyVS,Optizelle.Messaging(),fns,state,MyRestartManipulator())
+    MyVS,MyVS,MyVS,Optizelle.Messaging.stdout,fns,state,MyRestartManipulator())
 
 # Print out the reason for convergence
 print("The algorithm converged due to: %s" % (
@@ -277,5 +268,4 @@ print("The algorithm converged due to: %s" % (
 print("The optimal point is: (%e,%e)" % (state.x[0],state.x[1]))
 
 # Write out the final answer to file
-Optizelle.json.Constrained.write_restart(MyVS,MyVS,MyVS,
-    Optizelle.Messaging(),"solution.json",state)
+Optizelle.json.Constrained.write_restart(MyVS,MyVS,MyVS,"solution.json",state)

@@ -2,17 +2,18 @@ __all__ = [
     "t"
 ]
 
-import Optizelle
 import Optizelle.Unconstrained.Functions
+from Optizelle.Properties import *
+from Optizelle.Functions import *
 
 class t(Optizelle.Unconstrained.Functions.t):
     """All the functions required by an optimization algorithm""" 
     def __init__(self):
         super(t,self).__init__()
-        self._h=Optizelle.VectorValuedFunction()
+        self._h=VectorValuedFunction()
     
     # Create all of the properties
-    h = Optizelle.createVectorValuedFunctionProperty(
+    h = createVectorValuedFunctionProperty(
         "h",
         "Inequality constraints")
 

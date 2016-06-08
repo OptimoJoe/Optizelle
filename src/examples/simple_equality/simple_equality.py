@@ -2,10 +2,6 @@
 # of (2-sqrt(2)/2,2-sqrt(2)/2).
 
 import Optizelle 
-import Optizelle.EqualityConstrained.State
-import Optizelle.EqualityConstrained.Functions
-import Optizelle.EqualityConstrained.Algorithms
-import Optizelle.json.EqualityConstrained
 import numpy
 import sys
 
@@ -49,15 +45,15 @@ class MyEq(Optizelle.VectorValuedFunction):
     def p(self,x,dx,y):
         y[0] = 2.*(x[0]-2.)*dx[0]+2.*(x[1]-2.)*dx[1]
 
-    # z=g'(x)*dy
-    def ps(self,x,dy,z):
-        z[0] = 2.*(x[0]-2.)*dy[0]
-        z[1] = 2.*(x[1]-2.)*dy[0]
+    # xhat=g'(x)*dy
+    def ps(self,x,dy,xhat):
+        xhat[0] = 2.*(x[0]-2.)*dy[0]
+        xhat[1] = 2.*(x[1]-2.)*dy[0]
 
-    # z=(g''(x)dx)*dy
-    def pps(self,x,dx,dy,z):
-        z[0] = 2.*dx[0]*dy[0]
-        z[1] = 2.*dx[1]*dy[0]
+    # xhat=(g''(x)dx)*dy
+    def pps(self,x,dx,dy,xhat):
+        xhat[0] = 2.*dx[0]*dy[0]
+        xhat[1] = 2.*dx[1]*dy[0]
 #---EqualityConstraint1---
 
 #---Preconditioner0---
@@ -80,14 +76,12 @@ x = numpy.array([2.1,1.1])
 y = numpy.array([0.])
 
 # Create an optimization state
-state=Optizelle.EqualityConstrained.State.t(
-    Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging(),x,y)
+state=Optizelle.EqualityConstrained.State.t(Optizelle.Rm,Optizelle.Rm,x,y)
 #---State1---
 
 #---Parameters0---
 # Read the parameters from file
-Optizelle.json.EqualityConstrained.read(
-    Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging(),fname,state)
+Optizelle.json.EqualityConstrained.read(Optizelle.Rm,Optizelle.Rm,fname,state)
 #---Parameters1---
 
 #---Functions0---
@@ -101,7 +95,7 @@ fns.PSchur_left=MyPrecon()
 #---Solver0---
 # Solve the optimization problem
 Optizelle.EqualityConstrained.Algorithms.getMin(
-    Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging(),fns,state)
+    Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging.stdout,fns,state)
 #---Solver1---
 
 #---Extract0---
@@ -115,4 +109,4 @@ print "The optimal point is: (%e,%e)" % (state.x[0],state.x[1])
 
 # Write out the final answer to file
 Optizelle.json.EqualityConstrained.write_restart(
-    Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging(),"solution.json",state)
+    Optizelle.Rm,Optizelle.Rm,"solution.json",state)

@@ -85,12 +85,16 @@ macro(add_unit name interfaces units validated)
 
             # Loop over each of the interface interfaces
             foreach(interface ${interfaces})
+                # Track if we've run the test
+                set(test_executed FALSE)
+
                 if(${interface} STREQUAL "cpp" AND ENABLE_CPP_UNIT)
                     # Run the test
                     add_test("Execution_of_cpp_${name}_${uname}"
                         ${name}
                         ${unit}
                         ${extra})
+                    set(test_executed TRUE)
 
                 elseif(${interface} STREQUAL "python" AND ENABLE_PYTHON_UNIT)
                     # Run the test
@@ -99,6 +103,7 @@ macro(add_unit name interfaces units validated)
                         "${CMAKE_CURRENT_SOURCE_DIR}/${name}.py"
                         ${unit}
                         ${extra})
+                    set(test_executed TRUE)
 
                     # Make sure Optizelle is available
                     set_tests_properties("Execution_of_python_${name}_${uname}"
@@ -125,6 +130,7 @@ macro(add_unit name interfaces units validated)
                         ${MATLAB_EXECUTABLE}
                         "-nosplash -nodesktop -r"
                         "\"${name}('${matlab_unit}'),exit\"")
+                    set(test_executed TRUE)
 
                     # Make sure Optizelle is available 
                     set_tests_properties(
@@ -147,10 +153,11 @@ macro(add_unit name interfaces units validated)
                         --path "${CMAKE_CURRENT_SOURCE_DIR}"
                         "--eval"
                         "${name}('${octave_unit}'),exit")
+                    set(test_executed TRUE)
                 endif()
                 
                 # Diff the result of the optimization against the known solution
-                if(${validated})
+                if(${validated} AND test_executed)
                     add_test("Solution_to_${interface}_${name}_${uname}"
                         "${CMAKE_BINARY_DIR}/src/unit/utility/diff_restart"
                         ${unit} solution.json)

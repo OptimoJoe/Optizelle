@@ -283,8 +283,7 @@ namespace Optizelle {
             // We require a vector of cone types and their sizes.
             Vector (
                 std::vector <Cone::t> const & types_,
-                std::vector <Natural> const & sizes_,
-                Messaging const msg = Optizelle::Messaging()
+                std::vector <Natural> const & sizes_
             )
             //---SQLVector3---
             : data(), offsets(), types(types_), sizes(sizes_),
@@ -294,12 +293,14 @@ namespace Optizelle {
 
                 // Insure that the type of cones and their sizes lines up.
                 if(types.size()!=sizes.size())
-                    msg.error("The vector containing the type of cones must "
-                        "be the same size as the vector with the cone sizes.");
+                    Exception::t(__LOC__
+                        + ", the vector containing the type of cones must "
+                        "be the same size as the vector with the cone sizes");
 
                 // Make sure we have at least one cone.
                 if(types.size() == 0)
-                    msg.error("A SQL vector requires at least one cone.");
+                    Exception::t(__LOC__
+                        + ", a SQL vector requires at least one cone");
 
                 // Initialize the offsets.  The last element has the total
                 // number of variables.

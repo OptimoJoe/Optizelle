@@ -35,7 +35,6 @@ namespace Optizelle {
     namespace json {
         // Parses a JSON file and returns the root
         Json::Value parse(
-            Optizelle::Messaging const & msg,
             std::string const & fname
         ) {
             // Read in the input file
@@ -43,8 +42,9 @@ namespace Optizelle {
             Json::Reader reader;
             std::ifstream file(fname.c_str(),std::ifstream::in);
             bool parsingSuccessful = reader.parse( file, root, true );
-            if ( !parsingSuccessful ) 
-                msg.error("Failed to parse the optimization parameter "
+            if(!parsingSuccessful) 
+                throw Exception::t(__LOC__
+                    + ", failed to parse the optimization parameter "
                     "file:  " + reader.getFormattedErrorMessages());
 
             // Close everything out and return the root
@@ -54,28 +54,28 @@ namespace Optizelle {
        
         // Writes a JSON spec to file
         void write_to_file(
-            Optizelle::Messaging const & msg,
             std::string const & fname,
             Json::Value const & root
         ) {
             // Open a file for writing
             std::ofstream fout(fname.c_str());
             if(!fout.is_open())
-                msg.error("While writing the restart file, unable to open "
+                throw Exception::t(__LOC__
+                    + ", while writing the restart file, unable to open "
                     "the file: " + fname + ".");
 
             // Write out the json tree
             fout << root;
             if(fout.bad())
-                msg.error("While writing the restart file, unable to write "
-                    "the json tree.");
+                throw Exception::t(__LOC__
+                    + ", while writing the restart file, unable to write "
+                    "the json tree");
         }
         
         // Safely reads from a json tree 
         namespace read {
             // Read a natural 
             Natural natural(
-                Optizelle::Messaging const & msg,
                 Json::Value const & json,
                 std::string const & name
             ) {
@@ -93,19 +93,15 @@ namespace Optizelle {
                     if(val>=0)
                         return Natural(val);
                     else
-                        msg.error(err_msg);
+                        throw Exception::t(__LOC__ + ", " + err_msg);
 
                 // Anything else is an error
                 } else
-                    msg.error(err_msg);
-
-                // We should not hit this point
-                throw;
+                    throw Exception::t(__LOC__ + ", " + err_msg);
             }
             
             // Read a string 
             std::string string(
-                Optizelle::Messaging const & msg,
                 Json::Value const & json,
                 std::string const & name
             ) {
@@ -119,10 +115,7 @@ namespace Optizelle {
 
                 // Anything else is an error
                 else
-                    msg.error(err_msg);
-
-                // We should not hit this point
-                throw;
+                    throw Exception::t(__LOC__ + ", " + err_msg);
             }
         }
 
@@ -177,7 +170,6 @@ namespace Optizelle {
 
             // Naturals 
             void naturals(
-                Optizelle::Messaging const & msg,
                 Json::Value const & root,
                 std::string const & vs,
                 typename RestartPackage <Natural>::t & nats
@@ -190,13 +182,12 @@ namespace Optizelle {
                     // Grab the natural 
                     std::string name(itr.key().asString());
                     nats.emplace_back(name,std::move(
-                        read::natural(msg,root[vs][name],name))); 
+                        read::natural(root[vs][name],name))); 
                 }
             }
             
             // Parameters 
             void parameters(
-                Optizelle::Messaging const & msg,
                 Json::Value const & root,
                 std::string const & vs,
                 typename RestartPackage <std::string>::t & params 
@@ -209,7 +200,7 @@ namespace Optizelle {
                     // Grab the parameter 
                     std::string name(itr.key().asString());
                     params.emplace_back(name,std::move(
-                        read::string(msg,root[vs][name],name)));
+                        read::string(root[vs][name],name)));
                 }
             }
         }

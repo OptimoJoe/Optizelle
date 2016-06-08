@@ -33,7 +33,7 @@ Author: Joseph Young (joe@optimojoe.com)
 #define OPTIZELLE_PYTHON_H
 
 #include <Python.h>
-#include <exception>
+#include <optizelle/exception.h>
 #include <optizelle/optizelle.h>
 #include <optizelle/json.h>
 
@@ -126,6 +126,12 @@ namespace Optizelle {
     }
 
     namespace Python {
+        namespace Exception {
+            struct t : public Optizelle::Exception::t {
+                using Optizelle::Exception::t::t;
+            };
+        }
+
         // Converts Py_ssize_t to Natural
         Natural Py_ssize_t_to_Natural(Py_ssize_t const & x);
         
@@ -164,11 +170,6 @@ namespace Optizelle {
             PyObject * const arg4
         );
 
-        // Used to catch Python exceptions
-        struct Exception : public std::exception {
-            Exception();
-        };
-        
         // Deep copy of a Python object and return the result
         PyObject * deepcopy(PyObject * const in);
 
@@ -179,15 +180,18 @@ namespace Optizelle {
             };
         }
 
-        // A custom PyObject pointer that does proper clean-up on termination
+        // A custom PyObject pointer that does proper clean-up on termination.
+        // Basically, it's a shared pointer to a Python object, so we take care
+        // to increment and decrement Python's internal reference count
+        // depending on the action we take.
         struct PyObjectPtr { 
         protected:
             // Internal storage of the pointer
             PyObject * ptr;
             
         public:
-            // Disallow constructors 
-            NO_DEFAULT_COPY_ASSIGNMENT(PyObjectPtr)
+            // Create an empty pointer
+            PyObjectPtr();
 
             // On construction, initialize the pointer and figure out if
             // we're capturing the pointer or attaching to it
@@ -196,11 +200,20 @@ namespace Optizelle {
                 PyObjectPtrMode::t const mode = PyObjectPtrMode::Capture
             );
 
+            // Copy constructor
+            PyObjectPtr(PyObjectPtr& ptr_) noexcept;
+
             // Move constructor
-            explicit PyObjectPtr(PyObjectPtr&& ptr_) noexcept;
+            PyObjectPtr(PyObjectPtr&& ptr_) noexcept;
+
+            // Copy assignment operator
+            PyObjectPtr const & operator = (PyObjectPtr& ptr_) noexcept;
 
             // Move assignment operator
             PyObjectPtr const & operator = (PyObjectPtr&& ptr_) noexcept;
+
+            // Boolean operator
+            explicit operator bool() const;
 
             // For a reset, we decrement the pointer and then assign a new
             // value.
@@ -212,6 +225,7 @@ namespace Optizelle {
 
             // On a get, we simply return the pointer.
             PyObject * get();
+            PyObject const * get() const;
             
             // On a release, we return the underlying pointer and then clear
             // the vector.  This will prevent a decrement later.
@@ -222,29 +236,10 @@ namespace Optizelle {
             ~PyObjectPtr();
         };
 
-        // A messaging utility that hooks directly into Python 
-        struct Messaging : public Optizelle::Messaging, public PyObjectPtr {
-            // Disallow constructors
-            NO_DEFAULT_COPY_ASSIGNMENT(Messaging)
-
-            // On construction, we just grab the pointer to the messaging object
-            explicit Messaging(
-                PyObject * const ptr_,
-                PyObjectPtrMode::t const mode = PyObjectPtrMode::Capture
-            );
-
-            // Move constructor
-            explicit Messaging(Messaging && msg) noexcept;
-
-            // Move assignment operator
-            Messaging const & operator = (Messaging && msg) noexcept;
-
-            // Prints a message
-            void print(std::string const & msg_) const;
-
-            // Prints an error
-            void error(std::string const & msg_) const;
-        };
+        // A messaging utility that hooks directly into Python
+        namespace Messaging {
+            Optizelle::Messaging::t python(PyObject * const print);
+        }
 
         // This class merges the vector space with a vector into a singular 
         // object.  We require this structure since Optizelle requires the
@@ -254,9 +249,6 @@ namespace Optizelle {
         // functions.
         struct Vector : public PyObjectPtr {
         private:
-            // Messaging object
-            Messaging msg;
-
             // Vector space
             PyObjectPtr vs;
 
@@ -266,7 +258,6 @@ namespace Optizelle {
 
             // Create a vector with the appropriate messaging and vector space 
             explicit Vector(
-                PyObject * const msg_,
                 PyObject * const vs_,
                 PyObject * const vec,
                 PyObjectPtrMode::t mode=PyObjectPtrMode::Capture);
@@ -352,9 +343,6 @@ namespace Optizelle {
         template <typename ProblemClass>
         struct Functions : public PyObjectPtr {
         private:
-            // Messaging object
-            Messaging msg; 
-            
             // Keep some states lying around so that we can communicate this
             // to our operator.
             State <ProblemClass> pystate;
@@ -366,14 +354,12 @@ namespace Optizelle {
 
             // On construction, we just grab the pointer to the bundle object
             explicit Functions(
-                PyObject * const msg_,
                 PyObject * const pystate_,
                 typename ProblemClass::State::t const & state_,
                 PyObject * const ptr_,
                 PyObjectPtrMode::t const mode = PyObjectPtrMode::Capture
             ) :
                 PyObjectPtr(ptr_,mode),
-                msg(msg_,PyObjectPtrMode::Attach),
                 pystate(pystate_,PyObjectPtrMode::Attach),
                 state(state_)
             {}
@@ -389,9 +375,6 @@ namespace Optizelle {
             public PyObjectPtr 
         {
         private:
-            // Messaging object for reporting errors
-            Messaging msg;
-
             // Keep a copy of a Python state lying around so that we can
             // use it to pass information back and forth to the Python
             // StateManipulator.
@@ -408,14 +391,12 @@ namespace Optizelle {
             // We need the Python state manipulator, a copy of a Python state
             // to pass information, and a copy of the Python functions.
             StateManipulator(
-                PyObject * const msg_,
                 PyObject * const pystate_,
                 PyObject * const pyfns_,
                 PyObject * const smanip_,
                 PyObjectPtrMode::t const mode = PyObjectPtrMode::Capture
             ) :
                 PyObjectPtr(smanip_,mode),
-                msg(msg_,PyObjectPtrMode::Attach),
                 pystate(pystate_,PyObjectPtrMode::Attach),
                 pyfns(pyfns_,PyObjectPtrMode::Attach)
             {}
@@ -442,9 +423,10 @@ namespace Optizelle {
                     loc.get()));
 
                 // Check errors
-                if(ret.get()==nullptr)
-                    msg.error("Evaluation of the StateManipulator object "
-                        "failed.");
+                if(!ret)
+                    throw Python::Exception::t( __LOC__
+                        + ", evaluation of the StateManipulator object "
+                        "failed");
 
                 // Convert the Python state to the C++ state 
                 pystate.fromPython(state);
@@ -462,7 +444,7 @@ namespace Optizelle {
 
             // Memory allocation and size setting 
             static Vector init(Vector const & x) { 
-                return std::move(const_cast <Vector &> (x).init());
+                return const_cast <Vector &> (x).init();
             } 
 
             // y <- x (Shallow.  No memory allocation.) 
@@ -567,16 +549,12 @@ namespace Optizelle {
             // Create some type shortcuts
             typedef PythonVS <>::Vector Vector; 
 
-            // Messaging object
-            Messaging msg; 
-
         public:
             // Prevent constructors 
             NO_DEFAULT_COPY_ASSIGNMENT(ScalarValuedFunction)
 
             // Create a function 
             explicit ScalarValuedFunction(
-                PyObject * const msg_,
                 PyObject * const f,
                 PyObjectPtrMode::t mode=PyObjectPtrMode::Capture);
 
@@ -600,9 +578,6 @@ namespace Optizelle {
             typedef PythonVS <>::Vector X_Vector; 
             typedef PythonVS <>::Vector Y_Vector; 
 
-            // Messaging object
-            Messaging msg; 
-
             // Name of this function
             std::string const name;
 
@@ -613,7 +588,6 @@ namespace Optizelle {
             // Create a function 
             explicit VectorValuedFunction(
                 std::string const & name_,
-                PyObject * const msg_,
                 PyObject * const f,
                 PyObjectPtrMode::t mode=PyObjectPtrMode::Capture);
 
@@ -646,9 +620,6 @@ namespace Optizelle {
             typedef PythonVS <>::Vector X_Vector; 
             typedef PythonVS <>::Vector Y_Vector; 
 
-            // Messaging object
-            Messaging msg; 
-
             // Optimization state.  Here's a funny trick.  Frequently, we
             // an operator like inv(g'(x)g'(x)*).  Notice, that this operator
             // depends on x, but the application of this operator doesn't
@@ -672,14 +643,12 @@ namespace Optizelle {
             // Create an operator 
             explicit Operator(
                 std::string const & name_,
-                PyObject * const msg_,
                 PyObject * const op,
                 PyObject * const pystate_,
                 typename ProblemClass::State::t const & state_,
                 PyObjectPtrMode::t mode=PyObjectPtrMode::Capture
             ) :
                 PyObjectPtr(op,mode),
-                msg(msg_,PyObjectPtrMode::Attach),
                 pystate(pystate_,PyObjectPtrMode::Attach),
                 state(state_),
                 name(name_)
@@ -699,12 +668,10 @@ namespace Optizelle {
                     y.get()));
 
                 // Check errors
-                if(ret.get()==nullptr) {
-                    std::stringstream ss;
-                    ss << "Evaluation of the eval function in the operator "
-                        << name << " failed.";
-                    msg.error(ss.str());
-                }
+                if(!ret)
+                    throw Python::Exception::t(__LOC__
+                        + ", evaluation of the eval function in the operator "
+                        + name + " failed");
             }
         };
         
@@ -837,7 +804,6 @@ namespace Optizelle {
             // Sets a scalar-valued function in a C++ function bundle 
             void ScalarValuedFunction(
                 std::string const & name,
-                PyObject * const msg,
                 PyObject * const obj,
                 std::unique_ptr <PyScalarValuedFunction> & value
             );
@@ -845,7 +811,6 @@ namespace Optizelle {
             // Sets a vector-valued function in a C++ function bundle 
             void VectorValuedFunction(
                 std::string const & name,
-                PyObject * const msg,
                 PyObject * const obj,
                 std::unique_ptr <PyVectorValuedFunction> & value
             );
@@ -854,7 +819,6 @@ namespace Optizelle {
             template <typename ProblemClass>
             void Operator(
                 std::string const & name,
-                PyObject * const msg,
                 PyObject * const obj,
                 PyObject * const pystate,
                 typename ProblemClass::State::t const & state,
@@ -862,7 +826,6 @@ namespace Optizelle {
             ) {
                 value.reset(new Python::Operator <ProblemClass> (
                     name,
-                    msg,
                     PyObject_GetAttrString(obj,name.c_str()),
                     pystate,
                     state));
@@ -942,18 +905,16 @@ namespace Optizelle {
                 // Convert a Python bundle to C++ 
                 template <typename ProblemClass>
                 void fromPython_(
-                    PyObject * const msg,
                     PyObject * const pyfns,
                     PyObject * const pystate,
                     typename ProblemClass::State::t const & state,
                     typename PyUnconstrained::Functions::t & fns 
                 ) {
-                    fromPython::ScalarValuedFunction("f",msg,pyfns,fns.f);
+                    fromPython::ScalarValuedFunction("f",pyfns,fns.f);
                     fromPython::Operator <ProblemClass> (
-                        "PH",msg,pyfns,pystate,state,fns.PH);
+                        "PH",pyfns,pystate,state,fns.PH);
                 }
                 void fromPython(
-                    PyObject * const msg,
                     PyObject * const pyfns,
                     PyObject * const pystate,
                     typename PyUnconstrained::State::t const & state,
@@ -1045,20 +1006,18 @@ namespace Optizelle {
                 // Convert a Python bundle to C++ 
                 template <typename ProblemClass>
                 void fromPython_(
-                    PyObject * const msg,
                     PyObject * const pyfns,
                     PyObject * const pystate,
                     typename ProblemClass::State::t const & state,
                     typename PyEqualityConstrained::Functions::t & fns 
                 ) {
-                    fromPython::VectorValuedFunction("g",msg,pyfns,fns.g);
+                    fromPython::VectorValuedFunction("g",pyfns,fns.g);
                     fromPython::Operator <ProblemClass> ("PSchur_left",
-                        msg,pyfns,pystate,state,fns.PSchur_left);
+                        pyfns,pystate,state,fns.PSchur_left);
                     fromPython::Operator <ProblemClass> ("PSchur_right",
-                        msg,pyfns,pystate,state,fns.PSchur_right);
+                        pyfns,pystate,state,fns.PSchur_right);
                 }
                 void fromPython(
-                    PyObject * const msg,
                     PyObject * const pyfns,
                     PyObject * const pystate,
                     typename PyEqualityConstrained::State::t const & state,
@@ -1150,16 +1109,14 @@ namespace Optizelle {
                 // Convert a Python bundle to C++ 
                 template <typename ProblemClass>
                 void fromPython_(
-                    PyObject * const msg,
                     PyObject * const pyfns,
                     PyObject * const pystate,
                     typename ProblemClass::State::t const & state,
                     typename PyInequalityConstrained::Functions::t & fns 
                 ) {
-                    fromPython::VectorValuedFunction("h",msg,pyfns,fns.h);
+                    fromPython::VectorValuedFunction("h",pyfns,fns.h);
                 }
                 void fromPython(
-                    PyObject * const msg,
                     PyObject * const pyfns,
                     PyObject * const pystate,
                     typename PyInequalityConstrained::State::t const & state,
@@ -1243,7 +1200,6 @@ namespace Optizelle {
             namespace Functions{
                 // Convert a Python bundle to C++ 
                 void fromPython(
-                    PyObject * const msg,
                     PyObject * const pyfns,
                     PyObject * const pystate,
                     typename PyConstrained::State::t const & state,

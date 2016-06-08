@@ -2,10 +2,6 @@
 # optimal solution to this function is (1,1,1).
 
 import Optizelle 
-import Optizelle.Unconstrained.State
-import Optizelle.Unconstrained.Functions
-import Optizelle.Unconstrained.Algorithms
-import Optizelle.json.Unconstrained
 import numpy
 import sys
 
@@ -50,11 +46,10 @@ fname = sys.argv[1]
 x = numpy.array([-1.2,1.1,2.])
 
 # Create an unconstrained state based on this vector
-state=Optizelle.Unconstrained.State.t(Optizelle.Rm,Optizelle.Messaging(),x)
+state=Optizelle.Unconstrained.State.t(Optizelle.Rm,x)
 
 # Read the parameters from file
-Optizelle.json.Unconstrained.read(Optizelle.Rm,Optizelle.Messaging(),
-    fname,state)
+Optizelle.json.Unconstrained.read(Optizelle.Rm,fname,state)
 
 # Create the bundle of functions 
 fns=Optizelle.Unconstrained.Functions.t()
@@ -63,7 +58,7 @@ fns.PH=QuadHInv()
 
 # Solve the optimization problem
 Optizelle.Unconstrained.Algorithms.getMin(
-    Optizelle.Rm,Optizelle.Messaging(),fns,state)
+    Optizelle.Rm,Optizelle.Messaging.stdout,fns,state)
 
 # Print out the reason for convergence
 print "The algorithm converged due to: %s" % (
@@ -73,5 +68,4 @@ print "The algorithm converged due to: %s" % (
 print "The optimal point is: (%e,%e,%e)" % (state.x[0],state.x[1],state.x[2])
 
 # Write out the final answer to file
-Optizelle.json.Unconstrained.write_restart(
-    Optizelle.Rm,Optizelle.Messaging(),"solution.json",state)
+Optizelle.json.Unconstrained.write_restart(Optizelle.Rm,"solution.json",state)

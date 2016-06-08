@@ -143,7 +143,7 @@ int main(int argc,char* argv[]){
         std::cerr << "sql_restart <parameters>" << std::endl;
         exit(EXIT_FAILURE);
     }
-    auto fname = std::string(argv[1]);
+    auto fname = argv[1];
 
     // Generate an initial guess for the primal
     auto x = std::vector <double> { 5.5, 3.3, 2.2};
@@ -161,7 +161,7 @@ int main(int argc,char* argv[]){
     
     // Read the parameters from file
     Optizelle::json::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>
-        ::read(Optizelle::Messaging(),fname,state);
+        ::read(fname,state);
 
     // Create a bundle of functions
     Optizelle::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>
@@ -171,15 +171,15 @@ int main(int argc,char* argv[]){
 
     // Solve the optimization problem
     Optizelle::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>
-        ::Algorithms::getMin(Optizelle::Messaging(),fns,state);
+        ::Algorithms::getMin(Optizelle::Messaging::stdout,fns,state);
     
     // Write an intermediate restart file 
     Optizelle::json::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>
-        ::write_restart(Optizelle::Messaging(),"restart.json",state);
+        ::write_restart("restart.json",state);
 
     // Read in the restart file
     Optizelle::json::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>
-        ::read_restart(Optizelle::Messaging(),"restart.json",x,z,state);
+        ::read_restart("restart.json",x,z,state);
 
     // Change the maximum number of iterations to something larger and reset
     // the convergence flag
@@ -188,7 +188,7 @@ int main(int argc,char* argv[]){
 
     // Finish solving the optimization problem
     Optizelle::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>
-        ::Algorithms::getMin(Optizelle::Messaging(),fns,state);
+        ::Algorithms::getMin(Optizelle::Messaging::stdout,fns,state);
 
     // Print out the reason for convergence
     std::cout << "The algorithm converged due to: " <<
@@ -201,7 +201,7 @@ int main(int argc,char* argv[]){
 
     // Write out the final answer to file
     Optizelle::json::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>
-        ::write_restart(Optizelle::Messaging(),"solution.json",state);
+        ::write_restart("solution.json",state);
 
     // Successful termination
     return EXIT_SUCCESS;

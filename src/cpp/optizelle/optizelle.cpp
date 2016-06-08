@@ -34,18 +34,11 @@ Author: Joseph Young (joe@optimojoe.com)
 namespace Optizelle{
 
     // Prints a message
-    void Messaging::print(std::string const & msg) const {
-        std::cout << msg << std::endl;
+    namespace Messaging {
+        void stdout(std::string const & msg) {
+            std::cout << msg << std::endl;
+        }
     }
-
-    // Prints an error
-    void Messaging::error(std::string const & msg) const {
-        std::cerr << msg << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-    // Allow a derived class to deallocate memory
-    Messaging::~Messaging() {}
 
     // Which algorithm class do we use
     namespace AlgorithmClass{
@@ -59,7 +52,7 @@ namespace Optizelle{
             case UserDefined:
                 return "UserDefined";
             default:
-                throw;
+                throw Exception::t(__LOC__+", invalid AlgorithmClass::t");
             }
         }
         
@@ -72,7 +65,8 @@ namespace Optizelle{
             else if(algorithm_class=="UserDefined")
                 return UserDefined;
             else
-                throw;
+                throw Exception::t(__LOC__
+                    + ", string can't be convert into an AlgorithmClass::t"); 
         }
 
         // Checks whether or not a string is valid
@@ -107,7 +101,8 @@ namespace Optizelle{
             case UserDefined:
                 return "UserDefined";
             default:
-                throw;
+                throw Exception::t(__LOC__
+                    + ", invalid OptimizationStop::t"); 
             }
         }
 
@@ -128,7 +123,8 @@ namespace Optizelle{
             else if(opt_stop=="UserDefined")
                 return UserDefined;
             else
-                throw;
+                throw Exception::t(__LOC__
+                    + ", string can't be converted into an OptimizationStop::t"); 
         }
 
         // Checks whether or not a string is valid
@@ -169,7 +165,7 @@ namespace Optizelle{
             case UserDefined:
                 return "UserDefined";
             default:
-                throw;
+                throw Exception::t(__LOC__ + ", invalid Operators::t"); 
             }
         }
         
@@ -192,7 +188,8 @@ namespace Optizelle{
             else if(op=="UserDefined")
                 return UserDefined; 
             else
-                throw;
+                throw Exception::t(__LOC__
+                    + ", string can't be convert into an Operators::t"); 
         }
 
         // Checks whether or not a string is valid
@@ -231,7 +228,8 @@ namespace Optizelle{
             case NewtonCG:
                 return "NewtonCG";
             default:
-                throw;
+                throw Exception::t(__LOC__
+                    + ", invalid LineSearchDirection::t"); 
             }
         }
         
@@ -250,7 +248,8 @@ namespace Optizelle{
             else if(dir=="NewtonCG")
                 return NewtonCG; 
             else
-                throw;
+                throw Exception::t(__LOC__
+                    +", string can't be convert into a LineSearchDirection::t"); 
         }
 
         // Checks whether or not a string is valid
@@ -283,7 +282,8 @@ namespace Optizelle{
             case TwoPointB:
                 return "TwoPointB";
             default:
-                throw;
+                throw Exception::t(__LOC__
+                    + ", invalid LineSearchKind::t"); 
             }
         }
         
@@ -298,7 +298,8 @@ namespace Optizelle{
             else if(kind=="TwoPointB")
                 return TwoPointB; 
             else
-                throw;
+                throw Exception::t(__LOC__
+                    + ", string can't be convert into a LineSearchKind::t"); 
         }
 
         // Checks whether or not a string is valid
@@ -324,7 +325,7 @@ namespace Optizelle{
             case TwoPointB:
                 return false;
             default:
-                throw;
+                throw Exception::t(__LOC__+", invalid LineSearchKind::t"); 
             }
         }
     }
@@ -374,7 +375,8 @@ namespace Optizelle{
             case EndOfOptimization:
                 return "EndOfOptimization";
             default:
-                throw;
+                throw Exception::t(__LOC__
+                    + ", invalid OptimizationLocation::t"); 
             }
         }
         
@@ -419,7 +421,9 @@ namespace Optizelle{
             else if(loc=="EndOfOptimization")
                 return EndOfOptimization;
             else
-                throw;
+                throw Exception::t(__LOC__
+                    + ", string can't be convert into an "
+                    "OptimizationLocation::t"); 
         }
 
         // Checks whether or not a string is valid
@@ -465,7 +469,7 @@ namespace Optizelle{
             case Constrained:
                 return "Constrained";
             default:
-                    throw;
+                throw Exception::t(__LOC__+", invalid ProblemClass::t"); 
             }
         }
 
@@ -480,7 +484,8 @@ namespace Optizelle{
             else if(problem_class=="Constrained")
                 return Constrained;
             else
-                throw;
+                throw Exception::t(__LOC__
+                    + ", string can't be convert into a ProblemClass::t"); 
         }
 
         // Checks whether or not a string is valid
@@ -509,7 +514,8 @@ namespace Optizelle{
             case SecondOrder: 
                 return "SecondOrder";
             default:
-                throw;
+                throw Exception::t(__LOC__
+                    + ", invalid FunctionDiagnostics::t"); 
             }
         }
         
@@ -522,7 +528,9 @@ namespace Optizelle{
             else if(diag=="SecondOrder")
                 return SecondOrder;
             else
-                throw;
+                throw Exception::t(__LOC__
+                    + ", string can't be convert into a "
+                    "FunctionDiagnostics::t"); 
         }
 
         // Checks whether or not a string is valid
@@ -550,7 +558,8 @@ namespace Optizelle{
             case EveryIteration: 
                 return "EveryIteration";
             default:
-                throw;
+                throw Exception::t(__LOC__
+                    + ", invalid DiagnosticScheme::t"); 
             }
         }
         
@@ -563,7 +572,8 @@ namespace Optizelle{
             else if(dscheme=="EveryIteration")
                 return EveryIteration;
             else
-                throw;
+                throw Exception::t(__LOC__
+                    + ", string can't be convert into a DiagnosticScheme::t"); 
         }
 
         // Checks whether or not a string is valid
@@ -591,7 +601,8 @@ namespace Optizelle{
             case EuclideanJordan: 
                 return "EuclideanJordan";
             default:
-                throw;
+                throw Exception::t(__LOC__
+                    + ", invalid VectorSpaceDiagnostics::t"); 
             }
         }
         
@@ -604,7 +615,9 @@ namespace Optizelle{
             else if(diag=="EuclideanJordan")
                 return EuclideanJordan;
             else
-                throw;
+                throw Exception::t(__LOC__
+                    + ", string can't be convert into a "
+                    "VectorSpaceDiagnostics ::t"); 
         }
 
         // Checks whether or not a string is valid
@@ -630,7 +643,7 @@ namespace Optizelle{
             case Absolute: 
                 return "Absolute";
             default:
-                throw;
+                throw Exception::t(__LOC__+", invalid ToleranceKind::t"); 
             }
         }
         
@@ -641,7 +654,8 @@ namespace Optizelle{
             else if(eps_rel=="Absolute")
                 return Absolute;
             else
-                throw;
+                throw Exception::t(__LOC__
+                    + ", string can't be convert into a ToleranceKind::t"); 
         }
 
         // Checks whether or not a string is valid
@@ -684,7 +698,8 @@ namespace Optizelle{
             case NewtonFailed: 
                 return "NewtonFailed";
             default:
-                throw;
+                throw Exception::t(__LOC__
+                    + ", invalid QuasiNormalStop::t");
             }
         }
         
@@ -713,7 +728,8 @@ namespace Optizelle{
             else if(qn_stop=="NewtonFailed")
                 return NewtonFailed;
             else
-                throw;
+                throw Exception::t(__LOC__
+                    + ", string can't be convert into a QuasiNormalStop::t"); 
         }
 
         // Checks whether or not a string is valid
@@ -799,7 +815,7 @@ namespace Optizelle{
         case TruncatedStop::ObjectiveIncrease:
             return atos("ObjIncr");
         default:
-            throw;
+            throw Exception::t(__LOC__ + ", invalid TruncatedStop::t");
         }
     }
     std::string Utility::atos(QuasinormalStop::t const & x){
@@ -829,7 +845,7 @@ namespace Optizelle{
         case QuasinormalStop::NewtonFailed:
             return atos("NewtonFail");
         default:
-            throw;
+            throw Exception::t(__LOC__ + ", invalid QuasiNormalStop::t");
         }
     }
 }

@@ -3,7 +3,7 @@
 // std::cerr
 #include <iostream>
 
-namespace Exception {
+namespace Optizelle { namespace Exception {
     // Prints out nested exceptions 
     void print_exception(std::exception const & e) {
         // Print out the top layer of the exception
@@ -42,4 +42,4 @@ namespace Exception {
             return s + "Unknown exception" + '\n';
         }
     }
-}
+}}

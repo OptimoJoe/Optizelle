@@ -42,13 +42,11 @@ namespace Optizelle {
     namespace json {
         // Parses a JSON file and returns the root
         Json::Value parse(
-            Optizelle::Messaging const & msg,
             std::string const & fname
         ); 
        
         // Writes a JSON spec to file
         void write_to_file(
-            Optizelle::Messaging const & msg,
             std::string const & fname,
             Json::Value const & root
         ); 
@@ -58,7 +56,6 @@ namespace Optizelle {
             // Read a real
             template <typename Real>
             Real real(
-                Optizelle::Messaging const & msg,
                 Json::Value const & json,
                 std::string const & name
             ) {
@@ -79,7 +76,7 @@ namespace Optizelle {
                     else if(val=="-Inf")
                         return -std::numeric_limits <Real>::infinity();
                     else
-                        msg.error(err_msg);
+                        throw Exception::t(__LOC__ + ", " + err_msg);
 
                 // As long as we have a number, grab it
                 } else if (json.isNumeric())
@@ -87,7 +84,7 @@ namespace Optizelle {
 
                 // Anything else is an error
                 else
-                    msg.error(err_msg);
+                    throw Exception::t(__LOC__ + ", " + err_msg);
                 
                 // We should not hit this point
                 throw;
@@ -95,7 +92,6 @@ namespace Optizelle {
 
             // Read a natural 
             Natural natural(
-                Optizelle::Messaging const & msg,
                 Json::Value const & json,
                 std::string const & name
             );
@@ -103,7 +99,6 @@ namespace Optizelle {
             // Read a paramter
             template <typename enum_t>
             enum_t param(
-                Optizelle::Messaging const & msg,
                 Json::Value const & json,
                 std::function<bool(std::string const &)> const & is_valid,
                 std::function<enum_t(std::string const&)>const& from_string,
@@ -125,11 +120,11 @@ namespace Optizelle {
                         return from_string(val);
 
                     // Otherwise, raise an error
-                    msg.error(err_msg);
+                    throw Exception::t(__LOC__ + ", " + err_msg);
 
                 // If we don't start with a string, raise an error
                 } else
-                    msg.error(err_msg);
+                    throw Exception::t(__LOC__ + ", " + err_msg);
                 
                 // We should not hit this point
                 throw;
@@ -137,7 +132,6 @@ namespace Optizelle {
 
             // Read a string 
             std::string string(
-                Optizelle::Messaging const & msg,
                 Json::Value const & json,
                 std::string const & name
             );
@@ -304,7 +298,6 @@ namespace Optizelle {
             // Reals 
             template <typename Real>
             void reals(
-                Messaging const & msg,
                 Json::Value const & root,
                 std::string const & vs,
                 typename RestartPackage <Real>::t & reals
@@ -317,13 +310,12 @@ namespace Optizelle {
                     // Grab the real 
                     std::string name(itr.key().asString());
                     reals.emplace_back(name,std::move(
-                        read::real <Real> (msg,root[vs][name],name)));
+                        read::real <Real> (root[vs][name],name)));
                 }
             }
             
             // Naturals 
             void naturals(
-                Optizelle::Messaging const & msg,
                 Json::Value const & root,
                 std::string const & vs,
                 typename RestartPackage <Natural>::t & nats
@@ -331,7 +323,6 @@ namespace Optizelle {
             
             // Parameters 
             void parameters(
-                Optizelle::Messaging const & msg,
                 Json::Value const & root,
                 std::string const & vs,
                 typename RestartPackage <std::string>::t & params 
@@ -355,162 +346,134 @@ namespace Optizelle {
 
             // Read parameters from file
             static void read_(
-                Optizelle::Messaging const & msg,
                 std::string const & fname,
                 typename Optizelle::Unconstrained <Real,XX>::State::t & state
             ) {
                 // Read in the input file
-                Json::Value root=parse(msg,fname);
+                Json::Value root=parse(fname);
 
                 // Read in the parameters
                 state.eps_grad=read::real <Real> (
-                    msg,
                     root["Optizelle"].get("eps_grad",state.eps_grad),
                     "eps_grad");
                 state.eps_dx=read::real <Real> (
-                    msg,
                     root["Optizelle"].get("eps_dx",state.eps_dx),
                     "eps_dx");
                 state.stored_history=read::natural(
-                    msg,
                     root["Optizelle"].get(
                         "stored_history",
                         Json::Value::UInt64(state.stored_history)),
                     "stored_history");
                 state.iter_max=read::natural(
-                    msg,
                     root["Optizelle"].get(
                         "iter_max",
                         Json::Value::UInt64(state.iter_max)),
                     "iter_max");
                 state.glob_iter_max=read::natural(
-                    msg,
                     root["Optizelle"].get(
                         "glob_iter_max",
                         Json::Value::UInt64(state.glob_iter_max)),
                     "glob_iter_max");
                 state.trunc_iter_max=read::natural(
-                    msg,
                     root["Optizelle"].get(
                         "trunc_iter_max",
                         Json::Value::UInt64(state.trunc_iter_max)),
                     "trunc_iter_max");
                 state.trunc_orthog_storage_max=read::natural(
-                    msg,
                     root["Optizelle"].get(
                         "trunc_orthog_storage_max",
                         Json::Value::UInt64(state.trunc_orthog_storage_max)),
                     "trunc_orthog_storage_max");
                 state.trunc_orthog_iter_max=read::natural(
-                    msg,
                     root["Optizelle"].get(
                         "trunc_orthog_iter_max",
                         Json::Value::UInt64(state.trunc_orthog_iter_max)),
                     "trunc_orthog_iter_max");
                 state.eps_trunc=read::real <Real> (
-                    msg,
                     root["Optizelle"].get("eps_trunc",state.eps_trunc),
                     "eps_trunc");
                 state.algorithm_class=read::param <AlgorithmClass::t> (
-                    msg,
                     root["Optizelle"].get("algorithm_class",
                         AlgorithmClass::to_string(state.algorithm_class)),
                     AlgorithmClass::is_valid,
                     AlgorithmClass::from_string,
                     "algorithm_class");
                 state.PH_type=read::param <Operators::t> (
-                    msg,
                     root["Optizelle"].get("PH_type",
                         Operators::to_string(state.PH_type)),
                     Operators::is_valid,
                     Operators::from_string,
                     "PH_type");
                 state.H_type=read::param <Operators::t> (
-                    msg,
                     root["Optizelle"].get("H_type",
                         Operators::to_string(state.H_type)),
                     Operators::is_valid,
                     Operators::from_string,
                     "H_type");
                 state.msg_level=read::natural(
-                    msg,
                     root["Optizelle"].get(
                         "msg_level",
                         Json::Value::UInt64(state.msg_level)),
                     "msg_level");
                 state.safeguard_failed_max=read::natural(
-                    msg,
                     root["Optizelle"].get(
                         "safeguard_failed_max",
                         Json::Value::UInt64(state.safeguard_failed_max)),
                     "safeguard_failed_max");
                 state.delta=read::real <Real> (
-                    msg,
                     root["Optizelle"].get("delta",state.delta),
                     "delta");
                 state.eta1=read::real <Real> (
-                    msg,
                     root["Optizelle"].get("eta1",state.eta1),
                     "eta1");
                 state.eta2=read::real <Real> (
-                    msg,
                     root["Optizelle"].get("eta2",state.eta2),
                     "eta2");
                 state.alpha0=read::real <Real> (
-                    msg,
                     root["Optizelle"].get("alpha0",state.alpha0),
                     "alpha0");
                 state.c1=read::real <Real> (
-                    msg,
                     root["Optizelle"].get("c1",state.c1),
                     "c1");
                 state.ls_iter_max=read::natural(
-                    msg,
                     root["Optizelle"].get(
                         "ls_iter_max",
                         Json::Value::UInt64(state.ls_iter_max)),
                     "ls_iter_max");
                 state.eps_ls=read::real <Real> (
-                    msg,
                     root["Optizelle"].get("eps_ls",state.eps_ls),
                     "eps_ls");
                 state.dir=read::param <LineSearchDirection::t> (
-                    msg,
                     root["Optizelle"].get("dir",
                         LineSearchDirection::to_string(state.dir)),
                     LineSearchDirection::is_valid,
                     LineSearchDirection::from_string,
                     "dir");
                 state.kind=read::param <LineSearchKind::t> (
-                    msg,
                     root["Optizelle"].get("kind",
                         LineSearchKind::to_string(state.kind)),
                     LineSearchKind::is_valid,
                     LineSearchKind::from_string,
                     "kind");
                 state.f_diag=read::param <FunctionDiagnostics::t> (
-                    msg,
                     root["Optizelle"].get("f_diag",
                         FunctionDiagnostics::to_string(state.f_diag)),
                     FunctionDiagnostics::is_valid,
                     FunctionDiagnostics::from_string,
                     "f_diag");
                 state.L_diag=read::param <FunctionDiagnostics::t> (
-                    msg,
                     root["Optizelle"].get("L_diag",
                         FunctionDiagnostics::to_string(state.L_diag)),
                     FunctionDiagnostics::is_valid,
                     FunctionDiagnostics::from_string,
                     "L_diag");
                 state.x_diag=read::param <VectorSpaceDiagnostics::t> (
-                    msg,
                     root["Optizelle"].get("x_diag",
                         VectorSpaceDiagnostics::to_string(state.x_diag)),
                     VectorSpaceDiagnostics::is_valid,
                     VectorSpaceDiagnostics::from_string,
                     "x_diag");
                 state.dscheme=read::param <DiagnosticScheme::t> (
-                    msg,
                     root["Optizelle"].get("dscheme",
                         DiagnosticScheme::to_string(state.dscheme)),
                     DiagnosticScheme::is_valid,
@@ -518,7 +481,6 @@ namespace Optizelle {
                     "dscheme");
                 state.eps_kind=read::param
                     <ToleranceKind::t> (
-                    msg,
                     root["Optizelle"].get("eps_kind",
                         ToleranceKind::to_string(
                             state.eps_kind)),
@@ -527,11 +489,10 @@ namespace Optizelle {
                     "eps_kind");
             }
             static void read(
-                Optizelle::Messaging const & msg,
                 std::string const & fname,
                 typename Optizelle::Unconstrained <Real,XX>::State::t& state
             ) {
-                Unconstrained <Real,XX>::read_(msg,fname,state);
+                Unconstrained <Real,XX>::read_(fname,state);
             }
 
             // Convert parameters to a string 
@@ -601,7 +562,6 @@ namespace Optizelle {
 
             // Write all parameters to file
             static void write_restart(
-                Optizelle::Messaging const & msg,
                 std::string const & fname,
                 typename Optizelle::Unconstrained <Real,XX>::State::t & state
             ) {
@@ -624,22 +584,21 @@ namespace Optizelle {
                 Serialize::parameters(params,"Parameters",root);
                 
                 // Write everything to file 
-                write_to_file(msg,fname,root);
+                write_to_file(fname,root);
 
                 // Recapture the state
                 Optizelle::Unconstrained <Real,XX>::Restart::capture(
-                    msg,state,xs,reals,nats,params);
+                    state,xs,reals,nats,params);
             }
 
             // Read all the parameters from file
             static void read_restart(
-                Optizelle::Messaging const & msg,
                 std::string const & fname,
                 X_Vector const & x,
                 typename Optizelle::Unconstrained <Real,XX>::State::t & state
             ) {
                 // Read in the input file
-                Json::Value root=parse(msg,fname);
+                Json::Value root=parse(fname);
 
                 // Extract everything from the parsed json file 
                 X_Vectors xs;
@@ -647,13 +606,13 @@ namespace Optizelle {
                 Naturals nats;
                 Params params;
                 Deserialize::vectors <Real,XX>(root,"X_Vectors",x,xs);
-                Deserialize::reals <Real> (msg,root,"Reals",reals);
-                Deserialize::naturals(msg,root,"Naturals",nats);
-                Deserialize::parameters(msg,root,"Parameters",params);
+                Deserialize::reals <Real> (root,"Reals",reals);
+                Deserialize::naturals(root,"Naturals",nats);
+                Deserialize::parameters(root,"Parameters",params);
                
                 // Move this information into the state
                 Optizelle::Unconstrained <Real,XX>::Restart::capture(
-                    msg,state,xs,reals,nats,params);
+                    state,xs,reals,nats,params);
             }
         };
 
@@ -682,106 +641,85 @@ namespace Optizelle {
 
             // Read parameters from file
             static void read_(
-                Optizelle::Messaging const & msg,
                 std::string const & fname,
                 typename Optizelle::EqualityConstrained <Real,XX,YY>::State::t &
                     state
             ) {
                 // Read in the input file
-                Json::Value root=parse(msg,fname);
+                Json::Value root=parse(fname);
 
                 // Read in the parameters
                 state.zeta=read::real <Real> (
-                    msg,
                     root["Optizelle"].get("zeta",state.zeta),
                     "zeta");
                 state.eta0=read::real <Real> (
-                    msg,
                     root["Optizelle"].get("eta0",state.eta0),
                     "eta0");
                 state.rho=read::real <Real> (
-                    msg,
                     root["Optizelle"].get("rho",state.rho),
                     "rho");
                 state.rho_bar=read::real <Real> (
-                    msg,
                     root["Optizelle"].get("rho_bar",state.rho_bar),
                     "rho_bar");
                 state.eps_constr=read::real <Real> (
-                    msg,
                     root["Optizelle"].get("eps_constr",state.eps_constr),
                     "eps_constr");
                 state.xi_all(read::real <Real> (
-                    msg,
                     root["Optizelle"].get("xi_all",state.xi_qn),
                     "xi_all"));
                 state.eps_constr=read::real <Real> (
-                    msg,
                     root["Optizelle"].get("eps_constr",state.eps_constr),
                     "eps_constr");
                 state.xi_qn=read::real <Real> (
-                    msg,
                     root["Optizelle"].get("xi_qn",state.xi_qn),
                     "xi_qn");
                 state.xi_pg=read::real <Real> (
-                    msg,
                     root["Optizelle"].get("xi_pg",state.xi_pg),
                     "xi_pg");
                 state.xi_proj=read::real <Real> (
-                    msg,
                     root["Optizelle"].get("xi_proj",state.xi_proj),
                     "xi_proj");
                 state.xi_tang=read::real <Real> (
-                    msg,
                     root["Optizelle"].get("xi_tang",state.xi_tang),
                     "xi_tang");
                 state.xi_lmh=read::real <Real> (
-                    msg,
                     root["Optizelle"].get("xi_lmh",state.xi_lmh),
                     "xi_lmh");
                 state.xi_lmg=read::real <Real> (
-                    msg,
                     root["Optizelle"].get("xi_lmg",state.xi_lmg),
                     "xi_lmg");
                 state.xi_4=read::real <Real> (
-                    msg,
                     root["Optizelle"].get("xi_4",state.xi_4),
                     "xi_4");
                 state.augsys_iter_max=read::natural(
-                    msg,
                     root["Optizelle"].get(
                         "augsys_iter_max",
                         Json::Value::UInt64(state.augsys_iter_max)),
                     "augsys_iter_max");
                 state.augsys_rst_freq=read::natural(
-                    msg,
                     root["Optizelle"].get(
                         "augsys_rst_freq",
                         Json::Value::UInt64(state.augsys_rst_freq)),
                     "augsys_rst_freq");
                 state.PSchur_left_type=read::param <Operators::t> (
-                    msg,
                     root["Optizelle"].get("PSchur_left_type",
                         Operators::to_string(state.PSchur_left_type)),
                     Operators::is_valid,
                     Operators::from_string,
                     "PSchur_left_type");
                 state.PSchur_right_type=read::param <Operators::t> (
-                    msg,
                     root["Optizelle"].get("PSchur_right_type",
                         Operators::to_string(state.PSchur_right_type)),
                     Operators::is_valid,
                     Operators::from_string,
                     "PSchur_right_type");
                 state.g_diag=read::param <FunctionDiagnostics::t> (
-                    msg,
                     root["Optizelle"].get("g_diag",
                         FunctionDiagnostics::to_string(state.g_diag)),
                     FunctionDiagnostics::is_valid,
                     FunctionDiagnostics::from_string,
                     "g_diag");
                 state.y_diag=read::param <VectorSpaceDiagnostics::t> (
-                    msg,
                     root["Optizelle"].get("y_diag",
                         VectorSpaceDiagnostics::to_string(state.y_diag)),
                     VectorSpaceDiagnostics::is_valid,
@@ -789,13 +727,12 @@ namespace Optizelle {
                     "y_diag");
             }
             static void read(
-                Optizelle::Messaging const & msg,
                 std::string const & fname,
                 typename Optizelle::EqualityConstrained <Real,XX,YY>::State::t &
                     state
             ) {
-                Unconstrained <Real,XX>::read_(msg,fname,state);
-                EqualityConstrained <Real,XX,YY>::read_(msg,fname,state);
+                Unconstrained <Real,XX>::read_(fname,state);
+                EqualityConstrained <Real,XX,YY>::read_(fname,state);
             }
 
             // Convert parameters to a string 
@@ -851,7 +788,6 @@ namespace Optizelle {
 
             // Write all parameters to file
             static void write_restart(
-                Optizelle::Messaging const & msg,
                 std::string const & fname,
                 typename Optizelle::EqualityConstrained <Real,XX,YY>::State::t &
                     state
@@ -877,16 +813,15 @@ namespace Optizelle {
                 Serialize::parameters(params,"Parameters",root);
                 
                 // Write everything to file 
-                write_to_file(msg,fname,root);
+                write_to_file(fname,root);
 
                 // Recapture the state
                 Optizelle::EqualityConstrained<Real,XX,YY>::Restart::capture(
-                    msg,state,xs,ys,reals,nats,params);
+                    state,xs,ys,reals,nats,params);
             }
 
             // Read all the parameters from file
             static void read_restart(
-                Optizelle::Messaging const & msg,
                 std::string const & fname,
                 X_Vector const & x,
                 Y_Vector const & y,
@@ -894,7 +829,7 @@ namespace Optizelle {
                     state
             ) {
                 // Read in the input file
-                Json::Value root=parse(msg,fname);
+                Json::Value root=parse(fname);
 
                 // Extract everything from the parsed json file 
                 X_Vectors xs;
@@ -904,13 +839,13 @@ namespace Optizelle {
                 Params params;
                 Deserialize::vectors <Real,XX>(root,"X_Vectors",x,xs);
                 Deserialize::vectors <Real,YY>(root,"Y_Vectors",y,ys);
-                Deserialize::reals <Real> (msg,root,"Reals",reals);
-                Deserialize::naturals(msg,root,"Naturals",nats);
-                Deserialize::parameters(msg,root,"Parameters",params);
+                Deserialize::reals <Real> (root,"Reals",reals);
+                Deserialize::naturals(root,"Naturals",nats);
+                Deserialize::parameters(root,"Parameters",params);
                
                 // Move this information into the state
                 Optizelle::EqualityConstrained <Real,XX,YY>::Restart::capture(
-                    msg,state,xs,ys,reals,nats,params);
+                    state,xs,ys,reals,nats,params);
             }
         };
 
@@ -938,40 +873,33 @@ namespace Optizelle {
 
             // Read parameters from file
             static void read_(
-                Optizelle::Messaging const & msg,
                 std::string const & fname,
                 typename Optizelle::InequalityConstrained<Real,XX,ZZ>::State::t&
                     state
             ) {
                 // Read in the input file
-                Json::Value root=parse(msg,fname);
+                Json::Value root=parse(fname);
 
                 // Read in the parameters
                 state.eps_mu=read::real <Real> (
-                    msg,
                     root["Optizelle"].get("eps_mu",state.eps_mu),
                     "eps_mu");
                 state.mu=read::real <Real> (
-                    msg,
                     root["Optizelle"].get("mu",state.mu),
                     "mu");
                 state.sigma=read::real <Real> (
-                    msg,
                     root["Optizelle"].get("sigma",state.sigma),
                     "sigma");
                 state.gamma=read::real <Real> (
-                    msg,
                     root["Optizelle"].get("gamma",state.gamma),
                     "gamma");
                 state.h_diag=read::param <FunctionDiagnostics::t> (
-                    msg,
                     root["Optizelle"].get("h_diag",
                         FunctionDiagnostics::to_string(state.h_diag)),
                     FunctionDiagnostics::is_valid,
                     FunctionDiagnostics::from_string,
                     "h_diag");
                 state.z_diag=read::param <VectorSpaceDiagnostics::t> (
-                    msg,
                     root["Optizelle"].get("z_diag",
                         VectorSpaceDiagnostics::to_string(state.z_diag)),
                     VectorSpaceDiagnostics::is_valid,
@@ -979,13 +907,12 @@ namespace Optizelle {
                     "z_diag");
             }
             static void read(
-                Optizelle::Messaging const & msg,
                 std::string const & fname,
                 typename Optizelle::InequalityConstrained<Real,XX,ZZ>::State::t&
                     state
             ) {
-                Unconstrained <Real,XX>::read_(msg,fname,state);
-                InequalityConstrained <Real,XX,ZZ>::read_(msg,fname,state);
+                Unconstrained <Real,XX>::read_(fname,state);
+                InequalityConstrained <Real,XX,ZZ>::read_(fname,state);
             }
 
             // Convert parameters to a string 
@@ -1025,7 +952,6 @@ namespace Optizelle {
 
             // Write all parameters to file
             static void write_restart(
-                Optizelle::Messaging const & msg,
                 std::string const & fname,
                 typename Optizelle::InequalityConstrained<Real,XX,ZZ>::State::t&
                     state
@@ -1051,16 +977,15 @@ namespace Optizelle {
                 Serialize::parameters(params,"Parameters",root);
                 
                 // Write everything to file 
-                write_to_file(msg,fname,root);
+                write_to_file(fname,root);
 
                 // Recapture the state
                 Optizelle::InequalityConstrained<Real,XX,ZZ>::Restart::capture(
-                    msg,state,xs,zs,reals,nats,params);
+                    state,xs,zs,reals,nats,params);
             }
 
             // Read all the parameters from file
             static void read_restart(
-                Optizelle::Messaging const & msg,
                 std::string const & fname,
                 X_Vector const & x,
                 Z_Vector const & z,
@@ -1068,7 +993,7 @@ namespace Optizelle {
                     state
             ) {
                 // Read in the input file
-                Json::Value root=parse(msg,fname);
+                Json::Value root=parse(fname);
 
                 // Extract everything from the parsed json file 
                 X_Vectors xs;
@@ -1078,13 +1003,13 @@ namespace Optizelle {
                 Params params;
                 Deserialize::vectors <Real,XX>(root,"X_Vectors",x,xs);
                 Deserialize::vectors <Real,ZZ>(root,"Z_Vectors",z,zs);
-                Deserialize::reals <Real> (msg,root,"Reals",reals);
-                Deserialize::naturals(msg,root,"Naturals",nats);
-                Deserialize::parameters(msg,root,"Parameters",params);
+                Deserialize::reals <Real> (root,"Reals",reals);
+                Deserialize::naturals(root,"Naturals",nats);
+                Deserialize::parameters(root,"Parameters",params);
                
                 // Move this information into the state
                 Optizelle::InequalityConstrained <Real,XX,ZZ>::Restart::capture(
-                    msg,state,xs,zs,reals,nats,params);
+                    state,xs,zs,reals,nats,params);
             }
         };
 
@@ -1117,14 +1042,13 @@ namespace Optizelle {
 
             // Read parameters from file
             static void read(
-                Optizelle::Messaging const & msg,
                 std::string const & fname,
                 typename Optizelle::Constrained <Real,XX,YY,ZZ>::State::t&
                     state
             ) {
-                Unconstrained <Real,XX>::read_(msg,fname,state);
-                EqualityConstrained <Real,XX,YY>::read_(msg,fname,state);
-                InequalityConstrained <Real,XX,ZZ>::read_(msg,fname,state);
+                Unconstrained <Real,XX>::read_(fname,state);
+                EqualityConstrained <Real,XX,YY>::read_(fname,state);
+                InequalityConstrained <Real,XX,ZZ>::read_(fname,state);
             }
 
             // Convert parameters to a string 
@@ -1145,7 +1069,6 @@ namespace Optizelle {
             
             // Write all parameters to file
             static void write_restart(
-                Optizelle::Messaging const & msg,
                 std::string const & fname,
                 typename Optizelle::Constrained <Real,XX,YY,ZZ>::State::t &
                     state
@@ -1173,16 +1096,15 @@ namespace Optizelle {
                 Serialize::parameters(params,"Parameters",root);
                 
                 // Write everything to file 
-                write_to_file(msg,fname,root);
+                write_to_file(fname,root);
 
                 // Recapture the state
                 Optizelle::Constrained<Real,XX,YY,ZZ>::Restart::capture(
-                    msg,state,xs,ys,zs,reals,nats,params);
+                    state,xs,ys,zs,reals,nats,params);
             }
             
             // Read all the parameters from file
             static void read_restart(
-                Optizelle::Messaging const & msg,
                 std::string const & fname,
                 X_Vector const & x,
                 Y_Vector const & y,
@@ -1190,7 +1112,7 @@ namespace Optizelle {
                 typename Optizelle::Constrained <Real,XX,YY,ZZ>::State::t& state
             ) {
                 // Read in the input file
-                Json::Value root=parse(msg,fname);
+                Json::Value root=parse(fname);
 
                 // Extract everything from the parsed json file 
                 X_Vectors xs;
@@ -1202,13 +1124,13 @@ namespace Optizelle {
                 Deserialize::vectors <Real,XX>(root,"X_Vectors",x,xs);
                 Deserialize::vectors <Real,YY>(root,"Y_Vectors",y,ys);
                 Deserialize::vectors <Real,ZZ>(root,"Z_Vectors",z,zs);
-                Deserialize::reals <Real> (msg,root,"Reals",reals);
-                Deserialize::naturals(msg,root,"Naturals",nats);
-                Deserialize::parameters(msg,root,"Parameters",params);
+                Deserialize::reals <Real> (root,"Reals",reals);
+                Deserialize::naturals(root,"Naturals",nats);
+                Deserialize::parameters(root,"Parameters",params);
                
                 // Move this information into the state
                 Optizelle::Constrained <Real,XX,YY,ZZ>::Restart::capture(
-                    msg,state,xs,ys,zs,reals,nats,params);
+                    state,xs,ys,zs,reals,nats,params);
             }
         };
     }

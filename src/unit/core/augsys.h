@@ -544,11 +544,10 @@ struct Unit {
         }
 
         // Create the messaging object
-        auto msg = Optizelle::Messaging();
+        auto msg = Optizelle::Messaging::stdout;
 
         // Fill out the bundle of functions
-        Optizelle::Constrained <Real,XX,YY,ZZ>::Functions::init(
-            msg,state,fns);
+        Optizelle::Constrained <Real,XX,YY,ZZ>::Functions::init(state,fns);
 
         // Evaluate the function and cache information about it
         fns.g->eval(state.x,state.g_x);
@@ -704,11 +703,10 @@ struct Unit {
         fns.g = std::move(setup.g);
 
         // Create the messaging object
-        auto msg = Optizelle::Messaging();
+        auto msg = Optizelle::Messaging::stdout;
 
         // Fill out the bundle of functions
-        Optizelle::EqualityConstrained <Real,XX,YY>::Functions::init(
-            msg,state,fns);
+        Optizelle::EqualityConstrained <Real,XX,YY>::Functions::init(state,fns);
 
         // Evaluate the function and cache information about it
         fns.g->eval(state.x,state.g_x);

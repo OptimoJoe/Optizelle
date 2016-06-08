@@ -2,13 +2,7 @@
 # some of the more advanced API features such as custom vector spaces,
 # messaging objects, and restarts.
 
-from __future__ import print_function
 import Optizelle 
-import Optizelle.Unconstrained.State
-import Optizelle.Unconstrained.Functions
-import Optizelle.Unconstrained.Algorithms
-import Optizelle.json.Unconstrained
-import Optizelle.json.Serialization
 import sys
 import copy
 import array
@@ -129,16 +123,9 @@ class RosenHInv(Optizelle.Operator):
 
 #---Messaging0---
 # Define a custom messaging object
-class MyMessaging(Optizelle.Messaging):
-    """Defines how we output messages to the user"""
-   
-    def print(self,msg):
-        """Prints out normal diagnostic information"""
-        sys.stdout.write("PRINT:  %s\n" %(msg))
-
-    def error(self,msg):
-        """Prints out error information"""
-        sys.stderr.write("ERROR:  %s\n" %(msg))
+def mymessaging(msg):
+    """Prints out normal diagnostic information"""
+    sys.stdout.write("PRINT:  %s\n" %(msg))
 #---Messaging1---
 
 #---Serialization0---
@@ -195,8 +182,7 @@ class MyRestartManipulator(Optizelle.StateManipulator):
             ss = "rosenbrock_advanced_api_%04d.json" % (state.iter)
                 
             # Write the restart file
-            Optizelle.json.Unconstrained.write_restart( 
-               MyVS,MyMessaging(),ss,state)
+            Optizelle.json.Unconstrained.write_restart(MyVS,ss,state)
 #---RestartManipulator1---
 
 # Register the serialization routines
@@ -213,17 +199,15 @@ rname = sys.argv[2] if len(sys.argv)==3 else ""
 x = array.array('d',[-1.2,1.0])
 
 # Create an unconstrained state based on this vector
-state=Optizelle.Unconstrained.State.t(MyVS,MyMessaging(),x)
+state=Optizelle.Unconstrained.State.t(MyVS,x)
 
 #---ReadRestart0---
 # If we have a restart file, read in the parameters 
 if len(sys.argv)==3:
-    Optizelle.json.Unconstrained.read_restart(
-        MyVS,MyMessaging(),rname,x,state)
+    Optizelle.json.Unconstrained.read_restart(MyVS,rname,x,state)
 
 # Read additional parameters from file
-Optizelle.json.Unconstrained.read(MyVS,Optizelle.Messaging(),
-    pname,state)
+Optizelle.json.Unconstrained.read(MyVS,pname,state)
 #---ReadRestart1---
 
 # Create the bundle of functions 
@@ -234,7 +218,7 @@ fns.PH=RosenHInv()
 #---Solver0---
 # Solve the optimization problem
 Optizelle.Unconstrained.Algorithms.getMin(
-    MyVS,MyMessaging(),fns,state,MyRestartManipulator())
+    MyVS,mymessaging,fns,state,MyRestartManipulator())
 #---Solver1---
 
 # Print out the reason for convergence
@@ -246,6 +230,5 @@ print("The optimal point is: (%e,%e)" % (state.x[0],state.x[1]))
 
 #---WriteRestart0---
 # Write out the final answer to file
-Optizelle.json.Unconstrained.write_restart(
-    MyVS,Optizelle.Messaging(),"solution.json",state)
+Optizelle.json.Unconstrained.write_restart(MyVS,"solution.json",state)
 #---WriteRestart1---

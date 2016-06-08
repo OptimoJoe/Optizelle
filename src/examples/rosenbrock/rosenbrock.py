@@ -1,10 +1,6 @@
 # In this example, we setup and minimize the Rosenbrock function.
 
 import Optizelle 
-import Optizelle.Unconstrained.State
-import Optizelle.Unconstrained.Functions
-import Optizelle.Unconstrained.Algorithms
-import Optizelle.json.Unconstrained
 import numpy
 import sys
 
@@ -53,13 +49,12 @@ fname = sys.argv[1]
 x = numpy.array([-1.2,1.0])
 
 # Create an unconstrained state based on this vector
-state=Optizelle.Unconstrained.State.t(Optizelle.Rm,Optizelle.Messaging(),x)
+state=Optizelle.Unconstrained.State.t(Optizelle.Rm,x)
 #---State1---
     
 #---Parameters0---
 # Read the parameters from file
-Optizelle.json.Unconstrained.read(Optizelle.Rm,Optizelle.Messaging(),
-    fname,state)
+Optizelle.json.Unconstrained.read(Optizelle.Rm,fname,state)
 #---Parameters1---
 
 #---Functions0---
@@ -72,7 +67,7 @@ fns.PH=RosenHInv()
 #---Solver0---
 # Solve the optimization problem
 Optizelle.Unconstrained.Algorithms.getMin(
-    Optizelle.Rm,Optizelle.Messaging(),fns,state)
+    Optizelle.Rm,Optizelle.Messaging.stdout,fns,state)
 #---Solver1---
 
 #---Extract0---
@@ -85,5 +80,4 @@ print "The optimal point is: (%e,%e)" % (state.x[0],state.x[1])
 #---Extract1---
 
 # Write out the final answer to file
-Optizelle.json.Unconstrained.write_restart(
-    Optizelle.Rm,Optizelle.Messaging(),"solution.json",state)
+Optizelle.json.Unconstrained.write_restart(Optizelle.Rm,"solution.json",state)

@@ -9,7 +9,7 @@
 int main() {
     
     // Create a messaging object
-    Optizelle::Messaging msg;
+    auto msg = Optizelle::Messaging::stdout;
 
     // Create some arbitrary vector in R^2
     std::vector <Real> x = {1.2,2.3};
@@ -27,7 +27,7 @@ int main() {
     // Read in some parameters
     std::string fname("blank.json");
     //---ReadJson0--- 
-    Optizelle::json::EqualityConstrained <Real,XX,YY>::read(msg,fname,state);
+    Optizelle::json::EqualityConstrained <Real,XX,YY>::read(fname,state);
     //---ReadJson1--- 
    
     // Create a bundle of functions
@@ -55,9 +55,9 @@ int main() {
     fname = "restart.json";
     //---WriteReadRestart0---
     Optizelle::json::EqualityConstrained <Real,XX,YY>::write_restart(
-        msg,fname,state);
+        fname,state);
     Optizelle::json::EqualityConstrained <Real,XX,YY>::read_restart(
-        msg,fname,x,y,state);
+        fname,x,y,state);
     //---WriteReadRestart1---
 
     // Do a release 
@@ -104,7 +104,7 @@ int main() {
     // Capture the state
     //---Capture0---
     Optizelle::EqualityConstrained <Real,XX,YY>::Restart
-        ::capture(msg,state,xs,ys,reals,nats,params);
+        ::capture(state,xs,ys,reals,nats,params);
     //---Capture1---
 
     // Check that we actually have memory in these slots

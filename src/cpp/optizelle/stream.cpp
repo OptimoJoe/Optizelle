@@ -3,7 +3,7 @@
 // std::find_if
 #include <algorithm>
 
-namespace Stream {
+namespace Optizelle { namespace Stream {
     // Implements a macro processor that iterates over a stream and then
     // does macro replacement for all the strings found in a map
     void macro(
@@ -15,8 +15,8 @@ namespace Stream {
     ) try {
         // Make sure that the macros contain an default element
         if(macros.count("default")==0)
-            std::runtime_error(__LOC__ +
-                ", macro processor requires a default function (default)");
+            throw Exception::t(__LOC__
+                + ", macro processor requires a default function (default)");
 
         // Otherwise, iterate over all of the elements and apply the appropriate
         // macro function
@@ -54,8 +54,7 @@ namespace Stream {
             stream);
     } catch(...) {
         std::throw_with_nested(
-            std::runtime_error(__LOC__ +
-                ", problem macro processing over the stream"));
+            Exception::t(__LOC__ + ", problem macro processing over the stream"));
     }
 
     // Wrap cin in something that we can instantiate
@@ -63,4 +62,4 @@ namespace Stream {
         // Set this buffer to be the same as std::cin
         rdbuf(std::cin.rdbuf());
     }
-}
+} }

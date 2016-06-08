@@ -2,19 +2,20 @@ __all__ = [
     "t"
 ]
 
-import Optizelle
+from Optizelle.Properties import *
+from Optizelle.Functions import *
 
 class t(object):
     """All the functions required by an optimization algorithm""" 
     def __init__(self):
-        self._f=Optizelle.ScalarValuedFunction()
-        self._PH=Optizelle.Operator()
+        self._f=ScalarValuedFunction()
+        self._PH=Operator()
 
     # Create all of the properties
-    f = Optizelle.createScalarValuedFunctionProperty(
+    f = createScalarValuedFunctionProperty(
         "f",
         "Objective function")
-    PH = Optizelle.createOperatorProperty(
+    PH = createOperatorProperty(
         "PH",
         "Preconditioner for the Hessian of the objective")
 
