@@ -52,12 +52,12 @@ function self = MyEq()
     self.p = @(x,dx) [ ...
         2.*(x(1)-2.)*dx(1)+2.*(x(2)-2.)*dx(2)];
 
-    % z=g'(x)*dy
+    % xhat=g'(x)*dy
     self.ps = @(x,dy) [ ...
         2.*(x(1)-2.)*dy(1); ...
         2.*(x(2)-2.)*dy(1)];
 
-    % z=(g''(x)dx)*dy
+    % xhat=(g''(x)dx)*dy
     self.pps = @(x,dx,dy) [ ...
         2.*dx(1)*dy(1); ...
         2.*dx(2)*dy(1) ];
@@ -87,13 +87,13 @@ function main(fname)
 
     % Create an optimization state
     state = Optizelle.EqualityConstrained.State.t( ...
-        Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,x,y);
+        Optizelle.Rm,Optizelle.Rm,x,y);
     %---State1---
 
     %---Parameters0---
     % Read the parameters from file
     state = Optizelle.json.EqualityConstrained.read( ...
-        Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,fname,state);
+        Optizelle.Rm,Optizelle.Rm,fname,state);
     %---Parameters1---
 
     %---Functions0---
@@ -107,7 +107,7 @@ function main(fname)
     %---Solver0---
     % Solve the optimization problem
     state = Optizelle.EqualityConstrained.Algorithms.getMin( ...
-        Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,fns,state);
+        Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging.stdout,fns,state);
     %---Solver1---
 
     %---Extract0---
@@ -121,5 +121,5 @@ function main(fname)
 
     % Write out the final answer to file
     Optizelle.json.EqualityConstrained.write_restart( ...
-        Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,'solution.json',state);
+        Optizelle.Rm,Optizelle.Rm,'solution.json',state);
 end

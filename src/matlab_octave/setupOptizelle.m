@@ -200,10 +200,9 @@ Optizelle.Operator = struct( ...
 
 %---Messaging0---
 % Defines how we output messages to the user
-Optizelle.Messaging = struct( ...
-    'print',@(x)fprintf('%s\n',x), ...
-    'error',@(x)fprintf('%s\n',x));
+Optizelle.Messaging.t = @(x)error('Undefined messaging function');
 %---Messaging1---
+Optizelle.Messaging.stdout = @(x)fprintf('%s\n',x);
 
 %---StateManipulator0---
 % A function that has free reign to manipulate or analyze the state.

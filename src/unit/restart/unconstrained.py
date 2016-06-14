@@ -70,7 +70,7 @@ Optizelle.Unconstrained.Restart.release(XX,state,xs,reals,nats,params)
 # Check that we have the correct number of vectors
 if len(xs) != 6:
     raise Optizelle.Exception.t(
-        "The list xs contains the wrong number of vectors.")
+        "List xs contains the wrong number of vectors")
 
 # Modify some vectors 
 xs[0]=(xs[0][0],x0)
@@ -89,4 +89,4 @@ err=(math.sqrt(XX.innr(residual,residual))
     /(1+math.sqrt(XX.innr(x0,x0))))
 
 if err >= 1e-15:
-    msg("Too much error in the captured x")
+    raise Optizelle.Exception.t("Too much error in the captured x")

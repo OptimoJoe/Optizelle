@@ -42,23 +42,23 @@ end
 %
 function self = MyIneq()
 
-    % y=h(x) 
+    % z=h(x) 
     self.eval = @(x) [
         x(1)+2.*x(2)-1. ;
         2.*x(1)+x(2)-1. ];
 
-    % y=h'(x)dx
+    % z=h'(x)dx
     self.p = @(x,dx) [
         dx(1)+2.*dx(2) ;
         2.*dx(1)+dx(2) ];
 
-    % z=h'(x)*dy
-    self.ps = @(x,dy) [
-        dy(1)+2.*dy(2) ;
-        2.*dy(1)+dy(2) ];
+    % xhat=h'(x)*dz
+    self.ps = @(x,dz) [
+        dz(1)+2.*dz(2) ;
+        2.*dz(1)+dz(2) ];
 
-    % z=(h''(x)dx)*dy
-    self.pps = @(x,dx,dy) zeros(2,1); 
+    % xhat=(h''(x)dx)*dz
+    self.pps = @(x,dx,dz) zeros(2,1); 
 end
 
 % Actually runs the program
@@ -76,11 +76,11 @@ function main(fname)
 
     % Create an optimization state
     state=Optizelle.InequalityConstrained.State.t( ...
-        Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,x,z);
+        Optizelle.Rm,Optizelle.Rm,x,z);
 
     % Read the parameters from file
     state=Optizelle.json.InequalityConstrained.read( ...
-        Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,fname,state);
+        Optizelle.Rm,Optizelle.Rm,fname,state);
 
     % Create a bundle of functions
     fns=Optizelle.InequalityConstrained.Functions.t;
@@ -89,7 +89,7 @@ function main(fname)
 
     % Solve the optimization problem
     state=Optizelle.InequalityConstrained.Algorithms.getMin( ...
-        Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,fns,state);
+        Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging.stdout,fns,state);
 
     % Print out the reason for convergence
     fprintf('The algorithm converged due to: %s\n', ...
@@ -100,5 +100,5 @@ function main(fname)
     
     % Write out the final answer to file
     Optizelle.json.InequalityConstrained.write_restart( ...
-        Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,'solution.json',state);
+        Optizelle.Rm,Optizelle.Rm,'solution.json',state);
 end

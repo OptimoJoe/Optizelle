@@ -28,15 +28,15 @@ x = zeros(params.nx+2,1);
     x(params.idx.u) = phi(x(params.idx.k)); 
 y = zeros(params.nx,1);
 state = Optizelle.EqualityConstrained.State.t( ...
-    Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,x,y);
+    Optizelle.Rm,Optizelle.Rm,x,y);
 
 % Read the parameters from file
 state = Optizelle.json.EqualityConstrained.read( ...
-    Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,pname,state);
+    Optizelle.Rm,Optizelle.Rm,pname,state);
 
 % Solve the optmization problem
 state = Optizelle.EqualityConstrained.Algorithms.getMin( ...
-    Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,fns,state);
+    Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging.stdout,fns,state);
 
 % Extract the state solution 
 u = state.x(params.idx.u); 

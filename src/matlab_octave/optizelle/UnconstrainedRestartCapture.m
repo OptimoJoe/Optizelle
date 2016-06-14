@@ -1,8 +1,7 @@
 % Capture the state in an unconstrained optimization problem 
-function state=UnconstrainedRestartCapture(X,msg,state,xs,reals,nats,params)
+function state=UnconstrainedRestartCapture(X,state,xs,reals,nats,params)
     % Check our arguments
     checkVectorSpace('X',X);
-    checkMessaging('msg',msg);
     checkUnconstrainedStateT('state',state);
     checkVectors('xs',xs);
     checkReals('reals',reals);
@@ -10,4 +9,4 @@ function state=UnconstrainedRestartCapture(X,msg,state,xs,reals,nats,params)
     checkParams('params',params);
 
     % Do the state capture 
-    state=UnconstrainedRestartCapture_(X,msg,state,xs,reals,nats,params);
+    state=UnconstrainedRestartCapture_(X,state,xs,reals,nats,params);

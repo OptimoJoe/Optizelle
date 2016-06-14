@@ -7,7 +7,7 @@ setupOptizelle();
 % Create some type shortcuts
 XX = Optizelle.Rm;
 YY = Optizelle.Rm;
-msg = Optizelle.Messaging;
+msg = Optizelle.Messaging.stdout;
     
 % Create some arbitrary vector in R^2
 x = [1.2;2.3];
@@ -19,13 +19,13 @@ y0 = [5.6;4.5;3.4];
 
 % Create a state based on this vector
 %---State0---
-state = Optizelle.EqualityConstrained.State.t(XX,YY,msg,x,y);
+state = Optizelle.EqualityConstrained.State.t(XX,YY,x,y);
 %---State1---
 
 % Read in some parameters
 fname = 'blank.json';
 %---ReadJson0--- 
-state = Optizelle.json.EqualityConstrained.read(XX,YY,msg,fname,state);
+state = Optizelle.json.EqualityConstrained.read(XX,YY,fname,state);
 %---ReadJson1--- 
    
 % Create a bundle of functions
@@ -49,10 +49,8 @@ state = Optizelle.EqualityConstrained.Algorithms.getMin( ...
 % Read and write the state to file
 fname = 'restart.json';
 %---WriteReadRestart0---
-Optizelle.json.EqualityConstrained.write_restart( ...
-    XX,YY,msg,fname,state);
-state = Optizelle.json.EqualityConstrained.read_restart( ...
-    XX,YY,msg,fname,x,y);
+Optizelle.json.EqualityConstrained.write_restart(XX,YY,fname,state);
+state = Optizelle.json.EqualityConstrained.read_restart(XX,YY,fname,x,y);
 %---WriteReadRestart1---
 
 % Do a release 
@@ -63,15 +61,15 @@ reals = Optizelle.EqualityConstrained.Restart.Reals;
 nats = Optizelle.EqualityConstrained.Restart.Naturals;
 params = Optizelle.EqualityConstrained.Restart.Params;
 [xs ys reals nats params] = Optizelle.EqualityConstrained.Restart.release( ...
-    XX,YY,msg,state);
+    XX,YY,state);
 %---Release1---
 
 % Check that we have the correct number of vectors
 if length(xs) ~= 14
-    msg.error('The list xs contains the wrong number of vectors.');
+    error('The list xs contains the wrong number of vectors.');
 end
 if length(ys) ~= 5
-    msg.error('The list ys contains the wrong number of vectors.');
+    error('The list ys contains the wrong number of vectors.');
 end
 
 % Modify some vectors 
@@ -81,7 +79,7 @@ ys{1}{2}=y0;
 % Capture the state
 %---Capture0---
 state = Optizelle.EqualityConstrained.Restart.capture( ...
-    XX,YY,msg,state,xs,ys,reals,nats,params);
+    XX,YY,state,xs,ys,reals,nats,params);
 %---Capture1---
 
 % Check the relative error between the vector created above and the one
@@ -92,7 +90,7 @@ residual = XX.axpy(-1.,state.x,residual);
 err=(sqrt(XX.innr(residual,residual)) ...
     /(1+sqrt(XX.innr(x0,x0))));
 if err >= 1e-15
-    msg.error('Too much error in the captured x');
+    error('Too much error in the captured x');
 end
 
 residual = YY.init(y);
@@ -101,5 +99,5 @@ residual = YY.axpy(-1.,state.y,residual);
 err=(sqrt(YY.innr(residual,residual)) ...
     /(1+sqrt(YY.innr(y0,y0))));
 if err >= 1e-15
-    msg.error('Too much error in the captured y')
+    error('Too much error in the captured y')
 end

@@ -1047,7 +1047,7 @@ namespace Optizelle {
                 return [print = PyObjectPtr(print_,PyObjectPtrMode::Attach)](
                     std::string const & msg_
                 ) {
-                    // Call the print function on msg
+                    // Call the print function
                     PyObjectPtr msg(PyString_FromString(msg_.c_str()));
                     PyObjectPtr ret(PyObject_CallObject1(
                         const_cast <PyObject *> (print.get()),

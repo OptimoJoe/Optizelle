@@ -179,10 +179,10 @@ function self = MyEq()
     % y=g'(x)dx
     self.p = @(x,dx) reshape(generateJac(x),3,5)*dx; 
 
-    % z=g'(x)*dy
+    % xhat=g'(x)*dy
     self.ps = @(x,dy) reshape(generateJac(x),3,5)'*dy; 
 
-    % z=(g''(x)dx)*dy
+    % xhat=(g''(x)dx)*dy
     self.pps = @(x,dx,dy) pps(x,dx,dy); 
 end
 % Generate a dense version of the Jacobian
@@ -246,12 +246,11 @@ function main(fname)
     y = zeros(3,1);
 
     % Create an optimization state
-    state=Optizelle.EqualityConstrained.State.t( ...
-        Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,x,y);
+    state=Optizelle.EqualityConstrained.State.t(Optizelle.Rm,Optizelle.Rm,x,y);
 
     % Read the parameters from file
     state=Optizelle.json.EqualityConstrained.read(Optizelle.Rm,Optizelle.Rm, ...
-        Optizelle.Messaging,fname,state);
+        fname,state);
 
     % Create the bundle of functions 
     fns=Optizelle.EqualityConstrained.Functions.t;
@@ -260,7 +259,7 @@ function main(fname)
 
     % Solve the optimization problem
     state = Optizelle.EqualityConstrained.Algorithms.getMin( ...
-        Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,fns,state);
+        Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging.stdout,fns,state);
 
     % Print out the reason for convergence
     fprintf('The algorithm converged due to: %s\n', ...
@@ -284,5 +283,5 @@ function main(fname)
 
     % Write out the final answer to file
     Optizelle.json.EqualityConstrained.write_restart( ...
-        Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,'solution.json',state);
+        Optizelle.Rm,Optizelle.Rm,'solution.json',state);
 end

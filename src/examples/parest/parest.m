@@ -73,11 +73,11 @@ function main(fname)
 
     % Create an optimization state
     state = Optizelle.EqualityConstrained.State.t( ...
-        Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,x,y);
+        Optizelle.Rm,Optizelle.Rm,x,y);
 
     % Read the parameters from file
     state = Optizelle.json.EqualityConstrained.read( ...
-        Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,fname,state);
+        Optizelle.Rm,Optizelle.Rm,fname,state);
 
     % Create a bundle of functions
     fns=Optizelle.EqualityConstrained.Functions.t;
@@ -87,7 +87,7 @@ function main(fname)
     % Solve the full-space problem 
     fprintf('\n------------Solving the full-space problem------------\n');
     state = Optizelle.EqualityConstrained.Algorithms.getMin( ...
-        RmxRm,Optizelle.Rm,Optizelle.Messaging,fns,state);
+        RmxRm,Optizelle.Rm,Optizelle.Messaging.stdout,fns,state);
 
     % Print out the reason for convergence
     fprintf('The algorithm converged due to: %s\n', ...
@@ -103,11 +103,10 @@ function main(fname)
     x=randn(m,1);
     
     % Create an unconstrained state 
-    state=Optizelle.Unconstrained.State.t(Optizelle.Rm,Optizelle.Messaging,x);
+    state=Optizelle.Unconstrained.State.t(Optizelle.Rm,x);
 
     % Read the parameters from file
-    state=Optizelle.json.Unconstrained.read(Optizelle.Rm,Optizelle.Messaging,...
-        fname,state);
+    state=Optizelle.json.Unconstrained.read(Optizelle.Rm,fname,state);
 
     % Create a bundle of functions
     fns=Optizelle.Unconstrained.Functions.t;
@@ -115,7 +114,7 @@ function main(fname)
 
     % Solve the optimization problem
     state = Optizelle.Unconstrained.Algorithms.getMin( ...
-        Optizelle.Rm,Optizelle.Messaging,fns,state);
+        Optizelle.Rm,Optizelle.Messaging.stdout,fns,state);
 
     % Print out the reason for convergence
     fprintf('The algorithm converged due to: %s\n', ...

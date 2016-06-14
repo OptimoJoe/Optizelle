@@ -126,6 +126,7 @@ namespace Optizelle {
     }
 
     namespace Python {
+        // Exception for when a function in Python throws an error
         namespace Exception {
             struct t : public std::runtime_error {
                 using std::runtime_error::runtime_error;

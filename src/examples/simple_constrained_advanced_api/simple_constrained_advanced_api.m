@@ -104,12 +104,12 @@ function self = MyEq()
     % y=g'(x)dx
     self.p = @(x,dx) tostruct(feval(@(x,dx)[dx(1)+2.*dx(2)],x.data,dx.data));
 
-    % z=g'(x)*dy
+    % xhat=g'(x)*dy
     self.ps = @(x,dy) tostruct(feval(@(x,dy)[
         dy(1);
         2.*dy(1)],x.data,dy.data));
 
-    % z=(g''(x)dx)*dy
+    % xhat=(g''(x)dx)*dy
     self.pps = @(x,dx,dy) tostruct(zeros(2,1)); 
 end
 
@@ -119,21 +119,21 @@ end
 %
 function self = MyIneq()
 
-    % y=h(x) 
+    % z=h(x) 
     self.eval = @(x) tostruct(feval(@(x)[
         2.*x(1)+x(2)-1],x.data));
 
-    % y=h'(x)dx
+    % z=h'(x)dx
     self.p = @(x,dx) tostruct(feval(@(x,dx)[
         2.*dx(1)+dx(2)],x.data,dx.data));
 
-    % z=h'(x)*dy
-    self.ps = @(x,dy) tostruct(feval(@(x,dy)[
-        2.*dy(1)
-        dy(1)],x.data,dy.data));
+    % xhat=h'(x)*dz
+    self.ps = @(x,dz) tostruct(feval(@(x,dz)[
+        2.*dz(1)
+        dz(1)],x.data,dz.data));
 
-    % z=(h''(x)dx)*dy
-    self.pps = @(x,dx,dy) tostruct([ 0. ]); 
+    % hat=(h''(x)dx)*dz
+    self.pps = @(x,dx,dz) tostruct([ 0. ]); 
 end
 
 %---Serialization0---
@@ -188,7 +188,7 @@ function state=MyRestartManipulator_(fns,state,loc)
             
         % Write the restart file
         Optizelle.json.Constrained.write_restart( ...
-           MyVS(),MyVS(),MyVS(),Optizelle.Messaging,ss,state);
+           MyVS(),MyVS(),MyVS(),ss,state);
     end
 end
 
@@ -212,18 +212,16 @@ function main(pname,rname)
     z = tostruct([0.]);
 
     % Create an optimization state
-    state = Optizelle.Constrained.State.t( ...
-        MyVS(),MyVS(),MyVS(),Optizelle.Messaging,x,y,z);
+    state = Optizelle.Constrained.State.t(MyVS(),MyVS(),MyVS(),x,y,z);
     
     % If we have a restart file, read in the parameters 
     if(nargin==2)
         state = Optizelle.json.Constrained.read_restart( ...
-            MyVS(),MyVS(),MyVS(),Optizelle.Messaging,rname,x,y,z);
+            MyVS(),MyVS(),MyVS(),rname,x,y,z);
     end
 
     % Read the parameters from file
-    state = Optizelle.json.Constrained.read( ...
-        MyVS(),MyVS(),MyVS(),Optizelle.Messaging,pname,state);
+    state = Optizelle.json.Constrained.read(MyVS(),MyVS(),MyVS(),pname,state);
 
     % Create a bundle of functions
     fns = Optizelle.Constrained.Functions.t;
@@ -233,7 +231,7 @@ function main(pname,rname)
 
     % Solve the optimization problem
     state = Optizelle.Constrained.Algorithms.getMin( ...
-        MyVS(),MyVS(),MyVS(),Optizelle.Messaging,fns,state, ...
+        MyVS(),MyVS(),MyVS(),Optizelle.Messaging.stdout,fns,state, ...
         MyRestartManipulator());
 
     % Print out the reason for convergence
@@ -245,6 +243,5 @@ function main(pname,rname)
 
     % Write out the final answer to file
     Optizelle.json.Constrained.write_restart( ...
-        MyVS(),MyVS(),MyVS(), ...
-        Optizelle.Messaging,'solution.json',state);
+        MyVS(),MyVS(),MyVS(),'solution.json',state);
 end

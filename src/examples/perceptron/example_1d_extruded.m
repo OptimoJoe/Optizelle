@@ -35,12 +35,10 @@ scaling = generate_scaling(x,y);
 xx = randn(idx.size,1);
 
 % Create an optimization state
-state=Optizelle.Unconstrained.State.t( ...
-    Optizelle.Rm,Optizelle.Messaging,xx);
+state=Optizelle.Unconstrained.State.t(Optizelle.Rm,xx);
 
 % Read the parameters from file
-state=Optizelle.json.Unconstrained.read(Optizelle.Rm,Optizelle.Messaging,...
-    fname,state);
+state=Optizelle.json.Unconstrained.read(Optizelle.Rm,fname,state);
 
 % Generate the objective function
 fns=Optizelle.Unconstrained.Functions.t;
@@ -48,7 +46,7 @@ fns.f = generate_objective(generate_hyperbolic(),lens,x,y,scaling);
 
 % Interpolate our data 
 state=Optizelle.Unconstrained.Algorithms.getMin( ...
-    Optizelle.Rm,Optizelle.Messaging,fns,state);
+    Optizelle.Rm,Optizelle.Messaging.stdout,fns,state);
 
 % Generate an interpolatory function based on this
 ff = generate_interpolant(generate_hyperbolic(),lens,state.x,scaling);

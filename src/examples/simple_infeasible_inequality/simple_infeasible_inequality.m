@@ -128,11 +128,11 @@ function main(fname)
 
     % Create an optimization state
     state=Optizelle.Constrained.State.t( ...
-        Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,x,y,z);
+        Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,x,y,z);
 
     % Read the parameters from file
     state=Optizelle.json.Constrained.read( ...
-        Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,fname,state);
+        Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,fname,state);
 
     % Create a bundle of functions
     fns = Optizelle.Constrained.Functions.t;
@@ -142,7 +142,8 @@ function main(fname)
 
     % Solve the optimization problem
     state = Optizelle.Constrained.Algorithms.getMin( ...
-        Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,fns,state);
+        Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging.stdout, ...
+        fns,state);
 
     % Print out the reason for convergence
     fprintf('The algorithm converged due to: %s\n', ...
@@ -153,6 +154,5 @@ function main(fname)
 
     % Write out the final answer to file
     Optizelle.json.Constrained.write_restart( ...
-        Optizelle.Rm,Optizelle.Rm,Optizelle.Rm, ...
-        Optizelle.Messaging,'solution.json',state);
+        Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,'solution.json',state);
 end

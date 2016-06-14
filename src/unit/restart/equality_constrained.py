@@ -65,9 +65,11 @@ Optizelle.EqualityConstrained.Restart.release(
 
 # Check that we have the correct number of vectors
 if len(xs) != 14:
-    msg("The list xs contains the wrong number of vectors.")
+    raise Optizelle.Exception.t(
+        "List xs contains the wrong number of vectors")
 if len(ys) != 5:
-    msg("The list ys contains the wrong number of vectors.")
+    raise Optizelle.Exception.t(
+        "List ys contains the wrong number of vectors")
 
 # Modify some vectors 
 xs[0]=(xs[0][0],x0)
@@ -87,7 +89,8 @@ XX.axpy(-1.,state.x,residual)
 err=(math.sqrt(XX.innr(residual,residual))
     /(1+math.sqrt(XX.innr(x0,x0))))
 if err >= 1e-15:
-    msg("Too much error in the captured x")
+    raise Optizelle.Exception.t(
+        "Too much error in the captured x")
 
 residual = YY.init(y)
 YY.copy(y0,residual)
@@ -95,4 +98,4 @@ YY.axpy(-1.,state.y,residual)
 err=(math.sqrt(YY.innr(residual,residual))
     /(1+math.sqrt(YY.innr(y0,y0))))
 if err >= 1e-15:
-    msg("Too much error in the captured y")
+    raise Optizelle.Exception.t("Too much error in the captured y")
