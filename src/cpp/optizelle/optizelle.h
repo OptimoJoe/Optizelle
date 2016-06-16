@@ -2050,7 +2050,7 @@ namespace Optizelle{
                     ),
                     iter_max(
                         //---iter_max0---
-                        std::numeric_limits <Natural>::max() 
+                        std::numeric_limits <Integer>::max() 
                         //---iter_max1---
                     ),
                     glob_iter(
