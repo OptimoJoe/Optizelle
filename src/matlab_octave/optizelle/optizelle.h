@@ -40,14 +40,12 @@ namespace Optizelle {
     // Forward declare some pointer types
     namespace Matlab {
         struct mxArrayPtr;
-        struct mxManaged;
-        struct mxUnmanaged;
     }
 
     // Extend our enumerated types to convert to and from MATLAB/Octave
     namespace OptimizationStop { 
         // Converts t to a Matlab enumerated type
-        Matlab::mxManaged toMatlab(t const & opt_stop);
+        Matlab::mxArrayPtr toMatlab(t const & opt_stop);
 
         // Converts a Matlab enumerated type to t 
         t fromMatlab(Matlab::mxArrayPtr const & member);
@@ -55,7 +53,7 @@ namespace Optizelle {
 
     namespace TruncatedStop {
         // Converts t to a Matlab enumerated type
-        Matlab::mxManaged toMatlab(t const & trunc_stop);
+        Matlab::mxArrayPtr toMatlab(t const & trunc_stop);
 
         // Converts a Matlab enumerated type to t 
         t fromMatlab(Matlab::mxArrayPtr const & member);
@@ -63,7 +61,7 @@ namespace Optizelle {
     
     namespace AlgorithmClass { 
         // Converts t to a Matlab enumerated type
-        Matlab::mxManaged toMatlab(t const & algorithm_class);
+        Matlab::mxArrayPtr toMatlab(t const & algorithm_class);
 
         // Converts a Matlab enumerated type to t 
         t fromMatlab(Matlab::mxArrayPtr const & member);
@@ -71,7 +69,7 @@ namespace Optizelle {
     
     namespace Operators{ 
         // Converts t to a Matlab enumerated type
-        Matlab::mxManaged toMatlab(t const & op);
+        Matlab::mxArrayPtr toMatlab(t const & op);
 
         // Converts a Matlab enumerated type to t 
         t fromMatlab(Matlab::mxArrayPtr const & member);
@@ -79,7 +77,7 @@ namespace Optizelle {
     
     namespace LineSearchDirection{ 
         // Converts t to a Matlab enumerated type
-        Matlab::mxManaged toMatlab(t const & dir);
+        Matlab::mxArrayPtr toMatlab(t const & dir);
 
         // Converts a Matlab enumerated type to t 
         t fromMatlab(Matlab::mxArrayPtr const & member);
@@ -87,7 +85,7 @@ namespace Optizelle {
     
     namespace LineSearchKind{ 
         // Converts t to a Matlab enumerated type
-        Matlab::mxManaged toMatlab(t const & kind);
+        Matlab::mxArrayPtr toMatlab(t const & kind);
 
         // Converts a Matlab enumerated type to t 
         t fromMatlab(Matlab::mxArrayPtr const & member);
@@ -95,7 +93,7 @@ namespace Optizelle {
     
     namespace OptimizationLocation{ 
         // Converts t to a Matlab enumerated type
-        Matlab::mxManaged toMatlab(t const & loc);
+        Matlab::mxArrayPtr toMatlab(t const & loc);
 
         // Converts a Matlab enumerated type to t 
         t fromMatlab(Matlab::mxArrayPtr const & member);
@@ -103,7 +101,7 @@ namespace Optizelle {
     
     namespace FunctionDiagnostics{ 
         // Converts t to a Matlab enumerated type
-        Matlab::mxManaged toMatlab(t const & diag); 
+        Matlab::mxArrayPtr toMatlab(t const & diag); 
 
         // Converts a Matlab enumerated type to t 
         t fromMatlab(Matlab::mxArrayPtr const & member);
@@ -111,7 +109,7 @@ namespace Optizelle {
     
     namespace VectorSpaceDiagnostics{ 
         // Converts t to a Matlab enumerated type
-        Matlab::mxManaged toMatlab(t const & diag); 
+        Matlab::mxArrayPtr toMatlab(t const & diag); 
 
         // Converts a Matlab enumerated type to t 
         t fromMatlab(Matlab::mxArrayPtr const & member);
@@ -119,7 +117,7 @@ namespace Optizelle {
     
     namespace DiagnosticScheme{ 
         // Converts t to a Matlab enumerated type
-        Matlab::mxManaged toMatlab(t const & dscheme); 
+        Matlab::mxArrayPtr toMatlab(t const & dscheme); 
 
         // Converts a Matlab enumerated type to t 
         t fromMatlab(Matlab::mxArrayPtr const & member);
@@ -134,186 +132,167 @@ namespace Optizelle {
 
         // Wrapper for mxArray *
         struct mxArrayPtr {
-        protected:
-            // Internal storage of the pointer
-            mxArray * ptr;
-            
-            // Grab the pointer.  Keep this protected to prevent direct
-            // instantiation of this class.
-            mxArrayPtr(
-                mxArray const * const & ptr_
-            );
+        private:
+            // Internal storage of the pointer and the function we current use
+            // to free it
+            struct mxArrayPtrData {
+                mxArray * const ptr;
+                std::function<void(mxArray *)> destructor;
+                mxArrayPtrData(
+                    mxArray const * const & ptr_,
+                    std::function <void(mxArray *)> const & destructor_
+                );
+                ~mxArrayPtrData();
+            };
+            std::shared_ptr <mxArrayPtrData> data;
 
         public:
-            // Allow move semantics
-            mxArrayPtr(mxArrayPtr && p);
-            mxArrayPtr & operator = (mxArrayPtr && p);
+            // Determines whether we're managing the memory
+            enum Mode : Natural {
+                Managed,
+                Unmanaged};
 
-            // Disallow copy semantics
-            mxArrayPtr(mxArrayPtr const &) = delete;
-            mxArrayPtr & operator = (mxArrayPtr const &) = delete;
+            // Grab the pointer
+            mxArrayPtr(
+                mxArray const * const & ptr,
+                Mode const & mode = Managed
+            );
 
-            // Allow the deallocator to be overwritten 
-            virtual ~mxArrayPtr();
+            // Allow move and copy semantics
+            mxArrayPtr(mxArrayPtr && p) = default;
+            mxArrayPtr & operator = (mxArrayPtr && p) = default;
+            mxArrayPtr(mxArrayPtr const &) = default;
+            mxArrayPtr & operator = (mxArrayPtr const &) = default;
+
+            // Default the destructor 
+            ~mxArrayPtr()=default;
 
             // Grab the internal pointer
             mxArray * get() const;
 
-            // Release ownership and management of the pointer
-            mxArray * release();
+            // Grab the pointer and convert the destructor to no longer free
+            // the memory
+            mxArray * leak() const;
         };
 
-        // Unmanaged pointers.  This assumes that MATLAB/Octave will free the
-        // memory.
-        struct mxUnmanaged : public mxArrayPtr {
-            // Grab the pointer
-            mxUnmanaged(
-                mxArray const * const & ptr
-            ); 
+        namespace capi {
+            mxArrayPtr mexCallMATLAB1(
+                mxArrayPtr const & fn,
+                mxArrayPtr const & arg1,
+                std::string const & errmsg);
+            void mexCallMATLAB1_0(
+                mxArrayPtr const & fn,
+                mxArrayPtr const & arg1,
+                std::string const & errmsg);
+            mxArrayPtr mexCallMATLAB2(
+                mxArrayPtr const & fn,
+                mxArrayPtr const & arg1,
+                mxArrayPtr const & arg2,
+                std::string const & errmsg);
+            mxArrayPtr mexCallMATLAB2(
+                std::string const & fn,
+                mxArrayPtr const & arg1,
+                mxArrayPtr const & arg2,
+                std::string const & errmsg);
+            mxArrayPtr mexCallMATLAB3(
+                mxArrayPtr const & fn,
+                mxArrayPtr const & arg1,
+                mxArrayPtr const & arg2,
+                mxArrayPtr const & arg3,
+                std::string const & errmsg);
+            mxArrayPtr mexCallMATLAB3(
+                std::string const & fn,
+                mxArrayPtr const & arg1,
+                mxArrayPtr const & arg2,
+                mxArrayPtr const & arg3,
+                std::string const & errmsg);
+            mxArrayPtr mexCallMATLAB4(
+                mxArrayPtr const & fn,
+                mxArrayPtr const & arg1,
+                mxArrayPtr const & arg2,
+                mxArrayPtr const & arg3,
+                mxArrayPtr const & arg4,
+                std::string const & errmsg);
+            mxArrayPtr mxDuplicateArray(mxArrayPtr const & x);
+            mxArrayPtr mxGetField(
+                mxArrayPtr const & pm,
+                mwIndex const & index,
+                std::string const & fieldname);
+            void mxSetField(
+                mxArrayPtr & pm,
+                mwIndex const & index,
+                std::string const & fieldname,
+                mxArrayPtr const & pvalue);
+            mxArrayPtr mxCreateString(std::string const &str);
+            std::string mxArrayToString(mxArrayPtr const & array_ptr);
+            mxArrayPtr mxCreateCellMatrix(mwSize const & m, mwSize const & n);
+            mxArrayPtr mxGetCell(mxArrayPtr const & pm, mwIndex const & index);
+            void mxSetCell(
+                mxArrayPtr & pm,
+                mwIndex const & index,
+                mxArrayPtr const & value);
+            size_t mxGetN(mxArrayPtr const & pm);
+            mxArrayPtr mexGetVariable(
+                std::string const & workspace,
+                std::string const & varname);
+            mxArrayPtr mxCreateStructMatrix(
+                mwSize const & m,
+                mwSize const & n,
+                int const & nfields, 
+                const char **fieldnames);
 
-            // Allow copy and move semantics
-            mxUnmanaged(mxUnmanaged const & p);
-            mxUnmanaged & operator = (mxUnmanaged const & p);
-            mxUnmanaged(mxUnmanaged &&) = default;
-            mxUnmanaged & operator = (mxUnmanaged &&) = default;
-        };
+            // Creates a MATLAB/Octave double from a C++ double
+            mxArrayPtr mxArrayFromDouble(double const x_);
 
-        // Managed pointers.  We free the memory, not MATLAB/Octave.
-        struct mxManaged : public mxArrayPtr {
-            // Grab the pointer
-            mxManaged(
-                mxArray const * const & ptr
+            // Creates a C++ double from a MATLAB/Octave double
+            double mxArrayToDouble(mxArrayPtr const & x_);
+
+            // Creates a MATLAB/Octave int from a C++ Natural 
+            mxArrayPtr mxArrayFromNatural(Natural const x_);
+
+            // Creates a C++ Natural from a MATLAB/Octave integer 
+            Natural mxArrayToNatural(mxArrayPtr const & x_);
+
+            // Converts an Optizelle enumerated type to a mxArray *
+            mxArrayPtr enumToMxArray(
+                std::string const & type,
+                std::string const & member 
+            );
+            
+            // Converts an Optizelle enumerated type to a Natural
+            Natural enumToNatural(
+                std::string const & type,
+                std::string const & member 
             );
 
-            // Free the memory
-            virtual ~mxManaged();
-
-            // Allow move semantics
-            mxManaged(mxManaged &&) = default;
-            mxManaged & operator = (mxManaged &&) = default;
-
-            // Reset the pointer to a given value
-            void reset(mxArray * ptr_);
-        };
-
-        // Calls a Matlab function with one argument and no returns 
-        int mxArray_CallObject1_0(
-            mxArray * const fn,
-            mxArray * const arg1
-        );
-
-        // Calls a Matlab function with one argument 
-        std::tuple <mxManaged,int> mxArray_CallObject1(
-            mxArray * const fn,
-            mxArray * const arg1
-        );
-        
-        // Calls a Matlab function with two arguments
-        std::tuple <mxManaged,int> mxArray_CallObject2(
-            mxArray * const fn,
-            mxArray * const arg1,
-            mxArray * const arg2
-        );
-        
-        // Calls a Matlab function with three arguments
-        std::tuple <mxManaged,int> mxArray_CallObject3(
-            mxArray * const fn,
-            mxArray * const arg1,
-            mxArray * const arg2,
-            mxArray * const arg3
-        );
-        
-        // Calls a Matlab function with four arguments
-        std::tuple <mxManaged,int> mxArray_CallObject4(
-            mxArray * const fn,
-            mxArray * const arg1,
-            mxArray * const arg2,
-            mxArray * const arg3,
-            mxArray * const arg4
-        );
-
-        // Creates a Matlab double from a C++ double
-        mxManaged mxArray_FromDouble(double const x_);
-
-        // Creates a Matlab int from a C++ size_t 
-        mxManaged mxArray_FromSize_t(Natural const x_);
-
-        // Converts an Optizelle enumerated type to a mxArray *
-        mxManaged enumToMxArray(
-            std::string const & type,
-            std::string const & member 
-        );
-        
-        // Converts an Optizelle enumerated type to a Natural
-        Natural enumToNatural(
-            std::string const & type,
-            std::string const & member 
-        );
-
-        // Converts a MATLAB double to an Optizelle Natural
-        Natural fromDouble(double value);
+            // Converts a MATLAB double to an Optizelle Natural
+            Natural fromDouble(double value);
+        }
 
         // A messaging utility that hooks directly into MATLAB/Octave 
         namespace Messaging {
-            template <typename A>
-            Optizelle::Messaging::t matlab(A && print_) {
-                auto print = std::shared_ptr <mxArrayPtr> (
-                    new A(std::move(print_)));
-                return [print](std::string const & msg_) {
-
-                    // Call the print function
-                    auto msg = mxManaged(mxCreateString(msg_.c_str()));
-                    auto err = mxArray_CallObject1_0(
-                        print->get(),
-                        msg.get());
-
-                    // Check errors
-                    if(err)
-                        throw Matlab::Exception::t( __LOC__
-                            + ", evaluation of the Messaging function failed");
-                };
-            }
+            Optizelle::Messaging::t matlab(mxArrayPtr const & print);
         }
 
-        // This class merges the vector space with a vector into a singular 
-        // object.  We require this structure since Optizelle requires the
-        // vector space to be static.  Since the user is passing us a vector
-        // space dynamically, we merge the vector space functions with the
-        // vectors and then statically define the vector space to call these
-        // functions.
+        // Merges the vector space with a vector into a singular object.  We
+        // require this structure since Optizelle requires the vector space to
+        // be static.  Since the user is passing us a vector space dynamically,
+        // we merge the vector space functions with the vectors and then
+        // statically define the vector space to call these functions.
         struct Vector {
         private:
             // Vector space
-            std::shared_ptr <mxArrayPtr> vs;
+            mxArrayPtr vs;
 
         public:
             // Data
-            std::unique_ptr <mxArrayPtr> data;
+            mxArrayPtr data;
 
             // Disallow constructors
             NO_DEFAULT_COPY_ASSIGNMENT(Vector)
 
-            // Build a vector
-
-            // Generally, we use this version for the initial vector space
-            template <typename A,typename B>
-            Vector(
-                A && vs_,
-                B && data_
-            ) :
-                vs(new A(std::move(vs_))),
-                data(new B(std::move(data_)))
-            {}
-
-            // Then, we use this version to spawn new vectors
-            template <typename A>
-            Vector(
-                std::shared_ptr <mxArrayPtr> const & vs_,
-                A && data_
-            ) :
-                vs(vs_),
-                data(new A(std::move(data_)))
-            {}
+            // Grab the vector space and data 
+            Vector(mxArrayPtr const & vs_, mxArrayPtr const & data_);
 
             // Allow move constructors
             Vector(Vector &&) = default;
@@ -363,7 +342,7 @@ namespace Optizelle {
             void symm(); 
             
             // Converts (copies) a value into Matlab.  
-            mxManaged toMatlab() const;
+            mxArrayPtr toMatlab() const;
             
             // Converts (copies) a value from Matlab.  This assumes that the
             // vector space functions have already been properly assigned.
@@ -374,16 +353,13 @@ namespace Optizelle {
         template <typename ProblemClass>
         struct State {
             // Data
-            std::unique_ptr <mxArrayPtr> data;
+            mxArrayPtr data;
 
             // Disallow constructors
             NO_DEFAULT_COPY_ASSIGNMENT(State)
 
             // On construction, we just grab the pointer to the state object
-            template <typename A>
-            State(A && data_) :
-                data(new A(std::move(data_)))
-            {}
+            State(mxArrayPtr const & data_) : data(data_) {}
 
             // Allow move constructors
             State(State &&) = default;
@@ -409,21 +385,22 @@ namespace Optizelle {
             
         public:
             // Data
-            std::unique_ptr <mxArrayPtr> data;
+            mxArrayPtr data;
 
             // Disallow constructors
             NO_DEFAULT_COPY_ASSIGNMENT(Functions)
 
-            // On construction, we just grab the pointer to the bundle object
-            template <typename A>
+            // Grab references to the states to pass information to the
+            // operators.  In addition, grab the data for the bundle of
+            // functions.
             Functions(
                 State <ProblemClass> & mxstate_,
                 typename ProblemClass::State::t const & state_,
-                A && data_
+                mxArrayPtr const & data_
             ) :
                 mxstate(mxstate_),
                 state(state_),
-                data(new A(std::move(data_)))
+                data(data_)
             {}
 
             // Convert a Matlab bundle to C++ 
@@ -446,23 +423,22 @@ namespace Optizelle {
             Functions <ProblemClass> & mxfns;
             
             // Underlying state manipulator 
-            std::unique_ptr <mxArrayPtr> smanip;
+            mxArrayPtr data;
 
         public:
             // Disallow constructors
             NO_DEFAULT_COPY_ASSIGNMENT(StateManipulator)
 
-            // We need the Matlab state manipulator, a copy of a Matlab state
-            // to pass information, and a copy of the Matlab functions.
-            template <typename A>
+            // Grab references to both the state and bundle of functions in
+            // addition to the information for the StateManpiulator itself
             StateManipulator(
                 State <ProblemClass> & mxstate_,
                 Functions <ProblemClass> & mxfns_,
-                A && smanip_
+                mxArrayPtr const & data_
             ) :
                 mxstate(mxstate_),
                 mxfns(mxfns_),
-                smanip(new A(std::move(smanip_)))
+                data(data_)
             {}
 
             // Application
@@ -478,21 +454,16 @@ namespace Optizelle {
                 auto loc = OptimizationLocation::toMatlab(loc_);
 
                 // Call the Matlab state manipulator give it mxstate and mxfns. 
-                auto eval = mxGetField(smanip->get(),0,"eval");
-                auto ret_err = mxArray_CallObject3(
+                auto eval = capi::mxGetField(data,0,"eval");
+                mxstate.data = capi::mexCallMATLAB3(
                     eval,
-                    mxfns.data->get(),
-                    mxstate.data->get(),
-                    loc.get());
-            
-                // Check errors
-                if(std::get <1> (ret_err))
-                    throw Matlab::Exception::t( __LOC__
-                        + ", evaluation of the StateManipulator object failed");
+                    mxfns.data,
+                    mxstate.data,
+                    loc,
+                    __LOC__
+                        + ", evaluation of the StateManipulator failed");
 
-                // Convert the returned state to the C++ state 
-                mxstate.data.reset(
-                    new mxManaged(std::move(std::get<0> (ret_err))));
+                // Convert the returned state to the C++ state
                 mxstate.fromMatlab(state);
             }
         };
@@ -610,17 +581,14 @@ namespace Optizelle {
         {
         private:
             // Underlying function 
-            std::unique_ptr <mxArrayPtr> data;
+            mxArrayPtr data;
 
         public:
             // Prevent constructors 
             NO_DEFAULT_COPY_ASSIGNMENT(ScalarValuedFunction)
 
-            // Create a function 
-            template <typename A>
-            ScalarValuedFunction(A && data_) :
-                data(new A(std::move(data_)))
-            {}
+            // Grab the pointer to the function information 
+            ScalarValuedFunction(mxArrayPtr const & data_);
 
             // <- f(x) 
             double eval(Vector const & x) const; 
@@ -645,20 +613,17 @@ namespace Optizelle {
             std::string const name;
 
             // Underlying function 
-            std::unique_ptr <mxArrayPtr> data;
+            mxArrayPtr data;
 
         public:
             // Prevent constructors 
             NO_DEFAULT_COPY_ASSIGNMENT(VectorValuedFunction)
 
-            // Create a function 
-            template <typename A>
+            // Grab the function's name and a pointer to the underlying data 
             VectorValuedFunction(
                 std::string const & name_,
-                A && data_
-            ) :
-                name(name_), data(new A(std::move(data_)))
-            {}
+                mxArrayPtr const & data_ 
+            );
 
             // y=f(x)
             void eval(X_Vector const & x,Y_Vector & y) const;
@@ -691,7 +656,7 @@ namespace Optizelle {
             std::string const name;
 
             // Underlying operator
-            std::unique_ptr <mxArrayPtr> data;
+            mxArrayPtr data;
 
             // Optimization state.  Here's a funny trick.  Frequently, we
             // an operator like inv(g'(x)g'(x)*).  Notice, that this operator
@@ -711,15 +676,14 @@ namespace Optizelle {
             NO_DEFAULT_COPY_ASSIGNMENT(Operator)
 
             // Create an operator
-            template <typename A>
             Operator(
                 std::string const & name_,
-                A && data_,
+                mxArrayPtr const & data_,
                 State <ProblemClass> & mxstate_,
                 typename ProblemClass::State::t const & state_
             ) :
                 name(name_),
-                data(new A(std::move(data_))),
+                data(data_),
                 mxstate(mxstate_),
                 state(state_)
             {}
@@ -730,20 +694,14 @@ namespace Optizelle {
                 mxstate.toMatlab(state);
 
                 // Apply the operator to the state, x, and y
-                auto eval = mxGetField(data->get(),0,"eval");
-                auto ret_err = mxArray_CallObject2(
+                auto eval = capi::mxGetField(data,0,"eval");
+                y.data = capi::mexCallMATLAB2(
                     eval,
-                    mxstate.data->get(),
-                    x.data->get());
-                
-                // Check errors
-                if(std::get <1> (ret_err))
-                    throw Matlab::Exception::t( __LOC__
+                    mxstate.data,
+                    x.data,
+                    __LOC__
                         + ", evaluation of the eval function in the operator "
                         + name + " failed");
-            
-                // Copy the returned value into y 
-                y.data.reset(new mxManaged(std::move(std::get<0> (ret_err))));
             }
         };
         
@@ -767,12 +725,12 @@ namespace Optizelle {
             template <typename enum_t>
             void Param(
                 std::string const & name,
-                std::function<mxManaged (enum_t const &)> const & toMatlab,
+                std::function<mxArrayPtr(enum_t const &)> const & toMatlab,
                 enum_t const & value,
                 mxArrayPtr & mxstate 
             ) {
                 auto item = toMatlab(value);
-                mxSetField(mxstate.get(),0,name.c_str(),item.release());
+                capi::mxSetField(mxstate,0,name,item);
             }
             
             // Sets a vector in a Matlab state 
@@ -835,17 +793,17 @@ namespace Optizelle {
             void Param(
                 std::string const & name,
                 std::function<enum_t(mxArrayPtr const &)> const & fromMatlab,
-                mxArrayPtr const & obj,
+                mxArrayPtr const & mxstate,
                 enum_t & value
             ) {
-                auto item = mxUnmanaged(mxGetField(obj.get(),0,name.c_str()));
+                auto item = capi::mxGetField(mxstate,0,name);
                 value = fromMatlab(item);
             }
             
             // Sets a vector in a C++ state 
             void Vector(
                 std::string const & name,
-                mxArrayPtr const & obj,
+                mxArrayPtr const & mxstate,
                 Matlab::Vector & value
             );
             
@@ -865,7 +823,7 @@ namespace Optizelle {
                 std::unique_ptr <MxScalarValuedFunction> & value
             ) {
                 value.reset(new Matlab::ScalarValuedFunction(
-                    mxUnmanaged(mxGetField(fns.data->get(),0,name.c_str()))));
+                    capi::mxGetField(fns.data,0,name)));
             }
             
             // Sets a vector-valued function in a C++ function bundle
@@ -877,7 +835,7 @@ namespace Optizelle {
             ) {
                 value.reset(new Matlab::VectorValuedFunction(
                     name,
-                    mxUnmanaged(mxGetField(fns.data->get(),0,name.c_str()))));
+                    capi::mxGetField(fns.data,0,name)));
             }
             
             // Sets an operator in a C++ function bundle 
@@ -891,7 +849,7 @@ namespace Optizelle {
             ) {
                 value.reset(new Matlab::Operator <ProblemClass> (
                     name,
-                    mxUnmanaged(mxGetField(mxfns.data->get(),0,name.c_str())),
+                    capi::mxGetField(mxfns.data,0,name),
                     mxstate,
                     state));
             }
@@ -937,7 +895,7 @@ namespace Optizelle {
                 std::vector <char const *> fieldNames();
                 
                 // Create the structure for a Matlab state
-                mxManaged mxCreate();
+                mxArrayPtr mxCreate();
 
                 // Convert a C++ state to a Matlab state 
                 void toMatlab_(
@@ -1045,7 +1003,7 @@ namespace Optizelle {
                 std::vector <char const *> fieldNames();
                 
                 // Create the structure for a Matlab state
-                mxManaged mxCreate();
+                mxArrayPtr mxCreate();
 
                 // Convert a C++ state to a Matlab state 
                 void toMatlab_(
@@ -1156,7 +1114,7 @@ namespace Optizelle {
                 std::vector <char const *> fieldNames();
                 
                 // Create the structure for a Matlab state
-                mxManaged mxCreate();
+                mxArrayPtr mxCreate();
 
                 // Convert a C++ state to a Matlab state 
                 void toMatlab_(
@@ -1263,7 +1221,7 @@ namespace Optizelle {
                 std::vector <char const *> fieldNames();
                 
                 // Create the structure for a Matlab state
-                mxManaged mxCreate();
+                mxArrayPtr mxCreate();
 
                 // Convert a C++ state to a Matlab state 
                 void toMatlab(

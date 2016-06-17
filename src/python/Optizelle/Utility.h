@@ -146,7 +146,7 @@ namespace Optizelle {
         public:
             // Determine whether we're accepting a borrowed reference or a new
             // reference
-            enum t : std::size_t {
+            enum Mode : std::size_t {
                 Borrowed,       // Borrowed reference 
                 New             // New reference 
             };
@@ -154,7 +154,7 @@ namespace Optizelle {
             // Grab the pointer 
             PyObjectPtr(
                 PyObject * const ptr_,
-                PyObjectPtr::t const mode = PyObjectPtr::New
+                PyObjectPtr::Mode const & mode = PyObjectPtr::New
             );
 
             // Copy semantics 
@@ -167,11 +167,6 @@ namespace Optizelle {
 
             // On a get, we simply return the pointer.
             PyObject * get() const;
-
-            // Release control of the pointer without decrementing the
-            // reference count.  This only work when the function receiving
-            // this pointer steals the reference otherwise we leak memory
-            PyObject * leak();
 
             // On destruction, decrement the reference count 
             ~PyObjectPtr();

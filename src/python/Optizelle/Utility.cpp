@@ -31,6 +31,7 @@ Author: Joseph Young (joe@optimojoe.com)
 
 #include <Utility.h>
 
+// Handle Python and Optizelle errors
 #define CATCH_PYTHON_ERRORS \
     catch(Python::Exception::t const & e) { \
         return nullptr; \
@@ -39,9 +40,17 @@ Author: Joseph Young (joe@optimojoe.com)
             Optizelle::Exception::exception_to_string(e)); \
         return nullptr; \
     }
-#define PY_INPUT_VAR(name) PyObjectPtr name##_(name##__,PyObjectPtr::Borrowed);
-#define PY_PARSE_VAR(name) &name##__
+
+// Define a raw Python variable that we'll parse into
 #define PY_RAW_VAR(name) PyObject *name##__;
+
+// Parse a raw Python variable
+#define PY_PARSE_VAR(name) &name##__
+
+// Convert a raw Python variable into our memory management scheme
+#define PY_INPUT_VAR(name) PyObjectPtr name##_(name##__,PyObjectPtr::Borrowed);
+
+// Grab and convert the Python inputs
 #define PY_VAR_3(v1,v2,v3) \
     PY_RAW_VAR(v1); \
     PY_RAW_VAR(v2); \
@@ -1046,7 +1055,7 @@ namespace Optizelle {
         // Grab the pointer 
         PyObjectPtr::PyObjectPtr(
             PyObject * const ptr_,
-            PyObjectPtr::t const mode
+            PyObjectPtr::Mode const & mode
         ) : ptr(ptr_) {
             // If we have a borrowed reference, increase the reference count
             if(mode==PyObjectPtr::Borrowed)
@@ -1084,15 +1093,6 @@ namespace Optizelle {
         // On a get, we simply return the pointer.
         PyObject * PyObjectPtr::get() const {
             return ptr;
-        }
-
-        // Release control of the pointer without decrementing the
-        // reference count.  This only work when the function receiving
-        // this pointer steals the reference otherwise we leak memory
-        PyObject * PyObjectPtr::leak() {
-            auto ptr_ = ptr;
-            ptr = nullptr;
-            return ptr_;
         }
 
         // On destruction, decrement the reference count 
