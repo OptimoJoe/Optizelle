@@ -3,7 +3,7 @@ function self=InequalityConstrainedAlgorithmsGetMin(varargin)
     % Check the number of arguments
     if nargin~=5 && nargin~=6
         error(['The getMin function requires either 5 or 6 arguments, ', ...
-            sprintf('but %d given.',nargin)]); 
+            sprintf('but %d given',nargin)]); 
     end
 
     % Extract the arguments

@@ -7,7 +7,7 @@
 // std::ctype
 #include <locale>
 
-namespace Stream{ 
+namespace Optizelle { namespace Stream { 
     // Basic stream type
     template <typename A>
     struct t {
@@ -73,8 +73,8 @@ namespace Stream{
             return item;
         } catch(...) {
             std::throw_with_nested(
-                std::runtime_error(__LOC__ + 
-                    ", problem grabbing the next element of the stream"));
+                Exception::t(__LOC__
+                    + ", problem grabbing the next element of the stream"));
         }
     };
 
@@ -86,7 +86,7 @@ namespace Stream{
             f(*item);
     } catch(...) {
         std::throw_with_nested(
-            std::runtime_error(__LOC__ +", problem iterating over the stream"));
+            Exception::t(__LOC__ +", problem iterating over the stream"));
     }
 
     // Iterate over the stream with a special item for the last element
@@ -118,7 +118,7 @@ namespace Stream{
         g(*cache);
     } catch(...) {
         std::throw_with_nested(
-            std::runtime_error(__LOC__ +", problem iterating over the stream "
+            Exception::t(__LOC__ +", problem iterating over the stream "
                 "with a special function for the last element"));
     }
 
@@ -198,4 +198,4 @@ namespace Stream{
         // Return what we have
         return acc;
     }
-}
+}}

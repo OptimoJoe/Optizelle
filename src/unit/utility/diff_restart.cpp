@@ -19,8 +19,8 @@ int main(int argc,char* argv[]) {
     }
 
     // Parse the JSON files 
-    Json::Value baseline=Optizelle::json::parse(Optizelle::Messaging(),argv[1]);
-    Json::Value test = Optizelle::json::parse(Optizelle::Messaging(),argv[2]);
+    Json::Value baseline=Optizelle::json::parse(argv[1]);
+    Json::Value test = Optizelle::json::parse(argv[2]);
 
     // Set a tolerance for our differences
     const double tol=0.05;

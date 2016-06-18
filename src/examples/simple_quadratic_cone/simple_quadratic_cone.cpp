@@ -114,7 +114,7 @@ int main(int argc,char* argv[]){
         std::cerr << "simple_quadratic_cone <parameters>" << std::endl;
         exit(EXIT_FAILURE);
     }
-    auto fname = std::string(argv[1]);
+    auto fname = argv[1];
 
     // Generate an initial guess for the primal
     auto x = X_Vector({1.2,3.1});
@@ -126,8 +126,7 @@ int main(int argc,char* argv[]){
     Optizelle::InequalityConstrained <Real,XX,ZZ>::State::t state(x,z);
 
     // Read the parameters from file
-    Optizelle::json::InequalityConstrained <Real,XX,ZZ>
-        ::read(Optizelle::Messaging(),fname,state);
+    Optizelle::json::InequalityConstrained <Real,XX,ZZ>::read(fname,state);
     
     // Create a bundle of functions
     Optizelle::InequalityConstrained <Real,XX,ZZ>::Functions::t fns;
@@ -136,7 +135,7 @@ int main(int argc,char* argv[]){
 
     // Solve the optimization problem
     Optizelle::InequalityConstrained <Real,XX,ZZ>
-        ::Algorithms::getMin(Optizelle::Messaging(),fns,state);
+        ::Algorithms::getMin(Optizelle::Messaging::stdout,fns,state);
 
     // Print out the reason for convergence
     std::cout << "The algorithm converged due to: " <<
@@ -149,7 +148,7 @@ int main(int argc,char* argv[]){
 
     // Write out the final answer to file
     Optizelle::json::InequalityConstrained <Real,XX,ZZ>
-        ::write_restart(Optizelle::Messaging(),"solution.json",state);
+        ::write_restart("solution.json",state);
 
     // Successful termination
     return EXIT_SUCCESS;

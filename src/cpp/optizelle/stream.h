@@ -10,8 +10,8 @@
 // std::map
 #include <map>
 
-// __LOC__
-#include "exception.h"
+// Optizelle::Exception::t 
+#include "optizelle/exception.h"
 
 // std::istream
 #include <iostream>
@@ -20,7 +20,7 @@
 // location correct.
 #define CHECK_FILE(s,fname) \
     if(!((s).is_open())) \
-        throw std::runtime_error( \
+        throw Optizelle::Exception::t( \
             __LOC__  + ", unable to open the file " + (fname) + ": " \
                 + strerror(errno));
 
@@ -28,12 +28,12 @@
 // file location correct.
 #define CHECK_STREAM(s) \
     if((s).bad()) \
-        throw std::runtime_error( \
+        throw Optizelle::Exception::t( \
             __LOC__ + ", error with the stream object: " \
             + strerror(errno));
 
 // Stream functions
-namespace Stream{ 
+namespace Optizelle { namespace Stream { 
     // A : Set -> t 
     template <typename A>
     struct t;
@@ -83,6 +83,6 @@ namespace Stream{
     struct cin : public std::istream {
         cin();
     };
-}
+}}
 
 #include "stream.tpp"

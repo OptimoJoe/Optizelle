@@ -24,15 +24,14 @@ fns=Optizelle.Unconstrained.Functions.t;
 
 % Create an optimization state
 x = [ 2.; 2.];
-state = Optizelle.Unconstrained.State.t(Optizelle.Rm,Optizelle.Messaging,x);
+state = Optizelle.Unconstrained.State.t(Optizelle.Rm,x);
 
 % Read the parameters from file
-state = Optizelle.json.Unconstrained.read( ...
-    Optizelle.Rm,Optizelle.Messaging,pname,state);
+state = Optizelle.json.Unconstrained.read(Optizelle.Rm,pname,state);
 
 % Solve the optmization problem
 state = Optizelle.Unconstrained.Algorithms.getMin( ...
-    Optizelle.Rm,Optizelle.Messaging,fns,state);
+    Optizelle.Rm,Optizelle.Messaging.stdout,fns,state);
 
 % Find the state solution based on the material we just solved for
 u = phi(state.x);

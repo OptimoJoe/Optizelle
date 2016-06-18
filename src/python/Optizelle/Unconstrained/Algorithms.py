@@ -4,10 +4,11 @@ __all__ = [
 
 __doc__ = "Different algorithms used for optimization" 
 
-import Optizelle
-import Optizelle.Utility
 import Optizelle.Unconstrained.State
 import Optizelle.Unconstrained.Functions
+from Optizelle.Utility import *
+from Optizelle.Properties import *
+from Optizelle.Functions import *
 
 def getMin(X, msg, fns, state, smanip=None):
     """Solves an unconstrained optimization problem
@@ -15,14 +16,14 @@ def getMin(X, msg, fns, state, smanip=None):
     Solve with a state manipulator: getMin(X,msg,fns,state,smanip)
     """
     if smanip is None:
-        smanip = Optizelle.StateManipulator()
+        smanip = StateManipulator()
 
     # Check the arguments
-    Optizelle.checkVectorSpace("X",X)
-    Optizelle.checkMessaging("msg",msg)
+    checkVectorSpace("X",X)
+    checkMessaging("msg",msg)
     Optizelle.Unconstrained.Functions.checkT("fns",fns)
     Optizelle.Unconstrained.State.checkT("state",state)
-    Optizelle.checkStateManipulator("smanip",smanip)
+    checkStateManipulator("smanip",smanip)
 
     # Call the optimization
-    Optizelle.Utility.UnconstrainedAlgorithmsGetMin(X,msg,fns,state,smanip)
+    UnconstrainedAlgorithmsGetMin(X,msg,fns,state,smanip)

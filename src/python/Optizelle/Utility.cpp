@@ -31,753 +31,959 @@ Author: Joseph Young (joe@optimojoe.com)
 
 #include <Utility.h>
 
+// Handle Python and Optizelle errors
+#define CATCH_PYTHON_ERRORS \
+    catch(Python::Exception::t const & e) { \
+        return nullptr; \
+    } catch(std::exception const & e) { \
+        capi::PyErr_SetString_Optizelle( \
+            Optizelle::Exception::to_string(e)); \
+        return nullptr; \
+    }
+
+// Define a raw Python variable that we'll parse into
+#define PY_RAW_VAR(name) PyObject *name##__;
+
+// Parse a raw Python variable
+#define PY_PARSE_VAR(name) &name##__
+
+// Convert a raw Python variable into our memory management scheme
+#define PY_INPUT_VAR(name) PyObjectPtr name##_(name##__,PyObjectPtr::Borrowed);
+
+// Grab and convert the Python inputs
+#define PY_VAR_3(v1,v2,v3) \
+    PY_RAW_VAR(v1); \
+    PY_RAW_VAR(v2); \
+    PY_RAW_VAR(v3); \
+    if(!PyArg_ParseTuple(args,"OOO", \
+        PY_PARSE_VAR(v1), \
+        PY_PARSE_VAR(v2), \
+        PY_PARSE_VAR(v3) \
+    )) \
+        return nullptr; \
+    PY_INPUT_VAR(v1); \
+    PY_INPUT_VAR(v2); \
+    PY_INPUT_VAR(v3);
+#define PY_VAR_4(v1,v2,v3,v4) \
+    PY_RAW_VAR(v1); \
+    PY_RAW_VAR(v2); \
+    PY_RAW_VAR(v3); \
+    PY_RAW_VAR(v4); \
+    if(!PyArg_ParseTuple(args,"OOOO", \
+        PY_PARSE_VAR(v1), \
+        PY_PARSE_VAR(v2), \
+        PY_PARSE_VAR(v3), \
+        PY_PARSE_VAR(v4) \
+    )) \
+        return nullptr; \
+    PY_INPUT_VAR(v1); \
+    PY_INPUT_VAR(v2); \
+    PY_INPUT_VAR(v3); \
+    PY_INPUT_VAR(v4);
+#define PY_VAR_5(v1,v2,v3,v4,v5) \
+    PY_RAW_VAR(v1); \
+    PY_RAW_VAR(v2); \
+    PY_RAW_VAR(v3); \
+    PY_RAW_VAR(v4); \
+    PY_RAW_VAR(v5); \
+    if(!PyArg_ParseTuple(args,"OOOOO", \
+        PY_PARSE_VAR(v1), \
+        PY_PARSE_VAR(v2), \
+        PY_PARSE_VAR(v3), \
+        PY_PARSE_VAR(v4), \
+        PY_PARSE_VAR(v5) \
+    )) \
+        return nullptr; \
+    PY_INPUT_VAR(v1); \
+    PY_INPUT_VAR(v2); \
+    PY_INPUT_VAR(v3); \
+    PY_INPUT_VAR(v4); \
+    PY_INPUT_VAR(v5);
+#define PY_VAR_6(v1,v2,v3,v4,v5,v6) \
+    PY_RAW_VAR(v1); \
+    PY_RAW_VAR(v2); \
+    PY_RAW_VAR(v3); \
+    PY_RAW_VAR(v4); \
+    PY_RAW_VAR(v5); \
+    PY_RAW_VAR(v6); \
+    if(!PyArg_ParseTuple(args,"OOOOOO", \
+        PY_PARSE_VAR(v1), \
+        PY_PARSE_VAR(v2), \
+        PY_PARSE_VAR(v3), \
+        PY_PARSE_VAR(v4), \
+        PY_PARSE_VAR(v5), \
+        PY_PARSE_VAR(v6) \
+    )) \
+        return nullptr; \
+    PY_INPUT_VAR(v1); \
+    PY_INPUT_VAR(v2); \
+    PY_INPUT_VAR(v3); \
+    PY_INPUT_VAR(v4); \
+    PY_INPUT_VAR(v5); \
+    PY_INPUT_VAR(v6);
+#define PY_VAR_7(v1,v2,v3,v4,v5,v6,v7) \
+    PY_RAW_VAR(v1); \
+    PY_RAW_VAR(v2); \
+    PY_RAW_VAR(v3); \
+    PY_RAW_VAR(v4); \
+    PY_RAW_VAR(v5); \
+    PY_RAW_VAR(v6); \
+    PY_RAW_VAR(v7); \
+    if(!PyArg_ParseTuple(args,"OOOOOOO", \
+        PY_PARSE_VAR(v1), \
+        PY_PARSE_VAR(v2), \
+        PY_PARSE_VAR(v3), \
+        PY_PARSE_VAR(v4), \
+        PY_PARSE_VAR(v5), \
+        PY_PARSE_VAR(v6), \
+        PY_PARSE_VAR(v7) \
+    )) \
+        return nullptr; \
+    PY_INPUT_VAR(v1); \
+    PY_INPUT_VAR(v2); \
+    PY_INPUT_VAR(v3); \
+    PY_INPUT_VAR(v4); \
+    PY_INPUT_VAR(v5); \
+    PY_INPUT_VAR(v6); \
+    PY_INPUT_VAR(v7);
+#define PY_VAR_8(v1,v2,v3,v4,v5,v6,v7,v8) \
+    PY_RAW_VAR(v1); \
+    PY_RAW_VAR(v2); \
+    PY_RAW_VAR(v3); \
+    PY_RAW_VAR(v4); \
+    PY_RAW_VAR(v5); \
+    PY_RAW_VAR(v6); \
+    PY_RAW_VAR(v7); \
+    PY_RAW_VAR(v8); \
+    if(!PyArg_ParseTuple(args,"OOOOOOOO", \
+        PY_PARSE_VAR(v1), \
+        PY_PARSE_VAR(v2), \
+        PY_PARSE_VAR(v3), \
+        PY_PARSE_VAR(v4), \
+        PY_PARSE_VAR(v5), \
+        PY_PARSE_VAR(v6), \
+        PY_PARSE_VAR(v7), \
+        PY_PARSE_VAR(v8) \
+    )) \
+        return nullptr; \
+    PY_INPUT_VAR(v1); \
+    PY_INPUT_VAR(v2); \
+    PY_INPUT_VAR(v3); \
+    PY_INPUT_VAR(v4); \
+    PY_INPUT_VAR(v5); \
+    PY_INPUT_VAR(v6); \
+    PY_INPUT_VAR(v7); \
+    PY_INPUT_VAR(v8);
+#define PY_VAR_10(v1,v2,v3,v4,v5,v6,v7,v8,v9,v10) \
+    PY_RAW_VAR(v1); \
+    PY_RAW_VAR(v2); \
+    PY_RAW_VAR(v3); \
+    PY_RAW_VAR(v4); \
+    PY_RAW_VAR(v5); \
+    PY_RAW_VAR(v6); \
+    PY_RAW_VAR(v7); \
+    PY_RAW_VAR(v8); \
+    PY_RAW_VAR(v9); \
+    PY_RAW_VAR(v10); \
+    if(!PyArg_ParseTuple(args,"OOOOOOOOOO", \
+        PY_PARSE_VAR(v1), \
+        PY_PARSE_VAR(v2), \
+        PY_PARSE_VAR(v3), \
+        PY_PARSE_VAR(v4), \
+        PY_PARSE_VAR(v5), \
+        PY_PARSE_VAR(v6), \
+        PY_PARSE_VAR(v7), \
+        PY_PARSE_VAR(v8), \
+        PY_PARSE_VAR(v9), \
+        PY_PARSE_VAR(v10) \
+    )) \
+        return nullptr; \
+    PY_INPUT_VAR(v1); \
+    PY_INPUT_VAR(v2); \
+    PY_INPUT_VAR(v3); \
+    PY_INPUT_VAR(v4); \
+    PY_INPUT_VAR(v5); \
+    PY_INPUT_VAR(v6); \
+    PY_INPUT_VAR(v7); \
+    PY_INPUT_VAR(v8); \
+    PY_INPUT_VAR(v9); \
+    PY_INPUT_VAR(v10);
+
 namespace Optizelle {
     namespace OptimizationStop { 
         // Converts t to a Python enumerated type
-        PyObject * toPython(t const & opt_stop) {
+        Python::PyObjectPtr toPython(t const & opt_stop) {
             // Do the conversion
             switch(opt_stop){
             case NotConverged:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "OptimizationStop","NotConverged");
             case GradientSmall:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "OptimizationStop","GradientSmall");
             case StepSmall:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "OptimizationStop","StepSmall");
             case MaxItersExceeded:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "OptimizationStop","MaxItersExceeded");
             case InteriorPointInstability:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "OptimizationStop","InteriorPointInstability");
             case GlobalizationFailure:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "OptimizationStop","GlobalizationFailure");
             case UserDefined:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "OptimizationStop","UserDefined");
-            default:
-                throw;
             }
         }
 
         // Converts a Python enumerated type to t 
-        t fromPython(PyObject * const member) {
+        t fromPython(Python::PyObjectPtr const & member) {
             // Convert the member to a Natural 
-            Natural m=PyInt_AsSsize_t(member);
+            auto m=Python::capi::PyInt_AsNatural(member);
 
-            if(m==Python::enumToNatural("OptimizationStop","NotConverged"))
+            if(m==Python::capi::enumToNatural(
+                "OptimizationStop","NotConverged")
+            )
                 return NotConverged;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "OptimizationStop","GradientSmall")
             )
                 return GradientSmall;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "OptimizationStop","StepSmall")
             )
                 return StepSmall;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "OptimizationStop","MaxItersExceeded")
             )
                 return MaxItersExceeded;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "OptimizationStop","InteriorPointInstability")
             )
                 return InteriorPointInstability;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "OptimizationStop","GlobalizationFailure")
             )
                 return GlobalizationFailure;
-            else if(m==Python::enumToNatural("OptimizationStop","UserDefined"))
+            else if(m==Python::capi::enumToNatural(
+                "OptimizationStop","UserDefined")
+            )
                 return UserDefined;
             else
-                throw;
+                throw Optizelle::Exception::t( __LOC__
+                    + ", unknown OptimizationStop");
         }
     }
     
     namespace TruncatedStop { 
         // Converts t to a Python enumerated type
-        PyObject * toPython(t const & trunc_stop) {
+        Python::PyObjectPtr toPython(t const & trunc_stop) {
             // Do the conversion
             switch(trunc_stop){
             case NotConverged:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "TruncatedStop","NotConverged");
             case NegativeCurvature:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "TruncatedStop","NegativeCurvature");
             case RelativeErrorSmall:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "TruncatedStop","RelativeErrorSmall");
             case MaxItersExceeded:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "TruncatedStop","MaxItersExceeded");
             case TrustRegionViolated:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "TruncatedStop","TrustRegionViolated");
             case NanOperator:
-                return Python::enumToPyObject("TruncatedStop","NanOperator");
+                return Python::capi::enumToPyObject(
+                    "TruncatedStop","NanOperator");
             case NanPreconditioner:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "TruncatedStop","NanPreconditioner");
             case NonProjectorPreconditioner:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "TruncatedStop","NonProjectorPreconditioner");
             case NonSymmetricPreconditioner:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "TruncatedStop","NonSymmetricPreconditioner");
             case NonSymmetricOperator:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "TruncatedStop","NonSymmetricOperator");
             case LossOfOrthogonality:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "TruncatedStop","LossOfOrthogonality");
             case OffsetViolatesTrustRegion:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "TruncatedStop","OffsetViolatesTrustRegion");
             case OffsetViolatesSafeguard:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "TruncatedStop","OffsetViolatesSafeguard");
             case TooManyFailedSafeguard:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "TruncatedStop","TooManyFailedSafeguard");
             case ObjectiveIncrease:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "TruncatedStop","ObjectiveIncrease");
-            default:
-                throw;
             }
         }
 
         // Converts a Python enumerated type to t 
-        t fromPython(PyObject * const member) {
+        t fromPython(Python::PyObjectPtr const & member) {
             // Convert the member to a Natural 
-            Natural m=PyInt_AsSsize_t(member);
+            auto m=Python::capi::PyInt_AsNatural(member);
 
-            if(m==Python::enumToNatural("TruncatedStop","NotConverged"))
+            if(m==Python::capi::enumToNatural("TruncatedStop","NotConverged"))
                 return NotConverged;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "TruncatedStop","NegativeCurvature")
             )
                 return NegativeCurvature;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "TruncatedStop","RelativeErrorSmall")
             )
                 return RelativeErrorSmall;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "TruncatedStop","MaxItersExceeded")
             )
                 return MaxItersExceeded;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "TruncatedStop","TrustRegionViolated")
             )
                 return TrustRegionViolated;
-            else if(m==Python::enumToNatural("TruncatedStop","NanOperator"))
+            else if(m==Python::capi::enumToNatural(
+                "TruncatedStop","NanOperator")
+            )
                 return NanOperator;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "TruncatedStop","NanPreconditioner")
             )
                 return NanPreconditioner;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "TruncatedStop","NonProjectorPreconditioner")
             )
                 return NonProjectorPreconditioner;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "TruncatedStop","NonSymmetricPreconditioner")
             )
                 return NonSymmetricPreconditioner;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "TruncatedStop","NonSymmetricOperator")
             )
                 return NonSymmetricOperator;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "TruncatedStop","LossOfOrthogonality")
             )
                 return LossOfOrthogonality;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "TruncatedStop","OffsetViolatesTrustRegion")
             )
                 return OffsetViolatesTrustRegion;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "TruncatedStop","OffsetViolatesSafeguard")
             )
                 return OffsetViolatesSafeguard;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "TruncatedStop","TooManyFailedSafeguard")
             )
                 return TooManyFailedSafeguard;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "TruncatedStop","ObjectiveIncrease")
             )
                 return ObjectiveIncrease;
             else
-                throw;
+                throw Optizelle::Exception::t( __LOC__
+                    + ", unknown TruncatedStop");
         }
     }
 
     namespace AlgorithmClass { 
         // Converts t to a Python enumerated type
-        PyObject * toPython(t const & algorithm_class) {
+        Python::PyObjectPtr toPython(t const & algorithm_class) {
             // Do the conversion
             switch(algorithm_class){
             case TrustRegion:
-                return Python::enumToPyObject("AlgorithmClass","TrustRegion");
+                return Python::capi::enumToPyObject(
+                    "AlgorithmClass","TrustRegion");
             case LineSearch:
-                return Python::enumToPyObject("AlgorithmClass","LineSearch");
+                return Python::capi::enumToPyObject(
+                    "AlgorithmClass","LineSearch");
             case UserDefined:
-                return Python::enumToPyObject("AlgorithmClass","UserDefined");
-            default:
-                throw;
+                return Python::capi::enumToPyObject(
+                    "AlgorithmClass","UserDefined");
             }
         }
 
         // Converts a Python enumerated type to t 
-        t fromPython(PyObject * const member) {
+        t fromPython(Python::PyObjectPtr const & member) {
             // Convert the member to a Natural 
-            Natural m=PyInt_AsSsize_t(member);
+            auto m=Python::capi::PyInt_AsNatural(member);
 
-            if(m==Python::enumToNatural("AlgorithmClass","TrustRegion"))
+            if(m==Python::capi::enumToNatural(
+                "AlgorithmClass","TrustRegion")
+            )
                 return TrustRegion;
-            else if(m==Python::enumToNatural("AlgorithmClass","LineSearch"))
+            else if(m==Python::capi::enumToNatural(
+                "AlgorithmClass","LineSearch")
+            )
                 return LineSearch;
-            else if(m==Python::enumToNatural("AlgorithmClass","UserDefined"))
+            else if(m==Python::capi::enumToNatural(
+                "AlgorithmClass","UserDefined")
+            )
                 return UserDefined;
             else
-                throw;
+                throw Optizelle::Exception::t( __LOC__
+                    + ", unknown AlgorithmClass");
         }
     }
 
     namespace Operators { 
         // Converts t to a Python enumerated type
-        PyObject * toPython(t const & op) {
+        Python::PyObjectPtr toPython(t const & op) {
             // Do the conversion
             switch(op){
             case Identity:
-                return Python::enumToPyObject("Operators","Identity");
+                return Python::capi::enumToPyObject("Operators","Identity");
             case Zero:
-                return Python::enumToPyObject("Operators","Zero");
+                return Python::capi::enumToPyObject("Operators","Zero");
             case ScaledIdentity:
-                return Python::enumToPyObject("Operators","ScaledIdentity");
+                return Python::capi::enumToPyObject(
+                    "Operators","ScaledIdentity");
             case BFGS:
-                return Python::enumToPyObject("Operators","BFGS");
+                return Python::capi::enumToPyObject("Operators","BFGS");
             case InvBFGS:
-                return Python::enumToPyObject("Operators","InvBFGS");
+                return Python::capi::enumToPyObject("Operators","InvBFGS");
             case SR1:
-                return Python::enumToPyObject("Operators","SR1");
+                return Python::capi::enumToPyObject("Operators","SR1");
             case InvSR1:
-                return Python::enumToPyObject("Operators","InvSR1");
+                return Python::capi::enumToPyObject("Operators","InvSR1");
             case UserDefined:
-                return Python::enumToPyObject("Operators","UserDefined");
-            default:
-                throw;
+                return Python::capi::enumToPyObject("Operators","UserDefined");
             }
         }
 
         // Converts a Python enumerated type to t 
-        t fromPython(PyObject * const member) {
+        t fromPython(Python::PyObjectPtr const & member) {
             // Convert the member to a Natural 
-            Natural m=PyInt_AsSsize_t(member);
+            auto m=Python::capi::PyInt_AsNatural(member);
 
-            if(m==Python::enumToNatural("Operators","Identity"))
+            if(m==Python::capi::enumToNatural("Operators","Identity"))
                 return Identity;
-            else if(m==Python::enumToNatural("Operators","Zero"))
+            else if(m==Python::capi::enumToNatural("Operators","Zero"))
                 return Zero;
-            else if(m==Python::enumToNatural("Operators","ScaledIdentity"))
+            else if(m==Python::capi::enumToNatural(
+                    "Operators","ScaledIdentity")
+            )
                 return ScaledIdentity;
-            else if(m==Python::enumToNatural("Operators","BFGS"))
+            else if(m==Python::capi::enumToNatural("Operators","BFGS"))
                 return BFGS;
-            else if(m==Python::enumToNatural("Operators","InvBFGS"))
+            else if(m==Python::capi::enumToNatural("Operators","InvBFGS"))
                 return InvBFGS;
-            else if(m==Python::enumToNatural("Operators","SR1"))
+            else if(m==Python::capi::enumToNatural("Operators","SR1"))
                 return SR1;
-            else if(m==Python::enumToNatural("Operators","InvSR1"))
+            else if(m==Python::capi::enumToNatural("Operators","InvSR1"))
                 return InvSR1;
-            else if(m==Python::enumToNatural("Operators","UserDefined"))
+            else if(m==Python::capi::enumToNatural("Operators","UserDefined"))
                 return UserDefined;
             else
-                throw;
+                throw Optizelle::Exception::t( __LOC__
+                    + ", unknown Operators");
         }
     }
 
     namespace LineSearchDirection {
         // Converts t to a Python enumerated type
-        PyObject * toPython(t const & dir) {
+        Python::PyObjectPtr toPython(t const & dir) {
             // Do the conversion
             switch(dir){
             case SteepestDescent:
-                return Python::enumToPyObject("LineSearchDirection",
+                return Python::capi::enumToPyObject("LineSearchDirection",
                     "SteepestDescent");
             case FletcherReeves:
-                return Python::enumToPyObject("LineSearchDirection",
+                return Python::capi::enumToPyObject("LineSearchDirection",
                     "FletcherReeves");
             case PolakRibiere:
-                return Python::enumToPyObject("LineSearchDirection",
+                return Python::capi::enumToPyObject("LineSearchDirection",
                     "PolakRibiere");
             case HestenesStiefel:
-                return Python::enumToPyObject("LineSearchDirection",
+                return Python::capi::enumToPyObject("LineSearchDirection",
                     "HestenesStiefel");
             case BFGS:
-                return Python::enumToPyObject("LineSearchDirection","BFGS");
+                return Python::capi::enumToPyObject(
+                    "LineSearchDirection","BFGS");
             case NewtonCG:
-                return Python::enumToPyObject("LineSearchDirection","NewtonCG");
-            default:
-                throw;
+                return Python::capi::enumToPyObject(
+                    "LineSearchDirection","NewtonCG");
             }
         }
 
         // Converts a Python enumerated type to t 
-        t fromPython(PyObject * const member) {
+        t fromPython(Python::PyObjectPtr const & member) {
             // Convert the member to a Natural 
-            Natural m=PyInt_AsSsize_t(member);
+            auto m=Python::capi::PyInt_AsNatural(member);
 
-            if(m==Python::enumToNatural("LineSearchDirection",
+            if(m==Python::capi::enumToNatural("LineSearchDirection",
                 "SteepestDescent")
             )
                 return SteepestDescent;
-            else if(m==Python::enumToNatural("LineSearchDirection",
+            else if(m==Python::capi::enumToNatural("LineSearchDirection",
                 "FletcherReeves")
             )
                 return FletcherReeves;
-            else if(m==Python::enumToNatural("LineSearchDirection",
+            else if(m==Python::capi::enumToNatural("LineSearchDirection",
                 "PolakRibiere")
             )
                 return PolakRibiere;
-            else if(m==Python::enumToNatural("LineSearchDirection",
+            else if(m==Python::capi::enumToNatural("LineSearchDirection",
                 "HestenesStiefel")
             )
                 return HestenesStiefel;
-            else if(m==Python::enumToNatural("LineSearchDirection","BFGS"))
+            else if(m==Python::capi::enumToNatural(
+                "LineSearchDirection","BFGS")
+            )
                 return BFGS;
-            else if(m==Python::enumToNatural("LineSearchDirection","NewtonCG"))
+            else if(m==Python::capi::enumToNatural(
+                "LineSearchDirection","NewtonCG")
+            )
                 return NewtonCG;
             else
-                throw;
+                throw Optizelle::Exception::t( __LOC__
+                    + ", unknown LineSearchDirection");
         }
     }
 
     namespace LineSearchKind { 
         // Converts t to a Python enumerated type
-        PyObject * toPython(t const & kind) {
+        Python::PyObjectPtr toPython(t const & kind) {
             // Do the conversion
             switch(kind){
             case GoldenSection:
-                return Python::enumToPyObject("LineSearchKind","GoldenSection");
+                return Python::capi::enumToPyObject(
+                    "LineSearchKind","GoldenSection");
             case BackTracking:
-                return Python::enumToPyObject("LineSearchKind","BackTracking");
+                return Python::capi::enumToPyObject(
+                    "LineSearchKind","BackTracking");
             case TwoPointA:
-                return Python::enumToPyObject("LineSearchKind","TwoPointA");
+                return Python::capi::enumToPyObject(
+                    "LineSearchKind","TwoPointA");
             case TwoPointB:
-                return Python::enumToPyObject("LineSearchKind","TwoPointB");
-            default:
-                throw;
+                return Python::capi::enumToPyObject(
+                    "LineSearchKind","TwoPointB");
             }
         }
 
         // Converts a Python enumerated type to t 
-        t fromPython(PyObject * const member) {
+        t fromPython(Python::PyObjectPtr const & member) {
             // Convert the member to a Natural 
-            Natural m=PyInt_AsSsize_t(member);
+            auto m=Python::capi::PyInt_AsNatural(member);
 
-            if(m==Python::enumToNatural("LineSearchKind","GoldenSection"))
+            if(m==Python::capi::enumToNatural(
+                "LineSearchKind","GoldenSection")
+            )
                 return GoldenSection;
-            else if(m==Python::enumToNatural("LineSearchKind","BackTracking"))
+            else if(m==Python::capi::enumToNatural(
+                "LineSearchKind","BackTracking")
+            )
                 return BackTracking;
-            else if(m==Python::enumToNatural("LineSearchKind","TwoPointA"))
+            else if(m==Python::capi::enumToNatural(
+                "LineSearchKind","TwoPointA")
+            )
                 return TwoPointA;
-            else if(m==Python::enumToNatural("LineSearchKind","TwoPointB"))
+            else if(m==Python::capi::enumToNatural(
+                "LineSearchKind","TwoPointB")
+            )
                 return TwoPointB;
             else
-                throw;
+                throw Optizelle::Exception::t( __LOC__
+                    + ", unknown LineSearchKind");
         }
     }
 
     namespace OptimizationLocation { 
         // Converts t to a Python enumerated type
-        PyObject * toPython(t const & loc) {
+        Python::PyObjectPtr toPython(t const & loc) {
             // Do the conversion
             switch(loc){
             case BeginningOfOptimization:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "OptimizationLocation","BeginningOfOptimization");
             case BeforeInitialFuncAndGrad:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "OptimizationLocation","BeforeInitialFuncAndGrad");
             case AfterInitialFuncAndGrad:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "OptimizationLocation","AfterInitialFuncAndGrad");
             case BeforeOptimizationLoop:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "OptimizationLocation","BeforeOptimizationLoop");
             case BeginningOfOptimizationLoop:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "OptimizationLocation","BeginningOfOptimizationLoop");
             case BeforeSaveOld:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "OptimizationLocation","BeforeSaveOld");
             case BeforeStep:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "OptimizationLocation","BeforeStep");
             case BeforeGetStep:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "OptimizationLocation","BeforeGetStep");
             case GetStep:
-                return Python::enumToPyObject("OptimizationLocation","GetStep");
+                return Python::capi::enumToPyObject(
+                    "OptimizationLocation","GetStep");
             case AfterStepBeforeGradient:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "OptimizationLocation","AfterStepBeforeGradient");
             case AfterGradient:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "OptimizationLocation","AfterGradient");
             case BeforeQuasi:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "OptimizationLocation","BeforeQuasi");
             case AfterQuasi:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "OptimizationLocation","AfterQuasi");
             case AfterCheckStop:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "OptimizationLocation","AfterCheckStop");
             case EndOfOptimizationIteration:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "OptimizationLocation","EndOfOptimizationIteration");
             case BeforeLineSearch:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "OptimizationLocation","BeforeLineSearch");
             case AfterRejectedTrustRegion:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "OptimizationLocation","AfterRejectedTrustRegion");
             case AfterRejectedLineSearch:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "OptimizationLocation","AfterRejectedLineSearch");
             case BeforeActualVersusPredicted:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "OptimizationLocation","BeforeActualVersusPredicted");
             case EndOfOptimization:
-                return Python::enumToPyObject(
+                return Python::capi::enumToPyObject(
                     "OptimizationLocation","EndOfOptimization");
-            default:
-                throw;
             }
         }
 
         // Converts a Python enumerated type to t 
-        t fromPython(PyObject * const member) {
+        t fromPython(Python::PyObjectPtr const & member) {
             // Convert the member to a Natural 
-            Natural m=PyInt_AsSsize_t(member);
+            auto m=Python::capi::PyInt_AsNatural(member);
 
-            if(m==Python::enumToNatural(
+            if(m==Python::capi::enumToNatural(
                 "OptimizationLocation","BeginningOfOptimization"))
                 return BeginningOfOptimization;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "OptimizationLocation","BeforeInitialFuncAndGrad"))
                 return BeforeInitialFuncAndGrad;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "OptimizationLocation","AfterInitialFuncAndGrad"))
                 return AfterInitialFuncAndGrad;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "OptimizationLocation","BeforeOptimizationLoop"))
                 return BeforeOptimizationLoop;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "OptimizationLocation","BeginningOfOptimizationLoop"))
                 return BeginningOfOptimizationLoop;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "OptimizationLocation","BeforeSaveOld"))
                 return BeforeSaveOld;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "OptimizationLocation","BeforeStep"))
                 return BeforeStep;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "OptimizationLocation","BeforeGetStep"))
                 return BeforeGetStep;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "OptimizationLocation","GetStep"))
                 return GetStep;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "OptimizationLocation","AfterStepBeforeGradient"))
                 return AfterStepBeforeGradient;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "OptimizationLocation","AfterGradient"))
                 return AfterGradient;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "OptimizationLocation","BeforeQuasi"))
                 return BeforeQuasi;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "OptimizationLocation","AfterQuasi"))
                 return AfterQuasi;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "OptimizationLocation","AfterCheckStop"))
                 return AfterCheckStop;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "OptimizationLocation","EndOfOptimizationIteration"))
                 return EndOfOptimizationIteration;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "OptimizationLocation","BeforeLineSearch"))
                 return BeforeLineSearch;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "OptimizationLocation","AfterRejectedTrustRegion"))
                 return AfterRejectedTrustRegion;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "OptimizationLocation","AfterRejectedLineSearch"))
                 return AfterRejectedLineSearch;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "OptimizationLocation","BeforeActualVersusPredicted"))
                 return BeforeActualVersusPredicted;
-            else if(m==Python::enumToNatural(
+            else if(m==Python::capi::enumToNatural(
                 "OptimizationLocation","EndOfOptimization"))
                 return EndOfOptimization;
             else
-                throw;
+                throw Optizelle::Exception::t( __LOC__
+                    + ", unknown OptimizationLocation");
         }
     }
 
     namespace FunctionDiagnostics { 
         // Converts t to a Python enumerated type
-        PyObject * toPython(t const & diag) {
+        Python::PyObjectPtr toPython(t const & diag) {
             // Do the conversion
             switch(diag){
             case NoDiagnostics:
-                return Python::enumToPyObject("FunctionDiagnostics",
+                return Python::capi::enumToPyObject("FunctionDiagnostics",
                     "NoDiagnostics");
             case FirstOrder:
-                return Python::enumToPyObject("FunctionDiagnostics",
+                return Python::capi::enumToPyObject("FunctionDiagnostics",
                     "FirstOrder");
             case SecondOrder:
-                return Python::enumToPyObject("FunctionDiagnostics",
+                return Python::capi::enumToPyObject("FunctionDiagnostics",
                     "SecondOrder");
-            default:
-                throw;
             }
         }
 
         // Converts a Python enumerated type to t 
-        t fromPython(PyObject * const member) {
+        t fromPython(Python::PyObjectPtr const & member) {
             // Convert the member to a Natural 
-            Natural m=PyInt_AsSsize_t(member);
+            auto m=Python::capi::PyInt_AsNatural(member);
 
-            if(m==Python::enumToNatural("FunctionDiagnostics","NoDiagnostics"))
+            if(m==Python::capi::enumToNatural(
+                "FunctionDiagnostics","NoDiagnostics")
+            )
                 return NoDiagnostics;
-            else if(m==Python::enumToNatural("FunctionDiagnostics",
+            else if(m==Python::capi::enumToNatural("FunctionDiagnostics",
                 "FirstOrder")
             )
                 return FirstOrder;
-            else if(m==Python::enumToNatural("FunctionDiagnostics",
+            else if(m==Python::capi::enumToNatural("FunctionDiagnostics",
                 "SecondOrder")
             )
                 return SecondOrder;
             else
-                throw;
+                throw Optizelle::Exception::t( __LOC__
+                    + ", unknown FunctionDiagnostics");
         }
     }
 
     namespace VectorSpaceDiagnostics { 
         // Converts t to a Python enumerated type
-        PyObject * toPython(t const & diag) {
+        Python::PyObjectPtr toPython(t const & diag) {
             // Do the conversion
             switch(diag){
             case NoDiagnostics:
-                return Python::enumToPyObject("VectorSpaceDiagnostics",
+                return Python::capi::enumToPyObject("VectorSpaceDiagnostics",
                     "NoDiagnostics");
             case Basic:
-                return Python::enumToPyObject("VectorSpaceDiagnostics",
+                return Python::capi::enumToPyObject("VectorSpaceDiagnostics",
                     "Basic");
             case EuclideanJordan:
-                return Python::enumToPyObject("VectorSpaceDiagnostics",
+                return Python::capi::enumToPyObject("VectorSpaceDiagnostics",
                     "EuclideanJordan");
-            default:
-                throw;
             }
         }
 
         // Converts a Python enumerated type to t 
-        t fromPython(PyObject * const member) {
+        t fromPython(Python::PyObjectPtr const & member) {
             // Convert the member to a Natural 
-            Natural m=PyInt_AsSsize_t(member);
+            auto m=Python::capi::PyInt_AsNatural(member);
 
-            if(m==Python::enumToNatural("VectorSpaceDiagnostics",
+            if(m==Python::capi::enumToNatural("VectorSpaceDiagnostics",
                 "NoDiagnostics")
             )
                 return NoDiagnostics;
-            else if(m==Python::enumToNatural("VectorSpaceDiagnostics",
+            else if(m==Python::capi::enumToNatural("VectorSpaceDiagnostics",
                 "Basic")
             )
                 return Basic;
-            else if(m==Python::enumToNatural("VectorSpaceDiagnostics",
+            else if(m==Python::capi::enumToNatural("VectorSpaceDiagnostics",
                 "EuclideanJordan")
             )
                 return EuclideanJordan;
             else
-                throw;
+                throw Optizelle::Exception::t( __LOC__
+                    + ", unknown VectorSpaceDiagnostics");
         }
     }
 
     namespace DiagnosticScheme { 
         // Converts t to a Python enumerated type
-        PyObject * toPython(t const & dscheme) {
+        Python::PyObjectPtr toPython(t const & dscheme) {
             // Do the conversion
             switch(dscheme){
             case Never:
-                return Python::enumToPyObject("DiagnosticScheme","Never");
+                return Python::capi::enumToPyObject("DiagnosticScheme","Never");
             case DiagnosticsOnly:
-                return Python::enumToPyObject("DiagnosticScheme",
+                return Python::capi::enumToPyObject("DiagnosticScheme",
                     "DiagnosticsOnly");
             case EveryIteration:
-                return Python::enumToPyObject("DiagnosticScheme",
+                return Python::capi::enumToPyObject("DiagnosticScheme",
                     "EveryIteration");
-            default:
-                throw;
             }
         }
 
         // Converts a Python enumerated type to t 
-        t fromPython(PyObject * const member) {
+        t fromPython(Python::PyObjectPtr const & member) {
             // Convert the member to a Natural 
-            Natural m=PyInt_AsSsize_t(member);
+            auto m=Python::capi::PyInt_AsNatural(member);
 
-            if(m==Python::enumToNatural("DiagnosticScheme","Never"))
+            if(m==Python::capi::enumToNatural("DiagnosticScheme","Never"))
                 return Never;
-            else if(m==Python::enumToNatural("DiagnosticScheme",
+            else if(m==Python::capi::enumToNatural("DiagnosticScheme",
                 "DiagnosticsOnly")
             )
                 return DiagnosticsOnly;
-            else if(m==Python::enumToNatural("DiagnosticScheme",
+            else if(m==Python::capi::enumToNatural("DiagnosticScheme",
                 "EveryIteration")
             )
                 return EveryIteration;
             else
-                throw;
+                throw Optizelle::Exception::t( __LOC__
+                    + ", unknown DiagnosticScheme");
         }
     }
 
     namespace ToleranceKind { 
         // Converts t to a Python enumerated type
-        PyObject * toPython(t const & eps_kind) {
+        Python::PyObjectPtr toPython(t const & eps_kind) {
             // Do the conversion
             switch(eps_kind){
             case Relative:
-                return Python::enumToPyObject("ToleranceKind",
+                return Python::capi::enumToPyObject("ToleranceKind",
                     "Relative");
             case Absolute:
-                return Python::enumToPyObject("ToleranceKind",
+                return Python::capi::enumToPyObject("ToleranceKind",
                     "Absolute");
-            default:
-                throw;
             }
         }
 
         // Converts a Python enumerated type to t 
-        t fromPython(PyObject * const member) {
+        t fromPython(Python::PyObjectPtr const & member) {
             // Convert the member to a Natural 
-            Natural m=PyInt_AsSsize_t(member);
+            auto m=Python::capi::PyInt_AsNatural(member);
 
-            if(m==Python::enumToNatural("ToleranceKind",
+            if(m==Python::capi::enumToNatural("ToleranceKind",
                 "Relative")
             )
                 return Relative;
-            else if(m==Python::enumToNatural("ToleranceKind",
+            else if(m==Python::capi::enumToNatural("ToleranceKind",
                 "Absolute")
             )
                 return Absolute;
             else
-                throw;
+                throw Optizelle::Exception::t( __LOC__
+                    + ", unknown ToleranceKind");
         }
     }
 
     namespace QuasinormalStop{ 
         // Converts t to a Python enumerated type
-        PyObject * toPython(t const & qn_stop) {
+        Python::PyObjectPtr toPython(t const & qn_stop) {
             // Do the conversion
             switch(qn_stop){
             case Newton:
-                return Python::enumToPyObject("QuasinormalStop",
+                return Python::capi::enumToPyObject("QuasinormalStop",
                     "Newton");
             case CauchyTrustRegion:
-                return Python::enumToPyObject("QuasinormalStop",
+                return Python::capi::enumToPyObject("QuasinormalStop",
                     "CauchyTrustRegion");
             case CauchySafeguard:
-                return Python::enumToPyObject("QuasinormalStop",
+                return Python::capi::enumToPyObject("QuasinormalStop",
                     "CauchySafeguard");
             case DoglegTrustRegion:
-                return Python::enumToPyObject("QuasinormalStop",
+                return Python::capi::enumToPyObject("QuasinormalStop",
                     "DoglegTrustRegion");
             case DoglegSafeguard:
-                return Python::enumToPyObject("QuasinormalStop",
+                return Python::capi::enumToPyObject("QuasinormalStop",
                     "DoglegSafeguard");
             case NewtonTrustRegion:
-                return Python::enumToPyObject("QuasinormalStop",
+                return Python::capi::enumToPyObject("QuasinormalStop",
                     "NewtonTrustRegion");
             case NewtonSafeguard:
-                return Python::enumToPyObject("QuasinormalStop",
+                return Python::capi::enumToPyObject("QuasinormalStop",
                     "NewtonSafeguard");
             case Feasible:
-                return Python::enumToPyObject("QuasinormalStop",
+                return Python::capi::enumToPyObject("QuasinormalStop",
                     "Feasible");
             case CauchySolved:
-                return Python::enumToPyObject("QuasinormalStop",
+                return Python::capi::enumToPyObject("QuasinormalStop",
                     "CauchySolved");
             case LocalMin:
-                return Python::enumToPyObject("QuasinormalStop",
+                return Python::capi::enumToPyObject("QuasinormalStop",
                     "LocalMin");
             case NewtonFailed:
-                return Python::enumToPyObject("QuasinormalStop",
+                return Python::capi::enumToPyObject("QuasinormalStop",
                     "NewtonFailed");
-            default:
-                throw;
             }
         }
 
         // Converts a Python enumerated type to t 
-        t fromPython(PyObject * const member) {
+        t fromPython(Python::PyObjectPtr const & member) {
             // Convert the member to a Natural 
-            Natural m=PyInt_AsSsize_t(member);
+            auto m=Python::capi::PyInt_AsNatural(member);
 
-            if(m==Python::enumToNatural("QuasinormalStop",
+            if(m==Python::capi::enumToNatural("QuasinormalStop",
                 "Newton")
             )
                 return Newton;
-            else if(m==Python::enumToNatural("QuasinormalStop",
+            else if(m==Python::capi::enumToNatural("QuasinormalStop",
                 "CauchyTrustRegion")
             )
                 return CauchyTrustRegion;
-            else if(m==Python::enumToNatural("QuasinormalStop",
+            else if(m==Python::capi::enumToNatural("QuasinormalStop",
                 "CauchySafeguard")
             )
                 return CauchySafeguard;
-            else if(m==Python::enumToNatural("QuasinormalStop",
+            else if(m==Python::capi::enumToNatural("QuasinormalStop",
                 "DoglegTrustRegion")
             )
                 return DoglegTrustRegion;
-            else if(m==Python::enumToNatural("QuasinormalStop",
+            else if(m==Python::capi::enumToNatural("QuasinormalStop",
                 "DoglegSafeguard")
             )
                 return DoglegSafeguard;
-            else if(m==Python::enumToNatural("QuasinormalStop",
+            else if(m==Python::capi::enumToNatural("QuasinormalStop",
                 "NewtonTrustRegion")
             )
                 return NewtonTrustRegion;
-            else if(m==Python::enumToNatural("QuasinormalStop",
+            else if(m==Python::capi::enumToNatural("QuasinormalStop",
                 "NewtonSafeguard")
             )
                 return NewtonSafeguard;
-            else if(m==Python::enumToNatural("QuasinormalStop",
+            else if(m==Python::capi::enumToNatural("QuasinormalStop",
                 "Feasible")
             )
                 return Feasible;
-            else if(m==Python::enumToNatural("QuasinormalStop",
+            else if(m==Python::capi::enumToNatural("QuasinormalStop",
                 "CauchySolved")
             )
                 return CauchySolved;
-            else if(m==Python::enumToNatural("QuasinormalStop",
+            else if(m==Python::capi::enumToNatural("QuasinormalStop",
                 "LocalMin")
             )
                 return LocalMin;
-            else if(m==Python::enumToNatural("QuasinormalStop",
+            else if(m==Python::capi::enumToNatural("QuasinormalStop",
                 "NewtonFailed")
             )
                 return NewtonFailed;
             else
-                throw;
+                throw Optizelle::Exception::t( __LOC__
+                    + ", unknown QuasinormalStep");
         }
     }
 
@@ -791,36 +997,28 @@ namespace Optizelle {
                 Natural const & iter_
             ) {
                 // Grab the serialization module 
-                Python::PyObjectPtr module(PyImport_ImportModule(
-                    "Optizelle.json.Serialization")); 
+                auto module = Python::capi::PyImport_ImportModule(
+                    "Optizelle.json.Serialization"); 
 
                 // Now, get the serialize routine
-                Python::PyObjectPtr serialize(PyObject_GetAttrString(
-                    module.get(),"serialize"));
+                auto serialize =
+                    Python::capi::PyObject_GetAttrString(module,"serialize");
                 
                 // Make a Python object of the name and iteration 
-                Python::PyObjectPtr name(PyString_FromString(name_.c_str()));
-                Python::PyObjectPtr iter(PyInt_FromSize_t(iter_));
+                auto name = Python::capi::PyString_FromString(name_.c_str());
+                auto iter = Python::capi::PyInt_FromNatural(iter_);
 
                 // Call the serialize routine on the vector
-                Python::PyObjectPtr x_json(
-                    Python::PyObject_CallObject3(
-                        serialize.get(),
-                        const_cast <Python::Vector &> (x).get(),
-                        name.get(),
-                        iter.get()));
-            
-                // Check errors
-                if(x_json.get()==nullptr) {
-                    std::string msg(
-                        "Evaluation of the serialize function failed.\n");
-                    PySys_WriteStderr("%s",msg.c_str());
-                    Python::PyErr_SetString_Optizelle(msg);
-                    throw Optizelle::Python::Exception();
-                }
+                auto x_json = Python::capi::PyObject_CallObject3(
+                    serialize,
+                    x.data,
+                    name,
+                    iter,
+                    __LOC__
+                        + ", evaluation of the serialize function failed");
 
                 // Convert the serialized vector to a string and return it 
-                return std::string(PyString_AsString(x_json.get()));
+                return Python::capi::PyString_AsString(x_json);
             }
 
             static Python::Vector deserialize (
@@ -828,537 +1026,590 @@ namespace Optizelle {
                 std::string const & x_json_
             ) {
                 // Grab the serialization module 
-                Python::PyObjectPtr module(PyImport_ImportModule(
-                    "Optizelle.json.Serialization")); 
+                auto module = Python::capi::PyImport_ImportModule(
+                    "Optizelle.json.Serialization"); 
 
                 // Now, get the deserialize routine
-                Python::PyObjectPtr deserialize(PyObject_GetAttrString(
-                    module.get(),"deserialize"));
+                auto deserialize = Python::capi::PyObject_GetAttrString(
+                    module,"deserialize");
 
                 // Convert the inputed string into Python
-                Python::PyObjectPtr x_json(
-                    PyString_FromString(x_json_.c_str()));
+                auto x_json= Python::capi::PyString_FromString(x_json_.c_str());
 
-                // Allocate memory for a new Python vector
-                Python::Vector x(const_cast <Python::Vector &> (x_).init());
-                
                 // Call the deserialize routine on the reference vector and the
                 // json vector
-                Python::PyObjectPtr x_raw(Python::PyObject_CallObject2(
-                    deserialize.get(),
-                    x.get(),
-                    x_json.get()));
-            
-                // Check errors
-                if(x_raw.get()==nullptr) {
-                    std::string msg(
-                        "Evaluation of the deserialize function failed.\n");
-                    PySys_WriteStderr("%s",msg.c_str());
-                    Python::PyErr_SetString_Optizelle(msg);
-                    throw Optizelle::Python::Exception();
-                }
+                auto x_raw = Python::capi::PyObject_CallObject2(
+                    deserialize,
+                    x_.init().data,
+                    x_json,
+                    __LOC__
+                        + ", evaluation of the deserialize function failed");
 
-                // Move the raw information into the Python vector
-                x.reset(x_raw.release());
-
-                // Move out the new vector
-                return std::move(x);
+                // Return a vector based on this information 
+                return Python::Vector(x_.vs,x_raw);
             }
         };
     }
 
     namespace Python {
-        // Converts Py_ssize_t to Natural
-        Natural Py_ssize_t_to_Natural(Py_ssize_t const & x) {
-            return x < 0 ? 0 : x;
-        }
-
-        // A function to alter the behavior of PyTuple_SetItem so that we don't
-        // have to hand increment the reference to the object since SetItem
-        // takes control of its arguments.
-        void MyPyTuple_SetItem(PyObject * p,Natural const & pos,PyObject * o) {
-            Py_INCREF(o);
-            PyTuple_SetItem(p,pos,o);
-        }
-
-        // Calls a Python function with one argument 
-        PyObject * PyObject_CallObject1(
-            PyObject * const fn,
-            PyObject * const arg1
-        ) {
-            PyObjectPtr args(PyTuple_New(1)); 
-            MyPyTuple_SetItem(args.get(),0,arg1);
-            return PyObject_CallObject(fn,args.get()); 
-        }
-        
-        // Calls a Python function with two arguments
-        PyObject * PyObject_CallObject2(
-            PyObject * const fn,
-            PyObject * const arg1,
-            PyObject * const arg2
-        ) {
-            PyObjectPtr args(PyTuple_New(2)); 
-            MyPyTuple_SetItem(args.get(),0,arg1); 
-            MyPyTuple_SetItem(args.get(),1,arg2); 
-            return PyObject_CallObject(fn,args.get()); 
-        }
-        
-        // Calls a Python function with three arguments
-        PyObject * PyObject_CallObject3(
-            PyObject * const fn,
-            PyObject * const arg1,
-            PyObject * const arg2,
-            PyObject * const arg3
-        ) {
-            PyObjectPtr args(PyTuple_New(3)); 
-            MyPyTuple_SetItem(args.get(),0,arg1); 
-            MyPyTuple_SetItem(args.get(),1,arg2); 
-            MyPyTuple_SetItem(args.get(),2,arg3); 
-            return PyObject_CallObject(fn,args.get()); 
-        }
-        
-        // Calls a Python function with four arguments
-        PyObject * PyObject_CallObject4(
-            PyObject * const fn,
-            PyObject * const arg1,
-            PyObject * const arg2,
-            PyObject * const arg3,
-            PyObject * const arg4
-        ) {
-            PyObjectPtr args(PyTuple_New(4)); 
-            MyPyTuple_SetItem(args.get(),0,arg1); 
-            MyPyTuple_SetItem(args.get(),1,arg2); 
-            MyPyTuple_SetItem(args.get(),2,arg3); 
-            MyPyTuple_SetItem(args.get(),3,arg4); 
-            return PyObject_CallObject(fn,args.get()); 
-        }
-
-        // Used to catch Python exceptions
-        Exception::Exception() {}
-
-        // Deep copy of a Python object and return the result
-        PyObject * deepcopy(PyObject * const in) {
-            // Grab the deepcopy function from the copy module 
-            PyObjectPtr module(PyImport_ImportModule("copy")); 
-            PyObjectPtr deepcopy(PyObject_GetAttrString(module.get(),
-                "deepcopy")); 
-
-            // Call deepcopy on vec and return the result
-            PyObjectPtr args(PyTuple_New(1)); 
-            MyPyTuple_SetItem(args.get(),0,in); 
-            return PyObject_CallObject(
-                deepcopy.get(),
-                args.get()); 
-        }
-
-        // On construction, initialize the pointer and figure out if
-        // we're capturing the pointer or attaching to it
+        // Grab the pointer 
         PyObjectPtr::PyObjectPtr(
             PyObject * const ptr_,
-            PyObjectPtrMode::t const mode 
+            PyObjectPtr::Mode const & mode
         ) : ptr(ptr_) {
-            switch(mode) {
-            case PyObjectPtrMode::Capture:
-                break;
-            case PyObjectPtrMode::Attach:
+            // If we have a borrowed reference, increase the reference count
+            if(mode==PyObjectPtr::Borrowed)
                 Py_XINCREF(ptr);
-                break;
-            }
-        }
-            
-        // Move constructor
-        PyObjectPtr::PyObjectPtr(PyObjectPtr&& ptr_) noexcept
-            : ptr(ptr_.release()) {}
-        
-        // Move assignment operator
-        PyObjectPtr const & PyObjectPtr::operator=(PyObjectPtr&& ptr_)noexcept {
-            ptr=ptr_.release();
-            return *this;
         }
 
-        // For a reset, we decrement the pointer and then assign a new
-        // value.
-        void PyObjectPtr::reset(PyObject * const ptr_) {
-            Py_XDECREF(ptr);
-            ptr=ptr_;
+        // Copy semantics 
+        PyObjectPtr::PyObjectPtr(PyObjectPtr const & p) : ptr(p.ptr) {
+            Py_XINCREF(ptr);
         }
+        PyObjectPtr & PyObjectPtr::operator = (PyObjectPtr& p) {
+            // Decrease the reference count on this object first
+            if(ptr)
+                Py_XDECREF(ptr);
 
-        // For an attach, we decrement the pointer, assign a new value,
-        // and then increment the reference count.
-        void PyObjectPtr::attach(PyObject * const ptr_) {
-            Py_XDECREF(ptr);
-            ptr=ptr_;
+            // Then, grab the new pointer and increase the reference to that
+            ptr =p.ptr;
             Py_XINCREF(ptr);
         }
 
+        // Move semantics
+        PyObjectPtr::PyObjectPtr(PyObjectPtr && p) : ptr(p.ptr) {
+            p.ptr = nullptr;
+        }
+        PyObjectPtr & PyObjectPtr::operator = (PyObjectPtr && p) { 
+            // Decrease the reference count on this object first
+            if(ptr)
+                Py_XDECREF(ptr);
+
+            // Then, grab the new pointer
+            ptr=p.ptr;
+            p.ptr = nullptr;
+        }
+
         // On a get, we simply return the pointer.
-        PyObject * PyObjectPtr::get() {
+        PyObject * PyObjectPtr::get() const {
             return ptr;
         }
-    
-        // On a release, we return the underlying pointer and then clear
-        // the vector.  This will prevent a decrement later.
-        PyObject * PyObjectPtr::release() {
-            PyObject * ptr_=ptr;
-            ptr=nullptr;
-            return ptr_;
-        }
 
-        // On destruction, decrement the Python reference counter and do
-        // not delete the pointer.
+        // On destruction, decrement the reference count 
         PyObjectPtr::~PyObjectPtr() {
-            Py_XDECREF(ptr);
-            ptr=nullptr;
+            if(ptr)
+                Py_XDECREF(ptr);
         }
-            
-        // On construction, we just grab the pointer to the messaging object
-        Messaging::Messaging(
-            PyObject * const ptr_,
-            PyObjectPtrMode::t const mode
-        ) : PyObjectPtr(ptr_,mode) {}
-            
-        // Move constructor
-        Messaging::Messaging(Messaging && msg) noexcept
-            : PyObjectPtr(msg.release()) {}
-
-        // Move assignment operator
-        Messaging const & Messaging::operator = (Messaging && msg) noexcept {
-            ptr = msg.release();
-            return *this;
-        }
-            
-        // Prints a message
-        void Messaging::print(std::string const & msg_) const {
-            // Call the print function on msg
-            PyObjectPtr print(PyObject_GetAttrString(ptr,"print"));
-            PyObjectPtr msg(PyString_FromString(msg_.c_str()));
-            PyObjectPtr ret(PyObject_CallObject1(
-                print.get(),
-                msg.get()));
-
-            // Check errors
-            if(ret.get()==nullptr)
-                error("Evaluation of the print function in the Messaging "
-                    "object failed.");
-        }
-
-        // Prints an error
-        void Messaging::error(std::string const & msg_) const {
-            // Call the error function on msg
-            PyObjectPtr error(PyObject_GetAttrString(ptr,"error"));
-            PyObjectPtr msg(PyString_FromString(msg_.c_str()));
-            PyObjectPtr ret(PyObject_CallObject1(
-                error.get(),
-                msg.get()));
-
-            // Check errors
-            if(ret.get()==nullptr) {
-                std::string msg2="Evaluation of the error function in the "
-                    "Messaging object failed.\n";
-                PySys_WriteStderr("%s",msg2.c_str());
-                PyErr_SetString_Optizelle(msg2);
-                throw Exception();
+        namespace capi {
+            PyObjectPtr PyImport_ImportModule(const char *name) {
+                auto ret = ::PyImport_ImportModule(name); 
+                if(!ret)
+                    throw Python::Exception::t(__LOC__
+                        + ", unable to open the module " + name);
+                else
+                    return ret;
             }
 
-            // Raise a Python exception
-            PyErr_SetString_Optizelle(msg_);
-            throw Exception();
+            PyObjectPtr PyString_FromString(const char *v) {
+                if(!v)
+                    throw Python::Exception::t(__LOC__
+                        + ", can't convert a nullstring into a Python string");
+                auto ret = ::PyString_FromString(v); 
+                if(!ret)
+                    throw Python::Exception::t(__LOC__
+                        + ", unable to convert the string " + v 
+                        + " into a Python string") ;
+                else
+                    return ret;
+            }
+            std::string PyString_AsString(PyObjectPtr const & string) {
+                auto ret = ::PyString_AsString(string.get()); 
+                if(!ret)
+                    throw Python::Exception::t(__LOC__
+                        + ", unable to convert a Python object into a string");
+                else
+                    return std::string(ret);
+            }
+
+            Natural PyInt_AsNatural(PyObjectPtr const & io) {
+                return PyInt_AsSsize_t(io.get());
+            }
+            PyObjectPtr PyInt_FromNatural(Natural const & ival) {
+                return PyInt_FromSize_t(ival);
+            }
+
+            PyObjectPtr PyFloat_FromDouble(double v) {
+                auto ret = ::PyFloat_FromDouble(v);
+                if(!ret)
+                    throw Python::Exception::t(__LOC__
+                        + ", unable to convert the float " + std::to_string(v)
+                        + " in a Python object");
+                else
+                    return ret;
+            }
+            double PyFloat_AsDouble(PyObjectPtr const & pyfloat) {
+                auto x = ::PyFloat_AsDouble(pyfloat.get());
+                if(::PyErr_Occurred())
+                    throw Python::Exception::t(__LOC__
+                        + ", unable to convert object into a float");
+                return x;
+            }
+
+            PyObjectPtr PyObject_GetAttrString(
+                PyObjectPtr const & o,
+                const char *attr_name
+            ) {
+                auto ret = ::PyObject_GetAttrString(o.get(),attr_name);
+                if(!ret)
+                    throw Python::Exception::t(__LOC__
+                        + ", unable to get the attribute " + attr_name
+                        + " in a Python object");
+                else
+                    return ret;
+            }
+            void PyObject_SetAttrString(
+                PyObjectPtr & o,
+                const char * attr_name,
+                PyObjectPtr const & v
+            ) {
+                auto ret = PyObject_SetAttrString(o.get(),attr_name,v.get());
+                if(ret==-1)
+                    throw Python::Exception::t(__LOC__
+                        + ", unable set the attribute " + attr_name 
+                        + " in a Python object");
+            }
+            PyObjectPtr PyObject_CallObject1(
+                PyObjectPtr const & fn,
+                PyObjectPtr const & arg1,
+                std::string const & errmsg
+            ) {
+                auto args = capi::PyTuple_New(1);
+                capi::PyTuple_SetItem(args,0,arg1);
+                auto ret = ::PyObject_CallObject(fn.get(),args.get()); 
+                if(!ret)
+                    throw Python::Exception::t(errmsg);
+                else
+                    return ret;
+            }
+            PyObjectPtr PyObject_CallObject2(
+                PyObjectPtr const & fn,
+                PyObjectPtr const & arg1,
+                PyObjectPtr const & arg2,
+                std::string const & errmsg
+            ) {
+                auto args = capi::PyTuple_New(2);
+                capi::PyTuple_SetItem(args,0,arg1);
+                capi::PyTuple_SetItem(args,1,arg2);
+                auto ret = ::PyObject_CallObject(fn.get(),args.get()); 
+                if(!ret)
+                    throw Python::Exception::t(errmsg);
+                else
+                    return ret;
+            }
+            PyObjectPtr PyObject_CallObject3(
+                PyObjectPtr const & fn,
+                PyObjectPtr const & arg1,
+                PyObjectPtr const & arg2,
+                PyObjectPtr const & arg3,
+                std::string const & errmsg
+            ) {
+                auto args = capi::PyTuple_New(3);
+                capi::PyTuple_SetItem(args,0,arg1);
+                capi::PyTuple_SetItem(args,1,arg2);
+                capi::PyTuple_SetItem(args,2,arg3);
+                auto ret = ::PyObject_CallObject(fn.get(),args.get()); 
+                if(!ret)
+                    throw Python::Exception::t(errmsg);
+                else
+                    return ret;
+            }
+            PyObjectPtr PyObject_CallObject4(
+                PyObjectPtr const & fn,
+                PyObjectPtr const & arg1,
+                PyObjectPtr const & arg2,
+                PyObjectPtr const & arg3,
+                PyObjectPtr const & arg4,
+                std::string const & errmsg
+            ) {
+                auto args = capi::PyTuple_New(4);
+                capi::PyTuple_SetItem(args,0,arg1);
+                capi::PyTuple_SetItem(args,1,arg2);
+                capi::PyTuple_SetItem(args,2,arg3);
+                capi::PyTuple_SetItem(args,3,arg4);
+                auto ret = ::PyObject_CallObject(fn.get(),args.get()); 
+                if(!ret)
+                    throw Python::Exception::t(errmsg);
+                else
+                    return ret;
+            }
+
+            PyObjectPtr PyTuple_New(Py_ssize_t const & len) {
+                auto ret = ::PyTuple_New(len);
+                if(!ret)
+                    throw Python::Exception::t(__LOC__
+                        + ", unable to create a tuple of size "
+                        + std::to_string(len) + " in a Python tuple");
+                else
+                    return ret;
+            }
+            void PyTuple_SetItem(
+                PyObjectPtr const & p,
+                Py_ssize_t const & pos,
+                PyObjectPtr const & o
+            ) {
+                Py_INCREF(o.get());
+                auto ret = ::PyTuple_SetItem(p.get(),pos,o.get());
+                if(ret)
+                    throw Python::Exception::t(__LOC__
+                        + ", error setting an item at position "
+                        + std::to_string(pos) + " in a Python tuple");
+            }
+            PyObjectPtr PyTuple_GetItem(
+                PyObjectPtr const & p,
+                Py_ssize_t const & pos
+            ) {
+                auto ret = ::PyTuple_GetItem(p.get(),pos);
+                if(!ret)
+                    throw Python::Exception::t(__LOC__
+                        + ", error getting an item at position "
+                        + std::to_string(pos) + " in a Python tuple");
+                return PyObjectPtr(ret,PyObjectPtr::Borrowed);
+            }
+            PyObjectPtr PyTuple_Pack_2(
+                PyObjectPtr const & item1,
+                PyObjectPtr const & item2
+            ) {
+                auto ret = ::PyTuple_Pack(2,item1.get(),item2.get());
+                if(!ret)
+                    throw Python::Exception::t(__LOC__
+                        + ", unable to create a tuple with two items"); 
+                return ret;
+            }
+
+            PyObjectPtr PyList_New(Py_ssize_t const & len) {
+                auto ret = ::PyList_New(len);
+                if(!ret)
+                    throw Python::Exception::t(__LOC__
+                        + ", error creating a list of size"
+                        + std::to_string(len));
+                return ret;
+            }
+            void PyList_Append(PyObjectPtr & list, PyObjectPtr const & item) {
+                auto ret = ::PyList_Append(list.get(),item.get());
+                if(ret == -1)
+                    throw Python::Exception::t(__LOC__
+                        + ", error appending an item to a list");
+            }
+            Natural PyList_Size(PyObjectPtr const & list) {
+                auto ret = PyList_Size(list.get());
+                return ret  < 0 ? 0 : ret;
+            }
+            PyObjectPtr PyList_GetItem(
+                PyObjectPtr const & list,
+                Py_ssize_t const & index
+            ) {
+                auto ret = PyList_GetItem(list.get(),index);
+                if(!ret)
+                    throw Python::Exception::t(__LOC__
+                        + ", unable to get item " + std::to_string(index)
+                        + " in a list");
+                return PyObjectPtr(ret,PyObjectPtr::Borrowed);
+            }
+
+            // Calls the Optizelle exception with a string
+            void PyErr_SetString_Optizelle(std::string const & msg) {
+                auto module = capi::PyImport_ImportModule("Optizelle"); 
+                auto exception = capi::PyObject_GetAttrString(
+                    module,
+                    "Exception");
+                auto t = capi::PyObject_GetAttrString(
+                    exception,
+                    "t");
+                ::PyErr_SetString(t.get(),msg.c_str());
+            }
+
+            // Deep copy of a Python object and return the result
+            PyObjectPtr deepcopy(PyObjectPtr const & in) {
+                // Grab the deepcopy function from the copy module 
+                auto module = capi::PyImport_ImportModule("copy"); 
+                auto deepcopy = capi::PyObject_GetAttrString(module,"deepcopy");
+
+                // Call deepcopy on in and return the result
+                return capi::PyObject_CallObject1(
+                    deepcopy,
+                    in,
+                    __LOC__ + ", failed to deep copy an object");
+            }
+
+            // Converts an Optizelle enumerated type to a PyObject * 
+            PyObjectPtr enumToPyObject(
+                std::string const & type,
+                std::string const & member 
+            ) {
+                // Grab the enumerated type object from the Optizelle module.
+                // We just use simple classes in Python to represent the
+                // enumerated type
+                auto module = capi::PyImport_ImportModule("Optizelle"); 
+                auto pyclass= capi::PyObject_GetAttrString(module,type.c_str());
+
+                // Grab and return the member
+                return PyObject_GetAttrString(pyclass.get(),member.c_str());
+            }
+           
+            // Converts an Optizelle enumerated type to a Natural based on
+            // the scheme in the Python enumerated type
+            Natural enumToNatural(
+                std::string const & type,
+                std::string const & member 
+            ) {
+                // Grab the PyObject * for the type and member requested
+                auto obj = capi::enumToPyObject(type,member);
+
+                // Convert and return the member
+                return capi::PyInt_AsNatural(obj);
+            }
         }
 
-        // Create a vector with the appropriate messaging and vector space 
-        Vector::Vector(
-            PyObject * const msg_,
-            PyObject * const vs_,
-            PyObject * const vec,
-            PyObjectPtrMode::t mode
-        ) : 
-            PyObjectPtr(vec,mode),
-            msg(msg_,PyObjectPtrMode::Attach),
-            vs(vs_,PyObjectPtrMode::Attach)
-        {}
-            
-        // Create a move constructor so we can interact with stl objects
-        Vector::Vector(Vector && vec) noexcept :
-            PyObjectPtr(std::move(vec)),
-            msg(std::move(vec.msg)),
-            vs(std::move(vec.vs))
-        { }
-            
-        // Move assignment operator
-        Vector const & Vector::operator = (Vector && vec) noexcept {
-            ptr = vec.release(); 
-            msg = std::move(vec.msg);
-            vs = std::move(vec.vs);
-            return *this;
+        // A messaging utility that hooks directly into Python
+        namespace Messaging {
+            Optizelle::Messaging::t python(PyObjectPtr const & print) {
+                return [print](std::string const & msg_) {
+                    // Call the print function
+                    auto msg = capi::PyString_FromString(msg_.c_str());
+                    auto ret = capi::PyObject_CallObject1(
+                        print,
+                        msg,
+                         __LOC__
+                            + ", evaluation of the Messaging function failed");
+                };
+            }
         }
 
+        // Create a vector with the appropriate vector space 
+        Vector::Vector(PyObjectPtr const & vs_,PyObjectPtr const & vec_) :
+            vs(vs_), data(vec_) {}
+            
         // Memory allocation and size setting 
-        Vector Vector::init() { 
+        Vector Vector::init() const {
             // Call the init function on the internal and store in y 
-            PyObjectPtr init(PyObject_GetAttrString(vs.get(),"init"));
-            PyObjectPtr y(PyObject_CallObject1(
-                init.get(),
-                get()));
-
-            // Check errors
-            if(y.get()==nullptr)
-                msg.error(
-                    "Evaluation of the vector space function init failed.");
+            auto init = capi::PyObject_GetAttrString(vs,"init");
+            auto y = capi::PyObject_CallObject1(
+                init,
+                data,
+                __LOC__
+                    + ", evaluation of the vector space function init failed");
 
             // Create and return a new vector based on y
-            return std::move(Vector(msg.get(),vs.get(),y.release()));
-        } 
+            return Vector(vs,y);
+        }
         
         // y <- x (Shallow.  No memory allocation.)  Internal is y.
-        void Vector::copy(Vector & x) { 
+        void Vector::copy(Vector const & x) { 
             // Call the copy function on x and the internal 
-            PyObjectPtr copy(PyObject_GetAttrString(vs.get(),"copy"));
-            PyObjectPtr ret(PyObject_CallObject2(
-                copy.get(),
-                x.get(),
-                get()));
-
-            // Check errors
-            if(ret.get()==nullptr)
-                msg.error(
-                    "Evaluation of the vector space function copy failed.");
-        } 
+            auto copy = capi::PyObject_GetAttrString(vs,"copy");
+            capi::PyObject_CallObject2(
+                copy,
+                x.data,
+                data,
+                __LOC__
+                    + ", evaluation of the vector space function copy failed");
+        }
 
         // x <- alpha * x.  Internal is x.
         void Vector::scal(double const & alpha_) { 
             // Call the scal function on alpha and the internal storage 
-            PyObjectPtr scal(PyObject_GetAttrString(vs.get(),"scal"));
-            PyObjectPtr alpha(PyFloat_FromDouble(alpha_));
-            PyObjectPtr ret(PyObject_CallObject2(
-                scal.get(),
-                alpha.get(),
-                get()));
-
-            // Check errors
-            if(ret.get()==nullptr)
-                msg.error(
-                    "Evaluation of the vector space function scal failed.");
+            auto scal = capi::PyObject_GetAttrString(vs,"scal");
+            auto alpha = capi::PyFloat_FromDouble(alpha_);
+            capi::PyObject_CallObject2(
+                scal,
+                alpha,
+                data,
+                __LOC__
+                    + ", evaluation of the vector space function scal failed");
         } 
 
         // x <- 0.  Internal is x. 
         void Vector::zero() { 
             // Call the zero function on this vector.
-            PyObjectPtr zero(PyObject_GetAttrString(vs.get(),"zero"));
-            PyObjectPtr ret(PyObject_CallObject1(
-                zero.get(),
-                get()));
-
-            // Check errors
-            if(ret.get()==nullptr)
-                msg.error(
-                    "Evaluation of the vector space function zero failed.");
-        } 
+            auto zero = capi::PyObject_GetAttrString(vs,"zero");
+            capi::PyObject_CallObject1(
+                zero,
+                data,
+                __LOC__
+                    + ", evaluation of the vector space function zero failed");
+        }
 
         // y <- alpha * x + y.   Internal is y.
-        void Vector::axpy(double const & alpha_,Vector & x) { 
+        void Vector::axpy(double const & alpha_,Vector const & x) { 
             // Call the axpy function on alpha, x, and the internal storage.
-            PyObjectPtr axpy(PyObject_GetAttrString(vs.get(),"axpy"));
-            PyObjectPtr alpha(PyFloat_FromDouble(alpha_));
-            PyObjectPtr ret(PyObject_CallObject3(
-                axpy.get(),
-                alpha.get(),
-                x.get(),
-                get()));
-           
-            // Check errors
-            if(ret.get()==nullptr)
-                msg.error(
-                    "Evaluation of the vector space function axpy failed.");
-        } 
+            auto axpy = capi::PyObject_GetAttrString(vs,"axpy");
+            auto alpha = capi::PyFloat_FromDouble(alpha_);
+            capi::PyObject_CallObject3(
+                axpy,
+                alpha,
+                x.data,
+                data,
+                __LOC__
+                    + ", evaluation of the vector space function axpy failed");
+        }
 
         // innr <- <x,y>.  Internal is y.
-        double Vector::innr(Vector & x) { 
+        double Vector::innr(Vector const & x) const {
             // Call the innr function on x and the internal.  Store in z. 
-            PyObjectPtr innr(PyObject_GetAttrString(vs.get(),"innr"));
-            PyObjectPtr z(PyObject_CallObject2(
-                innr.get(),
-                x.get(),
-                get()));
-
-            // Check errors
-            if(z.get()==nullptr)
-                msg.error(
-                    "Evaluation of the vector space function innr failed.");
+            auto innr = capi::PyObject_GetAttrString(vs,"innr");
+            auto z = capi::PyObject_CallObject2(
+                innr,
+                x.data,
+                data,
+                __LOC__
+                    + ", evaluation of the vector space function innr failed");
 
             // Return the result 
-            return PyFloat_AsDouble(z.get()); 
-        } 
+            return capi::PyFloat_AsDouble(z); 
+        }
 
         // x <- random.  Internal is x. 
         void Vector::rand() { 
             // Call the rand function on this vector.
-            PyObjectPtr rand(PyObject_GetAttrString(vs.get(),"rand"));
-            PyObjectPtr ret(PyObject_CallObject1(
-                rand.get(),
-                get()));
-
-            // Check errors
-            if(ret.get()==nullptr)
-                msg.error(
-                    "Evaluation of the vector space function rand failed.");
-        } 
+            auto rand = capi::PyObject_GetAttrString(vs,"rand");
+            capi::PyObject_CallObject1(
+                rand,
+                data,
+                __LOC__
+                    + ", evaluation of the vector space function rand failed");
+        }
 
         // Jordan product, z <- x o y.  Internal is z.
-        void Vector::prod(Vector & x,Vector & y) { 
+        void Vector::prod(Vector const & x,Vector const & y) { 
             // Call the prod function on x, y, and the internal 
-            PyObjectPtr prod(PyObject_GetAttrString(vs.get(),"prod"));
-            PyObjectPtr ret(PyObject_CallObject3(
-                prod.get(),
-                x.get(),
-                y.get(),
-                get()));
-
-            // Check errors
-            if(get()==nullptr)
-                msg.error(
-                    "Evaluation of the vector space function prod failed.");
-        } 
+            auto prod = capi::PyObject_GetAttrString(vs,"prod");
+            capi::PyObject_CallObject3(
+                prod,
+                x.data,
+                y.data,
+                data,
+                __LOC__
+                    + ", evaluation of the vector space function prod failed");
+        }
 
         // Identity element, x <- e such that x o e = x .  Internal is x.
-        void Vector::id() { 
+        void Vector::id() {
             // Call the id function on the internal.
-            PyObjectPtr id(PyObject_GetAttrString(vs.get(),"id"));
-            PyObjectPtr ret(PyObject_CallObject1(
-                id.get(),
-                get()));
-
-            // Check errors
-            if(ret.get()==nullptr)
-                msg.error(
-                    "Evaluation of the vector space function id failed.");
+            auto id = capi::PyObject_GetAttrString(vs,"id");
+            capi::PyObject_CallObject1(
+                id,
+                data,
+                __LOC__
+                    + ", evaluation of the vector space function id failed");
         } 
 
         // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y.
         // Internal is z.
-        void Vector::linv(Vector& x, Vector& y) { 
+        void Vector::linv(Vector const & x, Vector const & y) { 
             // Call the linv function on x, y, and the internal
-            PyObjectPtr linv(PyObject_GetAttrString(vs.get(),"linv"));
-            PyObjectPtr ret(PyObject_CallObject3(
-                linv.get(),
-                x.get(),
-                y.get(),
-                get()));
-
-            // Check errors
-            if(ret.get()==nullptr)
-                msg.error(
-                    "Evaluation of the vector space function linv failed.");
-        } 
+            auto linv = capi::PyObject_GetAttrString(vs,"linv");
+            capi::PyObject_CallObject3(
+                linv,
+                x.data,
+                y.data,
+                data,
+                __LOC__
+                    + ", evaluation of the vector space function linv failed");
+        }
 
         // Barrier function, barr <- barr(x) where x o grad barr(x) = e.
         // Internal is x.
-        double Vector::barr() { 
+        double Vector::barr() const {
             // Call the barr function on the internal.  Store in z.
-            PyObjectPtr barr(PyObject_GetAttrString(vs.get(),"barr"));
-            PyObjectPtr z(PyObject_CallObject1(
-                barr.get(),
-                get()));
-
-            // Check errors
-            if(z.get()==nullptr)
-                msg.error(
-                    "Evaluation of the vector space function barr failed.");
+            auto barr = capi::PyObject_GetAttrString(vs,"barr");
+            auto z = capi::PyObject_CallObject1(
+                barr,
+                data,
+                __LOC__
+                    + ", evaluation of the vector space function barr failed");
 
             // Return the result 
-            return PyFloat_AsDouble(z.get());
-        } 
+            return capi::PyFloat_AsDouble(z);
+        }
 
         // Line search, srch <- argmax {alpha in Real >= 0 : alpha x + y >= 0} 
         // where y > 0.  Internal is y.
-        double Vector::srch(Vector& x) {  
+        double Vector::srch(Vector const & x) const {
             // Call the srch function on x and the internal.  Store in z.
-            PyObjectPtr srch(PyObject_GetAttrString(vs.get(),"srch"));
-            PyObjectPtr z(PyObject_CallObject2(
-                srch.get(),
-                x.get(),
-                get()));
-
-            // Check errors
-            if(z.get()==nullptr)
-                msg.error(
-                    "Evaluation of the vector space function srch failed.");
+            auto srch = capi::PyObject_GetAttrString(vs,"srch");
+            auto z = capi::PyObject_CallObject2(
+                srch,
+                x.data,
+                data,
+                __LOC__
+                    + ", evaluation of the vector space function srch failed");
 
             // Return the result 
-            return PyFloat_AsDouble(z.get());
+            return capi::PyFloat_AsDouble(z);
         } 
 
         // Symmetrization, x <- symm(x) such that L(symm(x)) is a symmetric
         // operator.  Internal is x.
         void Vector::symm() { 
             // Call the symm function on the internal.
-            PyObjectPtr symm(PyObject_GetAttrString(vs.get(),"symm"));
-            PyObjectPtr ret(PyObject_CallObject1(
-                symm.get(),
-                get()));
-
-            // Check errors
-            if(ret.get()==nullptr)
-                msg.error(
-                    "Evaluation of the vector space function symm failed.");
-
-        } 
+            auto symm = capi::PyObject_GetAttrString(vs,"symm");
+            capi::PyObject_CallObject1(
+                symm,
+                data,
+                __LOC__
+                    + ", evaluation of the vector space function symm failed");
+        }
         
         // Converts (copies) a value into Python.  This assumes memory
         // has been allocated both in the vector as well as Python.
-        void Vector::toPython(PyObject * const ptr) {
+        void Vector::toPython(PyObjectPtr const & ptr) const {
             // Call the copy function on the internal and x
-            PyObjectPtr copy(PyObject_GetAttrString(vs.get(),"copy"));
-            PyObjectPtr ret(PyObject_CallObject2(
-                copy.get(),
-                get(),
-                ptr));
-
-            // Check errors
-            if(ret.get()==nullptr)
-                msg.error(
-                    "Evaluation of the vector space function copy failed.");
-        } 
+            auto copy = capi::PyObject_GetAttrString(vs,"copy");
+            capi::PyObject_CallObject2(
+                copy,
+                data,
+                ptr,
+                __LOC__
+                    + ", evaluation of the vector space function copy failed");
+        }
         
         // Converts (copies) a value from Python.  This assumes memory
         // has been allocated both in the vector as well as Python.
-        void Vector::fromPython(PyObject * const ptr) {
+        void Vector::fromPython(PyObjectPtr const & ptr) {
             // Call the copy function on ptr and the internal 
-            PyObjectPtr copy(PyObject_GetAttrString(vs.get(),"copy"));
-            PyObjectPtr ret(PyObject_CallObject2(
-                copy.get(),
+            auto copy = capi::PyObject_GetAttrString(vs,"copy");
+            capi::PyObject_CallObject2(
+                copy,
                 ptr,
-                get()));
-
-            // Check errors
-            if(ret.get()==nullptr)
-                msg.error(
-                    "Evaluation of the vector space function copy failed.");
-        } 
+                data,
+                __LOC__
+                    + ", evaluation of the vector space function copy failed");
+        }
             
         // Convert a C++ state to a Python state 
         template <>
         void State <PyUnconstrained>::toPython(
             typename PyUnconstrained::State::t const & state
         ) {
-            Unconstrained::State::toPython(state,ptr);
+            Unconstrained::State::toPython(state,*this);
         }
         template <>
         void State <PyEqualityConstrained>::toPython(
             typename PyEqualityConstrained::State::t const & state
         ) {
-            EqualityConstrained::State::toPython(state,ptr);
+            EqualityConstrained::State::toPython(state,*this);
         }
         template <>
         void State <PyInequalityConstrained>::toPython(
             typename PyInequalityConstrained::State::t const & state
         ) {
-            InequalityConstrained::State::toPython(state,ptr);
+            InequalityConstrained::State::toPython(state,*this);
         }
         template <>
         void State <PyConstrained>::toPython(
             typename PyConstrained::State::t const & state
         ) {
-            Constrained::State::toPython(state,ptr);
+            Constrained::State::toPython(state,*this);
         }
 
         // Convert a Python state to C++ 
@@ -1366,25 +1617,25 @@ namespace Optizelle {
         void State <PyUnconstrained>::fromPython(
             typename PyUnconstrained::State::t & state
         ) {
-            Unconstrained::State::fromPython(ptr,state);
+            Unconstrained::State::fromPython(data,state);
         }
         template <>
         void State <PyEqualityConstrained>::fromPython(
             typename PyEqualityConstrained::State::t & state
         ) {
-            EqualityConstrained::State::fromPython(ptr,state);
+            EqualityConstrained::State::fromPython(data,state);
         }
         template <>
         void State <PyInequalityConstrained>::fromPython(
             typename PyInequalityConstrained::State::t & state
         ) {
-            InequalityConstrained::State::fromPython(ptr,state);
+            InequalityConstrained::State::fromPython(data,state);
         }
         template <>
         void State <PyConstrained>::fromPython(
             typename PyConstrained::State::t & state
         ) {
-            Constrained::State::fromPython(ptr,state);
+            Constrained::State::fromPython(data,state);
         }
         
         // Convert a Python bundle to C++ 
@@ -1393,54 +1644,46 @@ namespace Optizelle {
             typename PyUnconstrained::Functions::t & fns 
         ) {
             Unconstrained::Functions::fromPython(
-                msg.get(),ptr,pystate.get(),state,fns);
+                *this,pystate,state,fns);
         }
         template <>
         void Functions <PyEqualityConstrained>::fromPython(
             typename PyEqualityConstrained::Functions::t & fns 
         ) {
             EqualityConstrained::Functions::fromPython(
-                msg.get(),ptr,pystate.get(),state,fns);
+                *this,pystate,state,fns);
         }
         template <>
         void Functions <PyInequalityConstrained>::fromPython(
             typename PyInequalityConstrained::Functions::t & fns 
         ) {
             InequalityConstrained::Functions::fromPython(
-                msg.get(),ptr,pystate.get(),state,fns);
+                *this,pystate,state,fns);
         }
         template <>
         void Functions <PyConstrained>::fromPython(
             typename PyConstrained::Functions::t & fns 
         ) {
             Constrained::Functions::fromPython(
-                msg.get(),ptr,pystate.get(),state,fns);
+                *this,pystate,state,fns);
         }
 
         // Create a function 
-        ScalarValuedFunction::ScalarValuedFunction(
-            PyObject * const msg_,
-            PyObject * const f,
-            PyObjectPtrMode::t mode
-        ) :
-            PyObjectPtr(f,mode),
-            msg(msg_,PyObjectPtrMode::Attach)
-        { }
+        ScalarValuedFunction::ScalarValuedFunction(PyObjectPtr const & data_)
+            : data(data_) {}
 
         // <- f(x) 
         double ScalarValuedFunction::eval(Vector const & x) const { 
             // Call the objective function on x.  Store in z.
-            PyObjectPtr eval(PyObject_GetAttrString(ptr,"eval"));
-            PyObjectPtr z(PyObject_CallObject1(
-                eval.get(),
-                const_cast <Vector &> (x).get()));
-
-            // Check errors
-            if(z.get()==nullptr)
-                msg.error("Evaluation of the objective f failed.");
+            auto eval = capi::PyObject_GetAttrString(data,"eval");
+            auto ret = capi::PyObject_CallObject1(
+                eval,
+                x.data,
+                __LOC__
+                    + ", evaluation of the objective f failed");
 
             // Return the result
-            return PyFloat_AsDouble(z.get());
+            return capi::PyFloat_AsDouble(ret);
         }
 
         // grad = grad f(x) 
@@ -1449,15 +1692,13 @@ namespace Optizelle {
             Vector & grad
         ) const { 
             // Call the gradient function on x and grad. 
-            PyObjectPtr pygrad(PyObject_GetAttrString(ptr,"grad"));
-            PyObjectPtr ret(PyObject_CallObject2(
-                pygrad.get(),
-                const_cast <Vector &>(x).get(),
-                grad.get()));
-
-            // Check errors
-            if(ret.get()==nullptr)
-                msg.error("Evaluation of the gradient of f failed.");
+            auto pygrad = capi::PyObject_GetAttrString(data,"grad");
+            capi::PyObject_CallObject2(
+                pygrad,
+                x.data,
+                grad.data,
+                __LOC__
+                    + ", evaluation of the gradient of f failed");
         }
 
         // H_dx = hess f(x) dx 
@@ -1467,156 +1708,94 @@ namespace Optizelle {
             Vector & H_dx
         ) const {
             // Call the hessvec function on x, dx, and H_dx.
-            PyObjectPtr hessvec(PyObject_GetAttrString(ptr,"hessvec"));
-            PyObjectPtr ret(PyObject_CallObject3(
-                hessvec.get(),
-                const_cast <Vector &> (x).get(),
-                const_cast <Vector &> (dx).get(),
-                H_dx.get()));
-
-            // Check errors
-            if(ret.get()==nullptr)
-                msg.error("Evaluation of the Hessian-vector product"
-                    " of f failed.");
+            auto hessvec = capi::PyObject_GetAttrString(data,"hessvec");
+            capi::PyObject_CallObject3(
+                hessvec,
+                x.data,
+                dx.data,
+                H_dx.data,
+                __LOC__
+                    + ", evaluation of the Hessian-vector product of f failed");
         }
 
         // Create a function 
         VectorValuedFunction::VectorValuedFunction(
             std::string const & name_,
-            PyObject * const msg_,
-            PyObject * const f,
-            PyObjectPtrMode::t mode
+            PyObjectPtr const & data_
         ) :
-            PyObjectPtr(f,mode),
-            msg(msg_,PyObjectPtrMode::Attach),
-            name(name_)
+            name(name_),
+            data(data_)
         {}
 
         // y=f(x)
         void VectorValuedFunction::eval(
-            Vector const & x,
+            X_Vector const & x,
             VectorValuedFunction::Y_Vector& y
         ) const {
             // Call the evaluate function on x and y.
-            PyObjectPtr eval(PyObject_GetAttrString(ptr,"eval"));
-            PyObjectPtr ret(PyObject_CallObject2(
-                eval.get(),
-                const_cast <Vector &> (x).get(),
-                y.get()));
-
-            // Check errors
-            if(ret.get()==nullptr) {
-                std::stringstream ss;
-                ss << "Evaluation of the constraint " << name << " failed.";
-                msg.error(ss.str());
-            }
+            auto eval = capi::PyObject_GetAttrString(data,"eval");
+            capi::PyObject_CallObject2(
+                eval,
+                x.data,
+                y.data,
+                __LOC__
+                    + ", evaluation of the constraint " + name + " failed");
         }
 
         // y=f'(x)dx 
         void VectorValuedFunction::p(
-            Vector const & x,
-            Vector const & dx,
-            VectorValuedFunction::Y_Vector& y
+            X_Vector const & x,
+            X_Vector const & dx,
+            Y_Vector & y
         ) const {
             // Call the prime function on x, dx, and y
-            PyObjectPtr p(PyObject_GetAttrString(ptr,"p"));
-            PyObjectPtr ret(PyObject_CallObject3(
-                p.get(),
-                const_cast <Vector &> (x).get(),
-                const_cast <Vector &> (dx).get(),
-                y.get()));
-           
-            // Check errors
-            if(ret.get()==nullptr) {
-                std::stringstream ss;
-                ss << "Evaluation of the derivative of the constraint "
-                    << name << " failed.";
-                msg.error(ss.str());
-            }
+            auto p = capi::PyObject_GetAttrString(data,"p");
+            capi::PyObject_CallObject3(
+                p,
+                x.data,
+                dx.data,
+                y.data,
+                __LOC__
+                    + ", evaluation of the derivative of the constraint "
+                    + name + " failed");
         }
 
-        // z=f'(x)*dy
+        // xhat=f'(x)*dy
         void VectorValuedFunction::ps(
-            Vector const & x,
-            Vector const & dy,
-            VectorValuedFunction::X_Vector& z
+            X_Vector const & x,
+            Y_Vector const & dy,
+            X_Vector & xhat 
         ) const {
             // Call the prime-adjoint function on x, dy, and z
-            PyObjectPtr ps(PyObject_GetAttrString(ptr,"ps"));
-            PyObjectPtr ret(PyObject_CallObject3(
-                ps.get(),
-                const_cast <Vector &> (x).get(),
-                const_cast <Vector &> (dy).get(),
-                z.get()));
-
-            // Check errors
-            if(ret.get()==nullptr) {
-                std::stringstream ss;
-                ss << "Evaluation of the derivative-adjoint of the constraint "
-                    << name << " failed.";
-                msg.error(ss.str());
-            }
+            auto ps = capi::PyObject_GetAttrString(data,"ps");
+            capi::PyObject_CallObject3(
+                ps,
+                x.data,
+                dy.data,
+                xhat.data,
+                __LOC__
+                    +", evaluation of the derivative-adjoint of the constraint "
+                    + name + " failed");
         }
              
-        // z=(f''(x)dx)*dy
+        // xhat=(f''(x)dx)*dy
         void VectorValuedFunction::pps(
-            Vector const & x,
-            Vector const & dx,
-            Vector const & dy,
-            X_Vector& z
+            X_Vector const & x,
+            X_Vector const & dx,
+            Y_Vector const & dy,
+            X_Vector & xhat 
         ) const { 
             // Call the prime-adjoint function on x, dx, dy, and z
-            PyObjectPtr pps(PyObject_GetAttrString(ptr,"pps"));
-            PyObjectPtr ret(PyObject_CallObject4(
-                pps.get(),
-                const_cast <Vector &> (x).get(),
-                const_cast <Vector &> (dx).get(),
-                const_cast <Vector &> (dy).get(),
-                z.get()));
-
-            // Check errors
-            if(ret.get()==nullptr) {
-                std::stringstream ss;
-                ss << "Evaluation of the second derivative-adjoint of the "
-                    "constraint " << name << " failed.";
-                msg.error(ss.str());
-            }
-        }
-
-        // Calls the Optizelle exception with a string
-        void PyErr_SetString_Optizelle(std::string const& msg) {
-            Python::PyObjectPtr module(PyImport_ImportModule("Optizelle")); 
-            Python::PyObjectPtr exception(PyObject_GetAttrString(module.get(),
-                "Exception"));
-            PyErr_SetString(exception.get(),msg.c_str());
-        }
-
-        // Converts an Optizelle enumerated type to a PyObject * 
-        PyObject * enumToPyObject(
-            std::string const & type,
-            std::string const & member 
-        ) {
-            // Grab the enumerated type object from the Optizelle module.
-            // We just use simple classes in Python to represent the
-            // enumerated type
-            Python::PyObjectPtr module(PyImport_ImportModule("Optizelle")); 
-            Python::PyObjectPtr pyclass(PyObject_GetAttrString(module.get(),
-                type.c_str()));
-
-            // Grab and return the member
-            return PyObject_GetAttrString(pyclass.get(),member.c_str());
-        }
-       
-        // Converts an Optizelle enumerated type to a Natural
-        Natural enumToNatural(
-            std::string const & type,
-            std::string const & member 
-        ) {
-            // Grab the PyObject * for the type and member requested
-            PyObjectPtr obj(enumToPyObject(type,member));
-
-            // Convert and return the member
-            return PyInt_AsSsize_t(obj.get());
+            auto pps = capi::PyObject_GetAttrString(data,"pps");
+            capi::PyObject_CallObject4(
+                pps,
+                x.data,
+                dx.data,
+                dy.data,
+                xhat.data,
+                __LOC__
+                    + ", evaluation of the second derivative-adjoint of the "
+                    "constraint " + name + " failed");
         }
         
         // Converts elements from C++ to Python 
@@ -1626,146 +1805,132 @@ namespace Optizelle {
             void Real(
                 std::string const & name,
                 double const & value,
-                PyObject * const obj 
+                PyObjectPtr & pystate 
             ) {
-                PyObjectPtr item(PyFloat_FromDouble(value));
-                PyObject_SetAttrString(obj,name.c_str(),item.get());
+                auto item = capi::PyFloat_FromDouble(value);
+                capi::PyObject_SetAttrString(pystate,name.c_str(),item);
             }
         
             // Sets a natural in a Python state 
             void Natural(
                 std::string const & name,
                 Optizelle::Natural const & value,
-                PyObject * const obj 
+                PyObjectPtr & pystate 
             ) {
-                PyObjectPtr item(PyInt_FromSize_t(value));
-                PyObject_SetAttrString(obj,name.c_str(),item.get());
+                auto item = capi::PyInt_FromNatural(value);
+                capi::PyObject_SetAttrString(pystate,name.c_str(),item);
             }
         
             // Sets a vector in a Python state 
             void Vector(
                 std::string const & name,
                 Python::Vector const & value,
-                PyObject * const obj 
+                PyObjectPtr & pystate 
             ) {
-                PyObjectPtr item(PyObject_GetAttrString(obj,name.c_str()));
-                const_cast <Python::Vector &> (value).toPython(item.get());
+                auto item = capi::PyObject_GetAttrString(pystate,name.c_str());
+                value.toPython(item);
             }
         
             // Sets a list of vectors in a Python state 
             void VectorList(
                 std::string const & name,
                 std::list <Python::Vector> const & values,
-                PyObject * const obj 
+                PyObjectPtr & pystate 
             ) {
                 // Create a new Python list that we insert elements into
-                PyObjectPtr items(PyList_New(0));
+                auto items = capi::PyList_New(0);
 
                 // Loop over all of the items inside values and then insert 
                 // them into items 
-                for(std::list <Python::Vector>::const_iterator value
-                        = values.cbegin();
-                    value!=values.cend();
-                    value++
-                ) {
+                for(auto const & value : values) {
                     // Allocate memory for a new vector
-                    Python::Vector item(
-                        const_cast <Python::Vector &> (*value).init());
+                    auto item = value.init();
 
                     // Copy the information from the current iterator into this
                     // new vector
-                    item.copy(const_cast <Python::Vector &> (*value));
+                    item.copy(value);
 
-                    // Release the pointer into the Python list
-                    PyList_Append(items.get(),item.release());
+                    // Append this item to the list 
+                    capi::PyList_Append(items,item.data);
                 }
                 
-                // Insert the items into obj
-                PyObject_SetAttrString(obj,name.c_str(),items.get());
+                // Insert the items into pystate 
+                capi::PyObject_SetAttrString(pystate,name.c_str(),items);
             }
 
             // Sets restart vectors in Python 
             void Vectors(
                 Python::Vectors const & values,
-                PyObject * const pyvalues 
+                PyObjectPtr & pyvalues 
             ) {
             
                 // Loop over all of the items inside values and then insert 
                 // them into pyvalues 
-                for(typename Python::Vectors::const_iterator value
-                        = values.cbegin();
-                    value!=values.cend();
-                    value++
-                ) {
+                for(auto const & value : values) {
                     // Allocate memory for a new vector
-                    Python::Vector pyvalue(
-                        const_cast <Python::Vector &>(value->second).init());
+                    auto pyvalue = value.second.init();
 
                     // Copy the information from the current iterator into this
                     // new vector
-                    pyvalue.copy(const_cast <Python::Vector &> (value->second));
+                    pyvalue.copy(value.second);
 
                     // Release the pointer into the Python list
-                    PyList_Append(pyvalues,PyTuple_Pack(2,
-                        PyString_FromString(value->first.c_str()),
-                        pyvalue.release()));
+                    capi::PyList_Append(
+                        pyvalues,
+                        capi::PyTuple_Pack_2(
+                            capi::PyString_FromString(value.first.c_str()),
+                            pyvalue.data));
                 }
             }
         
             // Sets restart reals in Python 
             void Reals(
                 Python::Reals const & values,
-                PyObject * const pyvalues 
+                PyObjectPtr & pyvalues 
             ) {
                 // Loop over all of the items inside values and then insert 
                 // them into pyvalues 
-                for(typename Python::Reals::const_iterator value
-                        = values.cbegin();
-                    value!=values.cend();
-                    value++
-                ) {
+                for(auto const & value : values) {
                     // Insert the double into the Python list 
-                    PyList_Append(pyvalues,PyTuple_Pack(2,
-                        PyString_FromString(value->first.c_str()),
-                        PyFloat_FromDouble(value->second)));
+                    capi::PyList_Append(
+                        pyvalues,
+                        capi::PyTuple_Pack_2(
+                            capi::PyString_FromString(value.first.c_str()),
+                            capi::PyFloat_FromDouble(value.second)));
                 }
             }
         
             // Converts a list of naturals to a Python list 
             void Naturals(
                 Python::Naturals const & values,
-                PyObject * const pyvalues 
+                PyObjectPtr & pyvalues 
             ) {
                 // Loop over all of the items inside values and then insert 
                 // them into pyvalues 
-                for(typename Python::Naturals::const_iterator value
-                        = values.cbegin();
-                    value!=values.cend();
-                    value++
-                ) {
+                for(auto const & value : values) {
                     // Insert the double into the Python list 
-                    PyList_Append(pyvalues,PyTuple_Pack(2,
-                        PyString_FromString(value->first.c_str()),
-                        PyInt_FromSize_t(value->second)));
+                    capi::PyList_Append(
+                        pyvalues,
+                        capi::PyTuple_Pack_2(
+                            capi::PyString_FromString(value.first.c_str()),
+                            capi::PyInt_FromNatural(value.second)));
                 }
             }
         
             // Sets restart parameters in Python 
             void Params(
                 Python::Params const & values,
-                PyObject * const pyvalues 
+                PyObjectPtr & pyvalues 
             ) {
                 // Loop over all of the items inside values and then insert 
                 // them into pyvalues 
-                for(typename Python::Params::const_iterator value
-                        = values.cbegin();
-                    value!=values.cend();
-                    value++
-                ) {
+                for(auto const & value : values) {
                     // Insert the double into the Python list 
-                    PyList_Append(pyvalues,PyTuple_Pack(2,
-                        PyString_FromString(value->first.c_str()),
-                        PyString_FromString(value->second.c_str())));
+                    capi::PyList_Append(
+                        pyvalues,
+                        capi::PyTuple_Pack_2(
+                            capi::PyString_FromString(value.first.c_str()),
+                            capi::PyString_FromString(value.second.c_str())));
                 }
             }
         }
@@ -1776,46 +1941,55 @@ namespace Optizelle {
             // Sets a real in a C++ state 
             void Real(
                 std::string const & name,
-                PyObject * const obj,
+                PyObjectPtr const & pystate,
                 double & value
             ) {
-                PyObjectPtr item(PyObject_GetAttrString(obj,name.c_str()));
-                value=PyFloat_AsDouble(item.get());
+                auto item = capi::PyObject_GetAttrString(pystate,name.c_str());
+                value=capi::PyFloat_AsDouble(item);
             }
             
             // Sets a natural in a C++ state 
             void Natural(
                 std::string const & name,
-                PyObject * const obj,
+                PyObjectPtr const & pystate,
                 Optizelle::Natural & value
             ) {
-                PyObjectPtr item(PyObject_GetAttrString(obj,name.c_str()));
-                value=PyInt_AsSsize_t(item.get());
+                auto item = capi::PyObject_GetAttrString(pystate,name.c_str());
+                value=capi::PyInt_AsNatural(item);
+            }
+            
+            // Sets a vector in a C++ state 
+            void Vector(
+                std::string const & name,
+                PyObjectPtr const & pystate,
+                Python::Vector & value
+            ) {
+                auto item = capi::PyObject_GetAttrString(pystate,name.c_str());
+                value.fromPython(item);
             }
             
             // Sets a list of vectors in a C++ state 
             void VectorList(
                 std::string const & name,
-                PyObject * const obj,
+                PyObjectPtr const & pystate,
                 Python::Vector const & vec,
                 std::list <Python::Vector> & values
             ) {
                 // Grab the list of items
-                PyObjectPtr items(PyObject_GetAttrString(obj,name.c_str()));
+                auto items = capi::PyObject_GetAttrString(pystate,name.c_str());
 
                 // Loop over all the elements in items and insert them one
                 // at a time into values
                 values.clear();
-                for(Optizelle::Natural i=0;
-                    i<Py_ssize_t_to_Natural(PyList_Size(items.get()));
+                for(auto i=Optizelle::Natural(0);
+                    i<capi::PyList_Size(items);
                     i++
                 ) {
                     // Grab the current item from Python
-                    PyObject * item(PyList_GetItem(items.get(),i));
+                    auto item = capi::PyList_GetItem(items,i);
 
                     // Create a new vector in values 
-                    values.emplace_back(std::move(
-                        const_cast<Python::Vector &>(vec).init()));
+                    values.emplace_back(vec.init());
 
                     // Copy the Python item into the new value
                     values.back().fromPython(item);
@@ -1825,124 +1999,134 @@ namespace Optizelle {
             // Sets a scalar-valued function in a C++ function bundle 
             void ScalarValuedFunction(
                 std::string const & name,
-                PyObject * const msg,
-                PyObject * const obj,
+                PyObjectPtr const & pyfns,
                 std::unique_ptr <PyScalarValuedFunction> & value
             ) {
-                value.reset(new Python::ScalarValuedFunction(msg,
-                    PyObject_GetAttrString(obj,name.c_str())));
+                value.reset(
+                    new Python::ScalarValuedFunction(
+                        capi::PyObject_GetAttrString(
+                            pyfns,
+                            name.c_str())));
             }
             
             // Sets a vector-valued function in a C++ function bundle 
             void VectorValuedFunction(
                 std::string const & name,
-                PyObject * const msg,
-                PyObject * const obj,
+                PyObjectPtr const & pyfns,
                 std::unique_ptr <PyVectorValuedFunction> & value
             ) {
-                value.reset(new Python::VectorValuedFunction(name,msg,
-                    PyObject_GetAttrString(obj,name.c_str())));
-            }
-            
-            // Sets a vector in a C++ state 
-            void Vector(
-                std::string const & name,
-                PyObject * const obj,
-                Python::Vector & value
-            ) {
-                PyObjectPtr item(PyObject_GetAttrString(obj,name.c_str()));
-                value.fromPython(item.get());
+                value.reset(
+                    new Python::VectorValuedFunction(name,
+                        capi::PyObject_GetAttrString(
+                            pyfns,
+                            name.c_str())));
             }
         
             // Sets restart vectors in C++ 
             void Vectors(
                 Python::Vector const & vec,
-                PyObject * const pyvalues,
+                PyObjectPtr const & pyvalues,
                 Python::Vectors & values
             ) {
                 // Loop over all the elements in pyvalues and insert them one
                 // at a time into values
                 values.clear();
-                for(Optizelle::Natural i=0;
-                    i<Py_ssize_t_to_Natural(PyList_Size(pyvalues));
+                for(auto i = Optizelle::Natural(0);
+                    i<capi::PyList_Size(pyvalues);
                     i++
                 ) {
                     // Grab the current item from Python
-                    PyObject * pyvalue(PyList_GetItem(pyvalues,i));
+                    auto pyvalue = capi::PyList_GetItem(pyvalues,i);
+
+                    // Grab the values
+                    auto name = capi::PyTuple_GetItem(pyvalue,0);
+                    auto val = capi::PyTuple_GetItem(pyvalue,1);
 
                     // Create the elements in values 
                     values.emplace_back(
-                        PyString_AsString(PyTuple_GetItem(pyvalue,0)),
-                        std::move(const_cast<Python::Vector &>(vec).init()));
+                        capi::PyString_AsString(name),
+                        vec.init());
 
                     // Copy the Python value into the C++ value
-                    values.back().second.fromPython(PyTuple_GetItem(pyvalue,1));
+                    values.back().second.fromPython(val);
                 }
             }
             
             // Sets restart reals in C++ 
             void Reals(
-                PyObject * const pyvalues,
+                PyObjectPtr const & pyvalues,
                 Python::Reals & values
             ) {
                 // Loop over all the elements in pyvalues and insert them one
                 // at a time into values
                 values.clear();
-                for(Optizelle::Natural i=0;
-                    i<Py_ssize_t_to_Natural(PyList_Size(pyvalues));
+                for(auto i = Optizelle::Natural(0);
+                    i<capi::PyList_Size(pyvalues);
                     i++
                 ) {
                     // Grab the current item from Python
-                    PyObject * pyvalue(PyList_GetItem(pyvalues,i));
+                    auto pyvalue = capi::PyList_GetItem(pyvalues,i);
+
+                    // Grab the values
+                    auto name = capi::PyTuple_GetItem(pyvalue,0);
+                    auto val = capi::PyTuple_GetItem(pyvalue,1);
                     
                     // Create the elements in values 
                     values.emplace_back(
-                        PyString_AsString(PyTuple_GetItem(pyvalue,0)),
-                        PyFloat_AsDouble(PyTuple_GetItem(pyvalue,1)));
+                        capi::PyString_AsString(name),
+                        capi::PyFloat_AsDouble(val));
                 }
             }
             
             // Sets restart naturals in C++ 
             void Naturals(
-                PyObject * const pyvalues,
+                PyObjectPtr const & pyvalues,
                 Python::Naturals & values
             ) {
                 // Loop over all the elements in pyvalues and insert them one
                 // at a time into values
                 values.clear();
-                for(Optizelle::Natural i=0;
-                    i<Py_ssize_t_to_Natural(PyList_Size(pyvalues));
+                for(auto i = Optizelle::Natural(0);
+                    i<capi::PyList_Size(pyvalues);
                     i++
                 ) {
                     // Grab the current item from Python
-                    PyObject * pyvalue(PyList_GetItem(pyvalues,i));
+                    auto pyvalue = capi::PyList_GetItem(pyvalues,i);
+
+                    // Grab the values
+                    auto name = capi::PyTuple_GetItem(pyvalue,0);
+                    auto val = capi::PyTuple_GetItem(pyvalue,1);
                     
                     // Create the elements in values 
                     values.emplace_back(
-                        PyString_AsString(PyTuple_GetItem(pyvalue,0)),
-                        PyInt_AsSsize_t(PyTuple_GetItem(pyvalue,1)));
+                        capi::PyString_AsString(name),
+                        capi::PyInt_AsNatural(val));
                 }
             }
             
             // Sets restart parameters in C++ 
             void Params(
-                PyObject * const pyvalues,
+                PyObjectPtr const & pyvalues,
                 Python::Params & values
             ) {
                 // Loop over all the elements in pyvalues and insert them one
                 // at a time into values
                 values.clear();
-                for(Optizelle::Natural i=0;
-                    i<Py_ssize_t_to_Natural(PyList_Size(pyvalues));
+                for(auto i = Optizelle::Natural(0);
+                    i<capi::PyList_Size(pyvalues);
                     i++
                 ) {
                     // Grab the current item from Python
-                    PyObject * pyvalue(PyList_GetItem(pyvalues,i));
+                    auto pyvalue = capi::PyList_GetItem(pyvalues,i);
+
+                    // Grab the values
+                    auto name = capi::PyTuple_GetItem(pyvalue,0);
+                    auto val = capi::PyTuple_GetItem(pyvalue,1);
                     
                     // Create the elements in values 
                     values.emplace_back(
-                        PyString_AsString(PyTuple_GetItem(pyvalue,0)),
-                        PyString_AsString(PyTuple_GetItem(pyvalue,1)));
+                        capi::PyString_AsString(name),
+                        capi::PyString_AsString(val));
                 }
             }
         }
@@ -1960,7 +2144,7 @@ namespace Optizelle {
                 // Convert a C++ state to a Python state 
                 void toPython_(
                     typename PyUnconstrained::State::t const & state,
-                    PyObject * const pystate
+                    PyObjectPtr & pystate
                 ){
                     // Set each of the required items in the Python state
                     toPython::Real("eps_grad",state.eps_grad,pystate);
@@ -2085,14 +2269,14 @@ namespace Optizelle {
                 }
                 void toPython(
                     typename PyUnconstrained::State::t const & state,
-                    PyObject * const pystate
+                    Python::State <PyUnconstrained> & pystate
                 ){
-                    Unconstrained::State::toPython_(state,pystate);
+                    Unconstrained::State::toPython_(state,pystate.data);
                 }
                 
                 // Convert a Python state to C++ 
                 void fromPython_(
-                    PyObject * const pystate,
+                    PyObjectPtr const & pystate,
                     typename PyUnconstrained::State::t & state
                 ){
                     // Set each of the required items in the Python state
@@ -2220,109 +2404,86 @@ namespace Optizelle {
                         state.eps_kind);
                 }
                 void fromPython(
-                    PyObject * const pystate,
+                    Python::State <PyUnconstrained> const & pystate,
                     typename PyUnconstrained::State::t & state
                 ){
-                    Unconstrained::State::fromPython_(pystate,state);
+                    Unconstrained::State::fromPython_(pystate.data,state);
                 }
 
                 // Creates a state and inserts the elements into pystate 
                 PyObject * create(
                     PyObject * self,
                     PyObject * args
-                ){
-                    // Calling convention should be (pystate,X,msg,x) 
-                    PyObject *pystate_,*X,*msg,*x_;
-                    if(!PyArg_ParseTuple(args,"OOOO",&pystate_,&X,&msg,&x_))
-                        return nullptr; 
+                ) try {
+                    // Grab variables 
+                    PY_VAR_3(pystate,X,x);
 
-                    // Make sure we bail if we detect a Python exception
-                    try {
-                        // Create a vector from the user input
-                        Vector x(msg,X,x_,PyObjectPtrMode::Attach);
+                    // Create a vector from the user input
+                    auto x = Vector(X_,x_);
 
-                        // Create a Python state 
-                        Python::State <PyUnconstrained> pystate(pystate_,
-                            PyObjectPtrMode::Attach);
+                    // Create a Python state 
+                    auto pystate = Python::State <PyUnconstrained> (pystate_);
 
-                        // Create a new C++ state
-                        typename PyUnconstrained::State::t state(x);
+                    // Create a new C++ state
+                    typename PyUnconstrained::State::t state(x);
 
-                        // Convert the state to a Python state
-                        pystate.toPython(state);
+                    // Convert the state to a Python state
+                    pystate.toPython(state);
 
-                        // Return nothing 
-                        return Py_None; 
+                    // Return nothing 
+                    Py_RETURN_NONE;
 
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){
-                        return nullptr;
-                    }
-                }
-        
+                // Catch errors 
+                } CATCH_PYTHON_ERRORS;
+
                 // Read json parameters from file
                 PyObject * readJson(
                     PyObject * self,
                     PyObject * args
-                ) {
-                    // Calling convention should be (X,msg,fname,pystate) 
-                    PyObject *X,*msg_,*fname_,*pystate_;
-                    if(!PyArg_ParseTuple(args,"OOOO",
-                        &X,&msg_,&fname_,&pystate_)
-                    )
-                        return nullptr; 
+                ) try {
+                    // Grab variables 
+                    PY_VAR_3(X,fname,pystate);
 
-                    // Make sure we bail if we detect a Python exception
-                    try {
-                        // Grab the file name
-                        std::string fname(PyString_AsString(fname_));
+                    // Grab the file name
+                    auto fname = capi::PyString_AsString(fname_);
 
-                        // Create a messaging object
-                        Optizelle::Python::Messaging msg(msg_,
-                            PyObjectPtrMode::Attach);
+                    // Create a Python state 
+                    auto pystate = Python::State <PyUnconstrained> (pystate_);
+                
+                    // Grab the base vectors from the Python state
+                    auto x_ = capi::PyObject_GetAttrString(pystate.data,"x");
+                    auto x = Vector(X_,x_);
 
-                        // Create a Python state 
-                        Python::State <PyUnconstrained> pystate(pystate_,
-                            PyObjectPtrMode::Attach);
+                    // Create a new C++ state
+                    typename PyUnconstrained::State::t state(x);
                     
-                        // Grab the base vectors from the Python state
-                        Vector x(msg_,X,
-                            PyObject_GetAttrString(pystate.get(),"x"));
+                    // Convert the Python state to a C++ state
+                    pystate.fromPython(state);
 
-                        // Create a new C++ state
-                        typename PyUnconstrained::State::t state(x);
-                        
-                        // Convert the Python state to a C++ state
-                        pystate.fromPython(state);
+                    // Read the JSON file into the C++ state
+                    PyJsonUnconstrained::read(fname,state);
 
-                        // Read the JSON file into the C++ state
-                        PyJsonUnconstrained::read(msg,fname,state);
-
-                        // Convert the C++ state to a Python state
-                        pystate.toPython(state);
-                                
-                        // Return nothing 
-                        return Py_None; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){
-                        return nullptr;
-                    }
-                }
+                    // Convert the C++ state to a Python state
+                    pystate.toPython(state);
+                            
+                    // Return nothing 
+                    Py_RETURN_NONE;
+                
+                // Catch errors 
+                } CATCH_PYTHON_ERRORS;
             }
 
             // All the functions required by an optimization algorithm.  
             namespace Functions{
                 // Convert a Python bundle to C++ 
                 void fromPython(
-                    PyObject * const msg,
-                    PyObject * const pyfns,
-                    PyObject * const pystate,
+                    Python::Functions <PyUnconstrained> const & pyfns,
+                    Python::State <PyUnconstrained> & pystate,
                     typename PyUnconstrained::State::t const & state,
                     typename PyUnconstrained::Functions::t & fns 
                 ) {
                     Unconstrained::Functions::fromPython_
-                        <PyUnconstrained> (msg,pyfns,pystate,state,fns);
+                        <PyUnconstrained> (pyfns,pystate,state,fns);
                 }
             }
 
@@ -2332,72 +2493,56 @@ namespace Optizelle {
                 PyObject * getMin(
                     PyObject * self,
                     PyObject * args
-                ) {
-                    // Calling convention should be
-                    // (X,msg,fns,state,smanip)
-                    PyObject *X,*msg_,*pyfns_,*pystate_,*smanip_;
-                    if(!PyArg_ParseTuple(args,"OOOOO",
-                        &X,&msg_,&pyfns_,&pystate_,&smanip_)
-                    )
-                        return nullptr; 
+                ) try {
+                    // Grab variables 
+                    PY_VAR_5(X,msg,pyfns,pystate,smanip);
 
-                    // Make sure we bail if we detect a Python exception
-                    try {
-                        // Create a messaging object
-                        Optizelle::Python::Messaging msg(msg_,
-                            PyObjectPtrMode::Attach);
-                            
-                        // Create a Python state 
-                        Python::State <PyUnconstrained> pystate(pystate_,
-                            PyObjectPtrMode::Attach);
+                    // Create a messaging object
+                    auto msg = Optizelle::Python::Messaging::python(msg_);
                         
-                        // Grab the base vectors from the Python state
-                        Vector x(msg_,X,
-                            PyObject_GetAttrString(pystate.get(),"x"));
+                    // Create a Python state 
+                    auto pystate = Python::State <PyUnconstrained> (pystate_);
+                    
+                    // Grab the base vectors from the Python state
+                    auto x_ = capi::PyObject_GetAttrString(pystate.data,"x");
+                    auto x = Vector(X_,x_);
 
-                        // Create a C++ state
-                        typename PyUnconstrained::State::t state(x);
-                        
-                        // Convert the Python state to a C++ state
-                        pystate.fromPython(state);
+                    // Create a C++ state
+                    typename PyUnconstrained::State::t state(x);
+                    
+                    // Convert the Python state to a C++ state
+                    pystate.fromPython(state);
 
-                        // Create a Python bundle of functions
-                        Python::Functions <PyUnconstrained> pyfns(
-                            msg.get(),
-                            pystate.get(),
-                            state,
-                            pyfns_,
-                            PyObjectPtrMode::Attach);
+                    // Create a Python bundle of functions
+                    auto pyfns = Python::Functions <PyUnconstrained>(
+                        pystate,
+                        state,
+                        pyfns_);
 
-                        // Create a C++ bundle of functions
-                        typename PyUnconstrained::Functions::t fns;
-                        
-                        // Convert the Python bundle of functions to C++ 
-                        pyfns.fromPython(fns);
-                        
-                        // Create a state manipulator 
-                        Python::StateManipulator <PyUnconstrained> smanip(
-                            msg.get(),
-                            pystate.get(),
-                            pyfns.get(),
-                            smanip_,
-                            PyObjectPtrMode::Attach);
-                       
-                        // Minimize
-                        PyUnconstrained::Algorithms::getMin(
-                            msg,fns,state,smanip);
-                        
-                        // Convert the C++ state to a Python state
-                        pystate.toPython(state);
+                    // Create a C++ bundle of functions
+                    typename PyUnconstrained::Functions::t fns;
+                    
+                    // Convert the Python bundle of functions to C++ 
+                    pyfns.fromPython(fns);
+                    
+                    // Create a state manipulator 
+                    auto smanip = Python::StateManipulator <PyUnconstrained>(
+                        pystate,
+                        pyfns,
+                        smanip_);
+                   
+                    // Minimize
+                    PyUnconstrained::Algorithms::getMin(
+                        msg,fns,state,smanip);
+                    
+                    // Convert the C++ state to a Python state
+                    pystate.toPython(state);
 
-                        // Return nothing 
-                        return Py_None; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){
-                        return nullptr;
-                    }
-                }
+                    // Return nothing 
+                    Py_RETURN_NONE;
+                
+                // Catch errors 
+                } CATCH_PYTHON_ERRORS;
             }
             
             // Utilities for restarting the optimization
@@ -2406,205 +2551,150 @@ namespace Optizelle {
                 PyObject * release(
                     PyObject * self,
                     PyObject * args
-                ) {
-                    // Calling convention should be
-                    // (X,msg,state,xs,reals,nats,params)
-                    PyObject *X,*msg,*pystate_,*pyxs,*pyreals,*pynats,*pyparams;
-                    if(!PyArg_ParseTuple(args,"OOOOOOO",
-                        &X,&msg,&pystate_,&pyxs,&pyreals,&pynats,&pyparams)
-                    )
-                        return nullptr; 
+                ) try {
+                    // Grab variables
+                    PY_VAR_6(X,pystate,pyxs,pyreals,pynats,pyparams);
 
-                    // Make sure we bail if we detect a Python exception
-                    try {
-                        // Create a Python state 
-                        Python::State <PyUnconstrained> pystate(pystate_,
-                            PyObjectPtrMode::Attach);
-                        
-                        // Grab the base vectors from the Python state
-                        Vector x(msg,X,
-                            PyObject_GetAttrString(pystate.get(),"x"));
+                    // Create a Python state 
+                    auto pystate = Python::State <PyUnconstrained>(pystate_);
+                    
+                    // Grab the base vectors from the Python state
+                    auto x_ = capi::PyObject_GetAttrString(pystate.data,"x");
+                    auto x = Vector(X_,x_);
 
-                        // Create a C++ state
-                        typename PyUnconstrained::State::t state(x);
-                        
-                        // Convert the Python state to a C++ state
-                        pystate.fromPython(state);
+                    // Create a C++ state
+                    typename PyUnconstrained::State::t state(x);
+                    
+                    // Convert the Python state to a C++ state
+                    pystate.fromPython(state);
 
-                        // Do a release 
-                        PyUnconstrained::Restart::X_Vectors xs;
-                        PyUnconstrained::Restart::Reals reals;
-                        PyUnconstrained::Restart::Naturals nats;
-                        PyUnconstrained::Restart::Params params;
-                        PyUnconstrained::Restart
-                            ::release(state,xs,reals,nats,params);
+                    // Do a release 
+                    PyUnconstrained::Restart::X_Vectors xs;
+                    PyUnconstrained::Restart::Reals reals;
+                    PyUnconstrained::Restart::Naturals nats;
+                    PyUnconstrained::Restart::Params params;
+                    PyUnconstrained::Restart
+                        ::release(state,xs,reals,nats,params);
 
-                        // Convert the restart information to Python 
-                        toPython::Vectors(xs,pyxs);
-                        toPython::Reals(reals,pyreals);
-                        toPython::Naturals(nats,pynats);
-                        toPython::Params(params,pyparams);
+                    // Convert the restart information to Python 
+                    toPython::Vectors(xs,pyxs_);
+                    toPython::Reals(reals,pyreals_);
+                    toPython::Naturals(nats,pynats_);
+                    toPython::Params(params,pyparams_);
 
-                        // Return nothing 
-                        return Py_None; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){
-                        return nullptr;
-                    }
-                }
+                    // Return nothing 
+                    Py_RETURN_NONE;
+                
+                // Catch errors 
+                } CATCH_PYTHON_ERRORS;
 
                 // Capture data from structures controlled by the user.  
                 PyObject * capture(
                     PyObject * self,
                     PyObject * args
-                ) {
-                    // Calling convention should be
-                    // (X,msg,state,xs,reals,nats,params)
-                    PyObject *X,*msg_,*pystate_,*pyxs,*pyreals,*pynats,
-                        *pyparams;
-                    if(!PyArg_ParseTuple(args,"OOOOOOO",
-                        &X,&msg_,&pystate_,&pyxs,&pyreals,&pynats,&pyparams)
-                    )
-                        return nullptr; 
+                ) try {
+                    // Grab variables
+                    PY_VAR_6(X,pystate,pyxs,pyreals,pynats,pyparams);
 
-                    // Make sure we bail if we detect a Python exception
-                    try {
-                        // Create a messaging object
-                        Optizelle::Python::Messaging msg(msg_,
-                            PyObjectPtrMode::Attach);
+                    // Create a Python state 
+                    auto pystate = Python::State <PyUnconstrained> (pystate_);
+                    
+                    // Grab the base vectors from the Python state
+                    auto x_ = capi::PyObject_GetAttrString(pystate.data,"x");
+                    auto x = Vector(X_,x_);
 
-                        // Create a Python state 
-                        Python::State <PyUnconstrained> pystate(pystate_,
-                            PyObjectPtrMode::Attach);
-                        
-                        // Grab the base vectors from the Python state
-                        Vector x(msg_,X,
-                            PyObject_GetAttrString(pystate.get(),"x"));
+                    // Create a C++ state
+                    typename PyUnconstrained::State::t state(x);
+                   
+                    // Allocate memory for the released vectors
+                    PyUnconstrained::Restart::X_Vectors xs;
+                    PyUnconstrained::Restart::Reals reals;
+                    PyUnconstrained::Restart::Naturals nats;
+                    PyUnconstrained::Restart::Params params;
+                    
+                    // Convert the restart information from Python 
+                    fromPython::Vectors(x,pyxs_,xs);
+                    fromPython::Reals(pyreals_,reals);
+                    fromPython::Naturals(pynats_,nats);
+                    fromPython::Params(pyparams_,params);
 
-                        // Create a C++ state
-                        typename PyUnconstrained::State::t state(x);
-                       
-                        // Allocate memory for the released vectors
-                        PyUnconstrained::Restart::X_Vectors xs;
-                        PyUnconstrained::Restart::Reals reals;
-                        PyUnconstrained::Restart::Naturals nats;
-                        PyUnconstrained::Restart::Params params;
-                        
-                        // Convert the restart information from Python 
-                        fromPython::Vectors(x,pyxs,xs);
-                        fromPython::Reals(pyreals,reals);
-                        fromPython::Naturals(pynats,nats);
-                        fromPython::Params(pyparams,params);
+                    // Do a capture 
+                    PyUnconstrained::Restart
+                        ::capture(state,xs,reals,nats,params);
 
-                        // Do a capture 
-                        PyUnconstrained::Restart
-                            ::capture(msg,state,xs,reals,nats,params);
+                    // Convert the C++ state to a Python state
+                    pystate.toPython(state);
 
-                        // Convert the C++ state to a Python state
-                        pystate.toPython(state);
-
-                        // Return nothing 
-                        return Py_None; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){
-                        return nullptr;
-                    }
-                }
+                    // Return nothing 
+                    Py_RETURN_NONE;
                 
+                // Catch errors 
+                } CATCH_PYTHON_ERRORS;
+
                 // Writes a json restart file
                 PyObject * write_restart(
                     PyObject * self,
                     PyObject * args
-                ) {
-                    // Calling convention should be (X,msg,fname,state)
-                    PyObject *X,*msg_,*fname_,*pystate_;
-                    if(!PyArg_ParseTuple(args,"OOOO",
-                        &X,&msg_,&fname_,&pystate_)
-                    )
-                        return nullptr; 
+                ) try {
+                    // Grab variables 
+                    PY_VAR_3(X,fname,pystate);
 
-                    // Make sure we bail if we detect a Python exception
-                    try {
-                        // Create a messaging object
-                        Optizelle::Python::Messaging msg(msg_,
-                            PyObjectPtrMode::Attach);
-                        
-                        // Grab the file name
-                        std::string fname(PyString_AsString(fname_));
+                    // Grab the file name
+                    auto fname = capi::PyString_AsString(fname_);
 
-                        // Create a Python state 
-                        Python::State <PyUnconstrained> pystate(pystate_,
-                            PyObjectPtrMode::Attach);
-                        
-                        // Grab the base vectors from the Python state
-                        Vector x(msg_,X,
-                            PyObject_GetAttrString(pystate.get(),"x"));
-                        
-                        // Create a C++ state
-                        typename PyUnconstrained::State::t state(x);
-                        
-                        // Convert Python state to C++ 
-                        pystate.fromPython(state);
+                    // Create a Python state 
+                    auto pystate = Python::State <PyUnconstrained> (pystate_);
+                    
+                    // Grab the base vectors from the Python state
+                    auto x_ = capi::PyObject_GetAttrString(pystate.data,"x");
+                    auto x = Vector(X_,x_);
+                    
+                    // Create a C++ state
+                    typename PyUnconstrained::State::t state(x);
+                    
+                    // Convert Python state to C++ 
+                    pystate.fromPython(state);
 
-                        // Write the restart file
-                        PyJsonUnconstrained::write_restart(msg,fname,state);
-                        
-                        // Return nothing 
-                        return Py_None; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){
-                        return nullptr;
-                    }
-                }
+                    // Write the restart file
+                    PyJsonUnconstrained::write_restart(fname,state);
+                    
+                    // Return nothing 
+                    Py_RETURN_NONE; 
                 
+                // Catch errors 
+                } CATCH_PYTHON_ERRORS;
+
                 // Reads a json restart file
                 PyObject * read_restart(
                     PyObject * self,
                     PyObject * args
-                ) {
-                    // Calling convention should be (X,msg,fname,x,state)
-                    PyObject *X,*msg_,*fname_,*x_,*pystate_;
-                    if(!PyArg_ParseTuple(args,"OOOOO",
-                        &X,&msg_,&fname_,&x_,&pystate_)
-                    )
-                        return nullptr; 
+                ) try {
+                    // Grab variables
+                    PY_VAR_4(X,fname,x,pystate);
 
-                    // Make sure we bail if we detect a Python exception
-                    try {
-                        // Create a messaging object
-                        Optizelle::Python::Messaging msg(msg_,
-                            PyObjectPtrMode::Attach);
-                        
-                        // Grab the file name
-                        std::string fname(PyString_AsString(fname_));
+                    // Grab the file name
+                    auto fname = capi::PyString_AsString(fname_);
 
-                        // Create a Python state 
-                        Python::State <PyUnconstrained> pystate(pystate_,
-                            PyObjectPtrMode::Attach);
-                        
-                        // Grab the reference vector 
-                        Vector x(msg_,X,x_,PyObjectPtrMode::Attach);
-                        
-                        // Create a C++ state
-                        typename PyUnconstrained::State::t state(x);
+                    // Create a Python state 
+                    auto pystate = Python::State <PyUnconstrained> (pystate_);
+                    
+                    // Grab the reference vector 
+                    auto x = Vector(X_,x_);
+                    
+                    // Create a C++ state
+                    typename PyUnconstrained::State::t state(x);
 
-                        // Read the restart file into the C++ state 
-                        PyJsonUnconstrained::read_restart(msg,fname,x,state);
-                        
-                        // Convert the C++ state to a Python state
-                        pystate.toPython(state);
+                    // Read the restart file into the C++ state 
+                    PyJsonUnconstrained::read_restart(fname,x,state);
+                    
+                    // Convert the C++ state to a Python state
+                    pystate.toPython(state);
 
-                        // Return nothing 
-                        return Py_None; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){
-                        return nullptr;
-                    }
-                }
+                    // Return nothing 
+                    Py_RETURN_NONE; 
+                
+                // Catch errors 
+                } CATCH_PYTHON_ERRORS;
             }
         }
 
@@ -2620,7 +2710,7 @@ namespace Optizelle {
                 // Convert a C++ state to a Python state 
                 void toPython_(
                     typename PyEqualityConstrained::State::t const & state,
-                    PyObject * const pystate
+                    PyObjectPtr & pystate
                 ){
                     toPython::Vector("y",state.y,pystate);
                     toPython::Vector("dy",state.dy,pystate);
@@ -2742,15 +2832,15 @@ namespace Optizelle {
                 }
                 void toPython(
                     typename PyEqualityConstrained::State::t const & state,
-                    PyObject * const pystate
+                    Python::State <PyEqualityConstrained> & pystate
                 ){
-                    Unconstrained::State::toPython_(state,pystate);
-                    EqualityConstrained::State::toPython_(state,pystate);
+                    Unconstrained::State::toPython_(state,pystate.data);
+                    EqualityConstrained::State::toPython_(state,pystate.data);
                 }
                 
                 // Convert a Python state to C++ 
                 void fromPython_(
-                    PyObject * const pystate,
+                    PyObjectPtr const & pystate,
                     typename PyEqualityConstrained::State::t & state
                 ){
                     fromPython::Vector("y",pystate,state.y);
@@ -2873,7 +2963,7 @@ namespace Optizelle {
                         state.qn_stop);
                 }
                 void fromPython(
-                    PyObject * const pystate,
+                    PyObjectPtr const & pystate,
                     typename PyEqualityConstrained::State::t & state
                 ){
                     Unconstrained::State::fromPython_(pystate,state);
@@ -2884,107 +2974,83 @@ namespace Optizelle {
                 PyObject * create(
                     PyObject * self,
                     PyObject * args
-                ){
-                    // Calling convention should be (pystate,X,Y,msg,x,y) 
-                    PyObject *pystate_,*X,*Y,*msg,*x_,*y_;
-                    if(!PyArg_ParseTuple(
-                        args,"OOOOOO",&pystate_,&X,&Y,&msg,&x_,&y_)
-                    )
-                        return nullptr; 
+                ) try {
+                    // Grab variables 
+                    PY_VAR_5(pystate,X,Y,x,y);
 
+                    // Create vectors from the user input
+                    auto x = Vector(X_,x_);
+                    auto y = Vector(Y_,y_);
 
-                    // Make sure we bail if we detect a Python exception
-                    try {
-                        // Create vectors from the user input
-                        Vector x(msg,X,x_,PyObjectPtrMode::Attach);
-                        Vector y(msg,Y,y_,PyObjectPtrMode::Attach);
+                    // Create a Python state 
+                    auto pystate = Python::State <PyEqualityConstrained> (
+                        pystate_);
 
-                        // Create a Python state 
-                        Python::State <PyEqualityConstrained> pystate(pystate_,
-                            PyObjectPtrMode::Attach);
+                    // Create a new C++ state
+                    typename PyEqualityConstrained::State::t state(x,y);
 
-                        // Create a new C++ state
-                        typename PyEqualityConstrained::State::t state(x,y);
+                    // Convert the state to a Python state
+                    pystate.toPython(state);
 
-                        // Convert the state to a Python state
-                        pystate.toPython(state);
-
-                        // Return nothing 
-                        return Py_None; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){
-                        return nullptr;
-                    }
-                }
+                    // Return nothing 
+                    Py_RETURN_NONE; 
+                
+                // Catch errors 
+                } CATCH_PYTHON_ERRORS;
         
                 // Read json parameters from file
                 PyObject * readJson(
                     PyObject * self,
                     PyObject * args
-                ) {
-                    // Calling convention should be (X,Y,msg,fname,pystate) 
-                    PyObject *X,*Y,*msg_,*fname_,*pystate_;
-                    if(!PyArg_ParseTuple(args,"OOOOO",
-                        &X,&Y,&msg_,&fname_,&pystate_)
-                    )
-                        return nullptr; 
+                ) try {
+                    // Grab variables 
+                    PY_VAR_4(X,Y,fname,pystate);
 
-                    // Make sure we bail if we detect a Python exception
-                    try {
-                        // Grab the file name
-                        std::string fname(PyString_AsString(fname_));
+                    // Grab the file name
+                    auto fname = capi::PyString_AsString(fname_);
 
-                        // Create a messaging object
-                        Optizelle::Python::Messaging msg(msg_,
-                            PyObjectPtrMode::Attach);
+                    // Create a Python state 
+                    auto pystate = Python::State <PyEqualityConstrained> (
+                        pystate_);
+                
+                    // Grab the base vectors from the Python state
+                    auto x_ = capi::PyObject_GetAttrString(pystate.data,"x");
+                    auto x = Vector(X_,x_);
+                    auto y_ = capi::PyObject_GetAttrString(pystate.data,"y");
+                    auto y = Vector(Y_,y_);
 
-                        // Create a Python state 
-                        Python::State <PyEqualityConstrained> pystate(pystate_,
-                            PyObjectPtrMode::Attach);
+                    // Create a new C++ state
+                    typename PyEqualityConstrained::State::t state(x,y);
                     
-                        // Grab the base vectors from the Python state
-                        Vector x(msg_,X,
-                            PyObject_GetAttrString(pystate.get(),"x"));
-                        Vector y(msg_,Y,
-                            PyObject_GetAttrString(pystate.get(),"y"));
+                    // Convert the Python state to a C++ state
+                    pystate.fromPython(state);
 
-                        // Create a new C++ state
-                        typename PyEqualityConstrained::State::t state(x,y);
-                        
-                        // Convert the Python state to a C++ state
-                        pystate.fromPython(state);
+                    // Read the JSON file into the C++ state
+                    PyJsonEqualityConstrained::read(fname,state);
 
-                        // Read the JSON file into the C++ state
-                        PyJsonEqualityConstrained::read(msg,fname,state);
-
-                        // Convert the C++ state to a Python state
-                        pystate.toPython(state);
-                                
-                        // Return nothing 
-                        return Py_None; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){
-                        return nullptr;
-                    }
-                }
+                    // Convert the C++ state to a Python state
+                    pystate.toPython(state);
+                            
+                    // Return nothing 
+                    Py_RETURN_NONE; 
+                
+                // Catch errors 
+                } CATCH_PYTHON_ERRORS;
             }
 
             // All the functions required by an optimization algorithm.  
             namespace Functions{
                 // Convert a Python bundle to C++ 
                 void fromPython(
-                    PyObject * const msg,
-                    PyObject * const pyfns,
-                    PyObject * const pystate,
+                    Python::Functions <PyEqualityConstrained> const & pyfns,
+                    Python::State <PyEqualityConstrained> & pystate,
                     typename PyEqualityConstrained::State::t const & state,
                     typename PyEqualityConstrained::Functions::t & fns 
                 ) {
                     Unconstrained::Functions::fromPython_
-                        <PyEqualityConstrained> (msg,pyfns,pystate,state,fns);
+                        <PyEqualityConstrained> (pyfns,pystate,state,fns);
                     EqualityConstrained::Functions::fromPython_
-                        <PyEqualityConstrained> (msg,pyfns,pystate,state,fns);
+                        <PyEqualityConstrained> (pyfns,pystate,state,fns);
                 }
             }
 
@@ -2994,74 +3060,60 @@ namespace Optizelle {
                 PyObject * getMin(
                     PyObject * self,
                     PyObject * args
-                ) {
-                    // Calling convention should be
-                    // (X,Y,msg,fns,state,smanip)
-                    PyObject *X,*Y,*msg_,*pyfns_,*pystate_,*smanip_;
-                    if(!PyArg_ParseTuple(args,"OOOOOO",
-                        &X,&Y,&msg_,&pyfns_,&pystate_,&smanip_)
-                    )
-                        return nullptr; 
+                ) try {
+                    // Grab variables 
+                    PY_VAR_6(X,Y,msg,pyfns,pystate,smanip);
 
-                    // Make sure we bail if we detect a Python exception
-                    try {
-                        // Create a messaging object
-                        Optizelle::Python::Messaging msg(msg_,
-                            PyObjectPtrMode::Attach);
-                            
-                        // Create a Python state 
-                        Python::State <PyEqualityConstrained> pystate(pystate_,
-                            PyObjectPtrMode::Attach);
+                    // Create a messaging object
+                    auto msg = Optizelle::Python::Messaging::python(msg_);
                         
-                        // Grab the base vectors from the Python state
-                        Vector x(msg_,X,
-                            PyObject_GetAttrString(pystate.get(),"x"));
-                        Vector y(msg_,Y,
-                            PyObject_GetAttrString(pystate.get(),"y"));
+                    // Create a Python state 
+                    auto pystate = Python::State <PyEqualityConstrained> (
+                        pystate_);
+                    
+                    // Grab the base vectors from the Python state
+                    auto x_ = capi::PyObject_GetAttrString(pystate.data,"x");
+                    auto x = Vector(X_,x_);
+                    auto y_ = capi::PyObject_GetAttrString(pystate.data,"y");
+                    auto y = Vector(Y_,y_);
 
-                        // Create a C++ state
-                        typename PyEqualityConstrained::State::t state(x,y);
-                        
-                        // Convert the Python state to a C++ state
-                        pystate.fromPython(state);
+                    // Create a C++ state
+                    typename PyEqualityConstrained::State::t state(x,y);
+                    
+                    // Convert the Python state to a C++ state
+                    pystate.fromPython(state);
 
-                        // Create a Python bundle of functions
-                        Python::Functions <PyEqualityConstrained> pyfns(
-                            msg.get(),
-                            pystate.get(),
-                            state,
-                            pyfns_,
-                            PyObjectPtrMode::Attach);
+                    // Create a Python bundle of functions
+                    auto pyfns = Python::Functions <PyEqualityConstrained>(
+                        pystate,
+                        state,
+                        pyfns_);
 
-                        // Create a C++ bundle of functions
-                        typename PyEqualityConstrained::Functions::t fns;
-                        
-                        // Convert the Python bundle of functions to C++ 
-                        pyfns.fromPython(fns);
-                        
-                        // Create a state manipulator 
-                        Python::StateManipulator <PyEqualityConstrained> smanip(
-                            msg.get(),
-                            pystate.get(),
-                            pyfns.get(),
-                            smanip_,
-                            PyObjectPtrMode::Attach);
-                       
-                        // Minimize
-                        PyEqualityConstrained::Algorithms::getMin(
-                            msg,fns,state,smanip);
-                        
-                        // Convert the C++ state to a Python state
-                        pystate.toPython(state);
+                    // Create a C++ bundle of functions
+                    typename PyEqualityConstrained::Functions::t fns;
+                    
+                    // Convert the Python bundle of functions to C++ 
+                    pyfns.fromPython(fns);
+                    
+                    // Create a state manipulator 
+                    auto smanip =
+                        Python::StateManipulator <PyEqualityConstrained>(
+                        pystate,
+                        pyfns,
+                        smanip_);
+                   
+                    // Minimize
+                    PyEqualityConstrained::Algorithms::getMin(
+                        msg,fns,state,smanip);
+                    
+                    // Convert the C++ state to a Python state
+                    pystate.toPython(state);
 
-                        // Return nothing 
-                        return Py_None; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){
-                        return nullptr;
-                    }
-                }
+                    // Return nothing 
+                    Py_RETURN_NONE; 
+                
+                // Catch errors 
+                } CATCH_PYTHON_ERRORS;
             }
             
             // Utilities for restarting the optimization
@@ -3070,221 +3122,166 @@ namespace Optizelle {
                 PyObject * release(
                     PyObject * self,
                     PyObject * args
-                ) {
-                    // Calling convention should be
-                    // (X,Y,msg,state,xs,ys,reals,nats,params)
-                    PyObject *X,*Y,*msg,*pystate_,*pyxs,*pyys,*pyreals,
-                        *pynats,*pyparams;
-                    if(!PyArg_ParseTuple(args,"OOOOOOOOO",
-                        &X,&Y,&msg,&pystate_,&pyxs,&pyys,&pyreals,
-                        &pynats,&pyparams)
-                    )
-                        return nullptr; 
+                ) try {
+                    // Grab variables
+                    PY_VAR_8(X,Y,pystate,pyxs,pyys,pyreals,pynats,pyparams);
 
-                    // Make sure we bail if we detect a Python exception
-                    try {
-                        // Create a Python state 
-                        Python::State <PyEqualityConstrained> pystate(pystate_,
-                            PyObjectPtrMode::Attach);
-                        
-                        // Grab the base vectors from the Python state
-                        Vector x(msg,X,
-                            PyObject_GetAttrString(pystate.get(),"x"));
-                        Vector y(msg,Y,
-                            PyObject_GetAttrString(pystate.get(),"y"));
+                    // Create a Python state 
+                    auto pystate = Python::State <PyEqualityConstrained> (
+                        pystate_);
+                    
+                    // Grab the base vectors from the Python state
+                    auto x_ = capi::PyObject_GetAttrString(pystate.data,"x");
+                    auto x = Vector(X_,x_);
+                    auto y_ = capi::PyObject_GetAttrString(pystate.data,"y");
+                    auto y = Vector(Y_,y_);
 
-                        // Create a C++ state
-                        typename PyEqualityConstrained::State::t state(x,y);
-                        
-                        // Convert the Python state to a C++ state
-                        pystate.fromPython(state);
+                    // Create a C++ state
+                    typename PyEqualityConstrained::State::t state(x,y);
+                    
+                    // Convert the Python state to a C++ state
+                    pystate.fromPython(state);
 
-                        // Do a release 
-                        PyEqualityConstrained::Restart::X_Vectors xs;
-                        PyEqualityConstrained::Restart::Y_Vectors ys;
-                        PyEqualityConstrained::Restart::Reals reals;
-                        PyEqualityConstrained::Restart::Naturals nats;
-                        PyEqualityConstrained::Restart::Params params;
-                        PyEqualityConstrained::Restart
-                            ::release(state,xs,ys,reals,nats,params);
+                    // Do a release 
+                    PyEqualityConstrained::Restart::X_Vectors xs;
+                    PyEqualityConstrained::Restart::Y_Vectors ys;
+                    PyEqualityConstrained::Restart::Reals reals;
+                    PyEqualityConstrained::Restart::Naturals nats;
+                    PyEqualityConstrained::Restart::Params params;
+                    PyEqualityConstrained::Restart
+                        ::release(state,xs,ys,reals,nats,params);
 
-                        // Convert the restart information to Python 
-                        toPython::Vectors(xs,pyxs);
-                        toPython::Vectors(ys,pyys);
-                        toPython::Reals(reals,pyreals);
-                        toPython::Naturals(nats,pynats);
-                        toPython::Params(params,pyparams);
+                    // Convert the restart information to Python 
+                    toPython::Vectors(xs,pyxs_);
+                    toPython::Vectors(ys,pyys_);
+                    toPython::Reals(reals,pyreals_);
+                    toPython::Naturals(nats,pynats_);
+                    toPython::Params(params,pyparams_);
 
-                        // Return nothing 
-                        return Py_None; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){
-                        return nullptr;
-                    }
-                }
+                    // Return nothing 
+                    Py_RETURN_NONE; 
+                
+                // Catch errors 
+                } CATCH_PYTHON_ERRORS;
 
                 // Capture data from structures controlled by the user.  
                 PyObject * capture(
                     PyObject * self,
                     PyObject * args
-                ) {
-                    // Calling convention should be
-                    // (X,Y,msg,state,xs,ys,reals,nats,params)
-                    PyObject *X,*Y,*msg_,*pystate_,*pyxs,*pyys,
-                        *pyreals,*pynats,*pyparams;
-                    if(!PyArg_ParseTuple(args,"OOOOOOOOO",
-                        &X,&Y,&msg_,&pystate_,&pyxs,&pyys,
-                        &pyreals,&pynats,&pyparams)
-                    )
-                        return nullptr; 
+                ) try {
+                    // Grab variables
+                    PY_VAR_8(X,Y,pystate,pyxs,pyys,pyreals,pynats,pyparams);
 
-                    // Make sure we bail if we detect a Python exception
-                    try {
-                        // Create a messaging object
-                        Optizelle::Python::Messaging msg(msg_,
-                            PyObjectPtrMode::Attach);
+                    // Create a Python state 
+                    auto pystate = Python::State <PyEqualityConstrained> (
+                        pystate_);
+                    
+                    // Grab the base vectors from the Python state
+                    auto x_ = capi::PyObject_GetAttrString(pystate.data,"x");
+                    auto x = Vector(X_,x_);
+                    auto y_ = capi::PyObject_GetAttrString(pystate.data,"y");
+                    auto y = Vector(Y_,y_);
 
-                        // Create a Python state 
-                        Python::State <PyEqualityConstrained> pystate(pystate_,
-                            PyObjectPtrMode::Attach);
-                        
-                        // Grab the base vectors from the Python state
-                        Vector x(msg_,X,
-                            PyObject_GetAttrString(pystate.get(),"x"));
-                        Vector y(msg_,Y,
-                            PyObject_GetAttrString(pystate.get(),"y"));
+                    // Create a C++ state
+                    typename PyEqualityConstrained::State::t state(x,y);
+                   
+                    // Allocate memory for the released vectors
+                    PyEqualityConstrained::Restart::X_Vectors xs;
+                    PyEqualityConstrained::Restart::Y_Vectors ys;
+                    PyEqualityConstrained::Restart::Reals reals;
+                    PyEqualityConstrained::Restart::Naturals nats;
+                    PyEqualityConstrained::Restart::Params params;
+                    
+                    // Convert the restart information from Python 
+                    fromPython::Vectors(x,pyxs_,xs);
+                    fromPython::Vectors(y,pyys_,ys);
+                    fromPython::Reals(pyreals_,reals);
+                    fromPython::Naturals(pynats_,nats);
+                    fromPython::Params(pyparams_,params);
 
-                        // Create a C++ state
-                        typename PyEqualityConstrained::State::t state(x,y);
-                       
-                        // Allocate memory for the released vectors
-                        PyEqualityConstrained::Restart::X_Vectors xs;
-                        PyEqualityConstrained::Restart::Y_Vectors ys;
-                        PyEqualityConstrained::Restart::Reals reals;
-                        PyEqualityConstrained::Restart::Naturals nats;
-                        PyEqualityConstrained::Restart::Params params;
-                        
-                        // Convert the restart information from Python 
-                        fromPython::Vectors(x,pyxs,xs);
-                        fromPython::Vectors(y,pyys,ys);
-                        fromPython::Reals(pyreals,reals);
-                        fromPython::Naturals(pynats,nats);
-                        fromPython::Params(pyparams,params);
+                    // Do a capture 
+                    PyEqualityConstrained::Restart
+                        ::capture(state,xs,ys,reals,nats,params);
 
-                        // Do a capture 
-                        PyEqualityConstrained::Restart
-                            ::capture(msg,state,xs,ys,reals,nats,params);
+                    // Convert the C++ state to a Python state
+                    pystate.toPython(state);
 
-                        // Convert the C++ state to a Python state
-                        pystate.toPython(state);
-
-                        // Return nothing 
-                        return Py_None; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){
-                        return nullptr;
-                    }
-                }
+                    // Return nothing 
+                    Py_RETURN_NONE; 
                 
+                // Catch errors 
+                } CATCH_PYTHON_ERRORS;
+
                 // Writes a json restart file
                 PyObject * write_restart(
                     PyObject * self,
                     PyObject * args
-                ) {
-                    // Calling convention should be (X,Y,msg,fname,state)
-                    PyObject *X,*Y,*msg_,*fname_,*pystate_;
-                    if(!PyArg_ParseTuple(args,"OOOOO",
-                        &X,&Y,&msg_,&fname_,&pystate_)
-                    )
-                        return nullptr; 
+                ) try {
+                    // Grab variables 
+                    PY_VAR_4(X,Y,fname,pystate);
 
-                    // Make sure we bail if we detect a Python exception
-                    try {
-                        // Create a messaging object
-                        Optizelle::Python::Messaging msg(msg_,
-                            PyObjectPtrMode::Attach);
-                        
-                        // Grab the file name
-                        std::string fname(PyString_AsString(fname_));
+                    // Grab the file name
+                    auto fname = capi::PyString_AsString(fname_);
 
-                        // Create a Python state 
-                        Python::State <PyEqualityConstrained> pystate(pystate_,
-                            PyObjectPtrMode::Attach);
-                        
-                        // Grab the base vectors from the Python state
-                        Vector x(msg_,X,
-                            PyObject_GetAttrString(pystate.get(),"x"));
-                        Vector y(msg_,Y,
-                            PyObject_GetAttrString(pystate.get(),"y"));
-                        
-                        // Create a C++ state
-                        typename PyEqualityConstrained::State::t state(x,y);
-                        
-                        // Convert Python state to C++ 
-                        pystate.fromPython(state);
+                    // Create a Python state 
+                    auto pystate = Python::State <PyEqualityConstrained> (
+                        pystate_);
+                    
+                    // Grab the base vectors from the Python state
+                    auto x_ = capi::PyObject_GetAttrString(pystate.data,"x");
+                    auto x = Vector(X_,x_);
+                    auto y_ = capi::PyObject_GetAttrString(pystate.data,"y");
+                    auto y = Vector(Y_,y_);
+                    
+                    // Create a C++ state
+                    typename PyEqualityConstrained::State::t state(x,y);
+                    
+                    // Convert Python state to C++ 
+                    pystate.fromPython(state);
 
-                        // Write the restart file
-                        PyJsonEqualityConstrained::write_restart(
-                            msg,fname,state);
-                        
-                        // Return nothing 
-                        return Py_None; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){
-                        return nullptr;
-                    }
-                }
+                    // Write the restart file
+                    PyJsonEqualityConstrained::write_restart(fname,state);
+                    
+                    // Return nothing 
+                    Py_RETURN_NONE; 
                 
+                // Catch errors 
+                } CATCH_PYTHON_ERRORS;
+
                 // Reads a json restart file
                 PyObject * read_restart(
                     PyObject * self,
                     PyObject * args
-                ) {
-                    // Calling convention should be (X,Y,msg,fname,x,y,state)
-                    PyObject *X,*Y,*msg_,*fname_,*x_,*y_,*pystate_;
-                    if(!PyArg_ParseTuple(args,"OOOOOOO",
-                        &X,&Y,&msg_,&fname_,&x_,&y_,&pystate_)
-                    )
-                        return nullptr; 
+                ) try {
+                    // Grab variables
+                    PY_VAR_6(X,Y,fname,x,y,pystate);
 
-                    // Make sure we bail if we detect a Python exception
-                    try {
-                        // Create a messaging object
-                        Optizelle::Python::Messaging msg(msg_,
-                            PyObjectPtrMode::Attach);
-                        
-                        // Grab the file name
-                        std::string fname(PyString_AsString(fname_));
+                    // Grab the file name
+                    auto fname = capi::PyString_AsString(fname_);
 
-                        // Create a Python state 
-                        Python::State <PyEqualityConstrained> pystate(pystate_,
-                            PyObjectPtrMode::Attach);
-                        
-                        // Grab the reference vector 
-                        Vector x(msg_,X,x_,PyObjectPtrMode::Attach);
-                        Vector y(msg_,Y,y_,PyObjectPtrMode::Attach);
-                        
-                        // Create a C++ state
-                        typename PyEqualityConstrained::State::t state(x,y);
+                    // Create a Python state 
+                    auto pystate = Python::State <PyEqualityConstrained> (
+                        pystate_);
+                    
+                    // Grab the reference vector 
+                    auto x = Vector(X_,x_);
+                    auto y = Vector(Y_,y_);
+                    
+                    // Create a C++ state
+                    typename PyEqualityConstrained::State::t state(x,y);
 
-                        // Read the restart file into the C++ state 
-                        PyJsonEqualityConstrained::read_restart(
-                            msg,fname,x,y,state);
-                        
-                        // Convert the C++ state to a Python state
-                        pystate.toPython(state);
+                    // Read the restart file into the C++ state 
+                    PyJsonEqualityConstrained::read_restart(
+                        fname,x,y,state);
+                    
+                    // Convert the C++ state to a Python state
+                    pystate.toPython(state);
 
-                        // Return nothing 
-                        return Py_None; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){
-                        return nullptr;
-                    }
-                }
+                    // Return nothing 
+                    Py_RETURN_NONE; 
+                
+                // Catch errors 
+                } CATCH_PYTHON_ERRORS;
             }
         }
         
@@ -3300,7 +3297,7 @@ namespace Optizelle {
                 // Convert a C++ state to a Python state 
                 void toPython_(
                     typename PyInequalityConstrained::State::t const & state,
-                    PyObject * const pystate
+                    PyObjectPtr & pystate
                 ){
                     toPython::Vector("z",state.z,pystate);
                     toPython::Vector("dz",state.dz,pystate);
@@ -3325,15 +3322,15 @@ namespace Optizelle {
                 }
                 void toPython(
                     typename PyInequalityConstrained::State::t const & state,
-                    PyObject * const pystate
+                    Python::State <PyInequalityConstrained> & pystate
                 ){
-                    Unconstrained::State::toPython_(state,pystate);
-                    InequalityConstrained::State::toPython_(state,pystate);
+                    Unconstrained::State::toPython_(state,pystate.data);
+                    InequalityConstrained::State::toPython_(state,pystate.data);
                 }
                 
                 // Convert a Python state to C++ 
                 void fromPython_(
-                    PyObject * const pystate,
+                    PyObjectPtr const & pystate,
                     typename PyInequalityConstrained::State::t & state
                 ){
                     fromPython::Vector("z",pystate,state.z);
@@ -3358,7 +3355,7 @@ namespace Optizelle {
                         state.z_diag);
                 }
                 void fromPython(
-                    PyObject * const pystate,
+                    PyObjectPtr const & pystate,
                     typename PyInequalityConstrained::State::t & state
                 ){
                     Unconstrained::State::fromPython_(pystate,state);
@@ -3369,106 +3366,83 @@ namespace Optizelle {
                 PyObject * create( 
                     PyObject * self,
                     PyObject * args
-                ){
-                    // Calling convention should be (pystate,X,Z,msg,x,z) 
-                    PyObject *pystate_,*X,*Z,*msg,*x_,*z_;
-                    if(!PyArg_ParseTuple(
-                        args,"OOOOOO",&pystate_,&X,&Z,&msg,&x_,&z_)
-                    )
-                        return nullptr; 
+                ) try {
+                    // Grab variables 
+                    PY_VAR_5(pystate,X,Z,x,z);
 
-                    // Make sure we bail if we detect a Python exception
-                    try {
-                        // Create vectors from the user input
-                        Vector x(msg,X,x_,PyObjectPtrMode::Attach);
-                        Vector z(msg,Z,z_,PyObjectPtrMode::Attach);
+                    // Create vectors from the user input
+                    auto x = Vector(X_,x_);
+                    auto z = Vector(Z_,z_);
 
-                        // Create a Python state 
-                        Python::State<PyInequalityConstrained> pystate(pystate_,
-                            PyObjectPtrMode::Attach);
+                    // Create a Python state 
+                    auto pystate = Python::State <PyInequalityConstrained> (
+                        pystate_);
 
-                        // Create a new C++ state
-                        typename PyInequalityConstrained::State::t state(x,z);
+                    // Create a new C++ state
+                    typename PyInequalityConstrained::State::t state(x,z);
 
-                        // Convert the state to a Python state
-                        pystate.toPython(state);
+                    // Convert the state to a Python state
+                    pystate.toPython(state);
 
-                        // Return nothing 
-                        return Py_None; 
+                    // Return nothing 
+                    Py_RETURN_NONE; 
+                
+                // Catch errors 
+                } CATCH_PYTHON_ERRORS;
 
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){
-                        return nullptr;
-                    }
-                }
-        
                 // Read json parameters from file
                 PyObject * readJson(
                     PyObject * self,
                     PyObject * args
-                ) {
-                    // Calling convention should be (X,Z,msg,fname,pystate) 
-                    PyObject *X,*Z,*msg_,*fname_,*pystate_;
-                    if(!PyArg_ParseTuple(args,"OOOOO",
-                        &X,&Z,&msg_,&fname_,&pystate_)
-                    )
-                        return nullptr; 
+                ) try {
+                    // Grab variables 
+                    PY_VAR_4(X,Z,fname,pystate);
 
-                    // Make sure we bail if we detect a Python exception
-                    try {
-                        // Grab the file name
-                        std::string fname(PyString_AsString(fname_));
+                    // Grab the file name
+                    auto fname = capi::PyString_AsString(fname_);
 
-                        // Create a messaging object
-                        Optizelle::Python::Messaging msg(msg_,
-                            PyObjectPtrMode::Attach);
+                    // Create a Python state 
+                    auto pystate = Python::State <PyInequalityConstrained> (
+                        pystate_);
+                
+                    // Grab the base vectors from the Python state
+                    auto x_ = capi::PyObject_GetAttrString(pystate.data,"x");
+                    auto x = Vector(X_,x_);
+                    auto z_ = capi::PyObject_GetAttrString(pystate.data,"z");
+                    auto z = Vector(Z_,z_);
 
-                        // Create a Python state 
-                        Python::State<PyInequalityConstrained> pystate(pystate_,
-                            PyObjectPtrMode::Attach);
+                    // Create a new C++ state
+                    typename PyInequalityConstrained::State::t state(x,z);
                     
-                        // Grab the base vectors from the Python state
-                        Vector x(msg_,X,
-                            PyObject_GetAttrString(pystate.get(),"x"));
-                        Vector z(msg_,Z,
-                            PyObject_GetAttrString(pystate.get(),"z"));
+                    // Convert the Python state to a C++ state
+                    pystate.fromPython(state);
 
-                        // Create a new C++ state
-                        typename PyInequalityConstrained::State::t state(x,z);
-                        
-                        // Convert the Python state to a C++ state
-                        pystate.fromPython(state);
+                    // Read the JSON file into the C++ state
+                    PyJsonInequalityConstrained::read(fname,state);
 
-                        // Read the JSON file into the C++ state
-                        PyJsonInequalityConstrained::read(msg,fname,state);
-
-                        // Convert the C++ state to a Python state
-                        pystate.toPython(state);
-                                
-                        // Return nothing 
-                        return Py_None; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){
-                        return nullptr;
-                    }
-                }
+                    // Convert the C++ state to a Python state
+                    pystate.toPython(state);
+                            
+                    // Return nothing 
+                    Py_RETURN_NONE; 
+                
+                // Catch errors 
+                } CATCH_PYTHON_ERRORS;
             }
             
             // All the functions required by an optimization algorithm.  
             namespace Functions{
                 // Convert a Python bundle to C++ 
                 void fromPython(
-                    PyObject * const msg,
-                    PyObject * const pyfns,
-                    PyObject * const pystate,
+                    Python::Functions <PyInequalityConstrained> const & pyfns,
+                    Python::State <PyInequalityConstrained> & pystate,
                     typename PyInequalityConstrained::State::t const & state,
                     typename PyInequalityConstrained::Functions::t & fns 
                 ) {
                     Unconstrained::Functions::fromPython_
-                        <PyInequalityConstrained> (msg,pyfns,pystate,state,fns);
+                        <PyInequalityConstrained> (pyfns,pystate,state,fns);
                     InequalityConstrained::Functions::fromPython_
-                        <PyInequalityConstrained> (msg,pyfns,pystate,state,fns);
+                        <PyInequalityConstrained> (pyfns,pystate,state,fns);
                 }
             }
 
@@ -3478,74 +3452,60 @@ namespace Optizelle {
                 PyObject * getMin(
                     PyObject * self,
                     PyObject * args
-                ) {
-                    // Calling convention should be
-                    // (X,Z,msg,fns,state,smanip)
-                    PyObject *X,*Z,*msg_,*pyfns_,*pystate_,*smanip_;
-                    if(!PyArg_ParseTuple(args,"OOOOOO",
-                        &X,&Z,&msg_,&pyfns_,&pystate_,&smanip_)
-                    )
-                        return nullptr; 
+                ) try {
+                    // Grab variables 
+                    PY_VAR_6(X,Z,msg,pyfns,pystate,smanip);
 
-                    // Make sure we bail if we detect a Python exception
-                    try {
-                        // Create a messaging object
-                        Optizelle::Python::Messaging msg(msg_,
-                            PyObjectPtrMode::Attach);
-                            
-                        // Create a Python state 
-                        Python::State<PyInequalityConstrained> pystate(pystate_,
-                            PyObjectPtrMode::Attach);
+                    // Create a messaging object
+                    auto msg = Optizelle::Python::Messaging::python(msg_);
                         
-                        // Grab the base vectors from the Python state
-                        Vector x(msg_,X,
-                            PyObject_GetAttrString(pystate.get(),"x"));
-                        Vector z(msg_,Z,
-                            PyObject_GetAttrString(pystate.get(),"z"));
+                    // Create a Python state 
+                    auto pystate = Python::State <PyInequalityConstrained> (
+                        pystate_);
+                    
+                    // Grab the base vectors from the Python state
+                    auto x_ = capi::PyObject_GetAttrString(pystate.data,"x");
+                    auto x = Vector(X_,x_);
+                    auto z_ = capi::PyObject_GetAttrString(pystate.data,"z");
+                    auto z = Vector(Z_,z_);
 
-                        // Create a C++ state
-                        typename PyInequalityConstrained::State::t state(x,z);
-                        
-                        // Convert the Python state to a C++ state
-                        pystate.fromPython(state);
+                    // Create a C++ state
+                    typename PyInequalityConstrained::State::t state(x,z);
+                    
+                    // Convert the Python state to a C++ state
+                    pystate.fromPython(state);
 
-                        // Create a Python bundle of functions
-                        Python::Functions <PyInequalityConstrained> pyfns(
-                            msg.get(),
-                            pystate.get(),
-                            state,
-                            pyfns_,
-                            PyObjectPtrMode::Attach);
+                    // Create a Python bundle of functions
+                    auto pyfns = Python::Functions <PyInequalityConstrained>(
+                        pystate,
+                        state,
+                        pyfns_);
 
-                        // Create a C++ bundle of functions
-                        typename PyInequalityConstrained::Functions::t fns;
-                        
-                        // Convert the Python bundle of functions to C++ 
-                        pyfns.fromPython(fns);
-                        
-                        // Create a state manipulator 
-                        Python::StateManipulator<PyInequalityConstrained>smanip(
-                            msg.get(),
-                            pystate.get(),
-                            pyfns.get(),
-                            smanip_,
-                            PyObjectPtrMode::Attach);
-                       
-                        // Minimize
-                        PyInequalityConstrained::Algorithms::getMin(
-                            msg,fns,state,smanip);
-                        
-                        // Convert the C++ state to a Python state
-                        pystate.toPython(state);
+                    // Create a C++ bundle of functions
+                    typename PyInequalityConstrained::Functions::t fns;
+                    
+                    // Convert the Python bundle of functions to C++ 
+                    pyfns.fromPython(fns);
+                    
+                    // Create a state manipulator 
+                    auto smanip =
+                        Python::StateManipulator <PyInequalityConstrained>(
+                        pystate,
+                        pyfns,
+                        smanip_);
+                   
+                    // Minimize
+                    PyInequalityConstrained::Algorithms::getMin(
+                        msg,fns,state,smanip);
+                    
+                    // Convert the C++ state to a Python state
+                    pystate.toPython(state);
 
-                        // Return nothing 
-                        return Py_None; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){
-                        return nullptr;
-                    }
-                }
+                    // Return nothing 
+                    Py_RETURN_NONE; 
+                
+                // Catch errors 
+                } CATCH_PYTHON_ERRORS;
             }
             
             // Utilities for restarting the optimization
@@ -3554,221 +3514,166 @@ namespace Optizelle {
                 PyObject * release(
                     PyObject * self,
                     PyObject * args
-                ) {
-                    // Calling convention should be
-                    // (X,Z,msg,state,xs,zs,reals,nats,params)
-                    PyObject *X,*Z,*msg,*pystate_,*pyxs,*pyzs,*pyreals,
-                        *pynats,*pyparams;
-                    if(!PyArg_ParseTuple(args,"OOOOOOOOO",
-                        &X,&Z,&msg,&pystate_,&pyxs,&pyzs,&pyreals,
-                        &pynats,&pyparams)
-                    )
-                        return nullptr; 
+                ) try {
+                    // Grab variables
+                    PY_VAR_8(X,Z,pystate,pyxs,pyzs,pyreals,pynats,pyparams);
 
-                    // Make sure we bail if we detect a Python exception
-                    try {
-                        // Create a Python state 
-                        Python::State <PyInequalityConstrained>pystate(pystate_,
-                            PyObjectPtrMode::Attach);
-                        
-                        // Grab the base vectors from the Python state
-                        Vector x(msg,X,
-                            PyObject_GetAttrString(pystate.get(),"x"));
-                        Vector z(msg,Z,
-                            PyObject_GetAttrString(pystate.get(),"z"));
+                    // Create a Python state 
+                    auto pystate = Python::State <PyInequalityConstrained> (
+                        pystate_);
+                    
+                    // Grab the base vectors from the Python state
+                    auto x_ = capi::PyObject_GetAttrString(pystate.data,"x");
+                    auto x = Vector(X_,x_);
+                    auto z_ = capi::PyObject_GetAttrString(pystate.data,"z");
+                    auto z = Vector(Z_,z_);
 
-                        // Create a C++ state
-                        typename PyInequalityConstrained::State::t state(x,z);
-                        
-                        // Convert the Python state to a C++ state
-                        pystate.fromPython(state);
+                    // Create a C++ state
+                    typename PyInequalityConstrained::State::t state(x,z);
+                    
+                    // Convert the Python state to a C++ state
+                    pystate.fromPython(state);
 
-                        // Do a release 
-                        PyInequalityConstrained::Restart::X_Vectors xs;
-                        PyInequalityConstrained::Restart::Z_Vectors zs;
-                        PyInequalityConstrained::Restart::Reals reals;
-                        PyInequalityConstrained::Restart::Naturals nats;
-                        PyInequalityConstrained::Restart::Params params;
-                        PyInequalityConstrained::Restart
-                            ::release(state,xs,zs,reals,nats,params);
+                    // Do a release 
+                    PyInequalityConstrained::Restart::X_Vectors xs;
+                    PyInequalityConstrained::Restart::Z_Vectors zs;
+                    PyInequalityConstrained::Restart::Reals reals;
+                    PyInequalityConstrained::Restart::Naturals nats;
+                    PyInequalityConstrained::Restart::Params params;
+                    PyInequalityConstrained::Restart
+                        ::release(state,xs,zs,reals,nats,params);
 
-                        // Convert the restart information to Python 
-                        toPython::Vectors(xs,pyxs);
-                        toPython::Vectors(zs,pyzs);
-                        toPython::Reals(reals,pyreals);
-                        toPython::Naturals(nats,pynats);
-                        toPython::Params(params,pyparams);
+                    // Convert the restart information to Python 
+                    toPython::Vectors(xs,pyxs_);
+                    toPython::Vectors(zs,pyzs_);
+                    toPython::Reals(reals,pyreals_);
+                    toPython::Naturals(nats,pynats_);
+                    toPython::Params(params,pyparams_);
 
-                        // Return nothing 
-                        return Py_None; 
+                    // Return nothing 
+                    Py_RETURN_NONE; 
 
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){
-                        return nullptr;
-                    }
-                }
+                // Catch errors 
+                } CATCH_PYTHON_ERRORS;
 
                 // Capture data from structures controlled by the user.  
                 PyObject * capture(
                     PyObject * self,
                     PyObject * args
-                ) {
-                    // Calling convention should be
-                    // (X,Y,msg,state,xs,ys,reals,nats,params)
-                    PyObject *X,*Z,*msg_,*pystate_,*pyxs,*pyzs,
-                        *pyreals,*pynats,*pyparams;
-                    if(!PyArg_ParseTuple(args,"OOOOOOOOO",
-                        &X,&Z,&msg_,&pystate_,&pyxs,&pyzs,
-                        &pyreals,&pynats,&pyparams)
-                    )
-                        return nullptr; 
+                ) try {
+                    // Grab variables
+                    PY_VAR_8(X,Z,pystate,pyxs,pyzs,pyreals,pynats,pyparams);
 
-                    // Make sure we bail if we detect a Python exception
-                    try {
-                        // Create a messaging object
-                        Optizelle::Python::Messaging msg(msg_,
-                            PyObjectPtrMode::Attach);
+                    // Create a Python state 
+                    auto pystate = Python::State <PyInequalityConstrained> (
+                        pystate_);
+                    
+                    // Grab the base vectors from the Python state
+                    auto x_ = capi::PyObject_GetAttrString(pystate.data,"x");
+                    auto x = Vector(X_,x_);
+                    auto z_ = capi::PyObject_GetAttrString(pystate.data,"z");
+                    auto z = Vector(Z_,z_);
 
-                        // Create a Python state 
-                        Python::State <PyInequalityConstrained>pystate(pystate_,
-                            PyObjectPtrMode::Attach);
-                        
-                        // Grab the base vectors from the Python state
-                        Vector x(msg_,X,
-                            PyObject_GetAttrString(pystate.get(),"x"));
-                        Vector z(msg_,Z,
-                            PyObject_GetAttrString(pystate.get(),"z"));
+                    // Create a C++ state
+                    typename PyInequalityConstrained::State::t state(x,z);
+                   
+                    // Allocate memory for the released vectors
+                    PyInequalityConstrained::Restart::X_Vectors xs;
+                    PyInequalityConstrained::Restart::Z_Vectors zs;
+                    PyInequalityConstrained::Restart::Reals reals;
+                    PyInequalityConstrained::Restart::Naturals nats;
+                    PyInequalityConstrained::Restart::Params params;
+                    
+                    // Convert the restart information from Python 
+                    fromPython::Vectors(x,pyxs_,xs);
+                    fromPython::Vectors(z,pyzs_,zs);
+                    fromPython::Reals(pyreals_,reals);
+                    fromPython::Naturals(pynats_,nats);
+                    fromPython::Params(pyparams_,params);
 
-                        // Create a C++ state
-                        typename PyInequalityConstrained::State::t state(x,z);
-                       
-                        // Allocate memory for the released vectors
-                        PyInequalityConstrained::Restart::X_Vectors xs;
-                        PyInequalityConstrained::Restart::Z_Vectors zs;
-                        PyInequalityConstrained::Restart::Reals reals;
-                        PyInequalityConstrained::Restart::Naturals nats;
-                        PyInequalityConstrained::Restart::Params params;
-                        
-                        // Convert the restart information from Python 
-                        fromPython::Vectors(x,pyxs,xs);
-                        fromPython::Vectors(z,pyzs,zs);
-                        fromPython::Reals(pyreals,reals);
-                        fromPython::Naturals(pynats,nats);
-                        fromPython::Params(pyparams,params);
+                    // Do a capture 
+                    PyInequalityConstrained::Restart
+                        ::capture(state,xs,zs,reals,nats,params);
 
-                        // Do a capture 
-                        PyInequalityConstrained::Restart
-                            ::capture(msg,state,xs,zs,reals,nats,params);
+                    // Convert the C++ state to a Python state
+                    pystate.toPython(state);
 
-                        // Convert the C++ state to a Python state
-                        pystate.toPython(state);
+                    // Return nothing 
+                    Py_RETURN_NONE; 
 
-                        // Return nothing 
-                        return Py_None; 
+                // Python error
+                } CATCH_PYTHON_ERRORS;
 
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){
-                        return nullptr;
-                    }
-                }
-                
                 // Writes a json restart file
                 PyObject * write_restart(
                     PyObject * self,
                     PyObject * args
-                ) {
-                    // Calling convention should be (X,Z,msg,fname,state)
-                    PyObject *X,*Z,*msg_,*fname_,*pystate_;
-                    if(!PyArg_ParseTuple(args,"OOOOO",
-                        &X,&Z,&msg_,&fname_,&pystate_)
-                    )
-                        return nullptr; 
+                ) try {
+                    // Grab variables 
+                    PY_VAR_4(X,Z,fname,pystate);
 
-                    // Make sure we bail if we detect a Python exception
-                    try {
-                        // Create a messaging object
-                        Optizelle::Python::Messaging msg(msg_,
-                            PyObjectPtrMode::Attach);
-                        
-                        // Grab the file name
-                        std::string fname(PyString_AsString(fname_));
+                    // Grab the file name
+                    auto fname = capi::PyString_AsString(fname_);
 
-                        // Create a Python state 
-                        Python::State <PyInequalityConstrained>pystate(pystate_,
-                            PyObjectPtrMode::Attach);
-                        
-                        // Grab the base vectors from the Python state
-                        Vector x(msg_,X,
-                            PyObject_GetAttrString(pystate.get(),"x"));
-                        Vector z(msg_,Z,
-                            PyObject_GetAttrString(pystate.get(),"z"));
-                        
-                        // Create a C++ state
-                        typename PyInequalityConstrained::State::t state(x,z);
-                        
-                        // Convert Python state to C++ 
-                        pystate.fromPython(state);
+                    // Create a Python state 
+                    auto pystate = Python::State <PyInequalityConstrained> (
+                        pystate_);
+                    
+                    // Grab the base vectors from the Python state
+                    auto x_ = capi::PyObject_GetAttrString(pystate.data,"x");
+                    auto x = Vector(X_,x_);
+                    auto z_ = capi::PyObject_GetAttrString(pystate.data,"z");
+                    auto z = Vector(Z_,z_);
+                    
+                    // Create a C++ state
+                    typename PyInequalityConstrained::State::t state(x,z);
+                    
+                    // Convert Python state to C++ 
+                    pystate.fromPython(state);
 
-                        // Write the restart file
-                        PyJsonInequalityConstrained::write_restart(
-                            msg,fname,state);
-                        
-                        // Return nothing 
-                        return Py_None; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){
-                        return nullptr;
-                    }
-                }
+                    // Write the restart file
+                    PyJsonInequalityConstrained::write_restart(fname,state);
+                    
+                    // Return nothing 
+                    Py_RETURN_NONE; 
+                
+                // Catch errors 
+                } CATCH_PYTHON_ERRORS;
                 
                 // Reads a json restart file
                 PyObject * read_restart(
                     PyObject * self,
                     PyObject * args
-                ) {
-                    // Calling convention should be (X,Z,msg,fname,x,z,state)
-                    PyObject *X,*Z,*msg_,*fname_,*x_,*z_,*pystate_;
-                    if(!PyArg_ParseTuple(args,"OOOOOOO",
-                        &X,&Z,&msg_,&fname_,&x_,&z_,&pystate_)
-                    )
-                        return nullptr; 
+                ) try {
+                    // Grab variables
+                    PY_VAR_6(X,Z,fname,x,z,pystate);
 
-                    // Make sure we bail if we detect a Python exception
-                    try {
-                        // Create a messaging object
-                        Optizelle::Python::Messaging msg(msg_,
-                            PyObjectPtrMode::Attach);
-                        
-                        // Grab the file name
-                        std::string fname(PyString_AsString(fname_));
+                    // Grab the file name
+                    auto fname = capi::PyString_AsString(fname_);
 
-                        // Create a Python state 
-                        Python::State <PyInequalityConstrained>pystate(pystate_,
-                            PyObjectPtrMode::Attach);
-                        
-                        // Grab the reference vector 
-                        Vector x(msg_,X,x_,PyObjectPtrMode::Attach);
-                        Vector z(msg_,Z,z_,PyObjectPtrMode::Attach);
-                        
-                        // Create a C++ state
-                        typename PyInequalityConstrained::State::t state(x,z);
+                    // Create a Python state 
+                    auto pystate = Python::State <PyInequalityConstrained> (
+                        pystate_);
+                    
+                    // Grab the reference vector 
+                    auto x = Vector(X_,x_);
+                    auto z = Vector(Z_,z_);
+                    
+                    // Create a C++ state
+                    typename PyInequalityConstrained::State::t state(x,z);
 
-                        // Read the restart file into the C++ state 
-                        PyJsonInequalityConstrained::read_restart(
-                            msg,fname,x,z,state);
-                        
-                        // Convert the C++ state to a Python state
-                        pystate.toPython(state);
+                    // Read the restart file into the C++ state 
+                    PyJsonInequalityConstrained::read_restart(
+                        fname,x,z,state);
+                    
+                    // Convert the C++ state to a Python state
+                    pystate.toPython(state);
 
-                        // Return nothing 
-                        return Py_None; 
+                    // Return nothing 
+                    Py_RETURN_NONE; 
 
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){
-                        return nullptr;
-                    }
-                }
+                // Catch errors 
+                } CATCH_PYTHON_ERRORS;
             }
         }
         
@@ -3785,16 +3690,16 @@ namespace Optizelle {
                 // Convert a C++ state to a Python state 
                 void toPython(
                     typename PyConstrained::State::t const & state,
-                    PyObject * const pystate
+                    Python::State <PyConstrained> & pystate
                 ){
-                    Unconstrained::State::toPython_(state,pystate);
-                    EqualityConstrained::State::toPython_(state,pystate);
-                    InequalityConstrained::State::toPython_(state,pystate);
+                    Unconstrained::State::toPython_(state,pystate.data);
+                    EqualityConstrained::State::toPython_(state,pystate.data);
+                    InequalityConstrained::State::toPython_(state,pystate.data);
                 }
                 
                 // Convert a Python state to C++ 
                 void fromPython(
-                    PyObject * const pystate,
+                    PyObjectPtr const & pystate,
                     typename PyConstrained::State::t & state
                 ){
                     Unconstrained::State::fromPython_(pystate,state);
@@ -3806,111 +3711,86 @@ namespace Optizelle {
                 PyObject * create(
                     PyObject * self,
                     PyObject * args
-                ){
-                    // Calling convention should be (pystate,X,Y,Z,msg,x,y,z) 
-                    PyObject *pystate_,*X,*Y,*Z,*msg,*x_,*y_,*z_;
-                    if(!PyArg_ParseTuple(args,"OOOOOOOO",
-                        &pystate_,&X,&Y,&Z,&msg,&x_,&y_,&z_)
-                    )
-                        return nullptr; 
+                ) try {
+                    // Grab variables 
+                    PY_VAR_7(pystate,X,Y,Z,x,y,z);
 
-                    // Make sure we bail if we detect a Python exception
-                    try {
-                        // Create vectors from the user input
-                        Vector x(msg,X,x_,PyObjectPtrMode::Attach);
-                        Vector y(msg,Y,y_,PyObjectPtrMode::Attach);
-                        Vector z(msg,Z,z_,PyObjectPtrMode::Attach);
+                    // Create vectors from the user input
+                    auto x = Vector(X_,x_);
+                    auto y = Vector(Y_,y_);
+                    auto z = Vector(Z_,z_);
 
-                        // Create a Python state 
-                        Python::State <PyConstrained> pystate(pystate_,
-                            PyObjectPtrMode::Attach);
+                    // Create a Python state 
+                    auto pystate = Python::State <PyConstrained> (pystate_);
 
-                        // Create a new C++ state
-                        typename PyConstrained::State::t state(x,y,z);
+                    // Create a new C++ state
+                    typename PyConstrained::State::t state(x,y,z);
 
-                        // Convert the state to a Python state
-                        pystate.toPython(state);
+                    // Convert the state to a Python state
+                    pystate.toPython(state);
 
-                        // Return nothing 
-                        return Py_None; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){
-                        return nullptr;
-                    }
-                }
+                    // Return nothing 
+                    Py_RETURN_NONE; 
+                
+                // Catch errors 
+                } CATCH_PYTHON_ERRORS;
 
                 // Read json parameters from file
                 PyObject * readJson(
                     PyObject * self,
                     PyObject * args
-                ) {
-                    // Calling convention should be (X,Y,Z,msg,fname,pystate) 
-                    PyObject *X,*Y,*Z,*msg_,*fname_,*pystate_;
-                    if(!PyArg_ParseTuple(args,"OOOOOO",
-                        &X,&Y,&Z,&msg_,&fname_,&pystate_)
-                    )
-                        return nullptr; 
+                ) try {
+                    // Grab variables 
+                    PY_VAR_5(X,Y,Z,fname,pystate);
 
-                    // Make sure we bail if we detect a Python exception
-                    try {
-                        // Grab the file name
-                        std::string fname(PyString_AsString(fname_));
+                    // Grab the file name
+                    auto fname = capi::PyString_AsString(fname_);
 
-                        // Create a messaging object
-                        Optizelle::Python::Messaging msg(msg_,
-                            PyObjectPtrMode::Attach);
+                    // Create a Python state 
+                    auto pystate = Python::State <PyConstrained> (pystate_);
+                
+                    // Grab the base vectors from the Python state
+                    auto x_ = capi::PyObject_GetAttrString(pystate.data,"x");
+                    auto x = Vector(X_,x_);
+                    auto y_ = capi::PyObject_GetAttrString(pystate.data,"y");
+                    auto y = Vector(Y_,y_);
+                    auto z_ = capi::PyObject_GetAttrString(pystate.data,"z");
+                    auto z = Vector(Z_,z_);
 
-                        // Create a Python state 
-                        Python::State <PyConstrained> pystate(pystate_,
-                            PyObjectPtrMode::Attach);
+                    // Create a new C++ state
+                    typename PyConstrained::State::t state(x,y,z);
                     
-                        // Grab the base vectors from the Python state
-                        Vector x(msg_,X,
-                            PyObject_GetAttrString(pystate.get(),"x"));
-                        Vector y(msg_,Y,
-                            PyObject_GetAttrString(pystate.get(),"y"));
-                        Vector z(msg_,Z,
-                            PyObject_GetAttrString(pystate.get(),"z"));
+                    // Convert the Python state to a C++ state
+                    pystate.fromPython(state);
 
-                        // Create a new C++ state
-                        typename PyConstrained::State::t state(x,y,z);
-                        
-                        // Convert the Python state to a C++ state
-                        pystate.fromPython(state);
+                    // Read the JSON file into the C++ state
+                    PyJsonConstrained::read(fname,state);
 
-                        // Read the JSON file into the C++ state
-                        PyJsonConstrained::read(msg,fname,state);
-
-                        // Convert the C++ state to a Python state
-                        pystate.toPython(state);
-                                
-                        // Return nothing 
-                        return Py_None; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){
-                        return nullptr;
-                    }
-                }
+                    // Convert the C++ state to a Python state
+                    pystate.toPython(state);
+                            
+                    // Return nothing 
+                    Py_RETURN_NONE; 
+                
+                // Catch errors 
+                } CATCH_PYTHON_ERRORS;
             }
             
             // All the functions required by an optimization algorithm.  
             namespace Functions{
                 // Convert a Python bundle to C++ 
                 void fromPython(
-                    PyObject * const msg,
-                    PyObject * const pyfns,
-                    PyObject * const pystate,
+                    Python::Functions <PyConstrained> const & pyfns,
+                    Python::State <PyConstrained> & pystate,
                     typename PyConstrained::State::t const & state,
                     typename PyConstrained::Functions::t & fns 
                 ) {
                     Unconstrained::Functions::fromPython_
-                        <PyConstrained> (msg,pyfns,pystate,state,fns);
+                        <PyConstrained> (pyfns,pystate,state,fns);
                     EqualityConstrained::Functions::fromPython_
-                        <PyConstrained> (msg,pyfns,pystate,state,fns);
+                        <PyConstrained> (pyfns,pystate,state,fns);
                     InequalityConstrained::Functions::fromPython_
-                        <PyConstrained> (msg,pyfns,pystate,state,fns);
+                        <PyConstrained> (pyfns,pystate,state,fns);
                 }
             }
 
@@ -3920,76 +3800,60 @@ namespace Optizelle {
                 PyObject * getMin(
                     PyObject * self,
                     PyObject * args
-                ) {
-                    // Calling convention should be
-                    // (X,Y,Z,msg,fns,state,smanip)
-                    PyObject *X,*Y,*Z,*msg_,*pyfns_,*pystate_,*smanip_;
-                    if(!PyArg_ParseTuple(args,"OOOOOOO",
-                        &X,&Y,&Z,&msg_,&pyfns_,&pystate_,&smanip_)
-                    )
-                        return nullptr; 
+                ) try {
+                    // Grab variables 
+                    PY_VAR_7(X,Y,Z,msg,pyfns,pystate,smanip);
 
-                    // Make sure we bail if we detect a Python exception
-                    try {
-                        // Create a messaging object
-                        Optizelle::Python::Messaging msg(msg_,
-                            PyObjectPtrMode::Attach);
-                            
-                        // Create a Python state 
-                        Python::State<PyConstrained> pystate(pystate_,
-                            PyObjectPtrMode::Attach);
+                    // Create a messaging object
+                    auto msg = Optizelle::Python::Messaging::python(msg_);
                         
-                        // Grab the base vectors from the Python state
-                        Vector x(msg_,X,
-                            PyObject_GetAttrString(pystate.get(),"x"));
-                        Vector y(msg_,Y,
-                            PyObject_GetAttrString(pystate.get(),"y"));
-                        Vector z(msg_,Z,
-                            PyObject_GetAttrString(pystate.get(),"z"));
+                    // Create a Python state 
+                    auto pystate = Python::State <PyConstrained> (pystate_);
+                    
+                    // Grab the base vectors from the Python state
+                    auto x_ = capi::PyObject_GetAttrString(pystate.data,"x");
+                    auto x = Vector(X_,x_);
+                    auto y_ = capi::PyObject_GetAttrString(pystate.data,"y");
+                    auto y = Vector(Y_,y_);
+                    auto z_ = capi::PyObject_GetAttrString(pystate.data,"z");
+                    auto z = Vector(Z_,z_);
 
-                        // Create a C++ state
-                        typename PyConstrained::State::t state(x,y,z);
-                        
-                        // Convert the Python state to a C++ state
-                        pystate.fromPython(state);
+                    // Create a C++ state
+                    typename PyConstrained::State::t state(x,y,z);
+                    
+                    // Convert the Python state to a C++ state
+                    pystate.fromPython(state);
 
-                        // Create a Python bundle of functions
-                        Python::Functions <PyConstrained> pyfns(
-                            msg.get(),
-                            pystate.get(),
-                            state,
-                            pyfns_,
-                            PyObjectPtrMode::Attach);
+                    // Create a Python bundle of functions
+                    auto pyfns = Python::Functions <PyConstrained>(
+                        pystate,
+                        state,
+                        pyfns_);
 
-                        // Create a C++ bundle of functions
-                        typename PyConstrained::Functions::t fns;
-                        
-                        // Convert the Python bundle of functions to C++ 
-                        pyfns.fromPython(fns);
-                        
-                        // Create a state manipulator 
-                        Python::StateManipulator<PyConstrained>smanip(
-                            msg.get(),
-                            pystate.get(),
-                            pyfns.get(),
-                            smanip_,
-                            PyObjectPtrMode::Attach);
-                       
-                        // Minimize
-                        PyConstrained::Algorithms::getMin(
-                            msg,fns,state,smanip);
-                        
-                        // Convert the C++ state to a Python state
-                        pystate.toPython(state);
+                    // Create a C++ bundle of functions
+                    typename PyConstrained::Functions::t fns;
+                    
+                    // Convert the Python bundle of functions to C++ 
+                    pyfns.fromPython(fns);
+                    
+                    // Create a state manipulator 
+                    auto smanip = Python::StateManipulator <PyConstrained>(
+                        pystate,
+                        pyfns,
+                        smanip_);
+                   
+                    // Minimize
+                    PyConstrained::Algorithms::getMin(
+                        msg,fns,state,smanip);
+                    
+                    // Convert the C++ state to a Python state
+                    pystate.toPython(state);
 
-                        // Return nothing 
-                        return Py_None; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){
-                        return nullptr;
-                    }
-                }
+                    // Return nothing 
+                    Py_RETURN_NONE; 
+                
+                // Catch errors 
+                } CATCH_PYTHON_ERRORS;
             }
 
             // Utilities for restarting the optimization
@@ -3998,231 +3862,174 @@ namespace Optizelle {
                 PyObject * release(
                     PyObject * self,
                     PyObject * args
-                ) {
-                    // Calling convention should be
-                    // (X,Y,Z,msg,state,xs,ys,zs,reals,nats,params)
-                    PyObject *X,*Y,*Z,*msg,*pystate_,*pyxs,*pyys,*pyzs,
-                        *pyreals,*pynats,*pyparams;
-                    if(!PyArg_ParseTuple(args,"OOOOOOOOOOO",
-                        &X,&Y,&Z,&msg,&pystate_,&pyxs,&pyys,&pyzs,
-                        &pyreals,&pynats,&pyparams)
-                    )
-                        return nullptr; 
+                ) try {
+                    // Grab variables
+                    PY_VAR_10(X,Y,Z,pystate,pyxs,pyys,pyzs,
+                        pyreals,pynats,pyparams);
 
-                    // Make sure we bail if we detect a Python exception
-                    try {
-                        // Create a Python state 
-                        Python::State <PyConstrained> pystate(pystate_,
-                            PyObjectPtrMode::Attach);
-                        
-                        // Grab the base vectors from the Python state
-                        Vector x(msg,X,
-                            PyObject_GetAttrString(pystate.get(),"x"));
-                        Vector y(msg,Y,
-                            PyObject_GetAttrString(pystate.get(),"y"));
-                        Vector z(msg,Z,
-                            PyObject_GetAttrString(pystate.get(),"z"));
+                    // Create a Python state 
+                    auto pystate = Python::State <PyConstrained> (pystate_);
+                    
+                    // Grab the base vectors from the Python state
+                    auto x_ = capi::PyObject_GetAttrString(pystate.data,"x");
+                    auto x = Vector(X_,x_);
+                    auto y_ = capi::PyObject_GetAttrString(pystate.data,"y");
+                    auto y = Vector(Y_,y_);
+                    auto z_ = capi::PyObject_GetAttrString(pystate.data,"z");
+                    auto z = Vector(Z_,z_);
 
-                        // Create a C++ state
-                        typename PyConstrained::State::t state(x,y,z);
-                        
-                        // Convert the Python state to a C++ state
-                        pystate.fromPython(state);
+                    // Create a C++ state
+                    typename PyConstrained::State::t state(x,y,z);
+                    
+                    // Convert the Python state to a C++ state
+                    pystate.fromPython(state);
 
-                        // Do a release 
-                        PyConstrained::Restart::X_Vectors xs;
-                        PyConstrained::Restart::Y_Vectors ys;
-                        PyConstrained::Restart::Z_Vectors zs;
-                        PyConstrained::Restart::Reals reals;
-                        PyConstrained::Restart::Naturals nats;
-                        PyConstrained::Restart::Params params;
-                        PyConstrained::Restart
-                            ::release(state,xs,ys,zs,reals,nats,params);
+                    // Do a release 
+                    PyConstrained::Restart::X_Vectors xs;
+                    PyConstrained::Restart::Y_Vectors ys;
+                    PyConstrained::Restart::Z_Vectors zs;
+                    PyConstrained::Restart::Reals reals;
+                    PyConstrained::Restart::Naturals nats;
+                    PyConstrained::Restart::Params params;
+                    PyConstrained::Restart
+                        ::release(state,xs,ys,zs,reals,nats,params);
 
-                        // Convert the restart information to Python 
-                        toPython::Vectors(xs,pyxs);
-                        toPython::Vectors(ys,pyys);
-                        toPython::Vectors(zs,pyzs);
-                        toPython::Reals(reals,pyreals);
-                        toPython::Naturals(nats,pynats);
-                        toPython::Params(params,pyparams);
+                    // Convert the restart information to Python 
+                    toPython::Vectors(xs,pyxs_);
+                    toPython::Vectors(ys,pyys_);
+                    toPython::Vectors(zs,pyzs_);
+                    toPython::Reals(reals,pyreals_);
+                    toPython::Naturals(nats,pynats_);
+                    toPython::Params(params,pyparams_);
 
-                        // Return nothing 
-                        return Py_None; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){
-                        return nullptr;
-                    }
-                }
+                    // Return nothing 
+                    Py_RETURN_NONE; 
+                
+                // Catch errors 
+                } CATCH_PYTHON_ERRORS;
 
                 // Capture data from structures controlled by the user.  
                 PyObject * capture(
                     PyObject * self,
                     PyObject * args
-                ) {
-                    // Calling convention should be
-                    // (X,Y,msg,state,xs,ys,reals,nats,params)
-                    PyObject *X,*Y,*Z,*msg_,*pystate_,*pyxs,*pyys,*pyzs,
-                        *pyreals,*pynats,*pyparams;
-                    if(!PyArg_ParseTuple(args,"OOOOOOOOOOO",
-                        &X,&Y,&Z,&msg_,&pystate_,&pyxs,&pyys,&pyzs,
-                        &pyreals,&pynats,&pyparams)
-                    )
-                        return nullptr; 
+                ) try {
+                    // Grab variables
+                    PY_VAR_10(X,Y,Z,pystate,pyxs,pyys,pyzs,
+                        pyreals,pynats,pyparams);
 
-                    // Make sure we bail if we detect a Python exception
-                    try {
-                        // Create a messaging object
-                        Optizelle::Python::Messaging msg(msg_,
-                            PyObjectPtrMode::Attach);
+                    // Create a Python state 
+                    auto pystate = Python::State <PyConstrained> (pystate_);
+                    
+                    // Grab the base vectors from the Python state
+                    auto x_ = capi::PyObject_GetAttrString(pystate.data,"x");
+                    auto x = Vector(X_,x_);
+                    auto y_ = capi::PyObject_GetAttrString(pystate.data,"y");
+                    auto y = Vector(Y_,y_);
+                    auto z_ = capi::PyObject_GetAttrString(pystate.data,"z");
+                    auto z = Vector(Z_,z_);
 
-                        // Create a Python state 
-                        Python::State <PyConstrained>pystate(pystate_,
-                            PyObjectPtrMode::Attach);
-                        
-                        // Grab the base vectors from the Python state
-                        Vector x(msg_,X,
-                            PyObject_GetAttrString(pystate.get(),"x"));
-                        Vector y(msg_,Y,
-                            PyObject_GetAttrString(pystate.get(),"y"));
-                        Vector z(msg_,Z,
-                            PyObject_GetAttrString(pystate.get(),"z"));
+                    // Create a C++ state
+                    typename PyConstrained::State::t state(x,y,z);
+                   
+                    // Allocate memory for the released vectors
+                    PyConstrained::Restart::X_Vectors xs;
+                    PyConstrained::Restart::Y_Vectors ys;
+                    PyConstrained::Restart::Z_Vectors zs;
+                    PyConstrained::Restart::Reals reals;
+                    PyConstrained::Restart::Naturals nats;
+                    PyConstrained::Restart::Params params;
+                    
+                    // Convert the restart information from Python 
+                    fromPython::Vectors(x,pyxs_,xs);
+                    fromPython::Vectors(y,pyys_,ys);
+                    fromPython::Vectors(z,pyzs_,zs);
+                    fromPython::Reals(pyreals_,reals);
+                    fromPython::Naturals(pynats_,nats);
+                    fromPython::Params(pyparams_,params);
 
-                        // Create a C++ state
-                        typename PyConstrained::State::t state(x,y,z);
-                       
-                        // Allocate memory for the released vectors
-                        PyConstrained::Restart::X_Vectors xs;
-                        PyConstrained::Restart::Y_Vectors ys;
-                        PyConstrained::Restart::Z_Vectors zs;
-                        PyConstrained::Restart::Reals reals;
-                        PyConstrained::Restart::Naturals nats;
-                        PyConstrained::Restart::Params params;
-                        
-                        // Convert the restart information from Python 
-                        fromPython::Vectors(x,pyxs,xs);
-                        fromPython::Vectors(y,pyys,ys);
-                        fromPython::Vectors(z,pyzs,zs);
-                        fromPython::Reals(pyreals,reals);
-                        fromPython::Naturals(pynats,nats);
-                        fromPython::Params(pyparams,params);
+                    // Do a capture 
+                    PyConstrained::Restart
+                        ::capture(state,xs,ys,zs,reals,nats,params);
 
-                        // Do a capture 
-                        PyConstrained::Restart
-                            ::capture(msg,state,xs,ys,zs,reals,nats,params);
+                    // Convert the C++ state to a Python state
+                    pystate.toPython(state);
 
-                        // Convert the C++ state to a Python state
-                        pystate.toPython(state);
-
-                        // Return nothing 
-                        return Py_None; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){
-                        return nullptr;
-                    }
-                }
+                    // Return nothing 
+                    Py_RETURN_NONE; 
+                
+                // Catch errors 
+                } CATCH_PYTHON_ERRORS;
                 
                 // Writes a json restart file
                 PyObject * write_restart(
                     PyObject * self,
                     PyObject * args
-                ) {
-                    // Calling convention should be (X,Y,Z,msg,fname,state)
-                    PyObject *X,*Y,*Z,*msg_,*fname_,*pystate_;
-                    if(!PyArg_ParseTuple(args,"OOOOOO",
-                        &X,&Y,&Z,&msg_,&fname_,&pystate_)
-                    )
-                        return nullptr; 
+                ) try {
+                    // Grab variables 
+                    PY_VAR_5(X,Y,Z,fname,pystate);
 
-                    // Make sure we bail if we detect a Python exception
-                    try {
-                        // Create a messaging object
-                        Optizelle::Python::Messaging msg(msg_,
-                            PyObjectPtrMode::Attach);
-                        
-                        // Grab the file name
-                        std::string fname(PyString_AsString(fname_));
+                    // Grab the file name
+                    auto fname = capi::PyString_AsString(fname_);
 
-                        // Create a Python state 
-                        Python::State <PyConstrained>pystate(pystate_,
-                            PyObjectPtrMode::Attach);
-                        
-                        // Grab the base vectors from the Python state
-                        Vector x(msg_,X,
-                            PyObject_GetAttrString(pystate.get(),"x"));
-                        Vector y(msg_,Y,
-                            PyObject_GetAttrString(pystate.get(),"y"));
-                        Vector z(msg_,Z,
-                            PyObject_GetAttrString(pystate.get(),"z"));
-                        
-                        // Create a C++ state
-                        typename PyConstrained::State::t state(x,y,z);
-                        
-                        // Convert Python state to C++ 
-                        pystate.fromPython(state);
+                    // Create a Python state 
+                    auto pystate = Python::State <PyConstrained> (pystate_);
+                    
+                    // Grab the base vectors from the Python state
+                    auto x_ = capi::PyObject_GetAttrString(pystate.data,"x");
+                    auto x = Vector(X_,x_);
+                    auto y_ = capi::PyObject_GetAttrString(pystate.data,"y");
+                    auto y = Vector(Y_,y_);
+                    auto z_ = capi::PyObject_GetAttrString(pystate.data,"z");
+                    auto z = Vector(Z_,z_);
+                    
+                    // Create a C++ state
+                    typename PyConstrained::State::t state(x,y,z);
+                    
+                    // Convert Python state to C++ 
+                    pystate.fromPython(state);
 
-                        // Write the restart file
-                        PyJsonConstrained::write_restart(msg,fname,state);
-                        
-                        // Return nothing 
-                        return Py_None; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){
-                        return nullptr;
-                    }
-                }
+                    // Write the restart file
+                    PyJsonConstrained::write_restart(fname,state);
+                    
+                    // Return nothing 
+                    Py_RETURN_NONE; 
                 
+                // Catch errors 
+                } CATCH_PYTHON_ERRORS;
+
                 // Reads a json restart file
                 PyObject * read_restart(
                     PyObject * self,
                     PyObject * args
-                ) {
-                    // Calling convention should be(X,Y,Z,msg,fname,x,y,z,state)
-                    PyObject *X,*Y,*Z,*msg_,*fname_,*x_,*y_,*z_,*pystate_;
-                    if(!PyArg_ParseTuple(args,"OOOOOOOOO",
-                        &X,&Y,&Z,&msg_,&fname_,&x_,&y_,&z_,&pystate_)
-                    )
-                        return nullptr; 
+                ) try {
+                    // Grab variables
+                    PY_VAR_8(X,Y,Z,fname,x,y,z,pystate);
 
-                    // Make sure we bail if we detect a Python exception
-                    try {
-                        // Create a messaging object
-                        Optizelle::Python::Messaging msg(msg_,
-                            PyObjectPtrMode::Attach);
-                        
-                        // Grab the file name
-                        std::string fname(PyString_AsString(fname_));
+                    // Grab the file name
+                    auto fname = capi::PyString_AsString(fname_);
 
-                        // Create a Python state 
-                        Python::State <PyConstrained>pystate(pystate_,
-                            PyObjectPtrMode::Attach);
-                        
-                        // Grab the reference vector 
-                        Vector x(msg_,X,x_,PyObjectPtrMode::Attach);
-                        Vector y(msg_,Y,y_,PyObjectPtrMode::Attach);
-                        Vector z(msg_,Z,z_,PyObjectPtrMode::Attach);
-                        
-                        // Create a C++ state
-                        typename PyConstrained::State::t state(x,y,z);
+                    // Create a Python state 
+                    auto pystate = Python::State <PyConstrained> (pystate_);
+                    
+                    // Grab the reference vector 
+                    auto x = Vector(X_,x_);
+                    auto y = Vector(Y_,y_);
+                    auto z = Vector(Z_,z_);
+                    
+                    // Create a C++ state
+                    typename PyConstrained::State::t state(x,y,z);
 
-                        // Read the restart file into the C++ state 
-                        PyJsonConstrained::read_restart(
-                            msg,fname,x,y,z,state);
-                        
-                        // Convert the C++ state to a Python state
-                        pystate.toPython(state);
+                    // Read the restart file into the C++ state 
+                    PyJsonConstrained::read_restart(fname,x,y,z,state);
+                    
+                    // Convert the C++ state to a Python state
+                    pystate.toPython(state);
 
-                        // Return nothing 
-                        return Py_None; 
+                    // Return nothing 
+                    Py_RETURN_NONE; 
 
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){
-                        return nullptr;
-                    }
-                }
+                // Catch errors 
+                } CATCH_PYTHON_ERRORS;
             }
         }
     }

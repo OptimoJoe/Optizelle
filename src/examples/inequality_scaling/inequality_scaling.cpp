@@ -31,19 +31,19 @@ struct MyObj : public Optizelle::ScalarValuedFunction <double,Optizelle::Rm> {
     MyObj(X::Vector const & c_) : c(c_) {}
 
     // Evaluation 
-    double eval(const X::Vector& x) const {
-        double acc(0.);
-        for(Natural i=0;i<x.size();i++)
+    double eval(X::Vector const & x) const {
+        auto acc = 0.;
+        for(auto i=0;i<x.size();i++)
             acc+=sq(x[i]-c[i]);
         return 0.5*acc;
     }
 
     // Gradient
     void grad(
-        const X::Vector& x,
-        X::Vector& grad
+        X::Vector const & x,
+        X::Vector & grad
     ) const {
-        for(Natural i=0;i<x.size();i++)
+        for(auto i=0;i<x.size();i++)
             grad[i]=x[i]-c[i];
     }
 
@@ -66,7 +66,7 @@ struct MyIneq
     :public Optizelle::VectorValuedFunction<double,Optizelle::Rm,Optizelle::Rm>
 {
     typedef Optizelle::Rm <double> X;
-    typedef Optizelle::Rm <double> Y;
+    typedef Optizelle::Rm <double> Z;
 
     // Lower bound 
     X::Vector const & lb;
@@ -74,43 +74,43 @@ struct MyIneq
     // Grab the lower bound during constuction
     MyIneq(X::Vector const & lb_) : lb(lb_) {}
 
-    // y=h(x) 
+    // z=h(x) 
     void eval(
-        const X::Vector& x,
-        Y::Vector& y
+        X::Vector const & x,
+        Z::Vector & z
     ) const {
-        for(Natural i=0;i<x.size();i++)
-            y[i]=x[i]-lb[i];
+        for(auto i=0;i<x.size();i++)
+            z[i]=x[i]-lb[i];
     }
 
-    // y=h'(x)dx
+    // z=h'(x)dx
     void p(
-        const X::Vector& x,
-        const X::Vector& dx,
-        Y::Vector& y
+        X::Vector const & x,
+        X::Vector const & dx,
+        Z::Vector & z
     ) const {
-        for(Natural i=0;i<x.size();i++)
-            y[i]=dx[i];
+        for(auto i=0;i<x.size();i++)
+            z[i]=dx[i];
     }
 
-    // z=h'(x)*dy
+    // xhat=h'(x)*dz
     void ps(
-        const X::Vector& x,
-        const Y::Vector& dy,
-        X::Vector& z
+        X::Vector const & x,
+        Z::Vector const & dz,
+        X::Vector & xhat 
     ) const {
-        for(Natural i=0;i<x.size();i++)
-            z[i]=dy[i];
+        for(auto i=0;i<x.size();i++)
+            xhat[i]=dz[i];
     }
 
-    // z=(h''(x)dx)*dy
+    // xhat=(h''(x)dx)*dz
     void pps(
-        const X::Vector& x,
-        const X::Vector& dx,
-        const Y::Vector& dy,
-        X::Vector& z
+        X::Vector const & x,
+        X::Vector const & dx,
+        Z::Vector const & dz,
+        X::Vector & xhat 
     ) const {
-        X::zero(z);
+        X::zero(xhat);
     }
 };
 
@@ -120,36 +120,35 @@ int main(int argc,char* argv[]){
         std::cerr << "inequality_scaling <parameters>" << std::endl;
         exit(EXIT_FAILURE);
     }
-    std::string fname(argv[1]);
+    auto fname = argv[1];
 
     // Create a type shortcut
     using Optizelle::Rm;
 
     // Generate an initial guess
-    std::vector <double> x(10);
-    for(Natural i=0;i<x.size();i++)
+    auto x = std::vector <double> (10);
+    for(auto i=0;i<x.size();i++)
         x[i]=1. + pow(.1,i);
 
     // Allocate memory for the inequality multipler 
-    std::vector <double> z(10);
+    auto z = std::vector <double> (10);
 
     // Create the center of the objective function
-    std::vector <double> c(10);
-    for(Natural i=0;i<c.size();i++)
+    auto c = std::vector <double> (10);
+    for(auto i=0;i<c.size();i++)
         c[i]=-1.;
 
     // Create the lower bound for the problem
-    std::vector <double> lb(10);
-    for(Natural i=0;i<lb.size();i++)
+    auto lb = std::vector <double> (10);
+    for(auto i=0;i<lb.size();i++)
         lb[i]=1.;
 
     // Create an optimization state
-    Optizelle::InequalityConstrained <double,Rm,Rm>::State::t
-        state(x,z);
+    Optizelle::InequalityConstrained <double,Rm,Rm>::State::t state(x,z);
 
     // Read the parameters from file
     Optizelle::json::InequalityConstrained <double,Optizelle::Rm,Optizelle::Rm>
-        ::read(Optizelle::Messaging(),fname,state);
+        ::read(fname,state);
     
     // Create a bundle of functions
     Optizelle::InequalityConstrained <double,Rm,Rm>::Functions::t fns;
@@ -158,7 +157,7 @@ int main(int argc,char* argv[]){
 
     // Solve the optimization problem
     Optizelle::InequalityConstrained <double,Rm,Rm>::Algorithms
-        ::getMin(Optizelle::Messaging(),fns,state);
+        ::getMin(Optizelle::Messaging::stdout,fns,state);
 
     // Print out the reason for convergence
     std::cout << "The algorithm converged due to: " <<
@@ -174,7 +173,7 @@ int main(int argc,char* argv[]){
 
     // Write out the final answer to file
     Optizelle::json::InequalityConstrained<double,Rm,Rm>
-        ::write_restart(Optizelle::Messaging(),"solution.json",state);
+        ::write_restart("solution.json",state);
 
     // Return that the program exited properly
     return EXIT_SUCCESS;

@@ -112,10 +112,8 @@ end
 
 %---Messaging0---
 % Define a custom messaging object
-function msg = MyMessaging()
-    msg = struct( ...
-        'print',@(x)fprintf('PRINT:  %s\n',x), ...
-        'error',@(x)error(sprintf('ERROR:  %s',x)));
+function MyMessaging(msg)
+    fprintf('PRINT:  %s\n',msg);
 end
 %---Messaging1---
 
@@ -149,8 +147,7 @@ function state=MyRestartManipulator_(fns,state,loc)
         ss = sprintf('rosenbrock_advanced_api_%04d.json',state.iter);
             
         % Write the restart file
-        Optizelle.json.Unconstrained.write_restart( ...
-           MyVS(),MyMessaging(),ss,state);
+        Optizelle.json.Unconstrained.write_restart(MyVS(),ss,state);
     end
 end
 %---RestartManipulator1---
@@ -169,18 +166,16 @@ function main(pname,rname)
     x = tostruct([-1.2;1.]);
 
     % Create an unconstrained state based on this vector
-    state=Optizelle.Unconstrained.State.t(MyVS(),MyMessaging(),x);
+    state=Optizelle.Unconstrained.State.t(MyVS(),x);
     
     %---ReadRestart0---
     % If we have a restart file, read in the parameters 
     if(nargin==2)
-        state = Optizelle.json.Unconstrained.read_restart( ...
-            MyVS(),MyMessaging(),rname,x);
+        state = Optizelle.json.Unconstrained.read_restart(MyVS(),rname,x);
     end
     
     % Read additional parameters from file
-    state=Optizelle.json.Unconstrained.read( ...
-        MyVS(),MyMessaging(),pname,state);
+    state=Optizelle.json.Unconstrained.read(MyVS(),pname,state);
     %---ReadRestart1---
 
     % Create the bundle of functions 
@@ -191,7 +186,7 @@ function main(pname,rname)
     %---Solver0---
     % Solve the optimization problem
     state=Optizelle.Unconstrained.Algorithms.getMin( ...
-        MyVS(),MyMessaging(),fns,state,MyRestartManipulator());
+        MyVS(),@MyMessaging,fns,state,MyRestartManipulator());
     %---Solver1---
     
     % Print out the reason for convergence
@@ -203,7 +198,6 @@ function main(pname,rname)
     
     %---WriteRestart0---
     % Write out the final answer to file
-    Optizelle.json.Unconstrained.write_restart( ...
-        MyVS(),MyMessaging(),'solution.json',state);
+    Optizelle.json.Unconstrained.write_restart(MyVS(),'solution.json',state);
     %---WriteRestart1---
 end

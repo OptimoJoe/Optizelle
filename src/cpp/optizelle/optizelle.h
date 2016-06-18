@@ -43,6 +43,7 @@ Author: Joseph Young (joe@optimojoe.com)
 #include<functional>
 #include<algorithm>
 #include<numeric>
+#include "optizelle/exception.h"
 #include "optizelle/linalg.h"
 
 //---Optizelle0---
@@ -201,17 +202,17 @@ namespace Optizelle{
 
     //---Messaging0---
     // Defines how we output messages to the user
-    struct Messaging {
-        // Prints a message
-        virtual void print(std::string const & msg) const;
-
-        // Prints an error
-        virtual void error(std::string const & msg) const;
-
-        // Allow a derived class to deallocate memory
-        virtual ~Messaging();
-    };
+    namespace Messaging {
+        // At its core, we take in a string and then write it somewhere
+        typedef std::function<void(std::string const & msg)> t;
     //---Messaging1---
+
+        // Write a string to stdout
+        void stdout(std::string const & msg);
+
+    //---Messaging2---
+    }
+    //---Messaging3---
 
     // A safeguard search used primarily for inequality constraints
     template <typename Real,template <typename> class XX>
@@ -829,7 +830,7 @@ namespace Optizelle{
             template <typename> class XX
         >
         Real gradientCheck(
-            Messaging const & msg,
+            Messaging::t const & msg,
             ScalarValuedFunction<Real,XX> const & f,
             typename XX <Real>::Vector const & x,
             typename XX <Real>::Vector const & dx,
@@ -847,7 +848,7 @@ namespace Optizelle{
             Real dd_grad=X::innr(f_grad,dx);
 
             // Compute an ensemble of finite difference tests in a linear manner
-            msg.print("Finite difference test on the gradient of " + name);
+            msg("Finite difference test on the gradient of " + name);
             Real min_rel_err(std::numeric_limits<Real>::quiet_NaN());
             for(Integer i=-2;i<=5;i++){
                 Real epsilon=pow(Real(.1),int(i));
@@ -865,7 +866,7 @@ namespace Optizelle{
                 if(i<0) ss << "The relative difference (1e+" << -i <<  "): ";
                 else ss << "The relative difference (1e-" << i << "): ";
                 ss << std::scientific << std::setprecision(16) << rel_err; 
-                msg.print(ss.str());
+                msg(ss.str());
             }
             
             // Return the function's smallest relative error
@@ -879,7 +880,7 @@ namespace Optizelle{
             template <typename> class XX
         >
         Real hessianCheck(
-            Messaging const & msg,
+            Messaging::t const & msg,
             ScalarValuedFunction<Real,XX> const & f,
             typename XX <Real>::Vector const & x,
             typename XX <Real>::Vector const & dx,
@@ -899,7 +900,7 @@ namespace Optizelle{
             f.hessvec(x,dx,hess_f_dx);
 
             // Compute an ensemble of finite difference tests in a linear manner
-            msg.print("Finite difference test on the Hessian of " + name);
+            msg("Finite difference test on the Hessian of " + name);
             Real min_rel_err(std::numeric_limits<Real>::quiet_NaN());
             for(Integer i=-2;i<=5;i++){
 
@@ -923,7 +924,7 @@ namespace Optizelle{
                 if(i<0)ss << "The relative difference (1e+" << -i <<  "): ";
                 else ss << "The relative difference (1e-" << i << "): ";
                 ss << std::scientific << std::setprecision(16) << rel_err; 
-                msg.print(ss.str());
+                msg(ss.str());
             }
             
             // Return the function's smallest relative error
@@ -937,7 +938,7 @@ namespace Optizelle{
             template <typename> class XX
         >
         Real hessianSymmetryCheck(
-            Messaging const & msg,
+            Messaging::t const & msg,
             ScalarValuedFunction<Real,XX> const & f,
             typename XX <Real>::Vector const & x,
             typename XX <Real>::Vector const & dx,
@@ -967,11 +968,11 @@ namespace Optizelle{
             Real diff=fabs(innr_Hxdx_dxx-innr_dx_Hxdxx);
 
             // Send a message with the result
-            msg.print("Symmetry test on the Hessian of " + name);
+            msg("Symmetry test on the Hessian of " + name);
             std::stringstream ss;
             ss<< "The absolute error between <H(x)dx,dxx> and <dx,H(x)dxx>: "
                 << std::scientific << std::setprecision(16) << diff;
-            msg.print(ss.str());
+            msg(ss.str());
             
             // Return the absolute error in symmetry 
             return diff;
@@ -984,7 +985,7 @@ namespace Optizelle{
             template <typename> class XX
         >
         Real operatorSymmetryCheck(
-            Messaging const & msg,
+            Messaging::t const & msg,
             Operator <Real,XX,XX> const & A,
             typename XX <Real>::Vector const & dx,
             typename XX <Real>::Vector const & dxx,
@@ -1013,12 +1014,12 @@ namespace Optizelle{
             Real diff=fabs(innr_Adx_dxx-innr_dx_Adxx);
 
             // Send a message with the result
-            msg.print("Symmetry test on the operator " + name);
+            msg("Symmetry test on the operator " + name);
             std::stringstream ss;
             ss<< "The absolute error between <" << name << " dx,dxx> and <dx,"
                 << name << " dxx>: " << std::scientific
                 << std::setprecision(16) << diff;
-            msg.print(ss.str());
+            msg(ss.str());
             
             // Return the absolute error in symmetry 
             return diff;
@@ -1032,7 +1033,7 @@ namespace Optizelle{
             template <typename> class YY 
         >
         Real derivativeCheck(
-            Messaging const & msg,
+            Messaging::t const & msg,
             VectorValuedFunction<Real,XX,YY> const & f,
             typename XX <Real>::Vector const & x,
             typename XX <Real>::Vector const & dx,
@@ -1055,7 +1056,7 @@ namespace Optizelle{
             std::stringstream notice;
             notice << "Finite difference test on the derivative of " 
                 << name;
-            msg.print(notice.str());
+            msg(notice.str());
             Real min_rel_err(std::numeric_limits<Real>::quiet_NaN());
             for(Integer i=-2;i<=5;i++){
 
@@ -1079,7 +1080,7 @@ namespace Optizelle{
                 if(i<0)ss << "The relative difference (1e+" << -i <<  "): ";
                 else ss << "The relative difference (1e-" << i << "): ";
                 ss << std::scientific << std::setprecision(16) << rel_err; 
-                msg.print(ss.str());
+                msg(ss.str());
             }
             
             // Return the function's smallest relative error
@@ -1095,7 +1096,7 @@ namespace Optizelle{
             template <typename> class YY 
         >
         Real derivativeAdjointCheck(
-            Messaging const & msg,
+            Messaging::t const & msg,
             VectorValuedFunction<Real,XX,YY> const & f,
             typename XX <Real>::Vector const & x,
             typename XX <Real>::Vector const & dx,
@@ -1127,12 +1128,12 @@ namespace Optizelle{
             Real diff=fabs(innr_fpxdx_dy-innr_dx_fpsxdy);
 
             // Send a message with the result
-            msg.print("Adjoint test on the first derivative of " + name);
+            msg("Adjoint test on the first derivative of " + name);
             std::stringstream ss;
             ss<<"The absolute err. between <" + name + "'(x)dx,dy> and <dx,"
                 + name + "'(x)*dy>: "
                 << std::scientific << std::setprecision(16) << diff;
-            msg.print(ss.str());
+            msg(ss.str());
             
             // Return the absolute error in symmetry 
             return diff;
@@ -1147,7 +1148,7 @@ namespace Optizelle{
             template <typename> class YY 
         >
         Real secondDerivativeCheck(
-            Messaging const & msg,
+            Messaging::t const & msg,
             VectorValuedFunction<Real,XX,YY> const & f,
             typename XX <Real>::Vector const & x,
             typename XX <Real>::Vector const & dx,
@@ -1167,7 +1168,7 @@ namespace Optizelle{
             f.pps(x,dx,dy,fpps_x_dx_dy);
 
             // Compute an ensemble of finite difference tests in a linear manner
-            msg.print("Finite difference test on the 2nd-derivative adjoint "
+            msg("Finite difference test on the 2nd-derivative adjoint "
                 "of " + name);
             Real min_rel_err(std::numeric_limits<Real>::quiet_NaN());
             for(Integer i=-2;i<=5;i++){
@@ -1192,7 +1193,7 @@ namespace Optizelle{
                 if(i<0)ss << "The relative difference (1e+" << -i <<  "): ";
                 else ss << "The relative difference (1e-" << i << "): ";
                 ss << std::scientific << std::setprecision(16) << rel_err; 
-                msg.print(ss.str());
+                msg(ss.str());
             }
             
             // Return the function's smallest relative error
@@ -1205,7 +1206,7 @@ namespace Optizelle{
             template <typename> class XX
         >
         Real zero_innr(
-            Messaging const & msg,
+            Messaging::t const & msg,
             typename XX <Real>::Vector const & x,
             std::string const & name
         ) {
@@ -1223,7 +1224,7 @@ namespace Optizelle{
             // Print out it's norm
             std::stringstream ss;
             ss << "The " << name << "::norm of zero(x) is: " << norm;
-            msg.print(ss.str());
+            msg(ss.str());
 
             // Return the actual norm 
             return norm;
@@ -1235,7 +1236,7 @@ namespace Optizelle{
             template <typename> class XX
         >
         Real copy_axpy_innr(
-            Messaging const & msg,
+            Messaging::t const & msg,
             typename XX <Real>::Vector const & x,
             std::string const & name
         ) {
@@ -1262,7 +1263,7 @@ namespace Optizelle{
             // Print out it's norm
             std::stringstream ss;
             ss << "The " << name << "::norm of ((x-0.5x)+0.5x)-x is: " << norm;
-            msg.print(ss.str());
+            msg(ss.str());
 
             // Return the actual norm 
             return norm;
@@ -1274,7 +1275,7 @@ namespace Optizelle{
             template <typename> class XX
         >
         Real copy_scal_innr(
-            Messaging const & msg,
+            Messaging::t const & msg,
             typename XX <Real>::Vector const & x,
             std::string const & name
         ) {
@@ -1302,7 +1303,7 @@ namespace Optizelle{
             std::stringstream ss;
             ss << "The value || 10 x || - 10 || x || in the " << name <<
                 "::norm is: " << norm; 
-            msg.print(ss.str());
+            msg(ss.str());
 
             // Return the actual norm 
             return norm;
@@ -1314,7 +1315,7 @@ namespace Optizelle{
             template <typename> class XX
         >
         Real id_prod(
-            Messaging const & msg,
+            Messaging::t const & msg,
             typename XX <Real>::Vector const & x,
             std::string const & name
         ) {
@@ -1341,7 +1342,7 @@ namespace Optizelle{
             std::stringstream ss;
             ss << "The value || x - (x o e) || in the " << name <<
                 "::norm is: " << norm; 
-            msg.print(ss.str());
+            msg(ss.str());
 
             // Return the actual norm 
             return norm;
@@ -1353,7 +1354,7 @@ namespace Optizelle{
             template <typename> class XX
         >
         Real prod_linv(
-            Messaging const & msg,
+            Messaging::t const & msg,
             typename XX <Real>::Vector const & x1,
             typename XX <Real>::Vector const & x2,
             std::string const & name
@@ -1380,7 +1381,7 @@ namespace Optizelle{
             std::stringstream ss;
             ss << "The value || x2 - linv(x1)(x1 o x2)) || in the " << name <<
                 "::norm is: " << norm; 
-            msg.print(ss.str());
+            msg(ss.str());
 
             // Return the actual norm 
             return norm;
@@ -1392,7 +1393,7 @@ namespace Optizelle{
             template <typename> class XX
         >
         Real id_srch(
-            Messaging const & msg,
+            Messaging::t const & msg,
             typename XX <Real>::Vector const & x,
             std::string const & name
         ) {
@@ -1417,7 +1418,7 @@ namespace Optizelle{
             std::stringstream ss;
             ss << "The value of " << name << "::srch(-2.0 e,e) - 0.5 is: "
                 << alpha; 
-            msg.print(ss.str());
+            msg(ss.str());
 
             // Return the actual distance 
             return alpha;
@@ -1471,7 +1472,7 @@ namespace Optizelle{
             template <typename> class XX
         >
         Real linv_id_barr(
-            Messaging const & msg,
+            Messaging::t const & msg,
             typename XX <Real>::Vector const & x,
             typename XX <Real>::Vector const & dx,
             std::string const & name
@@ -1488,7 +1489,7 @@ namespace Optizelle{
             template <typename> class XX
         >
         Real innr_prod_symm(
-            Messaging const & msg,
+            Messaging::t const & msg,
             typename XX <Real>::Vector const & dx,
             typename XX <Real>::Vector const & dxx,
             typename XX <Real>::Vector const & dxxx,
@@ -1522,7 +1523,7 @@ namespace Optizelle{
             ss << "The value <symm(dx o dxx) o dxxx, dxxxx> - "
             "<dxxx, symm(dx o dxx) o dxxxx> using " << name <<
                 "::innr is: " << innr1-innr2; 
-            msg.print(ss.str());
+            msg(ss.str());
 
             // Return the actual distance 
             return innr1-innr2;
@@ -1577,7 +1578,7 @@ namespace Optizelle{
         StateManipulator <ProblemClass> const & smanip;
 
         // A reference to the messsaging object
-        Messaging const & msg;
+        Messaging::t const & msg;
 
     public:
         // Disallow constructors
@@ -1586,7 +1587,7 @@ namespace Optizelle{
         // Create a reference to an existing manipulator 
         explicit DiagnosticManipulator(
             StateManipulator <ProblemClass> const & smanip_,
-            Messaging const & msg_
+            Messaging::t const & msg_
         ) : smanip(smanip_), msg(msg_) {}
 
         // Application
@@ -1623,7 +1624,7 @@ namespace Optizelle{
                     ProblemClass::Diagnostics::getStateHeader(state,out);
 
                     // Output the result
-                    msg.print(std::accumulate (
+                    msg(std::accumulate (
                         out.begin(),out.end(),std::string()));
                         
                     // Grab some initial diagnostic information
@@ -1632,7 +1633,7 @@ namespace Optizelle{
                         ::getState(fns,state,false,false,out);
 
                     // Output the result
-                    msg.print(std::accumulate (
+                    msg(std::accumulate (
                         out.begin(),out.end(),std::string()));
                 }
                 break;
@@ -1669,7 +1670,7 @@ namespace Optizelle{
                             ::getState(fns,state,false,false,out);
 
                     // Output the result
-                    msg.print(std::accumulate (
+                    msg(std::accumulate (
                         out.begin(),out.end(),std::string()));
                 }
                 break;
@@ -1725,25 +1726,18 @@ namespace Optizelle{
         // throws an error.
         template <typename T> 
         void checkItems(
-            Messaging const & msg,
             std::function <
                 bool(typename RestartPackage <T>::tuple const &) > is_item,
             typename RestartPackage<T>::t const & items,
             std::string const & kind
         ) {
-            // Create a base message
-            const std::string base
-                ="During serialization, found an invalid ";
-
             // Check the labels
-            typename RestartPackage<T>::t::const_iterator item
-                = find_if(items.begin(), items.end(),std::not1(is_item));
+            auto item = find_if(items.begin(), items.end(),std::not1(is_item));
 
-            if(item!=items.end()) {
-                std::stringstream ss;
-                ss << base << kind << item->first;
-                msg.error(ss.str());
-            }
+            if(item!=items.end())
+                throw Exception::t(__LOC__
+                    + ", during serialization, found an invalid "
+                    + kind + item->first);
         }
 
         // Converts a variety of basic datatypes to strings
@@ -1899,7 +1893,7 @@ namespace Optizelle{
                 // Objective function at the trial step
                 Real f_xpdx;
 
-                // Messaging level
+                // Messaging::t level
                 Natural msg_level;
 
                 // Kind of stopping tolerance
@@ -2056,7 +2050,7 @@ namespace Optizelle{
                     ),
                     iter_max(
                         //---iter_max0---
-                        std::numeric_limits <Natural>::max() 
+                        std::numeric_limits <Integer>::max() 
                         //---iter_max1---
                     ),
                     glob_iter(
@@ -2326,7 +2320,7 @@ namespace Optizelle{
             };
 
             // Check that we have a valid set of parameters.  
-            static void check_(Messaging const & msg,t const & state) {
+            static void check_(t const & state) {
                    
                 // Use this to build an error message
                 std::stringstream ss;
@@ -2709,10 +2703,11 @@ namespace Optizelle{
                     //---dscheme_valid1---
 
                 // If there's an error, print it
-                if(ss.str()!="") msg.error(ss.str());
+                if(ss.str()!="")
+                    throw Exception::t(__LOC__ + ", " + ss.str());
             }
-            static void check(Messaging const & msg,t const & state) {
-                Unconstrained <Real,XX>::State::check_(msg,state);
+            static void check(t const & state) {
+                Unconstrained <Real,XX>::State::check_(state);
             }
         };
 
@@ -2838,20 +2833,19 @@ namespace Optizelle{
             
             // Checks whether we have valid labels
             static void checkItems(
-                Messaging const & msg,
                 Reals const & reals,
                 Naturals const & nats,
                 Params const & params,
                 X_Vectors const & xs
             ) {
                 Utility::checkItems <Real> (
-                    msg,is_real,reals,"real name: ");
+                    is_real,reals,"real name: ");
                 Utility::checkItems <Natural> (
-                    msg,is_nat,nats,"natural name: ");
+                    is_nat,nats,"natural name: ");
                 Utility::checkItems <std::string> (
-                    msg,is_param,params,"paramater: ");
+                    is_param,params,"paramater: ");
                 Utility::checkItems <X_Vector> (
-                    msg,is_x,xs,"variable name: ");
+                    is_x,xs,"variable name: ");
             }
 
             
@@ -3178,7 +3172,6 @@ namespace Optizelle{
             // into vars in order.  In other words, oldY_1 must come before
             // oldY_2, etc.
             static void capture(
-                Messaging const & msg,
                 typename State::t & state,
                 X_Vectors & xs,
                 Reals & reals,
@@ -3187,7 +3180,7 @@ namespace Optizelle{
             ) {
 
                 // Check the user input 
-                checkItems(msg,reals,nats,params,xs);
+                checkItems(reals,nats,params,xs);
 
                 // Copy in the variables 
                 Unconstrained <Real,XX>::Restart::vectorsToState(state,xs);
@@ -3197,7 +3190,7 @@ namespace Optizelle{
                     ::Restart::scalarsToState(state,reals,nats,params);
 
                 // Check that we have a valid state 
-                State::check(msg,state);
+                State::check(state);
             }
         };
 
@@ -3307,17 +3300,13 @@ namespace Optizelle{
             // not the inverse, but the true Hessian approximation. 
             class BFGS : public Operator <Real,XX,XX> {
             private:
-                // Messaging device in case the quasi-Newton information is bad
-                Messaging const & msg;
-
                 // Stored quasi-Newton information
                 std::list<X_Vector> const & oldY;
                 std::list<X_Vector> const & oldS;
             public:
                 BFGS(
-                    Messaging const & msg_,
                     typename State::t const & state
-                ) : msg(msg_), oldY(state.oldY), oldS(state.oldS) {};
+                ) : oldY(state.oldY), oldS(state.oldS) {};
 
                 // Operator interface
                 /* It's not entirely clear to me what the best implementation
@@ -3338,9 +3327,10 @@ namespace Optizelle{
                     // Check that the number of stored gradient and trial step
                     // differences is the same.
                     if(oldY.size() != oldS.size())
-                        msg.error("In the BFGS Hessian approximation, the "
-                            "number of stored gradient differences must equal "
-                            "the number of stored trial step differences.");
+                    throw Exception::t(__LOC__ +
+                        ", in the BFGS Hessian approximation, the "
+                        "number of stored gradient differences must equal "
+                        "the number of stored trial step differences");
 
                     // Allocate memory for work
                     std::list <X_Vector> work;
@@ -3361,7 +3351,8 @@ namespace Optizelle{
                     while(y0!=oldY.end()){
                         Real inner_y_s=X::innr(*y0++,*s0++);
                         if(inner_y_s <= Real(0.))
-                            msg.error("Detected a (s,y) pair in BFGS that "
+                            throw Exception::t(__LOC__
+                                + ", detected a (s,y) pair in BFGS that "
                                 "possesed a nonpositive inner product");
                     }
 
@@ -3474,17 +3465,13 @@ namespace Optizelle{
             // The SR1 Hessian approximation.  
             class SR1 : public Operator <Real,XX,XX> {
             private:
-                // Messaging device in case the quasi-Newton information is bad
-                Messaging const & msg;
-
                 // Stored quasi-Newton information
                 std::list<X_Vector> const & oldY;
                 std::list<X_Vector> const & oldS;
             public:
                 SR1(
-                    Messaging const & msg_,
                     typename State::t const & state
-                ) : msg(msg_), oldY(state.oldY), oldS(state.oldS) {};
+                ) : oldY(state.oldY), oldS(state.oldS) {};
                 
                 // Operator interface
                 void eval(X_Vector const & dx,X_Vector & result) const {
@@ -3492,9 +3479,10 @@ namespace Optizelle{
                     // Check that the number of stored gradient and trial step
                     // differences is the same.
                     if(oldY.size() != oldS.size())
-                        msg.error("In the SR1 Hessian approximation, the "
+                        throw Exception::t(__LOC__
+                            + ", in the SR1 Hessian approximation, the "
                             "number of stored gradient differences must equal "
-                            "the number of stored trial step differences.");
+                            "the number of stored trial step differences");
 
                     // Allocate memory for work
                     std::list <X_Vector> work;
@@ -3616,17 +3604,13 @@ namespace Optizelle{
             // The inverse BFGS operator 
             class InvBFGS : public Operator <Real,XX,XX> {
             private:
-                // Messaging device in case the quasi-Newton information is bad
-                Messaging const & msg;
-
                 // Stored quasi-Newton information
                 std::list <X_Vector> const & oldY;
                 std::list <X_Vector> const & oldS;
             public:
                 InvBFGS(
-                    Messaging const & msg_,
                     typename State::t const & state
-                ) : msg(msg_), oldY(state.oldY), oldS(state.oldS) {};
+                ) : oldY(state.oldY), oldS(state.oldS) {};
                 
                 // Operator interface
                 void eval(X_Vector const & dx,X_Vector & result) const{
@@ -3634,9 +3618,10 @@ namespace Optizelle{
                     // Check that the number of stored gradient and trial step
                     // differences is the same.
                     if(oldY.size() != oldS.size())
-                        msg.error("In the inverse BFGS operator, the number "
+                        throw Exception::t(__LOC__
+                            + ", in the inverse BFGS operator, the number "
                             "of stored gradient differences must equal the "
-                            "number of stored trial step differences.");
+                            "number of stored trial step differences");
                     
                     // As a safety check, insure that the inner product between
                     // all the (s,y) pairs is positive
@@ -3647,7 +3632,8 @@ namespace Optizelle{
                     while(y0!=oldY.end()){
                         Real inner_y_s=X::innr(*y0++,*s0++);
                         if(inner_y_s <= Real(0.))
-                            msg.error("Detected a (s,y) pair in the inverse "
+                            throw Exception::t(__LOC__
+                                + ", detected a (s,y) pair in the inverse "
                                 "BFGS operator that possesed a nonpositive "
                                 "inner product");
                     }
@@ -3711,9 +3697,8 @@ namespace Optizelle{
                 SR1 sr1;
             public:
                 InvSR1(
-                    Messaging const & msg,
                     typename State::t const & state
-                ) : sr1(msg,state) {};
+                ) : sr1(state) {};
                 void eval(X_Vector const & dx,X_Vector & result) const{
                     sr1.eval(dx,result);
                 }
@@ -3738,7 +3723,6 @@ namespace Optizelle{
                 // a Hessian-vector product or if we use an internal
                 // approximation
                 HessianAdjustedFunction(
-                    Messaging const & msg,
                     typename State::t const & state,
                     typename Functions::t & fns
                 ) : H(nullptr), f(std::move(fns.f)) {
@@ -3754,15 +3738,16 @@ namespace Optizelle{
                             H.reset(new ScaledIdentity (fns,state));
                             break;
                         case Operators::BFGS:
-                            H.reset(new BFGS(msg,state));
+                            H.reset(new BFGS(state));
                             break;
                         case Operators::SR1:
-                            H.reset(new SR1(msg,state));
+                            H.reset(new SR1(state));
                             break;
                         case Operators::UserDefined:
                             break;
                         default:
-                            msg.error("Not a valid Hessian approximation.");
+                            throw Exception::t(__LOC__
+                                + ", not a valid Hessian approximation");
                             break;
                     }
                 }
@@ -3827,25 +3812,27 @@ namespace Optizelle{
             }
 
             // Check that all the functions are defined
-            static void check(Messaging const & msg,t const & fns) {
+            static void check(t const & fns) {
                 // Check that objective function exists 
-                if(fns.f.get()==nullptr)
-                    msg.error("Missing an objective function definition.");
+                if(!fns.f)
+                    throw Exception::t(__LOC__
+                        + ", missing an objective function definition");
                 
                 // Check that objective function modifications exists 
-                if(fns.f_mod.get()==nullptr)
-                    msg.error("Missing an objective function modification "
-                        "definition.");
+                if(!fns.f_mod)
+                    throw Exception::t(__LOC__
+                        + ", missing an objective function modification "
+                        "definition");
                 
                 // Check that a preconditioner exists 
-                if(fns.PH.get()==nullptr)
-                    msg.error("Missing a preconditioner definition.");
+                if(!fns.PH)
+                    throw Exception::t(__LOC__
+                        + ", missing a preconditioner definition");
             }
 
             // Initialize any missing functions for just unconstrained
             // optimization.
             static void init_(
-                Messaging const & msg,
                 typename State::t const & state,
                 t & fns
             ) {
@@ -3859,27 +3846,29 @@ namespace Optizelle{
                         fns.PH.reset(new Identity());
                         break;
                     case Operators::InvBFGS:
-                        fns.PH.reset(new InvBFGS(msg,state));
+                        fns.PH.reset(new InvBFGS(state));
                         break;
                     case Operators::InvSR1:
-                        fns.PH.reset(new InvSR1(msg,state));
+                        fns.PH.reset(new InvSR1(state));
                         break;
                     case Operators::UserDefined:
-                        if(fns.PH.get()==nullptr)
-                            msg.error("An externally defined preconditioner "
-                                "must be provided explicitly.");
+                        if(!fns.PH)
+                            throw Exception::t(__LOC__
+                                + ", an externally defined preconditioner "
+                                "must be provided explicitly");
                         break;
                     default:
-                        msg.error("Not a valid Hessian approximation.");
+                        throw Exception::t(__LOC__
+                            + ", not a valid Hessian approximation");
                         break;
                 }
 
                 // Check that all functions are defined (namely, the 
                 // objective).
-                check(msg,fns);
+                check(fns);
 
                 // Modify the objective function if necessary
-                fns.f.reset(new HessianAdjustedFunction(msg,state,fns));
+                fns.f.reset(new HessianAdjustedFunction(state,fns));
 
                 // We don't need to safeguard our steps nor modify our gradient
                 // for the step modification
@@ -3900,11 +3889,10 @@ namespace Optizelle{
 
             // Initialize any missing functions 
             static void init(
-                Messaging const & msg,
                 typename State::t const & state,
                 t & fns
             ) {
-                Unconstrained <Real,XX>::Functions::init_(msg,state,fns);
+                Unconstrained <Real,XX>::Functions::init_(state,fns);
             }
         };
 
@@ -4125,7 +4113,7 @@ namespace Optizelle{
 
             // Runs the specified function diagnostics 
             static void checkFunctions_(
-                Messaging const & msg,
+                Messaging::t const & msg,
                 typename Functions::t const & fns,
                 typename State::t const & state
             ) {
@@ -4143,24 +4131,24 @@ namespace Optizelle{
                 // Run the diagnostics
                 switch(f_diag) {
                     case FunctionDiagnostics::FirstOrder:
-                        msg.print("Diagnostics on the function f");
+                        msg("Diagnostics on the function f");
                         Optizelle::Diagnostics::gradientCheck(msg,f,x,dx,"f");
-                        msg.print("");
+                        msg("");
                         break;
                     case FunctionDiagnostics::SecondOrder:
-                        msg.print("Diagnostics on the function f");
+                        msg("Diagnostics on the function f");
                         Optizelle::Diagnostics::gradientCheck(msg,f,x,dx,"f");
                         Optizelle::Diagnostics::hessianCheck(msg,f,x,dx,"f");
                         Optizelle::Diagnostics::hessianSymmetryCheck(
                             msg,f,x,dx,dxx,"f");
-                        msg.print("");
+                        msg("");
                         break;
                 }
             }
             
             // Runs the specified function diagnostics 
             static void checkFunctions(
-                Messaging const & msg,
+                Messaging::t const & msg,
                 typename Functions::t const & fns,
                 typename State::t const & state
             ) {
@@ -4170,14 +4158,14 @@ namespace Optizelle{
             
             // Runs the specified Lagrangian diagnostics 
             static void checkLagrangian_(
-                Messaging const & msg,
+                Messaging::t const & msg,
                 typename Functions::t const & fns,
                 typename State::t const & state
             ) { }
             
             // Runs the specified Lagrangian diagnostics 
             static void checkLagrangian(
-                Messaging const & msg,
+                Messaging::t const & msg,
                 typename Functions::t const & fns,
                 typename State::t const & state
             ) {
@@ -4187,7 +4175,7 @@ namespace Optizelle{
             
             // Runs the specified vector space diagnostics 
             static void checkVectorSpace_(
-                Messaging const & msg,
+                Messaging::t const & msg,
                 typename Functions::t const & fns,
                 typename State::t const & state
             ) {
@@ -4202,20 +4190,20 @@ namespace Optizelle{
                 // Run the diagnostics
                 switch(x_diag) {
                     case VectorSpaceDiagnostics::Basic:
-                        msg.print("Diagnostics on the vector-space X");
+                        msg("Diagnostics on the vector-space X");
                         Optizelle::Diagnostics::zero_innr <Real,XX> (msg,x,"X");
                         Optizelle::Diagnostics::copy_axpy_innr <Real,XX> (
                             msg,dx,"X");
                         Optizelle::Diagnostics::copy_scal_innr <Real,XX> (
                             msg,dx,"X");
-                        msg.print("");
+                        msg("");
                         break;
                 }
             }
             
             // Runs the specified vector space diagnostics 
             static void checkVectorSpace(
-                Messaging const & msg,
+                Messaging::t const & msg,
                 typename Functions::t const & fns,
                 typename State::t const & state
             ) {
@@ -4403,7 +4391,6 @@ namespace Optizelle{
         
             // Finds the trust-region step
             static void getStepTR(
-                Messaging const & msg,
                 StateManipulator <Unconstrained <Real,XX> > const & smanip,
                 typename Functions::t const & fns,
                 typename State::t & state
@@ -4796,7 +4783,6 @@ namespace Optizelle{
 
             // BFGS search direction
             static void BFGS(
-                Messaging const & msg,
                 typename Functions::t const & fns,
                 typename State::t & state
             ) {
@@ -4813,7 +4799,7 @@ namespace Optizelle{
                     f_mod.grad_step(x,grad,grad_step);
 
                 // Create the inverse BFGS operator
-                typename Functions::InvBFGS Hinv(msg,state); 
+                typename Functions::InvBFGS Hinv(state); 
 
                 // Apply the inverse BFGS operator to the gradient
                 Hinv.eval(grad_step,dx);
@@ -5023,7 +5009,6 @@ namespace Optizelle{
             
             // Finds a trial step using a line-search for globalization
             static void getStepLS(
-                Messaging const & msg,
                 StateManipulator <Unconstrained <Real,XX> > const & smanip,
                 typename Functions::t const & fns,
                 typename State::t & state
@@ -5098,7 +5083,7 @@ namespace Optizelle{
                         fns,state);
                     break;
                 case LineSearchDirection::BFGS:
-                    BFGS(msg,fns,state);
+                    BFGS(fns,state);
                     break;
                 case LineSearchDirection::NewtonCG: {
                     // Allocate memory for the Cauchy point
@@ -5313,7 +5298,6 @@ namespace Optizelle{
 
             // Finds a new trial step
             static void getStep(
-                Messaging const & msg,
                 StateManipulator <Unconstrained <Real,XX> > const & smanip,
                 typename Functions::t const & fns,
                 typename State::t & state
@@ -5324,10 +5308,10 @@ namespace Optizelle{
                 // Choose whether we use a line-search or trust-region method
                 switch(algorithm_class){
                 case AlgorithmClass::TrustRegion:
-                    getStepTR(msg,smanip,fns,state);
+                    getStepTR(smanip,fns,state);
                     break;
                 case AlgorithmClass::LineSearch:
-                    getStepLS(msg,smanip,fns,state);
+                    getStepLS(smanip,fns,state);
                     break;
                 case AlgorithmClass::UserDefined:
                     smanip.eval(fns,state,OptimizationLocation::GetStep);
@@ -5337,7 +5321,6 @@ namespace Optizelle{
 
             // Updates the quasi-Newton information
             static void updateQuasi(
-                Messaging const & msg,
                 typename Functions::t const & fns,
                 typename State::t & state
             ){
@@ -5397,7 +5380,7 @@ namespace Optizelle{
                 ) {
                     // Bs <- B s
                     X_Vector Bs(X::init(x));
-                        typename Functions::SR1(msg,state).eval(s,Bs);
+                        typename Functions::SR1(state).eval(s,Bs);
 
                     // y_m_Bs <- y-Bs
                     X_Vector y_m_Bs(X::init(x));
@@ -5425,7 +5408,7 @@ namespace Optizelle{
                         oldYY.splice(oldYY.end(),oldY,oldY.begin());
 
                         // Bs <- B si
-                        typename Functions::SR1(msg,state).eval(
+                        typename Functions::SR1(state).eval(
                             oldSS.back(),Bs);
 
                         // y_m_Bs
@@ -5469,7 +5452,6 @@ namespace Optizelle{
 
             // Solves an optimization problem
             static void getMin_(
-                Messaging const & msg,
                 StateManipulator <Unconstrained <Real,XX> > const & smanip,
                 typename Functions::t const & fns,
                 typename State::t & state
@@ -5543,7 +5525,7 @@ namespace Optizelle{
                         OptimizationLocation::BeginningOfOptimizationLoop);
 
                     // Get a new optimization iterate.  
-                    getStep(msg,smanip,fns,state);
+                    getStep(smanip,fns,state);
 
                     // Manipulate the state if required
                     smanip.eval(fns,state,OptimizationLocation::BeforeSaveOld);
@@ -5579,7 +5561,7 @@ namespace Optizelle{
                     smanip.eval(fns,state,OptimizationLocation::BeforeQuasi);
 
                     // Update the quasi-Newton information
-                    updateQuasi(msg,fns,state);
+                    updateQuasi(fns,state);
                     
                     // Manipulate the state if required
                     smanip.eval(fns,state,OptimizationLocation::AfterQuasi);
@@ -5605,7 +5587,7 @@ namespace Optizelle{
             // Solves an optimization problem where the user doesn't know about
             // the state manipulator
             static void getMin(
-                Messaging const & msg,
+                Messaging::t const & msg,
                 typename Functions::t & fns,
                 typename State::t & state
             ){
@@ -5619,23 +5601,23 @@ namespace Optizelle{
             // Initializes remaining functions then solves an optimization
             // problem
             static void getMin(
-                Messaging const & msg,
+                Messaging::t const & msg,
                 typename Functions::t & fns,
                 typename State::t & state,
                 StateManipulator <Unconstrained <Real,XX> > const & smanip
             ){
                 // Initialize any remaining functions required for optimization 
-                Functions::init(msg,state,fns);
+                Functions::init(state,fns);
 
                 // Check the inputs to the optimization
-                State::check(msg,state);
+                State::check(state);
 
                 // Add the output to the state manipulator
                 DiagnosticManipulator <Unconstrained<Real,XX> >
                     dmanip(smanip,msg);
 
                 // Minimize the problem
-                getMin_(msg,dmanip,fns,state);
+                getMin_(dmanip,fns,state);
             }
         };
     };
@@ -6224,7 +6206,7 @@ namespace Optizelle{
             };
             
             // Check that we have a valid set of parameters.  
-            static void check_(Messaging const & msg,t const & state) {
+            static void check_(t const & state) {
                    
                 // Use this to build an error message
                 std::stringstream ss;
@@ -6616,11 +6598,13 @@ namespace Optizelle{
                     //---qn_stop_valid1---
 
                 // If there's an error, print it
-                if(ss.str()!="") msg.error(ss.str());
+                if(ss.str()!="")
+                    throw Exception::t(__LOC__ + ", " + ss.str());
+
             }
-            static void check(Messaging const & msg,t const & state) {
-                Unconstrained <Real,XX>::State::check_(msg,state);
-                EqualityConstrained <Real,XX,YY>::State::check_(msg,state);
+            static void check(t const & state) {
+                Unconstrained <Real,XX>::State::check_(state);
+                EqualityConstrained <Real,XX,YY>::State::check_(state);
             }
         };
         
@@ -6761,7 +6745,6 @@ namespace Optizelle{
 
             // Checks whether we have valid labels
             static void checkItems(
-                Messaging const & msg,
                 Reals const & reals,
                 Naturals const & nats,
                 Params const & params,
@@ -6769,15 +6752,15 @@ namespace Optizelle{
                 Y_Vectors const & ys
             ) {
                 Utility::checkItems <Real> (
-                    msg,is_real,reals," real name: ");
+                    is_real,reals," real name: ");
                 Utility::checkItems <Natural> (
-                    msg,is_nat,nats," natural name: ");
+                    is_nat,nats," natural name: ");
                 Utility::checkItems <std::string> (
-                    msg,is_param,params," paramater: ");
+                    is_param,params," paramater: ");
                 Utility::checkItems <X_Vector> (
-                    msg,is_x,xs," variable name: ");
+                    is_x,xs," variable name: ");
                 Utility::checkItems <Y_Vector> (
-                    msg,is_y,ys," equality multiplier name: ");
+                    is_y,ys," equality multiplier name: ");
             }
             
             // Copy out all equality multipliers 
@@ -7111,7 +7094,6 @@ namespace Optizelle{
 
             // Capture data from structures controlled by the user.  
             static void capture(
-                Messaging const & msg,
                 typename State::t & state,
                 X_Vectors & xs,
                 Y_Vectors & ys,
@@ -7121,7 +7103,7 @@ namespace Optizelle{
             ) {
 
                 // Check the user input 
-                checkItems(msg,reals,nats,params,xs,ys);
+                checkItems(reals,nats,params,xs,ys);
 
                 // Copy in the variables 
                 Unconstrained <Real,XX>
@@ -7136,7 +7118,7 @@ namespace Optizelle{
                     ::Restart::scalarsToState(state,reals,nats,params);
 
                 // Check that we have a valid state 
-                State::check(msg,state);
+                State::check(state);
             }
         };
         
@@ -7354,28 +7336,30 @@ namespace Optizelle{
             };
 
             // Check that all the functions are defined
-            static void check(Messaging const & msg,t const & fns) {
+            static void check(t const & fns) {
 
                 // Check the unconstrained pieces
-                Unconstrained <Real,XX>::Functions::check(msg,fns);
+                Unconstrained <Real,XX>::Functions::check(fns);
                 
                 // Check that the equality constraints exist 
-                if(fns.g.get()==nullptr)
-                    msg.error("Missing the equality constraint definition.");
+                if(!fns.g)
+                    throw Exception::t(__LOC__
+                        + ", missing the equality constraint definition");
 
                 // Check that preconditioners exist
-                if(fns.PSchur_left.get()==nullptr)
-                    msg.error("Missing a left preconditioner for the "
-                        "augmented system.");
-                if(fns.PSchur_right.get()==nullptr)
-                    msg.error("Missing a right preconditioner for the "
-                        "augmented system.");
+                if(!fns.PSchur_left)
+                    throw Exception::t(__LOC__
+                        + ", missing a left preconditioner for the "
+                        "augmented system");
+                if(!fns.PSchur_right)
+                    throw Exception::t(__LOC__
+                        + ", missing a right preconditioner for the "
+                        "augmented system");
             }
 
             // Initialize any missing functions for just equality constrained 
             // optimization.
             static void init_(
-                Messaging const & msg,
                 typename State::t const & state,
                 t & fns
             ) {
@@ -7385,14 +7369,16 @@ namespace Optizelle{
                         fns.PSchur_left.reset(new Identity());
                         break;
                     case Operators::UserDefined:
-                        if(fns.PSchur_left.get()==nullptr)
-                            msg.error("An externally defined left "
+                        if(!fns.PSchur_left)
+                            throw Exception::t(__LOC__
+                                + ", an externally defined left "
                                 "preconditioner for the augmented system must "
-                                "be provided explicitly.");
+                                "be provided explicitly");
                         break;
                     default:
-                        msg.error("Not a valid left preconditioner for the "
-                            "augmented system.");
+                        throw Exception::t(__LOC__
+                            + ", not a valid left preconditioner for the "
+                            "augmented system");
                         break;
                 }
                 
@@ -7403,18 +7389,20 @@ namespace Optizelle{
                         break;
                     case Operators::UserDefined:
                         if(fns.PSchur_right.get()==nullptr)
-                            msg.error("An externally defined right "
+                            throw Exception::t(__LOC__
+                                + ", an externally defined right "
                                 "preconditioner for the augmented system must "
-                                "be provided explicitly.");
+                                "be provided explicitly");
                         break;
                     default:
-                        msg.error("Not a valid right preconditioner for the "
-                            "augmented system.");
+                        throw Exception::t(__LOC__
+                            + ", not a valid right preconditioner for the "
+                            "augmented system");
                         break;
                 }
 
                 // Check that all functions are defined 
-                check(msg,fns);
+                check(fns);
                 
                 // Modify the objective 
                 fns.f_mod.reset(new EqualityModifications(
@@ -7423,14 +7411,13 @@ namespace Optizelle{
 
             // Initialize any missing functions 
             static void init(
-                Messaging const & msg,
                 typename State::t const & state,
                 t & fns
             ) {
                 Unconstrained <Real,XX>
-                    ::Functions::init_(msg,state,fns);
+                    ::Functions::init_(state,fns);
                 EqualityConstrained <Real,XX,YY>
-                    ::Functions::init_(msg,state,fns);
+                    ::Functions::init_(state,fns);
             }
         };
         
@@ -7709,7 +7696,7 @@ namespace Optizelle{
             
             // Runs the specified function diagnostics 
             static void checkFunctions_(
-                Messaging const & msg,
+                Messaging::t const & msg,
                 typename Functions::t const & fns,
                 typename State::t const & state
             ) {
@@ -7728,29 +7715,29 @@ namespace Optizelle{
                 // Run the diagnostics
                 switch(g_diag) {
                     case FunctionDiagnostics::FirstOrder:
-                        msg.print("Diagnostics on the function g");
+                        msg("Diagnostics on the function g");
                         Optizelle::Diagnostics::derivativeCheck(
                             msg,g,x,dx,dy,"g");
                         Optizelle::Diagnostics::derivativeAdjointCheck(
                             msg,g,x,dx,dy,"g");
-                        msg.print("");
+                        msg("");
                         break;
                     case FunctionDiagnostics::SecondOrder:
-                        msg.print("Diagnostics on the function g");
+                        msg("Diagnostics on the function g");
                         Optizelle::Diagnostics::derivativeCheck(
                             msg,g,x,dx,dy,"g");
                         Optizelle::Diagnostics::derivativeAdjointCheck(
                             msg,g,x,dx,dy,"g");
                         Optizelle::Diagnostics::secondDerivativeCheck(
                             msg,g,x,dx,dy,"g");
-                        msg.print("");
+                        msg("");
                         break;
                 }
             }
             
             // Runs the specified function diagnostics 
             static void checkFunctions(
-                Messaging const & msg,
+                Messaging::t const & msg,
                 typename Functions::t const & fns,
                 typename State::t const & state
             ) {
@@ -7808,7 +7795,7 @@ namespace Optizelle{
            
             // Runs the specified Lagrangian diagnostics 
             static void checkLagrangian_(
-                Messaging const & msg,
+                Messaging::t const & msg,
                 typename Functions::t const & fns,
                 typename State::t const & state
             ) {
@@ -7828,18 +7815,18 @@ namespace Optizelle{
                 // Run the diagnostics
                 switch(L_diag) {
                     case FunctionDiagnostics::SecondOrder:
-                        msg.print("Diagnostics on the contribution of g to "
+                        msg("Diagnostics on the contribution of g to "
                             "the Lagrangian");
                         Optizelle::Diagnostics::operatorSymmetryCheck <Real,XX>(
                             msg,L,dx,dxx,"(g''(x).)*y");
-                        msg.print("");
+                        msg("");
                         break;
                 }
             }
             
             // Runs the specified Lagrangian diagnostics 
             static void checkLagrangian(
-                Messaging const & msg,
+                Messaging::t const & msg,
                 typename Functions::t const & fns,
                 typename State::t const & state
             ) {
@@ -7851,7 +7838,7 @@ namespace Optizelle{
             
             // Runs the specified vector space diagnostics 
             static void checkVectorSpace_(
-                Messaging const & msg,
+                Messaging::t const & msg,
                 typename Functions::t const & fns,
                 typename State::t const & state
             ) {
@@ -7866,20 +7853,20 @@ namespace Optizelle{
                 // Run the diagnostics
                 switch(y_diag) {
                     case VectorSpaceDiagnostics::Basic:
-                        msg.print("Diagnostics on the vector-space Y");
+                        msg("Diagnostics on the vector-space Y");
                         Optizelle::Diagnostics::zero_innr <Real,YY> (msg,y,"Y");
                         Optizelle::Diagnostics::copy_axpy_innr <Real,YY> (
                             msg,dy,"Y");
                         Optizelle::Diagnostics::copy_scal_innr <Real,YY> (
                             msg,dy,"Y");
-                        msg.print("");
+                        msg("");
                         break;
                 }
             }
             
             // Runs the specified vector space diagnostics 
             static void checkVectorSpace(
-                Messaging const & msg,
+                Messaging::t const & msg,
                 typename Functions::t const & fns,
                 typename State::t const & state
             ) {
@@ -9363,7 +9350,6 @@ namespace Optizelle{
 
             // Finds the trust-region step
             static void getStep(
-                Messaging const & msg,
                 StateManipulator <EqualityConstrained <Real,XX,YY> > const &
                     smanip,
                 typename Functions::t const & fns,
@@ -9634,14 +9620,10 @@ namespace Optizelle{
                 // A reference to the user-defined state manipulator
                 StateManipulator<ProblemClass> const & smanip;
 
-                // A reference to the messaging object
-                Messaging const & msg;
-
             public:
                 CompositeStepManipulator(
-                    StateManipulator <ProblemClass> const & smanip_,
-                    Messaging const & msg_
-                ) : smanip(smanip_), msg(msg_) {}
+                    StateManipulator <ProblemClass> const & smanip_
+                ) : smanip(smanip_) {}
 
                 // Application
                 void eval(
@@ -9731,7 +9713,7 @@ namespace Optizelle{
                             cmanip(smanip);
 
                         // Find the steps in both the primal and dual directions
-                        getStep(msg,cmanip,fns,state);
+                        getStep(cmanip,fns,state);
                         break;
 
                     } case OptimizationLocation::BeforeStep:
@@ -9771,7 +9753,7 @@ namespace Optizelle{
             // Solves an optimization problem where the user doesn't know about
             // the state manipulator
             static void getMin(
-                Messaging const & msg,
+                Messaging::t const & msg,
                 typename Functions::t & fns,
                 typename State::t & state
             ){
@@ -9785,7 +9767,7 @@ namespace Optizelle{
             // Initializes remaining functions then solves an optimization
             // problem
             static void getMin(
-                Messaging const & msg,
+                Messaging::t const & msg,
                 typename Functions::t & fns,
                 typename State::t & state,
                 StateManipulator <EqualityConstrained <Real,XX,YY> > const &
@@ -9798,7 +9780,7 @@ namespace Optizelle{
 
                 // Add the composite step pieces to the state manipulator
                 CompositeStepManipulator <EqualityConstrained <Real,XX,YY> >
-                    csmanip(dmanip,msg);
+                    csmanip(dmanip);
 
                 // Insures that we can interact with unconstrained code
                 ConversionManipulator
@@ -9806,14 +9788,14 @@ namespace Optizelle{
                     cmanip(csmanip);
                 
                 // Initialize any remaining functions required for optimization 
-                Functions::init(msg,state,fns);
+                Functions::init(state,fns);
                 
                 // Check the inputs to the optimization
-                State::check(msg,state);
+                State::check(state);
 
                 // Minimize the problem
                 Unconstrained <Real,XX>::Algorithms
-                    ::getMin_(msg,cmanip,fns,state);
+                    ::getMin_(cmanip,fns,state);
             }
         };
     };
@@ -9968,7 +9950,7 @@ namespace Optizelle{
             };
                 
             // Check that we have a valid set of parameters.  
-            static void check_(Messaging const & msg,t const & state) {
+            static void check_(t const & state) {
                 // Use this to build an error message
                 std::stringstream ss;
                     
@@ -10054,11 +10036,12 @@ namespace Optizelle{
                     //---z_diag_valid1---
 
                 // If there's an error, print it
-                if(ss.str()!="") msg.error(ss.str());
+                if(ss.str()!="")
+                    throw Exception::t(__LOC__ + ", " + ss.str());
             }
-            static void check(Messaging const & msg,t const & state) {
-                Unconstrained <Real,XX>::State::check_(msg,state);
-                InequalityConstrained <Real,XX,ZZ>::State::check_(msg,state);
+            static void check(t const & state) {
+                Unconstrained <Real,XX>::State::check_(state);
+                InequalityConstrained <Real,XX,ZZ>::State::check_(state);
             }
         };
         // Utilities for restarting the optimization
@@ -10141,7 +10124,6 @@ namespace Optizelle{
 
             // Checks whether we have valid labels
             static void checkItems(
-                Messaging const & msg,
                 Reals const & reals,
                 Naturals const & nats,
                 Params const & params,
@@ -10149,15 +10131,15 @@ namespace Optizelle{
                 Z_Vectors const & zs
             ) {
                 Utility::checkItems <Real> (
-                    msg,is_real,reals," real name: ");
+                    is_real,reals," real name: ");
                 Utility::checkItems <Natural> (
-                    msg,is_nat,nats," natural name: ");
+                    is_nat,nats," natural name: ");
                 Utility::checkItems <std::string> (
-                    msg,is_param,params," paramater: ");
+                    is_param,params," paramater: ");
                 Utility::checkItems <X_Vector> (
-                    msg,is_x,xs," variable name: ");
+                    is_x,xs," variable name: ");
                 Utility::checkItems <Z_Vector> (
-                    msg,is_z,zs," inequality multiplier name: ");
+                    is_z,zs," inequality multiplier name: ");
             }
             
             // Copy out the inequality multipliers 
@@ -10279,7 +10261,6 @@ namespace Optizelle{
             
             // Capture data from structures controlled by the user.  
             static void capture(
-                Messaging const & msg,
                 typename State::t & state,
                 X_Vectors & xs,
                 Z_Vectors & zs,
@@ -10288,7 +10269,7 @@ namespace Optizelle{
                 Params & params
             ) {
                 // Check the user input 
-                checkItems(msg,reals,nats,params,xs,zs);
+                checkItems(reals,nats,params,xs,zs);
 
                 // Copy in the variables 
                 Unconstrained <Real,XX>
@@ -10303,7 +10284,7 @@ namespace Optizelle{
                     ::Restart::scalarsToState(state,reals,nats,params);
 
                 // Check that we have a valid state 
-                State::check(msg,state);
+                State::check(state);
             }
         };
         
@@ -10745,25 +10726,25 @@ namespace Optizelle{
             }
 
             // Check that all the functions are defined
-            static void check(Messaging const & msg,t const & fns) {
+            static void check(t const & fns) {
 
                 // Check the unconstrained pieces
-                Unconstrained <Real,XX>::Functions::check(msg,fns);
+                Unconstrained <Real,XX>::Functions::check(fns);
                 
                 // Check that the inequality constraints exist 
-                if(fns.h.get()==nullptr)
-                    msg.error("Missing the inequality constraint definition.");
+                if(!fns.h)
+                    throw Exception::t(__LOC__
+                        + ", missing the inequality constraint definition");
             }
 
             // Initialize any missing functions for just inequality constrained 
             // optimization.
             static void init_(
-                Messaging const & msg,
                 typename State::t & state,
                 t& fns
             ) {
                 // Check that all functions are defined 
-                check(msg,fns);
+                check(fns);
 
                 // Modify the objective 
                 fns.f_mod.reset(new InequalityModifications(
@@ -10796,14 +10777,13 @@ namespace Optizelle{
 
             // Initialize any missing functions 
             static void init(
-                Messaging const & msg,
                 typename State::t & state,
                 t& fns
             ) {
                 Unconstrained <Real,XX>
-                    ::Functions::init_(msg,state,fns);
+                    ::Functions::init_(state,fns);
                 InequalityConstrained <Real,XX,ZZ>
-                    ::Functions::init_(msg,state,fns);
+                    ::Functions::init_(state,fns);
             }
         };
         
@@ -10922,7 +10902,7 @@ namespace Optizelle{
             
             // Runs the specified function diagnostics 
             static void checkFunctions_(
-                Messaging const & msg,
+                Messaging::t const & msg,
                 typename Functions::t const & fns,
                 typename State::t const & state
             ) {
@@ -10941,22 +10921,22 @@ namespace Optizelle{
                 // Run the diagnostics
                 switch(h_diag) {
                     case FunctionDiagnostics::FirstOrder:
-                        msg.print("Diagnostics on the function h");
+                        msg("Diagnostics on the function h");
                         Optizelle::Diagnostics::derivativeCheck(
                             msg,h,x,dx,dz,"h");
                         Optizelle::Diagnostics::derivativeAdjointCheck(
                             msg,h,x,dx,dz,"h");
-                        msg.print("");
+                        msg("");
                         break;
                     case FunctionDiagnostics::SecondOrder:
-                        msg.print("Diagnostics on the function h");
+                        msg("Diagnostics on the function h");
                         Optizelle::Diagnostics::derivativeCheck(
                             msg,h,x,dx,dz,"h");
                         Optizelle::Diagnostics::derivativeAdjointCheck(
                             msg,h,x,dx,dz,"h");
                         Optizelle::Diagnostics::secondDerivativeCheck(
                             msg,h,x,dx,dz,"h");
-                        msg.print("");
+                        msg("");
                         break;
                     case FunctionDiagnostics::NoDiagnostics:
                         break;
@@ -10965,7 +10945,7 @@ namespace Optizelle{
             
             // Runs the specified function diagnostics 
             static void checkFunctions(
-                Messaging const & msg,
+                Messaging::t const & msg,
                 typename Functions::t const & fns,
                 typename State::t const & state
             ) {
@@ -11023,7 +11003,7 @@ namespace Optizelle{
            
             // Runs the specified Lagrangian diagnostics 
             static void checkLagrangian_(
-                Messaging const & msg,
+                Messaging::t const & msg,
                 typename Functions::t const & fns,
                 typename State::t const & state
             ) {
@@ -11044,18 +11024,18 @@ namespace Optizelle{
                 switch(L_diag) {
                     case FunctionDiagnostics::FirstOrder:
                     case FunctionDiagnostics::SecondOrder:
-                        msg.print("Diagnostics on the contribution of h to "
+                        msg("Diagnostics on the contribution of h to "
                             "the Lagrangian");
                         Optizelle::Diagnostics::operatorSymmetryCheck <Real,XX>(
                             msg,L,dx,dxx,"h'(x)*(Linv(h(x))(h'(x).z)");
-                        msg.print("");
+                        msg("");
                         break;
                 }
             }
             
             // Runs the specified Lagrangian diagnostics 
             static void checkLagrangian(
-                Messaging const & msg,
+                Messaging::t const & msg,
                 typename Functions::t const & fns,
                 typename State::t const & state
             ) {
@@ -11067,7 +11047,7 @@ namespace Optizelle{
 
             // Runs the specified vector space diagnostics 
             static void checkVectorSpace_(
-                Messaging const & msg,
+                Messaging::t const & msg,
                 typename Functions::t const & fns,
                 typename State::t const & state
             ) {
@@ -11090,13 +11070,13 @@ namespace Optizelle{
                 // Run the diagnostics
                 switch(z_diag) {
                     case VectorSpaceDiagnostics::Basic:
-                        msg.print("Diagnostics on the vector-space Z");
+                        msg("Diagnostics on the vector-space Z");
                         Optizelle::Diagnostics::zero_innr <Real,ZZ> (msg,z,"Z");
                         Optizelle::Diagnostics::copy_axpy_innr <Real,ZZ> (
                             msg,dz,"Z");
                         Optizelle::Diagnostics::copy_scal_innr <Real,ZZ> (
                             msg,dz,"Z");
-                        msg.print("");
+                        msg("");
                         break;
                     case VectorSpaceDiagnostics::EuclideanJordan: {
 
@@ -11105,7 +11085,7 @@ namespace Optizelle{
                         h.eval(x,h_x);
 
                         // Run the diagnostics
-                        msg.print("Diagnostics on the vector-space Z");
+                        msg("Diagnostics on the vector-space Z");
                         Optizelle::Diagnostics::zero_innr <Real,ZZ> (msg,z,"Z");
                         Optizelle::Diagnostics::copy_axpy_innr <Real,ZZ> (
                             msg,dz,"Z");
@@ -11120,7 +11100,7 @@ namespace Optizelle{
                             msg,h_x,dz,"Z");
                         Optizelle::Diagnostics::innr_prod_symm <Real,ZZ> (
                             msg,dz,dzz,dzzz,dzzzz,"Z");
-                        msg.print("");
+                        msg("");
                         break;
                     } 
                 }
@@ -11128,7 +11108,7 @@ namespace Optizelle{
             
             // Runs the specified vector space diagnostics 
             static void checkVectorSpace(
-                Messaging const & msg,
+                Messaging::t const & msg,
                 typename Functions::t const & fns,
                 typename State::t const & state
             ) {
@@ -11733,7 +11713,7 @@ namespace Optizelle{
             // Solves an optimization problem where the user doesn't know about
             // the state manipulator
             static void getMin(
-                Messaging const & msg,
+                Messaging::t const & msg,
                 typename Functions::t & fns,
                 typename State::t & state
             ){
@@ -11747,7 +11727,7 @@ namespace Optizelle{
             // Initializes remaining functions then solves an optimization
             // problem
             static void getMin(
-                Messaging const & msg,
+                Messaging::t const & msg,
                 typename Functions::t & fns,
                 typename State::t & state,
                 StateManipulator <InequalityConstrained <Real,XX,ZZ> > const &
@@ -11767,14 +11747,14 @@ namespace Optizelle{
                     cmanip(ipmanip);
                 
                 // Initialize any remaining functions required for optimization 
-                Functions::init(msg,state,fns);
+                Functions::init(state,fns);
                 
                 // Check the inputs to the optimization
-                State::check(msg,state);
+                State::check(state);
                 
                 // Minimize the problem
                 Unconstrained <Real,XX>::Algorithms
-                    ::getMin_(msg,cmanip,fns,state);
+                    ::getMin_(cmanip,fns,state);
             }
         };
     };
@@ -11831,10 +11811,10 @@ namespace Optizelle{
             };
             
             // Check that we have a valid set of parameters.
-            static void check(Messaging const & msg,t const & state) {
-                Unconstrained <Real,XX>::State::check_(msg,state);
-                EqualityConstrained <Real,XX,YY>::State::check_(msg,state);
-                InequalityConstrained <Real,XX,ZZ>::State::check_(msg,state);
+            static void check(t const & state) {
+                Unconstrained <Real,XX>::State::check_(state);
+                EqualityConstrained <Real,XX,YY>::State::check_(state);
+                InequalityConstrained <Real,XX,ZZ>::State::check_(state);
             }
         };
         
@@ -11921,7 +11901,6 @@ namespace Optizelle{
 
             // Checks whether we have valid labels
             static void checkItems(
-                Messaging const & msg,
                 Reals const & reals,
                 Naturals const & nats,
                 Params const & params,
@@ -11930,17 +11909,17 @@ namespace Optizelle{
                 Z_Vectors const & zs
             ) {
                 Utility::checkItems <Real> (
-                    msg,is_real,reals," real name: ");
+                    is_real,reals," real name: ");
                 Utility::checkItems <Natural> (
-                    msg,is_nat,nats," natural name: ");
+                    is_nat,nats," natural name: ");
                 Utility::checkItems <std::string> (
-                    msg,is_param,params," paramater: ");
+                    is_param,params," paramater: ");
                 Utility::checkItems <X_Vector> (
-                    msg,is_x,xs," variable name: ");
+                    is_x,xs," variable name: ");
                 Utility::checkItems <Y_Vector> (
-                    msg,is_y,ys," equality multiplier name: ");
+                    is_y,ys," equality multiplier name: ");
                 Utility::checkItems <Z_Vector> (
-                    msg,is_z,zs," inequality multiplier name: ");
+                    is_z,zs," inequality multiplier name: ");
             }
             
             // Release the data into structures controlled by the user 
@@ -11972,7 +11951,6 @@ namespace Optizelle{
 
             // Capture data from structures controlled by the user.  
             static void capture(
-                Messaging const & msg,
                 typename State::t & state,
                 X_Vectors & xs,
                 Y_Vectors & ys,
@@ -11982,7 +11960,7 @@ namespace Optizelle{
                 Params & params
             ) {
                 // Check the user input 
-                checkItems(msg,reals,nats,params,xs,ys,zs);
+                checkItems(reals,nats,params,xs,ys,zs);
 
                 // Copy in the variables 
                 Unconstrained <Real,XX>
@@ -12001,7 +11979,7 @@ namespace Optizelle{
                     ::Restart::scalarsToState(state,reals,nats,params);
 
                 // Check that we have a valid state 
-                State::check(msg,state);
+                State::check(state);
             }
         };
 
@@ -12028,23 +12006,22 @@ namespace Optizelle{
             };
 
             // Check that all the functions are defined
-            static void check(Messaging const & msg,t const & fns) {
-                EqualityConstrained <Real,XX,YY>::Functions::check(msg,fns);
-                InequalityConstrained <Real,XX,ZZ>::Functions::check(msg,fns);
+            static void check(t const & fns) {
+                EqualityConstrained <Real,XX,YY>::Functions::check(fns);
+                InequalityConstrained <Real,XX,ZZ>::Functions::check(fns);
             }
 
             // Initialize any missing functions 
             static void init(
-                Messaging const & msg,
                 typename State::t & state,
                 t& fns
             ) {
                 Unconstrained <Real,XX>
-                    ::Functions::init_(msg,state,fns);
+                    ::Functions::init_(state,fns);
                 EqualityConstrained <Real,XX,YY>
-                    ::Functions::init_(msg,state,fns);
+                    ::Functions::init_(state,fns);
                 InequalityConstrained <Real,XX,ZZ>
-                    ::Functions::init_(msg,state,fns);
+                    ::Functions::init_(state,fns);
             }
         };
         
@@ -12140,7 +12117,7 @@ namespace Optizelle{
 
             // Runs the specified function diagnostics 
             static void checkFunctions(
-                Messaging const & msg,
+                Messaging::t const & msg,
                 typename Functions::t const & fns,
                 typename State::t const & state
             ) {
@@ -12154,7 +12131,7 @@ namespace Optizelle{
             
             // Runs the specified Lagrangian diagnostics 
             static void checkLagrangian(
-                Messaging const & msg,
+                Messaging::t const & msg,
                 typename Functions::t const & fns,
                 typename State::t const & state
             ) {
@@ -12168,7 +12145,7 @@ namespace Optizelle{
             
             // Runs the specified vector space diagnostics 
             static void checkVectorSpace(
-                Messaging const & msg,
+                Messaging::t const & msg,
                 typename Functions::t const & fns,
                 typename State::t const & state
             ) {
@@ -12189,7 +12166,7 @@ namespace Optizelle{
             // Solves an optimization problem where the user doesn't know about
             // the state manipulator
             static void getMin(
-                Messaging const & msg,
+                Messaging::t const & msg,
                 typename Functions::t & fns,
                 typename State::t & state
             ){
@@ -12203,7 +12180,7 @@ namespace Optizelle{
             // Initializes remaining functions then solves an optimization
             // problem
             static void getMin(
-                Messaging const & msg,
+                Messaging::t const & msg,
                 typename Functions::t & fns,
                 typename State::t & state,
                 StateManipulator <Constrained <Real,XX,YY,ZZ> > const & smanip
@@ -12222,7 +12199,7 @@ namespace Optizelle{
                 typename EqualityConstrained <Real,XX,YY>::Algorithms
                     ::template CompositeStepManipulator
                     <Constrained <Real,XX,YY,ZZ> >
-                    csmanip(ipmanip,msg);
+                    csmanip(ipmanip);
 
                 // Insures that we can interact with unconstrained code
                 ConversionManipulator
@@ -12230,14 +12207,14 @@ namespace Optizelle{
                     cmanip(csmanip);
                 
                 // Initialize any remaining functions required for optimization 
-                Functions::init(msg,state,fns);
+                Functions::init(state,fns);
                 
                 // Check the inputs to the optimization
-                State::check(msg,state);
+                State::check(state);
                 
                 // Minimize the problem
                 Unconstrained <Real,XX>::Algorithms
-                    ::getMin_(msg,cmanip,fns,state);
+                    ::getMin_(cmanip,fns,state);
             }
         };
     };

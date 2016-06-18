@@ -63,13 +63,12 @@ function main(fname)
     x = [-1.2;1.];
 
     % Create an unconstrained state based on this vector
-    state=Optizelle.Unconstrained.State.t(Optizelle.Rm,Optizelle.Messaging,x);
+    state=Optizelle.Unconstrained.State.t(Optizelle.Rm,x);
     %---State1---
 
     %---Parameters0---
     % Read the parameters from file
-    state=Optizelle.json.Unconstrained.read(Optizelle.Rm,Optizelle.Messaging,...
-        fname,state);
+    state=Optizelle.json.Unconstrained.read(Optizelle.Rm,fname,state);
     %---Parameters1---
 
     %---Functions0---
@@ -82,7 +81,7 @@ function main(fname)
     %---Solver0---
     % Solve the optimization problem
     state = Optizelle.Unconstrained.Algorithms.getMin( ...
-        Optizelle.Rm,Optizelle.Messaging,fns,state);
+        Optizelle.Rm,Optizelle.Messaging.stdout,fns,state);
     %---Solver1---
 
     %---Extract0---
@@ -96,5 +95,5 @@ function main(fname)
 
     % Write out the final answer to file
     Optizelle.json.Unconstrained.write_restart( ...
-        Optizelle.Rm,Optizelle.Messaging,'solution.json',state);
+        Optizelle.Rm,'solution.json',state);
 end

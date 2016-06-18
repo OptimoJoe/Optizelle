@@ -4,17 +4,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
     
 # Add some useful macros for examples and unit testing 
 include(Optizelle)
-        
-# Force C++14 on all targets
-set(CMAKE_CXX_STANDARD 14)
-set_property(GLOBAL PROPERTY CXX_STANDARD_REQUIRED)
-
-# Turn on position independent code.  This simplifies building both static
-# and shared libraries.
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
-# Add our prepocessing utilities
-add_subdirectory(preprocess)
 
 # Grab our third party library dependencies
 add_subdirectory(thirdparty)

@@ -2,10 +2,6 @@
 # optimization problems
 
 import Optizelle 
-import Optizelle.InequalityConstrained.State
-import Optizelle.InequalityConstrained.Functions
-import Optizelle.InequalityConstrained.Algorithms
-import Optizelle.json.InequalityConstrained
 import numpy
 import sys
 
@@ -40,21 +36,21 @@ class MyIneq(Optizelle.VectorValuedFunction):
     def __init__(self, lb):
         self.lb = lb 
 
-    # y=h(x) 
-    def eval(self,x,y):
-        numpy.copyto(y,x-lb);
+    # z=h(x) 
+    def eval(self,x,z):
+        numpy.copyto(z,x-lb);
 
-    # y=h'(x)dx
-    def p(self,x,dx,y):
-        numpy.copyto(y,dx);
+    # z=h'(x)dx
+    def p(self,x,dx,z):
+        numpy.copyto(z,dx);
 
-    # z=h'(x)*dy
-    def ps(self,x,dy,z):
-        numpy.copyto(z,dy);
+    # xhat=h'(x)*dz
+    def ps(self,x,dz,xhat):
+        numpy.copyto(xhat,dz);
 
-    # z=(h''(x)dx)*dy
-    def pps(self,x,dx,dy,z):
-        z.fill(0.)
+    # xhat=(h''(x)dx)*dz
+    def pps(self,x,dx,dz,xhat):
+        xhat.fill(0.)
 
 # Read in the name for the input file
 if len(sys.argv)!=2:
@@ -77,12 +73,11 @@ c = numpy.array(m*[-1.])
 lb = numpy.array(m*[1.])
 
 # Create an optimization state
-state=Optizelle.InequalityConstrained.State.t(
-    Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging(),x,z)
+state=Optizelle.InequalityConstrained.State.t(Optizelle.Rm,Optizelle.Rm,x,z)
 
 # Read the parameters from file
 Optizelle.json.InequalityConstrained.read(
-    Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging(),fname,state)
+    Optizelle.Rm,Optizelle.Rm,fname,state)
 
 # Create a bundle of functions
 fns=Optizelle.InequalityConstrained.Functions.t()
@@ -91,7 +86,7 @@ fns.h=MyIneq(lb)
 
 # Solve the optimization problem
 Optizelle.InequalityConstrained.Algorithms.getMin(
-    Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging(),fns,state)
+    Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging.stdout,fns,state)
 
 # Print out the reason for convergence
 print "The algorithm converged due to: %s" % (
@@ -105,4 +100,4 @@ print "]"
 
 # Write out the final answer to file
 Optizelle.json.InequalityConstrained.write_restart(
-    Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging(),"solution.json",state)
+    Optizelle.Rm,Optizelle.Rm,"solution.json",state)

@@ -30,6 +30,7 @@ Author: Joseph Young (joe@optimojoe.com)
 */
 
 #include "optizelle/linalg.h"
+#include "optizelle/exception.h"
 #include "FortranCInterface.h"
 using Optizelle::Integer;
 extern "C" {
@@ -869,7 +870,7 @@ namespace Optizelle {
             case ObjectiveIncrease:
                 return "ObjectiveIncrease";
             default:
-                throw;
+                throw Exception::t(__LOC__ +", invalid TruncatedStop::t");
             }
         }
         
@@ -906,7 +907,8 @@ namespace Optizelle {
             else if(trunc_stop=="ObjectiveIncrease")
                 return ObjectiveIncrease;
             else
-                throw;
+                throw Exception::t(__LOC__
+                    + ", string can't be convert into a TruncatedStop::t"); 
         }
 
         // Checks whether or not a string is valid

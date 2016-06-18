@@ -131,13 +131,13 @@ struct Rosenbrock : public Optizelle::ScalarValuedFunction <double,MyVS> {
     typedef MyVS <double> X;
 
     // Evaluation of the Rosenbrock function
-    double eval(const X::Vector & x) const {
+    double eval(X::Vector const & x) const {
         return sq(1.-x[0])+100.*sq(x[1]-sq(x[0]));
     }
 
     // Gradient
     void grad(
-        const X::Vector & x,
+        X::Vector const & x,
         X::Vector & g
     ) const {
         g[0]=-400*x[0]*(x[1]-sq(x[0]))-2*(1-x[0]);
@@ -146,8 +146,8 @@ struct Rosenbrock : public Optizelle::ScalarValuedFunction <double,MyVS> {
 
     // Hessian-vector product
     void hessvec(
-        const X::Vector & x,
-        const X::Vector & dx,
+        X::Vector const & x,
+        X::Vector const & dx,
         X::Vector & H_dx
     ) const {
     	H_dx[0]= (1200*sq(x[0])-400*x[1]+2)*dx[0]-400*x[0]*dx[1];
@@ -165,7 +165,7 @@ private:
 public:
     RosenHInv(X::Vector& x_) : x(x_) {}
     void eval(const X_Vector& dx,X_Vector &result) const {
-        double one_over_det=1./(80000.*sq(x[0])-80000.*x[1]+400.);
+        auto one_over_det=1./(80000.*sq(x[0])-80000.*x[1]+400.);
         result[0]=one_over_det*(200.*dx[0]+400.*x[0]*dx[1]);
         result[1]=one_over_det*
             (400.*x[0]*dx[0]+(1200.*x[0]*x[0]-400.*x[1]+2.)*dx[1]);
@@ -174,18 +174,9 @@ public:
 
 //---Messaging0---
 // Define a custom messaging object
-struct MyMessaging : public Optizelle::Messaging {
-    // Prints a message
-    void print(std::string const & msg) const {
-        std::cout << "PRINT:  " << msg << std::endl;
-    }
-
-    // Prints an error
-    void error(std::string const & msg) const {
-        std::cerr << "ERROR:  " << msg << std::endl;
-        exit(EXIT_FAILURE);
-    }
-};
+void mymessaging(std::string const & msg) {
+    std::cout << "PRINT:  " << msg << std::endl;
+}
 //---Messaging1---
 
 //---Serialization0---
@@ -217,7 +208,7 @@ namespace Optizelle {
                 std::string const & x_json_
             ) {
                 // Make a copy of x_json_
-                std::string x_json(x_json_);
+                auto x_json = x_json_;
 
                 // Filter out the commas and brackets from the string
                 char formatting[] = "[],";
@@ -227,13 +218,13 @@ namespace Optizelle {
                         x_json.end());
 
                 // Create a new vector that we eventually return
-                std::vector <double> x(x_.size());
+                auto x = std::vector <double>(x_.size());
 
                 // Create a stream out of x_json
                 std::stringstream ss(x_json);
 
                 // Read in each of the elements
-                for(Natural i=0;i<x.size();i++)
+                for(auto i=0;i<x.size();i++)
                     ss >> x[i];
 
                 // Return the result 
@@ -268,7 +259,7 @@ struct MyRestartManipulator
 
             // Write the restart file
             Optizelle::json::Unconstrained <double,MyVS>::write_restart(
-                MyMessaging(),ss.str(),state);
+                ss.str(),state);
             break;
         } default:
             break;
@@ -285,12 +276,11 @@ int main(int argc,char* argv[]) {
             << std::endl;
         exit(EXIT_FAILURE);
     }
-    std::string pname(argv[1]);
-    std::string rname(argc==3 ? argv[2] : ""); 
+    auto pname = argv[1];
+    auto rname = argc==3 ? argv[2] : ""; 
 
     // Generate an initial guess for Rosenbrock
-    std::vector <double> x(2);
-    x[0]=-1.2; x[1]=1.;
+    auto x  = std::vector <double> {-1.2, 1.};
 
     // Create an unconstrained state based on this vector
     Optizelle::Unconstrained <double,MyVS>::State::t state(x);
@@ -299,11 +289,10 @@ int main(int argc,char* argv[]) {
     // If we have a restart file, read in the parameters 
     if(argc==3)
         Optizelle::json::Unconstrained <double,MyVS>::read_restart(
-            MyMessaging(),rname,x,state);
+            rname,x,state);
 
     // Read additional parameters from file
-    Optizelle::json::Unconstrained <double,MyVS>
-        ::read(MyMessaging(),pname,state);
+    Optizelle::json::Unconstrained <double,MyVS>::read(pname,state);
     //---ReadRestart1---
 
     // Create the bundle of functions 
@@ -314,7 +303,7 @@ int main(int argc,char* argv[]) {
     //---Solver0---
     // Solve the optimization problem
     Optizelle::Unconstrained <double,MyVS>::Algorithms
-        ::getMin(MyMessaging(),fns,state,MyRestartManipulator());
+        ::getMin(mymessaging,fns,state,MyRestartManipulator());
     //---Solver1---
 
     // Print out the reason for convergence
@@ -328,6 +317,6 @@ int main(int argc,char* argv[]) {
     //---WriteRestart0---
     // Write out the final answer to file
     Optizelle::json::Unconstrained <double,MyVS>::write_restart(
-        MyMessaging(),"solution.json",state);
+        "solution.json",state);
     //---WriteRestart1---
 }

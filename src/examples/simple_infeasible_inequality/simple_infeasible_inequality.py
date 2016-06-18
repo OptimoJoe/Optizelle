@@ -20,10 +20,6 @@
 # only adds a single equality constraint.
 
 import Optizelle 
-import Optizelle.Constrained.State
-import Optizelle.Constrained.Functions
-import Optizelle.Constrained.Algorithms
-import Optizelle.json.Constrained
 import numpy
 import sys
 
@@ -129,11 +125,11 @@ z = numpy.array([0.,0.,0.])
 
 # Create an optimization state
 state=Optizelle.Constrained.State.t(
-    Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging(),x,y,z)
+    Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,x,y,z)
 
 # Read the parameters from file
 Optizelle.json.Constrained.read(
-    Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging(),fname,state)
+    Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,fname,state)
 
 # Create a bundle of functions
 fns=Optizelle.Constrained.Functions.t()
@@ -143,7 +139,7 @@ fns.h=MyIneq(epsilon)
 
 # Solve the optimization problem
 Optizelle.Constrained.Algorithms.getMin(
-    Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging(),fns,state)
+    Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging.stdout,fns,state)
 
 # Print out the reason for convergence
 print "The algorithm converged due to: %s" % (
@@ -154,4 +150,4 @@ print "The optimal point is: (%e,%e)" % (state.x[0],state.x[1])
 
 # Write out the final answer to file
 Optizelle.json.Constrained.write_restart(Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,
-    Optizelle.Messaging(),"solution.json",state)
+    "solution.json",state)

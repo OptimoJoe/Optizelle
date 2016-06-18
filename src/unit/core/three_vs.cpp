@@ -236,11 +236,10 @@ int main(int argc,char * argv[]) {
       
         // Read a restart file
         Optizelle::json::Unconstrained <Real,VS_X>::read_restart(
-            Optizelle::Messaging(),"junk.json",x,state);
+            "junk.json",x,state);
 
         // Read additional parameters from file
-        Optizelle::json::Unconstrained <Real,VS_X>
-            ::read(Optizelle::Messaging(),"junk.json",state);
+        Optizelle::json::Unconstrained <Real,VS_X>::read("junk.json",state);
 
         // Create the bundle of functions 
         Optizelle::Constrained <Real,VS_X,VS_Y,VS_Z>::Functions::t fns;
@@ -249,11 +248,11 @@ int main(int argc,char * argv[]) {
         
         // Solve the optimization problem
         Optizelle::Unconstrained <Real,VS_X>::Algorithms
-            ::getMin(Optizelle::Messaging(),fns,state);
+            ::getMin(Optizelle::Messaging::stdout,fns,state);
 
         // Write out the final answer to file
         Optizelle::json::Unconstrained <Real,VS_X>::write_restart(
-            Optizelle::Messaging(),"junk.json",state);
+            "junk.json",state);
 
     }
 
@@ -264,11 +263,11 @@ int main(int argc,char * argv[]) {
       
         // Read a restart file
         Optizelle::json::Constrained <Real,VS_X,VS_Y,VS_Z>::read_restart(
-            Optizelle::Messaging(),"junk.json",x,y,z,state);
+            "junk.json",x,y,z,state);
 
         // Read additional parameters from file
         Optizelle::json::Constrained <Real,VS_X,VS_Y,VS_Z>
-            ::read(Optizelle::Messaging(),"junk.json",state);
+            ::read("junk.json",state);
 
         // Create the bundle of functions 
         Optizelle::Constrained <Real,VS_X,VS_Y,VS_Z>::Functions::t fns;
@@ -281,11 +280,11 @@ int main(int argc,char * argv[]) {
         
         // Solve the optimization problem
         Optizelle::Constrained <Real,VS_X,VS_Y,VS_Z>::Algorithms
-            ::getMin(Optizelle::Messaging(),fns,state);
+            ::getMin(Optizelle::Messaging::stdout,fns,state);
 
         // Write out the final answer to file
         Optizelle::json::Constrained <Real,VS_X,VS_Y,VS_Z>::write_restart(
-            Optizelle::Messaging(),"junk.json",state);
+            "junk.json",state);
     }
 
     // Return success

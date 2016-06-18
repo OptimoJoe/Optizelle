@@ -45,17 +45,17 @@ end
 %
 function self = MyIneq()
 
-    % y=h(x) 
+    % z=h(x) 
     self.eval = @(x)MyIneq_eval(x);
 
-    % y=h'(x)dx
+    % z=h'(x)dx
     self.p = @(x,dx)MyIneq_p(x,dx);
 
-    % z=h'(x)*dy
-    self.ps = @(x,dy)MyIneq_ps(x,dy);
+    % xhat=h'(x)*dz
+    self.ps = @(x,dz)MyIneq_ps(x,dz);
 
-    % z=(h''(x)dx)*dy
-    self.pps = @(x,dx,dy) zeros(size(x)); 
+    % xhat=(h''(x)dx)*dz
+    self.pps = @(x,dx,dz) zeros(size(x)); 
 end
 
 % z=h(x) 
@@ -124,11 +124,11 @@ function main(fname)
 
     % Create an optimization state
     state=Optizelle.InequalityConstrained.State.t( ...
-        Optizelle.Rm,Optizelle.SQL,Optizelle.Messaging,x,z);
+        Optizelle.Rm,Optizelle.SQL,x,z);
 
     % Read the parameters from file
     state=Optizelle.json.InequalityConstrained.read( ...
-        Optizelle.Rm,Optizelle.SQL,Optizelle.Messaging,fname,state);
+        Optizelle.Rm,Optizelle.SQL,fname,state);
     
     % Create a bundle of functions
     fns=Optizelle.InequalityConstrained.Functions.t;
@@ -137,16 +137,15 @@ function main(fname)
 
     % Solve the optimization problem
     state=Optizelle.InequalityConstrained.Algorithms.getMin( ...
-        Optizelle.Rm,Optizelle.SQL,Optizelle.Messaging,fns,state);
+        Optizelle.Rm,Optizelle.SQL,Optizelle.Messaging.stdout,fns,state);
     
     % Write an intermediate restart file 
     Optizelle.json.InequalityConstrained.write_restart( ...
-        Optizelle.Rm,Optizelle.SQL,Optizelle.Messaging,'restart.json',state);
+        Optizelle.Rm,Optizelle.SQL,'restart.json',state);
 
     % Read in the restart file
     state = Optizelle.json.InequalityConstrained.read_restart( ...
-        Optizelle.Rm,Optizelle.SQL,Optizelle.Messaging,'restart.json', ...
-        state.x,state.z);
+        Optizelle.Rm,Optizelle.SQL,'restart.json',state.x,state.z);
 
     % Change the maximum number of iterations to something larger and reset
     % the convergence flag
@@ -155,7 +154,7 @@ function main(fname)
 
     % Finish solving the optimization problem
     state=Optizelle.InequalityConstrained.Algorithms.getMin( ...
-        Optizelle.Rm,Optizelle.SQL,Optizelle.Messaging,fns,state);
+        Optizelle.Rm,Optizelle.SQL,Optizelle.Messaging.stdout,fns,state);
 
     % Print out the reason for convergence
     fprintf('The algorithm converged due to: %s\n', ...
@@ -167,5 +166,5 @@ function main(fname)
 
     % Write out the final answer to file
     Optizelle.json.InequalityConstrained.write_restart( ...
-        Optizelle.Rm,Optizelle.SQL,Optizelle.Messaging,'solution.json',state);
+        Optizelle.Rm,Optizelle.SQL,'solution.json',state);
 end

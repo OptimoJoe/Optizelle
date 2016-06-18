@@ -2,8 +2,10 @@ __all__ = [
     "t"
 ]
 
-import Optizelle
 import Optizelle.Unconstrained.State
+from Optizelle.Utility import *
+from Optizelle.Properties import *
+from Optizelle.Enumerated import *
 
 def allocateVectors(self,X,Z,x,z):
     """Allocates memory for the state vectors"""
@@ -14,61 +16,60 @@ def allocateVectors(self,X,Z,x,z):
 class t(Optizelle.Unconstrained.State.t):
     """Internal state of the optimization"""
 
-    def __init__(self,X,Z,msg,x,z):
+    def __init__(self,X,Z,x,z):
         """Constructor"""
 
         # Check our arguments
-        Optizelle.checkVectorSpace("X",X)
-        Optizelle.checkEuclidean("Z",Z)
-        Optizelle.checkMessaging("msg",msg)
+        checkVectorSpace("X",X)
+        checkEuclidean("Z",Z)
         
         # Allocate memory for our vectors
         Optizelle.Unconstrained.State.allocateVectors(self,X,x)
         allocateVectors(self,X,Z,x,z)
 
         # Create the state
-        Optizelle.Utility.InequalityConstrainedStateCreate(self,X,Z,msg,x,z)
+        InequalityConstrainedStateCreate(self,X,Z,x,z)
 
     # Create all of the properties
-    z = Optizelle.createVectorProperty(
+    z = createVectorProperty(
         "z",
         "Inequality multiplier (dual variable or Lagrange multiplier)")
-    dz = Optizelle.createVectorProperty(
+    dz = createVectorProperty(
         "dz",
         "Step in the inequality multiplier")
-    h_x = Optizelle.createVectorProperty(
+    h_x = createVectorProperty(
         "h_x",
         "The inequality constraint evaluated at x.")
-    mu = Optizelle.createFloatProperty(
+    mu = createFloatProperty(
         "mu",
         "Interior point parameter")
-    mu_est = Optizelle.createFloatProperty(
+    mu_est = createFloatProperty(
         "mu_est",
         "Current interior point estimate")
-    mu_typ = Optizelle.createFloatProperty(
+    mu_typ = createFloatProperty(
         "mu_typ",
         "Typical value for mu.  Generally, the first estimated value for mu.")
-    eps_mu = Optizelle.createFloatProperty(
+    eps_mu = createFloatProperty(
         "eps_mu",
         "Relative stopping criteria for the interior point parameter")
-    sigma = Optizelle.createFloatProperty(
+    sigma = createFloatProperty(
         "sigma",
         ("The amount that we reduce the interior point parameter by everytime "
         "we approach the central path"))
-    gamma = Optizelle.createFloatProperty(
+    gamma = createFloatProperty(
         "gamma",
         "How close we move to the boundary during a single step")
-    alpha_z = Optizelle.createFloatProperty(
+    alpha_z = createFloatProperty(
         "alpha_z",
         ("Amount we truncate dx in order to maintain feasibility "
         " of the inequality multiplier"))
-    h_diag = Optizelle.createEnumProperty(
+    h_diag = createEnumProperty(
         "h_diag",
-        Optizelle.FunctionDiagnostics,
+        FunctionDiagnostics,
         "Function diagnostics on h")
-    z_diag = Optizelle.createEnumProperty(
+    z_diag = createEnumProperty(
         "z_diag",
-        Optizelle.VectorSpaceDiagnostics,
+        VectorSpaceDiagnostics,
         "Vector space diagnostics on Z")
 
 def checkT(name,value):

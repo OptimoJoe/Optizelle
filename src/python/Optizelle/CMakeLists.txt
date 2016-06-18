@@ -38,7 +38,8 @@ add_subdirectory(Constrained)
 add_subdirectory(json)
 
 install(
-    FILES __init__.py
+    FILES __init__.py Exception.py Messaging.py Properties.py Functions.py
+        Enumerated.py
     DESTINATION share/optizelle/python/Optizelle)
 install(
     TARGETS optizelle_python 

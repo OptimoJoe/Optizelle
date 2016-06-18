@@ -31,759 +31,898 @@ Author: Joseph Young (joe@optimojoe.com)
 
 #include "optizelle.h"
 
+// Catch and handle MATLAB/Octave and Optizelle errors.  In theory, we should
+// never have to handle Matlab::Exception::t since MATLAB/Octave should exit
+// the mex file immediately.  MATLAB does this correctly, but Octave does not,
+// so we require this safeguard.  Though, it swallows the actual error, which
+// is bad.  I've this reported as bug #48185 with Octave's bugtracker at
+// savannah.gnu.org.
+#define CATCH_MATLAB_ERRORS \
+    catch(Matlab::Exception::t const & e) { \
+        mexErrMsgTxt( \
+            Optizelle::Exception::to_string(e).c_str()); \
+    } catch(std::exception const & e) { \
+        mexErrMsgTxt( \
+            Optizelle::Exception::to_string(e).c_str()); \
+        return; \
+    }
+
+// Grab and globalize the Optizelle module
+#define MX_OPT_BEGIN \
+    optizelle.emplace_back(capi::mexGetVariablePtr("global","Optizelle"));
+
+// Clean up the Optizelle module
+#define MX_OPT_END optizelle.pop_back(); 
+
+// Return arguments to MATLAB/Octave
+#define MX_RETURN_0 \
+    MX_OPT_END; \
+    return;
+#define MX_RETURN_1(v1) \
+    MX_OPT_END; \
+    pOutput[0] = v1.leak(); \
+    return;
+#define MX_RETURN_4(v1,v2,v3,v4) \
+    MX_OPT_END; \
+    pOutput[0] = v1.leak(); \
+    pOutput[1] = v2.leak(); \
+    pOutput[2] = v3.leak(); \
+    pOutput[3] = v4.leak(); \
+    return;
+#define MX_RETURN_5(v1,v2,v3,v4,v5) \
+    MX_OPT_END; \
+    pOutput[0] = v1.leak(); \
+    pOutput[1] = v2.leak(); \
+    pOutput[2] = v3.leak(); \
+    pOutput[3] = v4.leak(); \
+    pOutput[4] = v5.leak(); \
+    return;
+#define MX_RETURN_6(v1,v2,v3,v4,v5,v6) \
+    MX_OPT_END; \
+    pOutput[0] = v1.leak(); \
+    pOutput[1] = v2.leak(); \
+    pOutput[2] = v3.leak(); \
+    pOutput[3] = v4.leak(); \
+    pOutput[4] = v5.leak(); \
+    pOutput[5] = v6.leak(); \
+    return;
+
+// Grab arguments from MATLAB/Octave
+#define MX_VAR_2(v1,v2) \
+    MX_OPT_BEGIN; \
+    auto v1##_ = mxArrayPtr(pInput[0],mxArrayPtr::Unmanaged); \
+    auto v2##_ = mxArrayPtr(pInput[1],mxArrayPtr::Unmanaged);
+#define MX_VAR_3(v1,v2,v3) \
+    MX_OPT_BEGIN; \
+    auto v1##_ = mxArrayPtr(pInput[0],mxArrayPtr::Unmanaged); \
+    auto v2##_ = mxArrayPtr(pInput[1],mxArrayPtr::Unmanaged); \
+    auto v3##_ = mxArrayPtr(pInput[2],mxArrayPtr::Unmanaged);
+#define MX_VAR_4(v1,v2,v3,v4) \
+    MX_OPT_BEGIN; \
+    auto v1##_ = mxArrayPtr(pInput[0],mxArrayPtr::Unmanaged); \
+    auto v2##_ = mxArrayPtr(pInput[1],mxArrayPtr::Unmanaged); \
+    auto v3##_ = mxArrayPtr(pInput[2],mxArrayPtr::Unmanaged); \
+    auto v4##_ = mxArrayPtr(pInput[3],mxArrayPtr::Unmanaged);
+#define MX_VAR_5(v1,v2,v3,v4,v5) \
+    MX_OPT_BEGIN; \
+    auto v1##_ = mxArrayPtr(pInput[0],mxArrayPtr::Unmanaged); \
+    auto v2##_ = mxArrayPtr(pInput[1],mxArrayPtr::Unmanaged); \
+    auto v3##_ = mxArrayPtr(pInput[2],mxArrayPtr::Unmanaged); \
+    auto v4##_ = mxArrayPtr(pInput[3],mxArrayPtr::Unmanaged); \
+    auto v5##_ = mxArrayPtr(pInput[4],mxArrayPtr::Unmanaged);
+#define MX_VAR_6(v1,v2,v3,v4,v5,v6) \
+    MX_OPT_BEGIN; \
+    auto v1##_ = mxArrayPtr(pInput[0],mxArrayPtr::Unmanaged); \
+    auto v2##_ = mxArrayPtr(pInput[1],mxArrayPtr::Unmanaged); \
+    auto v3##_ = mxArrayPtr(pInput[2],mxArrayPtr::Unmanaged); \
+    auto v4##_ = mxArrayPtr(pInput[3],mxArrayPtr::Unmanaged); \
+    auto v5##_ = mxArrayPtr(pInput[4],mxArrayPtr::Unmanaged); \
+    auto v6##_ = mxArrayPtr(pInput[5],mxArrayPtr::Unmanaged);
+#define MX_VAR_7(v1,v2,v3,v4,v5,v6,v7) \
+    MX_OPT_BEGIN; \
+    auto v1##_ = mxArrayPtr(pInput[0],mxArrayPtr::Unmanaged); \
+    auto v2##_ = mxArrayPtr(pInput[1],mxArrayPtr::Unmanaged); \
+    auto v3##_ = mxArrayPtr(pInput[2],mxArrayPtr::Unmanaged); \
+    auto v4##_ = mxArrayPtr(pInput[3],mxArrayPtr::Unmanaged); \
+    auto v5##_ = mxArrayPtr(pInput[4],mxArrayPtr::Unmanaged); \
+    auto v6##_ = mxArrayPtr(pInput[5],mxArrayPtr::Unmanaged); \
+    auto v7##_ = mxArrayPtr(pInput[6],mxArrayPtr::Unmanaged);
+#define MX_VAR_8(v1,v2,v3,v4,v5,v6,v7,v8) \
+    MX_OPT_BEGIN; \
+    auto v1##_ = mxArrayPtr(pInput[0],mxArrayPtr::Unmanaged); \
+    auto v2##_ = mxArrayPtr(pInput[1],mxArrayPtr::Unmanaged); \
+    auto v3##_ = mxArrayPtr(pInput[2],mxArrayPtr::Unmanaged); \
+    auto v4##_ = mxArrayPtr(pInput[3],mxArrayPtr::Unmanaged); \
+    auto v5##_ = mxArrayPtr(pInput[4],mxArrayPtr::Unmanaged); \
+    auto v6##_ = mxArrayPtr(pInput[5],mxArrayPtr::Unmanaged); \
+    auto v7##_ = mxArrayPtr(pInput[6],mxArrayPtr::Unmanaged); \
+    auto v8##_ = mxArrayPtr(pInput[7],mxArrayPtr::Unmanaged);
+#define MX_VAR_10(v1,v2,v3,v4,v5,v6,v7,v8,v9,v10) \
+    MX_OPT_BEGIN; \
+    auto v1##_ = mxArrayPtr(pInput[0],mxArrayPtr::Unmanaged); \
+    auto v2##_ = mxArrayPtr(pInput[1],mxArrayPtr::Unmanaged); \
+    auto v3##_ = mxArrayPtr(pInput[2],mxArrayPtr::Unmanaged); \
+    auto v4##_ = mxArrayPtr(pInput[3],mxArrayPtr::Unmanaged); \
+    auto v5##_ = mxArrayPtr(pInput[4],mxArrayPtr::Unmanaged); \
+    auto v6##_ = mxArrayPtr(pInput[5],mxArrayPtr::Unmanaged); \
+    auto v7##_ = mxArrayPtr(pInput[6],mxArrayPtr::Unmanaged); \
+    auto v8##_ = mxArrayPtr(pInput[7],mxArrayPtr::Unmanaged); \
+    auto v9##_ = mxArrayPtr(pInput[8],mxArrayPtr::Unmanaged); \
+    auto v10##_ = mxArrayPtr(pInput[9],mxArrayPtr::Unmanaged);
+
 namespace Optizelle {
     // In theory, I'd like to keep this variable local, but for some strange
     // reason Octave keeps moving around this memory.  As such, rather than
     // having it be static, I made it global and then grab the correct pointer
     // each time we enter these routines.
-    static std::list<mxArray *> optizelle;
+    static std::list<Matlab::mxArrayPtr> optizelle;
 
+    // Enumerate types
     namespace OptimizationStop { 
         // Converts t to a Matlab enumerated type
-        mxArray * toMatlab(t const & opt_stop) {
+        Matlab::mxArrayPtr toMatlab(t const & opt_stop) {
             // Do the conversion
             switch(opt_stop){
             case NotConverged:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "OptimizationStop","NotConverged");
             case GradientSmall:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "OptimizationStop","GradientSmall");
             case StepSmall:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "OptimizationStop","StepSmall");
             case MaxItersExceeded:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "OptimizationStop","MaxItersExceeded");
             case InteriorPointInstability:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "OptimizationStop","InteriorPointInstability");
             case GlobalizationFailure:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "OptimizationStop","GlobalizationFailure");
             case UserDefined:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "OptimizationStop","UserDefined");
-            default:
-                throw;
             }
         }
 
         // Converts a Matlab enumerated type to t 
-        t fromMatlab(mxArray * const member) {
+        t fromMatlab(Matlab::mxArrayPtr const & member) {
             // Convert the member to a Natural 
-            Natural m(*mxGetPr(member));
+            auto m = Matlab::capi::mxArrayToNatural(member);
 
-            if(m==Matlab::enumToNatural("OptimizationStop","NotConverged"))
+            if(m==Matlab::capi::enumToNatural(
+                "OptimizationStop","NotConverged")
+            )
                 return NotConverged;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "OptimizationStop","GradientSmall")
             )
                 return GradientSmall;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "OptimizationStop","StepSmall")
             )
                 return StepSmall;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "OptimizationStop","MaxItersExceeded")
             )
                 return MaxItersExceeded;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "OptimizationStop","InteriorPointInstability")
             )
                 return InteriorPointInstability;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "OptimizationStop","GlobalizationFailure")
             )
                 return GlobalizationFailure;
-            else if(m==Matlab::enumToNatural("OptimizationStop","UserDefined"))
+            else if(m==Matlab::capi::enumToNatural(
+                "OptimizationStop","UserDefined")
+            )
                 return UserDefined;
             else
-                throw;
+                throw Optizelle::Exception::t( __LOC__
+                    + ", unknown OptimizationStop");
         }
     }
     
     namespace TruncatedStop { 
         // Converts t to a Matlab enumerated type
-        mxArray * toMatlab(t const & trunc_stop) {
+        Matlab::mxArrayPtr toMatlab(t const & trunc_stop) {
             // Do the conversion
             switch(trunc_stop){
             case NotConverged:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "TruncatedStop","NotConverged");
             case NegativeCurvature:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "TruncatedStop","NegativeCurvature");
             case RelativeErrorSmall:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "TruncatedStop","RelativeErrorSmall");
             case MaxItersExceeded:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "TruncatedStop","MaxItersExceeded");
             case TrustRegionViolated:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "TruncatedStop","TrustRegionViolated");
             case NanOperator:
-                return Matlab::enumToMxArray("TruncatedStop","NanOperator");
+                return Matlab::capi::enumToMxArray("TruncatedStop","NanOperator");
             case NanPreconditioner:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "TruncatedStop","NanPreconditioner");
             case NonProjectorPreconditioner:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "TruncatedStop","NonProjectorPreconditioner");
             case NonSymmetricPreconditioner:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "TruncatedStop","NonSymmetricPreconditioner");
             case NonSymmetricOperator:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "TruncatedStop","NonSymmetricOperator");
             case LossOfOrthogonality:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "TruncatedStop","LossOfOrthogonality");
             case OffsetViolatesTrustRegion:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "TruncatedStop","OffsetViolatesTrustRegion");
             case OffsetViolatesSafeguard:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "TruncatedStop","OffsetViolatesSafeguard");
             case TooManyFailedSafeguard:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "TruncatedStop","TooManyFailedSafeguard");
             case ObjectiveIncrease:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "TruncatedStop","ObjectiveIncrease");
-            default:
-                throw;
             }
         }
 
         // Converts a Matlab enumerated type to t 
-        t fromMatlab(mxArray * const member) {
+        t fromMatlab(Matlab::mxArrayPtr const & member) {
             // Convert the member to a Natural 
-            Natural m(*mxGetPr(member));
+            auto m = Matlab::capi::mxArrayToNatural(member);
 
-            if(m==Matlab::enumToNatural("TruncatedStop","NotConverged"))
+            if(m==Matlab::capi::enumToNatural("TruncatedStop","NotConverged"))
                 return NotConverged;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "TruncatedStop","NegativeCurvature")
             )
                 return NegativeCurvature;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "TruncatedStop","RelativeErrorSmall")
             )
                 return RelativeErrorSmall;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "TruncatedStop","MaxItersExceeded")
             )
                 return MaxItersExceeded;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "TruncatedStop","TrustRegionViolated")
             )
                 return TrustRegionViolated;
-            else if(m==Matlab::enumToNatural("TruncatedStop","NanOperator"))
+            else if(m==Matlab::capi::enumToNatural(
+                "TruncatedStop","NanOperator")
+            )
                 return NanOperator;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "TruncatedStop","NanPreconditioner")
             )
                 return NanPreconditioner;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "TruncatedStop","NonProjectorPreconditioner")
             )
                 return NonProjectorPreconditioner;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "TruncatedStop","NonSymmetricPreconditioner")
             )
                 return NonSymmetricPreconditioner;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "TruncatedStop","NonSymmetricOperator")
             )
                 return NonSymmetricOperator;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "TruncatedStop","LossOfOrthogonality")
             )
                 return LossOfOrthogonality;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "TruncatedStop","OffsetViolatesTrustRegion")
             )
                 return OffsetViolatesTrustRegion;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "TruncatedStop","OffsetViolatesSafeguard")
             )
                 return OffsetViolatesSafeguard;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "TruncatedStop","TooManyFailedSafeguard")
             )
                 return TooManyFailedSafeguard;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "TruncatedStop","ObjectiveIncrease")
             )
                 return ObjectiveIncrease;
             else
-                throw;
+                throw Optizelle::Exception::t( __LOC__
+                    + ", unknown TruncatedStop");
         }
     }
 
     namespace AlgorithmClass { 
         // Converts t to a Matlab enumerated type
-        mxArray * toMatlab(t const & algorithm_class) {
+        Matlab::mxArrayPtr toMatlab(t const & algorithm_class) {
             // Do the conversion
             switch(algorithm_class){
             case TrustRegion:
-                return Matlab::enumToMxArray("AlgorithmClass","TrustRegion");
+                return Matlab::capi::enumToMxArray("AlgorithmClass","TrustRegion");
             case LineSearch:
-                return Matlab::enumToMxArray("AlgorithmClass","LineSearch");
+                return Matlab::capi::enumToMxArray("AlgorithmClass","LineSearch");
             case UserDefined:
-                return Matlab::enumToMxArray("AlgorithmClass","UserDefined");
-            default:
-                throw;
+                return Matlab::capi::enumToMxArray("AlgorithmClass","UserDefined");
             }
         }
 
         // Converts a Matlab enumerated type to t 
-        t fromMatlab(mxArray * const member) {
+        t fromMatlab(Matlab::mxArrayPtr const & member) {
             // Convert the member to a Natural 
-            Natural m(*mxGetPr(member));
+            auto m = Matlab::capi::mxArrayToNatural(member);
 
-            if(m==Matlab::enumToNatural("AlgorithmClass","TrustRegion"))
+            if(m==Matlab::capi::enumToNatural("AlgorithmClass","TrustRegion"))
                 return TrustRegion;
-            else if(m==Matlab::enumToNatural("AlgorithmClass","LineSearch"))
+            else if(m==Matlab::capi::enumToNatural(
+                "AlgorithmClass","LineSearch")
+            )
                 return LineSearch;
-            else if(m==Matlab::enumToNatural("AlgorithmClass","UserDefined"))
+            else if(m==Matlab::capi::enumToNatural(
+                "AlgorithmClass","UserDefined")
+            )
                 return UserDefined;
             else
-                throw;
+                throw Optizelle::Exception::t( __LOC__
+                    + ", unknown AlgorithmClass");
         }
     }
 
     namespace Operators { 
         // Converts t to a Matlab enumerated type
-        mxArray * toMatlab(t const & op) {
+        Matlab::mxArrayPtr toMatlab(t const & op) {
             // Do the conversion
             switch(op){
             case Identity:
-                return Matlab::enumToMxArray("Operators","Identity");
+                return Matlab::capi::enumToMxArray("Operators","Identity");
             case Zero:
-                return Matlab::enumToMxArray("Operators","Zero");
+                return Matlab::capi::enumToMxArray("Operators","Zero");
             case ScaledIdentity:
-                return Matlab::enumToMxArray("Operators","ScaledIdentity");
+                return Matlab::capi::enumToMxArray("Operators","ScaledIdentity");
             case BFGS:
-                return Matlab::enumToMxArray("Operators","BFGS");
+                return Matlab::capi::enumToMxArray("Operators","BFGS");
             case InvBFGS:
-                return Matlab::enumToMxArray("Operators","InvBFGS");
+                return Matlab::capi::enumToMxArray("Operators","InvBFGS");
             case SR1:
-                return Matlab::enumToMxArray("Operators","SR1");
+                return Matlab::capi::enumToMxArray("Operators","SR1");
             case InvSR1:
-                return Matlab::enumToMxArray("Operators","InvSR1");
+                return Matlab::capi::enumToMxArray("Operators","InvSR1");
             case UserDefined:
-                return Matlab::enumToMxArray("Operators","UserDefined");
-            default:
-                throw;
+                return Matlab::capi::enumToMxArray("Operators","UserDefined");
             }
         }
 
         // Converts a Matlab enumerated type to t 
-        t fromMatlab(mxArray * const member) {
+        t fromMatlab(Matlab::mxArrayPtr const & member) {
             // Convert the member to a Natural 
-            Natural m(*mxGetPr(member));
+            auto m = Matlab::capi::mxArrayToNatural(member);
 
-            if(m==Matlab::enumToNatural("Operators","Identity"))
+            if(m==Matlab::capi::enumToNatural("Operators","Identity"))
                 return Identity;
-            else if(m==Matlab::enumToNatural("Operators","Zero"))
+            else if(m==Matlab::capi::enumToNatural("Operators","Zero"))
                 return Zero;
-            else if(m==Matlab::enumToNatural("Operators","ScaledIdentity"))
+            else if(m==Matlab::capi::enumToNatural(
+                "Operators","ScaledIdentity")
+            )
                 return ScaledIdentity;
-            else if(m==Matlab::enumToNatural("Operators","BFGS"))
+            else if(m==Matlab::capi::enumToNatural("Operators","BFGS"))
                 return BFGS;
-            else if(m==Matlab::enumToNatural("Operators","InvBFGS"))
+            else if(m==Matlab::capi::enumToNatural("Operators","InvBFGS"))
                 return InvBFGS;
-            else if(m==Matlab::enumToNatural("Operators","SR1"))
+            else if(m==Matlab::capi::enumToNatural("Operators","SR1"))
                 return SR1;
-            else if(m==Matlab::enumToNatural("Operators","InvSR1"))
+            else if(m==Matlab::capi::enumToNatural("Operators","InvSR1"))
                 return InvSR1;
-            else if(m==Matlab::enumToNatural("Operators","UserDefined"))
+            else if(m==Matlab::capi::enumToNatural("Operators","UserDefined"))
                 return UserDefined;
             else
-                throw;
+                throw Optizelle::Exception::t( __LOC__
+                    + ", unknown Operators");
         }
     }
 
     namespace LineSearchDirection {
         // Converts t to a Matlab enumerated type
-        mxArray * toMatlab(t const & dir) {
+        Matlab::mxArrayPtr toMatlab(t const & dir) {
             // Do the conversion
             switch(dir){
             case SteepestDescent:
-                return Matlab::enumToMxArray("LineSearchDirection",
+                return Matlab::capi::enumToMxArray("LineSearchDirection",
                     "SteepestDescent");
             case FletcherReeves:
-                return Matlab::enumToMxArray("LineSearchDirection",
+                return Matlab::capi::enumToMxArray("LineSearchDirection",
                     "FletcherReeves");
             case PolakRibiere:
-                return Matlab::enumToMxArray("LineSearchDirection",
+                return Matlab::capi::enumToMxArray("LineSearchDirection",
                     "PolakRibiere");
             case HestenesStiefel:
-                return Matlab::enumToMxArray("LineSearchDirection",
+                return Matlab::capi::enumToMxArray("LineSearchDirection",
                     "HestenesStiefel");
             case BFGS:
-                return Matlab::enumToMxArray("LineSearchDirection","BFGS");
+                return Matlab::capi::enumToMxArray(
+                    "LineSearchDirection","BFGS");
             case NewtonCG:
-                return Matlab::enumToMxArray("LineSearchDirection","NewtonCG");
-            default:
-                throw;
+                return Matlab::capi::enumToMxArray(
+                    "LineSearchDirection","NewtonCG");
             }
         }
 
         // Converts a Matlab enumerated type to t 
-        t fromMatlab(mxArray * const member) {
+        t fromMatlab(Matlab::mxArrayPtr const & member) {
             // Convert the member to a Natural 
-            Natural m(*mxGetPr(member));
+            auto m = Matlab::capi::mxArrayToNatural(member);
 
-            if(m==Matlab::enumToNatural("LineSearchDirection",
-                "SteepestDescent")
+            if(m==Matlab::capi::enumToNatural(
+                "LineSearchDirection","SteepestDescent")
             )
                 return SteepestDescent;
-            else if(m==Matlab::enumToNatural("LineSearchDirection",
-                "FletcherReeves")
+            else if(m==Matlab::capi::enumToNatural(
+                "LineSearchDirection","FletcherReeves")
             )
                 return FletcherReeves;
-            else if(m==Matlab::enumToNatural("LineSearchDirection",
-                "PolakRibiere")
+            else if(m==Matlab::capi::enumToNatural(
+                "LineSearchDirection","PolakRibiere")
             )
                 return PolakRibiere;
-            else if(m==Matlab::enumToNatural("LineSearchDirection",
-                "HestenesStiefel")
+            else if(m==Matlab::capi::enumToNatural(
+                "LineSearchDirection","HestenesStiefel")
             )
                 return HestenesStiefel;
-            else if(m==Matlab::enumToNatural("LineSearchDirection","BFGS"))
+            else if(m==Matlab::capi::enumToNatural(
+                "LineSearchDirection","BFGS")
+            )
                 return BFGS;
-            else if(m==Matlab::enumToNatural("LineSearchDirection","NewtonCG"))
+            else if(m==Matlab::capi::enumToNatural(
+                "LineSearchDirection","NewtonCG")
+            )
                 return NewtonCG;
             else
-                throw;
+                throw Optizelle::Exception::t( __LOC__
+                    + ", unknown LineSearchDirection");
         }
     }
 
     namespace LineSearchKind { 
         // Converts t to a Matlab enumerated type
-        mxArray * toMatlab(t const & kind) {
+        Matlab::mxArrayPtr toMatlab(t const & kind) {
             // Do the conversion
             switch(kind){
             case GoldenSection:
-                return Matlab::enumToMxArray("LineSearchKind","GoldenSection");
+                return Matlab::capi::enumToMxArray(
+                    "LineSearchKind","GoldenSection");
             case BackTracking:
-                return Matlab::enumToMxArray("LineSearchKind","BackTracking");
+                return Matlab::capi::enumToMxArray(
+                    "LineSearchKind","BackTracking");
             case TwoPointA:
-                return Matlab::enumToMxArray("LineSearchKind","TwoPointA");
+                return Matlab::capi::enumToMxArray(
+                    "LineSearchKind","TwoPointA");
             case TwoPointB:
-                return Matlab::enumToMxArray("LineSearchKind","TwoPointB");
-            default:
-                throw;
+                return Matlab::capi::enumToMxArray(
+                    "LineSearchKind","TwoPointB");
             }
         }
 
         // Converts a Matlab enumerated type to t 
-        t fromMatlab(mxArray * const member) {
+        t fromMatlab(Matlab::mxArrayPtr const & member) {
             // Convert the member to a Natural 
-            Natural m(*mxGetPr(member));
+            auto m = Matlab::capi::mxArrayToNatural(member);
 
-            if(m==Matlab::enumToNatural("LineSearchKind","GoldenSection"))
+            if(m==Matlab::capi::enumToNatural("LineSearchKind","GoldenSection"))
                 return GoldenSection;
-            else if(m==Matlab::enumToNatural("LineSearchKind","BackTracking"))
+            else if(m==Matlab::capi::enumToNatural(
+                "LineSearchKind","BackTracking")
+            )
                 return BackTracking;
-            else if(m==Matlab::enumToNatural("LineSearchKind","TwoPointA"))
+            else if(m==Matlab::capi::enumToNatural(
+                "LineSearchKind","TwoPointA")
+            )
                 return TwoPointA;
-            else if(m==Matlab::enumToNatural("LineSearchKind","TwoPointB"))
+            else if(m==Matlab::capi::enumToNatural(
+                "LineSearchKind","TwoPointB")
+            )
                 return TwoPointB;
             else
-                throw;
+                throw Optizelle::Exception::t( __LOC__
+                    + ", unknown LineSearchKind");
         }
     }
 
     namespace OptimizationLocation { 
         // Converts t to a Matlab enumerated type
-        mxArray * toMatlab(t const & loc) {
+        Matlab::mxArrayPtr toMatlab(t const & loc) {
             // Do the conversion
             switch(loc){
             case BeginningOfOptimization:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "OptimizationLocation","BeginningOfOptimization");
             case BeforeInitialFuncAndGrad:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "OptimizationLocation","BeforeInitialFuncAndGrad");
             case AfterInitialFuncAndGrad:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "OptimizationLocation","AfterInitialFuncAndGrad");
             case BeforeOptimizationLoop:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "OptimizationLocation","BeforeOptimizationLoop");
             case BeginningOfOptimizationLoop:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "OptimizationLocation","BeginningOfOptimizationLoop");
             case BeforeSaveOld:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "OptimizationLocation","BeforeSaveOld");
             case BeforeStep:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "OptimizationLocation","BeforeStep");
             case BeforeGetStep:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "OptimizationLocation","BeforeGetStep");
             case GetStep:
-                return Matlab::enumToMxArray("OptimizationLocation","GetStep");
+                return Matlab::capi::enumToMxArray(
+                    "OptimizationLocation","GetStep");
             case AfterStepBeforeGradient:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "OptimizationLocation","AfterStepBeforeGradient");
             case AfterGradient:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "OptimizationLocation","AfterGradient");
             case BeforeQuasi:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "OptimizationLocation","BeforeQuasi");
             case AfterQuasi:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "OptimizationLocation","AfterQuasi");
             case AfterCheckStop:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "OptimizationLocation","AfterCheckStop");
             case EndOfOptimizationIteration:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "OptimizationLocation","EndOfOptimizationIteration");
             case BeforeLineSearch:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "OptimizationLocation","BeforeLineSearch");
             case AfterRejectedTrustRegion:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "OptimizationLocation","AfterRejectedTrustRegion");
             case AfterRejectedLineSearch:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "OptimizationLocation","AfterRejectedLineSearch");
             case BeforeActualVersusPredicted:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "OptimizationLocation","BeforeActualVersusPredicted");
             case EndOfOptimization:
-                return Matlab::enumToMxArray(
+                return Matlab::capi::enumToMxArray(
                     "OptimizationLocation","EndOfOptimization");
-            default:
-                throw;
             }
         }
 
         // Converts a Matlab enumerated type to t 
-        t fromMatlab(mxArray * const member) {
+        t fromMatlab(Matlab::mxArrayPtr const & member) {
             // Convert the member to a Natural 
-            Natural m(*mxGetPr(member));
+            auto m = Matlab::capi::mxArrayToNatural(member);
 
-            if(m==Matlab::enumToNatural(
+            if(m==Matlab::capi::enumToNatural(
                 "OptimizationLocation","BeginningOfOptimization"))
                 return BeginningOfOptimization;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "OptimizationLocation","BeforeInitialFuncAndGrad"))
                 return BeforeInitialFuncAndGrad;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "OptimizationLocation","AfterInitialFuncAndGrad"))
                 return AfterInitialFuncAndGrad;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "OptimizationLocation","BeforeOptimizationLoop"))
                 return BeforeOptimizationLoop;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "OptimizationLocation","BeginningOfOptimizationLoop"))
                 return BeginningOfOptimizationLoop;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "OptimizationLocation","BeforeSaveOld"))
                 return BeforeSaveOld;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "OptimizationLocation","BeforeStep"))
                 return BeforeStep;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "OptimizationLocation","BeforeGetStep"))
                 return BeforeGetStep;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "OptimizationLocation","GetStep"))
                 return GetStep;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "OptimizationLocation","AfterStepBeforeGradient"))
                 return AfterStepBeforeGradient;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "OptimizationLocation","AfterGradient"))
                 return AfterGradient;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "OptimizationLocation","BeforeQuasi"))
                 return BeforeQuasi;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "OptimizationLocation","AfterQuasi"))
                 return AfterQuasi;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "OptimizationLocation","AfterCheckStop"))
                 return AfterCheckStop;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "OptimizationLocation","EndOfOptimizationIteration"))
                 return EndOfOptimizationIteration;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "OptimizationLocation","BeforeLineSearch"))
                 return BeforeLineSearch;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "OptimizationLocation","AfterRejectedTrustRegion"))
                 return AfterRejectedTrustRegion;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "OptimizationLocation","AfterRejectedLineSearch"))
                 return AfterRejectedLineSearch;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "OptimizationLocation","BeforeActualVersusPredicted"))
                 return BeforeActualVersusPredicted;
-            else if(m==Matlab::enumToNatural(
+            else if(m==Matlab::capi::enumToNatural(
                 "OptimizationLocation","EndOfOptimization"))
                 return EndOfOptimization;
             else
-                throw;
+                throw Optizelle::Exception::t( __LOC__
+                    + ", unknown OptimizationLocation");
         }
     }
 
     namespace FunctionDiagnostics { 
         // Converts t to a Matlab enumerated type
-        mxArray * toMatlab(t const & diag) {
+        Matlab::mxArrayPtr toMatlab(t const & diag) {
             // Do the conversion
             switch(diag){
             case NoDiagnostics:
-                return Matlab::enumToMxArray("FunctionDiagnostics",
-                    "NoDiagnostics");
+                return Matlab::capi::enumToMxArray(
+                    "FunctionDiagnostics","NoDiagnostics");
             case FirstOrder:
-                return Matlab::enumToMxArray("FunctionDiagnostics",
-                    "FirstOrder");
+                return Matlab::capi::enumToMxArray(
+                    "FunctionDiagnostics","FirstOrder");
             case SecondOrder:
-                return Matlab::enumToMxArray("FunctionDiagnostics",
-                    "SecondOrder");
-            default:
-                throw;
+                return Matlab::capi::enumToMxArray(
+                    "FunctionDiagnostics","SecondOrder");
             }
         }
 
         // Converts a Matlab enumerated type to t 
-        t fromMatlab(mxArray * const member) {
+        t fromMatlab(Matlab::mxArrayPtr const & member) {
             // Convert the member to a Natural 
-            Natural m(*mxGetPr(member));
+            auto m = Matlab::capi::mxArrayToNatural(member);
 
-            if(m==Matlab::enumToNatural("FunctionDiagnostics","NoDiagnostics"))
+            if(m==Matlab::capi::enumToNatural(
+                "FunctionDiagnostics","NoDiagnostics")
+            )
                 return NoDiagnostics;
-            else if(m==Matlab::enumToNatural("FunctionDiagnostics",
-                "FirstOrder")
+            else if(m==Matlab::capi::enumToNatural(
+                "FunctionDiagnostics","FirstOrder")
             )
                 return FirstOrder;
-            else if(m==Matlab::enumToNatural("FunctionDiagnostics",
-                "SecondOrder")
+            else if(m==Matlab::capi::enumToNatural(
+                "FunctionDiagnostics","SecondOrder")
             )
                 return SecondOrder;
             else
-                throw;
+                throw Optizelle::Exception::t( __LOC__
+                    + ", unknown FunctionDiagnostics");
         }
     }
 
     namespace VectorSpaceDiagnostics { 
         // Converts t to a Matlab enumerated type
-        mxArray * toMatlab(t const & diag) {
+        Matlab::mxArrayPtr toMatlab(t const & diag) {
             // Do the conversion
             switch(diag){
             case NoDiagnostics:
-                return Matlab::enumToMxArray("VectorSpaceDiagnostics",
-                    "NoDiagnostics");
+                return Matlab::capi::enumToMxArray(
+                    "VectorSpaceDiagnostics","NoDiagnostics");
             case Basic:
-                return Matlab::enumToMxArray("VectorSpaceDiagnostics",
-                    "Basic");
+                return Matlab::capi::enumToMxArray(
+                    "VectorSpaceDiagnostics","Basic");
             case EuclideanJordan:
-                return Matlab::enumToMxArray("VectorSpaceDiagnostics",
-                    "EuclideanJordan");
-            default:
-                throw;
+                return Matlab::capi::enumToMxArray(
+                    "VectorSpaceDiagnostics","EuclideanJordan");
             }
         }
 
         // Converts a Matlab enumerated type to t 
-        t fromMatlab(mxArray * const member) {
+        t fromMatlab(Matlab::mxArrayPtr const & member) {
             // Convert the member to a Natural 
-            Natural m(*mxGetPr(member));
+            auto m = Matlab::capi::mxArrayToNatural(member);
 
-            if(m==Matlab::enumToNatural("VectorSpaceDiagnostics",
-                "NoDiagnostics")
+            if(m==Matlab::capi::enumToNatural(
+                "VectorSpaceDiagnostics","NoDiagnostics")
             )
                 return NoDiagnostics;
-            else if(m==Matlab::enumToNatural("VectorSpaceDiagnostics",
-                "Basic")
+            else if(m==Matlab::capi::enumToNatural(
+                "VectorSpaceDiagnostics","Basic")
             )
                 return Basic;
-            else if(m==Matlab::enumToNatural("VectorSpaceDiagnostics",
-                "EuclideanJordan")
+            else if(m==Matlab::capi::enumToNatural(
+                "VectorSpaceDiagnostics","EuclideanJordan")
             )
                 return EuclideanJordan;
             else
-                throw;
+                throw Optizelle::Exception::t( __LOC__
+                    + ", unknown VectorSpaceDiagnostics");
         }
     }
 
     namespace DiagnosticScheme { 
         // Converts t to a Matlab enumerated type
-        mxArray * toMatlab(t const & dscheme) {
+        Matlab::mxArrayPtr toMatlab(t const & dscheme) {
             // Do the conversion
             switch(dscheme){
             case Never:
-                return Matlab::enumToMxArray("DiagnosticScheme","Never");
+                return Matlab::capi::enumToMxArray("DiagnosticScheme","Never");
             case DiagnosticsOnly:
-                return Matlab::enumToMxArray("DiagnosticScheme",
-                    "DiagnosticsOnly");
+                return Matlab::capi::enumToMxArray(
+                    "DiagnosticScheme","DiagnosticsOnly");
             case EveryIteration:
-                return Matlab::enumToMxArray("DiagnosticScheme",
-                    "EveryIteration");
-            default:
-                throw;
+                return Matlab::capi::enumToMxArray(
+                    "DiagnosticScheme","EveryIteration");
             }
         }
 
         // Converts a Matlab enumerated type to t 
-        t fromMatlab(mxArray * const member) {
+        t fromMatlab(Matlab::mxArrayPtr const & member) {
             // Convert the member to a Natural 
-            Natural m(*mxGetPr(member));
+            auto m = Matlab::capi::mxArrayToNatural(member);
 
-            if(m==Matlab::enumToNatural("DiagnosticScheme","Never"))
+            if(m==Matlab::capi::enumToNatural("DiagnosticScheme","Never"))
                 return Never;
-            else if(m==Matlab::enumToNatural("DiagnosticScheme",
-                "DiagnosticsOnly")
+            else if(m==Matlab::capi::enumToNatural(
+                "DiagnosticScheme","DiagnosticsOnly")
             )
                 return DiagnosticsOnly;
-            else if(m==Matlab::enumToNatural("DiagnosticScheme",
-                "EveryIteration")
+            else if(m==Matlab::capi::enumToNatural(
+                "DiagnosticScheme","EveryIteration")
             )
                 return EveryIteration;
             else
-                throw;
+                throw Optizelle::Exception::t( __LOC__
+                    + ", unknown DiagnosticScheme");
         }
     }
 
     namespace ToleranceKind { 
         // Converts t to a Matlab enumerated type
-        mxArray * toMatlab(t const & eps_kind) {
+        Matlab::mxArrayPtr toMatlab(t const & eps_kind) {
             // Do the conversion
             switch(eps_kind){
             case Relative:
-                return Matlab::enumToMxArray("ToleranceKind",
-                    "Relative");
+                return Matlab::capi::enumToMxArray(
+                    "ToleranceKind","Relative");
             case Absolute:
-                return Matlab::enumToMxArray("ToleranceKind",
-                    "Absolute");
-            default:
-                throw;
+                return Matlab::capi::enumToMxArray(
+                    "ToleranceKind","Absolute");
             }
         }
 
         // Converts a Matlab enumerated type to t 
-        t fromMatlab(mxArray * const member) {
+        t fromMatlab(Matlab::mxArrayPtr const & member) {
             // Convert the member to a Natural 
-            Natural m(*mxGetPr(member));
+            auto m = Matlab::capi::mxArrayToNatural(member);
 
-            if(m==Matlab::enumToNatural("ToleranceKind",
-                "Relative")
+            if(m==Matlab::capi::enumToNatural(
+                "ToleranceKind","Relative")
             )
                 return Relative;
-            else if(m==Matlab::enumToNatural("ToleranceKind",
-                "Absolute")
+            else if(m==Matlab::capi::enumToNatural(
+                "ToleranceKind","Absolute")
             )
                 return Absolute;
             else
-                throw;
+                throw Optizelle::Exception::t( __LOC__
+                    + ", unknown ToleranceKind");
         }
     }
 
     namespace QuasinormalStop{ 
         // Converts t to a Matlab enumerated type
-        mxArray * toMatlab(t const & qn_stop) {
+        Matlab::mxArrayPtr toMatlab(t const & qn_stop) {
             // Do the conversion
             switch(qn_stop){
             case Newton:
-                return Matlab::enumToMxArray("QuasinormalStop",
-                    "Newton");
+                return Matlab::capi::enumToMxArray(
+                    "QuasinormalStop","Newton");
             case CauchyTrustRegion:
-                return Matlab::enumToMxArray("QuasinormalStop",
-                    "CauchyTrustRegion");
+                return Matlab::capi::enumToMxArray(
+                    "QuasinormalStop","CauchyTrustRegion");
             case CauchySafeguard:
-                return Matlab::enumToMxArray("QuasinormalStop",
-                    "CauchySafeguard");
+                return Matlab::capi::enumToMxArray(
+                    "QuasinormalStop","CauchySafeguard");
             case DoglegTrustRegion:
-                return Matlab::enumToMxArray("QuasinormalStop",
-                    "DoglegTrustRegion");
+                return Matlab::capi::enumToMxArray(
+                    "QuasinormalStop","DoglegTrustRegion");
             case DoglegSafeguard:
-                return Matlab::enumToMxArray("QuasinormalStop",
-                    "DoglegSafeguard");
+                return Matlab::capi::enumToMxArray(
+                    "QuasinormalStop","DoglegSafeguard");
             case NewtonTrustRegion:
-                return Matlab::enumToMxArray("QuasinormalStop",
-                    "NewtonTrustRegion");
+                return Matlab::capi::enumToMxArray(
+                    "QuasinormalStop","NewtonTrustRegion");
             case NewtonSafeguard:
-                return Matlab::enumToMxArray("QuasinormalStop",
-                    "NewtonSafeguard");
+                return Matlab::capi::enumToMxArray(
+                    "QuasinormalStop","NewtonSafeguard");
             case Feasible:
-                return Matlab::enumToMxArray("QuasinormalStop",
-                    "Feasible");
+                return Matlab::capi::enumToMxArray(
+                    "QuasinormalStop","Feasible");
             case CauchySolved:
-                return Matlab::enumToMxArray("QuasinormalStop",
-                    "CauchySolved");
+                return Matlab::capi::enumToMxArray(
+                    "QuasinormalStop","CauchySolved");
             case LocalMin:
-                return Matlab::enumToMxArray("QuasinormalStop",
-                    "LocalMin");
+                return Matlab::capi::enumToMxArray(
+                    "QuasinormalStop","LocalMin");
             case NewtonFailed:
-                return Matlab::enumToMxArray("QuasinormalStop",
-                    "NewtonFailed");
-            default:
-                throw;
+                return Matlab::capi::enumToMxArray(
+                    "QuasinormalStop","NewtonFailed");
             }
         }
 
         // Converts a Matlab enumerated type to t 
-        t fromMatlab(mxArray * const member) {
+        t fromMatlab(Matlab::mxArrayPtr const & member) {
             // Convert the member to a Natural 
-            Natural m(*mxGetPr(member));
+            auto m = Matlab::capi::mxArrayToNatural(member);
 
-            if(m==Matlab::enumToNatural("QuasinormalStop",
-                "Newton")
+            if(m==Matlab::capi::enumToNatural(
+                "QuasinormalStop","Newton")
             )
                 return Newton;
-            else if(m==Matlab::enumToNatural("QuasinormalStop",
-                "CauchyTrustRegion")
+            else if(m==Matlab::capi::enumToNatural(
+                "QuasinormalStop","CauchyTrustRegion")
             )
                 return CauchyTrustRegion;
-            else if(m==Matlab::enumToNatural("QuasinormalStop",
-                "CauchySafeguard")
+            else if(m==Matlab::capi::enumToNatural(
+                "QuasinormalStop","CauchySafeguard")
             )
                 return CauchySafeguard;
-            else if(m==Matlab::enumToNatural("QuasinormalStop",
-                "DoglegTrustRegion")
+            else if(m==Matlab::capi::enumToNatural(
+                "QuasinormalStop","DoglegTrustRegion")
             )
                 return DoglegTrustRegion;
-            else if(m==Matlab::enumToNatural("QuasinormalStop",
-                "DoglegSafeguard")
+            else if(m==Matlab::capi::enumToNatural(
+                "QuasinormalStop","DoglegSafeguard")
             )
                 return DoglegSafeguard;
-            else if(m==Matlab::enumToNatural("QuasinormalStop",
-                "NewtonTrustRegion")
+            else if(m==Matlab::capi::enumToNatural(
+                "QuasinormalStop","NewtonTrustRegion")
             )
                 return NewtonTrustRegion;
-            else if(m==Matlab::enumToNatural("QuasinormalStop",
-                "NewtonSafeguard")
+            else if(m==Matlab::capi::enumToNatural(
+                "QuasinormalStop","NewtonSafeguard")
             )
                 return NewtonSafeguard;
-            else if(m==Matlab::enumToNatural("QuasinormalStop",
-                "Feasible")
+            else if(m==Matlab::capi::enumToNatural(
+                "QuasinormalStop","Feasible")
             )
                 return Feasible;
-            else if(m==Matlab::enumToNatural("QuasinormalStop",
-                "CauchySolved")
+            else if(m==Matlab::capi::enumToNatural(
+                "QuasinormalStop","CauchySolved")
             )
                 return CauchySolved;
-            else if(m==Matlab::enumToNatural("QuasinormalStop",
-                "LocalMin")
+            else if(m==Matlab::capi::enumToNatural(
+                "QuasinormalStop","LocalMin")
             )
                 return LocalMin;
-            else if(m==Matlab::enumToNatural("QuasinormalStop",
-                "NewtonFailed")
+            else if(m==Matlab::capi::enumToNatural(
+                "QuasinormalStop","NewtonFailed")
             )
                 return NewtonFailed;
             else
-                throw;
+                throw Optizelle::Exception::t( __LOC__
+                    + ", unknown QuasiNormalStep");
         }
     }
 
@@ -797,25 +936,20 @@ namespace Optizelle {
                 Natural const & iter_
             ) {
                 // Convert the name and iteration to MATLAB
-                Matlab::mxArrayPtr name(mxCreateString(name_.c_str()));
-                Matlab::mxArrayPtr iter(Matlab::mxArray_FromSize_t(iter_));
+                auto name = Matlab::capi::mxCreateString(name_);
+                auto iter = Matlab::capi::mxArrayFromNatural(iter_);
 
                 // Call the serialize routine on the vector
-                mxArray * input[3]={
-                    const_cast <Matlab::Vector &> (x).get(),
-                    name.get(),
-                    iter.get()};
-                mxArray * output[1];
-                int err=mexCallMATLAB(1,output,3,input,"serialize");
-                Matlab::mxArrayPtr x_json(output[0]);
-
-                // Check errors
-                if(err)
-                    mexErrMsgTxt(
-                        "Evaluation of the serialize function failed.");
+                auto x_json = Matlab::capi::mexCallMATLAB3(
+                    std::string("serialize"),
+                    x.data,
+                    name,
+                    iter,
+                    __LOC__
+                        + ", evaluation of the serialize function failed");
 
                 // Convert the serialized vector to a string and return it 
-                return std::string(mxArrayToString(x_json.get()));
+                return Matlab::capi::mxArrayToString(x_json);
             }
 
             static Matlab::Vector deserialize (
@@ -823,648 +957,560 @@ namespace Optizelle {
                 std::string const & x_json_
             ) {
                 // Convert the inputed string into Matlab
-                Matlab::mxArrayPtr x_json(mxCreateString(x_json_.c_str()));
+                auto x_json =Matlab::capi::mxCreateString(x_json_);
 
                 // Allocate memory for a new Matlab vector
-                Matlab::Vector x(const_cast <Matlab::Vector &> (x_).init());
+                auto x = x_.init();
 
                 // Call the deserialize routine on the reference vector and the
                 // json vector
-                mxArray * input[2]={
-                    const_cast <Matlab::Vector &> (x_).get(),
-                    x_json.get()};
-                mxArray * output[1];
-                int err=mexCallMATLAB(1,output,2,input,"deserialize");
-                x.reset(output[0]);
-
-                // Check errors
-                if(err)
-                    mexErrMsgTxt(
-                        "Evaluation of the deserialize function failed.");
+                x.data = Matlab::capi::mexCallMATLAB2(
+                    std::string("deserialize"),
+                    x_.data,
+                    x_json,
+                    __LOC__
+                        + ", evaluation of the deserialize function failed");
 
                 // Move out the new vector
-                return std::move(x);
+                return x;
             }
         };
     }
 
     namespace Matlab {
-        // Used to catch Matlab exceptions
-        Exception::Exception() {}
-
-        // Calls a Matlab function with one argument 
-        std::pair <mxArray *,int> mxArray_CallObject1(
-            mxArray * const fn,
-            mxArray * const arg1
-        ) {
-            mxArray * input[2]={fn,arg1};
-            mxArray * output[1];
-            int err=mexCallMATLAB(1,output,2,input,"feval");
-            return std::pair <mxArray*,int> (output[0],err);
-        }
-        
-        // Calls a Matlab function with two arguments
-        std::pair <mxArray *,int> mxArray_CallObject2(
-            mxArray * const fn,
-            mxArray * const arg1,
-            mxArray * const arg2
-        ) {
-            mxArray* input[3]={fn,arg1,arg2};
-            mxArray* output[1];
-            int err=mexCallMATLAB(1,output,3,input,"feval");
-            return std::pair <mxArray*,int> (output[0],err);
-        }
-        
-        // Calls a Matlab function with three arguments
-        std::pair <mxArray *,int> mxArray_CallObject3(
-            mxArray * const fn,
-            mxArray * const arg1,
-            mxArray * const arg2,
-            mxArray * const arg3
-        ) {
-            mxArray* input[4]={fn,arg1,arg2,arg3};
-            mxArray* output[1];
-            int err=mexCallMATLAB(1,output,4,input,"feval");
-            return std::pair <mxArray*,int> (output[0],err);
-        }
-        
-        // Calls a Matlab function with four arguments
-        std::pair <mxArray *,int> mxArray_CallObject4(
-            mxArray * const fn,
-            mxArray * const arg1,
-            mxArray * const arg2,
-            mxArray * const arg3,
-            mxArray * const arg4
-        ) {
-            mxArray* input[5]={fn,arg1,arg2,arg3,arg4};
-            mxArray* output[1];
-            int err=mexCallMATLAB(1,output,5,input,"feval");
-            return std::pair <mxArray*,int> (output[0],err);
-        }
-
-        // Creates a Matlab double from a C++ double
-        mxArray * mxArray_FromDouble(double const x_) {
-            mxArray * x(mxCreateDoubleMatrix(1,1,mxREAL));
-            mxGetPr(x)[0]=x_;
-            return x;
-        }
-
-        // Creates a Matlab int from a C++ size_t 
-        mxArray * mxArray_FromSize_t(Natural const x_) {
-            mxArray * x(mxCreateDoubleMatrix(1,1,mxREAL));
-            mxGetPr(x)[0]=x_;
-            return x;
-        }
-
-        // Converts an Optizelle enumerated type to a mxArray *.  This points
-        // directly into the Optizelle structure, so be careful with its
-        // memory.
-        mxArray * enumToMxArray(
-            std::string const & type_,
-            std::string const & member_
-        ) {
-            // Grab the type 
-            mxArray * type = mxGetField(optizelle.back(),0,type_.c_str());
-
-            // Grab the member
-            mxArray * member = mxGetField(type,0,member_.c_str());
-                
-            // Return the member 
-            return member; 
-        }
-       
-        // Converts an Optizelle enumerated type to a Natural
-        Natural enumToNatural(
-            std::string const & type,
-            std::string const & member 
-        ) {
-            // Grab the mxArray * for the type and member requested
-            mxArray * obj(enumToMxArray(type,member));
-
-            // Convert and return the member
-            return Natural(*mxGetPr(obj));
-        }
-        
-        // Converts a MATLAB double to an Optizelle Natural
-        Natural fromDouble(double value) {
-            // Check that we're in bounds.  We were hitting a precision
-            // problem on 64-bit MATLAB/Octave that made this necessary.
-            if(value >= double(std::numeric_limits<Optizelle::Natural>::max())
-            )
-                return std::numeric_limits <Optizelle::Natural>::max();
-            else if(
-                value <= double(std::numeric_limits <Optizelle::Natural>::min())
-            )
-                return std::numeric_limits <Optizelle::Natural>::min();
-            else
-                return Optizelle::Natural(value);
-        }
-
-        // On construction, initialize the pointer and figure out if
-        // we're capturing the pointer or attaching to it
-        mxArrayPtr::mxArrayPtr(
-            mxArray * const ptr_,
-            mxArrayPtrMode::t const mode_ 
-        ) : ptr(ptr_), mode(mode_) { }
-            
-        // Move constructor
-        mxArrayPtr::mxArrayPtr(mxArrayPtr&& ptr_) noexcept
-            : ptr(ptr_.release()), mode(ptr_.mode) {}
-        
-        // Move assignment operator
-        mxArrayPtr const & mxArrayPtr::operator=(mxArrayPtr&& ptr_) noexcept {
-            ptr=ptr_.release();
-            mode=ptr_.mode;
-            return *this;
-        }
-
-        // For a reset, we destroy the pointer and then assign a new
-        // value.
-        void mxArrayPtr::reset(mxArray * const ptr_) {
-            if(ptr && mode!=mxArrayPtrMode::Attach)
-                mxDestroyArray(ptr);
-            ptr=ptr_;
-            mode = mxArrayPtrMode::Capture;
-        }
-
-        // For an attach, we destroy the pointer then assign a new value
-        void mxArrayPtr::attach(mxArray * const ptr_) {
-            if(ptr && mode!=mxArrayPtrMode::Attach)
-                mxDestroyArray(ptr);
-            ptr=ptr_;
-            mode = mxArrayPtrMode::Attach;
-        }
-
-        // On a get, we simply return the pointer.
-        mxArray * mxArrayPtr::get() {
-            return ptr;
-        }
-    
-        // On a release, we return the underlying pointer and then clear
-        // the vector.  This will prevent destruction later. 
-        mxArray * mxArrayPtr::release() {
-            mxArray * ptr_=ptr;
-            ptr=nullptr;
-            return ptr_;
-        }
-
-        // On destruction, destroy the pointer. 
-        mxArrayPtr::~mxArrayPtr() {
-            if(ptr && mode!=mxArrayPtrMode::Attach)
-                mxDestroyArray(ptr);
-            ptr=nullptr;
-        }
-            
-        // On construction, we just grab the pointer to the messaging object
-        Messaging::Messaging(
-            mxArray * const ptr_,
-            mxArrayPtrMode::t const mode
-        ) : mxArrayPtr(ptr_,mode) {}
-            
-        // Move constructor
-        Messaging::Messaging(Messaging && msg) noexcept
-            : mxArrayPtr(msg.release(),msg.mode) {}
-
-        // Move assignment operator
-        Messaging const & Messaging::operator = (Messaging && msg) noexcept {
-            ptr = msg.release();
-            mode = msg.mode;
-            return *this;
-        }
-            
-        // Prints a message
-        void Messaging::print(std::string const & msg_) const {
-            // Call the print function on msg
-            mxArray * print(mxGetField(ptr,0,"print"));
-            mxArrayPtr msg(mxCreateString(msg_.c_str()));
-            std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
-                print,
-                msg.get()));
-
-            // Check errors
-            if(ret_err.second)
-                error("Evaluation of the print function in the Messaging "
-                    "object failed.");
-        }
-
-        // Prints an error
-        void Messaging::error(std::string const & msg_) const {
-            // Call the error function on msg
-            mxArray * error(mxGetField(ptr,0,"error"));
-            mxArrayPtr msg(mxCreateString(msg_.c_str()));
-            //std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
-            //    error,
-            //    msg.get()));
-
-            // We do an additional call to the error handler to exit the
-            // mex file.  This also helps if the above error function fails.
-            mexErrMsgTxt(msg_.c_str());
-        }
-
-        // Create a vector with the appropriate messaging and vector space 
-        Vector::Vector(
-            mxArray * const msg_,
-            mxArray * const vs_,
-            mxArray * const vec,
-            mxArrayPtrMode::t mode
-        ) : 
-            mxArrayPtr(vec,mode),
-            msg(msg_,mxArrayPtrMode::Attach),
-            vs(vs_,mxArrayPtrMode::Attach)
+        // Grab the pointer and the method we use to destruct it
+        mxArrayPtr::mxArrayPtrData::mxArrayPtrData(
+            mxArray const * const & ptr_,
+            std::function <void(mxArray *)> const & destructor_
+        ) : ptr(const_cast <mxArray * const> (ptr_)),
+            destructor(destructor_)
         {}
-            
-        // Create a move constructor so we can interact with stl objects
-        Vector::Vector(Vector && vec) noexcept :
-            mxArrayPtr(std::move(vec)),
-            msg(std::move(vec.msg)),
-            vs(std::move(vec.vs))
-        { }
-            
-        // Move assignment operator
-        Vector const & Vector::operator = (Vector && vec) noexcept {
-            ptr = vec.release(); 
-            mode = vec.mode;
-            msg = std::move(vec.msg);
-            vs = std::move(vec.vs);
-            return *this;
+
+        // Call our custom destructor on the data 
+        mxArrayPtr::mxArrayPtrData::~mxArrayPtrData() { 
+            if(ptr)
+                destructor(ptr);
         }
+
+        // Grab the pointer
+        mxArrayPtr::mxArrayPtr(
+            mxArray const * const & ptr,
+            Mode const & mode
+        ) : data(std::make_shared <mxArrayPtrData> (
+                ptr,
+                mode==Managed?mxDestroyArray:[](auto){}))
+        {}
+
+        // Grab the internal pointer
+        mxArray * mxArrayPtr::get() const {
+            return data->ptr;
+        }
+
+        // Grab the pointer and convert the destructor to no longer free
+        // the memory
+        mxArray * mxArrayPtr::leak() const {
+            data->destructor = [](auto){}; 
+            return get();
+        }
+
+        namespace capi {
+            mxArrayPtr mexCallMATLAB1(
+                mxArrayPtr const & fn,
+                mxArrayPtr const & arg1,
+                std::string const & errmsg
+            ) {
+                mxArray * input[2] = {fn.get(),arg1.get()};
+                mxArray * output[1] = {nullptr}; 
+                auto err=::mexCallMATLAB(1,output,2,input,"feval");
+                if(err)
+                    throw Matlab::Exception::t(errmsg); 
+                return output[0];
+            }
+            void mexCallMATLAB1_0(
+                mxArrayPtr const & fn,
+                mxArrayPtr const & arg1,
+                std::string const & errmsg
+            ) {
+                mxArray * input[2] = {fn.get(),arg1.get()};
+                mxArray * output[0]; 
+                auto err=::mexCallMATLAB(0,output,2,input,"feval");
+                if(err)
+                    throw Matlab::Exception::t(errmsg); 
+            }
+            mxArrayPtr mexCallMATLAB2(
+                mxArrayPtr const & fn,
+                mxArrayPtr const & arg1,
+                mxArrayPtr const & arg2,
+                std::string const & errmsg
+            ) {
+                mxArray * input[3] = {fn.get(),arg1.get(),arg2.get()};
+                mxArray * output[1] = {nullptr}; 
+                auto err=::mexCallMATLAB(1,output,3,input,"feval");
+                if(err)
+                    throw Matlab::Exception::t(errmsg); 
+                return output[0];
+            }
+            mxArrayPtr mexCallMATLAB2(
+                std::string const & fn,
+                mxArrayPtr const & arg1,
+                mxArrayPtr const & arg2,
+                std::string const & errmsg
+            ) {
+                mxArray * input[2] = {arg1.get(),arg2.get()};
+                mxArray * output[1] = {nullptr}; 
+                auto err=::mexCallMATLAB(1,output,2,input,fn.c_str());
+                if(err)
+                    throw Matlab::Exception::t(errmsg); 
+                return output[0];
+            }
+            mxArrayPtr mexCallMATLAB3(
+                mxArrayPtr const & fn,
+                mxArrayPtr const & arg1,
+                mxArrayPtr const & arg2,
+                mxArrayPtr const & arg3,
+                std::string const & errmsg
+            ) {
+                mxArray * input[4] = {fn.get(),arg1.get(),arg2.get(),
+                    arg3.get()};
+                mxArray * output[1] = {nullptr}; 
+                auto err=::mexCallMATLAB(1,output,4,input,"feval");
+                if(err)
+                    throw Matlab::Exception::t(errmsg); 
+                return output[0];
+            }
+            mxArrayPtr mexCallMATLAB3(
+                std::string const & fn,
+                mxArrayPtr const & arg1,
+                mxArrayPtr const & arg2,
+                mxArrayPtr const & arg3,
+                std::string const & errmsg
+            ) {
+                mxArray * input[3] = {arg1.get(),arg2.get(),arg3.get()};
+                mxArray * output[1] = {nullptr}; 
+                auto err=::mexCallMATLAB(1,output,3,input,fn.c_str());
+                if(err)
+                    throw Matlab::Exception::t(errmsg); 
+                return output[0];
+            }
+            mxArrayPtr mexCallMATLAB4(
+                mxArrayPtr const & fn,
+                mxArrayPtr const & arg1,
+                mxArrayPtr const & arg2,
+                mxArrayPtr const & arg3,
+                mxArrayPtr const & arg4,
+                std::string const & errmsg
+            ) {
+                mxArray * input[5] = {fn.get(),arg1.get(),arg2.get(),
+                    arg3.get(),arg4.get()};
+                mxArray * output[1] = {nullptr}; 
+                auto err=::mexCallMATLAB(1,output,5,input,"feval");
+                if(err)
+                    throw Matlab::Exception::t(errmsg); 
+                return output[0];
+            }
+            mxArrayPtr mxDuplicateArray(mxArrayPtr const & x) {
+                auto ret = ::mxDuplicateArray(x.get());
+                if(!ret)
+                    throw Matlab::Exception::t(__LOC__
+                        + ", error when duplicating an array"); 
+                return ret;
+            }
+            mxArrayPtr mxGetField(
+                mxArrayPtr const & pm,
+                mwIndex const & index,
+                std::string const & fieldname
+            ) {
+                auto ret = ::mxGetField(pm.get(),index,fieldname.c_str());
+                if(!ret)
+                    throw Matlab::Exception::t(__LOC__
+                        + ", unable to get the field " + fieldname
+                        + " at position " + std::to_string(index));
+                return {ret,mxArrayPtr::Unmanaged};
+            }
+            void mxSetField(
+                mxArrayPtr & pm,
+                mwIndex const & index,
+                std::string const & fieldname,
+                mxArrayPtr const & pvalue
+            ) {
+                // First, check if there's memory in that location
+                auto field = ::mxGetField(pm.get(),index,fieldname.c_str());
+
+                // If we have memory, free it
+                if(field)
+                    ::mxDestroyArray(field);
+
+                // Now, set the field with our value.  Make sure to duplicate
+                // the memory first, since this method steals the memory
+                ::mxSetField(
+                    pm.get(),
+                    index,
+                    fieldname.c_str(),
+                    capi::mxDuplicateArray(pvalue).leak());
+            }
+            mxArrayPtr mxCreateString(std::string const & str) {
+                auto ret = ::mxCreateString(str.c_str());
+                if(!ret)
+                    throw Matlab::Exception::t(__LOC__
+                        + ", unable to convert the string " + str
+                        + " into an mxArray");
+                return ret;
+            }
+            std::string mxArrayToString(mxArrayPtr const & array_ptr) {
+                auto ret = ::mxArrayToString(array_ptr.get());
+                if(!ret)
+                    throw Matlab::Exception::t(__LOC__
+                        + ", unable to convert an mxArray into a string");
+                return ret;
+            }
+            mxArrayPtr mxCreateCellMatrix(mwSize const & m, mwSize const & n) {
+                auto ret = ::mxCreateCellMatrix(m,n);
+                if(!ret)
+                    throw Matlab::Exception::t(__LOC__
+                        + ", unable to create a cell array of size "
+                        + std::to_string(m) + " x " + std::to_string(n));
+                return ret;
+            }
+            mxArrayPtr mxGetCell(mxArrayPtr const & pm, mwIndex const & index) {
+                auto ret = ::mxGetCell(pm.get(),index);
+                if(!ret)
+                    throw Matlab::Exception::t(__LOC__
+                        + ", unable to get the cell item at position "
+                        + std::to_string(index));
+                return {ret,mxArrayPtr::Unmanaged};
+            }
+            void mxSetCell(
+                mxArrayPtr & pm,
+                mwIndex const & index,
+                mxArrayPtr const & value
+            ) {
+                // First, check if there's memory in that location
+                auto item = ::mxGetCell(pm.get(),index);
+
+                // If we have memory, free it
+                if(item)
+                    ::mxDestroyArray(item);
+
+                // Now, set the field with our value.  Make sure to duplicate
+                // the memory first, since this method steals the memory
+                ::mxSetCell(
+                    pm.get(),
+                    index,
+                    capi::mxDuplicateArray(value).leak());
+            }
+            size_t mxGetN(mxArrayPtr const & pm) {
+                return ::mxGetN(pm.get());
+            }
+            mxArrayPtr mexGetVariablePtr(
+                std::string const & workspace,
+                std::string const & varname
+            ) {
+                auto ret=::mexGetVariablePtr(workspace.c_str(),varname.c_str());
+                if(!ret)
+                    throw Matlab::Exception::t(__LOC__
+                        + ", unable to get the variable " + varname
+                        + " in the workspace " + workspace);
+                return {ret,mxArrayPtr::Unmanaged};
+            }
+            mxArrayPtr mxCreateStructMatrix(
+                mwSize const & m,
+                mwSize const & n,
+                int const & nfields, 
+                const char **fieldnames
+            ) {
+                auto ret = ::mxCreateStructMatrix(m,n,nfields,fieldnames);
+                if(!ret)
+                    throw Matlab::Exception::t(__LOC__
+                        + ", unable to create a struct array of size "
+                        + std::to_string(m) + " x " + std::to_string(n)
+                        + " with " + std::to_string(nfields) + " fields");
+                return ret;
+            }
+
+            // Creates a MATLAB/Octave double from a C++ double
+            mxArrayPtr mxArrayFromDouble(double const x_) {
+                auto x = mxArrayPtr(::mxCreateDoubleMatrix(1,1,mxREAL));
+                ::mxGetPr(x.get())[0]=x_;
+                return x;
+            }
+
+            // Creates a C++ double from a MATLAB/Octave double
+            double mxArrayToDouble(mxArrayPtr const & x_) {
+                return ::mxGetPr(x_.get())[0]; 
+            }
+
+            // Creates a MATLAB/Octave int from a C++ Natural 
+            mxArrayPtr mxArrayFromNatural(Natural const x_) {
+                auto x = mxArrayPtr(mxCreateDoubleMatrix(1,1,mxREAL));
+                ::mxGetPr(x.get())[0]=x_;
+                return x;
+            }
+
+            // Creates a C++ Natural from a MATLAB/Octave integer 
+            Natural mxArrayToNatural(mxArrayPtr const & x_) {
+                return ::mxGetPr(x_.get())[0]; 
+            }
+
+            // Converts an Optizelle enumerated type to a mxArray *
+            mxArrayPtr enumToMxArray(
+                std::string const & type_,
+                std::string const & member_
+            ) {
+                // Grab the type 
+                auto type = capi::mxGetField(optizelle.back(),0,type_);
+
+                // Grab the member
+                auto member = capi::mxGetField(type,0,member_);
+                    
+                // Return the member 
+                return mxArrayFromNatural(fromDouble(mxGetPr(member.get())[0]));
+            }
+           
+            // Converts an Optizelle enumerated type to a Natural
+            Natural enumToNatural(
+                std::string const & type,
+                std::string const & member 
+            ) {
+                // Grab the mxArray * for the type and member requested
+                auto obj = enumToMxArray(type,member);
+
+                // Convert and return the member
+                return Natural(*mxGetPr(obj.get()));
+            }
+        
+            // Converts a MATLAB double to an Optizelle Natural
+            Natural fromDouble(double value) {
+                // Check that we're in bounds.  We were hitting a precision
+                // problem on 64-bit MATLAB/Octave that made this necessary.
+                if(value>=double(std::numeric_limits<Optizelle::Natural>::max())
+                )
+                    return std::numeric_limits <Optizelle::Natural>::max();
+                else if(
+                    value<=double(
+                        std::numeric_limits <Optizelle::Natural>::min())
+                )
+                    return std::numeric_limits <Optizelle::Natural>::min();
+                else
+                    return Optizelle::Natural(value);
+            }
+        }
+
+        // A messaging utility that hooks directly into MATLAB/Octave 
+        namespace Messaging {
+            Optizelle::Messaging::t matlab(mxArrayPtr const & print) {
+                return [print](std::string const & msg_) {
+                    // Call the print function
+                    auto msg = capi::mxCreateString(msg_);
+                    capi::mexCallMATLAB1_0(
+                        print,
+                        msg,
+                        __LOC__
+                            + ", evaluation of the Messaging function failed");
+                };
+            }
+        }
+
+        // Grab the vector space and data 
+        Vector::Vector(mxArrayPtr const & vs_, mxArrayPtr const & data_) :
+            vs(vs_),
+            data(data_)
+        {}
 
         // Memory allocation and size setting 
-        Vector Vector::init() { 
+        Vector Vector::init() const {
             // Call the init function on the internal and store in y 
-            mxArray * init(mxGetField(vs.get(),0,"init"));
-            std::pair <mxArray *,int> y_err(mxArray_CallObject1(
+            auto init = capi::mxGetField(vs,0,"init");
+            auto ret = capi::mexCallMATLAB1(
                 init,
-                get()));
+                data,
+                 __LOC__
+                    + ", evaluation of the vector space function init failed");
 
-            // Check errors
-            if(y_err.second)
-                msg.error(
-                    "Evaluation of the vector space function init failed.");
-
-            // Create and return a new vector based on y
-            return std::move(Vector(msg.get(),vs.get(),y_err.first));
-        } 
+            // Return the vector
+            return Vector(vs,ret);
+        }
         
         // y <- x (Shallow.  No memory allocation.)  Internal is y.
-        void Vector::copy(Vector & x) { 
+        void Vector::copy(Vector const & x) { 
             // Call the copy function on x and the internal 
-            mxArray * copy(mxGetField(vs.get(),0,"copy"));
-            std::pair <mxArray *,int> ret_err(mxArray_CallObject1(
+            auto copy = capi::mxGetField(vs,0,"copy");
+            data = capi::mexCallMATLAB1(
                 copy,
-                x.get()));
-
-            // Check errors
-            if(ret_err.second)
-                msg.error(
-                    "Evaluation of the vector space function copy failed.");
-
-            // Assign y
-            reset(ret_err.first);
-        } 
+                x.data,
+                 __LOC__
+                    + ", evaluation of the vector space function copy failed");
+        }
 
         // x <- alpha * x.  Internal is x.
         void Vector::scal(double const & alpha_) { 
             // Call the scal function on alpha and the internal storage 
-            mxArray * scal(mxGetField(vs.get(),0,"scal"));
-            mxArrayPtr alpha(mxArray_FromDouble(alpha_));
-            std::pair <mxArray *,int> ret_err(mxArray_CallObject2(
+            auto scal = capi::mxGetField(vs,0,"scal");
+            auto alpha = capi::mxArrayFromDouble(alpha_);
+            data = capi::mexCallMATLAB2(
                 scal,
-                alpha.get(),
-                get()));
-
-            // Check errors
-            if(ret_err.second)
-                msg.error(
-                    "Evaluation of the vector space function scal failed.");
-
-            // Assign x
-            reset(ret_err.first);
+                alpha,
+                data,
+                __LOC__
+                    + ", evaluation of the vector space function scal failed");
         } 
 
         // x <- 0.  Internal is x. 
         void Vector::zero() { 
             // Call the zero function on this vector.
-            mxArray * zero(mxGetField(vs.get(),0,"zero"));
-            std::pair <mxArray *,int> ret_err(mxArray_CallObject1(
+            auto zero = capi::mxGetField(vs,0,"zero");
+            data = capi::mexCallMATLAB1(
                 zero,
-                get()));
-
-            // Check errors
-            if(ret_err.second)
-                msg.error(
-                    "Evaluation of the vector space function zero failed.");
-
-            // Assign x
-            reset(ret_err.first);
+                data,
+                __LOC__
+                    + ", evaluation of the vector space function zero failed");
         } 
 
         // y <- alpha * x + y.   Internal is y.
-        void Vector::axpy(double const & alpha_,Vector & x) { 
+        void Vector::axpy(double const & alpha_,Vector const & x) { 
             // Call the axpy function on alpha, x, and the internal storage.
-            mxArray * axpy(mxGetField(vs.get(),0,"axpy"));
-            mxArrayPtr alpha(mxArray_FromDouble(alpha_));
-            std::pair <mxArray *,int> ret_err(mxArray_CallObject3(
+            auto axpy = capi::mxGetField(vs,0,"axpy");
+            auto alpha = capi::mxArrayFromDouble(alpha_);
+            data = capi::mexCallMATLAB3(
                 axpy,
-                alpha.get(),
-                x.get(),
-                get()));
-           
-            // Check errors
-            if(ret_err.second)
-                msg.error(
-                    "Evaluation of the vector space function axpy failed.");
-
-            // Assign y
-            reset(ret_err.first);
+                alpha,
+                x.data,
+                data,
+                __LOC__
+                    + ", evaluation of the vector space function axpy failed");
         } 
 
         // innr <- <x,y>.  Internal is y.
-        double Vector::innr(Vector & x) { 
+        double Vector::innr(Vector const & x) const {
             // Call the innr function on x and the internal.  Store in z. 
-            mxArray * innr(mxGetField(vs.get(),0,"innr"));
-            std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject2(
+            auto innr = capi::mxGetField(vs,0,"innr");
+            return capi::mxArrayToDouble(capi::mexCallMATLAB2(
                 innr,
-                x.get(),
-                get()));
-
-            // Check errors
-            if(ret_err.second)
-                msg.error(
-                    "Evaluation of the vector space function innr failed.");
-
-            // Return the result 
-            return mxGetPr(ret_err.first.get())[0]; 
+                x.data,
+                data,
+                __LOC__
+                    + ", evaluation of the vector space function innr failed"));
         } 
 
         // x <- random.  Internal is x. 
         void Vector::rand() { 
             // Call the rand function on this vector.
-            mxArray * rand(mxGetField(vs.get(),0,"rand"));
-            std::pair <mxArray *,int> ret_err(mxArray_CallObject1(
+            auto rand = capi::mxGetField(vs,0,"rand");
+            data = capi::mexCallMATLAB1(
                 rand,
-                get()));
-
-            // Check errors
-            if(ret_err.second)
-                msg.error(
-                    "Evaluation of the vector space function rand failed.");
-            
-            // Assign x
-            reset(ret_err.first);
-        } 
+                data,
+                __LOC__
+                    + ", evaluation of the vector space function rand failed");
+        }
 
         // Jordan product, z <- x o y.  Internal is z.
-        void Vector::prod(Vector & x,Vector & y) { 
+        void Vector::prod(Vector const & x,Vector const & y) { 
             // Call the prod function on x, y, and the internal 
-            mxArray * prod(mxGetField(vs.get(),0,"prod"));
-            std::pair <mxArray *,int> ret_err(mxArray_CallObject2(
+            auto prod = capi::mxGetField(vs,0,"prod");
+            data = capi::mexCallMATLAB2(
                 prod,
-                x.get(),
-                y.get()));
-
-            // Check errors
-            if(ret_err.second)
-                msg.error(
-                    "Evaluation of the vector space function prod failed.");
-            
-            // Assign z
-            reset(ret_err.first);
+                x.data,
+                y.data,
+                __LOC__
+                    + ", evaluation of the vector space function prod failed");
         } 
 
         // Identity element, x <- e such that x o e = x .  Internal is x.
         void Vector::id() { 
             // Call the id function on the internal.
-            mxArray * id(mxGetField(vs.get(),0,"id"));
-            std::pair <mxArray *,int> ret_err(mxArray_CallObject1(
+            auto id = capi::mxGetField(vs,0,"id");
+            data = capi::mexCallMATLAB1(
                 id,
-                get()));
-
-            // Check errors
-            if(ret_err.second)
-                msg.error(
-                    "Evaluation of the vector space function id failed.");
-            
-            // Assign x
-            reset(ret_err.first);
+                data,
+                __LOC__
+                    + ", evaluation of the vector space function id failed");
         } 
 
         // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y.
         // Internal is z.
-        void Vector::linv(Vector& x, Vector& y) { 
+        void Vector::linv(Vector const & x, Vector const & y) { 
             // Call the linv function on x, y, and the internal
-            mxArray * linv(mxGetField(vs.get(),0,"linv"));
-            std::pair <mxArray *,int> ret_err(mxArray_CallObject2(
+            auto linv = capi::mxGetField(vs,0,"linv");
+            data = capi::mexCallMATLAB2(
                 linv,
-                x.get(),
-                y.get()));
-
-            // Check errors
-            if(ret_err.second)
-                msg.error(
-                    "Evaluation of the vector space function linv failed.");
-            
-            // Assign z
-            reset(ret_err.first);
+                x.data,
+                y.data,
+                __LOC__
+                    + ", evaluation of the vector space function linv failed");
         } 
 
         // Barrier function, barr <- barr(x) where x o grad barr(x) = e.
         // Internal is x.
-        double Vector::barr() { 
+        double Vector::barr() const {
             // Call the barr function on the internal.  Store in z.
-            mxArray * barr(mxGetField(vs.get(),0,"barr"));
-            std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
+            auto barr = capi::mxGetField(vs,0,"barr");
+            return capi::mxArrayToDouble(capi::mexCallMATLAB1(
                 barr,
-                get()));
-
-            // Check errors
-            if(ret_err.second)
-                msg.error(
-                    "Evaluation of the vector space function barr failed.");
-
-            // Return the result 
-            return mxGetPr(ret_err.first.get())[0]; 
+                data,
+                __LOC__ +
+                    ", evaluation of the vector space function barr failed."));
         } 
 
         // Line search, srch <- argmax {alpha in Real >= 0 : alpha x + y >= 0} 
         // where y > 0.  Internal is y.
-        double Vector::srch(Vector& x) {  
+        double Vector::srch(Vector const & x) const {
             // Call the srch function on x and the internal.  Store in z.
-            mxArray * srch(mxGetField(vs.get(),0,"srch"));
-            std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject2(
+            auto srch = capi::mxGetField(vs,0,"srch");
+            return capi::mxArrayToDouble(capi::mexCallMATLAB2(
                 srch,
-                x.get(),
-                get()));
-
-            // Check errors
-            if(ret_err.second)
-                msg.error(
-                    "Evaluation of the vector space function srch failed.");
-
-            // Return the result 
-            return mxGetPr(ret_err.first.get())[0]; 
+                x.data,
+                data,
+                __LOC__
+                    + ", evaluation of the vector space function srch failed"));
         } 
 
         // Symmetrization, x <- symm(x) such that L(symm(x)) is a symmetric
         // operator.  Internal is x.
         void Vector::symm() { 
             // Call the symm function on the internal.
-            mxArray * symm(mxGetField(vs.get(),0,"symm"));
-            std::pair <mxArray *,int> ret_err(mxArray_CallObject1(
+            auto symm = capi::mxGetField(vs,0,"symm");
+            data = capi::mexCallMATLAB1(
                 symm,
-                get()));
-
-            // Check errors
-            if(ret_err.second)
-                msg.error(
-                    "Evaluation of the vector space function symm failed.");
-            
-            // Assign x
-            reset(ret_err.first);
-
+                data,
+                __LOC__
+                    + ", evaluation of the vector space function symm failed");
         } 
         
         // Converts (copies) a value into Matlab.  
-        mxArray * Vector::toMatlab() {
+        mxArrayPtr Vector::toMatlab() const {
             // Call the copy function on the internal and x
-            mxArray * copy(mxGetField(vs.get(),0,"copy"));
-            std::pair <mxArray *,int> ret_err(mxArray_CallObject1(
+            auto copy = capi::mxGetField(vs,0,"copy");
+            return capi::mexCallMATLAB1(
                 copy,
-                get()));
-
-            // Check errors
-            if(ret_err.second)
-                msg.error(
-                    "Evaluation of the vector space function copy failed.");
-            
-            // Return the pointer 
-            return ret_err.first;
+                data,
+                __LOC__
+                    + ", evaluation of the vector space function copy failed");
         } 
         
         // Converts (copies) a value from Matlab.  This assumes that the
         // vector space functions have already been properly assigned.
-        void Vector::fromMatlab(mxArray * const ptr) {
+        void Vector::fromMatlab(mxArrayPtr const & ptr) {
             // Call the copy function on ptr and the internal 
-            mxArray * copy(mxGetField(vs.get(),0,"copy"));
-            std::pair <mxArray *,int> ret_err(mxArray_CallObject1(
+            auto copy = capi::mxGetField(vs,0,"copy");
+            data = capi::mexCallMATLAB1(
                 copy,
-                ptr));
-
-            // Check errors
-            if(ret_err.second)
-                msg.error(
-                    "Evaluation of the vector space function copy failed.");
-
-            // Copy in the value
-            reset(ret_err.first);
+                ptr,
+                __LOC__
+                    + ", evaluation of the vector space function copy failed");
         } 
 
-        // Convert a C++ state to a Matlab state 
-        template <>
-        void State <MxUnconstrained>::toMatlab(
-            typename MxUnconstrained::State::t const & state
-        ) {
-            Unconstrained::State::toMatlab(state,ptr);
-        }
-        template <>
-        void State <MxEqualityConstrained>::toMatlab(
-            typename MxEqualityConstrained::State::t const & state
-        ) {
-            EqualityConstrained::State::toMatlab(state,ptr);
-        }
-        template <>
-        void State <MxInequalityConstrained>::toMatlab(
-            typename MxInequalityConstrained::State::t const & state
-        ) {
-            InequalityConstrained::State::toMatlab(state,ptr);
-        }
-        template <>
-        void State <MxConstrained>::toMatlab(
-            typename MxConstrained::State::t const & state
-        ) {
-            Constrained::State::toMatlab(state,ptr);
-        }
+        // Grab the pointer to the function information 
+        ScalarValuedFunction::ScalarValuedFunction(mxArrayPtr const & data_)
+            : data(data_) {}
 
-        // Convert a Matlab state to C++ 
-        template <>
-        void State <MxUnconstrained>::fromMatlab(
-            typename MxUnconstrained::State::t & state
-        ) {
-            Unconstrained::State::fromMatlab(ptr,state);
-        }
-        template <>
-        void State <MxEqualityConstrained>::fromMatlab(
-            typename MxEqualityConstrained::State::t & state
-        ) {
-            EqualityConstrained::State::fromMatlab(ptr,state);
-        }
-        template <>
-        void State <MxInequalityConstrained>::fromMatlab(
-            typename MxInequalityConstrained::State::t & state
-        ) {
-            InequalityConstrained::State::fromMatlab(ptr,state);
-        }
-        template <>
-        void State <MxConstrained>::fromMatlab(
-            typename MxConstrained::State::t & state
-        ) {
-            Constrained::State::fromMatlab(ptr,state);
-        }
-        
-        // Convert a Matlab bundle to C++ 
-        template <>
-        void Functions <MxUnconstrained>::fromMatlab(
-            typename MxUnconstrained::Functions::t & fns 
-        ) {
-            Unconstrained::Functions::fromMatlab(
-                msg.get(),ptr,mxstate.get(),state,fns);
-        }
-        template <>
-        void Functions <MxEqualityConstrained>::fromMatlab(
-            typename MxEqualityConstrained::Functions::t & fns 
-        ) {
-            EqualityConstrained::Functions::fromMatlab(
-                msg.get(),ptr,mxstate.get(),state,fns);
-        }
-        template <>
-        void Functions <MxInequalityConstrained>::fromMatlab(
-            typename MxInequalityConstrained::Functions::t & fns 
-        ) {
-            InequalityConstrained::Functions::fromMatlab(
-                msg.get(),ptr,mxstate.get(),state,fns);
-        }
-        template <>
-        void Functions <MxConstrained>::fromMatlab(
-            typename MxConstrained::Functions::t & fns 
-        ) {
-            Constrained::Functions::fromMatlab(
-                msg.get(),ptr,mxstate.get(),state,fns);
-        }
-
-        // Create a function 
-        ScalarValuedFunction::ScalarValuedFunction(
-            mxArray * const msg_,
-            mxArray * const f,
-            mxArrayPtrMode::t mode
-        ) :
-            mxArrayPtr(f,mode),
-            msg(msg_,mxArrayPtrMode::Attach)
-        { }
-
-        // <- f(x) 
+        // <- f(x)-> 
         double ScalarValuedFunction::eval(Vector const & x) const { 
-            // Call the objective function on x.
-            mxArray * eval(mxGetField(ptr,0,"eval"));
-            std::pair <mxArrayPtr,int> ret_err(mxArray_CallObject1(
+            // Call the objective function on x
+            auto eval = capi::mxGetField(data,0,"eval");
+            return capi::mxArrayToDouble(capi::mexCallMATLAB1(
                 eval,
-                const_cast <Vector &> (x).get()));
-
-            // Check errors
-            if(ret_err.second)
-                msg.error("Evaluation of the objective f failed.");
-
-            // Return the result 
-            return mxGetPr(ret_err.first.get())[0]; 
+                x.data,
+                __LOC__
+                    + ", evaluation of the objective f failed"));
         }
 
         // grad = grad f(x) 
@@ -1473,17 +1519,12 @@ namespace Optizelle {
             Vector & grad
         ) const { 
             // Call the gradient function on x
-            mxArray * mxgrad(mxGetField(ptr,0,"grad"));
-            std::pair <mxArray *,int> ret_err(mxArray_CallObject1(
+            auto mxgrad = capi::mxGetField(data,0,"grad");
+            grad.data = capi::mexCallMATLAB1(
                 mxgrad,
-                const_cast <Vector &>(x).get()));
-
-            // Check errors
-            if(ret_err.second)
-                msg.error("Evaluation of the gradient of f failed.");
-
-            // Assign grad 
-            grad.reset(ret_err.first);
+                x.data,
+                __LOC__
+                    + ", evaluation of the gradient of f failed.");
         }
 
         // H_dx = hess f(x) dx 
@@ -1493,132 +1534,90 @@ namespace Optizelle {
             Vector & H_dx
         ) const {
             // Call the hessvec function on x and dx,
-            mxArray * hessvec(mxGetField(ptr,0,"hessvec"));
-            std::pair <mxArray *,int> ret_err(mxArray_CallObject2(
+            auto hessvec = capi::mxGetField(data,0,"hessvec");
+            H_dx.data = capi::mexCallMATLAB2(
                 hessvec,
-                const_cast <Vector &> (x).get(),
-                const_cast <Vector &> (dx).get()));
-
-            // Check errors
-            if(ret_err.second)
-                msg.error("Evaluation of the Hessian-vector product"
-                    " of f failed.");
-            
-            // Assign H_dx
-            H_dx.reset(ret_err.first);
+                x.data,
+                dx.data,
+                __LOC__
+                    + ", evaluation of the Hessian-vector product of f failed");
         }
 
-        // Create a function 
+        // Grab the function's name and a pointer to the underlying data 
         VectorValuedFunction::VectorValuedFunction(
             std::string const & name_,
-            mxArray * const msg_,
-            mxArray * const f,
-            mxArrayPtrMode::t mode
+            mxArrayPtr const & data_ 
         ) :
-            mxArrayPtr(f,mode),
-            msg(msg_,mxArrayPtrMode::Attach),
-            name(name_)
+            name(name_), data(data_)
         {}
 
         // y=f(x)
         void VectorValuedFunction::eval(
-            Vector const & x,
-            VectorValuedFunction::Y_Vector& y
+            X_Vector const & x,
+            Y_Vector & y
         ) const {
             // Call the objective function on x.
-            mxArray * eval(mxGetField(ptr,0,"eval"));
-            std::pair <mxArray *,int> ret_err(mxArray_CallObject1(
+            auto eval = capi::mxGetField(data,0,"eval");
+            y.data = capi::mexCallMATLAB1(
                 eval,
-                const_cast <Vector &> (x).get()));
-
-            // Check errors
-            if(ret_err.second) {
-                std::stringstream ss;
-                ss << "Evaluation of the constraint " << name << " failed.";
-                msg.error(ss.str());
-            }
-            
-            // Assign y 
-            y.reset(ret_err.first);
+                x.data,
+                __LOC__
+                    + ", evaluation of the constraint " + name + " failed");
         }
 
         // y=f'(x)dx 
         void VectorValuedFunction::p(
-            Vector const & x,
-            Vector const & dx,
-            VectorValuedFunction::Y_Vector& y
+            X_Vector const & x,
+            X_Vector const & dx,
+            Y_Vector & y
         ) const {
             // Call the prime function on x and dx
-            mxArray * p(mxGetField(ptr,0,"p"));
-            std::pair <mxArray *,int> ret_err(mxArray_CallObject2(
+            auto p = capi::mxGetField(data,0,"p");
+            y.data = capi::mexCallMATLAB2(
                 p,
-                const_cast <Vector &> (x).get(),
-                const_cast <Vector &> (dx).get()));
-           
-            // Check errors
-            if(ret_err.second) {
-                std::stringstream ss;
-                ss << "Evaluation of the derivative of the constraint "
-                    << name << " failed.";
-                msg.error(ss.str());
-            }
-            
-            // Assign y 
-            y.reset(ret_err.first);
+                x.data,
+                dx.data,
+                __LOC__
+                    + ", evaluation of the derivative of the constraint "
+                    + name + " failed");
         }
 
-        // z=f'(x)*dy
+        // xhat=f'(x)*dy
         void VectorValuedFunction::ps(
-            Vector const & x,
-            Vector const & dy,
-            VectorValuedFunction::X_Vector& z
+            X_Vector const & x,
+            Y_Vector const & dy,
+            X_Vector & xhat 
         ) const {
             // Call the prime-adjoint function on x and dy
-            mxArray * ps(mxGetField(ptr,0,"ps"));
-            std::pair <mxArray *,int> ret_err(mxArray_CallObject2(
+            auto ps = capi::mxGetField(data,0,"ps");
+            xhat.data = capi::mexCallMATLAB2(
                 ps,
-                const_cast <Vector &> (x).get(),
-                const_cast <Vector &> (dy).get()));
-
-            // Check errors
-            if(ret_err.second) {
-                std::stringstream ss;
-                ss << "Evaluation of the derivative-adjoint of the constraint "
-                    << name << " failed.";
-                msg.error(ss.str());
-            }
-            
-            // Assign z
-            z.reset(ret_err.first);
+                x.data,
+                dy.data,
+                __LOC__
+                    +", evaluation of the derivative-adjoint of the constraint "
+                    + name + " failed");
         }
              
-        // z=(f''(x)dx)*dy
+        // xhat=(f''(x)dx)*dy
         void VectorValuedFunction::pps(
-            Vector const & x,
-            Vector const & dx,
-            Vector const & dy,
-            X_Vector& z
+            X_Vector const & x,
+            X_Vector const & dx,
+            Y_Vector const & dy,
+            X_Vector & xhat 
         ) const { 
             // Call the prime-adjoint function on x, dx, and dy
-            mxArray * pps(mxGetField(ptr,0,"pps"));
-            std::pair <mxArray *,int> ret_err(mxArray_CallObject3(
+            auto pps = capi::mxGetField(data,0,"pps");
+            xhat.data = capi::mexCallMATLAB3(
                 pps,
-                const_cast <Vector &> (x).get(),
-                const_cast <Vector &> (dx).get(),
-                const_cast <Vector &> (dy).get()));
-
-            // Check errors
-            if(ret_err.second) {
-                std::stringstream ss;
-                ss << "Evaluation of the second derivative-adjoint of the "
-                    "constraint " << name << " failed.";
-                msg.error(ss.str());
-            }
-            
-            // Assign z 
-            z.reset(ret_err.first);
+                x.data,
+                dx.data,
+                dy.data,
+                __LOC__
+                    + ", evaluation of the second derivative-adjoint of the "
+                    + "constraint " + name + " failed");
         }
-        
+
         // Converts elements from C++ to Matlab 
         namespace toMatlab {
                     
@@ -1626,196 +1625,157 @@ namespace Optizelle {
             void Real(
                 std::string const & name,
                 double const & value,
-                mxArray * const obj 
+                mxArrayPtr & mxstate 
             ) {
-                // Get the field
-                mxArray * field = mxGetField(obj,0,name.c_str());
-
-                // If it's empty, allocate new memory
-                if(!field) {
-                    mxArray * item(mxArray_FromDouble(value));
-                    mxSetField(obj,0,name.c_str(),item);
-
-                // If it's not empty, just modify the element
-                } else
-                    mxGetPr(field)[0]=value;
+                auto item = capi::mxArrayFromDouble(value);
+                capi::mxSetField(mxstate,0,name,item);
             }
         
             // Sets a natural in a Matlab state 
             void Natural(
                 std::string const & name,
                 Optizelle::Natural const & value,
-                mxArray * const obj 
+                mxArrayPtr & mxstate 
             ) {
-                // Get the field
-                mxArray * field = mxGetField(obj,0,name.c_str());
-
-                // If it's empty, allocate new memory
-                if(!field) {
-                    mxArray * item(mxArray_FromSize_t(value));
-                    mxSetField(obj,0,name.c_str(),item);
-
-                // If it's not empty, just modify the element
-                } else
-                    mxGetPr(field)[0]=value;
+                auto item = capi::mxArrayFromNatural(value);
+                capi::mxSetField(mxstate,0,name,item);
             }
         
             // Sets a vector in a Matlab state 
             void Vector(
                 std::string const & name,
                 Matlab::Vector const & value,
-                mxArray * const obj 
+                mxArrayPtr & mxstate 
             ) {
-                // Get the field
-                mxArray * field = mxGetField(obj,0,name.c_str());
-
-                // If it's not empty, we need to free the memory 
-                if(field)
-                    mxDestroyArray(field);
-
-                // Now, set the element
-                mxSetField(obj,0,name.c_str(),
-                    const_cast <Matlab::Vector &> (value).toMatlab());
+                capi::mxSetField(mxstate,0,name,value.toMatlab());
             }
         
             // Sets a list of vectors in a Matlab state 
             void VectorList(
                 std::string const & name,
-                std::list <Matlab::Vector> const & values,
-                mxArray * const obj 
+                std::list <Matlab::Vector> const & vectors,
+                mxArrayPtr & mxstate 
             ) {
-                // Get the field
-                mxArray * field = mxGetField(obj,0,name.c_str());
-
-                // If it's not empty, we need to free the memory 
-                if(field)
-                    mxDestroyArray(field);
-
                 // Create a new Matlab cell array that we insert elements into
-                mxArray * items(mxCreateCellMatrix(1,values.size()));
+                auto mxvectors = capi::mxCreateCellMatrix(1,vectors.size());
 
-                // Loop over all of the items inside values and then insert 
+                // Loop over all of the items inside vectors and then insert 
                 // them into items 
-                Optizelle::Natural i=0;
-                for(std::list <Matlab::Vector>::const_iterator value
-                        = values.cbegin();
-                    value!=values.cend();
-                    value++,i++
-                ) {
+                auto i = Optizelle::Natural(0);
+                for(auto const & vector : vectors) {
                     // Allocate memory for a new vector
-                    Matlab::Vector item(
-                        const_cast <Matlab::Vector &> (*value).init());
+                    auto v = vector.init();
 
                     // Copy the information from the current iterator into this
                     // new vector
-                    item.copy(const_cast <Matlab::Vector &> (*value));
+                    v.copy(vector);
 
                     // Release the pointer into the Matlab cell array
-                    mxSetCell(items,i,item.release());
+                    capi::mxSetCell(mxvectors,i,v.data);
+
+                    // Increment our counter
+                    i++;
                 }
                 
-                // Insert the items into obj
-                mxSetField(obj,0,name.c_str(),items);
+                // Insert the items into mxstate 
+                capi::mxSetField(mxstate,0,name,mxvectors);
             }
         
             // Sets restart vectors in Matlab 
             void Vectors(
                 Matlab::Vectors const & values,
-                mxArray * const mxvalues 
+                mxArrayPtr & mxvalues 
             ) {
-            
                 // Loop over all of the items inside values and then insert 
                 // them into mxvalues 
-                Optizelle::Natural i=0;
-                for(typename Matlab::Vectors::const_iterator value
-                        = values.cbegin();
-                    value!=values.cend();
-                    value++,i++
-                ) {
+                auto i = Optizelle::Natural(0);
+                for(auto const & value : values) {
                     // Allocate memory for a new vector
-                    Matlab::Vector mxvalue(
-                        const_cast <Matlab::Vector &>(value->second).init());
+                    auto mxvalue = value.second.init();
 
                     // Copy the information from the current iterator into this
                     // new vector
-                    mxvalue.copy(const_cast <Matlab::Vector &> (value->second));
+                    mxvalue.copy(value.second);
 
                     // Create a 2-element cell array with the name and value
-                    mxArray * tuple(mxCreateCellMatrix(1,2));
-                    mxSetCell(tuple,0,mxCreateString(value->first.c_str()));
-                    mxSetCell(tuple,1,mxvalue.release());
+                    auto tuple = capi::mxCreateCellMatrix(1,2);
+                    capi::mxSetCell(tuple,0,
+                        capi::mxCreateString(value.first));
+                    capi::mxSetCell(tuple,1,mxvalue.data);
 
-                    // Release the tuple into the Matlab cell array
-                    mxSetCell(mxvalues,i,tuple);
+                    // Put tuple into the cell array
+                    capi::mxSetCell(mxvalues,i,tuple);
+
+                    // Increment our counter
+                    i++;
                 }
             }
         
             // Sets restart reals in Matlab 
             void Reals(
                 Matlab::Reals const & values,
-                mxArray * const mxvalues 
+                mxArrayPtr & mxvalues 
             ) {
                 // Loop over all of the items inside values and then insert 
                 // them into mxvalues 
-                Optizelle::Natural i=0;
-                for(typename Matlab::Reals::const_iterator value
-                        = values.cbegin();
-                    value!=values.cend();
-                    value++,i++
-                ) {
+                auto i = Optizelle::Natural(0);
+                for(auto const & value : values) {
                     // Create a 2-element cell array with the name and value
-                    mxArray * tuple(mxCreateCellMatrix(1,2));
-                    mxSetCell(tuple,0,mxCreateString(value->first.c_str()));
-                    mxSetCell(tuple,1,mxArray_FromDouble(value->second));
+                    auto tuple = capi::mxCreateCellMatrix(1,2);
+                    capi::mxSetCell(tuple,0,capi::mxCreateString(value.first));
+                    capi::mxSetCell(tuple,1,
+                        capi::mxArrayFromDouble(value.second));
 
-                    // Release the tuple into the Matlab cell array
-                    mxSetCell(mxvalues,i,tuple);
+                    // Put tuple into the cell array
+                    capi::mxSetCell(mxvalues,i,tuple);
+
+                    // Increment our counter
+                    i++;
                 }
             }
         
             // Converts a list of naturals to a Matlab list 
             void Naturals(
                 Matlab::Naturals const & values,
-                mxArray * const mxvalues 
+                mxArrayPtr & mxvalues 
             ) {
                 // Loop over all of the items inside values and then insert 
                 // them into mxvalues 
-                Optizelle::Natural i=0;
-                for(typename Matlab::Naturals::const_iterator value
-                        = values.cbegin();
-                    value!=values.cend();
-                    value++,i++
-                ) {
+                auto i = Optizelle::Natural(0);
+                for(auto const & value : values) {
                     // Create a 2-element cell array with the name and value
-                    mxArray * tuple(mxCreateCellMatrix(1,2));
-                    mxSetCell(tuple,0,mxCreateString(value->first.c_str()));
-                    mxSetCell(tuple,1,mxArray_FromSize_t(value->second));
+                    auto tuple = capi::mxCreateCellMatrix(1,2);
+                    capi::mxSetCell(tuple,0,capi::mxCreateString(value.first));
+                    capi::mxSetCell(tuple,1,
+                        capi::mxArrayFromNatural(value.second));
 
                     // Release the tuple into the Matlab cell array
-                    mxSetCell(mxvalues,i,tuple);
+                    capi::mxSetCell(mxvalues,i,tuple);
+
+                    // Increment our counter
+                    i++;
                 }
             }
         
             // Sets restart parameters in Matlab 
             void Params(
                 Matlab::Params const & values,
-                mxArray * const mxvalues 
+                mxArrayPtr & mxvalues 
             ) {
                 // Loop over all of the items inside values and then insert 
                 // them into mxvalues 
-                Optizelle::Natural i=0;
-                for(typename Matlab::Params::const_iterator value
-                        = values.cbegin();
-                    value!=values.cend();
-                    value++,i++
-                ) {
+                auto i = Optizelle::Natural(0);
+                for(auto const & value : values) {
                     // Create a 2-element cell array with the name and value
-                    mxArray * tuple(mxCreateCellMatrix(1,2));
-                    mxSetCell(tuple,0,mxCreateString(value->first.c_str()));
-                    mxSetCell(tuple,1,mxCreateString(value->second.c_str()));
+                    auto tuple = capi::mxCreateCellMatrix(1,2);
+                    capi::mxSetCell(tuple,0,capi::mxCreateString(value.first));
+                    capi::mxSetCell(tuple,1,capi::mxCreateString(value.second));
 
                     // Release the tuple into the Matlab cell array
-                    mxSetCell(mxvalues,i,tuple);
+                    capi::mxSetCell(mxvalues,i,tuple);
+
+                    // Increment our counter
+                    i++;
                 }
             }
         }
@@ -1826,162 +1786,222 @@ namespace Optizelle {
             // Sets a real in a C++ state 
             void Real(
                 std::string const & name,
-                mxArray * const obj,
+                mxArrayPtr const & mxstate,
                 double & value
             ) {
-                mxArray * item(mxGetField(obj,0,name.c_str()));
-                value=mxGetPr(item)[0];
+                auto item = capi::mxGetField(mxstate,0,name);
+                value=capi::mxArrayToDouble(item);
             }
             
             // Sets a natural in a C++ state 
             void Natural(
                 std::string const & name,
-                mxArray * const obj,
+                mxArrayPtr const & mxstate,
                 Optizelle::Natural & value
             ) {
-                mxArray * item(mxGetField(obj,0,name.c_str()));
-                value = fromDouble(mxGetPr(item)[0]);
+                auto item = capi::mxGetField(mxstate,0,name);
+                value=capi::mxArrayToNatural(item);
+            }
+            
+            // Sets a vector in a C++ state 
+            void Vector(
+                std::string const & name,
+                mxArrayPtr const & mxstate,
+                Matlab::Vector & value
+            ) {
+                auto item = capi::mxGetField(mxstate,0,name);
+                value.fromMatlab(item);
             }
             
             // Sets a list of vectors in a C++ state 
             void VectorList(
                 std::string const & name,
-                mxArray * const obj,
+                mxArrayPtr const & mxstate,
                 Matlab::Vector const & vec,
                 std::list <Matlab::Vector> & values
             ) {
                 // Grab the list of items
-                mxArray * items(mxGetField(obj,0,name.c_str()));
+                auto items = capi::mxGetField(mxstate,0,name);
 
                 // Loop over all the elements in items and insert them one
                 // at a time into values
                 values.clear();
-                for(Optizelle::Natural i=0;i<mxGetN(items);i++) {
+                for(auto i=0;i<capi::mxGetN(items);i++) {
                     // Grab the current item from Matlab
-                    mxArray * item(mxGetCell(items,i));
+                    auto item = capi::mxGetCell(items,i);
 
                     // Create a new vector in values 
-                    values.emplace_back(std::move(
-                        const_cast<Matlab::Vector &>(vec).init()));
+                    values.emplace_back(vec.init());
 
                     // Copy the Matlab item into the new value
                     values.back().fromMatlab(item);
                 }
             }
             
-            // Sets a scalar-valued function in a C++ function bundle 
-            void ScalarValuedFunction(
-                std::string const & name,
-                mxArray * const msg,
-                mxArray * const obj,
-                std::unique_ptr <MxScalarValuedFunction> & value
-            ) {
-                value.reset(new Matlab::ScalarValuedFunction(msg,
-                    mxGetField(obj,0,name.c_str()),mxArrayPtrMode::Attach));
-            }
-            
-            // Sets a vector-valued function in a C++ function bundle 
-            void VectorValuedFunction(
-                std::string const & name,
-                mxArray * const msg,
-                mxArray * const obj,
-                std::unique_ptr <MxVectorValuedFunction> & value
-            ) {
-                value.reset(new Matlab::VectorValuedFunction(name,msg,
-                    mxGetField(obj,0,name.c_str()),mxArrayPtrMode::Attach));
-            }
-            
-            // Sets a vector in a C++ state 
-            void Vector(
-                std::string const & name,
-                mxArray * const obj,
-                Matlab::Vector & value
-            ) {
-                mxArray * item(mxGetField(obj,0,name.c_str()));
-                value.fromMatlab(item);
-            }
-        
             // Sets restart vectors in C++ 
             void Vectors(
                 Matlab::Vector const & vec,
-                mxArray * const mxvalues,
+                mxArrayPtr const & mxvalues,
                 Matlab::Vectors & values
             ) {
                 // Loop over all the elements in mxvalues and insert them one
                 // at a time into values
                 values.clear();
-                for(Optizelle::Natural i=0;i<mxGetN(mxvalues);i++) {
+                for(auto i=0;i<capi::mxGetN(mxvalues);i++) {
                     // Grab the current item from Matlab
-                    mxArray * mxvalue(mxGetCell(mxvalues,i));
+                    auto mxvalue = capi::mxGetCell(mxvalues,i);
 
                     // Create the elements in values 
                     values.emplace_back(
-                        mxArrayToString(mxGetCell(mxvalue,0)),
-                        std::move(const_cast<Matlab::Vector &>(vec).init()));
+                        capi::mxArrayToString(capi::mxGetCell(mxvalue,0)),
+                        vec.init());
 
                     // Copy the Matlab value into the C++ value
-                    values.back().second.fromMatlab(mxGetCell(mxvalue,1));
+                    values.back().second.fromMatlab(
+                        capi::mxGetCell(mxvalue,1));
                 }
             }
             
             // Sets restart reals in C++ 
             void Reals(
-                mxArray * const mxvalues,
+                mxArrayPtr const & mxvalues,
                 Matlab::Reals & values
             ) {
                 // Loop over all the elements in mxvalues and insert them one
                 // at a time into values
                 values.clear();
-                for(Optizelle::Natural i=0;i<mxGetN(mxvalues);i++) {
+                for(auto i=0;i<capi::mxGetN(mxvalues);i++) {
                     // Grab the current item from Matlab
-                    mxArray * mxvalue(mxGetCell(mxvalues,i));
+                    auto mxvalue = capi::mxGetCell(mxvalues,i);
                     
                     // Create the elements in values 
                     values.emplace_back(
-                        mxArrayToString(mxGetCell(mxvalue,0)),
-                        mxGetPr(mxGetCell(mxvalue,1))[0]);
+                        capi::mxArrayToString(capi::mxGetCell(mxvalue,0)),
+                        capi::mxArrayToDouble(capi::mxGetCell(mxvalue,1)));
                 }
             }
             
             // Sets restart naturals in C++ 
             void Naturals(
-                mxArray * const mxvalues,
+                mxArrayPtr const & mxvalues,
                 Matlab::Naturals & values
             ) {
                 // Loop over all the elements in mxvalues and insert them one
                 // at a time into values
                 values.clear();
-                for(Optizelle::Natural i=0;i<mxGetN(mxvalues);i++) {
+                for(auto i=0;i<capi::mxGetN(mxvalues);i++) {
                     // Grab the current item from Matlab
-                    mxArray * mxvalue(mxGetCell(mxvalues,i));
+                    auto mxvalue = capi::mxGetCell(mxvalues,i);
                     
                     // Create the elements in values 
                     values.emplace_back(
-                        mxArrayToString(mxGetCell(mxvalue,0)),
-                        fromDouble(mxGetPr(mxGetCell(mxvalue,1))[0]));
+                        capi::mxArrayToString(capi::mxGetCell(mxvalue,0)),
+                        capi::mxArrayToNatural(capi::mxGetCell(mxvalue,1)));
                 }
             }
             
             // Sets restart parameters in C++ 
             void Params(
-                mxArray * const mxvalues,
+                mxArrayPtr const & mxvalues,
                 Matlab::Params & values
             ) {
                 // Loop over all the elements in mxvalues and insert them one
                 // at a time into values
                 values.clear();
-                for(Optizelle::Natural i=0;i<mxGetN(mxvalues);i++) {
+                for(auto i=0;i<capi::mxGetN(mxvalues);i++) {
                     // Grab the current item from Matlab
-                    mxArray * mxvalue(mxGetCell(mxvalues,i));
+                    auto mxvalue = capi::mxGetCell(mxvalues,i);
                     
                     // Create the elements in values 
                     values.emplace_back(
-                        mxArrayToString(mxGetCell(mxvalue,0)),
-                        mxArrayToString(mxGetCell(mxvalue,1)));
+                        capi::mxArrayToString(capi::mxGetCell(mxvalue,0)),
+                        capi::mxArrayToString(capi::mxGetCell(mxvalue,1)));
                 }
             }
         }
-       
+
+        // Convert a C++ state to a Matlab state 
+        template <>
+        void State <MxUnconstrained>::toMatlab(
+            typename MxUnconstrained::State::t const & state
+        ) {
+            Unconstrained::State::toMatlab(state,data);
+        }
+        template <>
+        void State <MxEqualityConstrained>::toMatlab(
+            typename MxEqualityConstrained::State::t const & state
+        ) {
+            EqualityConstrained::State::toMatlab(state,data);
+        }
+        template <>
+        void State <MxInequalityConstrained>::toMatlab(
+            typename MxInequalityConstrained::State::t const & state
+        ) {
+            InequalityConstrained::State::toMatlab(state,data);
+        }
+        template <>
+        void State <MxConstrained>::toMatlab(
+            typename MxConstrained::State::t const & state
+        ) {
+            Constrained::State::toMatlab(state,data);
+        }
+
+        // Convert a Matlab state to C++ 
+        template <>
+        void State <MxUnconstrained>::fromMatlab(
+            typename MxUnconstrained::State::t & state
+        ) {
+            Unconstrained::State::fromMatlab(data,state);
+        }
+        template <>
+        void State <MxEqualityConstrained>::fromMatlab(
+            typename MxEqualityConstrained::State::t & state
+        ) {
+            EqualityConstrained::State::fromMatlab(data,state);
+        }
+        template <>
+        void State <MxInequalityConstrained>::fromMatlab(
+            typename MxInequalityConstrained::State::t & state
+        ) {
+            InequalityConstrained::State::fromMatlab(data,state);
+        }
+        template <>
+        void State <MxConstrained>::fromMatlab(
+            typename MxConstrained::State::t & state
+        ) {
+            Constrained::State::fromMatlab(data,state);
+        }
+        
+        // Convert a Matlab bundle to C++ 
+        template <>
+        void Functions <MxUnconstrained>::fromMatlab(
+            typename MxUnconstrained::Functions::t & fns 
+        ) {
+            Unconstrained::Functions::fromMatlab(
+                *this,mxstate,state,fns);
+        }
+        template <>
+        void Functions <MxEqualityConstrained>::fromMatlab(
+            typename MxEqualityConstrained::Functions::t & fns 
+        ) {
+            EqualityConstrained::Functions::fromMatlab(
+                *this,mxstate,state,fns);
+        }
+        template <>
+        void Functions <MxInequalityConstrained>::fromMatlab(
+            typename MxInequalityConstrained::Functions::t & fns 
+        ) {
+            InequalityConstrained::Functions::fromMatlab(
+                *this,mxstate,state,fns);
+        }
+        template <>
+        void Functions <MxConstrained>::fromMatlab(
+            typename MxConstrained::Functions::t & fns 
+        ) {
+            Constrained::Functions::fromMatlab(
+                *this,mxstate,state,fns);
+        }
+
         // Routines that manipulate and support problems of the form
         // 
         // min_{x \in X} f(x)
@@ -2053,23 +2073,23 @@ namespace Optizelle {
                         "dscheme",
                         "eps_kind"};
 
-                    return std::move(names);
+                    return names;
                 }
                 std::vector <char const *> fieldNames() {
                     return fieldNames_();
                 }
 
                 // Create the structure for a Matlab state
-                mxArray * mxCreate() {
-                    std::vector <char const *> names
-                        = Unconstrained::State::fieldNames();
-                    return mxCreateStructMatrix(1,1,names.size(),&(names[0]));
+                mxArrayPtr mxCreate() {
+                    auto names = Unconstrained::State::fieldNames();
+                    return capi::mxCreateStructMatrix(
+                        1,1,names.size(),&(names[0]));
                 }
 
                 // Convert a C++ state to a Matlab state 
                 void toMatlab_(
                     typename MxUnconstrained::State::t const & state,
-                    mxArray * const mxstate
+                    mxArrayPtr & mxstate
                 ){
                     // Set each of the required items in the Matlab state
                     toMatlab::Real("eps_grad",state.eps_grad,mxstate);
@@ -2194,14 +2214,14 @@ namespace Optizelle {
                 }
                 void toMatlab(
                     typename MxUnconstrained::State::t const & state,
-                    mxArray * const mxstate
+                    mxArrayPtr & mxstate
                 ){
                     Unconstrained::State::toMatlab_(state,mxstate);
                 }
                 
                 // Convert a Matlab state to C++ 
                 void fromMatlab_(
-                    mxArray * const mxstate,
+                    mxArrayPtr const & mxstate,
                     typename MxUnconstrained::State::t & state
                 ){
                     // Set each of the required items in the Matlab state
@@ -2329,7 +2349,7 @@ namespace Optizelle {
                         state.eps_kind);
                 }
                 void fromMatlab(
-                    mxArray * const mxstate,
+                    mxArrayPtr const & mxstate,
                     typename MxUnconstrained::State::t & state
                 ){
                     Unconstrained::State::fromMatlab_(mxstate,state);
@@ -2339,113 +2359,76 @@ namespace Optizelle {
                 void create(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
-                ){
-                    // Grab Optizelle
-                    optizelle.push_back(mexGetVariable("global","Optizelle"));
+                ) try {
+                    // Grab the variables
+                    MX_VAR_2(X,x);
 
-                    // Calling convention should be (X,msg,x) -> (mxstate_out)
-                    mxArray *X=pInput[0],
-                            *msg=pInput[1],
-                            *x_=pInput[2];
-                    pOutput[0] = Unconstrained::State::mxCreate();
-                    mxArray *mxstate_out_=pOutput[0];
+                    // Create a vector from the user input
+                    auto x = Vector(X_,x_);
+                    // Create a Matlab state 
+                    auto mxstate_out = Matlab::State <MxUnconstrained> (
+                        Unconstrained::State::mxCreate());
 
-                    // Make sure we bail if we detect a Matlab exception
-                    try {
-                        // Create a vector from the user input
-                        Vector x(msg,X,x_,mxArrayPtrMode::Attach);
+                    // Create a new C++ state
+                    typename MxUnconstrained::State::t state(x);
 
-                        // Create a Matlab state 
-                        Matlab::State<MxUnconstrained> mxstate_out(mxstate_out_,
-                            mxArrayPtrMode::Attach);
+                    // Convert the state to a Matlab state
+                    mxstate_out.toMatlab(state);
+                   
+                    // Return the result 
+                    MX_RETURN_1(mxstate_out.data);
 
-                        // Create a new C++ state
-                        typename MxUnconstrained::State::t state(x);
-
-                        // Convert the state to a Matlab state
-                        mxstate_out.toMatlab(state);
-                       
-                        // Cleanup Optizelle
-                        optizelle.pop_back();
-
-                        // Return nothing 
-                        return; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){ }
-                }
+                } CATCH_MATLAB_ERRORS; 
         
                 // Read json parameters from file
                 void readJson(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
-                ) {
-                    // Grab Optizelle
-                    optizelle.push_back(mexGetVariable("global","Optizelle"));
+                ) try {
+                    // Grab the variables
+                    MX_VAR_3(X,fname,mxstate);
 
-                    // Calling convention should be (X,msg,fname,mxstate)
-                    // -> (mxstate_out)
-                    mxArray *X=pInput[0],
-                            *msg_=pInput[1],
-                            *fname_=pInput[2],
-                            *mxstate_=pInput[3];
-                    pOutput[0] = Unconstrained::State::mxCreate();
-                    mxArray *mxstate_out_=pOutput[0];
+                    // Grab the file name
+                    auto fname = capi::mxArrayToString(fname_);
 
-                    // Make sure we bail if we detect a Matlab exception
-                    try {
-                        // Grab the file name
-                        std::string fname(mxArrayToString(fname_));
+                    // Create a Matlab state 
+                    auto mxstate = Matlab::State <MxUnconstrained> (mxstate_);
+                    auto mxstate_out = Matlab::State <MxUnconstrained> (
+                        Unconstrained::State::mxCreate());
+                
+                    // Grab the base vectors from the Matlab state
+                    auto x_= capi::mxGetField(mxstate.data,0,"x");
+                    auto x = Vector(X_,x_);
 
-                        // Create a messaging object
-                        Optizelle::Matlab::Messaging msg(msg_,
-                            mxArrayPtrMode::Attach);
-
-                        // Create a Matlab state 
-                        Matlab::State <MxUnconstrained> mxstate(mxstate_,
-                            mxArrayPtrMode::Attach);
-                        Matlab::State<MxUnconstrained> mxstate_out(mxstate_out_,
-                            mxArrayPtrMode::Attach);
+                    // Create a new C++ state
+                    typename MxUnconstrained::State::t state(x);
                     
-                        // Grab the base vectors from the Matlab state
-                        Vector x(msg_,X,mxGetField(mxstate.get(),0,"x"),
-                            mxArrayPtrMode::Attach);
+                    // Convert the Matlab state to a C++ state
+                    mxstate.fromMatlab(state);
 
-                        // Create a new C++ state
-                        typename MxUnconstrained::State::t state(x);
-                        
-                        // Convert the Matlab state to a C++ state
-                        mxstate.fromMatlab(state);
+                    // Read the JSON file into the C++ state
+                    MxJsonUnconstrained::read(fname,state);
 
-                        // Read the JSON file into the C++ state
-                        MxJsonUnconstrained::read(msg,fname,state);
-
-                        // Convert the C++ state to a Matlab state
-                        mxstate_out.toMatlab(state);
-                       
-                        // Cleanup Optizelle
-                        optizelle.pop_back();
-                                
-                        // Return nothing 
-                        return; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){ }
-                }
+                    // Convert the C++ state to a Matlab state
+                    mxstate_out.toMatlab(state);
+                    
+                    // Return the result 
+                    MX_RETURN_1(mxstate_out.data);
+                   
+                } CATCH_MATLAB_ERRORS; 
             }
 
             // All the functions required by an optimization algorithm.  
             namespace Functions{
                 // Convert a Matlab bundle to C++ 
                 void fromMatlab(
-                    mxArray * const msg,
-                    mxArray * const mxfns,
-                    mxArray * const mxstate,
+                    Matlab::Functions <MxUnconstrained> const & mxfns,
+                    Matlab::State <MxUnconstrained> & mxstate,
                     typename MxUnconstrained::State::t const & state,
                     typename MxUnconstrained::Functions::t & fns 
                 ) {
                     Unconstrained::Functions::fromMatlab_
-                        <MxUnconstrained> (msg,mxfns,mxstate,state,fns);
+                        <MxUnconstrained> (mxfns,mxstate,state,fns);
                 }
             }
 
@@ -2455,80 +2438,56 @@ namespace Optizelle {
                 void getMin(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
-                ) {
-                    // Grab Optizelle
-                    optizelle.push_back(mexGetVariable("global","Optizelle"));
+                ) try {
+                    // Grab the variables
+                    MX_VAR_5(X,msg,mxfns,mxstate,smanip);
 
-                    // Calling convention should be
-                    // (X,msg,mxfns,mxstate,smanip) -> (mxstate_out)
-                    mxArray *X=pInput[0],
-                            *msg_=pInput[1],
-                            *mxfns_=pInput[2],
-                            *mxstate_=pInput[3],
-                            *smanip_=pInput[4];
-                    pOutput[0] = Unconstrained::State::mxCreate();
-                    mxArray *mxstate_out_=pOutput[0];
+                    // Create a messaging object
+                    auto msg = Optizelle::Matlab::Messaging::matlab(msg_);
 
-                    // Make sure we bail if we detect a Matlab exception
-                    try {
-                        // Create a messaging object
-                        Optizelle::Matlab::Messaging msg(msg_,
-                            mxArrayPtrMode::Attach);
-                            
-                        // Create a Matlab state 
-                        Matlab::State <MxUnconstrained> mxstate(mxstate_,
-                            mxArrayPtrMode::Attach);
-                        Matlab::State<MxUnconstrained> mxstate_out(mxstate_out_,
-                            mxArrayPtrMode::Attach);
-                        
-                        // Grab the base vectors from the Matlab state
-                        Vector x(msg_,X,mxGetField(mxstate.get(),0,"x"),
-                            mxArrayPtrMode::Attach);
+                    // Create a Matlab state 
+                    auto mxstate = Matlab::State <MxUnconstrained> (mxstate_);
+                    auto mxstate_out = Matlab::State <MxUnconstrained> (
+                        Unconstrained::State::mxCreate());
+                    
+                    // Grab the base vectors from the Matlab state
+                    auto x_= capi::mxGetField(mxstate.data,0,"x");
+                    auto x = Vector(X_,x_);
 
-                        // Create a C++ state
-                        typename MxUnconstrained::State::t state(x);
-                        
-                        // Convert the Matlab state to a C++ state
-                        mxstate.fromMatlab(state);
+                    // Create a C++ state
+                    typename MxUnconstrained::State::t state(x);
+                    
+                    // Convert the Matlab state to a C++ state
+                    mxstate.fromMatlab(state);
 
-                        // Create a Matlab bundle of functions
-                        Matlab::Functions <MxUnconstrained> mxfns(
-                            msg.get(),
-                            mxstate.get(),
-                            state,
-                            mxfns_,
-                            mxArrayPtrMode::Attach);
+                    // Create a Matlab bundle of functions
+                    Matlab::Functions <MxUnconstrained> mxfns(
+                        mxstate_out,
+                        state,
+                        mxfns_);
 
-                        // Create a C++ bundle of functions
-                        typename MxUnconstrained::Functions::t fns;
-                        
-                        // Convert the Matlab bundle of functions to C++ 
-                        mxfns.fromMatlab(fns);
+                    // Create a C++ bundle of functions
+                    typename MxUnconstrained::Functions::t fns;
+                    
+                    // Convert the Matlab bundle of functions to C++ 
+                    mxfns.fromMatlab(fns);
 
-                        // Create a state manipulator 
-                        Matlab::StateManipulator <MxUnconstrained> smanip(
-                            msg.get(),
-                            mxstate.get(),
-                            mxfns.get(),
-                            smanip_,
-                            mxArrayPtrMode::Attach);
-                       
-                        // Minimize
-                        MxUnconstrained::Algorithms::getMin(
-                            msg,fns,state,smanip);
-                        
-                        // Convert the C++ state to a Matlab state
-                        mxstate_out.toMatlab(state);
-                       
-                        // Cleanup Optizelle
-                        optizelle.pop_back();
+                    // Create a state manipulator 
+                    Matlab::StateManipulator <MxUnconstrained> smanip(
+                        mxstate_out,
+                        mxfns,
+                        smanip_);
+                   
+                    // Minimize
+                    MxUnconstrained::Algorithms::getMin(msg,fns,state,smanip);
+                    
+                    // Convert the C++ state to a Matlab state
+                    mxstate_out.toMatlab(state);
+                    
+                    // Return the result 
+                    MX_RETURN_1(mxstate_out.data);
 
-                        // Return nothing 
-                        return; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){ }
-                }
+                } CATCH_MATLAB_ERRORS;
             }
             
             // Utilities for restarting the optimization
@@ -2537,241 +2496,155 @@ namespace Optizelle {
                 void release(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
-                ) {
-                    // Grab Optizelle
-                    optizelle.push_back(mexGetVariable("global","Optizelle"));
+                ) try {
+                    // Grab the variables
+                    MX_VAR_2(X,mxstate);
 
-                    // Calling convention should be
-                    // (X,msg,mxstate) -> (xs,reals,nats,params)
-                    mxArray *X=pInput[0],
-                            *msg=pInput[1],
-                            *mxstate_=pInput[2];
-                    mxArray *mxxs,
-                            *mxreals,
-                            *mxnats,
-                            *mxparams;
+                    // Create a Matlab state 
+                    auto mxstate = Matlab::State <MxUnconstrained> (mxstate_);
+                    
+                    // Grab the base vectors from the Matlab state
+                    auto x_= capi::mxGetField(mxstate.data,0,"x");
+                    auto x = Vector(X_,x_);
 
-                    // Make sure we bail if we detect a Matlab exception
-                    try {
-                        // Create a Matlab state 
-                        Matlab::State <MxUnconstrained> mxstate(mxstate_,
-                            mxArrayPtrMode::Attach);
-                        
-                        // Grab the base vectors from the Matlab state
-                        Vector x(msg,X,mxGetField(mxstate.get(),0,"x"),
-                            mxArrayPtrMode::Attach);
+                    // Create a C++ state
+                    typename MxUnconstrained::State::t state(x);
+                    
+                    // Convert the Matlab state to a C++ state
+                    mxstate.fromMatlab(state);
 
-                        // Create a C++ state
-                        typename MxUnconstrained::State::t state(x);
-                        
-                        // Convert the Matlab state to a C++ state
-                        mxstate.fromMatlab(state);
+                    // Do a release 
+                    MxUnconstrained::Restart::X_Vectors xs;
+                    MxUnconstrained::Restart::Reals reals;
+                    MxUnconstrained::Restart::Naturals nats;
+                    MxUnconstrained::Restart::Params params;
+                    MxUnconstrained::Restart
+                        ::release(state,xs,reals,nats,params);
 
-                        // Do a release 
-                        MxUnconstrained::Restart::X_Vectors xs;
-                        MxUnconstrained::Restart::Reals reals;
-                        MxUnconstrained::Restart::Naturals nats;
-                        MxUnconstrained::Restart::Params params;
-                        MxUnconstrained::Restart
-                            ::release(state,xs,reals,nats,params);
+                    // Allocate memory for the Matlab versions
+                    auto mxxs = capi::mxCreateCellMatrix(1,xs.size());
+                    auto mxreals = capi::mxCreateCellMatrix(1,reals.size());
+                    auto mxnats = capi::mxCreateCellMatrix(1,nats.size());
+                    auto mxparams = capi::mxCreateCellMatrix(1,params.size());
 
-                        // Allocate memory for the Matlab versions
-                        mxxs = mxCreateCellMatrix(1,xs.size());
-                        mxreals = mxCreateCellMatrix(1,reals.size());
-                        mxnats = mxCreateCellMatrix(1,nats.size());
-                        mxparams = mxCreateCellMatrix(1,params.size());
-
-                        // Convert the restart information to Matlab 
-                        toMatlab::Vectors(xs,mxxs);
-                        toMatlab::Reals(reals,mxreals);
-                        toMatlab::Naturals(nats,mxnats);
-                        toMatlab::Params(params,mxparams);
-
-                        // Set the ouptuts
-                        pOutput[0]=mxxs;
-                        pOutput[1]=mxreals;
-                        pOutput[2]=mxnats;
-                        pOutput[3]=mxparams;
-                       
-                        // Cleanup Optizelle
-                        optizelle.pop_back();
-
-                        // Return nothing 
-                        return; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){ }
-                }
+                    // Convert the restart information to Matlab 
+                    toMatlab::Vectors(xs,mxxs);
+                    toMatlab::Reals(reals,mxreals);
+                    toMatlab::Naturals(nats,mxnats);
+                    toMatlab::Params(params,mxparams);
+                    
+                    // Return the result 
+                    MX_RETURN_4(mxxs,mxreals,mxnats,mxparams);
+                
+                } CATCH_MATLAB_ERRORS;
 
                 // Capture data from structures controlled by the user.  
                 void capture(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
-                ) {
-                    // Grab Optizelle
-                    optizelle.push_back(mexGetVariable("global","Optizelle"));
+                ) try {
+                    // Grab the variables
+                    MX_VAR_6(X,mxstate,mxxs,mxreals,mxnats,mxparams);
 
-                    // Calling convention should be
-                    // (X,msg,mxstate,mxxs,mxreals,mxnats,mxparams)
-                    // -> mxstate_out
-                    mxArray *X=pInput[0],
-                            *msg_=pInput[1],
-                            *mxstate_=pInput[2],
-                            *mxxs=pInput[3],
-                            *mxreals=pInput[4],
-                            *mxnats=pInput[5],
-                            *mxparams=pInput[6];
-                    pOutput[0] = Unconstrained::State::mxCreate();
-                    mxArray *mxstate_out_=pOutput[0];
+                    // Create a Matlab state 
+                    auto mxstate = Matlab::State <MxUnconstrained> (mxstate_);
+                    auto mxstate_out = Matlab::State <MxUnconstrained> (
+                        Unconstrained::State::mxCreate());
+                    
+                    // Grab the base vectors from the Matlab state
+                    auto x_= capi::mxGetField(mxstate.data,0,"x");
+                    auto x = Vector(X_,x_);
 
-                    // Make sure we bail if we detect a Matlab exception
-                    try {
-                        // Create a messaging object
-                        Optizelle::Matlab::Messaging msg(msg_,
-                            mxArrayPtrMode::Attach);
+                    // Create a C++ state
+                    typename MxUnconstrained::State::t state(x);
+                   
+                    // Allocate memory for the released vectors
+                    MxUnconstrained::Restart::X_Vectors xs;
+                    MxUnconstrained::Restart::Reals reals;
+                    MxUnconstrained::Restart::Naturals nats;
+                    MxUnconstrained::Restart::Params params;
+                    
+                    // Convert the restart information from Matlab 
+                    fromMatlab::Vectors(x,mxxs_,xs);
+                    fromMatlab::Reals(mxreals_,reals);
+                    fromMatlab::Naturals(mxnats_,nats);
+                    fromMatlab::Params(mxparams_,params);
 
-                        // Create a Matlab state 
-                        Matlab::State <MxUnconstrained> mxstate(mxstate_,
-                            mxArrayPtrMode::Attach);
-                        Matlab::State<MxUnconstrained> mxstate_out(mxstate_out_,
-                            mxArrayPtrMode::Attach);
-                        
-                        // Grab the base vectors from the Matlab state
-                        Vector x(msg_,X,mxGetField(mxstate.get(),0,"x"),
-                            mxArrayPtrMode::Attach);
+                    // Do a capture 
+                    MxUnconstrained::Restart
+                        ::capture(state,xs,reals,nats,params);
 
-                        // Create a C++ state
-                        typename MxUnconstrained::State::t state(x);
-                       
-                        // Allocate memory for the released vectors
-                        MxUnconstrained::Restart::X_Vectors xs;
-                        MxUnconstrained::Restart::Reals reals;
-                        MxUnconstrained::Restart::Naturals nats;
-                        MxUnconstrained::Restart::Params params;
-                        
-                        // Convert the restart information from Matlab 
-                        fromMatlab::Vectors(x,mxxs,xs);
-                        fromMatlab::Reals(mxreals,reals);
-                        fromMatlab::Naturals(mxnats,nats);
-                        fromMatlab::Params(mxparams,params);
+                    // Convert the C++ state to a Matlab state
+                    mxstate_out.toMatlab(state);
+                    
+                    // Return the result 
+                    MX_RETURN_1(mxstate_out.data);
 
-                        // Do a capture 
-                        MxUnconstrained::Restart
-                            ::capture(msg,state,xs,reals,nats,params);
-
-                        // Convert the C++ state to a Matlab state
-                        mxstate_out.toMatlab(state);
-                       
-                        // Cleanup Optizelle
-                        optizelle.pop_back();
-
-                        // Return nothing 
-                        return; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){ }
-                }
+                } CATCH_MATLAB_ERRORS;
                 
                 // Writes a json restart file
                 void write_restart(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
-                ) {
-                    // Grab Optizelle
-                    optizelle.push_back(mexGetVariable("global","Optizelle"));
+                ) try {
+                    // Grab the variables
+                    MX_VAR_3(X,fname,mxstate);
 
-                    // Calling convention should be (X,msg,fname,state) -> ()
-                    mxArray *X=pInput[0],
-                            *msg_=pInput[1],
-                            *fname_=pInput[2],
-                            *mxstate_=pInput[3];
+                    // Grab the file name
+                    auto fname = capi::mxArrayToString(fname_);
 
-                    // Make sure we bail if we detect a Matlab exception
-                    try {
-                        // Create a messaging object
-                        Optizelle::Matlab::Messaging msg(msg_,
-                            mxArrayPtrMode::Attach);
-                        
-                        // Grab the file name
-                        std::string fname(mxArrayToString(fname_));
+                    // Create a Matlab state 
+                    auto mxstate = Matlab::State <MxUnconstrained> (mxstate_);
+                    
+                    // Grab the base vectors from the Matlab state
+                    auto x_= capi::mxGetField(mxstate.data,0,"x");
+                    auto x = Vector(X_,x_);
+                    
+                    // Create a C++ state
+                    typename MxUnconstrained::State::t state(x);
+                    
+                    // Convert Matlab state to C++ 
+                    mxstate.fromMatlab(state);
 
-                        // Create a Matlab state 
-                        Matlab::State <MxUnconstrained> mxstate(mxstate_,
-                            mxArrayPtrMode::Attach);
-                        
-                        // Grab the base vectors from the Matlab state
-                        Vector x(msg_,X,mxGetField(mxstate.get(),0,"x"),
-                            mxArrayPtrMode::Attach);
-                        
-                        // Create a C++ state
-                        typename MxUnconstrained::State::t state(x);
-                        
-                        // Convert Matlab state to C++ 
-                        mxstate.fromMatlab(state);
+                    // Write the restart file
+                    MxJsonUnconstrained::write_restart(fname,state);
 
-                        // Write the restart file
-                        MxJsonUnconstrained::write_restart(msg,fname,state);
-                       
-                        // Cleanup Optizelle
-                        optizelle.pop_back();
-                        
-                        // Return nothing 
-                        return; 
+                    // Return nothing
+                    MX_RETURN_0;
 
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){ }
-                }
+                } CATCH_MATLAB_ERRORS;
                 
                 // Reads a json restart file
                 void read_restart(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
-                ) {
-                    // Grab Optizelle
-                    optizelle.push_back(mexGetVariable("global","Optizelle"));
+                ) try {
+                    // Grab the variables
+                    MX_VAR_3(X,fname,x);
 
-                    // Calling convention should be (X,msg,fname,x) -> (mxstate)
-                    mxArray *X=pInput[0],
-                            *msg_=pInput[1],
-                            *fname_=pInput[2],
-                            *x_=pInput[3];
-                    pOutput[0] = Unconstrained::State::mxCreate();
-                    mxArray *mxstate_out_=pOutput[0];
+                    // Grab the file name
+                    auto fname = capi::mxArrayToString(fname_);
 
-                    // Make sure we bail if we detect a Matlab exception
-                    try {
-                        // Create a messaging object
-                        Optizelle::Matlab::Messaging msg(msg_,
-                            mxArrayPtrMode::Attach);
-                        
-                        // Grab the file name
-                        std::string fname(mxArrayToString(fname_));
+                    // Create a Matlab state 
+                    auto mxstate_out = Matlab::State <MxUnconstrained> (
+                        Unconstrained::State::mxCreate());
+                    
+                    // Grab the reference vector 
+                    auto x = Vector(X_,x_);
+                    
+                    // Create a C++ state
+                    typename MxUnconstrained::State::t state(x);
 
-                        // Create a Matlab state 
-                        Matlab::State<MxUnconstrained> mxstate_out(mxstate_out_,
-                            mxArrayPtrMode::Attach);
-                        
-                        // Grab the reference vector 
-                        Vector x(msg_,X,x_,mxArrayPtrMode::Attach);
-                        
-                        // Create a C++ state
-                        typename MxUnconstrained::State::t state(x);
+                    // Read the restart file into the C++ state 
+                    MxJsonUnconstrained::read_restart(fname,x,state);
+                    
+                    // Convert the C++ state to a Matlab state
+                    mxstate_out.toMatlab(state);
+                    
+                    // Return the result 
+                    MX_RETURN_1(mxstate_out.data);
 
-                        // Read the restart file into the C++ state 
-                        MxJsonUnconstrained::read_restart(msg,fname,x,state);
-                        
-                        // Convert the C++ state to a Matlab state
-                        mxstate_out.toMatlab(state);
-                       
-                        // Cleanup Optizelle
-                        optizelle.pop_back();
-
-                        // Return nothing 
-                        return; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){ }
-                }
+                } CATCH_MATLAB_ERRORS;
             }
         }
 
@@ -2853,7 +2726,7 @@ namespace Optizelle {
                         "y_diag",
                         "qn_stop"};
 
-                    return std::move(names);
+                    return names;
                 }
                 std::vector <char const *> fieldNames() {
                     std::vector <char const*> un
@@ -2862,20 +2735,20 @@ namespace Optizelle {
                         = EqualityConstrained::State::fieldNames_();
                     un.reserve(un.size()+eq.size());
                     un.insert(un.end(),eq.begin(),eq.end());
-                    return std::move(un); 
+                    return un; 
                 }
 
                 // Create the structure for a Matlab state
-                mxArray * mxCreate() {
-                    std::vector <char const *> names
-                        = EqualityConstrained::State::fieldNames();
-                    return mxCreateStructMatrix(1,1,names.size(),&(names[0]));
+                mxArrayPtr mxCreate() {
+                    auto names = EqualityConstrained::State::fieldNames();
+                    return capi::mxCreateStructMatrix(
+                        1,1,names.size(),&(names[0]));
                 }
 
                 // Convert a C++ state to a Matlab state 
                 void toMatlab_(
                     typename MxEqualityConstrained::State::t const & state,
-                    mxArray * const mxstate
+                    mxArrayPtr & mxstate
                 ){
                     toMatlab::Vector("y",state.y,mxstate);
                     toMatlab::Vector("dy",state.dy,mxstate);
@@ -2997,7 +2870,7 @@ namespace Optizelle {
                 }
                 void toMatlab(
                     typename MxEqualityConstrained::State::t const & state,
-                    mxArray * const mxstate
+                    mxArrayPtr & mxstate
                 ){
                     Unconstrained::State::toMatlab_(state,mxstate);
                     EqualityConstrained::State::toMatlab_(state,mxstate);
@@ -3005,7 +2878,7 @@ namespace Optizelle {
                 
                 // Convert a Matlab state to C++ 
                 void fromMatlab_(
-                    mxArray * const mxstate,
+                    mxArrayPtr const & mxstate,
                     typename MxEqualityConstrained::State::t & state
                 ){
                     fromMatlab::Vector("y",mxstate,state.y);
@@ -3128,7 +3001,7 @@ namespace Optizelle {
                         state.qn_stop);
                 }
                 void fromMatlab(
-                    mxArray * const mxstate,
+                    mxArrayPtr const & mxstate,
                     typename MxEqualityConstrained::State::t & state
                 ){
                     Unconstrained::State::fromMatlab_(mxstate,state);
@@ -3139,121 +3012,83 @@ namespace Optizelle {
                 void create(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
-                ){
-                    // Grab Optizelle
-                    optizelle.push_back(mexGetVariable("global","Optizelle"));
+                ) try {
+                    // Grab the variables
+                    MX_VAR_4(X,Y,x,y);
+                    
+                    // Create a vector from the user input
+                    auto x = Vector(X_,x_);
+                    auto y = Vector(Y_,y_);
 
-                    // Calling convention should be (X,Y,msg,x,y)->(mxstate_out)
-                    mxArray *X=pInput[0],
-                            *Y=pInput[1],
-                            *msg=pInput[2],
-                            *x_=pInput[3],
-                            *y_=pInput[4];
-                    pOutput[0] = EqualityConstrained::State::mxCreate();
-                    mxArray *mxstate_out_=pOutput[0];
+                    // Create a Matlab state 
+                    auto mxstate_out = Matlab::State <MxEqualityConstrained> (
+                        EqualityConstrained::State::mxCreate());
 
-                    // Make sure we bail if we detect a Matlab exception
-                    try {
-                        // Create a vector from the user input
-                        Vector x(msg,X,x_,mxArrayPtrMode::Attach);
-                        Vector y(msg,Y,y_,mxArrayPtrMode::Attach);
+                    // Create a new C++ state
+                    typename MxEqualityConstrained::State::t state(x,y);
 
-                        // Create a Matlab state 
-                        Matlab::State<MxEqualityConstrained> mxstate_out(
-                            mxstate_out_,mxArrayPtrMode::Attach);
+                    // Convert the state to a Matlab state
+                    mxstate_out.toMatlab(state);
 
-                        // Create a new C++ state
-                        typename MxEqualityConstrained::State::t state(x,y);
+                    // Return the result 
+                    MX_RETURN_1(mxstate_out.data);
 
-                        // Convert the state to a Matlab state
-                        mxstate_out.toMatlab(state);
-                       
-                        // Cleanup Optizelle
-                        optizelle.pop_back();
-
-                        // Return nothing 
-                        return; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){ }
-                }
+                } CATCH_MATLAB_ERRORS;
         
                 // Read json parameters from file
                 void readJson(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
-                ) {
-                    // Grab Optizelle
-                    optizelle.push_back(mexGetVariable("global","Optizelle"));
+                ) try {
+                    // Grab the variables
+                    MX_VAR_4(X,Y,fname,mxstate);
 
-                    // Calling convention should be (X,Y,msg,fname,mxstate)
-                    // -> (mxstate_out)
-                    mxArray *X=pInput[0],
-                            *Y=pInput[1],
-                            *msg_=pInput[2],
-                            *fname_=pInput[3],
-                            *mxstate_=pInput[4];
-                    pOutput[0] = EqualityConstrained::State::mxCreate();
-                    mxArray *mxstate_out_=pOutput[0];
+                    // Grab the file name
+                    auto fname = capi::mxArrayToString(fname_);
 
-                    // Make sure we bail if we detect a Matlab exception
-                    try {
-                        // Grab the file name
-                        std::string fname(mxArrayToString(fname_));
+                    // Create a Matlab state 
+                    auto mxstate = Matlab::State <MxEqualityConstrained> (
+                        mxstate_);
+                    auto mxstate_out = Matlab::State <MxEqualityConstrained> (
+                        EqualityConstrained::State::mxCreate());
+                
+                    // Grab the base vectors from the Matlab state
+                    auto x_= capi::mxGetField(mxstate.data,0,"x");
+                    auto x = Vector(X_,x_);
+                    auto y_= capi::mxGetField(mxstate.data,0,"y");
+                    auto y = Vector(Y_,y_);
 
-                        // Create a messaging object
-                        Optizelle::Matlab::Messaging msg(msg_,
-                            mxArrayPtrMode::Attach);
-
-                        // Create a Matlab state 
-                        Matlab::State <MxEqualityConstrained> mxstate(
-                            mxstate_,mxArrayPtrMode::Attach);
-                        Matlab::State <MxEqualityConstrained> mxstate_out(
-                            mxstate_out_,mxArrayPtrMode::Attach);
+                    // Create a new C++ state
+                    typename MxEqualityConstrained::State::t state(x,y);
                     
-                        // Grab the base vectors from the Matlab state
-                        Vector x(msg_,X,mxGetField(mxstate.get(),0,"x"),
-                            mxArrayPtrMode::Attach);
-                        Vector y(msg_,Y,mxGetField(mxstate.get(),0,"y"),
-                            mxArrayPtrMode::Attach);
+                    // Convert the Matlab state to a C++ state
+                    mxstate.fromMatlab(state);
 
-                        // Create a new C++ state
-                        typename MxEqualityConstrained::State::t state(x,y);
-                        
-                        // Convert the Matlab state to a C++ state
-                        mxstate.fromMatlab(state);
+                    // Read the JSON file into the C++ state
+                    MxJsonEqualityConstrained::read(fname,state);
 
-                        // Read the JSON file into the C++ state
-                        MxJsonEqualityConstrained::read(msg,fname,state);
+                    // Convert the C++ state to a Matlab state
+                    mxstate_out.toMatlab(state);
+                    
+                    // Return the result 
+                    MX_RETURN_1(mxstate_out.data);
 
-                        // Convert the C++ state to a Matlab state
-                        mxstate_out.toMatlab(state);
-                       
-                        // Cleanup Optizelle
-                        optizelle.pop_back();
-                                
-                        // Return nothing 
-                        return; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){ }
-                }
+                } CATCH_MATLAB_ERRORS;
             }
 
             // All the functions required by an optimization algorithm.  
             namespace Functions{
                 // Convert a Matlab bundle to C++ 
                 void fromMatlab(
-                    mxArray * const msg,
-                    mxArray * const mxfns,
-                    mxArray * const mxstate,
+                    Matlab::Functions <MxEqualityConstrained> const & mxfns,
+                    Matlab::State <MxEqualityConstrained> & mxstate,
                     typename MxEqualityConstrained::State::t const & state,
                     typename MxEqualityConstrained::Functions::t & fns 
                 ) {
                     Unconstrained::Functions::fromMatlab_
-                        <MxEqualityConstrained> (msg,mxfns,mxstate,state,fns);
+                        <MxEqualityConstrained> (mxfns,mxstate,state,fns);
                     EqualityConstrained::Functions::fromMatlab_
-                        <MxEqualityConstrained> (msg,mxfns,mxstate,state,fns);
+                        <MxEqualityConstrained> (mxfns,mxstate,state,fns);
                 }
             }
 
@@ -3263,83 +3098,60 @@ namespace Optizelle {
                 void getMin(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
-                ) {
-                    // Grab Optizelle
-                    optizelle.push_back(mexGetVariable("global","Optizelle"));
+                ) try {
+                    // Grab the variables
+                    MX_VAR_6(X,Y,msg,mxfns,mxstate,smanip);
 
-                    // Calling convention should be
-                    // (X,Y,msg,mxfns,mxstate,smanip) -> (mxstate_out)
-                    mxArray *X=pInput[0],
-                            *Y=pInput[1],
-                            *msg_=pInput[2],
-                            *mxfns_=pInput[3],
-                            *mxstate_=pInput[4],
-                            *smanip_=pInput[5];
-                    pOutput[0] = EqualityConstrained::State::mxCreate();
-                    mxArray *mxstate_out_=pOutput[0];
+                    // Create a messaging object
+                    auto msg = Optizelle::Matlab::Messaging::matlab(msg_);
 
-                    // Make sure we bail if we detect a Matlab exception
-                    try {
-                        // Create a messaging object
-                        Optizelle::Matlab::Messaging msg(msg_,
-                            mxArrayPtrMode::Attach);
-                            
-                        // Create a Matlab state 
-                        Matlab::State <MxEqualityConstrained> mxstate(
-                            mxstate_,mxArrayPtrMode::Attach);
-                        Matlab::State<MxEqualityConstrained> mxstate_out(
-                            mxstate_out_,mxArrayPtrMode::Attach);
-                        
-                        // Grab the base vectors from the Matlab state
-                        Vector x(msg_,X,mxGetField(mxstate.get(),0,"x"),
-                            mxArrayPtrMode::Attach);
-                        Vector y(msg_,Y,mxGetField(mxstate.get(),0,"y"),
-                            mxArrayPtrMode::Attach);
+                    // Create a Matlab state 
+                    auto mxstate = Matlab::State <MxEqualityConstrained> (
+                        mxstate_);
+                    auto mxstate_out = Matlab::State <MxEqualityConstrained> (
+                        EqualityConstrained::State::mxCreate());
+                    
+                    // Grab the base vectors from the Matlab state
+                    auto x_= capi::mxGetField(mxstate.data,0,"x");
+                    auto x = Vector(X_,x_);
+                    auto y_= capi::mxGetField(mxstate.data,0,"y");
+                    auto y = Vector(Y_,y_);
 
-                        // Create a C++ state
-                        typename MxEqualityConstrained::State::t state(x,y);
-                        
-                        // Convert the Matlab state to a C++ state
-                        mxstate.fromMatlab(state);
+                    // Create a C++ state
+                    typename MxEqualityConstrained::State::t state(x,y);
+                    
+                    // Convert the Matlab state to a C++ state
+                    mxstate.fromMatlab(state);
 
-                        // Create a Matlab bundle of functions
-                        Matlab::Functions <MxEqualityConstrained> mxfns(
-                            msg.get(),
-                            mxstate.get(),
-                            state,
-                            mxfns_,
-                            mxArrayPtrMode::Attach);
+                    // Create a Matlab bundle of functions
+                    Matlab::Functions <MxEqualityConstrained> mxfns(
+                        mxstate_out,
+                        state,
+                        mxfns_);
 
-                        // Create a C++ bundle of functions
-                        typename MxEqualityConstrained::Functions::t fns;
-                        
-                        // Convert the Matlab bundle of functions to C++ 
-                        mxfns.fromMatlab(fns);
-                        
-                        // Create a state manipulator 
-                        Matlab::StateManipulator <MxEqualityConstrained> smanip(
-                            msg.get(),
-                            mxstate.get(),
-                            mxfns.get(),
-                            smanip_,
-                            mxArrayPtrMode::Attach);
-                       
-                        // Minimize
-                        MxEqualityConstrained::Algorithms::getMin(
-                            msg,fns,state,smanip);
-                        
-                        // Convert the C++ state to a Matlab state
-                        mxstate_out.toMatlab(state);
-                       
-                        // Cleanup Optizelle
-                        optizelle.pop_back();
+                    // Create a C++ bundle of functions
+                    typename MxEqualityConstrained::Functions::t fns;
+                    
+                    // Convert the Matlab bundle of functions to C++ 
+                    mxfns.fromMatlab(fns);
+                    
+                    // Create a state manipulator 
+                    Matlab::StateManipulator <MxEqualityConstrained> smanip(
+                        mxstate_out,
+                        mxfns,
+                        smanip_);
+                   
+                    // Minimize
+                    MxEqualityConstrained::Algorithms::getMin(
+                        msg,fns,state,smanip);
+                    
+                    // Convert the C++ state to a Matlab state
+                    mxstate_out.toMatlab(state);
+                    
+                    // Return the result 
+                    MX_RETURN_1(mxstate_out.data);
 
-                        // Return nothing 
-                        return; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){ }
-                }
+                } CATCH_MATLAB_ERRORS;
             }
             
             // Utilities for restarting the optimization
@@ -3348,264 +3160,170 @@ namespace Optizelle {
                 void release(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
-                ) {
-                    // Grab Optizelle
-                    optizelle.push_back(mexGetVariable("global","Optizelle"));
+                ) try {
+                    // Grab the variables
+                    MX_VAR_3(X,Y,mxstate);
 
-                    // Calling convention should be
-                    // (X,Y,msg,mxstate) -> (xs,ys,reals,nats,params)
-                    mxArray *X=pInput[0],
-                            *Y=pInput[1],
-                            *msg=pInput[2],
-                            *mxstate_=pInput[3];
-                    mxArray *mxxs,
-                            *mxys,
-                            *mxreals,
-                            *mxnats,
-                            *mxparams;
+                    // Create a Matlab state 
+                    auto mxstate = Matlab::State <MxEqualityConstrained> (
+                        mxstate_);
+                    
+                    // Grab the base vectors from the Matlab state
+                    auto x_= capi::mxGetField(mxstate.data,0,"x");
+                    auto x = Vector(X_,x_);
+                    auto y_= capi::mxGetField(mxstate.data,0,"y");
+                    auto y = Vector(Y_,y_);
 
-                    // Make sure we bail if we detect a Matlab exception
-                    try {
-                        // Create a Matlab state 
-                        Matlab::State <MxEqualityConstrained> mxstate(
-                            mxstate_,mxArrayPtrMode::Attach);
-                        
-                        // Grab the base vectors from the Matlab state
-                        Vector x(msg,X,mxGetField(mxstate.get(),0,"x"),
-                            mxArrayPtrMode::Attach);
-                        Vector y(msg,Y,mxGetField(mxstate.get(),0,"y"),
-                            mxArrayPtrMode::Attach);
+                    // Create a C++ state
+                    typename MxEqualityConstrained::State::t state(x,y);
+                    
+                    // Convert the Matlab state to a C++ state
+                    mxstate.fromMatlab(state);
 
-                        // Create a C++ state
-                        typename MxEqualityConstrained::State::t state(x,y);
-                        
-                        // Convert the Matlab state to a C++ state
-                        mxstate.fromMatlab(state);
+                    // Do a release 
+                    MxEqualityConstrained::Restart::X_Vectors xs;
+                    MxEqualityConstrained::Restart::Y_Vectors ys;
+                    MxEqualityConstrained::Restart::Reals reals;
+                    MxEqualityConstrained::Restart::Naturals nats;
+                    MxEqualityConstrained::Restart::Params params;
+                    MxEqualityConstrained::Restart
+                        ::release(state,xs,ys,reals,nats,params);
 
-                        // Do a release 
-                        MxEqualityConstrained::Restart::X_Vectors xs;
-                        MxEqualityConstrained::Restart::Y_Vectors ys;
-                        MxEqualityConstrained::Restart::Reals reals;
-                        MxEqualityConstrained::Restart::Naturals nats;
-                        MxEqualityConstrained::Restart::Params params;
-                        MxEqualityConstrained::Restart
-                            ::release(state,xs,ys,reals,nats,params);
+                    // Allocate memory for the Matlab versions
+                    auto mxxs = capi::mxCreateCellMatrix(1,xs.size());
+                    auto mxys = capi::mxCreateCellMatrix(1,ys.size());
+                    auto mxreals = capi::mxCreateCellMatrix(1,reals.size());
+                    auto mxnats = capi::mxCreateCellMatrix(1,nats.size());
+                    auto mxparams = capi::mxCreateCellMatrix(1,params.size());
 
-                        // Allocate memory for the Matlab versions
-                        mxxs = mxCreateCellMatrix(1,xs.size());
-                        mxys = mxCreateCellMatrix(1,ys.size());
-                        mxreals = mxCreateCellMatrix(1,reals.size());
-                        mxnats = mxCreateCellMatrix(1,nats.size());
-                        mxparams = mxCreateCellMatrix(1,params.size());
+                    // Convert the restart information to Matlab 
+                    toMatlab::Vectors(xs,mxxs);
+                    toMatlab::Vectors(ys,mxys);
+                    toMatlab::Reals(reals,mxreals);
+                    toMatlab::Naturals(nats,mxnats);
+                    toMatlab::Params(params,mxparams);
+                    
+                    // Return the result 
+                    MX_RETURN_5(mxxs,mxys,mxreals,mxnats,mxparams);
 
-                        // Convert the restart information to Matlab 
-                        toMatlab::Vectors(xs,mxxs);
-                        toMatlab::Vectors(ys,mxys);
-                        toMatlab::Reals(reals,mxreals);
-                        toMatlab::Naturals(nats,mxnats);
-                        toMatlab::Params(params,mxparams);
-
-                        // Set the ouptuts
-                        pOutput[0]=mxxs;
-                        pOutput[1]=mxys;
-                        pOutput[2]=mxreals;
-                        pOutput[3]=mxnats;
-                        pOutput[4]=mxparams;
-                       
-                        // Cleanup Optizelle
-                        optizelle.pop_back();
-
-                        // Return nothing 
-                        return; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){ }
-                }
+                } CATCH_MATLAB_ERRORS;
 
                 // Capture data from structures controlled by the user.  
                 void capture(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
-                ) {
-                    // Grab Optizelle
-                    optizelle.push_back(mexGetVariable("global","Optizelle"));
+                ) try {
+                    // Grab the variables
+                    MX_VAR_8(X,Y,mxstate,mxxs,mxys,mxreals,mxnats,mxparams);
 
-                    // Calling convention should be
-                    // (X,Y,msg,mxstate,mxxs,mxys,mxreals,mxnats,mxparams)
-                    // -> mxstate_out
-                    mxArray *X=pInput[0],
-                            *Y=pInput[1],
-                            *msg_=pInput[2],
-                            *mxstate_=pInput[3],
-                            *mxxs=pInput[4],
-                            *mxys=pInput[5],
-                            *mxreals=pInput[6],
-                            *mxnats=pInput[7],
-                            *mxparams=pInput[8];
-                    pOutput[0] = EqualityConstrained::State::mxCreate();
-                    mxArray *mxstate_out_=pOutput[0];
+                    // Create a Matlab state 
+                    auto mxstate = Matlab::State <MxEqualityConstrained> (
+                        mxstate_);
+                    auto mxstate_out = Matlab::State <MxEqualityConstrained> (
+                        EqualityConstrained::State::mxCreate());
+                    
+                    // Grab the base vectors from the Matlab state
+                    auto x_= capi::mxGetField(mxstate.data,0,"x");
+                    auto x = Vector(X_,x_);
+                    auto y_= capi::mxGetField(mxstate.data,0,"y");
+                    auto y = Vector(Y_,y_);
 
-                    // Make sure we bail if we detect a Matlab exception
-                    try {
-                        // Create a messaging object
-                        Optizelle::Matlab::Messaging msg(msg_,
-                            mxArrayPtrMode::Attach);
+                    // Create a C++ state
+                    typename MxEqualityConstrained::State::t state(x,y);
+                   
+                    // Allocate memory for the released vectors
+                    MxEqualityConstrained::Restart::X_Vectors xs;
+                    MxEqualityConstrained::Restart::Y_Vectors ys;
+                    MxEqualityConstrained::Restart::Reals reals;
+                    MxEqualityConstrained::Restart::Naturals nats;
+                    MxEqualityConstrained::Restart::Params params;
+                    
+                    // Convert the restart information from Matlab 
+                    fromMatlab::Vectors(x,mxxs_,xs);
+                    fromMatlab::Vectors(y,mxys_,ys);
+                    fromMatlab::Reals(mxreals_,reals);
+                    fromMatlab::Naturals(mxnats_,nats);
+                    fromMatlab::Params(mxparams_,params);
 
-                        // Create a Matlab state 
-                        Matlab::State <MxEqualityConstrained> mxstate(
-                            mxstate_,mxArrayPtrMode::Attach);
-                        Matlab::State<MxEqualityConstrained> mxstate_out(
-                            mxstate_out_,mxArrayPtrMode::Attach);
-                        
-                        // Grab the base vectors from the Matlab state
-                        Vector x(msg_,X,mxGetField(mxstate.get(),0,"x"),
-                            mxArrayPtrMode::Attach);
-                        Vector y(msg_,Y,mxGetField(mxstate.get(),0,"y"),
-                            mxArrayPtrMode::Attach);
+                    // Do a capture 
+                    MxEqualityConstrained::Restart
+                        ::capture(state,xs,ys,reals,nats,params);
 
-                        // Create a C++ state
-                        typename MxEqualityConstrained::State::t state(x,y);
-                       
-                        // Allocate memory for the released vectors
-                        MxEqualityConstrained::Restart::X_Vectors xs;
-                        MxEqualityConstrained::Restart::Y_Vectors ys;
-                        MxEqualityConstrained::Restart::Reals reals;
-                        MxEqualityConstrained::Restart::Naturals nats;
-                        MxEqualityConstrained::Restart::Params params;
-                        
-                        // Convert the restart information from Matlab 
-                        fromMatlab::Vectors(x,mxxs,xs);
-                        fromMatlab::Vectors(y,mxys,ys);
-                        fromMatlab::Reals(mxreals,reals);
-                        fromMatlab::Naturals(mxnats,nats);
-                        fromMatlab::Params(mxparams,params);
-
-                        // Do a capture 
-                        MxEqualityConstrained::Restart
-                            ::capture(msg,state,xs,ys,reals,nats,params);
-
-                        // Convert the C++ state to a Matlab state
-                        mxstate_out.toMatlab(state);
-                       
-                        // Cleanup Optizelle
-                        optizelle.pop_back();
-
-                        // Return nothing 
-                        return; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){ }
-                }
+                    // Convert the C++ state to a Matlab state
+                    mxstate_out.toMatlab(state);
+                    
+                    // Return the result 
+                    MX_RETURN_1(mxstate_out.data);
+                   
+                } CATCH_MATLAB_ERRORS;
                 
                 // Writes a json restart file
                 void write_restart(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
-                ) {
-                    // Grab Optizelle
-                    optizelle.push_back(mexGetVariable("global","Optizelle"));
+                ) try {
+                    // Grab the variables
+                    MX_VAR_4(X,Y,fname,mxstate);
 
-                    // Calling convention should be (X,Y,msg,fname,state) -> ()
-                    mxArray *X=pInput[0],
-                            *Y=pInput[1],
-                            *msg_=pInput[2],
-                            *fname_=pInput[3],
-                            *mxstate_=pInput[4];
+                    // Grab the file name
+                    auto fname = capi::mxArrayToString(fname_);
 
-                    // Make sure we bail if we detect a Matlab exception
-                    try {
-                        // Create a messaging object
-                        Optizelle::Matlab::Messaging msg(msg_,
-                            mxArrayPtrMode::Attach);
-                        
-                        // Grab the file name
-                        std::string fname(mxArrayToString(fname_));
+                    // Create a Matlab state 
+                    auto mxstate = Matlab::State <MxEqualityConstrained> (
+                        mxstate_);
+                    
+                    // Grab the base vectors from the Matlab state
+                    auto x_= capi::mxGetField(mxstate.data,0,"x");
+                    auto x = Vector(X_,x_);
+                    auto y_= capi::mxGetField(mxstate.data,0,"y");
+                    auto y = Vector(Y_,y_);
 
-                        // Create a Matlab state 
-                        Matlab::State <MxEqualityConstrained> mxstate(
-                            mxstate_,mxArrayPtrMode::Attach);
-                        
-                        // Grab the base vectors from the Matlab state
-                        Vector x(msg_,X,mxGetField(mxstate.get(),0,"x"),
-                            mxArrayPtrMode::Attach);
-                        Vector y(msg_,Y,mxGetField(mxstate.get(),0,"y"),
-                            mxArrayPtrMode::Attach);
-                        
-                        // Create a C++ state
-                        typename MxEqualityConstrained::State::t state(x,y);
-                        
-                        // Convert Matlab state to C++ 
-                        mxstate.fromMatlab(state);
+                    // Create a C++ state
+                    typename MxEqualityConstrained::State::t state(x,y);
+                    
+                    // Convert Matlab state to C++ 
+                    mxstate.fromMatlab(state);
 
-                        // Write the restart file
-                        MxJsonEqualityConstrained::write_restart(
-                            msg,fname,state);
-                       
-                        // Cleanup Optizelle
-                        optizelle.pop_back();
-                        
-                        // Return nothing 
-                        return; 
+                    // Write the restart file
+                    MxJsonEqualityConstrained::write_restart(fname,state);
 
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){ }
-                }
+                    // Return nothing
+                    MX_RETURN_0;
+                   
+                } CATCH_MATLAB_ERRORS;
                 
                 // Reads a json restart file
                 void read_restart(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
-                ) {
-                    // Grab Optizelle
-                    optizelle.push_back(mexGetVariable("global","Optizelle"));
+                ) try {
+                    // Grab the variables
+                    MX_VAR_5(X,Y,fname,x,y);
 
-                    // Calling convention should be
-                    // (X,Y,msg,fname,x,y) -> (mxstate)
-                    mxArray *X=pInput[0],
-                            *Y=pInput[1],
-                            *msg_=pInput[2],
-                            *fname_=pInput[3],
-                            *x_=pInput[4],
-                            *y_=pInput[5];
-                    pOutput[0] = EqualityConstrained::State::mxCreate();
-                    mxArray *mxstate_out_=pOutput[0];
+                    // Grab the file name
+                    auto fname = capi::mxArrayToString(fname_);
+                    
+                    // Create a Matlab state 
+                    auto mxstate_out = Matlab::State <MxEqualityConstrained> (
+                        EqualityConstrained::State::mxCreate());
+                    
+                    // Grab the reference vectors
+                    auto x = Vector(X_,x_);
+                    auto y = Vector(Y_,y_);
 
-                    // Make sure we bail if we detect a Matlab exception
-                    try {
-                        // Create a messaging object
-                        Optizelle::Matlab::Messaging msg(msg_,
-                            mxArrayPtrMode::Attach);
-                        
-                        // Grab the file name
-                        std::string fname(mxArrayToString(fname_));
+                    // Create a C++ state
+                    typename MxEqualityConstrained::State::t state(x,y);
 
-                        // Create a Matlab state 
-                        Matlab::State <MxEqualityConstrained> mxstate_out(
-                            mxstate_out_,mxArrayPtrMode::Attach);
-                        
-                        // Grab the reference vector 
-                        Vector x(msg_,X,x_,mxArrayPtrMode::Attach);
-                        Vector y(msg_,Y,y_,mxArrayPtrMode::Attach);
-                        
-                        // Create a C++ state
-                        typename MxEqualityConstrained::State::t state(x,y);
+                    // Read the restart file into the C++ state 
+                    MxJsonEqualityConstrained::read_restart(fname,x,y,state);
+                    
+                    // Convert the C++ state to a Matlab state
+                    mxstate_out.toMatlab(state);
+                    
+                    // Return the result 
+                    MX_RETURN_1(mxstate_out.data);
 
-                        // Read the restart file into the C++ state 
-                        MxJsonEqualityConstrained::read_restart(
-                            msg,fname,x,y,state);
-                        
-                        // Convert the C++ state to a Matlab state
-                        mxstate_out.toMatlab(state);
-                       
-                        // Cleanup Optizelle
-                        optizelle.pop_back();
-
-                        // Return nothing 
-                        return; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){ }
-                }
+                } CATCH_MATLAB_ERRORS;
             }
         }
         
@@ -3635,7 +3353,7 @@ namespace Optizelle {
                         "h_diag",
                         "z_diag"};
 
-                    return std::move(names);
+                    return names;
                 }
                 std::vector <char const *> fieldNames() {
                     std::vector <char const*> un
@@ -3644,20 +3362,20 @@ namespace Optizelle {
                         = InequalityConstrained::State::fieldNames_();
                     un.reserve(un.size()+iq.size());
                     un.insert(un.end(),iq.begin(),iq.end());
-                    return std::move(un); 
+                    return un; 
                 }
 
                 // Create the structure for a Matlab state
-                mxArray * mxCreate() {
-                    std::vector <char const *> names
-                        = InequalityConstrained::State::fieldNames();
-                    return mxCreateStructMatrix(1,1,names.size(),&(names[0]));
+                mxArrayPtr mxCreate() {
+                    auto names = InequalityConstrained::State::fieldNames();
+                    return capi::mxCreateStructMatrix(
+                        1,1,names.size(),&(names[0]));
                 }
 
                 // Convert a C++ state to a Matlab state 
                 void toMatlab_(
                     typename MxInequalityConstrained::State::t const & state,
-                    mxArray * const mxstate
+                    mxArrayPtr & mxstate
                 ){
                     toMatlab::Vector("z",state.z,mxstate);
                     toMatlab::Vector("dz",state.dz,mxstate);
@@ -3682,7 +3400,7 @@ namespace Optizelle {
                 }
                 void toMatlab(
                     typename MxInequalityConstrained::State::t const & state,
-                    mxArray * const mxstate
+                    mxArrayPtr & mxstate
                 ){
                     Unconstrained::State::toMatlab_(state,mxstate);
                     InequalityConstrained::State::toMatlab_(state,mxstate);
@@ -3690,7 +3408,7 @@ namespace Optizelle {
                 
                 // Convert a Matlab state to C++ 
                 void fromMatlab_(
-                    mxArray * const mxstate,
+                    mxArrayPtr const & mxstate,
                     typename MxInequalityConstrained::State::t & state
                 ){
                     fromMatlab::Vector("z",mxstate,state.z);
@@ -3715,7 +3433,7 @@ namespace Optizelle {
                         state.z_diag);
                 }
                 void fromMatlab(
-                    mxArray * const mxstate,
+                    mxArrayPtr const & mxstate,
                     typename MxInequalityConstrained::State::t & state
                 ){
                     Unconstrained::State::fromMatlab_(mxstate,state);
@@ -3726,121 +3444,83 @@ namespace Optizelle {
                 void create(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
-                ){
-                    // Grab Optizelle
-                    optizelle.push_back(mexGetVariable("global","Optizelle"));
+                ) try {
+                    // Grab the variables
+                    MX_VAR_4(X,Z,x,z);
 
-                    // Calling convention should be (X,Z,msg,x,z)->(mxstate_out)
-                    mxArray *X=pInput[0],
-                            *Z=pInput[1],
-                            *msg=pInput[2],
-                            *x_=pInput[3],
-                            *z_=pInput[4];
-                    pOutput[0] = InequalityConstrained::State::mxCreate();
-                    mxArray *mxstate_out_=pOutput[0];
+                    // Create a vector from the user input
+                    auto x = Vector(X_,x_);
+                    auto z = Vector(Z_,z_);
 
-                    // Make sure we bail if we detect a Matlab exception
-                    try {
-                        // Create a vector from the user input
-                        Vector x(msg,X,x_,mxArrayPtrMode::Attach);
-                        Vector z(msg,Z,z_,mxArrayPtrMode::Attach);
+                    // Create a Matlab state 
+                    auto mxstate_out = Matlab::State <MxInequalityConstrained> (
+                        InequalityConstrained::State::mxCreate());
 
-                        // Create a Matlab state 
-                        Matlab::State<MxInequalityConstrained> mxstate_out(
-                            mxstate_out_,mxArrayPtrMode::Attach);
+                    // Create a new C++ state
+                    typename MxInequalityConstrained::State::t state(x,z);
 
-                        // Create a new C++ state
-                        typename MxInequalityConstrained::State::t state(x,z);
+                    // Convert the state to a Matlab state
+                    mxstate_out.toMatlab(state);
 
-                        // Convert the state to a Matlab state
-                        mxstate_out.toMatlab(state);
-                       
-                        // Cleanup Optizelle
-                        optizelle.pop_back();
+                    // Return the result 
+                    MX_RETURN_1(mxstate_out.data);
 
-                        // Return nothing 
-                        return; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){ }
-                }
+                } CATCH_MATLAB_ERRORS;
         
                 // Read json parameters from file
                 void readJson(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
-                ) {
-                    // Grab Optizelle
-                    optizelle.push_back(mexGetVariable("global","Optizelle"));
+                ) try {
+                    // Grab the variables
+                    MX_VAR_4(X,Z,fname,mxstate);
 
-                    // Calling convention should be (X,Z,msg,fname,mxstate)
-                    // -> (mxstate_out)
-                    mxArray *X=pInput[0],
-                            *Z=pInput[1],
-                            *msg_=pInput[2],
-                            *fname_=pInput[3],
-                            *mxstate_=pInput[4];
-                    pOutput[0] = InequalityConstrained::State::mxCreate();
-                    mxArray *mxstate_out_=pOutput[0];
+                    // Grab the file name
+                    auto fname = capi::mxArrayToString(fname_);
 
-                    // Make sure we bail if we detect a Matlab exception
-                    try {
-                        // Grab the file name
-                        std::string fname(mxArrayToString(fname_));
+                    // Create a Matlab state 
+                    auto mxstate = Matlab::State <MxInequalityConstrained> (
+                        mxstate_);
+                    auto mxstate_out = Matlab::State <MxInequalityConstrained> (
+                        InequalityConstrained::State::mxCreate());
+                
+                    // Grab the base vectors from the Matlab state
+                    auto x_= capi::mxGetField(mxstate.data,0,"x");
+                    auto x = Vector(X_,x_);
+                    auto z_= capi::mxGetField(mxstate.data,0,"z");
+                    auto z = Vector(Z_,z_);
 
-                        // Create a messaging object
-                        Optizelle::Matlab::Messaging msg(msg_,
-                            mxArrayPtrMode::Attach);
-
-                        // Create a Matlab state 
-                        Matlab::State <MxInequalityConstrained> mxstate(
-                            mxstate_,mxArrayPtrMode::Attach);
-                        Matlab::State <MxInequalityConstrained> mxstate_out(
-                            mxstate_out_,mxArrayPtrMode::Attach);
+                    // Create a new C++ state
+                    typename MxInequalityConstrained::State::t state(x,z);
                     
-                        // Grab the base vectors from the Matlab state
-                        Vector x(msg_,X,mxGetField(mxstate.get(),0,"x"),
-                            mxArrayPtrMode::Attach);
-                        Vector z(msg_,Z,mxGetField(mxstate.get(),0,"z"),
-                            mxArrayPtrMode::Attach);
+                    // Convert the Matlab state to a C++ state
+                    mxstate.fromMatlab(state);
 
-                        // Create a new C++ state
-                        typename MxInequalityConstrained::State::t state(x,z);
-                        
-                        // Convert the Matlab state to a C++ state
-                        mxstate.fromMatlab(state);
+                    // Read the JSON file into the C++ state
+                    MxJsonInequalityConstrained::read(fname,state);
 
-                        // Read the JSON file into the C++ state
-                        MxJsonInequalityConstrained::read(msg,fname,state);
-
-                        // Convert the C++ state to a Matlab state
-                        mxstate_out.toMatlab(state);
-                       
-                        // Cleanup Optizelle
-                        optizelle.pop_back();
-                                
-                        // Return nothing 
-                        return; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){ }
-                }
+                    // Convert the C++ state to a Matlab state
+                    mxstate_out.toMatlab(state);
+                    
+                    // Return the result 
+                    MX_RETURN_1(mxstate_out.data);
+                   
+                } CATCH_MATLAB_ERRORS;
             }
 
             // All the functions required by an optimization algorithm.  
             namespace Functions{
                 // Convert a Matlab bundle to C++ 
                 void fromMatlab(
-                    mxArray * const msg,
-                    mxArray * const mxfns,
-                    mxArray * const mxstate,
+                    Matlab::Functions <MxInequalityConstrained> const & mxfns,
+                    Matlab::State <MxInequalityConstrained> & mxstate,
                     typename MxInequalityConstrained::State::t const & state,
                     typename MxInequalityConstrained::Functions::t & fns 
                 ) {
                     Unconstrained::Functions::fromMatlab_
-                        <MxInequalityConstrained> (msg,mxfns,mxstate,state,fns);
+                        <MxInequalityConstrained> (mxfns,mxstate,state,fns);
                     InequalityConstrained::Functions::fromMatlab_
-                        <MxInequalityConstrained> (msg,mxfns,mxstate,state,fns);
+                        <MxInequalityConstrained> (mxfns,mxstate,state,fns);
                 }
             }
 
@@ -3850,83 +3530,60 @@ namespace Optizelle {
                 void getMin(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
-                ) {
-                    // Grab Optizelle
-                    optizelle.push_back(mexGetVariable("global","Optizelle"));
-
-                    // Calling convention should be
-                    // (X,Z,msg,mxfns,mxstate,smanip) -> (mxstate_out)
-                    mxArray *X=pInput[0],
-                            *Z=pInput[1],
-                            *msg_=pInput[2],
-                            *mxfns_=pInput[3],
-                            *mxstate_=pInput[4],
-                            *smanip_=pInput[5];
-                    pOutput[0] = InequalityConstrained::State::mxCreate();
-                    mxArray *mxstate_out_=pOutput[0];
-
-                    // Make sure we bail if we detect a Matlab exception
-                    try {
-                        // Create a messaging object
-                        Optizelle::Matlab::Messaging msg(msg_,
-                            mxArrayPtrMode::Attach);
-                            
-                        // Create a Matlab state 
-                        Matlab::State <MxInequalityConstrained> mxstate(
-                            mxstate_,mxArrayPtrMode::Attach);
-                        Matlab::State<MxInequalityConstrained> mxstate_out(
-                            mxstate_out_,mxArrayPtrMode::Attach);
+                ) try {
+                    // Grab the variables
+                    MX_VAR_6(X,Z,msg,mxfns,mxstate,smanip);
+                    
+                    // Create a messaging object
+                    auto msg = Optizelle::Matlab::Messaging::matlab(msg_);
                         
-                        // Grab the base vectors from the Matlab state
-                        Vector x(msg_,X,mxGetField(mxstate.get(),0,"x"),
-                            mxArrayPtrMode::Attach);
-                        Vector z(msg_,Z,mxGetField(mxstate.get(),0,"z"),
-                            mxArrayPtrMode::Attach);
+                    // Create a Matlab state 
+                    auto mxstate = Matlab::State <MxInequalityConstrained> (
+                        mxstate_);
+                    auto mxstate_out = Matlab::State <MxInequalityConstrained> (
+                        InequalityConstrained::State::mxCreate());
+                    
+                    // Grab the base vectors from the Matlab state
+                    auto x_= capi::mxGetField(mxstate.data,0,"x");
+                    auto x = Vector(X_,x_);
+                    auto z_= capi::mxGetField(mxstate.data,0,"z");
+                    auto z = Vector(Z_,z_);
 
-                        // Create a C++ state
-                        typename MxInequalityConstrained::State::t state(x,z);
-                        
-                        // Convert the Matlab state to a C++ state
-                        mxstate.fromMatlab(state);
+                    // Create a C++ state
+                    typename MxInequalityConstrained::State::t state(x,z);
+                    
+                    // Convert the Matlab state to a C++ state
+                    mxstate.fromMatlab(state);
 
-                        // Create a Matlab bundle of functions
-                        Matlab::Functions <MxInequalityConstrained> mxfns(
-                            msg.get(),
-                            mxstate.get(),
-                            state,
-                            mxfns_,
-                            mxArrayPtrMode::Attach);
+                    // Create a Matlab bundle of functions
+                    Matlab::Functions <MxInequalityConstrained> mxfns(
+                        mxstate_out,
+                        state,
+                        mxfns_);
 
-                        // Create a C++ bundle of functions
-                        typename MxInequalityConstrained::Functions::t fns;
-                        
-                        // Convert the Matlab bundle of functions to C++ 
-                        mxfns.fromMatlab(fns);
-                        
-                        // Create a state manipulator 
-                        Matlab::StateManipulator<MxInequalityConstrained>smanip(
-                            msg.get(),
-                            mxstate.get(),
-                            mxfns.get(),
-                            smanip_,
-                            mxArrayPtrMode::Attach);
-                       
-                        // Minimize
-                        MxInequalityConstrained::Algorithms::getMin(
-                            msg,fns,state,smanip);
-                        
-                        // Convert the C++ state to a Matlab state
-                        mxstate_out.toMatlab(state);
-                       
-                        // Cleanup Optizelle
-                        optizelle.pop_back();
+                    // Create a C++ bundle of functions
+                    typename MxInequalityConstrained::Functions::t fns;
+                    
+                    // Convert the Matlab bundle of functions to C++ 
+                    mxfns.fromMatlab(fns);
+                    
+                    // Create a state manipulator 
+                    Matlab::StateManipulator <MxInequalityConstrained> smanip(
+                        mxstate_out,
+                        mxfns,
+                        smanip_);
+                   
+                    // Minimize
+                    MxInequalityConstrained::Algorithms::getMin(
+                        msg,fns,state,smanip);
+                    
+                    // Convert the C++ state to a Matlab state
+                    mxstate_out.toMatlab(state);
+                    
+                    // Return the result 
+                    MX_RETURN_1(mxstate_out.data);
 
-                        // Return nothing 
-                        return; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){ }
-                }
+                } CATCH_MATLAB_ERRORS;
             }
             
             // Utilities for restarting the optimization
@@ -3935,264 +3592,170 @@ namespace Optizelle {
                 void release(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
-                ) {
-                    // Grab Optizelle
-                    optizelle.push_back(mexGetVariable("global","Optizelle"));
+                ) try {
+                    // Grab the variables
+                    MX_VAR_3(X,Z,mxstate);
 
-                    // Calling convention should be
-                    // (X,Z,msg,mxstate) -> (xs,zs,reals,nats,params)
-                    mxArray *X=pInput[0],
-                            *Z=pInput[1],
-                            *msg=pInput[2],
-                            *mxstate_=pInput[3];
-                    mxArray *mxxs,
-                            *mxzs,
-                            *mxreals,
-                            *mxnats,
-                            *mxparams;
+                    // Create a Matlab state 
+                    auto mxstate = Matlab::State <MxInequalityConstrained> (
+                        mxstate_);
+                    
+                    // Grab the base vectors from the Matlab state
+                    auto x_= capi::mxGetField(mxstate.data,0,"x");
+                    auto x = Vector(X_,x_);
+                    auto z_= capi::mxGetField(mxstate.data,0,"z");
+                    auto z = Vector(Z_,z_);
 
-                    // Make sure we bail if we detect a Matlab exception
-                    try {
-                        // Create a Matlab state 
-                        Matlab::State <MxInequalityConstrained> mxstate(
-                            mxstate_,mxArrayPtrMode::Attach);
-                        
-                        // Grab the base vectors from the Matlab state
-                        Vector x(msg,X,mxGetField(mxstate.get(),0,"x"),
-                            mxArrayPtrMode::Attach);
-                        Vector z(msg,Z,mxGetField(mxstate.get(),0,"z"),
-                            mxArrayPtrMode::Attach);
+                    // Create a C++ state
+                    typename MxInequalityConstrained::State::t state(x,z);
+                    
+                    // Convert the Matlab state to a C++ state
+                    mxstate.fromMatlab(state);
 
-                        // Create a C++ state
-                        typename MxInequalityConstrained::State::t state(x,z);
-                        
-                        // Convert the Matlab state to a C++ state
-                        mxstate.fromMatlab(state);
+                    // Do a release 
+                    MxInequalityConstrained::Restart::X_Vectors xs;
+                    MxInequalityConstrained::Restart::Z_Vectors zs;
+                    MxInequalityConstrained::Restart::Reals reals;
+                    MxInequalityConstrained::Restart::Naturals nats;
+                    MxInequalityConstrained::Restart::Params params;
+                    MxInequalityConstrained::Restart
+                        ::release(state,xs,zs,reals,nats,params);
 
-                        // Do a release 
-                        MxInequalityConstrained::Restart::X_Vectors xs;
-                        MxInequalityConstrained::Restart::Z_Vectors zs;
-                        MxInequalityConstrained::Restart::Reals reals;
-                        MxInequalityConstrained::Restart::Naturals nats;
-                        MxInequalityConstrained::Restart::Params params;
-                        MxInequalityConstrained::Restart
-                            ::release(state,xs,zs,reals,nats,params);
+                    // Allocate memory for the Matlab versions
+                    auto mxxs = capi::mxCreateCellMatrix(1,xs.size());
+                    auto mxzs = capi::mxCreateCellMatrix(1,zs.size());
+                    auto mxreals = capi::mxCreateCellMatrix(1,reals.size());
+                    auto mxnats = capi::mxCreateCellMatrix(1,nats.size());
+                    auto mxparams = capi::mxCreateCellMatrix(1,params.size());
 
-                        // Allocate memory for the Matlab versions
-                        mxxs = mxCreateCellMatrix(1,xs.size());
-                        mxzs = mxCreateCellMatrix(1,zs.size());
-                        mxreals = mxCreateCellMatrix(1,reals.size());
-                        mxnats = mxCreateCellMatrix(1,nats.size());
-                        mxparams = mxCreateCellMatrix(1,params.size());
+                    // Convert the restart information to Matlab 
+                    toMatlab::Vectors(xs,mxxs);
+                    toMatlab::Vectors(zs,mxzs);
+                    toMatlab::Reals(reals,mxreals);
+                    toMatlab::Naturals(nats,mxnats);
+                    toMatlab::Params(params,mxparams);
 
-                        // Convert the restart information to Matlab 
-                        toMatlab::Vectors(xs,mxxs);
-                        toMatlab::Vectors(zs,mxzs);
-                        toMatlab::Reals(reals,mxreals);
-                        toMatlab::Naturals(nats,mxnats);
-                        toMatlab::Params(params,mxparams);
-
-                        // Set the ouptuts
-                        pOutput[0]=mxxs;
-                        pOutput[1]=mxzs;
-                        pOutput[2]=mxreals;
-                        pOutput[3]=mxnats;
-                        pOutput[4]=mxparams;
-                       
-                        // Cleanup Optizelle
-                        optizelle.pop_back();
-
-                        // Return nothing 
-                        return; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){ }
-                }
+                    // Return the result 
+                    MX_RETURN_5(mxxs,mxzs,mxreals,mxnats,mxparams);
+                   
+                } CATCH_MATLAB_ERRORS;
 
                 // Capture data from structures controlled by the user.  
                 void capture(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
-                ) {
-                    // Grab Optizelle
-                    optizelle.push_back(mexGetVariable("global","Optizelle"));
+                ) try {
+                    // Grab the variables
+                    MX_VAR_8(X,Z,mxstate,mxxs,mxzs,mxreals,mxnats,mxparams);
 
-                    // Calling convention should be
-                    // (X,Z,msg,mxstate,mxxs,mxzs,mxreals,mxnats,mxparams)
-                    // -> mxstate_out
-                    mxArray *X=pInput[0],
-                            *Z=pInput[1],
-                            *msg_=pInput[2],
-                            *mxstate_=pInput[3],
-                            *mxxs=pInput[4],
-                            *mxzs=pInput[5],
-                            *mxreals=pInput[6],
-                            *mxnats=pInput[7],
-                            *mxparams=pInput[8];
-                    pOutput[0] = InequalityConstrained::State::mxCreate();
-                    mxArray *mxstate_out_=pOutput[0];
+                    // Create a Matlab state 
+                    auto mxstate = Matlab::State <MxInequalityConstrained> (
+                        mxstate_);
+                    auto mxstate_out = Matlab::State <MxInequalityConstrained> (
+                        InequalityConstrained::State::mxCreate());
+                    
+                    // Grab the base vectors from the Matlab state
+                    auto x_= capi::mxGetField(mxstate.data,0,"x");
+                    auto x = Vector(X_,x_);
+                    auto z_= capi::mxGetField(mxstate.data,0,"z");
+                    auto z = Vector(Z_,z_);
 
-                    // Make sure we bail if we detect a Matlab exception
-                    try {
-                        // Create a messaging object
-                        Optizelle::Matlab::Messaging msg(msg_,
-                            mxArrayPtrMode::Attach);
+                    // Create a C++ state
+                    typename MxInequalityConstrained::State::t state(x,z);
+                   
+                    // Allocate memory for the released vectors
+                    MxInequalityConstrained::Restart::X_Vectors xs;
+                    MxInequalityConstrained::Restart::Z_Vectors zs;
+                    MxInequalityConstrained::Restart::Reals reals;
+                    MxInequalityConstrained::Restart::Naturals nats;
+                    MxInequalityConstrained::Restart::Params params;
+                    
+                    // Convert the restart information from Matlab 
+                    fromMatlab::Vectors(x,mxxs_,xs);
+                    fromMatlab::Vectors(z,mxzs_,zs);
+                    fromMatlab::Reals(mxreals_,reals);
+                    fromMatlab::Naturals(mxnats_,nats);
+                    fromMatlab::Params(mxparams_,params);
 
-                        // Create a Matlab state 
-                        Matlab::State <MxInequalityConstrained> mxstate(
-                            mxstate_,mxArrayPtrMode::Attach);
-                        Matlab::State<MxInequalityConstrained> mxstate_out(
-                            mxstate_out_,mxArrayPtrMode::Attach);
-                        
-                        // Grab the base vectors from the Matlab state
-                        Vector x(msg_,X,mxGetField(mxstate.get(),0,"x"),
-                            mxArrayPtrMode::Attach);
-                        Vector z(msg_,Z,mxGetField(mxstate.get(),0,"z"),
-                            mxArrayPtrMode::Attach);
+                    // Do a capture 
+                    MxInequalityConstrained::Restart
+                        ::capture(state,xs,zs,reals,nats,params);
 
-                        // Create a C++ state
-                        typename MxInequalityConstrained::State::t state(x,z);
-                       
-                        // Allocate memory for the released vectors
-                        MxInequalityConstrained::Restart::X_Vectors xs;
-                        MxInequalityConstrained::Restart::Z_Vectors zs;
-                        MxInequalityConstrained::Restart::Reals reals;
-                        MxInequalityConstrained::Restart::Naturals nats;
-                        MxInequalityConstrained::Restart::Params params;
-                        
-                        // Convert the restart information from Matlab 
-                        fromMatlab::Vectors(x,mxxs,xs);
-                        fromMatlab::Vectors(z,mxzs,zs);
-                        fromMatlab::Reals(mxreals,reals);
-                        fromMatlab::Naturals(mxnats,nats);
-                        fromMatlab::Params(mxparams,params);
+                    // Convert the C++ state to a Matlab state
+                    mxstate_out.toMatlab(state);
+                    
+                    // Return the result 
+                    MX_RETURN_1(mxstate_out.data);
 
-                        // Do a capture 
-                        MxInequalityConstrained::Restart
-                            ::capture(msg,state,xs,zs,reals,nats,params);
-
-                        // Convert the C++ state to a Matlab state
-                        mxstate_out.toMatlab(state);
-                       
-                        // Cleanup Optizelle
-                        optizelle.pop_back();
-
-                        // Return nothing 
-                        return; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){ }
-                }
+                } CATCH_MATLAB_ERRORS;
                 
                 // Writes a json restart file
                 void write_restart(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
-                ) {
-                    // Grab Optizelle
-                    optizelle.push_back(mexGetVariable("global","Optizelle"));
+                ) try {
+                    // Grab the variables
+                    MX_VAR_4(X,Z,fname,mxstate);
 
-                    // Calling convention should be (X,Z,msg,fname,state) -> ()
-                    mxArray *X=pInput[0],
-                            *Z=pInput[1],
-                            *msg_=pInput[2],
-                            *fname_=pInput[3],
-                            *mxstate_=pInput[4];
+                    // Grab the file name
+                    auto fname = capi::mxArrayToString(fname_);
 
-                    // Make sure we bail if we detect a Matlab exception
-                    try {
-                        // Create a messaging object
-                        Optizelle::Matlab::Messaging msg(msg_,
-                            mxArrayPtrMode::Attach);
-                        
-                        // Grab the file name
-                        std::string fname(mxArrayToString(fname_));
+                    // Create a Matlab state 
+                    auto mxstate = Matlab::State <MxInequalityConstrained> (
+                        mxstate_);
+                    
+                    // Grab the base vectors from the Matlab state
+                    auto x_= capi::mxGetField(mxstate.data,0,"x");
+                    auto x = Vector(X_,x_);
+                    auto z_= capi::mxGetField(mxstate.data,0,"z");
+                    auto z = Vector(Z_,z_);
+                    
+                    // Create a C++ state
+                    typename MxInequalityConstrained::State::t state(x,z);
+                    
+                    // Convert Matlab state to C++ 
+                    mxstate.fromMatlab(state);
 
-                        // Create a Matlab state 
-                        Matlab::State <MxInequalityConstrained> mxstate(
-                            mxstate_,mxArrayPtrMode::Attach);
-                        
-                        // Grab the base vectors from the Matlab state
-                        Vector x(msg_,X,mxGetField(mxstate.get(),0,"x"),
-                            mxArrayPtrMode::Attach);
-                        Vector z(msg_,Z,mxGetField(mxstate.get(),0,"z"),
-                            mxArrayPtrMode::Attach);
-                        
-                        // Create a C++ state
-                        typename MxInequalityConstrained::State::t state(x,z);
-                        
-                        // Convert Matlab state to C++ 
-                        mxstate.fromMatlab(state);
+                    // Write the restart file
+                    MxJsonInequalityConstrained::write_restart(fname,state);
 
-                        // Write the restart file
-                        MxJsonInequalityConstrained::write_restart(
-                            msg,fname,state);
-                       
-                        // Cleanup Optizelle
-                        optizelle.pop_back();
-                        
-                        // Return nothing 
-                        return; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){ }
-                }
+                    // Return nothing
+                    MX_RETURN_0;
+                   
+                } CATCH_MATLAB_ERRORS;
                 
                 // Reads a json restart file
                 void read_restart(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
-                ) {
-                    // Grab Optizelle
-                    optizelle.push_back(mexGetVariable("global","Optizelle"));
+                ) try {
+                    // Grab the variables
+                    MX_VAR_5(X,Z,fname,x,z);
 
-                    // Calling convention should be
-                    // (X,Z,msg,fname,x,z) -> (mxstate)
-                    mxArray *X=pInput[0],
-                            *Z=pInput[1],
-                            *msg_=pInput[2],
-                            *fname_=pInput[3],
-                            *x_=pInput[4],
-                            *z_=pInput[5];
-                    pOutput[0] = InequalityConstrained::State::mxCreate();
-                    mxArray *mxstate_out_=pOutput[0];
+                    // Grab the file name
+                    auto fname = capi::mxArrayToString(fname_);
 
-                    // Make sure we bail if we detect a Matlab exception
-                    try {
-                        // Create a messaging object
-                        Optizelle::Matlab::Messaging msg(msg_,
-                            mxArrayPtrMode::Attach);
-                        
-                        // Grab the file name
-                        std::string fname(mxArrayToString(fname_));
+                    // Create a Matlab state 
+                    auto mxstate_out = Matlab::State <MxInequalityConstrained> (
+                        InequalityConstrained::State::mxCreate());
+                    
+                    // Grab the reference vectors
+                    auto x = Vector(X_,x_);
+                    auto z = Vector(Z_,z_);
+                    
+                    // Create a C++ state
+                    typename MxInequalityConstrained::State::t state(x,z);
 
-                        // Create a Matlab state 
-                        Matlab::State <MxInequalityConstrained> mxstate_out(
-                            mxstate_out_,mxArrayPtrMode::Attach);
-                        
-                        // Grab the reference vector 
-                        Vector x(msg_,X,x_,mxArrayPtrMode::Attach);
-                        Vector z(msg_,Z,z_,mxArrayPtrMode::Attach);
-                        
-                        // Create a C++ state
-                        typename MxInequalityConstrained::State::t state(x,z);
-
-                        // Read the restart file into the C++ state 
-                        MxJsonInequalityConstrained::read_restart(
-                            msg,fname,x,z,state);
-                        
-                        // Convert the C++ state to a Matlab state
-                        mxstate_out.toMatlab(state);
-                       
-                        // Cleanup Optizelle
-                        optizelle.pop_back();
-
-                        // Return nothing 
-                        return; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){ }
-                }
+                    // Read the restart file into the C++ state 
+                    MxJsonInequalityConstrained::read_restart(fname,x,z,state);
+                    
+                    // Convert the C++ state to a Matlab state
+                    mxstate_out.toMatlab(state);
+                    
+                    // Return the result 
+                    MX_RETURN_1(mxstate_out.data);
+                   
+                } CATCH_MATLAB_ERRORS;
             }
         }
 
@@ -4218,20 +3781,20 @@ namespace Optizelle {
                     un.reserve(un.size()+eq.size()+iq.size());
                     un.insert(un.end(),eq.begin(),eq.end());
                     un.insert(un.end(),iq.begin(),iq.end());
-                    return std::move(un); 
+                    return un; 
                 }
 
                 // Create the structure for a Matlab state
-                mxArray * mxCreate() {
-                    std::vector <char const *> names
-                        = Constrained::State::fieldNames();
-                    return mxCreateStructMatrix(1,1,names.size(),&(names[0]));
+                mxArrayPtr mxCreate() {
+                    auto names = Constrained::State::fieldNames();
+                    return capi::mxCreateStructMatrix(
+                        1,1,names.size(),&(names[0]));
                 }
 
                 // Convert a C++ state to a Matlab state 
                 void toMatlab(
                     typename MxConstrained::State::t const & state,
-                    mxArray * const mxstate
+                    mxArrayPtr & mxstate
                 ){
                     Unconstrained::State::toMatlab_(state,mxstate);
                     EqualityConstrained::State::toMatlab_(state,mxstate);
@@ -4240,7 +3803,7 @@ namespace Optizelle {
                 
                 // Convert a Matlab state to C++ 
                 void fromMatlab(
-                    mxArray * const mxstate,
+                    mxArrayPtr const & mxstate,
                     typename MxConstrained::State::t & state
                 ){
                     Unconstrained::State::fromMatlab_(mxstate,state);
@@ -4252,130 +3815,87 @@ namespace Optizelle {
                 void create(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
-                ){
-                    // Grab Optizelle
-                    optizelle.push_back(mexGetVariable("global","Optizelle"));
+                ) try {
+                    // Grab the variables
+                    MX_VAR_6(X,Y,Z,x,y,z);
 
-                    // Calling convention should be
-                    // (X,Y,Z,msg,x,y,z)->(mxstate_out)
-                    mxArray *X=pInput[0],
-                            *Y=pInput[1],
-                            *Z=pInput[2],
-                            *msg=pInput[3],
-                            *x_=pInput[4],
-                            *y_=pInput[5],
-                            *z_=pInput[6];
-                    pOutput[0] = Constrained::State::mxCreate();
-                    mxArray *mxstate_out_=pOutput[0];
+                    // Create a vector from the user input
+                    auto x = Vector(X_,x_);
+                    auto y = Vector(Y_,y_);
+                    auto z = Vector(Z_,z_);
 
-                    // Make sure we bail if we detect a Matlab exception
-                    try {
-                        // Create a vector from the user input
-                        Vector x(msg,X,x_,mxArrayPtrMode::Attach);
-                        Vector y(msg,Y,y_,mxArrayPtrMode::Attach);
-                        Vector z(msg,Z,z_,mxArrayPtrMode::Attach);
+                    // Create a Matlab state 
+                    auto mxstate_out = Matlab::State <MxConstrained> (
+                        Constrained::State::mxCreate());
 
-                        // Create a Matlab state 
-                        Matlab::State<MxConstrained> mxstate_out(
-                            mxstate_out_,mxArrayPtrMode::Attach);
+                    // Create a new C++ state
+                    typename MxConstrained::State::t state(x,y,z);
 
-                        // Create a new C++ state
-                        typename MxConstrained::State::t state(x,y,z);
+                    // Convert the state to a Matlab state
+                    mxstate_out.toMatlab(state);
 
-                        // Convert the state to a Matlab state
-                        mxstate_out.toMatlab(state);
-                       
-                        // Cleanup Optizelle
-                        optizelle.pop_back();
+                    // Return the result 
+                    MX_RETURN_1(mxstate_out.data);
 
-                        // Return nothing 
-                        return; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){ }
-                }
+                } CATCH_MATLAB_ERRORS;
         
                 // Read json parameters from file
                 void readJson(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
-                ) {
-                    // Grab Optizelle
-                    optizelle.push_back(mexGetVariable("global","Optizelle"));
+                ) try {
+                    // Grab the variables
+                    MX_VAR_5(X,Y,Z,fname,mxstate);
 
-                    // Calling convention should be (X,Y,Z,msg,fname,mxstate)
-                    // -> (mxstate_out)
-                    mxArray *X=pInput[0],
-                            *Y=pInput[1],
-                            *Z=pInput[2],
-                            *msg_=pInput[3],
-                            *fname_=pInput[4],
-                            *mxstate_=pInput[5];
-                    pOutput[0] = Constrained::State::mxCreate();
-                    mxArray *mxstate_out_=pOutput[0];
+                    // Grab the file name
+                    auto fname = capi::mxArrayToString(fname_);
 
-                    // Make sure we bail if we detect a Matlab exception
-                    try {
-                        // Grab the file name
-                        std::string fname(mxArrayToString(fname_));
+                    // Create a Matlab state 
+                    auto mxstate = Matlab::State <MxConstrained> (mxstate_);
+                    auto mxstate_out = Matlab::State <MxConstrained> (
+                        Constrained::State::mxCreate());
+                
+                    // Grab the base vectors from the Matlab state
+                    auto x_= capi::mxGetField(mxstate.data,0,"x");
+                    auto x = Vector(X_,x_);
+                    auto y_= capi::mxGetField(mxstate.data,0,"y");
+                    auto y = Vector(Y_,y_);
+                    auto z_= capi::mxGetField(mxstate.data,0,"z");
+                    auto z = Vector(Z_,z_);
 
-                        // Create a messaging object
-                        Optizelle::Matlab::Messaging msg(msg_,
-                            mxArrayPtrMode::Attach);
-
-                        // Create a Matlab state 
-                        Matlab::State <MxConstrained> mxstate(
-                            mxstate_,mxArrayPtrMode::Attach);
-                        Matlab::State <MxConstrained> mxstate_out(
-                            mxstate_out_,mxArrayPtrMode::Attach);
+                    // Create a new C++ state
+                    typename MxConstrained::State::t state(x,y,z);
                     
-                        // Grab the base vectors from the Matlab state
-                        Vector x(msg_,X,mxGetField(mxstate.get(),0,"x"),
-                            mxArrayPtrMode::Attach);
-                        Vector y(msg_,Y,mxGetField(mxstate.get(),0,"y"),
-                            mxArrayPtrMode::Attach);
-                        Vector z(msg_,Z,mxGetField(mxstate.get(),0,"z"),
-                            mxArrayPtrMode::Attach);
+                    // Convert the Matlab state to a C++ state
+                    mxstate.fromMatlab(state);
 
-                        // Create a new C++ state
-                        typename MxConstrained::State::t state(x,y,z);
-                        
-                        // Convert the Matlab state to a C++ state
-                        mxstate.fromMatlab(state);
+                    // Read the JSON file into the C++ state
+                    MxJsonConstrained::read(fname,state);
 
-                        // Read the JSON file into the C++ state
-                        MxJsonConstrained::read(msg,fname,state);
+                    // Convert the C++ state to a Matlab state
+                    mxstate_out.toMatlab(state);
+                    
+                    // Return the result 
+                    MX_RETURN_1(mxstate_out.data);
 
-                        // Convert the C++ state to a Matlab state
-                        mxstate_out.toMatlab(state);
-                       
-                        // Cleanup Optizelle
-                        optizelle.pop_back();
-                                
-                        // Return nothing 
-                        return; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){ }
-                }
+                } CATCH_MATLAB_ERRORS;
             }
 
             // All the functions required by an optimization algorithm.  
             namespace Functions{
                 // Convert a Matlab bundle to C++ 
                 void fromMatlab(
-                    mxArray * const msg,
-                    mxArray * const mxfns,
-                    mxArray * const mxstate,
+                    Matlab::Functions <MxConstrained> const & mxfns,
+                    Matlab::State <MxConstrained> & mxstate,
                     typename MxConstrained::State::t const & state,
                     typename MxConstrained::Functions::t & fns 
                 ) {
                     Unconstrained::Functions::fromMatlab_
-                        <MxConstrained> (msg,mxfns,mxstate,state,fns);
+                        <MxConstrained> (mxfns,mxstate,state,fns);
                     EqualityConstrained::Functions::fromMatlab_
-                        <MxConstrained> (msg,mxfns,mxstate,state,fns);
+                        <MxConstrained> (mxfns,mxstate,state,fns);
                     InequalityConstrained::Functions::fromMatlab_
-                        <MxConstrained> (msg,mxfns,mxstate,state,fns);
+                        <MxConstrained> (mxfns,mxstate,state,fns);
                 }
             }
 
@@ -4385,86 +3905,61 @@ namespace Optizelle {
                 void getMin(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
-                ) {
-                    // Grab Optizelle
-                    optizelle.push_back(mexGetVariable("global","Optizelle"));
+                ) try {
+                    // Grab the variables
+                    MX_VAR_7(X,Y,Z,msg,mxfns,mxstate,smanip);
 
-                    // Calling convention should be
-                    // (X,Z,msg,mxfns,mxstate,smanip) -> (mxstate_out)
-                    mxArray *X=pInput[0],
-                            *Y=pInput[1],
-                            *Z=pInput[2],
-                            *msg_=pInput[3],
-                            *mxfns_=pInput[4],
-                            *mxstate_=pInput[5],
-                            *smanip_=pInput[6];
-                    pOutput[0] = Constrained::State::mxCreate();
-                    mxArray *mxstate_out_=pOutput[0];
+                    // Create a messaging object
+                    auto msg = Optizelle::Matlab::Messaging::matlab(msg_);
 
-                    // Make sure we bail if we detect a Matlab exception
-                    try {
-                        // Create a messaging object
-                        Optizelle::Matlab::Messaging msg(msg_,
-                            mxArrayPtrMode::Attach);
-                            
-                        // Create a Matlab state 
-                        Matlab::State <MxConstrained> mxstate(
-                            mxstate_,mxArrayPtrMode::Attach);
-                        Matlab::State<MxConstrained> mxstate_out(
-                            mxstate_out_,mxArrayPtrMode::Attach);
-                        
-                        // Grab the base vectors from the Matlab state
-                        Vector x(msg_,X,mxGetField(mxstate.get(),0,"x"),
-                            mxArrayPtrMode::Attach);
-                        Vector y(msg_,Y,mxGetField(mxstate.get(),0,"y"),
-                            mxArrayPtrMode::Attach);
-                        Vector z(msg_,Z,mxGetField(mxstate.get(),0,"z"),
-                            mxArrayPtrMode::Attach);
+                    // Create a Matlab state 
+                    auto mxstate = Matlab::State <MxConstrained> (
+                        mxstate_);
+                    auto mxstate_out = Matlab::State <MxConstrained> (
+                        Constrained::State::mxCreate());
+                    
+                    // Grab the base vectors from the Matlab state
+                    auto x_= capi::mxGetField(mxstate.data,0,"x");
+                    auto x = Vector(X_,x_);
+                    auto y_= capi::mxGetField(mxstate.data,0,"y");
+                    auto y = Vector(Y_,y_);
+                    auto z_= capi::mxGetField(mxstate.data,0,"z");
+                    auto z = Vector(Z_,z_);
 
-                        // Create a C++ state
-                        typename MxConstrained::State::t state(x,y,z);
-                        
-                        // Convert the Matlab state to a C++ state
-                        mxstate.fromMatlab(state);
+                    // Create a C++ state
+                    typename MxConstrained::State::t state(x,y,z);
+                    
+                    // Convert the Matlab state to a C++ state
+                    mxstate.fromMatlab(state);
 
-                        // Create a Matlab bundle of functions
-                        Matlab::Functions <MxConstrained> mxfns(
-                            msg.get(),
-                            mxstate.get(),
-                            state,
-                            mxfns_,
-                            mxArrayPtrMode::Attach);
+                    // Create a Matlab bundle of functions
+                    Matlab::Functions <MxConstrained> mxfns(
+                        mxstate_out,
+                        state,
+                        mxfns_);
 
-                        // Create a C++ bundle of functions
-                        typename MxConstrained::Functions::t fns;
-                        
-                        // Convert the Matlab bundle of functions to C++ 
-                        mxfns.fromMatlab(fns);
-                        
-                        // Create a state manipulator 
-                        Matlab::StateManipulator<MxConstrained>smanip(
-                            msg.get(),
-                            mxstate.get(),
-                            mxfns.get(),
-                            smanip_,
-                            mxArrayPtrMode::Attach);
-                       
-                        // Minimize
-                        MxConstrained::Algorithms::getMin(
-                            msg,fns,state,smanip);
-                        
-                        // Convert the C++ state to a Matlab state
-                        mxstate_out.toMatlab(state);
-                       
-                        // Cleanup Optizelle
-                        optizelle.pop_back();
+                    // Create a C++ bundle of functions
+                    typename MxConstrained::Functions::t fns;
+                    
+                    // Convert the Matlab bundle of functions to C++ 
+                    mxfns.fromMatlab(fns);
+                    
+                    // Create a state manipulator 
+                    Matlab::StateManipulator <MxConstrained> smanip(
+                        mxstate_out,
+                        mxfns,
+                        smanip_);
+                   
+                    // Minimize
+                    MxConstrained::Algorithms::getMin(msg,fns,state,smanip);
+                    
+                    // Convert the C++ state to a Matlab state
+                    mxstate_out.toMatlab(state);
+                    
+                    // Return the result 
+                    MX_RETURN_1(mxstate_out.data);
 
-                        // Return nothing 
-                        return; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){ }
-                }
+                } CATCH_MATLAB_ERRORS;
             }
             
             // Utilities for restarting the optimization
@@ -4473,284 +3968,180 @@ namespace Optizelle {
                 void release(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
-                ) {
-                    // Grab Optizelle
-                    optizelle.push_back(mexGetVariable("global","Optizelle"));
+                ) try {
+                    // Grab the variables
+                    MX_VAR_4(X,Y,Z,mxstate);
 
-                    // Calling convention should be
-                    // (X,Y,Z,msg,mxstate) -> (xs,ys,zs,reals,nats,params)
-                    mxArray *X=pInput[0],
-                            *Y=pInput[1],
-                            *Z=pInput[2],
-                            *msg=pInput[3],
-                            *mxstate_=pInput[4];
-                    mxArray *mxxs,
-                            *mxys,
-                            *mxzs,
-                            *mxreals,
-                            *mxnats,
-                            *mxparams;
+                    // Create a Matlab state 
+                    auto mxstate = Matlab::State <MxConstrained> (mxstate_);
+                    
+                    // Grab the base vectors from the Matlab state
+                    auto x_= capi::mxGetField(mxstate.data,0,"x");
+                    auto x = Vector(X_,x_);
+                    auto y_= capi::mxGetField(mxstate.data,0,"y");
+                    auto y = Vector(Y_,y_);
+                    auto z_= capi::mxGetField(mxstate.data,0,"z");
+                    auto z = Vector(Z_,z_);
 
-                    // Make sure we bail if we detect a Matlab exception
-                    try {
-                        // Create a Matlab state 
-                        Matlab::State <MxConstrained> mxstate(
-                            mxstate_,mxArrayPtrMode::Attach);
-                        
-                        // Grab the base vectors from the Matlab state
-                        Vector x(msg,X,mxGetField(mxstate.get(),0,"x"),
-                            mxArrayPtrMode::Attach);
-                        Vector y(msg,Y,mxGetField(mxstate.get(),0,"y"),
-                            mxArrayPtrMode::Attach);
-                        Vector z(msg,Z,mxGetField(mxstate.get(),0,"z"),
-                            mxArrayPtrMode::Attach);
+                    // Create a C++ state
+                    typename MxConstrained::State::t state(x,y,z);
+                    
+                    // Convert the Matlab state to a C++ state
+                    mxstate.fromMatlab(state);
 
-                        // Create a C++ state
-                        typename MxConstrained::State::t state(x,y,z);
-                        
-                        // Convert the Matlab state to a C++ state
-                        mxstate.fromMatlab(state);
+                    // Do a release 
+                    MxConstrained::Restart::X_Vectors xs;
+                    MxConstrained::Restart::Y_Vectors ys;
+                    MxConstrained::Restart::Z_Vectors zs;
+                    MxConstrained::Restart::Reals reals;
+                    MxConstrained::Restart::Naturals nats;
+                    MxConstrained::Restart::Params params;
+                    MxConstrained::Restart
+                        ::release(state,xs,ys,zs,reals,nats,params);
 
-                        // Do a release 
-                        MxConstrained::Restart::X_Vectors xs;
-                        MxConstrained::Restart::Y_Vectors ys;
-                        MxConstrained::Restart::Z_Vectors zs;
-                        MxConstrained::Restart::Reals reals;
-                        MxConstrained::Restart::Naturals nats;
-                        MxConstrained::Restart::Params params;
-                        MxConstrained::Restart
-                            ::release(state,xs,ys,zs,reals,nats,params);
+                    // Allocate memory for the Matlab versions
+                    auto mxxs = capi::mxCreateCellMatrix(1,xs.size());
+                    auto mxys = capi::mxCreateCellMatrix(1,ys.size());
+                    auto mxzs = capi::mxCreateCellMatrix(1,zs.size());
+                    auto mxreals = capi::mxCreateCellMatrix(1,reals.size());
+                    auto mxnats = capi::mxCreateCellMatrix(1,nats.size());
+                    auto mxparams = capi::mxCreateCellMatrix(1,params.size());
 
-                        // Allocate memory for the Matlab versions
-                        mxxs = mxCreateCellMatrix(1,xs.size());
-                        mxys = mxCreateCellMatrix(1,ys.size());
-                        mxzs = mxCreateCellMatrix(1,zs.size());
-                        mxreals = mxCreateCellMatrix(1,reals.size());
-                        mxnats = mxCreateCellMatrix(1,nats.size());
-                        mxparams = mxCreateCellMatrix(1,params.size());
+                    // Convert the restart information to Matlab 
+                    toMatlab::Vectors(xs,mxxs);
+                    toMatlab::Vectors(ys,mxys);
+                    toMatlab::Vectors(zs,mxzs);
+                    toMatlab::Reals(reals,mxreals);
+                    toMatlab::Naturals(nats,mxnats);
+                    toMatlab::Params(params,mxparams);
+                    
+                    // Return the result 
+                    MX_RETURN_6(mxxs,mxys,mxzs,mxreals,mxnats,mxparams);
 
-                        // Convert the restart information to Matlab 
-                        toMatlab::Vectors(xs,mxxs);
-                        toMatlab::Vectors(ys,mxys);
-                        toMatlab::Vectors(zs,mxzs);
-                        toMatlab::Reals(reals,mxreals);
-                        toMatlab::Naturals(nats,mxnats);
-                        toMatlab::Params(params,mxparams);
-
-                        // Set the ouptuts
-                        pOutput[0]=mxxs;
-                        pOutput[1]=mxys;
-                        pOutput[2]=mxzs;
-                        pOutput[3]=mxreals;
-                        pOutput[4]=mxnats;
-                        pOutput[5]=mxparams;
-                       
-                        // Cleanup Optizelle
-                        optizelle.pop_back();
-
-                        // Return nothing 
-                        return; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){ }
-                }
+                } CATCH_MATLAB_ERRORS;
 
                 // Capture data from structures controlled by the user.  
                 void capture(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
-                ) {
-                    // Grab Optizelle
-                    optizelle.push_back(mexGetVariable("global","Optizelle"));
+                ) try {
+                    // Grab the variables
+                    MX_VAR_10(X,Y,Z,mxstate,mxxs,mxys,mxzs,
+                        mxreals,mxnats,mxparams);
 
-                    // Calling convention should be
-                    //(X,Y,Z,msg,mxstate,mxxs,mxys,mxzs,mxreals,mxnats,mxparams)
-                    // -> mxstate_out
-                    mxArray *X=pInput[0],
-                            *Y=pInput[1],
-                            *Z=pInput[2],
-                            *msg_=pInput[3],
-                            *mxstate_=pInput[4],
-                            *mxxs=pInput[5],
-                            *mxys=pInput[6],
-                            *mxzs=pInput[7],
-                            *mxreals=pInput[8],
-                            *mxnats=pInput[9],
-                            *mxparams=pInput[10];
-                    pOutput[0] = Constrained::State::mxCreate();
-                    mxArray *mxstate_out_=pOutput[0];
+                    // Create a Matlab state 
+                    auto mxstate = Matlab::State <MxConstrained> (mxstate_);
+                    auto mxstate_out = Matlab::State <MxConstrained> (
+                        Constrained::State::mxCreate());
+                    
+                    // Grab the base vectors from the Matlab state
+                    auto x_= capi::mxGetField(mxstate.data,0,"x");
+                    auto x = Vector(X_,x_);
+                    auto y_= capi::mxGetField(mxstate.data,0,"y");
+                    auto y = Vector(Y_,y_);
+                    auto z_= capi::mxGetField(mxstate.data,0,"z");
+                    auto z = Vector(Z_,z_);
 
-                    // Make sure we bail if we detect a Matlab exception
-                    try {
-                        // Create a messaging object
-                        Optizelle::Matlab::Messaging msg(msg_,
-                            mxArrayPtrMode::Attach);
+                    // Create a C++ state
+                    typename MxConstrained::State::t state(x,y,z);
+                   
+                    // Allocate memory for the released vectors
+                    MxConstrained::Restart::X_Vectors xs;
+                    MxConstrained::Restart::Y_Vectors ys;
+                    MxConstrained::Restart::Z_Vectors zs;
+                    MxConstrained::Restart::Reals reals;
+                    MxConstrained::Restart::Naturals nats;
+                    MxConstrained::Restart::Params params;
+                    
+                    // Convert the restart information from Matlab 
+                    fromMatlab::Vectors(x,mxxs_,xs);
+                    fromMatlab::Vectors(y,mxys_,ys);
+                    fromMatlab::Vectors(z,mxzs_,zs);
+                    fromMatlab::Reals(mxreals_,reals);
+                    fromMatlab::Naturals(mxnats_,nats);
+                    fromMatlab::Params(mxparams_,params);
 
-                        // Create a Matlab state 
-                        Matlab::State <MxConstrained> mxstate(
-                            mxstate_,mxArrayPtrMode::Attach);
-                        Matlab::State<MxConstrained> mxstate_out(
-                            mxstate_out_,mxArrayPtrMode::Attach);
-                        
-                        // Grab the base vectors from the Matlab state
-                        Vector x(msg_,X,mxGetField(mxstate.get(),0,"x"),
-                            mxArrayPtrMode::Attach);
-                        Vector y(msg_,Y,mxGetField(mxstate.get(),0,"y"),
-                            mxArrayPtrMode::Attach);
-                        Vector z(msg_,Z,mxGetField(mxstate.get(),0,"z"),
-                            mxArrayPtrMode::Attach);
+                    // Do a capture 
+                    MxConstrained::Restart
+                        ::capture(state,xs,ys,zs,reals,nats,params);
 
-                        // Create a C++ state
-                        typename MxConstrained::State::t state(x,y,z);
-                       
-                        // Allocate memory for the released vectors
-                        MxConstrained::Restart::X_Vectors xs;
-                        MxConstrained::Restart::Y_Vectors ys;
-                        MxConstrained::Restart::Z_Vectors zs;
-                        MxConstrained::Restart::Reals reals;
-                        MxConstrained::Restart::Naturals nats;
-                        MxConstrained::Restart::Params params;
-                        
-                        // Convert the restart information from Matlab 
-                        fromMatlab::Vectors(x,mxxs,xs);
-                        fromMatlab::Vectors(y,mxys,ys);
-                        fromMatlab::Vectors(z,mxzs,zs);
-                        fromMatlab::Reals(mxreals,reals);
-                        fromMatlab::Naturals(mxnats,nats);
-                        fromMatlab::Params(mxparams,params);
+                    // Convert the C++ state to a Matlab state
+                    mxstate_out.toMatlab(state);
+                    
+                    // Return the result 
+                    MX_RETURN_1(mxstate_out.data);
 
-                        // Do a capture 
-                        MxConstrained::Restart
-                            ::capture(msg,state,xs,ys,zs,reals,nats,params);
-
-                        // Convert the C++ state to a Matlab state
-                        mxstate_out.toMatlab(state);
-                       
-                        // Cleanup Optizelle
-                        optizelle.pop_back();
-
-                        // Return nothing 
-                        return; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){ }
-                }
+                } CATCH_MATLAB_ERRORS;
                 
                 // Writes a json restart file
                 void write_restart(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
-                ) {
-                    // Grab Optizelle
-                    optizelle.push_back(mexGetVariable("global","Optizelle"));
+                ) try {
+                    // Grab the variables
+                    MX_VAR_5(X,Y,Z,fname,mxstate);
 
-                    // Calling convention should be (X,Y,Z,msg,fname,state)-> ()
-                    mxArray *X=pInput[0],
-                            *Y=pInput[1],
-                            *Z=pInput[2],
-                            *msg_=pInput[3],
-                            *fname_=pInput[4],
-                            *mxstate_=pInput[5];
+                    // Grab the file name
+                    auto fname = capi::mxArrayToString(fname_);
 
-                    // Make sure we bail if we detect a Matlab exception
-                    try {
-                        // Create a messaging object
-                        Optizelle::Matlab::Messaging msg(msg_,
-                            mxArrayPtrMode::Attach);
-                        
-                        // Grab the file name
-                        std::string fname(mxArrayToString(fname_));
+                    // Create a Matlab state 
+                    auto mxstate = Matlab::State <MxConstrained> (mxstate_);
+                    
+                    // Grab the base vectors from the Matlab state
+                    auto x_= capi::mxGetField(mxstate.data,0,"x");
+                    auto x = Vector(X_,x_);
+                    auto y_= capi::mxGetField(mxstate.data,0,"y");
+                    auto y = Vector(Y_,y_);
+                    auto z_= capi::mxGetField(mxstate.data,0,"z");
+                    auto z = Vector(Z_,z_);
+                    
+                    // Create a C++ state
+                    typename MxConstrained::State::t state(x,y,z);
+                    
+                    // Convert Matlab state to C++ 
+                    mxstate.fromMatlab(state);
 
-                        // Create a Matlab state 
-                        Matlab::State <MxConstrained> mxstate(
-                            mxstate_,mxArrayPtrMode::Attach);
-                        
-                        // Grab the base vectors from the Matlab state
-                        Vector x(msg_,X,mxGetField(mxstate.get(),0,"x"),
-                            mxArrayPtrMode::Attach);
-                        Vector y(msg_,Y,mxGetField(mxstate.get(),0,"y"),
-                            mxArrayPtrMode::Attach);
-                        Vector z(msg_,Z,mxGetField(mxstate.get(),0,"z"),
-                            mxArrayPtrMode::Attach);
-                        
-                        // Create a C++ state
-                        typename MxConstrained::State::t state(x,y,z);
-                        
-                        // Convert Matlab state to C++ 
-                        mxstate.fromMatlab(state);
+                    // Write the restart file
+                    MxJsonConstrained::write_restart(fname,state);
 
-                        // Write the restart file
-                        MxJsonConstrained::write_restart(
-                            msg,fname,state);
-                       
-                        // Cleanup Optizelle
-                        optizelle.pop_back();
-                        
-                        // Return nothing 
-                        return; 
+                    // Return nothing
+                    MX_RETURN_0;
 
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){ }
-                }
+                } CATCH_MATLAB_ERRORS;
                 
                 // Reads a json restart file
                 void read_restart(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
-                ) {
-                    // Grab Optizelle
-                    optizelle.push_back(mexGetVariable("global","Optizelle"));
+                ) try {
+                    // Grab the variables
+                    MX_VAR_7(X,Y,Z,fname,x,y,z);
 
-                    // Calling convention should be
-                    // (X,Y,Z,msg,fname,x,y,z) -> (mxstate)
-                    mxArray *X=pInput[0],
-                            *Y=pInput[1],
-                            *Z=pInput[2],
-                            *msg_=pInput[3],
-                            *fname_=pInput[4],
-                            *x_=pInput[5],
-                            *y_=pInput[6],
-                            *z_=pInput[7];
-                    pOutput[0] = Constrained::State::mxCreate();
-                    mxArray *mxstate_out_=pOutput[0];
+                    // Grab the file name
+                    auto fname = capi::mxArrayToString(fname_);
 
-                    // Make sure we bail if we detect a Matlab exception
-                    try {
-                        // Create a messaging object
-                        Optizelle::Matlab::Messaging msg(msg_,
-                            mxArrayPtrMode::Attach);
-                        
-                        // Grab the file name
-                        std::string fname(mxArrayToString(fname_));
+                    // Create a Matlab state 
+                    auto mxstate_out = Matlab::State <MxConstrained> (
+                        Constrained::State::mxCreate());
+                    
+                    // Grab the reference vectors
+                    auto x = Vector(X_,x_);
+                    auto y = Vector(Y_,y_);
+                    auto z = Vector(Z_,z_);
+                    
+                    // Create a C++ state
+                    typename MxConstrained::State::t state(x,y,z);
 
-                        // Create a Matlab state 
-                        Matlab::State <MxConstrained> mxstate_out(
-                            mxstate_out_,mxArrayPtrMode::Attach);
-                        
-                        // Grab the reference vector 
-                        Vector x(msg_,X,x_,mxArrayPtrMode::Attach);
-                        Vector y(msg_,Y,y_,mxArrayPtrMode::Attach);
-                        Vector z(msg_,Z,z_,mxArrayPtrMode::Attach);
-                        
-                        // Create a C++ state
-                        typename MxConstrained::State::t state(x,y,z);
+                    // Read the restart file into the C++ state 
+                    MxJsonConstrained::read_restart(fname,x,y,z,state);
+                    
+                    // Convert the C++ state to a Matlab state
+                    mxstate_out.toMatlab(state);
+                    
+                    // Return the result 
+                    MX_RETURN_1(mxstate_out.data);
 
-                        // Read the restart file into the C++ state 
-                        MxJsonConstrained::read_restart(
-                            msg,fname,x,y,z,state);
-                        
-                        // Convert the C++ state to a Matlab state
-                        mxstate_out.toMatlab(state);
-                       
-                        // Cleanup Optizelle
-                        optizelle.pop_back();
-
-                        // Return nothing 
-                        return; 
-
-                    // In theory, we should have set the appropriate error
-                    } catch (Exception& exc){ }
-                }
+                } CATCH_MATLAB_ERRORS;
             }
         }
     }
