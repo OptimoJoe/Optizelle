@@ -27,7 +27,7 @@ state=Optizelle.Unconstrained.State.t(Optizelle.Rm,x)
 fns=Optizelle.Unconstrained.Functions.t()
 fns.f=Objective()
 
-# Try and catch the error
+# Try to catch the error
 try:
     Optizelle.Unconstrained.Algorithms.getMin(
         Optizelle.Rm,Optizelle.Messaging.stdout,fns,state)

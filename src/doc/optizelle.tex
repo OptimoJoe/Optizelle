@@ -603,6 +603,7 @@
 \newcommand{\chadvanced}{Advanced API}
 \newcommand{\seccustomvector}{Customized vector spaces}
 \newcommand{\secmessaging}{User-defined messaging}
+\newcommand{\secerrors}{Handling errors}
 \newcommand{\seccone}{Symmetric cone programming}
 \newcommand{\secsmanip}{State manipulation}
 \newcommand{\secrestart}{Restarts}
@@ -1462,7 +1463,7 @@ We discuss how to implement each of the above steps below.
         {m}
 \end{boldlist}
 
-\noindent In C++, we always require \textct{optizelle/optizelle.h}, but only require \textct{optizelle/json.h} when working with JSON and \textct{optizelle/vspaces.h} when using our default vector spaces such as \textctref{Optizelle::Rm} and \textctref{Optizelle::SQL}.  In Python, the module required by the structures below can be determined by the element in \textbf{Structure}.  For example, the structure \textct{Optizelle.Unconstrained.State.t} requires the module \textct{Optizelle.Unconstrained.State}.  Finally, in MATLAB/Octave, we encapsulate all of the required functions in the global variable \textct{Optizelle}.
+\noindent In C++, we always require \textct{optizelle/optizelle.h}, but only require \textct{optizelle/json.h} when working with JSON and \textct{optizelle/vspaces.h} when using our default vector spaces such as \textctref{Optizelle::Rm} and \textctref{Optizelle::SQL}.  In Python, we simply need to include the \textct{Optizelle} module and everything else is automatically imported.  Finally, in MATLAB/Octave, we encapsulate all of the required functions in the global variable \textct{Optizelle}.
 
 \section{\secimportvs}\label{sec:importvs}
         In the optimization problems
@@ -1536,7 +1537,7 @@ Then, we have that
         {Python}
         {\textct{Optizelle.ScalarValuedFunction}}
         {Inheritance}
-        {\lstinputlisting[style=Python,linerange=ScalarValuedFunction0-ScalarValuedFunction1]{@OPTIZELLEPYTHONPATH@/__init__.py}}
+        {\lstinputlisting[style=Python,linerange=ScalarValuedFunction0-ScalarValuedFunction1]{@OPTIZELLEPYTHONPATH@/Functions.py}}
 
     \apiitem
         {MATLAB/Octave}
@@ -1545,7 +1546,7 @@ Then, we have that
         {\lstinputlisting[style=Matlab,linerange=ScalarValuedFunction0-ScalarValuedFunction1]{@OPTIZELLEMATLABPATH@/setupOptizelle.m}}
 \end{boldlist}
 \noindent Note, we require that the Hessian-vector product always be present.  If one is not available, we simply return zero.
-        
+
         As an example, in our \exampleref{\secrosenbrock}{sec:rosenbrock} example, we minimize the function $f:\re^2\rightarrow \re$ where 
 $$
         f(x)=(1-x_1)^2+100(x_2-x_1^2)^2.
@@ -1679,7 +1680,7 @@ This means that we have
         {Python}
         {\textct{Optizelle.VectorValuedFunction}}
         {Inheritance}
-        {\lstinputlisting[style=Python,linerange=VectorValuedFunction0-VectorValuedFunction1]{@OPTIZELLEPYTHONPATH@/__init__.py}}
+        {\lstinputlisting[style=Python,linerange=VectorValuedFunction0-VectorValuedFunction1]{@OPTIZELLEPYTHONPATH@/Functions.py}}
 
     \apiitem
         {MATLAB/Octave}
@@ -1807,7 +1808,7 @@ In theory, we can use a Choleski factorization to solve this system.  The proble
         {Python}
         {\textct{Optizelle.Operator}}
         {Inheritance}
-        {\lstinputlisting[style=Python,linerange=Operator0-Operator1]{@OPTIZELLEPYTHONPATH@/__init__.py}}
+        {\lstinputlisting[style=Python,linerange=Operator0-Operator1]{@OPTIZELLEPYTHONPATH@/Functions.py}}
 
     \apiitem
         {MATLAB/Octave}
@@ -1920,9 +1921,10 @@ We implement this in our \exampleref{\secequality}{sec:equality} example with th
         {m}
 \end{boldlist}
 
-\noindent Here, \textct{XX}, \textct{YY}, and \text{ZZ} correspond to the vector spaces $X$, $Y$, and $Z$ described in the section \hyperref[sec:importvs]{\secimportvs}.  Likely, they are just \textctref{Optizelle::Rm} or \textctref{Optizelle.Rm}.  Next, the variable \textct{x} denotes an initial guess for the optimization problem.  This guess is very important to the performance of the algorithms, so choose wisely.  The variables \textct{y} and \textct{z} represent arbitrary elements in the codomain of $g$ and $h$, respectively.  We do not use the values of these variables, so any properly allocated vector works fine.  Finally, in Python and MATLAB/Octave, we require a \textctref{Messaging} object \textct{msg}.  In the simple case, we can simply use \textctref{Optizelle.Messaging()} in Python and \textctref{Optizelle.Messaging} in MATLAB/Octave.  For more complicated cases, see the section \hyperref[sec:messaging]{\secmessaging}.
+\noindent Here, \textct{XX}, \textct{YY}, and \text{ZZ} correspond to the vector spaces $X$, $Y$, and $Z$ described in the section \hyperref[sec:importvs]{\secimportvs}.  Likely, they are just \textctref{Optizelle::Rm} or \textctref{Optizelle.Rm}.  Next, the variable \textct{x} denotes an initial guess for the optimization problem.  This guess is very important to the performance of the algorithms, so choose wisely.  The variables \textct{y} and \textct{z} represent arbitrary elements in the codomain of $g$ and $h$, respectively.  We do not use the values of these variables, so any properly allocated vector works fine.
 
-        As an example, we create the optimization state in the \exampleref{\secrosenbrock}{sec:rosenbrock} example with the following code:
+    As an example, we create the optimization state in the \exampleref{\secrosenbrock}{sec:rosenbrock} example with the following code:
+
 \begin{boldlist}
     \shortexampleitem
         {C++}
@@ -2135,7 +2137,7 @@ This becomes the following in our \exampleref{\secequality}{sec:equality} exampl
         {0}
         {m}
 \end{boldlist}
-\noindent As was the case in the section \hyperref[sec:state]{\secstate}, \textct{XX}, \textct{YY}, and \text{ZZ} correspond to the vector spaces $X$, $Y$, and $Z$ described in the section \hyperref[sec:importvs]{\secimportvs}.  Likely, they are just \textctref{Optizelle::Rm} or \textctref{Optizelle.Rm}.  Next, we call the function with a \textctref{Messaging} object, \textct{msg}.  In the simple case, we can simply use \textctref{Optizelle::Messaging()} in C++, \textctref{Optizelle.Messaging()} in Python, and \textctref{Optizelle.Messaging} in MATLAB/Octave.  For more complicated cases, see the section \hyperref[sec:messaging]{\secmessaging}.  Finally, we pass in the state and bundle of functions that we discussed in the sections \hyperref[sec:state]{\secstate} and \hyperref[sec:fns]{\secfns}, respectively.
+\noindent As was the case in the section \hyperref[sec:state]{\secstate}, \textct{XX}, \textct{YY}, and \text{ZZ} correspond to the vector spaces $X$, $Y$, and $Z$ described in the section \hyperref[sec:importvs]{\secimportvs}.  Likely, they are just \textctref{Optizelle::Rm} or \textctref{Optizelle.Rm}.  Next, we call the function with a \textctref{Messaging} object, \textct{msg}.  In the simple case, we can simply use \textctref{Optizelle::Messaging::stdout} in C++, \textctref{Optizelle.Messaging.stdout} in Python, and \textctref{Optizelle.Messaging.stdout} in MATLAB/Octave.  For more complicated cases, see the section \hyperref[sec:messaging]{\secmessaging}.  Finally, we pass in the state and bundle of functions that we discussed in the sections \hyperref[sec:state]{\secstate} and \hyperref[sec:fns]{\secfns}, respectively.
         
         In our \exampleref{\secrosenbrock}{sec:rosenbrock} example, we call Optizelle's solver with the code:
 \begin{boldlist}
@@ -3609,44 +3611,38 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
 
 \section{\secmessaging}\label{sec:messaging}
 
-        By default, we output messages and errors from Optizelle to \textct{stdout} and \textct{stderr}, respectively.  However, in some environments, we require different behavior.  For example, 
+        By default, we output messages from Optizelle to \textct{stdout}.  However, in some environments, we require different behavior.  For example, 
 \begin{itemize}
     \item When we use Optizelle in a program with a GUI, we may not to display the output to a separate window.
     \item When using MPI in a distributed, parallel environment we likely want to restrict our output to only the rank 0 processor.
 \end{itemize}
 \noindent In these cases, we want to define a new messaging object.
 
-        Messaging objects require two functions, \textct{print} and \textct{error}.  Both functions accept a string and print it accordingly.  In addition, \textct{error} must gracefully exit the optimization.  In code, we specify this object as:
+        Messaging objects are simply functions that accept a string and print it accordingly.  In code, we specify this object as:
 \phantomsection\label{itm:Messaging}
-\phantomsection\label{itm:Optizelle::Messaging}
-\phantomsection\label{itm:Optizelle::Messaging()}
-\phantomsection\label{itm:Optizelle.Messaging}
-\phantomsection\label{itm:Optizelle.Messaging()}
+\phantomsection\label{itm:Optizelle::Messaging::stdout}
+\phantomsection\label{itm:Optizelle.Messaging.stdout}
 \begin{boldlist}
     \apiitem
         {C++}
-        {\textct{Optizelle::Messaging}}
-        {Inheritance}
-        {\lstinputlisting[style=C++,linerange={Optizelle0-Optizelle1,Messaging0-Messaging1,Optizelle2-Optizelle3}]{@OPTIZELLECPPPATH@/optizelle.h}}
+        {\textct{Optizelle::Messaging::t}}
+        {Function matches type}
+        {\lstinputlisting[style=C++,linerange={Optizelle0-Optizelle1,Messaging0-Messaging1,Messaging2-Messaging3,Optizelle2-Optizelle3}]{@OPTIZELLECPPPATH@/optizelle.h}}
 
     \apiitem
         {Python}
-        {\textct{Optizelle.Messaging}}
-        {Inheritance}
-        {\lstinputlisting[style=Python,linerange=Messaging0-Messaging1]{@OPTIZELLEPYTHONPATH@/__init__.py}}
+        {\textct{Optizelle.Messaging.t}}
+        {Function matches type}
+        {\lstinputlisting[style=Python,linerange=Messaging0-Messaging1]{@OPTIZELLEPYTHONPATH@/Messaging.py}}
 
     \apiitem
         {MATLAB/Octave}
-        {\textct{Optizelle.Messaging}}
-        {Members present}
+        {\textct{Optizelle.Messaging.t}}
+        {Function matches type}
         {\lstinputlisting[style=Matlab,linerange=Messaging0-Messaging1]{@OPTIZELLEMATLABPATH@/setupOptizelle.m}}
 \end{boldlist}
-\noindent As a note, \textct{print} is a reserved keyword in Python 2.7.  Therefore, in order to define a custom messaging object, we require the import
-\begin{center}
-    \textct{from __future__ import print_function}
-\end{center}
 
-        Once we define a custom messaging object, we are free to pass it to Optizelle.  This occurs in a few different places, but most notably when we call the optimization solver.  We describe this process in the section \hyperref[sec:solve]{\secsolve}.
+        Once we define a custom messaging object, we are free to pass it to Optizelle, which occurs when we call the function \textct{getMin}.  We describe this process in the section \hyperref[sec:solve]{\secsolve}.
 
         As an example, we modify the messaging object in our \exampleref{\secrosenbrockadvancedapi}{sec:rosenbrockadvancedapi} example:
 \begin{boldlist}
@@ -3661,6 +3657,47 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
     \exampleitem
         {MATLAB/Octave}
         {\lstinputlisting[style=Matlab,linerange=Messaging0-Messaging1]{@ROSENBROCKADVANCEDAPIPATH@/rosenbrock_advanced_api.m}}
+\end{boldlist}
+
+\section{\secerrors}\label{sec:errors}
+
+        In general, Optizelle handles algorithmic errors gracefully and will exit the optimization with the current best solution.  However, errors in the problem setup or functions provided by the user cause Optizelle to exit its routines immediately.
+        
+        The mechanism for handling errors depends on the type and interface.  For errors that originate with Optizelle, we use the following scheme 
+\begin{boldlist}
+    \apiitem
+        {C++}
+        {\textct{Optizelle::Exception::t}}
+        {Exception handling}
+        {\lstinputlisting[style=C++,linerange={Optizelle0-Optizelle1,Exception0-Exception1,Optizelle2-Optizelle3}]{@OPTIZELLECPPPATH@/exception.h}}
+
+    \apiitem
+        {Python}
+        {\textct{Optizelle.Exception.t}}
+        {Exception handling}
+        {\lstinputlisting[style=Python,linerange=Exception0-Exception1]{@OPTIZELLEPYTHONPATH@/Exception.py}}
+
+    \apiitemshort
+        {MATLAB/Octave}
+        {\textct{error}}
+        {Native error function}
+\end{boldlist}
+\noindent For errors that originate within the user code, we exit Optizelle and propagate the original error back to parent code.  Typically, the best way to throw an error in the user code is by exceptions in C++ and Python and the \textct{error} function in MATLAB/Octave.
+
+
+    As an example, reading an invalid parameter from file raises an Optizelle error.  We catch this error with the following code
+\begin{boldlist}
+    \exampleitem
+        {C++}
+        {\lstinputlisting[style=C++,linerange=Exception0-Exception1]{@ERRORPATH@/read_params.cpp}}
+
+    \exampleitem
+        {Python}
+        {\lstinputlisting[style=Python,linerange=Exception0-Exception1]{@ERRORPATH@/read_params.py}}
+
+    \exampleitem
+        {MATLAB/Octave}
+        {\lstinputlisting[style=Matlab,linerange=Exception0-Exception1]{@ERRORPATH@/read_params.m}}
 \end{boldlist}
 
 \section{\seccustomvector}\label{sec:customvector}
@@ -3965,7 +4002,7 @@ Number of blocks & \textct{x.numblocks()}
     
     \exampleitem
         {MATLAB/Octave}
-        {\lstinputlisting[style=C++]{@SIMPLESDPCONEPATH@/simple_sdp_cone.m}}
+        {\lstinputlisting[style=Matlab]{@SIMPLESDPCONEPATH@/simple_sdp_cone.m}}
 \end{boldlist}
 
 \section{\secsmanip}\label{sec:smanip}
@@ -3996,7 +4033,7 @@ Number of blocks & \textct{x.numblocks()}
         {Python}
         {\textct{Optizelle.StateManipulator}}
         {Inheritance}
-        {\lstinputlisting[style=Python,linerange=StateManipulator0-StateManipulator1]{@OPTIZELLEPYTHONPATH@/__init__.py}}
+        {\lstinputlisting[style=Python,linerange=StateManipulator0-StateManipulator1]{@OPTIZELLEPYTHONPATH@/Functions.py}}
 
     \apiitem
         {MATLAB/Octave}
@@ -4579,7 +4616,7 @@ $$
 
 \noindent As before, we store the cached information in a persistent variable called \textct{cache}.  The nuance in this case is that we should check both \textct{x} and \textct{dy} when determining whether we've moved to a new point and need to recompute the second derivative.
 
-\chapter{chexamples}\label{ch:examples}
+\chapter{\chexamples}\label{ch:examples}
 
         During the configure process, we compile and install a variety of examples whenever the \textctref{ENABLE_CPP_EXAMPLES}, \textctref{ENABLE_PYTHON_EXAMPLES}, or \textctref{ENABLE_MATLAB_EXAMPLES} are turned to \textct{ON}.  For reference, we include some of these examples here.
 

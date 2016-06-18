@@ -5,7 +5,7 @@
 
 namespace Optizelle { namespace Exception {
     // Prints out nested exceptions 
-    void print_exception(std::exception const & e) {
+    void to_stderr(std::exception const & e) {
         // Print out the top layer of the exception
         std::cerr << e.what() << std::endl; 
 
@@ -15,7 +15,7 @@ namespace Optizelle { namespace Exception {
 
         // If we're still a std::exception, continue unrolling 
         } catch(std::exception const & nested) {
-            print_exception(nested);
+            to_stderr(nested);
 
         // Bail once we can't unroll any further
         } catch(...) {
@@ -24,7 +24,7 @@ namespace Optizelle { namespace Exception {
     }
 
     // Converts a nested expression to a string
-    std::string exception_to_string(std::exception const & e) {
+    std::string to_string(std::exception const & e) {
         // Grab the top layer of the exception
         auto s = std::string(e.what()) + '\n';
 
@@ -35,7 +35,7 @@ namespace Optizelle { namespace Exception {
 
         // If we're still a std::exception, continue unrolling 
         } catch(std::exception const & nested) {
-            return s + exception_to_string(nested);
+            return s + to_string(nested);
 
         // Bail once we can't unroll any further
         } catch(...) {

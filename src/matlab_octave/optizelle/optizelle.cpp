@@ -31,19 +31,25 @@ Author: Joseph Young (joe@optimojoe.com)
 
 #include "optizelle.h"
 
-// Catch and handle MATLAB/Octave and Optizelle errors
+// Catch and handle MATLAB/Octave and Optizelle errors.  In theory, we should
+// never have to handle Matlab::Exception::t since MATLAB/Octave should exit
+// the mex file immediately.  MATLAB does this correctly, but Octave does not,
+// so we require this safeguard.  Though, it swallows the actual error, which
+// is bad.  I've this reported as bug #48185 with Octave's bugtracker at
+// savannah.gnu.org.
 #define CATCH_MATLAB_ERRORS \
     catch(Matlab::Exception::t const & e) { \
-        return; \
+        mexErrMsgTxt( \
+            Optizelle::Exception::to_string(e).c_str()); \
     } catch(std::exception const & e) { \
         mexErrMsgTxt( \
-            Optizelle::Exception::exception_to_string(e).c_str()); \
+            Optizelle::Exception::to_string(e).c_str()); \
         return; \
     }
 
 // Grab and globalize the Optizelle module
 #define MX_OPT_BEGIN \
-    optizelle.emplace_back(capi::mexGetVariable("global","Optizelle"));
+    optizelle.emplace_back(capi::mexGetVariablePtr("global","Optizelle"));
 
 // Clean up the Optizelle module
 #define MX_OPT_END optizelle.pop_back(); 
@@ -447,9 +453,11 @@ namespace Optizelle {
                 return Matlab::capi::enumToMxArray("LineSearchDirection",
                     "HestenesStiefel");
             case BFGS:
-                return Matlab::capi::enumToMxArray("LineSearchDirection","BFGS");
+                return Matlab::capi::enumToMxArray(
+                    "LineSearchDirection","BFGS");
             case NewtonCG:
-                return Matlab::capi::enumToMxArray("LineSearchDirection","NewtonCG");
+                return Matlab::capi::enumToMxArray(
+                    "LineSearchDirection","NewtonCG");
             }
         }
 
@@ -494,13 +502,17 @@ namespace Optizelle {
             // Do the conversion
             switch(kind){
             case GoldenSection:
-                return Matlab::capi::enumToMxArray("LineSearchKind","GoldenSection");
+                return Matlab::capi::enumToMxArray(
+                    "LineSearchKind","GoldenSection");
             case BackTracking:
-                return Matlab::capi::enumToMxArray("LineSearchKind","BackTracking");
+                return Matlab::capi::enumToMxArray(
+                    "LineSearchKind","BackTracking");
             case TwoPointA:
-                return Matlab::capi::enumToMxArray("LineSearchKind","TwoPointA");
+                return Matlab::capi::enumToMxArray(
+                    "LineSearchKind","TwoPointA");
             case TwoPointB:
-                return Matlab::capi::enumToMxArray("LineSearchKind","TwoPointB");
+                return Matlab::capi::enumToMxArray(
+                    "LineSearchKind","TwoPointB");
             }
         }
 
@@ -559,7 +571,8 @@ namespace Optizelle {
                 return Matlab::capi::enumToMxArray(
                     "OptimizationLocation","BeforeGetStep");
             case GetStep:
-                return Matlab::capi::enumToMxArray("OptimizationLocation","GetStep");
+                return Matlab::capi::enumToMxArray(
+                    "OptimizationLocation","GetStep");
             case AfterStepBeforeGradient:
                 return Matlab::capi::enumToMxArray(
                     "OptimizationLocation","AfterStepBeforeGradient");
@@ -1188,16 +1201,16 @@ namespace Optizelle {
             size_t mxGetN(mxArrayPtr const & pm) {
                 return ::mxGetN(pm.get());
             }
-            mxArrayPtr mexGetVariable(
+            mxArrayPtr mexGetVariablePtr(
                 std::string const & workspace,
                 std::string const & varname
             ) {
-                auto ret = ::mexGetVariable(workspace.c_str(),varname.c_str());
+                auto ret=::mexGetVariablePtr(workspace.c_str(),varname.c_str());
                 if(!ret)
                     throw Matlab::Exception::t(__LOC__
                         + ", unable to get the variable " + varname
                         + " in the workspace " + workspace);
-                return ret;
+                return {ret,mxArrayPtr::Unmanaged};
             }
             mxArrayPtr mxCreateStructMatrix(
                 mwSize const & m,

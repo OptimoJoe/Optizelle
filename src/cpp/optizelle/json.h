@@ -493,6 +493,7 @@ namespace Optizelle {
                 typename Optizelle::Unconstrained <Real,XX>::State::t& state
             ) {
                 Unconstrained <Real,XX>::read_(fname,state);
+                Optizelle::Unconstrained<Real,XX>::State::check(state);
             }
 
             // Convert parameters to a string 
@@ -733,6 +734,7 @@ namespace Optizelle {
             ) {
                 Unconstrained <Real,XX>::read_(fname,state);
                 EqualityConstrained <Real,XX,YY>::read_(fname,state);
+                Optizelle::EqualityConstrained<Real,XX,YY>::State::check(state);
             }
 
             // Convert parameters to a string 
@@ -913,6 +915,8 @@ namespace Optizelle {
             ) {
                 Unconstrained <Real,XX>::read_(fname,state);
                 InequalityConstrained <Real,XX,ZZ>::read_(fname,state);
+                Optizelle::InequalityConstrained<Real,XX,ZZ>::State::check(
+                    state);
             }
 
             // Convert parameters to a string 
@@ -1049,6 +1053,7 @@ namespace Optizelle {
                 Unconstrained <Real,XX>::read_(fname,state);
                 EqualityConstrained <Real,XX,YY>::read_(fname,state);
                 InequalityConstrained <Real,XX,ZZ>::read_(fname,state);
+                Optizelle::Constrained<Real,XX,YY,ZZ>::State::check(state);
             }
 
             // Convert parameters to a string 

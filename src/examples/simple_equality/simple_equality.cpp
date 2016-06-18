@@ -159,8 +159,8 @@ int main(int argc,char* argv[]){
 
     //---Solver0---
     // Solve the optimization problem
-    Optizelle::EqualityConstrained <double,Rm,Rm>::Algorithms
-        ::getMin(Optizelle::Messaging::stdout,fns,state);
+    Optizelle::EqualityConstrained <double,Rm,Rm>::Algorithms::getMin(
+        Optizelle::Messaging::stdout,fns,state);
     //---Solver1---
 
     //---Extract0---

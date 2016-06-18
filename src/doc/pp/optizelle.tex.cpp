@@ -9,8 +9,12 @@
 
 // std::cout
 #include <iostream>
+    
+// Get into the Optizelle namespace
+using namespace Optizelle;
 
 int main(int argc,char * argv[]) try {
+
     // Make sure that we have our data
     if(argc!=2)
         throw std::runtime_error(std::string("Usage: ") + argv[0] + " <data>");
@@ -55,6 +59,6 @@ int main(int argc,char * argv[]) try {
         },
         in);
 } catch(std::exception const & e){
-    Exception::print_exception(e);
+    Exception::to_stderr(e);
     throw;
 }

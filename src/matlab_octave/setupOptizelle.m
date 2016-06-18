@@ -199,7 +199,7 @@ Optizelle.Operator = struct( ...
 %---Operator1---
 
 %---Messaging0---
-% Defines how we output messages to the user
+% At its core, we take in a string and then write it somewhere
 Optizelle.Messaging.t = @(x)error('Undefined messaging function');
 %---Messaging1---
 Optizelle.Messaging.stdout = @(x)fprintf('%s\n',x);

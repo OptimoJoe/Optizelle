@@ -210,9 +210,9 @@ namespace Optizelle{
         // Write a string to stdout
         void stdout(std::string const & msg);
 
-    //---Messaging3---
+    //---Messaging2---
     }
-    //---Messaging4---
+    //---Messaging3---
 
     // A safeguard search used primarily for inequality constraints
     template <typename Real,template <typename> class XX>

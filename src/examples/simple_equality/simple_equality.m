@@ -86,8 +86,7 @@ function main(fname)
     y = [0.];
 
     % Create an optimization state
-    state = Optizelle.EqualityConstrained.State.t( ...
-        Optizelle.Rm,Optizelle.Rm,x,y);
+    state= Optizelle.EqualityConstrained.State.t(Optizelle.Rm,Optizelle.Rm,x,y);
     %---State1---
 
     %---Parameters0---

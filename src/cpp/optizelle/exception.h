@@ -13,15 +13,21 @@
 #define S2(x) S1(x)
 #define __LOC__ std::string("File \"" __FILE__ "\", line " S2(__LINE__))
 
-namespace Optizelle { namespace Exception {
+//---Optizelle0---
+namespace Optizelle {namespace Exception {
+//---Optizelle1---
     // exception -> unit 
-    void print_exception(std::exception const & e);
+    void to_stderr(std::exception const & e);
 
     // exception -> std::string 
-    std::string exception_to_string(std::exception const & e);
+    std::string to_string(std::exception const & e);
 
     // t
+    //---Exception0---
     struct t : public std::runtime_error {
         using std::runtime_error::runtime_error;
     };
+    //---Exception1---
+//---Optizelle2---
 }}
+//---Optizelle3---

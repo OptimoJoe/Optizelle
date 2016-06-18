@@ -20,6 +20,7 @@ set(RESTARTPATH "${MY_SOURCE_DIR}/src/unit/restart/")
 set(SQLRESTARTPATH "${MY_SOURCE_DIR}/src/examples/sql_restart/")
 set(CACHEPATH "${MY_SOURCE_DIR}/src/examples/computation_caching/")
 set(DOCPATH "${CMAKE_CURRENT_BINARY_DIR}")
+set(ERRORPATH "${MY_SOURCE_DIR}/src/unit/exceptions/")
 
 # Configure the preprocessed file
 configure_file(

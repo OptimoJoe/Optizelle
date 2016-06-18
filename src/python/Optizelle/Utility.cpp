@@ -37,7 +37,7 @@ Author: Joseph Young (joe@optimojoe.com)
         return nullptr; \
     } catch(std::exception const & e) { \
         capi::PyErr_SetString_Optizelle( \
-            Optizelle::Exception::exception_to_string(e)); \
+            Optizelle::Exception::to_string(e)); \
         return nullptr; \
     }
 
@@ -1322,7 +1322,10 @@ namespace Optizelle {
                 auto exception = capi::PyObject_GetAttrString(
                     module,
                     "Exception");
-                ::PyErr_SetString(exception.get(),msg.c_str());
+                auto t = capi::PyObject_GetAttrString(
+                    exception,
+                    "t");
+                ::PyErr_SetString(t.get(),msg.c_str());
             }
 
             // Deep copy of a Python object and return the result
