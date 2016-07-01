@@ -139,6 +139,15 @@
     \item[Description] #7
     \item[]}
 
+% Configuration items for platform specific issues
+\newcommand{\configitem}[5]{
+    \item[Flag] \textct{#1}
+    \item[Platform] #2
+    \item[Interface] #3
+    \item[Indication] #4
+    \item[Description] #5
+    \item[]}
+
 %# API items
 \newcommand{\apiitem}[4]{
     \item[Language] #1
@@ -1284,6 +1293,32 @@ where the actual paths, libraries, and archives depend on the individual system.
         {Yes}
         {A path that indicates where the jsonlab library has been 
         installed.  This is automatically set when \textctref{ENABLE_BUILD_JSONLAB} is enabled.}
+\end{boldlist}
+
+\section{Platform Specific Configuration}
+
+    Due to a variety of platform specific quirks, some additional compilation flags may be necessary.  In order to use these flags, place them in the \textct{CMAKE_CXX_FLAGS} variable, separated by spaces, in the CMake configuration.
+\begin{boldlist}
+    \configitem
+        {-include math.h}
+        {Windows}
+        {Python}
+        {During compilation, \textct{error: '::hypot' has not been declared}}
+        {Fixes a bug inside of Python where \textct{hypot} has been renamed}
+
+    \configitem
+        {-DMS_WIN64}
+        {Windows}
+        {Python}
+        {During compilation, \textct{undefined reference to `__imp_Py_InitModule4'}}
+        {Tells Python to use Windows 64-bit specific code}
+
+    \configitem
+        {-O}
+        {Windows}
+        {MATLAB}
+        {Segmentation fault when executing \textct{getMin}}
+        {Bug in MATLAB when a string created with \textct{mxCreateString} is passed directly to the Messaging function}
 \end{boldlist}
 
 \section{\secinstalling}\label{sec:installing}

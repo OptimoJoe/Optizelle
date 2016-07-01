@@ -29,8 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 Author: Joseph Young (joe@optimojoe.com)
 */
 
-#ifndef OPTIZELLE_H
-#define OPTIZELLE_H
+#pragma once
 
 #include<list>
 #include<vector>
@@ -45,6 +44,14 @@ Author: Joseph Young (joe@optimojoe.com)
 #include<numeric>
 #include "optizelle/exception.h"
 #include "optizelle/linalg.h"
+
+// MinGW on Windows defines a macro called stdout that breaks our compilation.
+// Disable it in our code.  If this breaks someone elses code, issue the
+// command #pragma pop_macro("stdout") to get it back.
+#ifdef __MINGW32__
+#pragma push_macro("stdout")
+#undef stdout
+#endif
 
 //---Optizelle0---
 namespace Optizelle{
@@ -12221,4 +12228,3 @@ namespace Optizelle{
 //---Optizelle2---
 }
 //---Optizelle3---
-#endif
