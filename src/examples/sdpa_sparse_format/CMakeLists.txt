@@ -21,5 +21,6 @@ if(ENABLE_CPP_UNIT)
             "${unit}.dat-s"
             "${unit}_phase1.json"
             "${unit}_phase2.json")
+        fix_unit_path("Execution_of_cpp_${PROJECT_NAME}_${uname}")
     endforeach()
 endif()

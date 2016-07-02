@@ -94,6 +94,8 @@ macro(add_unit name interfaces units validated)
                         ${name}
                         ${unit}
                         ${extra})
+
+                    # Mark that the test was run
                     set(test_executed TRUE)
 
                 elseif(${interface} STREQUAL "python" AND ENABLE_PYTHON_UNIT)
@@ -103,6 +105,8 @@ macro(add_unit name interfaces units validated)
                         "${CMAKE_CURRENT_SOURCE_DIR}/${name}.py"
                         ${unit}
                         ${extra})
+
+                    # Mark that the test was run
                     set(test_executed TRUE)
 
                     # Make sure Optizelle is available
@@ -110,12 +114,9 @@ macro(add_unit name interfaces units validated)
                         PROPERTIES ENVIRONMENT
                             "PYTHONPATH=${CMAKE_BINARY_DIR}/src/python")
 
-                # Run the MATLAB test.  Note, this doesn't work on Windows
-                # since we can't set an environment variable to change the
-                # path.
+                # Run the MATLAB test
                 elseif(${interface} STREQUAL "matlab"
                     AND ENABLE_MATLAB_UNIT
-                    AND NOT WIN32
                 )
                     # If we have an extra argument, append it
                     if(${nextra} GREATER 0)
@@ -125,18 +126,20 @@ macro(add_unit name interfaces units validated)
                     endif()
 
                     # Run the test
+                    if(WIN32)
+                        set(wait "-wait")
+                    else()
+                        set(wait "")
+                    endif()
                     add_test(
                         "Execution_of_matlab_${name}_${uname}"
                         ${MATLAB_EXECUTABLE}
-                        "-nosplash -nodesktop -r"
-                        "\"${name}('${matlab_unit}'),exit\"")
+                        -nosplash -nodesktop ${wait} -r
+                        "addpath('${CMAKE_BINARY_DIR}/src/matlab','${CMAKE_CURRENT_SOURCE_DIR}'),${name}('${matlab_unit}'),exit")
+
+                    # Mark that the test was run
                     set(test_executed TRUE)
 
-                    # Make sure Optizelle is available 
-                    set_tests_properties(
-                        "Execution_of_matlab_${name}_${uname}"
-                        PROPERTIES ENVIRONMENT
-                        "MATLABPATH=${CMAKE_BINARY_DIR}/src/matlab:${CMAKE_CURRENT_SOURCE_DIR}")
                 elseif(${interface} STREQUAL "octave" AND ENABLE_OCTAVE_UNIT)
                     # If we have an extra argument, append it
                     if(${nextra} GREATER 0)
@@ -153,7 +156,14 @@ macro(add_unit name interfaces units validated)
                         --path "${CMAKE_CURRENT_SOURCE_DIR}"
                         "--eval"
                         "${name}('${octave_unit}'),exit")
+
+                    # Mark that the test was run
                     set(test_executed TRUE)
+                endif()
+
+                # Fix any execution paths
+                if(test_executed)
+                    fix_unit_path("Execution_of_${interface}_${name}_${uname}")
                 endif()
                 
                 # Diff the result of the optimization against the known solution
@@ -161,6 +171,9 @@ macro(add_unit name interfaces units validated)
                     add_test("Solution_to_${interface}_${name}_${uname}"
                         "${CMAKE_BINARY_DIR}/src/unit/utility/diff_restart"
                         ${unit} solution.json)
+
+                    # We need the libraries to run our diff program
+                    fix_unit_path("Solution_to_${interface}_${name}_${uname}")
                 endif()
             endforeach()
         endforeach()
@@ -169,9 +182,15 @@ macro(add_unit name interfaces units validated)
     else()
         # Loop over each of the interface interfaces
         foreach(interface ${interfaces})
+            # Track if we've run the test
+            set(test_executed FALSE)
+
             if(${interface} STREQUAL "cpp" AND ENABLE_CPP_UNIT)
                 # Run the test
                 add_test("Execution_of_cpp_${name}" ${name})
+
+                # Mark that the test was run
+                set(test_executed TRUE)
 
             elseif(${interface} STREQUAL "python" AND ENABLE_PYTHON_UNIT)
                 # Run the test
@@ -183,25 +202,28 @@ macro(add_unit name interfaces units validated)
                     PROPERTIES ENVIRONMENT
                         "PYTHONPATH=${CMAKE_BINARY_DIR}/src/python")
 
-            # Run the MATLAB test.  Note, this doesn't work on Windows
-            # since we can't set an environment variable to change the
-            # path.
+                # Mark that the test was run
+                set(test_executed TRUE)
+
+            # Run the MATLAB test
             elseif(${interface} STREQUAL "matlab"
                 AND ENABLE_MATLAB_UNIT
-                AND NOT WIN32
             )
                 # Run the test
+                if(WIN32)
+                    set(wait "-wait")
+                else()
+                    set(wait "")
+                endif()
                 add_test(
                     "Execution_of_matlab_${name}"
                     ${MATLAB_EXECUTABLE}
-                    "-nosplash -nodesktop -r"
-                    "${name},exit")
+                    -nosplash -nodesktop ${wait} -r
+                    "addpath('${CMAKE_BINARY_DIR}/src/matlab','${CMAKE_CURRENT_SOURCE_DIR}'),${name},exit")
 
-                # Make sure Optizelle is available 
-                set_tests_properties(
-                    "Execution_of_matlab_${name}"
-                    PROPERTIES ENVIRONMENT
-                    "MATLABPATH=${CMAKE_BINARY_DIR}/src/matlab:${CMAKE_CURRENT_SOURCE_DIR}")
+                # Mark that the test was run
+                set(test_executed TRUE)
+
             elseif(${interface} STREQUAL "octave" AND ENABLE_OCTAVE_UNIT)
                 # Run the test
                 add_test(
@@ -211,6 +233,14 @@ macro(add_unit name interfaces units validated)
                     --path "${CMAKE_CURRENT_SOURCE_DIR}"
                     "--eval"
                     "${name},exit")
+
+                # Mark that the test was run
+                set(test_executed TRUE)
+            endif()
+
+            # Fix any execution paths
+            if(test_executed)
+                fix_unit_path("Execution_of_${interface}_${name}")
             endif()
         endforeach()
     endif()
@@ -292,4 +322,19 @@ function(preprocess file data)
             "${data}")
     add_custom_target("${file}.pp.run" 
         DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/${file}")
+endfunction()
+
+# Adds in the appropriate path information for various libraries
+function(fix_unit_path name)
+    # On Windows, we need to grab the C++ system libraries as well as Optizelle itself
+    if(WIN32)
+        if(MINGW)
+            get_filename_component(Mingw_Path ${CMAKE_CXX_COMPILER} PATH)
+            set(system_libraries "\;${Mingw_Path}")
+        else()
+            set(system_libraries "")
+        endif()
+        set_property(TEST "${name}" APPEND PROPERTY ENVIRONMENT
+            "PATH=${CMAKE_BINARY_DIR}/src/cpp/optizelle\;${CMAKE_BINARY_DIR}/src/octave/optizelle\;${CMAKE_BINARY_DIR}/thirdparty/lib${system_libraries}")
+    endif()
 endfunction()

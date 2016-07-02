@@ -1032,8 +1032,7 @@ namespace Optizelle {
                 std::string const & errmsg
             ) {
                 mxArray * input[2] = {fn.get(),arg1.get()};
-                mxArray * output[0]; 
-                auto err=::mexCallMATLAB(0,output,2,input,"feval");
+                auto err=::mexCallMATLAB(0,nullptr,2,input,"feval");
                 if(err)
                     throw Matlab::Exception::t(errmsg); 
             }
