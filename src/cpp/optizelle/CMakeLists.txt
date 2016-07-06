@@ -56,6 +56,7 @@ if(MINGW)
 	${Mingw_Path}/libgcc_s_seh-1.dll
 	${Mingw_Path}/libstdc++-6.dll
 	${Mingw_Path}/libgfortran-3.dll
-	${Mingw_Path}/libquadmath-0.dll)
+	${Mingw_Path}/libquadmath-0.dll
+	${Mingw_Path}/libgomp-1.dll)
     install(PROGRAMS ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION lib)
 endif(MINGW)
