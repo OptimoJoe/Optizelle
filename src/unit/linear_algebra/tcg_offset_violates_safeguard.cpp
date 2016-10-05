@@ -13,7 +13,7 @@
 
 int main() {
     // Setup the problem 
-    auto setup = Unit::tcg <Real,XX> ();
+    auto setup = Unit::tcg <Real,Rm> ();
 
     // Problem setup
     setup.A = std::make_unique <Matrix>(
@@ -25,8 +25,8 @@ int main() {
     auto lb = Real(0.); 
     auto x = Unit::Vector<Real>::ones(setup.m);
     auto w = std::vector <Real> {0,0,0,0,1};
-    setup.safeguard = std::make_unique<Optizelle::SafeguardSimplified<Real,XX>>(
-        Unit::Safeguard <Real,XX>::lower(x,lb,w));
+    setup.safeguard = std::make_unique<Optizelle::SafeguardSimplified<Real,Rm>>(
+        Unit::Safeguard <Real,Rm>::lower(x,lb,w));
 
     // Target solutions
     setup.x_star =std::make_unique<Vector>(Unit::Vector <Real>::basic(setup.m));
@@ -40,7 +40,7 @@ int main() {
     setup.check_sol = true;
 
     // Check the solver 
-    Unit::run_and_verify <Real,XX> (setup);
+    Unit::run_and_verify <Real,Rm> (setup);
 
     // Declare success
     return EXIT_SUCCESS;

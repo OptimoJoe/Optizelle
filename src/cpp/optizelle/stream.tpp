@@ -82,7 +82,7 @@ namespace Optizelle { namespace Stream {
     template <typename A>
     void iter(std::function <void(A const &)> const & f,t <A> & stream) try {
         auto item = std::unique_ptr <A> (nullptr);
-        while(item = stream.next())
+        while((item = stream.next()))
             f(*item);
     } catch(...) {
         std::throw_with_nested(
@@ -105,7 +105,7 @@ namespace Optizelle { namespace Stream {
         auto cache = std::move(item);
 
         // Continue looping while we're not empty 
-        while(item = stream.next()) {
+        while((item = stream.next())) {
             // Apply the function to the cached element
             f(*cache);
 
@@ -142,7 +142,7 @@ namespace Optizelle { namespace Stream {
         std::unique_ptr <B> next() {
             // If we can grab an element, apply the function to it and return 
             auto item = std::unique_ptr <A> (nullptr);
-            if(item = stream -> next())
+            if((item = stream -> next()))
                 return std::make_unique <B> (f(*item));
 
             // Otherwise, return null
@@ -192,7 +192,7 @@ namespace Optizelle { namespace Stream {
     ) {
         // While we're not empty, keep grabbing elements
         auto item = std::unique_ptr <A> (nullptr);
-        while(item = stream.next())
+        while((item = stream.next()))
             acc = f(*item,acc);
 
         // Return what we have

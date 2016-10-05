@@ -7,7 +7,7 @@
 
 int main() {
     // Setup the problem 
-    auto setup = Unit::tcg <Real,XX> ();
+    auto setup = Unit::tcg <Real,Rm> ();
 
     // Problem setup 
     setup.A = std::make_unique <Matrix>(
@@ -27,13 +27,13 @@ int main() {
         setup.stop_star = Optizelle::TruncatedStop::NegativeCurvature;
 
         // Tests
-        Unit::reset_checks <Real,XX> (setup);
+        Unit::reset_checks <Real,Rm> (setup);
         setup.check_iter = true;
         setup.check_stop = true;
         setup.check_tr = true;
 
         // Check the solver 
-        Unit::run_and_verify <Real,XX> (setup);
+        Unit::run_and_verify <Real,Rm> (setup);
     }
 
     // Line-search
@@ -46,12 +46,12 @@ int main() {
         setup.stop_star = Optizelle::TruncatedStop::NegativeCurvature;
 
         // Tests
-        Unit::reset_checks <Real,XX> (setup);
+        Unit::reset_checks <Real,Rm> (setup);
         setup.check_iter = true;
         setup.check_stop = true;
 
         // Check the solver 
-        Unit::run_and_verify <Real,XX> (setup);
+        Unit::run_and_verify <Real,Rm> (setup);
 
         // Extract the solution that we generated.  This should be the
         // answer at the iteration prior to this.  Pull these in as the
@@ -62,13 +62,13 @@ int main() {
         setup.stop_star = Optizelle::TruncatedStop::MaxItersExceeded;
 
         // Tests
-        Unit::reset_checks <Real,XX> (setup);
+        Unit::reset_checks <Real,Rm> (setup);
         setup.check_stop = true;
         setup.check_sol = true;
         setup.check_iter = true;
 
         // Check the solver
-        Unit::run_and_verify <Real,XX> (setup);
+        Unit::run_and_verify <Real,Rm> (setup);
     }
 
     // Declare success

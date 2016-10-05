@@ -8,7 +8,7 @@
 
 int main() {
     // Setup the problem 
-    auto setup = Unit::tcg <Real,XX> ();
+    auto setup = Unit::tcg <Real,Rm> ();
 
     // Problem setup 
     setup.m=500;
@@ -25,7 +25,7 @@ int main() {
     setup.check_stop = true;
 
     // Check the solver 
-    Unit::run_and_verify <Real,XX> (setup);
+    Unit::run_and_verify <Real,Rm> (setup);
     
     // Change the problem setup to regain orthogonality 
     setup.orthog_iter_max=2;
@@ -38,7 +38,7 @@ int main() {
     setup.check_stop = true;
 
     // Check the solver 
-    Unit::run_and_verify <Real,XX> (setup);
+    Unit::run_and_verify <Real,Rm> (setup);
 
     // Declare success
     return EXIT_SUCCESS;

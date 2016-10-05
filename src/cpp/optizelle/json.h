@@ -182,19 +182,19 @@ namespace Optizelle {
                 std::string const & name,
                 Natural const & iter
             ) { 
-                std::cerr << "Optizelle::json::Serialization <>::serialize "
-                    << "undefined for the type: "
-                    << typeid(XX <Real>).name() << std::endl;
-                exit(EXIT_FAILURE);
+                throw Exception::t(__LOC__
+                    + "Optizelle::json::Serialization <>::serialize "
+                    + "undefined for the type: "
+                    + typeid(XX <Real>).name());
             }
             static typename XX <Real>::Vector deserialize(
                 typename XX <Real>::Vector const & x,
                 std::string const & x_json
             ) { 
-                std::cerr << "Optizelle::json::Serialization <>::deserialize "
-                    << "undefined for the type: "
-                    << typeid(XX <Real>).name() << std::endl;
-                exit(EXIT_FAILURE);
+                throw Exception::t(__LOC__
+                    + "Optizelle::json::Serialization <>::deserialize "
+                    + "undefined for the type: "
+                    + typeid(XX <Real>).name());
             }
         };
 

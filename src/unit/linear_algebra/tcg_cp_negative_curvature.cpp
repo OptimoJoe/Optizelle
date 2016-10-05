@@ -6,7 +6,7 @@
 
 int main() {
     // Setup the problem 
-    auto setup = Unit::tcg <Real,XX> ();
+    auto setup = Unit::tcg <Real,Rm> ();
 
     // Problem setup 
     setup.A = std::make_unique<Matrix>(Unit::Matrix <Real>::symm_nd(setup.m,0));
@@ -28,7 +28,7 @@ int main() {
         X::scal((setup.delta-norm_b)/norm_b,*setup.x_star);
 
         // Tests
-        Unit::reset_checks <Real,XX> (setup);
+        Unit::reset_checks <Real,Rm> (setup);
         setup.check_iter = true;
         setup.check_stop = true;
         setup.check_tr = true;
@@ -36,7 +36,7 @@ int main() {
         setup.check_sol = true;
 
         // Check the solver 
-        Unit::run_and_verify <Real,XX> (setup);
+        Unit::run_and_verify <Real,Rm> (setup);
     }
 
     // Line-search
@@ -50,14 +50,14 @@ int main() {
         setup.x_star = std::make_unique <Vector> (*setup.b);
 
         // Tests
-        Unit::reset_checks <Real,XX> (setup);
+        Unit::reset_checks <Real,Rm> (setup);
         setup.check_iter = true;
         setup.check_stop = true;
         setup.check_cp = true;
         setup.check_sol = true;
 
         // Check the solver 
-        Unit::run_and_verify <Real,XX> (setup);
+        Unit::run_and_verify <Real,Rm> (setup);
     }
 
     // Declare success

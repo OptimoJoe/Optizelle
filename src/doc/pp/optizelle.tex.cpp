@@ -24,7 +24,7 @@ int main(int argc,char * argv[]) try {
 
     // Create a stream out of stdin
     auto in = Stream::of_std <Stream::cin,std::string>(
-        new Stream::cin(),
+        new Stream::cin(nullptr),
         {'\n'});
 
     // Macro process stdin

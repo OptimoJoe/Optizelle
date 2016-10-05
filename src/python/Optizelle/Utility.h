@@ -420,7 +420,7 @@ namespace Optizelle {
             StateManipulator(StateManipulator && smanip) : 
                 pystate(smanip.pystate),
                 pyfns(smanip.pyfns),
-                data(std::move(data))
+                data(std::move(smanip.data))
             {}
 
             // We need the Python state manipulator, a copy of a Python state

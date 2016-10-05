@@ -5,7 +5,7 @@
 
 int main() {
     // Setup the problem 
-    auto setup = Unit::tcg <Real,XX> ();
+    auto setup = Unit::tcg <Real,Rm> ();
         
     // Problem setup
     setup.B = std::make_unique <Matrix>(
@@ -16,8 +16,8 @@ int main() {
     // When we throw a NaN immediately, we should exit with a zero solution 
     {
         // Problem setup
-        setup.A = std::make_unique <Unit::Operator <Real,XX>::Nan> (
-            Unit::Operator <Real,XX>::Nan(
+        setup.A = std::make_unique <Unit::Operator <Real,Rm>::Nan> (
+            Unit::Operator <Real,Rm>::Nan(
                 Unit::Matrix <Real>::symmetric(setup.m,0),
                 0));
 
@@ -34,7 +34,7 @@ int main() {
         setup.check_cp = true;
 
         // Check the solver 
-        Unit::run_and_verify <Real,XX> (setup);
+        Unit::run_and_verify <Real,Rm> (setup);
     }
 
     // When we throw a NaN on the second call, we should have gotten through
@@ -48,14 +48,14 @@ int main() {
         setup.iter_max = 1;
 
         // No tests
-        Unit::reset_checks <Real,XX> (setup);
+        Unit::reset_checks <Real,Rm> (setup);
 
         // Run the solver
-        Unit::run_and_verify <Real,XX> (setup);
+        Unit::run_and_verify <Real,Rm> (setup);
 
         // Now, throw a NaN in the operator after a single call
-        setup.A = std::make_unique <Unit::Operator <Real,XX>::Nan> (
-            Unit::Operator <Real,XX>::Nan(
+        setup.A = std::make_unique <Unit::Operator <Real,Rm>::Nan> (
+            Unit::Operator <Real,Rm>::Nan(
                 Unit::Matrix <Real>::symmetric(setup.m,0),
                 1));
         setup.iter_max = 500;
@@ -66,14 +66,14 @@ int main() {
         setup.stop_star = Optizelle::TruncatedStop::NanOperator;
 
         // Tests
-        Unit::reset_checks <Real,XX> (setup);
+        Unit::reset_checks <Real,Rm> (setup);
         setup.check_sol = true;
         setup.check_iter = true;
         setup.check_stop = true;
         setup.check_cp = true;
 
         // Check the solver 
-        Unit::run_and_verify <Real,XX> (setup);
+        Unit::run_and_verify <Real,Rm> (setup);
     }
 
     // Declare success

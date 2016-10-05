@@ -58,7 +58,7 @@ namespace Optizelle { namespace Stream {
     }
 
     // Wrap cin in something that we can instantiate
-    cin::cin() {  
+    cin::cin(std::streambuf * sb) : std::istream(sb) {
         // Set this buffer to be the same as std::cin
         rdbuf(std::cin.rdbuf());
     }

@@ -12,14 +12,11 @@ int main() {
     // Set the parameter file name 
     auto fname = "bad_params.json"; 
 
-    // Create a type shortcut
-    using Optizelle::Rm;
-
     // Allocate memory for an initial guess
     auto x = std::vector <double> {1.2, 2.3};
     
     // Create an optimization state
-    Optizelle::Unconstrained<double,Rm>::State::t state(x);
+    Optizelle::Unconstrained<double,XX>::State::t state(x);
 
     auto msg = std::string("");
     //---Exception0---

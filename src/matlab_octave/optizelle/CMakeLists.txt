@@ -96,34 +96,49 @@ macro(compile_interface type include libs extension unit)
     # Copy in files for the unit tests.
     if(${unit})
         add_custom_target(
+            ${type}_create_directory
+            ALL
+            COMMAND ${CMAKE_COMMAND} -E make_directory
+                ${CMAKE_BINARY_DIR}/src/${type}/)
+        add_custom_target(
             ${type}_mex_for_unit
             ALL
             COMMAND ${CMAKE_COMMAND} -E copy_directory
                 ${CMAKE_BINARY_DIR}/src/matlab_octave/optizelle
-                ${CMAKE_BINARY_DIR}/src/${type}/optizelle)
+                ${CMAKE_BINARY_DIR}/src/${type}/optizelle
+            DEPENDS ${type}_create_directory)
         add_custom_target(
             ${type}_scripts_for_unit
             ALL
             COMMAND ${CMAKE_COMMAND} -E copy_directory
                 ${CMAKE_SOURCE_DIR}/src/matlab_octave/optizelle
-                ${CMAKE_BINARY_DIR}/src/${type}/optizelle)
+                ${CMAKE_BINARY_DIR}/src/${type}/optizelle
+            DEPENDS ${type}_create_directory)
         add_custom_target(
             ${type}_setup_for_unit
             ALL
             COMMAND ${CMAKE_COMMAND} -E copy
                 ${CMAKE_SOURCE_DIR}/src/matlab_octave/setupOptizelle.m
-                ${CMAKE_BINARY_DIR}/src/${type})
+                ${CMAKE_BINARY_DIR}/src/${type}/
+            DEPENDS ${type}_create_directory)
         add_custom_target(
             ${type}_jsonlab_for_unit
             ALL
             COMMAND ${CMAKE_COMMAND} -E copy_directory
                 ${JSONLAB_DIR}
-                ${CMAKE_BINARY_DIR}/src/${type}/jsonlab)
+                ${CMAKE_BINARY_DIR}/src/${type}/jsonlab
+            DEPENDS ${type}_create_directory)
     endif()
 endmacro()
 
 # Compile the MATLAB interface 
 if(ENABLE_MATLAB)
+    # Necessary since we run through the unit test cmake scripts after this
+    # directory where this variable is defined
+    if(NOT ENABLE_MATLAB_UNIT)
+        set(MATLAB_MEX_EXTENSION "MEX_UKNOWN")
+        set(ENABLE_MATLAB_UNIT FALSE)
+    endif()
     compile_interface(
         matlab
         ${MATLAB_INCLUDE_DIR}
@@ -134,6 +149,9 @@ endif()
 
 # Compile the Octave interface
 if(ENABLE_OCTAVE)
+    if(NOT ENABLE_OCTAVE_UNIT)
+        set(ENABLE_OCTAVE_UNIT FALSE)
+    endif()
     compile_interface(
         octave 
         ${OCTAVE_INCLUDE_DIR}

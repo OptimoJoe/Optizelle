@@ -329,7 +329,7 @@ struct Unit {
         // h(x) = [ x - lb ] 
         //      = [ ub - x ]
         //
-        struct Box: public Optizelle::VectorValuedFunction<Real,XX,YY> {
+        struct Box: public Optizelle::VectorValuedFunction<Real,XX,ZZ> {
             // Lower bound
             X_Vector lb;
             
@@ -444,7 +444,7 @@ struct Unit {
         Z_Vector z;
 
         // Inequality constraint
-        std::unique_ptr <Optizelle::VectorValuedFunction <Real,XX,YY>> h;
+        std::unique_ptr <Optizelle::VectorValuedFunction <Real,XX,ZZ>> h;
 
         // Desired solution
         std::unique_ptr <X_Vector> dx_ncp_star;

@@ -4137,6 +4137,8 @@ namespace Optizelle{
 
                 // Run the diagnostics
                 switch(f_diag) {
+                    case FunctionDiagnostics::NoDiagnostics:
+                        break;
                     case FunctionDiagnostics::FirstOrder:
                         msg("Diagnostics on the function f");
                         Optizelle::Diagnostics::gradientCheck(msg,f,x,dx,"f");
@@ -4196,6 +4198,9 @@ namespace Optizelle{
 
                 // Run the diagnostics
                 switch(x_diag) {
+                    case VectorSpaceDiagnostics::NoDiagnostics:
+                    case VectorSpaceDiagnostics::EuclideanJordan:
+                        break;
                     case VectorSpaceDiagnostics::Basic:
                         msg("Diagnostics on the vector-space X");
                         Optizelle::Diagnostics::zero_innr <Real,XX> (msg,x,"X");
@@ -7721,6 +7726,8 @@ namespace Optizelle{
 
                 // Run the diagnostics
                 switch(g_diag) {
+                    case FunctionDiagnostics::NoDiagnostics:
+                        break;
                     case FunctionDiagnostics::FirstOrder:
                         msg("Diagnostics on the function g");
                         Optizelle::Diagnostics::derivativeCheck(
@@ -7821,6 +7828,9 @@ namespace Optizelle{
 
                 // Run the diagnostics
                 switch(L_diag) {
+                    case FunctionDiagnostics::NoDiagnostics:
+                    case FunctionDiagnostics::FirstOrder:
+                        break;
                     case FunctionDiagnostics::SecondOrder:
                         msg("Diagnostics on the contribution of g to "
                             "the Lagrangian");
@@ -7859,6 +7869,9 @@ namespace Optizelle{
 
                 // Run the diagnostics
                 switch(y_diag) {
+                    case VectorSpaceDiagnostics::NoDiagnostics:
+                    case VectorSpaceDiagnostics::EuclideanJordan:
+                        break;
                     case VectorSpaceDiagnostics::Basic:
                         msg("Diagnostics on the vector-space Y");
                         Optizelle::Diagnostics::zero_innr <Real,YY> (msg,y,"Y");
@@ -11029,6 +11042,8 @@ namespace Optizelle{
 
                 // Run the diagnostics
                 switch(L_diag) {
+                    case FunctionDiagnostics::NoDiagnostics:
+                        break;
                     case FunctionDiagnostics::FirstOrder:
                     case FunctionDiagnostics::SecondOrder:
                         msg("Diagnostics on the contribution of h to "
@@ -11076,6 +11091,8 @@ namespace Optizelle{
 
                 // Run the diagnostics
                 switch(z_diag) {
+                    case VectorSpaceDiagnostics::NoDiagnostics:
+                        break;
                     case VectorSpaceDiagnostics::Basic:
                         msg("Diagnostics on the vector-space Z");
                         Optizelle::Diagnostics::zero_innr <Real,ZZ> (msg,z,"Z");

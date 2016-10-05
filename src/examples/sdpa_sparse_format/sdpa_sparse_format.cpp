@@ -512,7 +512,7 @@ typename Optizelle::SQL <Real>::Vector initSQL(
     std::vector <Optizelle::Natural> sizes(prob.blk_sizes.size());
     std::vector <Optizelle::Cone::t> types(prob.blk_sizes.size());
     for(Natural i=0;i<sizes.size();i++) {
-        sizes[i]=abs(prob.blk_sizes[i]);
+        sizes[i]=labs(prob.blk_sizes[i]);
         if(prob.blk_sizes[i]<0)
             types[i]=Optizelle::Cone::Linear;
         else

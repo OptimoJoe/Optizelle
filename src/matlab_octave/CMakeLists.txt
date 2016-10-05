@@ -6,16 +6,6 @@ set(ENABLE_MATLAB OFF CACHE BOOL "Enable the MATLAB build?")
 mark_as_advanced(CLEAR ENABLE_OCTAVE)
 set(ENABLE_OCTAVE OFF CACHE BOOL "Enable the Octave build?")
 
-# Options for both
-if(ENABLE_MATLAB OR ENABLE_OCTAVE)
-    # Common includes
-    include_directories(${OPTIZELLE_INCLUDE_DIRS})
-    include_directories(${JSONCPP_INCLUDE_DIRS})
-    
-    # Add the directory with the sources 
-    add_subdirectory(optizelle)
-endif()
-
 # MATLAB specific options
 if(ENABLE_MATLAB)
     # Find the MATLAB libraries 
@@ -38,4 +28,14 @@ if(ENABLE_OCTAVE)
 
     # Install the setup file
     install(FILES setupOptizelle.m DESTINATION share/optizelle/octave/)
+endif()
+
+# Options for both
+if(ENABLE_MATLAB OR ENABLE_OCTAVE)
+    # Common includes
+    include_directories(${OPTIZELLE_INCLUDE_DIRS})
+    include_directories(${JSONCPP_INCLUDE_DIRS})
+
+    # Add the directory with the sources
+    add_subdirectory(optizelle)
 endif()

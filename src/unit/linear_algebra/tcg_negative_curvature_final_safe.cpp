@@ -29,7 +29,7 @@
 
 int main() {
     // Setup the problem 
-    auto setup = Unit::tcg <Real,XX> ();
+    auto setup = Unit::tcg <Real,Rm> ();
 
     // Problem setup 
     setup.A = std::make_unique <Matrix>(
@@ -38,8 +38,8 @@ int main() {
     auto lb = Real(-0.1); 
     auto x = Unit::Vector<Real>::zero(setup.m);
     auto w = std::vector <Real> {4,4,1,1,1};
-    setup.safeguard = std::make_unique<Optizelle::SafeguardSimplified<Real,XX>>(
-        Unit::Safeguard <Real,XX>::lower(x,lb,w));
+    setup.safeguard = std::make_unique<Optizelle::SafeguardSimplified<Real,Rm>>(
+        Unit::Safeguard <Real,Rm>::lower(x,lb,w));
     setup.delta = 1e5; 
 
     // Target solutions
@@ -48,14 +48,14 @@ int main() {
     setup.safeguard_failed_star = 0;
 
     // Tests
-    Unit::reset_checks <Real,XX> (setup);
+    Unit::reset_checks <Real,Rm> (setup);
     setup.check_iter = true;
     setup.check_stop = true;
     setup.check_tr = true;
     setup.check_safeguard_failed = true;
 
     // Check the solver 
-    Unit::run_and_verify <Real,XX> (setup);
+    Unit::run_and_verify <Real,Rm> (setup);
 
     // Declare success
     return EXIT_SUCCESS;

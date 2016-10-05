@@ -998,7 +998,7 @@ namespace Optizelle {
             Mode const & mode
         ) : data(std::make_shared <mxArrayPtrData> (
                 ptr,
-                mode==Managed?mxDestroyArray:[](auto){}))
+                mode==Managed?mxDestroyArray:[](mxArray *){}))
         {}
 
         // Grab the internal pointer

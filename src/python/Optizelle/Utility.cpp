@@ -1074,6 +1074,7 @@ namespace Optizelle {
             // Then, grab the new pointer and increase the reference to that
             ptr =p.ptr;
             Py_XINCREF(ptr);
+            return *this;
         }
 
         // Move semantics
@@ -1088,6 +1089,7 @@ namespace Optizelle {
             // Then, grab the new pointer
             ptr=p.ptr;
             p.ptr = nullptr;
+            return *this;
         }
 
         // On a get, we simply return the pointer.

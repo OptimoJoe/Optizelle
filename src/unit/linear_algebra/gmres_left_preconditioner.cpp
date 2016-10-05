@@ -7,7 +7,7 @@
 
 int main() {
     // Setup the problem 
-    auto setup = Unit::gmres <Real,XX> ();
+    auto setup = Unit::gmres <Real,Rm> ();
 
     setup.A = std::make_unique <Matrix>(
         Unit::Matrix <Real>::diagonal(setup.m));
@@ -28,7 +28,7 @@ int main() {
     setup.check_res=true;
 
     // Check the solver 
-    Unit::run_and_verify <Real,XX> (setup);
+    Unit::run_and_verify <Real,Rm> (setup);
 
     // Declare success
     return EXIT_SUCCESS;

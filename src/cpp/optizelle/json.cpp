@@ -47,8 +47,7 @@ namespace Optizelle {
                     + ", failed to parse the optimization parameter "
                     "file:  " + reader.getFormattedErrorMessages());
 
-            // Close everything out and return the root
-            file.close();
+            // Return the root
             return root;
         }
        

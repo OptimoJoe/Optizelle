@@ -81,7 +81,7 @@ namespace Optizelle { namespace Stream {
 
     // istream
     struct cin : public std::istream {
-        cin();
+        cin(std::streambuf * sb);
     };
 }}
 

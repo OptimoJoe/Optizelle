@@ -7,7 +7,7 @@
 
 int main() {
     // Setup the problem 
-    auto setup = Unit::tcg <Real,XX> ();
+    auto setup = Unit::tcg <Real,Rm> ();
 
     // On the first iteration, CG will move in the steepest descent direction.
     // If we place the offset in the same direction, we know that it'll still
@@ -35,7 +35,7 @@ int main() {
     setup.check_sol = true;
 
     // Check the solver 
-    Unit::run_and_verify <Real,XX> (setup);
+    Unit::run_and_verify <Real,Rm> (setup);
 
     // Declare success
     return EXIT_SUCCESS;

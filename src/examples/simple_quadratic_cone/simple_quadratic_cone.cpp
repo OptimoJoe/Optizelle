@@ -6,6 +6,11 @@
 #include "optizelle/vspaces.h"
 #include "optizelle/json.h"
 
+// Create some type shortcuts
+using Optizelle::Rm;
+using Optizelle::SQL;
+typedef double Real;
+
 // Squares its input
 template <typename Real>
 Real sq(Real x){
@@ -16,9 +21,8 @@ Real sq(Real x){
 // 
 // f(x,y)=(x-3)^2+(y-2)^2
 //
-struct MyObj : public Optizelle::ScalarValuedFunction <double,Optizelle::Rm> {
-    typedef double Real;
-    typedef Optizelle::Rm <Real> X;
+struct MyObj : public Optizelle::ScalarValuedFunction <Real,Rm> {
+    typedef Rm <Real> X;
 
     // Evaluation 
     double eval(X::Vector const & x) const {
@@ -50,12 +54,9 @@ struct MyObj : public Optizelle::ScalarValuedFunction <double,Optizelle::Rm> {
 // h(x,y) = [ y >= |x| ] 
 // h(x,y) =  (y,x) >=_Q 0
 //
-struct MyIneq :
-    public Optizelle::VectorValuedFunction <double,Optizelle::Rm,Optizelle::SQL>
-{
-    typedef Optizelle::Rm <double> X;
-    typedef Optizelle::SQL <double> Z;
-    typedef double Real;
+struct MyIneq : public Optizelle::VectorValuedFunction <Real,Rm,SQL> {
+    typedef Rm <Real> X;
+    typedef SQL <Real> Z;
 
     // z=h(x) 
     void eval(
@@ -97,17 +98,10 @@ struct MyIneq :
     }
 };
 
-// Create some type shortcuts
-template <typename Real> using XX = Optizelle::Rm <Real>;
-template <typename Real> using ZZ = Optizelle::SQL <Real>;
-
 int main(int argc,char* argv[]){
-    // Create some more type shortcuts
-    typedef double Real;
-    typedef XX <Real> X;
-    typedef ZZ <Real> Z;
-    typedef X::Vector X_Vector;
-    typedef Z::Vector Z_Vector;
+    // Create some type shortcuts
+    typedef Rm <Real>::Vector Rm_Vector;
+    typedef SQL <Real>::Vector SQL_Vector;
 
     // Read in the name for the input file
     if(argc!=2) {
@@ -117,24 +111,24 @@ int main(int argc,char* argv[]){
     auto fname = argv[1];
 
     // Generate an initial guess for the primal
-    auto x = X_Vector({1.2,3.1});
+    auto x = Rm_Vector({1.2,3.1});
 
     // Allocate memory for the dual
-    auto z = Z_Vector ({Optizelle::Cone::Quadratic},{2});
+    auto z = SQL_Vector ({Optizelle::Cone::Quadratic},{2});
 
     // Create an optimization state
-    Optizelle::InequalityConstrained <Real,XX,ZZ>::State::t state(x,z);
+    Optizelle::InequalityConstrained <Real,Rm,SQL>::State::t state(x,z);
 
     // Read the parameters from file
-    Optizelle::json::InequalityConstrained <Real,XX,ZZ>::read(fname,state);
+    Optizelle::json::InequalityConstrained <Real,Rm,SQL>::read(fname,state);
     
     // Create a bundle of functions
-    Optizelle::InequalityConstrained <Real,XX,ZZ>::Functions::t fns;
+    Optizelle::InequalityConstrained <Real,Rm,SQL>::Functions::t fns;
     fns.f.reset(new MyObj);
     fns.h.reset(new MyIneq);
 
     // Solve the optimization problem
-    Optizelle::InequalityConstrained <Real,XX,ZZ>
+    Optizelle::InequalityConstrained <Real,Rm,SQL>
         ::Algorithms::getMin(Optizelle::Messaging::stdout,fns,state);
 
     // Print out the reason for convergence
@@ -147,7 +141,7 @@ int main(int argc,char* argv[]){
 	<< state.x[1] << ')' << std::endl;
 
     // Write out the final answer to file
-    Optizelle::json::InequalityConstrained <Real,XX,ZZ>
+    Optizelle::json::InequalityConstrained <Real,Rm,SQL>
         ::write_restart("solution.json",state);
 
     // Successful termination
