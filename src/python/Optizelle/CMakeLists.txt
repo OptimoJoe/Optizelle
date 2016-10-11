@@ -18,6 +18,8 @@ if(APPLE)
 elseif(WIN32)
     set_target_properties(optizelle_python PROPERTIES SUFFIX ".pyd")
 endif()
+set_target_properties(optizelle_python PROPERTIES INSTALL_RPATH "@loader_path/../../../../lib")
+
 
 # Copy in the rest of the Python files for the unit tests.  Otherwise, we
 # end of dirtying our source tree.

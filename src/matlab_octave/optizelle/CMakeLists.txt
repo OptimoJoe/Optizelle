@@ -6,6 +6,7 @@ macro(add_mex name type include extension)
     set_target_properties(${name}_${type} PROPERTIES OUTPUT_NAME ${name}_)
     set_target_properties(${name}_${type} PROPERTIES PREFIX "")
     set_target_properties(${name}_${type} PROPERTIES SUFFIX .${extension})
+    set_target_properties(${name}_${type} PROPERTIES INSTALL_RPATH "@loader_path/../../../../lib")
     install(TARGETS ${name}_${type}
         DESTINATION share/optizelle/${type}/optizelle)
     install(FILES ${name}.m DESTINATION share/optizelle/${type}/optizelle)

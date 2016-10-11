@@ -53,6 +53,7 @@ macro(compile_example_unit name interfaces)
                     ${JSONCPP_LIBRARIES}
                     ${LAPACK_LIBRARIES}
                     ${BLAS_LIBRARIES})
+                set_target_properties(${name} PROPERTIES INSTALL_RPATH "@loader_path/../../../../lib")
             endif()
                 
         elseif(${interface} STREQUAL "python")
