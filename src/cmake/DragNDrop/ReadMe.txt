@@ -15,7 +15,7 @@ Installation instructions for Optizelle
 
         /Library/LaunchAgents/
 
-    which enables Optiezlle for all users.  Then, reboot the computer.  Note,
+    which enables Optizelle for all users.  Then, reboot the computer.  Note,
     by default, the folder ~/Library is hidden inside of Finder.  To access it,
     use the menu option Go->Go to Folder..., type ~/Library, and then click the
     Go button.
