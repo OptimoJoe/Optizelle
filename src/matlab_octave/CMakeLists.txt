@@ -13,12 +13,6 @@ if(ENABLE_MATLAB)
 
     # Install the setup file
     install(FILES setupOptizelle.m DESTINATION share/optizelle/matlab/)
-
-    # If we're on Windows, install a readme file that explains how to set the
-    # MATLAB path
-    if(WIN32)
-        install(FILES readme_windows.txt RENAME readme.txt DESTINATION share/optizelle/matlab/)
-    endif()
 endif()
 
 # Octave specific options

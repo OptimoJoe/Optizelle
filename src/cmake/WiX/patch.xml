@@ -29,20 +29,19 @@
             System="yes" />
     </CPackWiXFragment>
 
+    <CPackWiXFragment Id="CM_CP_lib.liboptizelle_matlab.dll">
+        <Environment Id="MATLABPATH"
+            Name="MATLABPATH"
+            Value="[INSTALL_ROOT]share\optizelle\matlab"
+            Permanent="no"
+            Part="last"
+            Action="set"
+            System="yes" />
+    </CPackWiXFragment>
+
     <CPackWiXFragment Id="#PRODUCT">
         <SetProperty Id="WIXUI_EXITDIALOGOPTIONALTEXT"
             Value="For updates, information, and support, please visit us at www.optimojoe.com"
             After="CostFinalize" />
-
-        <SetProperty Id="WixShellExecTarget"
-            Value="[INSTALL_ROOT]share\optizelle\matlab\readme.txt"
-            After="CostFinalize" />
-        <CustomAction Id="LaunchFile"
-            BinaryKey="WixCA"
-            DllEntry="WixShellExec"
-            Impersonate="yes" />
-        <InstallExecuteSequence>
-           <Custom Action='LaunchFile' After='InstallFinalize'>Installed</Custom>
-       </InstallExecuteSequence>
     </CPackWiXFragment>
 </CPackWiXPatch>
