@@ -38,8 +38,8 @@ elseif(APPLE)
     set(CPACK_PACKAGING_INSTALL_PREFIX "/${CPACK_PACKAGE_LONG_NAME}")
 
     # Make sure to enable this when building a package
-    set(CPACK_DRAGNDROP_README OFF CACHE BOOL "Install the DragNDrop ReadMe?")
-    if(CPACK_DRAGNDROP_README)
+    set(CPACK_DRAGNDROP OFF CACHE BOOL "Building a DragNDrop package?")
+    if(CPACK_DRAGNDROP)
         # Setup the readme file
         set(README_NAME "src/cmake/DragNDrop/ReadMe.txt")
         configure_file(
@@ -52,9 +52,29 @@ elseif(APPLE)
         configure_file(
             "${CMAKE_CURRENT_SOURCE_DIR}/${PLIST_NAME}"
             "${CMAKE_CURRENT_BINARY_DIR}/${PLIST_NAME}")
-        install(FILES
-            "${CMAKE_CURRENT_BINARY_DIR}/${PLIST_NAME}"
-            DESTINATION share/optizelle)
+
+        # Correct an absurd number of hard coded paths
+        macro(fix_macos_lib name lib)
+            add_custom_target(fix_${name}_internal_${lib}
+                ALL
+                DEPENDS LAPACK
+                COMMAND install_name_tool -change /opt/local/lib/libgcc/lib${lib}.dylib /Applications/${CPACK_PACKAGE_LONG_NAME}/lib/lib${lib}.dylib ${CMAKE_BINARY_DIR}/thirdparty/lib/lib${name}.dylib
+                COMMENT "Fixing the path for lib${lib}.dylib inside of lib${name}.dylib")
+        endmacro()
+        macro(fix_macos_lib_alt name lib)
+            add_custom_target(fix_${name}_internal_${lib}
+                ALL
+                DEPENDS LAPACK
+                COMMAND install_name_tool -change /opt/local/lib/gcc43/lib${lib}.dylib /Applications/${CPACK_PACKAGE_LONG_NAME}/lib/lib${lib}.dylib ${CMAKE_BINARY_DIR}/thirdparty/lib/lib${name}.dylib
+                COMMENT "Fixing the path for lib${lib}.dylib inside of lib${name}.dylib")
+        endmacro()
+        fix_macos_lib(gfortran.3 quadmath.0)
+        fix_macos_lib(gfortran.3 gcc_s.1)
+        fix_macos_lib(quadmath.0 gcc_s.1)
+        fix_macos_lib(blas.3.6.1 gfortran.3)
+        fix_macos_lib_alt(blas.3.6.1 gcc_s.1)
+        fix_macos_lib(lapack.3.6.1 gfortran.3)
+        fix_macos_lib_alt(lapack.3.6.1 gcc_s.1)
     endif()
 elseif(UNIX)
     set(CPACK_GENERATOR "TGZ" "RPM" "DEB")
