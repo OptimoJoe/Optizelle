@@ -19,7 +19,6 @@ set(CPACK_PACKAGE_NAME "Optizelle")
 set(CPACK_PACKAGE_VERSION_MAJOR "1")
 set(CPACK_PACKAGE_VERSION_MINOR "1")
 set(CPACK_PACKAGE_VERSION_PATCH "5")
-set(CPACK_PACKAGE_LONG_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 set(CPACK_SOURCE_IGNORE_FILES "${CMAKE_BINARY_DIR}" "${CMAKE_SOURCE_DIR}/.git")
 set(CPACK_PACKAGE_CONTACT "Joseph Young <joe@optimojoe.com>")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Optizelle [op-tuh-zel] is an open source software library designed to solve general purpose nonlinear optimization problems")
@@ -38,7 +37,7 @@ elseif(APPLE)
     set(CPACK_GENERATOR "DragNDrop")
 
     # Set the installation folder
-    set(CPACK_PACKAGING_INSTALL_PREFIX "/${CPACK_PACKAGE_LONG_NAME}")
+    set(CPACK_PACKAGING_INSTALL_PREFIX "/${CPACK_PACKAGE_NAME}")
 
     # Make sure to enable this when building a package
     set(CPACK_DRAGNDROP OFF CACHE BOOL "Building a DragNDrop package?")
@@ -50,25 +49,30 @@ elseif(APPLE)
             "${CMAKE_BINARY_DIR}/${README_NAME}")
         install(FILES "${CMAKE_BINARY_DIR}/${README_NAME}" DESTINATION ..)
 
+        # Set the background image for the installer
+        set(CPACK_DMG_BACKGROUND_IMAGE "${CMAKE_BINARY_DIR}/assets/background.png")
+        set(CPACK_DMG_DS_STORE "${CMAKE_BINARY_DIR}/assets/DS_Store")
+
         # Setup the plist file
         set(PLIST_NAME "src/cmake/DragNDrop/com.optimojoe.optizelle.plist")
         configure_file(
             "${CMAKE_CURRENT_SOURCE_DIR}/${PLIST_NAME}"
             "${CMAKE_CURRENT_BINARY_DIR}/${PLIST_NAME}")
+        install(FILES "${CMAKE_BINARY_DIR}/${PLIST_NAME}" DESTINATION share/optizelle/ )
 
         # Correct an absurd number of hard coded paths
         macro(fix_macos_lib name lib)
             add_custom_target(fix_${name}_internal_${lib}
                 ALL
                 DEPENDS LAPACK
-                COMMAND install_name_tool -change /opt/local/lib/libgcc/lib${lib}.dylib /Applications/${CPACK_PACKAGE_LONG_NAME}/lib/lib${lib}.dylib ${CMAKE_BINARY_DIR}/thirdparty/lib/lib${name}.dylib
+                COMMAND install_name_tool -change /opt/local/lib/libgcc/lib${lib}.dylib /Applications/${CPACK_PACKAGE_NAME}/lib/lib${lib}.dylib ${CMAKE_BINARY_DIR}/thirdparty/lib/lib${name}.dylib
                 COMMENT "Fixing the path for lib${lib}.dylib inside of lib${name}.dylib")
         endmacro()
         macro(fix_macos_lib_alt name lib)
             add_custom_target(fix_${name}_internal_${lib}
                 ALL
                 DEPENDS LAPACK
-                COMMAND install_name_tool -change /opt/local/lib/gcc43/lib${lib}.dylib /Applications/${CPACK_PACKAGE_LONG_NAME}/lib/lib${lib}.dylib ${CMAKE_BINARY_DIR}/thirdparty/lib/lib${name}.dylib
+                COMMAND install_name_tool -change /opt/local/lib/gcc43/lib${lib}.dylib /Applications/${CPACK_PACKAGE_NAME}/lib/lib${lib}.dylib ${CMAKE_BINARY_DIR}/thirdparty/lib/lib${name}.dylib
                 COMMENT "Fixing the path for lib${lib}.dylib inside of lib${name}.dylib")
         endmacro()
         fix_macos_lib(gfortran.3 quadmath.0)

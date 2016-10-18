@@ -1,11 +1,11 @@
 Installation instructions for Optizelle
 
-1.  Drag the folder ${CPACK_PACKAGE_LONG_NAME} to Applications
+1.  Drag the folder ${CPACK_PACKAGE_NAME} to Applications
 
 2.  Set the environment variables for desktop use of Optizelle.  Copy the file
     called
 
-        /Applications/${CPACK_PACKAGE_LONG_NAME}/share/optizelle/com.optimojoe.optizelle.plist
+        /Applications/${CPACK_PACKAGE_NAME}/share/optizelle/com.optimojoe.optizelle.plist
 
     to either 
 
@@ -23,8 +23,8 @@ Installation instructions for Optizelle
 3.  (Optional) Set the environment variables for use of Optizelle over an ssh
     session.  For bash, add
 
-        export PYTHONPATH=$PYTHONPATH:/Applications/${CPACK_PACKAGE_LONG_NAME}/share/optizelle/python
-        export MATLABPATH=$MATLABPATH:/Applications/${CPACK_PACKAGE_LONG_NAME}/share/optizelle/matlab
-        export OCTAVE_PATH=$OCTAVE_PATH:/Applications/${CPACK_PACKAGE_LONG_NAME}/share/optizelle/octave
+        export PYTHONPATH=$PYTHONPATH:/Applications/${CPACK_PACKAGE_NAME}/share/optizelle/python
+        export MATLABPATH=$MATLABPATH:/Applications/${CPACK_PACKAGE_NAME}/share/optizelle/matlab
+        export OCTAVE_PATH=$OCTAVE_PATH:/Applications/${CPACK_PACKAGE_NAME}/share/optizelle/octave
 
     to ~/.bash_login

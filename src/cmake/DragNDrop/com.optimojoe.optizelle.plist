@@ -8,9 +8,9 @@
 		<string>sh</string>
 		<string>-c</string>
 		<string>
-            launchctl setenv PYTHONPATH $PYTHONPATH:/Applications/${CPACK_PACKAGE_LONG_NAME}/share/optizelle/python
-            launchctl setenv MATLABPATH $MATLABPATH:/Applications/${CPACK_PACKAGE_LONG_NAME}/share/optizelle/matlab
-            launchctl setenv OCTAVE_PATH $OCTAVE_PATH:/Applications/${CPACK_PACKAGE_LONG_NAME}/share/optizelle/octave
+            launchctl setenv PYTHONPATH $PYTHONPATH:/Applications/${CPACK_PACKAGE_NAME}/share/optizelle/python
+            launchctl setenv MATLABPATH $MATLABPATH:/Applications/${CPACK_PACKAGE_NAME}/share/optizelle/matlab
+            launchctl setenv OCTAVE_PATH $OCTAVE_PATH:/Applications/${CPACK_PACKAGE_NAME}/share/optizelle/octave
 		</string>
   </array>
   <key>RunAtLoad</key>
