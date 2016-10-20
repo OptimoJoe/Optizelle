@@ -2,7 +2,7 @@
     <CPackWiXFragment Id="CM_CP_include.optizelle.optizelle.h">
         <Environment Id="PATH"
             Name="PATH"
-            Value="[INSTALL_ROOT]lib"
+            Value="[INSTALL_ROOT]lib;[INSTALL_ROOT]share\optizelle\thirdparty\lib"
             Permanent="no"
             Part="last"
             Action="set"

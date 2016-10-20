@@ -65,14 +65,14 @@ elseif(APPLE)
             add_custom_target(fix_${name}_internal_${lib}
                 ALL
                 DEPENDS LAPACK
-                COMMAND install_name_tool -change /opt/local/lib/libgcc/lib${lib}.dylib /Applications/${CPACK_PACKAGE_NAME}/lib/lib${lib}.dylib ${CMAKE_BINARY_DIR}/thirdparty/lib/lib${name}.dylib
+                COMMAND install_name_tool -change /opt/local/lib/libgcc/lib${lib}.dylib /Applications/${CPACK_PACKAGE_NAME}/share/optizelle/thirdparty/lib/lib${lib}.dylib ${CMAKE_BINARY_DIR}/thirdparty/lib/lib${name}.dylib
                 COMMENT "Fixing the path for lib${lib}.dylib inside of lib${name}.dylib")
         endmacro()
         macro(fix_macos_lib_alt name lib)
             add_custom_target(fix_${name}_internal_${lib}
                 ALL
                 DEPENDS LAPACK
-                COMMAND install_name_tool -change /opt/local/lib/gcc43/lib${lib}.dylib /Applications/${CPACK_PACKAGE_NAME}/lib/lib${lib}.dylib ${CMAKE_BINARY_DIR}/thirdparty/lib/lib${name}.dylib
+                COMMAND install_name_tool -change /opt/local/lib/gcc43/lib${lib}.dylib /Applications/${CPACK_PACKAGE_NAME}/share/optizelle/thirdparty/lib/lib${lib}.dylib ${CMAKE_BINARY_DIR}/thirdparty/lib/lib${name}.dylib
                 COMMENT "Fixing the path for lib${lib}.dylib inside of lib${name}.dylib")
         endmacro()
         fix_macos_lib(gfortran.3 quadmath.0)
@@ -93,3 +93,10 @@ enable_testing()
 
 # Add the source directories for all of the ports
 add_subdirectory(src)
+
+# Install any thirdparty libraries that we built
+if(EXISTS ${CMAKE_BINARY_DIR}/thirdparty)
+    install(
+        DIRECTORY ${CMAKE_BINARY_DIR}/thirdparty
+        DESTINATION share/optizelle)
+endif()

@@ -19,7 +19,7 @@ optizelle_dir = sprintf('%s/optizelle',dir);
 addpath(optizelle_dir);
 
 % Add jsonlab if we install it in this path
-jsonlab_dir = sprintf('%s/jsonlab',dir);
+jsonlab_dir = sprintf('%s/../thirdparty/share/jsonlab',dir);
 if exist(jsonlab_dir,'dir')
     addpath(jsonlab_dir)
 end

@@ -33,6 +33,11 @@ target_link_libraries(optizelle_shared
     ${JSONCPP_LIBRARIES}
     ${LAPACK_LIBRARIES}
     ${BLAS_LIBRARIES})
+if(APPLE)
+    set_target_properties(optizelle_shared PROPERTIES INSTALL_RPATH "@loader_path/../share/optizelle/thirdparty/lib")
+elseif(UNIX)
+    set_target_properties(optizelle_shared PROPERTIES INSTALL_RPATH "\$ORIGIN/../share/optizelle/thirdparty/lib")
+endif()
 
 # Install the headers associated with the library.  
 install(FILES
@@ -58,7 +63,9 @@ if(MINGW)
         ${Mingw_Path}/libgfortran-3.dll
         ${Mingw_Path}/libquadmath-0.dll
         ${Mingw_Path}/libgomp-1.dll)
-    install(PROGRAMS ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION lib)
+    file(
+	COPY ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS}
+	DESTINATION ${CMAKE_BINARY_DIR}/thirdparty/lib)
 elseif(APPLE AND CPACK_DRAGNDROP)
     get_filename_component(Compiler_Path ${CMAKE_Fortran_COMPILER} PATH)
     set(Lib_Path "${Compiler_Path}/../lib/libgcc")

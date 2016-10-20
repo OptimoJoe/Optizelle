@@ -6,7 +6,11 @@ macro(add_mex name type include extension)
     set_target_properties(${name}_${type} PROPERTIES OUTPUT_NAME ${name}_)
     set_target_properties(${name}_${type} PROPERTIES PREFIX "")
     set_target_properties(${name}_${type} PROPERTIES SUFFIX .${extension})
-    set_target_properties(${name}_${type} PROPERTIES INSTALL_RPATH "@loader_path/../../../../lib")
+    if(APPLE)
+        set_target_properties(${name}_${type} PROPERTIES INSTALL_RPATH "@loader_path/../../../../lib;@loader_path/../../thirdparty/lib")
+    elseif(UNIX)
+        set_target_properties(${name}_${type} PROPERTIES INSTALL_RPATH "\$ORIGIN/../../../../lib;\$ORIGIN/../../thirdparty/lib")
+    endif()
     install(TARGETS ${name}_${type}
         DESTINATION share/optizelle/${type}/optizelle)
     install(FILES ${name}.m DESTINATION share/optizelle/${type}/optizelle)
@@ -127,7 +131,7 @@ macro(compile_interface type include libs extension unit)
             ALL
             COMMAND ${CMAKE_COMMAND} -E copy_directory
                 ${JSONLAB_DIR}
-                ${CMAKE_BINARY_DIR}/src/${type}/jsonlab
+                ${CMAKE_BINARY_DIR}/src/thirdparty/share/jsonlab
             DEPENDS ${type}_create_directory)
     endif()
 endmacro()
