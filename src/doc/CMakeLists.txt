@@ -32,6 +32,7 @@ add_custom_target(configure_paths
         -D CPACK_PACKAGE_VERSION_MAJOR=${CPACK_PACKAGE_VERSION_MAJOR}
         -D CPACK_PACKAGE_VERSION_MINOR=${CPACK_PACKAGE_VERSION_MINOR}
         -D CPACK_PACKAGE_VERSION_PATCH=${CPACK_PACKAGE_VERSION_PATCH}
+        -D PAPERTYPE=${PAPERTYPE}
         -P ${CMAKE_CURRENT_SOURCE_DIR}/CMakePathConfigure.txt)
 add_dependencies(configure_paths optizelle.tex.pp.run)
 add_dependencies(pdf configure_paths)
