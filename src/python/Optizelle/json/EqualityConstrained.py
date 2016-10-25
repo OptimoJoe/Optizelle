@@ -4,47 +4,42 @@ __all__ = [
     "read_restart"
 ]
 
-import Optizelle
-import Optizelle.Utility
 import Optizelle.EqualityConstrained.State
+from Optizelle.Utility import *
+from Optizelle.Properties import *
 
-def read(X,Y,msg,fname,state):
+def read(X,Y,fname,state):
     """Read parameters from file"""
         
     # Check our arguments
-    Optizelle.checkVectorSpace("X",X)
-    Optizelle.checkVectorSpace("Y",Y)
-    Optizelle.checkMessaging("msg",msg)
-    Optizelle.checkString("fname",fname)
+    checkVectorSpace("X",X)
+    checkVectorSpace("Y",Y)
+    checkString("fname",fname)
     Optizelle.EqualityConstrained.State.checkT("state",state)
 
     # Do the read
-    Optizelle.Utility.EqualityConstrainedStateReadJson(X,Y,msg,fname,state)
+    Optizelle.Utility.EqualityConstrainedStateReadJson(X,Y,fname,state)
 
-def write_restart(X,Y,msg,fname,state):
+def write_restart(X,Y,fname,state):
     """Writes a json restart file"""
     
     # Check our arguments
-    Optizelle.checkVectorSpace("X",X)
-    Optizelle.checkVectorSpace("Y",Y)
-    Optizelle.checkMessaging("msg",msg)
-    Optizelle.checkString("fname",fname)
+    checkVectorSpace("X",X)
+    checkVectorSpace("Y",Y)
+    checkString("fname",fname)
     Optizelle.EqualityConstrained.State.checkT("state",state)
 
     # Do the write
-    Optizelle.Utility.EqualityConstrainedRestartWriteRestart(
-        X,Y,msg,fname,state)
+    EqualityConstrainedRestartWriteRestart(X,Y,fname,state)
 
-def read_restart(X,Y,msg,fname,x,y,state):
+def read_restart(X,Y,fname,x,y,state):
     """Reads a json restart file"""
     
     # Check our arguments
-    Optizelle.checkVectorSpace("X",X)
-    Optizelle.checkVectorSpace("Y",Y)
-    Optizelle.checkMessaging("msg",msg)
-    Optizelle.checkString("fname",fname)
+    checkVectorSpace("X",X)
+    checkVectorSpace("Y",Y)
+    checkString("fname",fname)
     Optizelle.EqualityConstrained.State.checkT("state",state)
 
     # Do the read 
-    Optizelle.Utility.EqualityConstrainedRestartReadRestart(
-        X,Y,msg,fname,x,y,state)
+    EqualityConstrainedRestartReadRestart(X,Y,fname,x,y,state)

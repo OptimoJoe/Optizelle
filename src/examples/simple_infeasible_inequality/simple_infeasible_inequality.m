@@ -7,6 +7,12 @@
 % Now, in the case we don't have a starting feasible solution, we can play
 % a reformulation trick that adds two scalar variables and allows us to find
 % a strictly feasible solution.  Namely,
+%
+% Note, most of the time, we're much better off just adding slack variables.
+% Basically, this trick is only worthwhile when we don't have a linear system
+% solver for the equality constraints added from the slacks since this method
+% only adds a single equality constraint.
+
 % min x + y
 % st  x + 2y >= 1 - z
 %     2x + y >= 1 - z
@@ -122,11 +128,11 @@ function main(fname)
 
     % Create an optimization state
     state=Optizelle.Constrained.State.t( ...
-        Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,x,y,z);
+        Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,x,y,z);
 
     % Read the parameters from file
     state=Optizelle.json.Constrained.read( ...
-        Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,fname,state);
+        Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,fname,state);
 
     % Create a bundle of functions
     fns = Optizelle.Constrained.Functions.t;
@@ -136,17 +142,17 @@ function main(fname)
 
     % Solve the optimization problem
     state = Optizelle.Constrained.Algorithms.getMin( ...
-        Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging,fns,state);
+        Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging.stdout, ...
+        fns,state);
 
     % Print out the reason for convergence
     fprintf('The algorithm converged due to: %s\n', ...
-        Optizelle.StoppingCondition.to_string(state.opt_stop));
+        Optizelle.OptimizationStop.to_string(state.opt_stop));
 
     % Print out the final answer
     fprintf('The optimal point is: (%e,%e)\n',state.x(1),state.x(2));
 
     % Write out the final answer to file
     Optizelle.json.Constrained.write_restart( ...
-        Optizelle.Rm,Optizelle.Rm,Optizelle.Rm, ...
-        Optizelle.Messaging,'solution.json',state);
+        Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,'solution.json',state);
 end

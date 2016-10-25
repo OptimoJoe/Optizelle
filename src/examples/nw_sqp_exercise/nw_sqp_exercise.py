@@ -2,10 +2,6 @@
 # an optimal solution of x = (-1.71,1.59,1.82.-0.763,-0.763).
 
 import Optizelle 
-import Optizelle.EqualityConstrained.State
-import Optizelle.EqualityConstrained.Functions
-import Optizelle.EqualityConstrained.Algorithms
-import Optizelle.json.EqualityConstrained
 import numpy
 import sys
 from math import exp
@@ -189,8 +185,8 @@ class MyEq(Optizelle.VectorValuedFunction):
             for j in xrange(1,6):
                 y[itok(i)] += jac[ijtok(i,j,3)]*dx[itok(j)]
 
-    # z=g'(x)*dy
-    def ps(self,x,dy,z):
+    # xhat=g'(x)*dy
+    def ps(self,x,dy,xhat):
         # Generate a dense matrix that holds the Jacobian
         jac = numpy.zeros(15)
 
@@ -198,13 +194,13 @@ class MyEq(Optizelle.VectorValuedFunction):
         self.generateJac(x,jac);
 
         # Compute the Jacobian transpose-vector product
-        z.fill(0.)
+        xhat.fill(0.)
         for i in xrange(1,4):
             for j in xrange(1,6):
-                z[itok(j)] += jac[ijtok(i,j,3)]*dy[itok(i)]
+                xhat[itok(j)] += jac[ijtok(i,j,3)]*dy[itok(i)]
 
-    # z=(g''(x)dx)*dy
-    def pps(self,x,dx,dy,z):
+    # xhat=(g''(x)dx)*dy
+    def pps(self,x,dx,dy,xhat):
         # Generate a dense tensor that holds the second derivative adjoint
         D = numpy.zeros(75)
         D[ijktol(1,1,1,3,5)] = 2.
@@ -222,11 +218,11 @@ class MyEq(Optizelle.VectorValuedFunction):
         D[ijktol(3,2,2,3,5)] = 6.*x[itok(2)]
 
         # Compute the action of this operator on our directions
-        z.fill(0.)
+        xhat.fill(0.)
         for i in xrange(1,4):
             for j in xrange(1,6):
                 for k in xrange(1,6):
-                    z[itok(k)] += D[ijktol(i,j,k,3,5)]*dx[itok(j)]*dy[itok(i)]
+                    xhat[itok(k)]+= D[ijktol(i,j,k,3,5)]*dx[itok(j)]*dy[itok(i)]
 
 
 # Read in the name for the input file
@@ -241,12 +237,10 @@ x = numpy.array([-1.8,1.7,1.9,-0.8,-0.8])
 y = numpy.zeros(3)
 
 # Create an optimization state
-state=Optizelle.EqualityConstrained.State.t(
-    Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging(),x,y)
+state=Optizelle.EqualityConstrained.State.t(Optizelle.Rm,Optizelle.Rm,x,y)
 
 # Read the parameters from file
-Optizelle.json.EqualityConstrained.read(Optizelle.Rm,Optizelle.Rm,
-    Optizelle.Messaging(),fname,state)
+Optizelle.json.EqualityConstrained.read(Optizelle.Rm,Optizelle.Rm,fname,state)
 
 # Create the bundle of functions 
 fns=Optizelle.EqualityConstrained.Functions.t()
@@ -255,11 +249,11 @@ fns.g=MyEq()
 
 # Solve the optimization problem
 Optizelle.EqualityConstrained.Algorithms.getMin(
-    Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging(),fns,state)
+    Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging.stdout,fns,state)
 
 # Print out the reason for convergence
 print "The algorithm converged due to: %s" % (
-    Optizelle.StoppingCondition.to_string(state.opt_stop))
+    Optizelle.OptimizationStop.to_string(state.opt_stop))
 
 # Print out the final answer
 print "The optimal point is:"
@@ -276,4 +270,4 @@ for i in xrange(1,6):
 
 # Write out the final answer to file
 Optizelle.json.EqualityConstrained.write_restart(
-    Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging(),"solution.json",state)
+    Optizelle.Rm,Optizelle.Rm,"solution.json",state)

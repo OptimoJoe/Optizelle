@@ -4,8 +4,9 @@ __all__ = [
 ]
 __doc__ = "Interaction between Optizelle with JSON formatted files"
 
-import Optizelle
 import numpy
+import Optizelle.Exception
+from Optizelle.Properties import *
 
 class Extendable(object):
     """Allows a function to be extended"""
@@ -18,8 +19,8 @@ class Extendable(object):
         called if the first argument matches vector_type."""
 
         # Check our arguments
-        Optizelle.checkFunction("(de)serialize",fn)
-        Optizelle.checkType("vector_type",vector_type)
+        checkFunction("(de)serialize",fn)
+        checkType("vector_type",vector_type)
 
         # Register the function
         self.fns[vector_type]=fn
@@ -31,20 +32,20 @@ class Extendable(object):
             return self.fn(*args) 
 
 @ Extendable
-def serialize(x):
+def serialize(x,name,iter):
     """Converts a vector to a JSON formatted string"""
     
-    raise Optizelle.Exception(
+    raise Optizelle.Exception.t(
         "The serialize function for the vector %s not defined." % str(x))
     
 @ Extendable
 def deserialize(x,x_json):
     """Converts a JSON formatted string to a vector"""
 
-    raise Optizelle.Exception(
+    raise Optizelle.Exception.t(
         "The deserialize function for the vector %s not defined." % str(x))
 
-def serialize_Rm(x):
+def serialize_Rm(x,name,iter):
     """Serializes a numpy array for the vector space Optizelle.Rm""" 
 
     # Create the json representation

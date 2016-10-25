@@ -512,7 +512,7 @@ typename Optizelle::SQL <Real>::Vector initSQL(
     std::vector <Optizelle::Natural> sizes(prob.blk_sizes.size());
     std::vector <Optizelle::Cone::t> types(prob.blk_sizes.size());
     for(Natural i=0;i<sizes.size();i++) {
-        sizes[i]=abs(prob.blk_sizes[i]);
+        sizes[i]=labs(prob.blk_sizes[i]);
         if(prob.blk_sizes[i]<0)
             types[i]=Optizelle::Cone::Linear;
         else
@@ -928,11 +928,10 @@ typename Optizelle::SQL <Real>::Vector initZ(
 // parse whether or not we want finite difference tests.
 template <typename Real>
 void parseSDPSettings(
-    Optizelle::Messaging const & msg,
     std::string const & fname,
     Real & epsilon
 ) {
-    Json::Value root=Optizelle::json::parse(msg,fname);
+    Json::Value root=Optizelle::json::parse(fname);
     epsilon=Real(root["sdp_settings"].get("epsilon",1.).asDouble());
 }
 
@@ -960,8 +959,8 @@ int main(int argc,char* argv[]) {
 
     // Note, we're going to ignore the values of epsilon from the phase-2
     // parsing.  Mostly, it's just easier not to have two different routines.
-    parseSDPSettings(Optizelle::Messaging(),phase2_params,epsilon);
-    parseSDPSettings(Optizelle::Messaging(),phase1_params,epsilon);
+    parseSDPSettings(phase2_params,epsilon);
+    parseSDPSettings(phase1_params,epsilon);
 
     // Parse the file sparse SDPA file
     SparseSDP <Real> prob;
@@ -989,7 +988,7 @@ int main(int argc,char* argv[]) {
 
     // Read the parameters from file
     Optizelle::json::InequalityConstrained <Real,Optizelle::Rm,Optizelle::SQL>
-        ::read(Optizelle::Messaging(),phase1_params,phase1_state);
+        ::read(phase1_params,phase1_state);
 
     // Create the bundle of phase-1 functions
     Optizelle::InequalityConstrained <Real,Optizelle::Rm,Optizelle::SQL>
@@ -1006,12 +1005,12 @@ int main(int argc,char* argv[]) {
 
         // Solve the SDP 
         Optizelle::InequalityConstrained <Real,Optizelle::Rm,Optizelle::SQL>
-            ::Algorithms::getMin(Optizelle::Messaging(),phase1_fns,
+            ::Algorithms::getMin(Optizelle::Messaging::stdout,phase1_fns,
                 phase1_state);
 
         // Tell us why the problem converged
         std::cout << "Phase-1 problem converged due to: "
-            << Optizelle::StoppingCondition::to_string(phase1_state.opt_stop)
+            << Optizelle::OptimizationStop::to_string(phase1_state.opt_stop)
             << std::endl;
 
         // Check if we're feasible
@@ -1040,7 +1039,7 @@ int main(int argc,char* argv[]) {
 
     // Read the parameters from file
     Optizelle::json::InequalityConstrained <Real,Optizelle::Rm,Optizelle::SQL>
-        ::read(Optizelle::Messaging(),phase2_params,state);
+        ::read(phase2_params,state);
 
     // Create the bundle of functions
     Optizelle::InequalityConstrained <Real,Optizelle::Rm,Optizelle::SQL>
@@ -1055,11 +1054,11 @@ int main(int argc,char* argv[]) {
 
     // Solve the SDP 
     Optizelle::InequalityConstrained<Real,Optizelle::Rm,Optizelle::SQL>
-        ::Algorithms::getMin(Optizelle::Messaging(),fns,state);
+        ::Algorithms::getMin(Optizelle::Messaging::stdout,fns,state);
 
     // Tell us why the problem converged
     std::cout << "SDP problem converged due to: "
-        << Optizelle::StoppingCondition::to_string(state.opt_stop)
+        << Optizelle::OptimizationStop::to_string(state.opt_stop)
         << std::endl;
 
     // Return the objective function
@@ -1068,5 +1067,5 @@ int main(int argc,char* argv[]) {
 
     // Write out the final answer to file
     Optizelle::json::InequalityConstrained <Real,Optizelle::Rm,Optizelle::SQL>
-        ::write_restart(Optizelle::Messaging(),"solution.json",state);
+        ::write_restart("solution.json",state);
 }

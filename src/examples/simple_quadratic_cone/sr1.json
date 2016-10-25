@@ -3,15 +3,12 @@
       "msg_level" : 1,
       "H_type" : "SR1",
       "stored_history" : 2,
-      "eps_krylov" : 1e-10,
+      "eps_trunc" : 1e-10,
       "iter_max" : 100,
-      "eps_dx" : 1e-16,
-      "eps_mu" : 1e-7,
-      "sigma" : 0.1,
-      "gamma" : 0.95
+      "eps_dx" : 1e-16
    },
    "Naturals" : {
-      "iter" : 9 
+      "iter" : 11
    },
    "X_Vectors" : {
       "x" : [ 2.5, 2.5] 

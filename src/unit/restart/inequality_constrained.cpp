@@ -9,7 +9,7 @@
 int main() {
 
     // Create a messaging object
-    Optizelle::Messaging msg;
+    auto msg = Optizelle::Messaging::stdout;
 
     // Create some arbitrary vector in R^2
     std::vector <Real> x = {1.2,2.3};
@@ -27,7 +27,7 @@ int main() {
     // Read in some parameters
     std::string fname("blank.json");
     //---ReadJson0--- 
-    Optizelle::json::InequalityConstrained <Real,XX,ZZ>::read(msg,fname,state);
+    Optizelle::json::InequalityConstrained <Real,XX,ZZ>::read(fname,state);
     //---ReadJson1--- 
    
     // Create a bundle of functions
@@ -38,6 +38,7 @@ int main() {
     fns.h.reset(new H);
 
     // Do a null optimization
+    state.f_x = 1.0;
     //---Solver0---
     Optizelle::InequalityConstrained<Real,XX,ZZ>::Algorithms::getMin(
         msg,fns,state);
@@ -54,9 +55,9 @@ int main() {
     fname = "restart.json";
     //---WriteReadRestart0---
     Optizelle::json::InequalityConstrained <Real,XX,ZZ>::write_restart(
-        msg,fname,state);
+        fname,state);
     Optizelle::json::InequalityConstrained <Real,XX,ZZ>::read_restart(
-        msg,fname,x,z,state);
+        fname,x,z,state);
     //---WriteReadRestart1---
 
     // Do a release 
@@ -94,7 +95,7 @@ int main() {
     // Capture the state
     //---Capture0---
     Optizelle::InequalityConstrained <Real,XX,ZZ>::Restart
-        ::capture(msg,state,xs,zs,reals,nats,params);
+        ::capture(state,xs,zs,reals,nats,params);
     //---Capture1---
 
     // Check that we actually have memory in these slots

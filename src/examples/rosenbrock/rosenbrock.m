@@ -40,15 +40,14 @@ end
 % Define a perfect preconditioner for the Hessian
 function self = RosenHInv()
     self.eval = @(state,dx) eval(state,dx);
-
-    function result = eval(state,dx)
-        x = state.x;
-        one_over_det=1./(80000.*sq(x(1))-80000.*x(2)+400.);
-        result = [
-            one_over_det*(200.*dx(1)+400.*x(1)*dx(2));
-            one_over_det*...
-                (400.*x(1)*dx(1)+(1200.*x(1)*x(1)-400.*x(2)+2.)*dx(2))];
-    end
+end
+function result = eval(state,dx)
+    x = state.x;
+    one_over_det=1./(80000.*sq(x(1))-80000.*x(2)+400.);
+    result = [
+        one_over_det*(200.*dx(1)+400.*x(1)*dx(2));
+        one_over_det*...
+            (400.*x(1)*dx(1)+(1200.*x(1)*x(1)-400.*x(2)+2.)*dx(2))];
 end
 %---Preconditioner1---
 
@@ -64,13 +63,12 @@ function main(fname)
     x = [-1.2;1.];
 
     % Create an unconstrained state based on this vector
-    state=Optizelle.Unconstrained.State.t(Optizelle.Rm,Optizelle.Messaging,x);
+    state=Optizelle.Unconstrained.State.t(Optizelle.Rm,x);
     %---State1---
 
     %---Parameters0---
     % Read the parameters from file
-    state=Optizelle.json.Unconstrained.read(Optizelle.Rm,Optizelle.Messaging,...
-        fname,state);
+    state=Optizelle.json.Unconstrained.read(Optizelle.Rm,fname,state);
     %---Parameters1---
 
     %---Functions0---
@@ -83,13 +81,13 @@ function main(fname)
     %---Solver0---
     % Solve the optimization problem
     state = Optizelle.Unconstrained.Algorithms.getMin( ...
-        Optizelle.Rm,Optizelle.Messaging,fns,state);
+        Optizelle.Rm,Optizelle.Messaging.stdout,fns,state);
     %---Solver1---
 
     %---Extract0---
     % Print out the reason for convergence
     fprintf('The algorithm converged due to: %s\n', ...
-        Optizelle.StoppingCondition.to_string(state.opt_stop));
+        Optizelle.OptimizationStop.to_string(state.opt_stop));
 
     % Print out the final answer
     fprintf('The optimal point is: (%e,%e)\n',state.x(1),state.x(2));
@@ -97,5 +95,5 @@ function main(fname)
 
     % Write out the final answer to file
     Optizelle.json.Unconstrained.write_restart( ...
-        Optizelle.Rm,Optizelle.Messaging,'solution.json',state);
+        Optizelle.Rm,'solution.json',state);
 end

@@ -1,36 +1,5 @@
-/*
-Copyright 2013-2014 OptimoJoe.
+#pragma once
 
-For the full copyright notice, see LICENSE.
-
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
-    * Redistributions of source code must retain the above copyright notice,
-      this list of conditions and the following disclaimer.
-
-    * Redistributions in binary form must reproduce the above copyright notice,
-      this list of conditions and the following disclaimer in the documentation
-      and/or other materials provided with the distribution.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-Author: Joseph Young (joe@optimojoe.com)
-*/
-
-#ifndef VSPACES_H
-#define VSPACES_H
 #include <cmath>
 #include <random>
 #include "optizelle/linalg.h"
@@ -183,7 +152,9 @@ namespace Optizelle {
         template <typename Real>
         struct Serialization <Real,Rm> {
             static std::string serialize (
-                typename Rm <Real>::Vector const & x
+                typename Rm <Real>::Vector const & x,
+                std::string const & name,
+                Natural const & iter
             ) {
                 // Create a jsoncpp object to copy into
                 Json::Value x_json;  
@@ -281,8 +252,7 @@ namespace Optizelle {
             // We require a vector of cone types and their sizes.
             Vector (
                 std::vector <Cone::t> const & types_,
-                std::vector <Natural> const & sizes_,
-                Messaging const msg = Optizelle::Messaging()
+                std::vector <Natural> const & sizes_
             )
             //---SQLVector3---
             : data(), offsets(), types(types_), sizes(sizes_),
@@ -292,12 +262,14 @@ namespace Optizelle {
 
                 // Insure that the type of cones and their sizes lines up.
                 if(types.size()!=sizes.size())
-                    msg.error("The vector containing the type of cones must "
-                        "be the same size as the vector with the cone sizes.");
+                    Exception::t(__LOC__
+                        + ", the vector containing the type of cones must "
+                        "be the same size as the vector with the cone sizes");
 
                 // Make sure we have at least one cone.
                 if(types.size() == 0)
-                    msg.error("A SQL vector requires at least one cone.");
+                    Exception::t(__LOC__
+                        + ", a SQL vector requires at least one cone");
 
                 // Initialize the offsets.  The last element has the total
                 // number of variables.
@@ -344,30 +316,9 @@ namespace Optizelle {
                 inverse_base.resize(inverse_base_offsets.back());
             }
             
-            // Move constructor 
-            Vector(Vector&& x) noexcept : 
-                data(std::move(x.data)),
-                offsets(std::move(x.offsets)),
-                types(std::move(x.types)),
-                sizes(std::move(x.sizes)),
-                inverse(std::move(x.inverse)),
-                inverse_offsets(std::move(x.inverse_offsets)),
-                inverse_base(std::move(x.inverse_base)),
-                inverse_base_offsets(std::move(x.inverse_base_offsets))
-            {}
-
-            // Move assignment operator
-            Vector const & operator = (Vector&& x) noexcept {
-                data=std::move(x.data);
-                offsets=std::move(x.offsets);
-                types=std::move(x.types);
-                sizes=std::move(x.sizes);
-                inverse=std::move(x.inverse);
-                inverse_offsets=std::move(inverse_offsets);
-                inverse_base=std::move(inverse_base);
-                inverse_base_offsets=std::move(inverse_base_offsets);
-                return *this;
-            }
+            // Move semantics 
+            Vector (Vector && x) = default; 
+            Vector & operator = (Vector && x) = default;
 
             // Simple indexing.
             Real & operator () (Natural const & i) {
@@ -926,10 +877,7 @@ namespace Optizelle {
                         - dot <Real> (mbar,&(x.bar(blk)),1,&(y.bar(blk)),1));
                     Real c = y.naught(blk)*y.naught(blk)
                         - dot <Real> (mbar,&(y.bar(blk)),1,&(y.bar(blk)),1);
-                    Natural nroots(0);
-                    Real alpha1(-1.);
-                    Real alpha2(-1.);
-                    quad_equation(a,b,c,nroots,alpha1,alpha2);
+                    auto roots = quad_equation(a,b,c);
 
                     // Now, determine the step length.
 
@@ -939,13 +887,17 @@ namespace Optizelle {
                         alpha0 : alpha;
 
                     // Next, if we have two roots, determine the restriction 
-                    if(nroots==2) { 
+                    if(roots.size()==2) { 
+                        auto alpha1 = roots[0];
+                        auto alpha2 = roots[1];
                         alpha = alpha1>=Real(0.)&&alpha1<alpha ? alpha1 : alpha;
                         alpha = alpha2>=Real(0.)&&alpha2<alpha ? alpha2 : alpha;
 
                     // If we have a single root 
-                    } else if(nroots==1)
+                    } else if(roots.size()==1) {
+                        auto alpha1 = roots[0];
                         alpha = alpha1>=Real(0.)&&alpha1<alpha ? alpha1 : alpha;
+                    }
 
                     // If we no roots, there's no additional restriction.
                     // This can't happen since we assume that y is strictly
@@ -1106,7 +1058,9 @@ namespace Optizelle {
         template <typename Real>
         struct Serialization <Real,SQL> {
             static std::string serialize (
-                typename SQL <Real>::Vector const & x
+                typename SQL <Real>::Vector const & x,
+                std::string const & name,
+                Natural const & iter
             ) {
                 // Create a jsoncpp object to copy into
                 Json::Value x_json;  
@@ -1220,4 +1174,3 @@ namespace Optizelle {
 //---Optizelle2---
 }
 //---Optizelle3---
-#endif

@@ -1,10 +1,14 @@
 project(parest)
 
-# Compile and install the example
-add_optizelle_example_matlab(${PROJECT_NAME})
+# Set what interfaces we're using
+set(interfaces "matlab" "octave")
 
-# Installs the supporting files 
-add_optizelle_example_supporting(${PROJECT_NAME}
+# Compile and install the example
+set(supporting
     genUnconstrained.m
-    genEqualityConstrained.m
-    tr_newton.json)
+    genEqualityConstrained.m)
+add_example(${PROJECT_NAME} "${interfaces}" "${supporting}")
+
+# Run the unit tests
+file(GLOB_RECURSE units ${CMAKE_CURRENT_SOURCE_DIR} "*.json")
+add_unit(${PROJECT_NAME} "${interfaces}" "${units}" FALSE)

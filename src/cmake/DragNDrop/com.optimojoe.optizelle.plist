@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+	<key>Label</key>
+	<string>Optizelle.startup</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>sh</string>
+		<string>-c</string>
+		<string>
+            launchctl setenv MATLABPATH $MATLABPATH:/Applications/${CPACK_PACKAGE_NAME}/share/optizelle/matlab
+            launchctl setenv OCTAVE_PATH $OCTAVE_PATH:/Applications/${CPACK_PACKAGE_NAME}/share/optizelle/octave
+            launchctl setenv PYTHONPATH $PYTHONPATH:/Applications/${CPACK_PACKAGE_NAME}/share/optizelle/python
+		</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+</dict></plist>

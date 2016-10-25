@@ -1,0 +1,12 @@
+{
+    "Optizelle" : {
+        "msg_level" : 2,
+        "iter_max" : 100,
+        "PSchur_left_type" : "UserDefined",
+        "augsys_iter_max" : 20,
+        "eps_constr" : 1e-7,
+        "dscheme" : "Never",
+        "f_diag" : "SecondOrder",
+        "g_diag" : "SecondOrder"
+    }
+}

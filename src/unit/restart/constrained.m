@@ -8,7 +8,7 @@ setupOptizelle();
 XX = Optizelle.Rm;
 YY = Optizelle.Rm;
 ZZ = Optizelle.Rm;
-msg = Optizelle.Messaging;
+msg = Optizelle.Messaging.stdout;
     
 % Create some arbitrary vector in R^2
 x = [1.2;2.3];
@@ -24,13 +24,13 @@ z0 =[9.10;8.9;7.8;6.7];
 
 % Create a state based on this vector
 %---State0---
-state = Optizelle.Constrained.State.t(XX,YY,ZZ,msg,x,y,z);
+state = Optizelle.Constrained.State.t(XX,YY,ZZ,x,y,z);
 %---State1---
 
 % Read in some parameters
 fname = 'blank.json';
 %---ReadJson0--- 
-state = Optizelle.json.Constrained.read(XX,YY,ZZ,msg,fname,state);
+state = Optizelle.json.Constrained.read(XX,YY,ZZ,fname,state);
 %---ReadJson1--- 
    
 % Create a bundle of functions
@@ -39,6 +39,7 @@ fns = Optizelle.Constrained.Functions.t;
 %---Functions1---
 
 % Do a null optimization
+state.f_x = 1.0;
 %---Solver0---
 state = Optizelle.Constrained.Algorithms.getMin(XX,YY,ZZ,msg,fns,state);
 %---Solver1---
@@ -53,10 +54,8 @@ state = Optizelle.Constrained.Algorithms.getMin( ...
 % Read and write the state to file
 fname = 'restart.json';
 %---WriteReadRestart0---
-Optizelle.json.Constrained.write_restart( ...
-    XX,YY,ZZ,msg,fname,state);
-state = Optizelle.json.Constrained.read_restart( ...
-    XX,YY,ZZ,msg,fname,x,y,z);
+Optizelle.json.Constrained.write_restart(XX,YY,ZZ,fname,state);
+state = Optizelle.json.Constrained.read_restart(XX,YY,ZZ,fname,x,y,z);
 %---WriteReadRestart1---
 
 % Do a release 
@@ -68,18 +67,18 @@ reals = Optizelle.Constrained.Restart.Reals;
 nats = Optizelle.Constrained.Restart.Naturals;
 params = Optizelle.Constrained.Restart.Params;
 [xs ys zs reals nats params] = Optizelle.Constrained.Restart.release( ...
-    XX,YY,ZZ,msg,state);
+    XX,YY,ZZ,state);
 %---Release1---
 
 % Check that we have the correct number of vectors
 if length(xs) ~= 14 
-    msg.error('The list xs contains the wrong number of vectors.');
+    error('The list xs contains the wrong number of vectors.');
 end
 if length(ys) ~= 5
-    msg.error('The list ys contains the wrong number of vectors.');
+    error('The list ys contains the wrong number of vectors.');
 end
 if length(zs) ~= 3
-    msg.error('The list zs contains the wrong number of vectors.');
+    error('The list zs contains the wrong number of vectors.');
 end
 
 % Modify some vectors 
@@ -90,7 +89,7 @@ zs{1}{2}=z0;
 % Capture the state
 %---Capture0---
 state = Optizelle.Constrained.Restart.capture( ...
-    XX,YY,ZZ,msg,state,xs,ys,zs,reals,nats,params);
+    XX,YY,ZZ,state,xs,ys,zs,reals,nats,params);
 %---Capture1---
 
 % Check the relative error between the vector created above and the one
@@ -101,7 +100,7 @@ residual = XX.axpy(-1.,state.x,residual);
 err=(sqrt(XX.innr(residual,residual)) ...
     /(1+sqrt(XX.innr(x0,x0))));
 if err >= 1e-15
-    msg.error('Too much error in the captured x');
+    error('Too much error in the captured x');
 end
 
 residual = YY.init(y);
@@ -110,7 +109,7 @@ residual = YY.axpy(-1.,state.y,residual);
 err=(sqrt(YY.innr(residual,residual)) ...
     /(1+sqrt(YY.innr(y0,y0))));
 if err >= 1e-15
-    msg.error('Too much error in the captured y');
+    error('Too much error in the captured y');
 end
 
 residual = ZZ.init(z);
@@ -119,5 +118,5 @@ residual = ZZ.axpy(-1.,state.z,residual);
 err=(sqrt(ZZ.innr(residual,residual)) ...
     /(1+sqrt(ZZ.innr(z0,z0))));
 if err >= 1e-15
-    msg.error('Too much error in the captured z')
+    error('Too much error in the captured z')
 end

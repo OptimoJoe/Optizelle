@@ -6,13 +6,11 @@
       "dir" : "NewtonCG",
       "kind" : "BackTracking",
       "iter_max" : 50,
-      "eps_krylov" : 1e-10,
-      "eps_dx" : 1e-16,
-      "sigma" : 0.01,
-      "gamma" : 0.995
+      "eps_trunc" : 1e-10,
+      "eps_dx" : 1e-16
    },
    "Naturals" : {
-      "iter" : 32 
+      "iter" :  12
    },
    "X_Vectors" : {
       "x" : [ 0.33333333, 0.33333333 ] 

@@ -1,11 +1,10 @@
 project(diagnostic_checks)
 
-# Compile and install the example
-add_optizelle_example_cpp(${PROJECT_NAME})
-add_optizelle_example_python(${PROJECT_NAME})
-add_optizelle_example_matlab(${PROJECT_NAME})
+# Set what interfaces we're using
+set(interfaces "cpp" "python" "matlab" "octave")
 
-# Add some unit tests
-add_optizelle_test_cpp(${PROJECT_NAME})
-add_optizelle_test_python(${PROJECT_NAME})
-add_optizelle_test_matlab(${PROJECT_NAME})
+# Compile and install the example
+add_example(${PROJECT_NAME} "${interfaces}" "")
+
+# Run the unit tests
+add_unit(${PROJECT_NAME} "${interfaces}" "" FALSE)

@@ -4,8 +4,8 @@ __all__ = [
 
 __doc__ = "Utilities for restarting the optimization"
 
-import Optizelle
-import Optizelle.Utility
+from Optizelle.Utility import *
+from Optizelle.Properties import *
 import Optizelle.Unconstrained.State
 
 class X_Vectors(list):
@@ -21,36 +21,32 @@ class Params(list):
     """Holds restart information for parameters"""
     pass
 
-def release(X,msg,state,xs,reals,nats,params):
+def release(X,state,xs,reals,nats,params):
     """Release the data into structures controlled by the user"""
 
     # Check the arguments
-    Optizelle.checkVectorSpace("X",X)
-    Optizelle.checkMessaging("msg",msg)
+    checkVectorSpace("X",X)
     Optizelle.Unconstrained.State.checkT("state",state)
 
     # Release the information from the state
-    Optizelle.Utility.UnconstrainedRestartRelease(
-        X,msg,state,xs,reals,nats,params)
+    UnconstrainedRestartRelease(X,state,xs,reals,nats,params)
 
     # Return nothing.  We've modified the passed in lists.
     return None 
 
-def capture(X,msg,state,xs,reals,nats,params):
+def capture(X,state,xs,reals,nats,params):
     """Capture data from structures controlled by the user."""
 
     # Check the arguments
-    Optizelle.checkVectorSpace("X",X)
-    Optizelle.checkMessaging("msg",msg)
+    checkVectorSpace("X",X)
     Optizelle.Unconstrained.State.checkT("state",state)
-    Optizelle.checkVectors('xs',xs)
-    Optizelle.checkReals('reals',reals)
-    Optizelle.checkNaturals('nats',nats)
-    Optizelle.checkParams('params',params)
+    checkVectors('xs',xs)
+    checkReals('reals',reals)
+    checkNaturals('nats',nats)
+    checkParams('params',params)
 
     # Capture the restart information
-    Optizelle.Utility.UnconstrainedRestartCapture(
-        X,msg,state,xs,reals,nats,params)
+    UnconstrainedRestartCapture(X,state,xs,reals,nats,params)
 
     # Return nothing.  The state has been modified.
     return None 

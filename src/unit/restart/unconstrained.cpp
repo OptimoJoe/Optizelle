@@ -8,7 +8,9 @@
 #include "unit.h"
 #include "restart.h"
 
-template <typename Real> using WW = Optizelle::Rm <Real>;
+template <typename Real> struct WW {
+    typedef Optizelle::Rm <Real> Vector;
+};
 
 //---Serialization0---
 namespace Optizelle {
@@ -16,7 +18,9 @@ namespace Optizelle {
         template <>
         struct Serialization <Real,WW> {
             static std::string serialize(
-                typename WW <Real>::Vector const & x
+                typename WW <Real>::Vector const & x,
+                std::string const & name,
+                Natural const & iter
             ) { throw; }
             static typename WW <Real>::Vector deserialize(
                 typename WW <Real>::Vector const & x,
@@ -30,7 +34,7 @@ namespace Optizelle {
 int main() {
 
     // Create a messaging object
-    Optizelle::Messaging msg;
+    auto msg = Optizelle::Messaging::stdout;
     
     // Create some arbitrary vector in R^2
     std::vector <Real> x = {1.2,2.3};
@@ -44,7 +48,7 @@ int main() {
     // Read in some parameters
     std::string fname("blank.json");
     //---ReadJson0--- 
-    Optizelle::json::Unconstrained <Real,XX>::read(msg,fname,state);
+    Optizelle::json::Unconstrained <Real,XX>::read(fname,state);
     //---ReadJson1--- 
    
     // Create a bundle of functions
@@ -54,6 +58,7 @@ int main() {
     fns.f.reset(new F);
 
     // Do a null optimization
+    state.f_x = 1.0;
     //---Solver0---
     Optizelle::Unconstrained<Real,XX>::Algorithms::getMin(
         msg,fns,state);
@@ -70,9 +75,9 @@ int main() {
     fname = "restart.json";
     //---WriteReadRestart0---
     Optizelle::json::Unconstrained <Real,XX>::write_restart(
-        msg,fname,state);
+        fname,state);
     Optizelle::json::Unconstrained <Real,XX>::read_restart(
-        msg,fname,x,state);
+        fname,x,state);
     //---WriteReadRestart1---
 
     // Do a release 
@@ -104,7 +109,7 @@ int main() {
     // Capture the state
     //---Capture0---
     Optizelle::Unconstrained <Real,XX>::Restart
-        ::capture(msg,state,xs,reals,nats,params);
+        ::capture(state,xs,reals,nats,params);
     //---Capture1---
 
     // Check that we actually have memory in these slots

@@ -7,11 +7,17 @@
 // Now, in the case we don't have a starting feasible solution, we can play
 // a reformulation trick that adds two scalar variables and allows us to find
 // a strictly feasible solution.  Namely,
+//
 // min x + y
 // st  x + 2y >= 1 - z
 //     2x + y >= 1 - z
 //     epsilon >= w             
 //     z = w
+//
+// Note, most of the time, we're much better off just adding slack variables.
+// Basically, this trick is only worthwhile when we don't have a linear system
+// solver for the equality constraints added from the slacks since this method
+// only adds a single equality constraint.
 
 #include "optizelle/optizelle.h"
 #include "optizelle/vspaces.h"
@@ -35,14 +41,14 @@ struct MyObj : public Optizelle::ScalarValuedFunction <Real,Optizelle::Rm> {
     typedef typename X::Vector X_Vector;
 
     // Evaluation 
-    double eval(const X_Vector& x) const {
+    double eval(X_Vector const & x) const {
         return x[0]+x[1];
     }
 
     // Gradient
     void grad(
-        const X_Vector& x,
-        X_Vector& grad
+        X_Vector const & x,
+        X_Vector & grad
     ) const {
         grad[0]=Real(1.);
         grad[1]=Real(1.);
@@ -52,9 +58,9 @@ struct MyObj : public Optizelle::ScalarValuedFunction <Real,Optizelle::Rm> {
 
     // Hessian-vector product
     void hessvec(
-        const X_Vector& x,
-        const X_Vector& dx,
-        X_Vector& H_dx
+        X_Vector const & x,
+        X_Vector const & dx,
+        X_Vector & H_dx
     ) const {
         X::zero(H_dx);
     }
@@ -78,26 +84,26 @@ public:
 
     // y=g(x) 
     void eval(
-        const X_Vector& x,
-        Y_Vector& y
+        X_Vector const & x,
+        Y_Vector & y
     ) const {
         y[0] = x[2]-x[3];
     }
 
     // y=g'(x)dx
     void p(
-        const X_Vector& x,
-        const X_Vector& dx,
-        Y_Vector& y
+        X_Vector const & x,
+        X_Vector const & dx,
+        Y_Vector & y
     ) const {
         y[0]= dx[2]-dx[3];
     }
 
     // xhat=g'(x)*dy
     void ps(
-        const X_Vector& x,
-        const Y_Vector& dy,
-        X_Vector& xhat 
+        X_Vector const & x,
+        Y_Vector const & dy,
+        X_Vector & xhat 
     ) const {
         xhat[0]= Real(0.);
         xhat[1]= Real(0.);
@@ -107,10 +113,10 @@ public:
 
     // xhat=(g''(x)dx)*dy
     void pps(
-        const X_Vector& x,
-        const X_Vector& dx,
-        const Y_Vector& dy,
-        X_Vector& xhat 
+        X_Vector const & x,
+        X_Vector const & dx,
+        Y_Vector const & dy,
+        X_Vector & xhat 
     ) const {
         X::zero(xhat);
     }
@@ -140,8 +146,8 @@ public:
 
     // z=h(x) 
     void eval(
-        const X_Vector& x,
-        Z_Vector& z
+        X_Vector const & x,
+        Z_Vector & z
     ) const {
         z[0]=x[0]+Real(2.)*x[1]+x[2]-Real(1.);
         z[1]=Real(2.)*x[0]+x[1]+x[2]-Real(1.);
@@ -150,9 +156,9 @@ public:
 
     // z=h'(x)dx
     void p(
-        const X_Vector& x,
-        const X_Vector& dx,
-        Z_Vector& z
+        X_Vector const & x,
+        X_Vector const & dx,
+        Z_Vector & z
     ) const {
         z[0]= dx[0]+Real(2.)*dx[1]+dx[2];
         z[1]= Real(2.)*dx[0]+dx[1]+dx[2];
@@ -161,9 +167,9 @@ public:
 
     // xhat=h'(x)*dz
     void ps(
-        const X_Vector& x,
-        const Z_Vector& dz,
-        X_Vector& xhat 
+        X_Vector const & x,
+        Z_Vector const & dz,
+        X_Vector & xhat 
     ) const {
         xhat[0]= dz[0]+Real(2.)*dz[1];
         xhat[1]= Real(2.)*dz[0]+dz[1];
@@ -173,10 +179,10 @@ public:
 
     // xhat=(h''(x)dx)*dz
     void pps(
-        const X_Vector& x,
-        const X_Vector& dx,
-        const Z_Vector& dz,
-        X_Vector& xhat 
+        X_Vector const & x,
+        X_Vector const & dx,
+        Z_Vector const & dz,
+        X_Vector & xhat 
     ) const {
         X::zero(xhat);
     }
@@ -192,27 +198,25 @@ int main(int argc,char* argv[]){
         std::cerr << "simple_infeasible_inequality <parameters>" << std::endl;
         exit(EXIT_FAILURE);
     }
-    std::string fname(argv[1]);
+    auto fname = argv[1];
 
     // Set the amount of infeasibility that we want to allow
     Real const epsilon(1e-8);
 
     // Generate an initial guess for the primal
-    std::vector <Real> x(4);
-    x[0]=Real(0.); x[1]=Real(0.); x[2]=Real(5.); x[3]=-Real(5.);
+    auto x = std::vector <Real> {0., 0., 5., -5.};
 
     // Generate a vector for the equality multiplier 
-    std::vector <Real> y(1);
+    auto y = std::vector <Real> (1);
 
     // Generate a vector for the inequality multiplier
-    std::vector <Real> z(3);
+    auto z = std::vector <Real> (3);
 
     // Create an optimization state
     Optizelle::Constrained <Real,Rm,Rm,Rm>::State::t state(x,y,z);
 
     // Read the parameters from file
-    Optizelle::json::Constrained <Real,Rm,Rm,Rm>::read(
-        Optizelle::Messaging(),fname,state);
+    Optizelle::json::Constrained <Real,Rm,Rm,Rm>::read(fname,state);
     
     // Create a bundle of functions
     Optizelle::Constrained <Real,Rm,Rm,Rm>::Functions::t fns;
@@ -223,11 +227,11 @@ int main(int argc,char* argv[]){
     // Solve the optimization problem
     std::cout << std::endl << "Solving the optimization problem." << std::endl;
     Optizelle::Constrained <Real,Rm,Rm,Rm>::Algorithms
-        ::getMin(Optizelle::Messaging(),fns,state);
+        ::getMin(Optizelle::Messaging::stdout,fns,state);
 
     // Print out the reason for convergence
     std::cout << "The algorithm converged due to: " <<
-        Optizelle::StoppingCondition::to_string(state.opt_stop) << std::endl;
+        Optizelle::OptimizationStop::to_string(state.opt_stop) << std::endl;
 
     // Print out the final answer
     std::cout << std::scientific << std::setprecision(16)
@@ -236,7 +240,7 @@ int main(int argc,char* argv[]){
 
     // Write out the final answer to file
     Optizelle::json::Constrained <Real,Rm,Rm,Rm>::write_restart(
-        Optizelle::Messaging(),"solution.json",state);
+        "solution.json",state);
 
     // Successful termination
     return EXIT_SUCCESS;

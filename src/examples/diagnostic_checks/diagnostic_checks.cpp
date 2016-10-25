@@ -47,17 +47,17 @@ struct Rosenbrock :
 
     // Gradient
     void grad(
-        const X::Vector & x,
-        X::Vector & g
+        X::Vector const & x,
+        X::Vector & grad
     ) const {
-        g[0]=-400*x[0]*(x[1]-sq(x[0]))-2*(1-x[0]);
-        g[1]=200*(x[1]-sq(x[0]));
+        grad[0]=-400*x[0]*(x[1]-sq(x[0]))-2*(1-x[0]);
+        grad[1]=200*(x[1]-sq(x[0]));
     }
 
     // Hessian-vector product
     void hessvec(
-        const X::Vector & x,
-        const X::Vector & dx,
+        X::Vector const & x,
+        X::Vector const & dx,
         X::Vector & H_dx
     ) const {
         H_dx[0]= (1200*sq(x[0])-400*x[1]+2)*dx[0]-400*x[0]*dx[1];
@@ -79,7 +79,7 @@ struct Utility  : public Optizelle::VectorValuedFunction
 
     // y=g(x) 
     void eval(
-        const X::Vector & x,
+        X::Vector const & x,
         Y::Vector & y
     ) const {
         y[0]=cos(x[0])*sin(x[1]);
@@ -89,8 +89,8 @@ struct Utility  : public Optizelle::VectorValuedFunction
 
     // y=g'(x)dx
     void p(
-        const X::Vector & x,
-        const X::Vector & dx,
+        X::Vector const & x,
+        X::Vector const & dx,
         Y::Vector & y
     ) const {
         y[0]= -sin(x[0])*sin(x[1])*dx[0]
@@ -103,29 +103,29 @@ struct Utility  : public Optizelle::VectorValuedFunction
 
     // z=g'(x)*dy
     void ps(
-        const X::Vector & x,
-        const Y::Vector & dy,
-        X::Vector & z
+        X::Vector const & x,
+        Y::Vector const & dy,
+        X::Vector & xhat 
     ) const {
-        z[0]= -sin(x[0])*sin(x[1])*dy[0]
+        xhat[0]= -sin(x[0])*sin(x[1])*dy[0]
               +6.*x[0]*x[1]*dy[1]
               +1./x[0]*dy[2];
-        z[1]= cos(x[0])*cos(x[1])*dy[0]
+        xhat[1]= cos(x[0])*cos(x[1])*dy[0]
               +(3.*sq(x[0])+3.*sq(x[1]))*dy[1]
               +15.*quad(x[1])*dy[2];
     }
 
     // z=(g''(x)dx)*dy
     void pps(
-        const X::Vector & x,
-        const X::Vector & dx,
-        const Y::Vector & dy,
-        X::Vector & z
+        X::Vector const & x,
+        X::Vector const & dx,
+        Y::Vector const & dy,
+        X::Vector & xhat 
     ) const {
-        z[0] = (-cos(x[0])*dx[0]*sin(x[1])-sin(x[0])*cos(x[1])*dx[1])*dy[0]
+        xhat[0] = (-cos(x[0])*dx[0]*sin(x[1])-sin(x[0])*cos(x[1])*dx[1])*dy[0]
                +(6.*dx[0]*x[1] + 6.*x[0]*dx[1])*dy[1]
                +(-1./sq(x[0])*dx[0])*dy[2];
-        z[1] = (-sin(x[0])*dx[0]*cos(x[1])-cos(x[0])*sin(x[1])*dx[1])*dy[0]
+        xhat[1] = (-sin(x[0])*dx[0]*cos(x[1])-cos(x[0])*sin(x[1])*dx[1])*dy[0]
                +(6.*x[0]*dx[0]+6.*x[1]*dx[1])*dy[1]
                +(60.*cub(x[1])*dx[1])*dy[2];
     }
@@ -137,9 +137,8 @@ int main() {
     using Optizelle::Rm;
 
     // Allocate memory for an initial guess and equality multiplier 
-    std::vector <double> x(2);
-    x[0] = 1.2; x[1] = 2.3;
-    std::vector <double> y(3);
+    auto x = std::vector <double> {1.2, 2.3};
+    auto y = std::vector <double> (3);
     
     // Create an optimization state
     Optizelle::EqualityConstrained <double,Rm,Rm>::State::t state(x,y);
@@ -147,7 +146,10 @@ int main() {
     // Modify the state so that we just run our diagnostics and exit
     state.dscheme = Optizelle::DiagnosticScheme::DiagnosticsOnly;
     state.f_diag = Optizelle::FunctionDiagnostics::SecondOrder;
+    state.x_diag = Optizelle::VectorSpaceDiagnostics::Basic;
     state.g_diag = Optizelle::FunctionDiagnostics::SecondOrder;
+    state.y_diag = Optizelle::VectorSpaceDiagnostics::EuclideanJordan;
+    state.L_diag = Optizelle::FunctionDiagnostics::SecondOrder;
     
     // Create a bundle of functions
     Optizelle::EqualityConstrained <double,Rm,Rm>::Functions::t fns;
@@ -157,5 +159,5 @@ int main() {
     // Even though this looks like we're solving an optimization problem,
     // we're actually just going to run our diagnostics and then exit.
     Optizelle::EqualityConstrained <double,Rm,Rm>::Algorithms
-        ::getMin(Optizelle::Messaging(),fns,state);
+        ::getMin(Optizelle::Messaging::stdout,fns,state);
 }

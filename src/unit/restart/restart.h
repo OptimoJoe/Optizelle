@@ -1,5 +1,4 @@
-#ifndef RESTART_H
-#define RESTART_H
+#pragma once
 
 #include "optizelle/optizelle.h"
 #include "optizelle/json.h"
@@ -9,66 +8,6 @@ typedef double Real;
 template <typename Real> using XX = Optizelle::Rm <Real>;
 template <typename Real> using YY = Optizelle::Rm <Real>;
 template <typename Real> using ZZ = Optizelle::Rm <Real>;
-
-// There's some irritating "feature" in GCC that forces us to do this.
-// Basically, an alias-template is not really the template's alias.  Hence,
-// when we alias Optielle::Rm above, it turns out that the serialization
-// functions are not defined.  However, the typeid error message refers
-// to Rm and not XX, YY, or ZZ, which is super confusing.
-namespace Optizelle {
-    namespace json {
-        template <typename Real>
-        struct Serialization <Real,XX> {
-            static std::string serialize(
-                typename XX <Real>::Vector const & x
-            ) {
-                return Optizelle::json::Serialization
-                    <Real,Optizelle::Rm>::serialize(x);
-            }
-            static typename XX <Real>::Vector deserialize(
-                typename XX <Real>::Vector const & x,
-                std::string const & x_json
-            ) {
-                return std::move(Optizelle::json::Serialization
-                    <Real,Optizelle::Rm>::deserialize(x,x_json));
-            }
-        };
-        
-        template <typename Real>
-        struct Serialization <Real,YY> {
-            static std::string serialize(
-                typename YY <Real>::Vector const & x
-            ) {
-                return Optizelle::json::Serialization
-                    <Real,Optizelle::Rm>::serialize(x);
-            }
-            static typename YY <Real>::Vector deserialize(
-                typename YY <Real>::Vector const & x,
-                std::string const & x_json
-            ) {
-                return std::move(Optizelle::json::Serialization
-                    <Real,Optizelle::Rm>::deserialize(x,x_json));
-            }
-        };
-        
-        template <typename Real>
-        struct Serialization <Real,ZZ> {
-            static std::string serialize(
-                typename ZZ <Real>::Vector const & x
-            ) {
-                return Optizelle::json::Serialization
-                    <Real,Optizelle::Rm>::serialize(x);
-            }
-            static typename ZZ <Real>::Vector deserialize(
-                typename ZZ <Real>::Vector const & x,
-                std::string const & x_json
-            ) {
-                return std::move(Optizelle::json::Serialization
-                    <Real,Optizelle::Rm>::deserialize(x,x_json));
-            }
-        };
-    }
-}
 
 // Create a blank state mainpulator
 template <typename ProblemClass>
@@ -161,5 +100,3 @@ struct H : public Optizelle::VectorValuedFunction <Real,XX,ZZ> {
          X_Vector & z
      ) const {} 
 };
-
-#endif

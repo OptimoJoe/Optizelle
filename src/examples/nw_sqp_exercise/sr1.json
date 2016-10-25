@@ -3,12 +3,11 @@
       "msg_level" : 1,
       "H_type" : "SR1",
       "stored_history" : 2,
-      "history_reset" : 10,
       "iter_max" : 100,
       "delta" : 100
    },
    "Naturals" : {
-      "iter" : 8
+      "iter" : 7
    },
    "X_Vectors" : {
       "x" : [-1.71, 1.59, 1.82, -0.763, -0.763]

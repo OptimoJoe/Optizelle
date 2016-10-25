@@ -1,0 +1,47 @@
+<CPackWiXPatch>
+    <CPackWiXFragment Id="CM_CP_include.optizelle.optizelle.h">
+        <Environment Id="PATH"
+            Name="PATH"
+            Value="[INSTALL_ROOT]lib;[INSTALL_ROOT]share\optizelle\thirdparty\lib"
+            Permanent="no"
+            Part="last"
+            Action="set"
+            System="yes" />
+    </CPackWiXFragment>
+
+    <CPackWiXFragment Id="CM_CP_share.optizelle.python.Optizelle.Utility.pyd">
+        <Environment Id="PYTHONPATH"
+            Name="PYTHONPATH"
+            Value="[INSTALL_ROOT]share\optizelle\python"
+            Permanent="no"
+            Part="last"
+            Action="set"
+            System="yes" />
+    </CPackWiXFragment>
+
+    <CPackWiXFragment Id="CM_CP_lib.liboptizelle_octave.dll">
+        <Environment Id="OCTAVE_PATH"
+            Name="OCTAVE_PATH"
+            Value="[INSTALL_ROOT]share\optizelle\octave"
+            Permanent="no"
+            Part="last"
+            Action="set"
+            System="yes" />
+    </CPackWiXFragment>
+
+    <CPackWiXFragment Id="CM_CP_lib.liboptizelle_matlab.dll">
+        <Environment Id="MATLABPATH"
+            Name="MATLABPATH"
+            Value="[INSTALL_ROOT]share\optizelle\matlab"
+            Permanent="no"
+            Part="last"
+            Action="set"
+            System="yes" />
+    </CPackWiXFragment>
+
+    <CPackWiXFragment Id="#PRODUCT">
+        <SetProperty Id="WIXUI_EXITDIALOGOPTIONALTEXT"
+            Value="For updates, information, and support, please visit us at www.optimojoe.com"
+            After="CostFinalize" />
+    </CPackWiXFragment>
+</CPackWiXPatch>

@@ -24,24 +24,24 @@ struct MyObj
     typedef Optizelle::Rm <double> X;
 
     // Evaluation 
-    double eval(const X::Vector& x) const {
+    double eval(X::Vector const & x) const {
         return sq(x[0]+1.)+sq(x[1]+1.);
     }
 
     // Gradient
     void grad(
-        const X::Vector& x,
-        X::Vector& g
+        X::Vector const & x,
+        X::Vector & grad
     ) const {
-        g[0]=2*x[0]+2;
-        g[1]=2*x[1]+2;
+        grad[0]=2*x[0]+2;
+        grad[1]=2*x[1]+2;
     }
 
     // Hessian-vector product
     void hessvec(
-        const X::Vector& x,
-        const X::Vector& dx,
-        X::Vector& H_dx
+        X::Vector const & x,
+        X::Vector const & dx,
+        X::Vector & H_dx
     ) const {
         H_dx[0]=2.*dx[0]; 
         H_dx[1]=2.*dx[1]; 
@@ -60,39 +60,39 @@ struct MyEq
 
     // y=g(x) 
     void eval(
-        const X::Vector& x,
-        Y::Vector& y
+        X::Vector const & x,
+        Y::Vector & y
     ) const {
         y[0]=x[0]+2.*x[1]-1.;
     }
 
     // y=g'(x)dx
     void p(
-        const X::Vector& x,
-        const X::Vector& dx,
-        Y::Vector& y
+        X::Vector const & x,
+        X::Vector const & dx,
+        Y::Vector & y
     ) const {
         y[0]= dx[0]+2.*dx[1];
     }
 
-    // z=g'(x)*dy
+    // xhat=g'(x)*dy
     void ps(
-        const X::Vector& x,
-        const Y::Vector& dy,
-        X::Vector& z
+        X::Vector const & x,
+        Y::Vector const & dy,
+        X::Vector & xhat 
     ) const {
-        z[0]= dy[0];
-        z[1]= 2.*dy[0];
+        xhat[0]= dy[0];
+        xhat[1]= 2.*dy[0];
     }
 
-    // z=(g''(x)dx)*dy
+    // xhat=(g''(x)dx)*dy
     void pps(
-        const X::Vector& x,
-        const X::Vector& dx,
-        const Y::Vector& dy,
-        X::Vector& z
+        X::Vector const & x,
+        X::Vector const & dx,
+        Y::Vector const & dy,
+        X::Vector & xhat
     ) const {
-        X::zero(z);
+        X::zero(xhat);
     }
 };
 
@@ -104,43 +104,43 @@ struct MyIneq
     :public Optizelle::VectorValuedFunction<double,Optizelle::Rm,Optizelle::Rm>
 {
     typedef Optizelle::Rm <double> X;
-    typedef Optizelle::Rm <double> Y;
+    typedef Optizelle::Rm <double> Z;
 
-    // y=h(x) 
+    // z=h(x) 
     void eval(
-        const X::Vector& x,
-        Y::Vector& y
+        X::Vector const & x,
+        Z::Vector & z
     ) const {
-        y[0]=2.*x[0]+x[1]-1.;
+        z[0]=2.*x[0]+x[1]-1.;
     }
 
-    // y=h'(x)dx
+    // z=h'(x)dx
     void p(
-        const X::Vector& x,
-        const X::Vector& dx,
-        Y::Vector& y
+        X::Vector const & x,
+        X::Vector const & dx,
+        Z::Vector & z
     ) const {
-        y[0]= 2.*dx[0]+dx[1];
+        z[0]= 2.*dx[0]+dx[1];
     }
 
-    // z=h'(x)*dy
+    // xhat=h'(x)*dz
     void ps(
-        const X::Vector& x,
-        const Y::Vector& dy,
-        X::Vector& z
+        X::Vector const & x,
+        Z::Vector const & dz,
+        X::Vector & xhat 
     ) const {
-        z[0]= 2.*dy[0];
-        z[1]= dy[0];
+        xhat[0]= 2.*dz[0];
+        xhat[1]= dz[0];
     }
 
-    // z=(h''(x)dx)*dy
+    // xhat=(h''(x)dx)*dz
     void pps(
-        const X::Vector& x,
-        const X::Vector& dx,
-        const Y::Vector& dy,
-        X::Vector& z
+        X::Vector const & x,
+        X::Vector const & dx,
+        Z::Vector const & dz,
+        X::Vector & xhat
     ) const {
-        X::zero(z);
+        X::zero(xhat);
     }
 };
 
@@ -150,27 +150,25 @@ int main(int argc,char* argv[]){
         std::cerr << "simple_constrained <parameters>" << std::endl;
         exit(EXIT_FAILURE);
     }
-    std::string fname(argv[1]);
+    auto fname = argv[1];
 
     // Create a type shortcut
     using Optizelle::Rm;
 
     // Generate an initial guess for the primal
-    std::vector <double> x(2);
-    x[0]=2.1; x[1]=1.1;
+    auto x = std::vector <double> {2.1, 1.1};
 
     // Allocate memory for equality multiplier 
-    std::vector <double> y(1);
+    auto y = std::vector <double> (1);
 
     // Allocate memory for the inequality multiplier 
-    std::vector <double> z(1);
+    auto z = std::vector <double> (1);
 
     // Create an optimization state
     Optizelle::Constrained <double,Rm,Rm,Rm>::State::t state(x,y,z);
 
     // Read the parameters from file
-    Optizelle::json::Constrained <double,Rm,Rm,Rm>::read(
-        Optizelle::Messaging(),fname,state);
+    Optizelle::json::Constrained <double,Rm,Rm,Rm>::read(fname,state);
     
     // Create a bundle of functions
     Optizelle::Constrained <double,Rm,Rm,Rm>::Functions::t fns;
@@ -180,21 +178,21 @@ int main(int argc,char* argv[]){
     
     // Solve the optimization problem
     Optizelle::Constrained <double,Rm,Rm,Rm>::Algorithms
-        ::getMin(Optizelle::Messaging(),fns,state);
+        ::getMin(Optizelle::Messaging::stdout,fns,state);
 
     // Print out the reason for convergence
     std::cout << "The algorithm converged due to: " <<
-        Optizelle::StoppingCondition::to_string(state.opt_stop) <<
+        Optizelle::OptimizationStop::to_string(state.opt_stop) <<
         std::endl;
 
     // Print out the final answer
     std::cout << std::scientific << std::setprecision(16)
         << "The optimal point is: (" << state.x[0] << ','
-	<< state.x[1] << ')' << std::endl;
+        << state.x[1] << ')' << std::endl;
 
     // Write out the final answer to file
     Optizelle::json::Constrained <double,Rm,Rm,Rm>::write_restart(
-        Optizelle::Messaging(),"solution.json",state);
+        "solution.json",state);
 
     // Successful termination
     return EXIT_SUCCESS;

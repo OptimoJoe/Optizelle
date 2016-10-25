@@ -1,0 +1,18 @@
+{
+   "Optizelle" : {
+      "msg_level" : 1,
+      "H_type" : "SR1",
+      "stored_history" : 2,
+      "iter_max" : 6,
+      "eps_trunc" : 1e-10,
+      "eps_dx" : 1e-16,
+      "delta" : 100,
+      "mu" : 10
+   },
+   "Naturals" : {
+      "iter" : 39
+   },
+   "X_Vectors" : {
+      "x" : [ 1.0, 1.0, 1.0] 
+   }
+}

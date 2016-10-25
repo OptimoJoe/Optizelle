@@ -19,8 +19,6 @@ function rosenbrock_advanced_api(pname,rname)
 
 end
 
-
-
 %---VectorSpace0---
 % Convert a vector to structure
 function y = tostruct(x)
@@ -101,24 +99,21 @@ end
 % Define a perfect preconditioner for the Hessian
 function self = RosenHInv()
     self.eval = @(state,dx) eval(state,dx);
-
-    function result = eval(state,dx)
-        x = state.x.data;
-        dx = dx.data;
-        one_over_det=1./(80000.*sq(x(1))-80000.*x(2)+400.);
-        result = tostruct([
-            one_over_det*(200.*dx(1)+400.*x(1)*dx(2));
-            one_over_det*...
-                (400.*x(1)*dx(1)+(1200.*x(1)*x(1)-400.*x(2)+2.)*dx(2))]);
-    end
+end
+function result = eval(state,dx)
+    x = state.x.data;
+    dx = dx.data;
+    one_over_det=1./(80000.*sq(x(1))-80000.*x(2)+400.);
+    result = tostruct([
+        one_over_det*(200.*dx(1)+400.*x(1)*dx(2));
+        one_over_det*...
+            (400.*x(1)*dx(1)+(1200.*x(1)*x(1)-400.*x(2)+2.)*dx(2))]);
 end
 
 %---Messaging0---
 % Define a custom messaging object
-function msg = MyMessaging()
-    msg = struct( ...
-        'print',@(x)fprintf('PRINT:  %s\n',x), ...
-        'error',@(x)error(sprintf('ERROR:  %s',x)));
+function MyMessaging(msg)
+    fprintf('PRINT:  %s\n',msg);
 end
 %---Messaging1---
 
@@ -128,7 +123,7 @@ function MySerialization()
     global Optizelle;
     Optizelle.json.Serialization.serialize( ...
         'register', ...
-        @(x)strrep(mat2str(x.data'),' ',', '), ...
+        @(x,name,iter)strrep(mat2str(x.data'),' ',', '), ...
         @(x)isstruct(x) && isfield(x,'data') && isvector(x.data));
     Optizelle.json.Serialization.deserialize( ...
         'register', ...
@@ -152,8 +147,7 @@ function state=MyRestartManipulator_(fns,state,loc)
         ss = sprintf('rosenbrock_advanced_api_%04d.json',state.iter);
             
         % Write the restart file
-        Optizelle.json.Unconstrained.write_restart( ...
-           MyVS(),MyMessaging(),ss,state);
+        Optizelle.json.Unconstrained.write_restart(MyVS(),ss,state);
     end
 end
 %---RestartManipulator1---
@@ -172,18 +166,16 @@ function main(pname,rname)
     x = tostruct([-1.2;1.]);
 
     % Create an unconstrained state based on this vector
-    state=Optizelle.Unconstrained.State.t(MyVS(),MyMessaging(),x);
+    state=Optizelle.Unconstrained.State.t(MyVS(),x);
     
     %---ReadRestart0---
     % If we have a restart file, read in the parameters 
     if(nargin==2)
-        state = Optizelle.json.Unconstrained.read_restart( ...
-            MyVS(),MyMessaging(),rname,x);
+        state = Optizelle.json.Unconstrained.read_restart(MyVS(),rname,x);
     end
     
     % Read additional parameters from file
-    state=Optizelle.json.Unconstrained.read( ...
-        MyVS(),MyMessaging(),pname,state);
+    state=Optizelle.json.Unconstrained.read(MyVS(),pname,state);
     %---ReadRestart1---
 
     % Create the bundle of functions 
@@ -194,19 +186,18 @@ function main(pname,rname)
     %---Solver0---
     % Solve the optimization problem
     state=Optizelle.Unconstrained.Algorithms.getMin( ...
-        MyVS(),MyMessaging(),fns,state,MyRestartManipulator());
+        MyVS(),@MyMessaging,fns,state,MyRestartManipulator());
     %---Solver1---
     
     % Print out the reason for convergence
     fprintf('The algorithm converged due to: %s\n', ...
-        Optizelle.StoppingCondition.to_string(state.opt_stop));
+        Optizelle.OptimizationStop.to_string(state.opt_stop));
 
     % Print out the final answer
     fprintf('The optimal point is: (%e,%e)\n',state.x.data(1),state.x.data(2));
     
     %---WriteRestart0---
     % Write out the final answer to file
-    Optizelle.json.Unconstrained.write_restart( ...
-        MyVS(),MyMessaging(),'solution.json',state);
+    Optizelle.json.Unconstrained.write_restart(MyVS(),'solution.json',state);
     %---WriteRestart1---
 end

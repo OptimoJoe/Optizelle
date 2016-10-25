@@ -4,13 +4,11 @@
       "H_type" : "UserDefined",
       "iter_max" : 50,
       "delta" : 100,
-      "eps_krylov" : 1e-10,
-      "eps_dx" : 1e-16,
-      "sigma" : 0.01,
-      "gamma" : 0.995
+      "eps_trunc" : 1e-10,
+      "eps_dx" : 1e-16
    },
    "Naturals" : {
-      "iter" : 7
+      "iter" : 13
    },
    "X_Vectors" : {
       "x" : [ 0.33333333, 0.33333333 ] 

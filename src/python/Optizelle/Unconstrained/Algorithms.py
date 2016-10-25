@@ -4,35 +4,26 @@ __all__ = [
 
 __doc__ = "Different algorithms used for optimization" 
 
-import Optizelle
-import Optizelle.Utility
 import Optizelle.Unconstrained.State
 import Optizelle.Unconstrained.Functions
+from Optizelle.Utility import *
+from Optizelle.Properties import *
+from Optizelle.Functions import *
 
-def getMin(*args):
+def getMin(X, msg, fns, state, smanip=None):
     """Solves an unconstrained optimization problem
     Basic solve: getMin(X,msg,fns,state) 
     Solve with a state manipulator: getMin(X,msg,fns,state,smanip)
     """
-
-    # Check the number of arguments
-    if len(args)!=4 and len(args)!=5:
-        raise Exception("The getMin function requires either 4 or 5 arguments, "
-            "but %d given." % len(args))
-
-    # Extract the arguments
-    X=args[0]
-    msg=args[1]
-    fns = args[2] 
-    state = args[3] 
-    smanip = Optizelle.StateManipulator() if len(args)==4 else args[4]
+    if smanip is None:
+        smanip = StateManipulator()
 
     # Check the arguments
-    Optizelle.checkVectorSpace("X",X)
-    Optizelle.checkMessaging("msg",msg)
+    checkVectorSpace("X",X)
+    checkMessaging("msg",msg)
     Optizelle.Unconstrained.Functions.checkT("fns",fns)
     Optizelle.Unconstrained.State.checkT("state",state)
-    Optizelle.checkStateManipulator("smanip",smanip)
+    checkStateManipulator("smanip",smanip)
 
     # Call the optimization
-    Optizelle.Utility.UnconstrainedAlgorithmsGetMin(X,msg,fns,state,smanip)
+    UnconstrainedAlgorithmsGetMin(X,msg,fns,state,smanip)

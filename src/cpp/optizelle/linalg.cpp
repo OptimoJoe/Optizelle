@@ -1,37 +1,9 @@
-/*
-Copyright 2013-2014 OptimoJoe.
-
-For the full copyright notice, see LICENSE.
-
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
-    * Redistributions of source code must retain the above copyright notice,
-      this list of conditions and the following disclaimer.
-
-    * Redistributions in binary form must reproduce the above copyright notice,
-      this list of conditions and the following disclaimer in the documentation
-      and/or other materials provided with the distribution.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-Author: Joseph Young (joe@optimojoe.com)
-*/
-
 #include "optizelle/linalg.h"
+#include "optizelle/exception.h"
 #include "FortranCInterface.h"
+
 using Optizelle::Integer;
+
 extern "C" {
 // Double and float BLAS and LAPACK routines
 #define drotg_fortran FortranCInterface_GLOBAL (drotg,DROTG)
@@ -834,10 +806,12 @@ namespace Optizelle {
         return i-Natural(1);
     }
     
-    namespace KrylovStop{
-        // Converts the Krylov stopping condition to a string 
-        std::string to_string(t const & krylov_stop){
-            switch(krylov_stop){
+    namespace TruncatedStop{
+        // Converts the truncated CG stopping condition to a string 
+        std::string to_string(t const & trunc_stop){
+            switch(trunc_stop){
+            case NotConverged:
+                return "NotConverged";
             case NegativeCurvature:
                 return "NegativeCurvature";
             case RelativeErrorSmall:
@@ -846,45 +820,123 @@ namespace Optizelle {
                 return "MaxItersExceeded";
             case TrustRegionViolated:
                 return "TrustRegionViolated";
-            case Instability:
-                return "Instability";
-            case InvalidTrustRegionCenter:
-                return "InvalidTrustRegionCenter";
+            case NanOperator:
+                return "NanOperator";
+            case NanPreconditioner:
+                return "NanPreconditioner";
+            case NonProjectorPreconditioner:
+                return "NonProjectorPreconditioner";
+            case NonSymmetricPreconditioner:
+                return "NonSymmetricPreconditioner";
+            case NonSymmetricOperator:
+                return "NonSymmetricOperator";
+            case LossOfOrthogonality:
+                return "LossOfOrthogonality";
+            case OffsetViolatesTrustRegion:
+                return "OffsetViolatesTrustRegion";
+            case OffsetViolatesSafeguard:
+                return "OffsetViolatesSafeguard";
+            case TooManyFailedSafeguard:
+                return "TooManyFailedSafeguard";
+            case ObjectiveIncrease:
+                return "ObjectiveIncrease";
             default:
-                throw;
+                throw Exception::t(__LOC__ +", invalid TruncatedStop::t");
             }
         }
         
-        // Converts a string to a Krylov stopping condition
-        t from_string(std::string const & krylov_stop){
-            if(krylov_stop=="NegativeCurvature")
+        // Converts a string to a truncated CG stopping condition
+        t from_string(std::string const & trunc_stop){
+            if(trunc_stop=="NotConverged")
+                return NotConverged;
+            else if(trunc_stop=="NegativeCurvature")
                 return NegativeCurvature;
-            else if(krylov_stop=="RelativeErrorSmall")
+            else if(trunc_stop=="RelativeErrorSmall")
                 return RelativeErrorSmall;
-            else if(krylov_stop=="MaxItersExceeded")
+            else if(trunc_stop=="MaxItersExceeded")
                 return MaxItersExceeded;
-            else if(krylov_stop=="TrustRegionViolated")
+            else if(trunc_stop=="TrustRegionViolated")
                 return TrustRegionViolated;
-            else if(krylov_stop=="Instability")
-                return Instability;
-            else if(krylov_stop=="InvalidTrustRegionCenter")
-                return InvalidTrustRegionCenter;
+            else if(trunc_stop=="NanOperator")
+                return NanOperator;
+            else if(trunc_stop=="NanPreconditioner")
+                return NanPreconditioner;
+            else if(trunc_stop=="NonProjectorPreconditioner")
+                return NonProjectorPreconditioner;
+            else if(trunc_stop=="NonSymmetricPreconditioner")
+                return NonSymmetricPreconditioner;
+            else if(trunc_stop=="NonSymmetricOperator")
+                return NonSymmetricOperator;
+            else if(trunc_stop=="LossOfOrthogonality")
+                return LossOfOrthogonality;
+            else if(trunc_stop=="OffsetViolatesTrustRegion")
+                return OffsetViolatesTrustRegion;
+            else if(trunc_stop=="OffsetViolatesSafeguard")
+                return OffsetViolatesSafeguard;
+            else if(trunc_stop=="TooManyFailedSafeguard")
+                return TooManyFailedSafeguard;
+            else if(trunc_stop=="ObjectiveIncrease")
+                return ObjectiveIncrease;
             else
-                throw;
+                throw Exception::t(__LOC__
+                    + ", string can't be convert into a TruncatedStop::t"); 
         }
 
         // Checks whether or not a string is valid
         bool is_valid(std::string const & name) {
-            if( name=="NegativeCurvature" ||
+            if( name=="NotConverged" ||
+                name=="NegativeCurvature" ||
                 name=="RelativeErrorSmall" ||
                 name=="MaxItersExceeded" ||
                 name=="TrustRegionViolated" ||
-                name=="Instability" ||
-                name=="InvalidTrustRegionCenter"
+                name=="NanOperator" ||
+                name=="NanPreconditioner" ||
+                name=="NonProjectorPreconditioner" ||
+                name=="NonSymmetricPreconditioner" ||
+                name=="NonSymmetricOperator" ||
+                name=="LossOfOrthogonality" ||
+                name=="OffsetViolatesTrustRegion" ||
+                name=="OffsetViolatesSafeguard" ||
+                name=="TooManyFailedSafeguard" ||
+                name=="ObjectiveIncrease"
             )
                 return true;
             else
                 return false;
         }
+    }
+
+    // Returns whether or not a truncated-CG direction is salvagable based on
+    // the current stopping condition.  Basically, salvagable directions are
+    // directions that exceed the trust-region, have negative curvature, 
+    // violated the safeguard, or have nothing wrong with them.  Non-salvagable
+    // situations are where Bdx has something like a NaN or the operators we
+    // used to calculate it have something bad going on.
+    auto is_Bdx_salvagable(TruncatedStop::t const & stop) -> bool {
+        if( stop == TruncatedStop::TrustRegionViolated ||
+            stop == TruncatedStop::NegativeCurvature ||
+            stop == TruncatedStop::NotConverged 
+        )
+            return true;
+        else
+            return false;
+    }
+    
+    // Returns whether or not the exit condition is related to the truncated-CG
+    // direction, Bdx
+    auto is_Bdx_related(TruncatedStop::t const & stop) -> bool {
+        if( stop == TruncatedStop::TrustRegionViolated ||
+            stop == TruncatedStop::NegativeCurvature ||
+            stop == TruncatedStop::NanOperator ||
+            stop == TruncatedStop::NanPreconditioner ||
+            stop == TruncatedStop::NonProjectorPreconditioner ||
+            stop == TruncatedStop::NonSymmetricPreconditioner ||
+            stop == TruncatedStop::NonSymmetricOperator ||
+            stop == TruncatedStop::LossOfOrthogonality ||
+            stop == TruncatedStop::ObjectiveIncrease
+        )
+            return true;
+        else
+            return false;
     }
 }

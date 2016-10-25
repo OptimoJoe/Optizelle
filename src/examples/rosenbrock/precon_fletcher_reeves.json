@@ -5,12 +5,12 @@
       "dir" : "FletcherReeves",
       "PH_type" : "UserDefined",
       "iter_max" : 50,
-      "linesearch_iter_max" : 7,
+      "ls_iter_max" : 7,
       "alpha0" : 1e-2,
       "eps_dx" : 1e-10
    },
    "Naturals" : {
-      "iter" : 27
+      "iter" : 29
    },
    "X_Vectors" : {
       "x" : [ 1.0, 1.0 ] 

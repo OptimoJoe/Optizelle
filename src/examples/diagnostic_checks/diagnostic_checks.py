@@ -2,12 +2,7 @@
 # on functions and then immediately exit.
 
 import Optizelle 
-import Optizelle.EqualityConstrained.State
-import Optizelle.EqualityConstrained.Functions
-import Optizelle.EqualityConstrained.Algorithms
-import Optizelle.json.EqualityConstrained
 import numpy
-import sys
 import math
 from math import cos
 from math import sin
@@ -75,21 +70,21 @@ class Utility(Optizelle.VectorValuedFunction):
         y[2]= (1./x[0]*dx[0]
               +15.*quad(x[1])*dx[1])
 
-    # z=g'(x)*dy
-    def ps(self,x,dy,z):
-        z[0]= (-sin(x[0])*sin(x[1])*dy[0]
+    # xhat=g'(x)*dy
+    def ps(self,x,dy,xhat):
+        xhat[0]= (-sin(x[0])*sin(x[1])*dy[0]
               +6.*x[0]*x[1]*dy[1]
               +1./x[0]*dy[2])
-        z[1]= (cos(x[0])*cos(x[1])*dy[0]
+        xhat[1]= (cos(x[0])*cos(x[1])*dy[0]
               +(3.*sq(x[0])+3.*sq(x[1]))*dy[1]
               +15.*quad(x[1])*dy[2])
 
-    # z=(g''(x)dx)*dy
-    def pps(self,x,dx,dy,z):
-        z[0] = ((-cos(x[0])*dx[0]*sin(x[1])-sin(x[0])*cos(x[1])*dx[1])*dy[0]
+    # xhat=(g''(x)dx)*dy
+    def pps(self,x,dx,dy,xhat):
+        xhat[0] = ((-cos(x[0])*dx[0]*sin(x[1])-sin(x[0])*cos(x[1])*dx[1])*dy[0]
                +(6.*dx[0]*x[1] + 6.*x[0]*dx[1])*dy[1]
                +(-1./sq(x[0])*dx[0])*dy[2])
-        z[1] = ((-sin(x[0])*dx[0]*cos(x[1])-cos(x[0])*sin(x[1])*dx[1])*dy[0]
+        xhat[1] = ((-sin(x[0])*dx[0]*cos(x[1])-cos(x[0])*sin(x[1])*dx[1])*dy[0]
                +(6.*x[0]*dx[0]+6.*x[1]*dx[1])*dy[1]
                +(60.*cub(x[1])*dx[1])*dy[2])
 
@@ -98,13 +93,15 @@ x = numpy.array([1.2,2.3])
 y = numpy.zeros(3)
 
 # Create an optimization state
-state=Optizelle.EqualityConstrained.State.t(
-    Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging(),x,y)
+state=Optizelle.EqualityConstrained.State.t(Optizelle.Rm,Optizelle.Rm,x,y)
 
 # Modify the state so that we just run our diagnostics and exit
-state.dscheme = Optizelle.DiagnosticScheme.DiagnosticsOnly;
-state.f_diag = Optizelle.FunctionDiagnostics.SecondOrder;
-state.g_diag = Optizelle.FunctionDiagnostics.SecondOrder;
+state.dscheme = Optizelle.DiagnosticScheme.DiagnosticsOnly
+state.f_diag = Optizelle.FunctionDiagnostics.SecondOrder
+state.x_diag = Optizelle.VectorSpaceDiagnostics.Basic
+state.g_diag = Optizelle.FunctionDiagnostics.SecondOrder
+state.y_diag = Optizelle.VectorSpaceDiagnostics.EuclideanJordan
+state.L_diag = Optizelle.FunctionDiagnostics.SecondOrder
 
 # Create a bundle of functions
 fns=Optizelle.EqualityConstrained.Functions.t()
@@ -114,4 +111,4 @@ fns.g=Utility()
 # Even though this looks like we're solving an optimization problem,
 # we're actually just going to run our diagnostics and then exit.
 Optizelle.EqualityConstrained.Algorithms.getMin(
-    Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging(),fns,state)
+    Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging.stdout,fns,state)

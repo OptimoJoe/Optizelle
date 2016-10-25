@@ -8,7 +8,7 @@ setupOptizelle();
 
 % Create some type shortcuts
 XX = Optizelle.Rm;
-msg = Optizelle.Messaging;
+msg = Optizelle.Messaging.stdout;
 
 serialize=@(x)'';
 deserialize=@(x,y)[];
@@ -24,13 +24,13 @@ x0 = [2.3;1.2];
 
 % Create a state based on this vector
 %---State0---
-state = Optizelle.Unconstrained.State.t(XX,msg,x);
+state = Optizelle.Unconstrained.State.t(XX,x);
 %---State1---
 
 % Read in some parameters
 fname = 'blank.json';
 %---ReadJson0--- 
-state = Optizelle.json.Unconstrained.read(XX,msg,fname,state);
+state = Optizelle.json.Unconstrained.read(XX,fname,state);
 %---ReadJson1--- 
    
 % Create a bundle of functions
@@ -39,6 +39,7 @@ fns = Optizelle.Unconstrained.Functions.t;
 %---Functions1---
 
 % Do a null optimization
+state.f_x = 1.0;
 %---Solver0---
 state = Optizelle.Unconstrained.Algorithms.getMin(XX,msg,fns,state);
 %---Solver1---
@@ -53,10 +54,8 @@ state = Optizelle.Unconstrained.Algorithms.getMin( ...
 % Read and write the state to file
 fname = 'restart.json';
 %---WriteReadRestart0---
-Optizelle.json.Unconstrained.write_restart( ...
-    XX,msg,fname,state);
-state = Optizelle.json.Unconstrained.read_restart( ...
-    XX,msg,fname,x);
+Optizelle.json.Unconstrained.write_restart(XX,fname,state);
+state = Optizelle.json.Unconstrained.read_restart(XX,fname,x);
 %---WriteReadRestart1---
 
 % Do a release 
@@ -66,12 +65,12 @@ reals = Optizelle.Unconstrained.Restart.Reals;
 nats = Optizelle.Unconstrained.Restart.Naturals;
 params = Optizelle.Unconstrained.Restart.Params;
 [xs reals nats params] = Optizelle.Unconstrained.Restart.release( ...
-    XX,msg,state);
+    XX,state);
 %---Release1---
 
 % Check that we have the correct number of vectors
 if length(xs) ~= 6
-    msg.error('The list xs contains the wrong number of vectors.');
+    error('The list xs contains the wrong number of vectors.');
 end
 
 % Modify some vectors 
@@ -80,7 +79,7 @@ xs{1}{2}=x0;
 % Capture the state
 %---Capture0---
 state = Optizelle.Unconstrained.Restart.capture( ...
-    XX,msg,state,xs,reals,nats,params);
+    XX,state,xs,reals,nats,params);
 %---Capture1---
 
 % Check the relative error between the vector created above and the one
@@ -92,5 +91,5 @@ err=(sqrt(XX.innr(residual,residual)) ...
     /(1+sqrt(XX.innr(x0,x0))));
 
 if err >= 1e-15
-    msg.error('Too much error in the captured x');
+    error('Too much error in the captured x');
 end

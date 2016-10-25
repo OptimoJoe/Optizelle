@@ -1,0 +1,18 @@
+Use of MATLAB is subject to the Mathworks, Inc. Software License Agreement,
+which can be found in license_agreement.txt in the MATLAB installation.
+Compilation and distribution of MATLAB code and MEX files are subject to the
+Deployment Addendum in Software License Agreement.  Specifically,
+
+2. USER CREATED FILES.  This Addendum does not apply to MATLAB code files,
+Simulink model files, MEX-files, MAT-files, VHDL-files, Verilog-files,
+FIG-files and P-files that are created by Licensee and that do not include any
+code obtained from MATLAB code files, Simulink model files, MAT-files, P-code,
+C/C++ files, VHDL-files, Verilog-files, TLC-files, or other Source Code files
+supplied with the Programs ("User Files").  Licensee may distribute or
+sublicense without restriction, User Files provided that a principal purpose of
+the distribution or sublicense is not to replace or replicate a Program or any
+part of a Program.  
+
+Optizelle does not include or distribute any Mathworks code or object files.
+Optizelle only distributes its own MATLAB code and MEX files and hence may
+distribute or sublicense itself without restriction.

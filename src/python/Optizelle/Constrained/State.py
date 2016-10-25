@@ -4,20 +4,22 @@ __all__ = [
 
 import Optizelle.EqualityConstrained.State
 import Optizelle.InequalityConstrained.State
+from Optizelle.Utility import *
+from Optizelle.Properties import *
+from Optizelle.Enumerated import *
 
 class t(
     Optizelle.EqualityConstrained.State.t,
     Optizelle.InequalityConstrained.State.t):
     """Internal state of the optimization"""
 
-    def __init__(self,X,Y,Z,msg,x,y,z):
+    def __init__(self,X,Y,Z,x,y,z):
         """Constructor"""
 
         # Check our arguments
-        Optizelle.checkVectorSpace("X",X)
-        Optizelle.checkVectorSpace("Y",Y)
-        Optizelle.checkEuclidean("Z",Z)
-        Optizelle.checkMessaging("msg",msg)
+        checkVectorSpace("X",X)
+        checkVectorSpace("Y",Y)
+        checkEuclidean("Z",Z)
         
         # Allocate memory for our vectors
         Optizelle.Unconstrained.State.allocateVectors(self,X,x)
@@ -25,7 +27,7 @@ class t(
         Optizelle.InequalityConstrained.State.allocateVectors(self,X,Z,x,z)
 
         # Create the state
-        Optizelle.Utility.ConstrainedStateCreate(self,X,Y,Z,msg,x,y,z)
+        ConstrainedStateCreate(self,X,Y,Z,x,y,z)
 
 def checkT(name,value):
     """Check that we have a state"""
