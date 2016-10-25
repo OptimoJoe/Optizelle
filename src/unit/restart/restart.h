@@ -1,5 +1,4 @@
-#ifndef RESTART_H
-#define RESTART_H
+#pragma once
 
 #include "optizelle/optizelle.h"
 #include "optizelle/json.h"
@@ -101,5 +100,3 @@ struct H : public Optizelle::VectorValuedFunction <Real,XX,ZZ> {
          X_Vector & z
      ) const {} 
 };
-
-#endif

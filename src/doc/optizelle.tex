@@ -96,6 +96,7 @@
 \newcommand{\licenseref}[2]{\hyperref[lic:#2]{#1}}
 
 % Used for labeling and referring to computer text 
+\newcommand{\textctalt}[1]{\texttt{\detokenize{#1}}}
 \newcommand{\textctlabel}[1]{\phantomsection\label{itm:#1}\textct{#1}}
 \newcommand{\textctref}[1]{\hyperref[itm:#1]{\textct{#1}}}
 \newcommand{\textctlabelalt}[1]{\phantomsection\label{alt:#1}\textct{#1}}
@@ -447,10 +448,10 @@
     \item[]}
 
 % Items that help describe the installation
-\newcommand{\languageitem}[3]{
-    \item[Linux/Unix] #1
-    \item[\mbox{OS X}] #2
-    \item[Windows] #3
+\newcommand{\ositem}[3]{
+    \item[Windows] #1
+    \item[macOS] #2
+    \item[Linux/Unix] #3
     \item[]}
 
 \newcommand{\libraryitem}[8]{
@@ -592,6 +593,10 @@
 \newsavebox{\boxInequalityConstrained}
 \newsavebox{\boxConstrained}
 \newsavebox{\boxImport}
+\newsavebox{\boxEnvironmentLinux}
+\newsavebox{\boxEnvironmentLinuxAlt}
+\newsavebox{\boxEnvironmentmacOS}
+\newsavebox{\boxEnvironmentWindows}
 
 % Labels for some sections
 \newcommand{\secinstalling}{Installing}
@@ -790,7 +795,66 @@ In order to optimize this function, we use the following code and parameters, wh
 \begin{center}
     \mbox{\url{http://www.optimojoe.com/products/optizelle}}
 \end{center}
-as a zipped archive.  Here, we also provide direct access to our source code repository.
+in a variety of precompiled packages.  Here, we also provide direct access to our source code repository.
+
+\section{Installing and Uninstalling}
+
+        The installation method depends on the platform, but generally involves opening the installer and following the specified instructions
+\begin{lrbox}{\boxEnvironmentLinux}
+    \begin{tabular}{l}
+    \textctalt{export MATLABPATH=$MATLABPATH:/usr/local/share/optizelle/matlab}\\
+    \textctalt{export OCTAVE_PATH=$OCTAVE_PATH:/usr/local/share/optizelle/octave}\\
+    \textctalt{export PYTHONPATH=$PYTHONPATH:/usr/local/share/optizelle/python}
+    \end{tabular}
+\end{lrbox}
+\begin{boldlist}
+    \ositem
+        {Open the installer}
+        {\begin{enumerate}
+            \item Open the installer
+            \item Drag the Optizelle folder to Applications
+            \item Copy the file
+                \begin{flushleft}
+                    \textct{/Applications/Optizelle/share/optizelle/com.optimojoe.optizelle.plist}
+                \end{flushleft}
+                to
+                \begin{flushleft}
+                    \textct{/Library/LaunchAgents/}
+                \end{flushleft}
+            \item Close the Terminal application if open and reboot
+        \end{enumerate}
+        Note, we summarize these steps and provide additional information in the \textct{ReadMe.txt} file provided after opening the installer.}
+        {\begin{enumerate}
+            \item Unzip the \textct{tar.gz} file to a local directory or use the appropriate package manager to install the \textct{rpm} or \textct{deb} package directly
+            \item Add \textct{/some/path/share/optizelle/matlab} to the \textct{MATLABPATH}
+            \item Add \textct{/some/path/share/optizelle/octave} to the \textct{OCTAVE_PATH}
+            \item Add \textct{/some/path/share/optizelle/python} to the \textct{PYTHONPATH}
+        \end{enumerate}
+        where \textct{/some/path} denotes the Optizelle install location.  By default, the \textct{deb} and \textct{rpm} files install Optizelle to \textct{/usr/local/}.  Note, on most Linux distributions, we add a variable to the path by adding
+        \begin{flushleft}
+            \textctalt{export SOMEVARIABLE=$SOMEVARIABLE:NEWPATH}
+        \end{flushleft}
+        to the file \textctalt{~/.bashrc}.  In other words, if we install Optizelle to \textct{/usr/local}, we add the following to text \textctalt{~/.bashrc}
+        \begin{flushleft}
+            \usebox{\boxEnvironmentLinux}
+        \end{flushleft}
+        Remember to execute \textctalt{source ~/.bashrc} on all active shells, log out and back in, or reboot for the changes to take affect.}
+\end{boldlist}
+
+    Similar to installation, how we uninstall Optizelle depends on the platform
+\begin{boldlist}
+    \ositem
+        {Click the menus Start $\rightarrow$ Settings $\rightarrow$ System $\rightarrow$ Apps \& features $\rightarrow$ Optizelle $\rightarrow$ Uninstall}
+        {\begin{enumerate}
+            \item Drag the folder \textct{/Applications/Optizelle} to the trash
+            \item Drag the file \textct{/Library/LaunchAgents/com.optimojoe.optizelle.plist} to the trash
+        \end{enumerate}}
+        {\begin{enumerate}
+            \item When installed locally using the \textct{tar.gz} package, delete the installation folder
+            \item When installed using the \textct{rpm} or \textct{deb} packages, use the package manager to remove Optizelle
+            \item Delete any modifications to the path made in the file \textctalt{~/.bashrc} or other similar configuration file
+        \end{enumerate}}
+\end{boldlist}
 
 \section{Dependencies}
 
@@ -815,7 +879,7 @@ as a zipped archive.  Here, we also provide direct access to our source code rep
 
 \section{Building}
 
-        Optizelle uses CMake as its build system.  On Linux, Unix, OS X, or Cygwin, execute the following commands from the base Optizelle directory:
+    Optizelle uses CMake as its build system.  On Linux, Unix, macOS, Cygwin, or MSYS, execute the following commands from the base Optizelle directory:
 \begin{enumerate}
     \item \textct{mkdir build}
     \item \textct{cd build}
@@ -823,23 +887,104 @@ as a zipped archive.  Here, we also provide direct access to our source code rep
     \item Configure the build.
     \item \textct{make}
 \end{enumerate}
-On Windows, if not using Cygwin, execute the following commands:
+On Windows, if not using Cygwin or MSYS, execute the following commands:
 \begin{enumerate}
     \item Using Windows Explorer, create a directory called \textct{build} in the base Optizelle directory.
     \item Run \textct{cmake-gui.exe}
     \item Set the source directory to the base Optizelle directory.
     \item Set the build directory to the \textct{build} folder created above.
     \item Configure the build.
-    \item Build the code (\textct{make} with MSYS.)
+    \item Build the code (\textct{make} with Cygwin or MSYS.)
 \end{enumerate}
 
-        Rather than using \textct{ccmake}, we can also run \textct{cmake} directly in order to configure the build.  This allows us to skip the CMake menu system and configure Optizelle directly, which can be advantageous when compiling Optizelle on multiple, but similar systems.  In order to accomplish this, we execute a command such as
+    Rather than using \textct{ccmake}, we can also run \textct{cmake} directly in order to configure the build.  This allows us to skip the CMake menu system and configure Optizelle directly, which can be advantageous when compiling Optizelle on multiple, but similar systems.  In order to accomplish this, we execute a command such as
 \begin{center}\begin{lstlisting}
 cmake \
     %-flags
 ..
 \end{lstlisting}\end{center}
 where the actual paths, libraries, and archives depend on the individual system.  Generally, we put this command inside a shell script or batch file in order to make it easier to edit.  As far as the available options, we list them in the next section.
+    
+    After building Optizelle, installation is as simple as executing
+\begin{center}
+        \textct{make install}
+\end{center}
+from the CMake build directory using GNU Make, MSYS, or Cygwin.  If using a different Make utility, call it on the \textct{install} target.  For a complete list of installed files, see 
+\begin{center}
+    \textct{install_manifest.txt}
+\end{center}
+located in the CMake build directory.\\
+
+    After installation via \textct{make install}, we must also
+    \begin{enumerate}
+        \item Add \textct{/some/path/share/optizelle/matlab} to the \textct{MATLABPATH}
+        \item Add \textct{/some/path/share/optizelle/octave} to the \textct{OCTAVE_PATH}
+        \item Add \textct{/some/path/share/optizelle/python} to the \textct{PYTHONPATH}
+    \end{enumerate}
+where \textct{/some/path} denotes the path found in the \textctref{CMAKE_INSTALL_PREFIX} configuration variable described below.  How we set environment variables depends on the platform 
+\begin{lrbox}{\boxEnvironmentWindows}
+    \begin{minipage}{5in}\begin{enumerate}
+        \item Open File Explorer
+        \item Right click This PC
+        \item Click the menus Advanced System Settings $\rightarrow$ System Properties $\rightarrow$ Environment Variables $\rightarrow$ New (if the variable doesn't exist) or Edit (if the variable does exist)
+        \item Modify \textct{PATH} with \verb|C:\some\path\lib| and \verb|C:\some\path\share\optizelle\thirdparty\lib|
+        \item Modify \textct{MATLABPATH} with \verb|C:\some\path\share\optizelle\matlab|
+        \item Modify \textct{OCTAVE_PATH} with \verb|C:\some\path\share\optizelle\octave|
+        \item Modify \textct{PYTHONPATH} with \verb|C:\some\path\share\optizelle\python|
+    \end{enumerate}\end{minipage}
+\end{lrbox}
+\begin{lrbox}{\boxEnvironmentmacOS}
+\begin{lstlisting}
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+"http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+	<key>Label</key>
+	<string>Optizelle.startup</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>sh</string>
+		<string>-c</string>
+		<string>
+            launchctl setenv MATLABPATH $MATLABPATH:/some/path/share/optizelle/matlab
+            launchctl setenv OCTAVE_PATH $OCTAVE_PATH:/some/path/share/optizelle/octave
+            launchctl setenv PYTHONPATH $PYTHONPATH:/some/path/share/optizelle/python
+		</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+</dict></plist>
+\end{lstlisting}
+\end{lrbox}
+\begin{lrbox}{\boxEnvironmentLinuxAlt}
+    \begin{tabular}{l}
+    \textctalt{export MATLABPATH=$MATLABPATH:/some/path/share/optizelle/matlab}\\
+    \textctalt{export OCTAVE_PATH=$OCTAVE_PATH:/some/path/share/optizelle/octave}\\
+    \textctalt{export PYTHONPATH=$PYTHONPATH:/some/path/share/optizelle/python}
+    \end{tabular}
+\end{lrbox}
+\begin{boldlist}
+    \ositem
+        {Modify each environment variable via the sequence
+        \begin{flushleft}
+            \usebox{\boxEnvironmentWindows}
+        \end{flushleft}
+        where \texttt{C:\textbackslash{}some\textbackslash{}path} denotes the installation path found in the CMake variable \textctref{CMAKE_INSTALL_PREFIX}.}
+        {Add a plist file to \textct{/Library/LaunchAgents} or \textctalt{~/Library/LaunchAgents}.  For example
+        \usebox{\boxEnvironmentmacOS}
+        where \textct{/some/path} denotes the installation path found in the CMake variable \textctref{CMAKE_INSTALL_PREFIX}.  Note, we must close the Terminal application and then reboot for the changes to take affect.}
+        {When using the Bash shell, we add
+        \begin{flushleft}
+        \usebox{\boxEnvironmentLinuxAlt}
+        \end{flushleft}
+        to \textctalt{~/.bashrc} where \textct{/some/path} denotes the installation path found in the CMake variable \textctref{CMAKE_INSTALL_PREFIX}.  Note, we must also execute the command \textctalt{source ~/.bashrc} on all active shells, log out and back in, or reboot for the changes to take affect.}
+\end{boldlist}
+
+        As a final note, CMake does not provide a native uninstallation process when installing Optizelle in this manner.  Nevertheless, on Linux, Unix, macOS, MSYS, or Cygwin, the command
+\begin{center}
+    \textct{xargs rm < install_manifest.txt}
+\end{center}
+will remove the installation.  Also, don't forget to remove each of the environment variables added in the above installation process.
 
 \section{Configuring}
 
@@ -1018,7 +1163,7 @@ where the actual paths, libraries, and archives depend on the individual system.
         {Yes}
         {A path that indicates where the jsoncpp headers have been 
         installed.  The actual headers must be found in 
-        \textct{\$\{JSONCPP_INCLUDE_DIR\}/json/}.}
+        \textctalt{$JSONCPP_INCLUDE_DIR/json/}}.
 
     \cmakeitem
         {JSONCPP_LIBRARY}
@@ -1313,134 +1458,6 @@ where the actual paths, libraries, and archives depend on the individual system.
         {During compilation, \textct{undefined reference to `__imp_Py_InitModule4'}}
         {Tells Python to use Windows 64-bit specific code}
 \end{boldlist}
-
-\section{\secinstalling}\label{sec:installing}
-
-    After building Optizelle, installation is as simple as executing
-\begin{center}
-        \texttt{make install}
-\end{center}
-from the CMake build directory using GNU Make, MSYS, or Cygwin.  If using a different Make utility, call it on the \textct{install} target.  For a complete list of installed files, see 
-\begin{center}
-    \textct{install_manifest.txt}
-\end{center}
-located in the CMake build directory.
-
-    The CMake variable \textctref{CMAKE_INSTALL_PREFIX} determines Optizelle's base installation directory.  From there, we install Optizelle into the following directory tree.  For brevity, we do not list all of the installed files in this diagram, but a selection of the most important files.
-\begin{center}\begin{minipage}[t]{1\columnwidth}
-    \dirtree{%
-        .1 \$\{\textctref{CMAKE_INSTALL_PREFIX}\}.
-        .2 lib.
-        .3 liboptizelle.a.
-        .3 optizelle.lib.
-        .3 liboptizelle.so.
-        .3 liboptizelle.dylib.
-        .3 optizelle.dll.
-        .2 include.
-        .3 optizelle.
-        .4 optizelle.h.
-        .4 json.h.
-        .4 vspaces.h.
-        .2 share.
-        .3 optizelle.
-        .4 doc.
-        .5 Optizelle-@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@.@CPACK_PACKAGE_VERSION_PATCH@.pdf.
-        .4 python.
-        .5 Optizelle.
-        .4 matlab.
-        .5 setupOptizelle.m.
-        .4 octave.
-        .5 setupOptizelle.m.
-        .4 examples.
-    }
-\end{minipage}\end{center}
-If the \textctref{ENABLE_BUILD_JSONCPP} variable is set to \textct{ON}, then we also install JsonCpp to the following location.
-\begin{center}\begin{minipage}[t]{1\columnwidth}
-    \dirtree{%
-        .1 \$\{\textctref{CMAKE_INSTALL_PREFIX}\}.
-        .2 lib.
-        .3 libjson.a.
-        .3 json.lib.
-        .3 libjson.so.
-        .3 libjson.dylib.
-        .3 json.dll.
-        .2 include.
-        .3 json.
-        .4 json.h.
-    }
-\end{minipage}\end{center}
-Finally, if the \textctref{ENABLE_BUILD_BLAS_AND_LAPACK} variable is set to \textct{ON}, then we install BLAS and LAPACK to the following location.
-\begin{center}\begin{minipage}[t]{1\columnwidth}
-    \dirtree{%
-        .1 \$\{\textctref{CMAKE_INSTALL_PREFIX}\}.
-        .2 lib.
-        .3 libblas.so.
-        .3 libblas.dylib.
-        .3 blas.dll.
-        .3 liblapack.so.
-        .3 liblapack.dylib.
-        .3 lapack.dll.
-    }
-\end{minipage}\end{center}
-
-\phantomsection\label{itm:environmentvariables}
-        Next, we must set several environment variables so that applications dependent on Optizelle can find the necessary libraries.  Each operating system uses a slightly different way to accomplish this, but the most common use cases are:
-\begin{boldlist}
-    \languageitem
-        {When using a Bash shell, modify \textct{.profile}, \textct{.bashrc}, \textct{.bash_profile} or the appropriate startup file.  Add the line
-\begin{center}
-        \textct{export SOMEVARIABLE=}\$\textct{SOMEVARIABLE:NEWPATH}
-\end{center}
-where \textct{SOMEVARIABLE} denotes one of the environment variables we discuss below and \textct{NEWPATH} denotes the added path.}
-        {Same as Linux/Unix}
-        {Modify \textct{SOMEVARIABLE} via the sequence My Computer $\rightarrow$ Properties $\rightarrow$ Advanced System Settings $\rightarrow$ System Properties $\rightarrow$ Environment Variables.  When modifying a variable, we separate each path with a semicolon.}
-\end{boldlist}
-On Linux, Unix, and OS X, most shells allow us to set this environment variable at runtime with syntax such as
-\begin{center}
-        \textct{SOMEVARIABLE1=}\$\textct{SOMEVARIABLE1:NEWPATH1 SOMEVARIABLE2=}\$\textct{SOMEVARIABLE2:NEWPATH2 myprog}
-\end{center}
-where \textct{myprog} denotes the program we want to run.
-        
-        As to the specific environment variables, we must:
-\begin{boldlist}
-    \libraryitem
-        {\$\{\textctref{CMAKE_INSTALL_PREFIX}\}\textct{/lib}}
-        {\begin{boldlist}
-            \languageitem
-                {\textct{LD_LIBRARY_PATH}}
-                {\textct{DYLD_LIBRARY_PATH} or \textct{DYLD_FALLBACK_LIBRARY_PATH}.  If we compile our own BLAS and LAPACK, these libraries may conflict with the versions found within the vecLib system library.  In this case, we may be required to use \textct{DYLD_FALLBACK_LIBRARY_PATH}.}
-                {\textct{PATH}}
-            \end{boldlist}}
-        {\$\{\textctref{CMAKE_INSTALL_PREFIX}\}\textct{/share/optizelle/python}}
-        {\textct{PYTHONPATH}}
-        {\$\{\textctref{CMAKE_INSTALL_PREFIX}\}\textct{/share/optizelle/matlab}}
-        {\textct{MATLABPATH}}
-        {\$\{\textctref{CMAKE_INSTALL_PREFIX}\}\textct{/share/optizelle/octave}}
-        {\textct{OCTAVE_PATH}}
-\end{boldlist}
-Note, when we say \$\{\textctref{CMAKE_INSTALL_PREFIX}\}, we mean the actual text stored in the CMake variable and not the literal string.
-
-\section{Uninstalling}
-
-        In order to uninstall Optizelle under Linux, Unix, OS X, MSYS, or Cygwin, execute the following command
-\begin{center}
-    \textct{xargs rm < install_manifest.txt}
-\end{center}
-from the CMake build directory.  On Windows, just delete the directory specified in the \textctref{CMAKE_INSTALL_PREFIX} variable, unless you share this directory with other utilities that respect the POSIX directory structure.  If this is the case, delete the files and directories found in the \textct{install_manifest.txt} file by hand.  Finally, on all platforms, remove any environment variables added by hand, which we describe in the section \hyperref[sec:installing]{Installing}.
-
-\section{Distributing}
-
-        Optizelle uses CPack, part of the CMake package, in order to distribute the Optizelle source and compiled binaries.  In order to make a new distributable source package on Linux, Unix, OS X, MSYS, or Cygwin run 
-\begin{center}
-    \textct{make package_source}
-\end{center}
-from the CMake build directory.  If using an alternative Make utility, run it on the target \textct{package_source} from the same directory.  Note, all files in the Optizelle directory tree except for the current build directory are included in the source package with this method.  Specifically, if the directory structure contains multiple build directories, CMake incorporates these in the source package as well, which is probably undesirable. 
-
-        In order to package compiled binaries to other systems, run
-\begin{center}
-    \textct{cpack}
-\end{center}
-in the build directory.  This encapsulates Optizelle as well as JsonCpp, BLAS, and LAPACK if they were also built during compilation.
 
 \chapter{Basic API}\label{ch:Basic}
 
@@ -2235,10 +2252,10 @@ This becomes the following in our \exampleref{\secequality}{sec:equality} exampl
 
 \subsection{C++}
 
-        As described in the \hyperref[sec:installing]{Installing} section of the manual, we install the C++ relevant headers and libraries to
+        By default, we install the C++ relevant headers and libraries to
 \begin{center}\begin{minipage}[t]{1\columnwidth}
     \dirtree{%
-        .1 \$\{\textctref{CMAKE_INSTALL_PREFIX}\}.
+        .1 /some/path.
         .2 lib.
         .3 liboptizelle.a.
         .3 optizelle.lib.
@@ -2252,27 +2269,25 @@ This becomes the following in our \exampleref{\secequality}{sec:equality} exampl
         .4 vspaces.h.
     }
 \end{minipage}\end{center}
-Therefore, in order to compile an Optizelle program, we must add the directory
+where \textct{/some/path} denotes the installation directory.  Therefore, in order to compile an Optizelle program, we must add the directory
 \begin{center}
-        \$\{\textctref{CMAKE_INSTALL_PREFIX}\}\textct{/include}
+        \textct{/some/path/include}
 \end{center}
 to the list of include directories and
 \begin{center}
-        \$\{\textctref{CMAKE_INSTALL_PREFIX}\}\textct{/lib}
+        \textct{/some/path/lib}
 \end{center}
 to the list of library directories.  For the static library, we link either \textct{liboptizelle.a} or \textct{optizelle.lib}.  For the dynamic library, we link either \textct{liboptizelle.so}, \textct{liboptizelle.dylib}, or \textct{optizelle.dll}.
 
         Note, Optizelle depends on JsonCpp, BLAS, and LAPACK as well.  Therefore, these headers and libraries must be included in any compilation command as well.  For example, in GCC, we may have the following set of build flags
 \begin{center}
-        \textct{-I/usr/include -L/usr/lib -loptizelle -ljson -lblas -llapack}
+        \textct{-I/usr/include -L/usr/lib -L/usr/share/optizelle/thirdparty/lib -loptizelle -ljson -lblas -llapack}
 \end{center}
 where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
 
-        In order to run a program, we must ensure that we set the necessary \hyperref[itm:environmentvariables]{environment variables} that we discuss in the \hyperref[sec:installing]{\secinstalling} section.
-
 \subsection{Python/MATLAB/Octave}
 
-        We require no compilation, but we must ensure that we set the necessary \hyperref[itm:environmentvariables]{environment variables} that we discuss in the \hyperref[sec:installing]{\secinstalling} section.
+        We require no compilation.
 
 \chapter{\chparams}\label{ch:params}
         
@@ -4137,7 +4152,7 @@ Number of blocks & \textct{x.numblocks()}
 
     \item Often an algorithm makes progress toward a solution, but then stagnates.  In order to diagnose why the algorithm stagnated, we may examine the restart file at the iteration of stagnation.  Furthermore, if we have insight into the underlying problem structure, we could modify the solution by hand or with an outside tool and then restart the computation.
 \end{itemize}
-\indent Each of these situations requires restarts.
+\noindent Each of these situations requires restarts.
 
         As long as we use our built-in vector spaces such as \textctref{Rm} and \textctref{SQL}, we can easily read and write the state to a JSON formatted file with the commands:
 \phantomsection\label{itm:write_restart}
@@ -5088,5 +5103,4 @@ In other words, our initial inequality multiplier puts us on the central path sp
 \clearpage
 \addcontentsline{toc}{chapter}{Index}
 \printindex
-
 \end{document}
