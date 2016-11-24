@@ -41,7 +41,9 @@ class RosenHInv(Optizelle.Operator):
     
 # Read in the name for the input file
 if len(sys.argv)!=2:
-    sys.exit("python rosenbrock.py <parameters>")
+    sys.stderr.write("Usage: python rosenbrock.py <parameters>.json\n")
+    raise ValueError("Parameters JSON file required.")
+
 fname = sys.argv[1]
 
 #---State0---

@@ -75,9 +75,11 @@ class MyIneq(Optizelle.VectorValuedFunction):
         xhat.fill(0.)
 
 # Read in the name for the input file
-if len(sys.argv)!=2:
-    sys.exit("simple_constrained.py <parameters>")
-fname=sys.argv[1]
+if len(sys.argv) != 2:
+    sys.stderr.write("Usage: python simple_constrained.py <parameters>.json\n")
+    raise ValueError("Parameters JSON file required.")
+
+fname = sys.argv[1]
 
 # Generate an initial guess 
 x = numpy.array([2.1,1.1])

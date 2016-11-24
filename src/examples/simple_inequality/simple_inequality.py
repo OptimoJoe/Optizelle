@@ -56,7 +56,9 @@ class MyIneq(Optizelle.VectorValuedFunction):
 
 # Read in the name for the input file
 if len(sys.argv)!=2:
-    sys.exit("simple_inequality.py <parameters>")
+    sys.stderr.write("Usage: python simple_inequality.py <parameters>.json\n")
+    raise ValueError("Parameters JSON file required.")
+
 fname=sys.argv[1]
 
 # Generate an initial guess 
