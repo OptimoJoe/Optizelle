@@ -2523,8 +2523,8 @@ namespace Optizelle {
                 // quit
                 else {
                     vs.pop_back();
-                    iter--;
-                    i--;
+                    if ( iter > 0 ) { iter--; }
+                    if ( i    > 0 ) { i--; }
                     nan_detected=true;
                     // Note, norm_r will not be correct on the next iteration
                 }
