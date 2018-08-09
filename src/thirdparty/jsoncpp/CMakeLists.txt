@@ -26,12 +26,12 @@ add_library(jsoncpp_shared SHARED $<TARGET_OBJECTS:jsoncpp_object> )
 set_target_properties(jsoncpp_shared jsoncpp_static
     PROPERTIES OUTPUT_NAME json)
 
-# Set the compiler to C++98
-set_property(TARGET jsoncpp_object PROPERTY CXX_STANDARD 98)
+# Set the compiler to C++14
+set_property(TARGET jsoncpp_object PROPERTY CXX_STANDARD 14)
 set_property(TARGET jsoncpp_object PROPERTY CXX_STANDARD_REQUIRED ON)
-set_property(TARGET jsoncpp_static PROPERTY CXX_STANDARD 98)
+set_property(TARGET jsoncpp_static PROPERTY CXX_STANDARD 14)
 set_property(TARGET jsoncpp_static PROPERTY CXX_STANDARD_REQUIRED ON)
-set_property(TARGET jsoncpp_shared PROPERTY CXX_STANDARD 98)
+set_property(TARGET jsoncpp_shared PROPERTY CXX_STANDARD 14)
 set_property(TARGET jsoncpp_shared PROPERTY CXX_STANDARD_REQUIRED ON)
 
 # Install the libraries and headers

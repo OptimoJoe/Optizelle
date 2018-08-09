@@ -7,14 +7,21 @@ namespace Optizelle {
             std::string const & fname
         ) {
             // Read in the input file
-            Json::Value root;
-            Json::Reader reader;
-            std::ifstream file(fname.c_str(),std::ifstream::in);
-            bool parsingSuccessful = reader.parse( file, root, true );
+            auto root = Json::Value();
+            auto builder = Json::CharReaderBuilder();
+            auto reader = std::unique_ptr<Json::CharReader> (
+                builder.newCharReader());
+            auto file = std::ifstream(fname.c_str(),std::ifstream::in);
+            auto err = std::string();
+            bool parsingSuccessful = Json::parseFromStream(
+                builder,
+                file,
+                &root,
+                &err);
             if(!parsingSuccessful)
                 throw Exception::t(__LOC__
                     + ", failed to parse the optimization parameter "
-                    "file:  " + reader.getFormattedErrorMessages());
+                    "file:  " + err);
 
             // Return the root
             return root;

@@ -164,17 +164,24 @@ namespace Optizelle {
                     x_json[Json::ArrayIndex(i)]=x[i];
 
                 // Return a string of the result
-                Json::StyledWriter writer;
-                return writer.write(x_json);
+                auto writer = Json::StreamWriterBuilder();
+                return Json::writeString(writer,x_json);
             }
             static typename Rm <Real>::Vector deserialize (
                 typename Rm <Real>::Vector const & x_,
                 std::string const & x_json_
             ) {
                 // Create a json tree from the input string
-                Json::Value x_json;
-                Json::Reader reader;
-                reader.parse(x_json_,x_json,true);
+                auto builder = Json::CharReaderBuilder();
+                auto reader = std::unique_ptr<Json::CharReader> (
+                    builder.newCharReader());
+                auto x_json = Json::Value();
+                auto err = std::string();
+                reader->parse(
+                    x_json_.c_str(),
+                    x_json_.c_str()+x_json_.size(),
+                    &x_json,
+                    &err);
 
                 // Create a vector from the json tree
                 std::vector <Real> x(x_json.size());
@@ -1097,17 +1104,24 @@ namespace Optizelle {
                         =Json::Value::UInt64(x.inverse_base_offsets[i]);
 
                 // Return a string of the result
-                Json::StyledWriter writer;
-                return writer.write(x_json);
+                auto writer = Json::StreamWriterBuilder();
+                return Json::writeString(writer,x_json);
             }
             static typename SQL <Real>::Vector deserialize (
                 typename SQL <Real>::Vector const & x_,
                 std::string const & x_json_
             ) {
                 // Create a json tree from the input string
-                Json::Value x_json;
-                Json::Reader reader;
-                reader.parse(x_json_,x_json,true);
+                auto builder = Json::CharReaderBuilder();
+                auto reader = std::unique_ptr<Json::CharReader> (
+                    builder.newCharReader());
+                auto x_json = Json::Value();
+                auto err = std::string();
+                reader->parse(
+                    x_json_.c_str(),
+                    x_json_.c_str()+x_json_.size(),
+                    &x_json,
+                    &err);
 
                 // Grab the types of the cones
                 std::vector <Cone::t> types;

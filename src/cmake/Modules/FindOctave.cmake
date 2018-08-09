@@ -18,7 +18,7 @@ set(OCTAVE_LIBRARIES ${OCTAVE_LIBRARY} )
 # Handle the quietly and required arguments for the library and include
 # directory.
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(OCTAVE DEFAULT_MSG
+find_package_handle_standard_args(Octave DEFAULT_MSG
     OCTAVE_LIBRARY OCTAVE_INCLUDE_DIR)
 mark_as_advanced(OCTAVE_INCLUDE_DIR OCTAVE_LIBRARY)
 

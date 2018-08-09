@@ -72,20 +72,22 @@ int main(int argc,char* argv[]) {
                     return EXIT_FAILURE;
                 }
             } else if(category.key().asString()=="X_Vectors") {
-                Json::StyledWriter writer;
+                auto writer = Json::StreamWriterBuilder();
 
                 Rm::Vector x(
                     Optizelle::json::Serialization <double,Optizelle::Rm>
                         ::deserialize(
                             std::vector <double>(),
-                            writer.write(baseline[category.name()]
-                                                 [variable.name()])));
+                            Json::writeString(
+                                writer,
+                                baseline[category.name()][variable.name()])));
                 Rm::Vector y(
                     Optizelle::json::Serialization <double,Optizelle::Rm>
                         ::deserialize(
                             std::vector <double>(),
-                            writer.write(test[category.name()]
-                                             [variable.name()])));
+                            Json::writeString(
+                                writer,
+                                baseline[category.name()][variable.name()])));
                 // Check that the vectors are the same size.  Mostly, this
                 // comes up when copying old setups for new tests.
                 if(x.size()!=y.size()) {

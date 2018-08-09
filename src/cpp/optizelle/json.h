@@ -182,7 +182,9 @@ namespace Optizelle {
                 typedef typename RestartPackage <X_Vector>::t X_Vectors;
 
                 // Create a reader object to parse a json tree
-                Json::Reader reader;
+                auto builder = Json::CharReaderBuilder();
+                auto reader = std::unique_ptr<Json::CharReader> (
+                    builder.newCharReader());
 
                 // Loop over all the vectors and serialize things
                 for(typename X_Vectors::const_iterator item = xs.cbegin();
@@ -194,8 +196,13 @@ namespace Optizelle {
                         item->second,item->first,iter));
 
                     // Parse the string
-                    Json::Value x_json;
-                    reader.parse(x_json_,x_json,true);
+                    auto x_json = Json::Value();
+                    auto err = std::string();
+                    reader->parse(
+                        x_json_.c_str(),
+                        x_json_.c_str()+x_json_.size(),
+                        &x_json,
+                        &err);
 
                     // Insert the information into the correct place
                     root[vs][item->first]=x_json;
@@ -248,7 +255,7 @@ namespace Optizelle {
             ) {
                 // Create a writer so that we can tranlate json objects into
                 // strings
-                Json::StyledWriter writer;
+                auto writer = Json::StreamWriterBuilder();
 
                 // Loop over all the names in the root
                 for(Json::ValueConstIterator itr=root[vs].begin();
@@ -259,7 +266,8 @@ namespace Optizelle {
                     std::string name(itr.key().asString());
                     xs.emplace_back(name,std::move(
                         Serialization <Real,XX>::deserialize(
-                            x,writer.write(root[vs][name]))));
+                            x,
+                            Json::writeString(writer,root[vs][name]))));
                 }
             }
 
@@ -519,9 +527,8 @@ namespace Optizelle {
                     ToleranceKind::to_string,state.eps_kind);
 
                 // Create a string with the above output
-                Json::StyledWriter writer;
-
-                return writer.write(root);
+                auto writer = Json::StreamWriterBuilder();
+                return Json::writeString(writer,root);
             }
             static std::string to_string(
                 typename Optizelle::Unconstrained <Real,XX>::State::t& state
@@ -713,9 +720,6 @@ namespace Optizelle {
                 // Create a new root for writing
                 Json::Value root;
 
-                // Create a string with the above output
-                Json::StyledWriter writer;
-
                 // Write the optimization parameters
                 root["Optizelle"]["zeta"]=write::real(state.zeta);
                 root["Optizelle"]["eta0"]=write::real(state.eta0);
@@ -742,7 +746,9 @@ namespace Optizelle {
                 root["Optizelle"]["y_diag"]=write_param(
                     VectorSpaceDiagnostics::to_string,state.y_diag);
 
-                return writer.write(root);
+                // Create a string with the above output
+                auto writer = Json::StreamWriterBuilder();
+                return Json::writeString(writer,root);
             }
             static std::string to_string(
                 typename Optizelle::EqualityConstrained <Real,XX,YY>::State::t &
@@ -895,9 +901,6 @@ namespace Optizelle {
                 // Create a new root for writing
                 Json::Value root;
 
-                // Create a string with the above output
-                Json::StyledWriter writer;
-
                 // Write the optimization parameters
                 root["Optizelle"]["eps_mu"]=write::real(state.eps_mu);
                 root["Optizelle"]["mu"]=write::real(state.mu);
@@ -908,7 +911,9 @@ namespace Optizelle {
                 root["Optizelle"]["z_diag"]=write_param(
                     VectorSpaceDiagnostics::to_string,state.z_diag);
 
-                return writer.write(root);
+                // Create a string with the above output
+                auto writer = Json::StreamWriterBuilder();
+                return Json::writeString(writer,root);
             }
             static std::string to_string(
                 typename Optizelle::InequalityConstrained<Real,XX,ZZ>::State::t&
