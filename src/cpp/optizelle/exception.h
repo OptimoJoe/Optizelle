@@ -16,10 +16,10 @@
 //---Optizelle0---
 namespace Optizelle {namespace Exception {
 //---Optizelle1---
-    // exception -> unit 
+    // exception -> unit
     void to_stderr(std::exception const & e);
 
-    // exception -> std::string 
+    // exception -> std::string
     std::string to_string(std::exception const & e);
 
     // t

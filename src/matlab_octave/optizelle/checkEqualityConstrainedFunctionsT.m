@@ -1,4 +1,4 @@
-% Check that we have an equality constrained function bundle 
+% Check that we have an equality constrained function bundle
 function checkEqualityConstrainedFunctionsT(name,value)
     % Set the error message
     err = sprintf( ...
@@ -12,7 +12,7 @@ function checkEqualityConstrainedFunctionsT(name,value)
         error(err);
     end
 
-    % Check for the equality constrained values 
+    % Check for the equality constrained values
     if ~(checkFields({ ...
         'g', ...
         'PSchur_left', ...

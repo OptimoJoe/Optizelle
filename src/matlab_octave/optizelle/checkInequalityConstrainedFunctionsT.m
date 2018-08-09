@@ -1,4 +1,4 @@
-% Check that we have an inequality constrained function bundle 
+% Check that we have an inequality constrained function bundle
 function checkInequalityConstrainedFunctionsT(name,value)
     % Set the error message
     err = sprintf( ...
@@ -12,7 +12,7 @@ function checkInequalityConstrainedFunctionsT(name,value)
         error(err);
     end
 
-    % Check for the inequality constrained values 
+    % Check for the inequality constrained values
     if ~(checkFields({ ...
         'h'}, ...
         value))

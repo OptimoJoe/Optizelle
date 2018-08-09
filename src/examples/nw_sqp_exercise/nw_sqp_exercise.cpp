@@ -13,7 +13,7 @@ using Optizelle::Natural;
 // Squares its input
 template <typename Real>
 Real sq(Real const & x){
-    return x*x; 
+    return x*x;
 }
 
 // Indexing for vectors
@@ -30,27 +30,27 @@ Natural ijtokp(Natural i,Natural j) {
     }
     return (i-1)+j*(j-1)/2;
 }
-    
-// Indexing function for dense matrices 
+
+// Indexing function for dense matrices
 Natural ijtok(Natural const & i,Natural const & j,Natural const & m) {
     return (i-1)+(j-1)*m;
 }
 
-// Indexing function for dense tensors 
+// Indexing function for dense tensors
 Natural ijktol(Natural const & i,Natural const & j,Natural const & k,
     Natural const & m,Natural const & n
 ) {
     return (i-1)+(j-1)*m+(k-1)*m*n;
 }
 
-// 
+//
 // f(x) = exp(x1 x2 x3 x4 x5) - (1/2) (x1^3 + x2^3 + 1)^2
 //
 struct MyObj : public Optizelle::ScalarValuedFunction <double,Optizelle::Rm> {
     typedef Optizelle::Rm <double> X;
     typedef double Real;
 
-    // Evaluation 
+    // Evaluation
     double eval(const X::Vector& x) const {
         return exp(x[itok(1)]*x[itok(2)]*x[itok(3)]*x[itok(4)]*x[itok(5)])
             - sq(pow(x[itok(1)],3)+pow(x[itok(2)],3)+Real(1.))/Real(2.);
@@ -182,7 +182,7 @@ struct MyEq
     typedef Optizelle::Rm <double> Y;
     typedef double Real;
 
-    // y=g(x) 
+    // y=g(x)
     void eval(
         X::Vector const & x,
         Y::Vector & y
@@ -203,12 +203,12 @@ struct MyEq
         jac[ijtok(1,3,3)] = Real(2.)*x[itok(3)];
         jac[ijtok(1,4,3)] = Real(2.)*x[itok(4)];
         jac[ijtok(1,5,3)] = Real(2.)*x[itok(5)];
-        
+
         jac[ijtok(2,2,3)] = x[itok(3)];
         jac[ijtok(2,3,3)] = x[itok(2)];
         jac[ijtok(2,4,3)] = Real(-5.)*x[itok(5)];
         jac[ijtok(2,5,3)] = Real(-5.)*x[itok(4)];
-        
+
         jac[ijtok(3,1,3)] = Real(3.)*sq(x[itok(1)]);
         jac[ijtok(3,2,3)] = Real(3.)*sq(x[itok(2)]);
     }
@@ -269,7 +269,7 @@ struct MyEq
         D[ijktol(1,3,3,3,5)] = Real(2.);
         D[ijktol(1,4,4,3,5)] = Real(2.);
         D[ijktol(1,5,5,3,5)] = Real(2.);
-        
+
         D[ijktol(2,2,3,3,5)] = Real(1.);
         D[ijktol(2,3,2,3,5)] = Real(1.);
         D[ijktol(2,4,5,3,5)] = Real(-5.);
@@ -313,12 +313,12 @@ int main(int argc,char* argv[]){
     // Read the parameters from file
     Optizelle::json::EqualityConstrained <double,Optizelle::Rm,Optizelle::Rm>
         ::read(fname,state);
-    
+
     // Create a bundle of functions
     Optizelle::EqualityConstrained <double,Rm,Rm>::Functions::t fns;
     fns.f.reset(new MyObj);
     fns.g.reset(new MyEq);
-   
+
     // Solve the optimization problem
     Optizelle::EqualityConstrained <double,Rm,Rm>::Algorithms
         ::getMin(Optizelle::Messaging::stdout,fns,state);

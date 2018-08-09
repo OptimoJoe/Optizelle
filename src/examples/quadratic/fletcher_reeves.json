@@ -8,9 +8,9 @@
       "eps_grad" : 1e-6
    },
    "Naturals" : {
-      "iter" : 4 
+      "iter" : 4
    },
    "X_Vectors" : {
-      "x" : [ 1.0, 1.0, 1.0 ] 
+      "x" : [ 1.0, 1.0, 1.0 ]
    }
 }

@@ -22,7 +22,7 @@ add_latex_document(master.tex
     BIBFILES optizelle.bib
 )
 
-# Process the config file for documentation 
+# Process the config file for documentation
 preprocess(optizelle.tex "${CMAKE_SOURCE_DIR}/src/unit/config/flags.txt")
 add_custom_target(configure_paths
     COMMAND ${CMAKE_COMMAND}

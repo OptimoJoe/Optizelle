@@ -11,7 +11,7 @@
 // min x + y
 // st  x + 2y >= 1 - z
 //     2x + y >= 1 - z
-//     epsilon >= w             
+//     epsilon >= w
 //     z = w
 //
 // Note, most of the time, we're much better off just adding slack variables.
@@ -28,11 +28,11 @@
 // Squares its input
 template <typename Real>
 Real sq(Real const & x){
-    return x*x; 
+    return x*x;
 }
 
-// Define an objective where 
-// 
+// Define an objective where
+//
 // f(x,y,z,w)=x+y
 //
 template <typename Real>
@@ -40,7 +40,7 @@ struct MyObj : public Optizelle::ScalarValuedFunction <Real,Optizelle::Rm> {
     typedef Optizelle::Rm <Real> X;
     typedef typename X::Vector X_Vector;
 
-    // Evaluation 
+    // Evaluation
     double eval(X_Vector const & x) const {
         return x[0]+x[1];
     }
@@ -82,7 +82,7 @@ public:
     typedef Optizelle::Rm <Real> Y;
     typedef typename Y::Vector Y_Vector;
 
-    // y=g(x) 
+    // y=g(x)
     void eval(
         X_Vector const & x,
         Y_Vector & y
@@ -103,7 +103,7 @@ public:
     void ps(
         X_Vector const & x,
         Y_Vector const & dy,
-        X_Vector & xhat 
+        X_Vector & xhat
     ) const {
         xhat[0]= Real(0.);
         xhat[1]= Real(0.);
@@ -116,7 +116,7 @@ public:
         X_Vector const & x,
         X_Vector const & dx,
         Y_Vector const & dy,
-        X_Vector & xhat 
+        X_Vector & xhat
     ) const {
         X::zero(xhat);
     }
@@ -125,8 +125,8 @@ public:
 
 // Define some inequalities where
 //
-// h(x,y,z,w) = [ x + 2y >= 1 - z  ] 
-//              [ 2x + y >= 1 - z  ] 
+// h(x,y,z,w) = [ x + 2y >= 1 - z  ]
+//              [ 2x + y >= 1 - z  ]
 //              [ epsilon >= w     ]
 //
 template <typename Real>
@@ -144,7 +144,7 @@ public:
     // Read in the amount of allowable infeasibility into the problem
     MyIneq(Real const & epsilon_) : epsilon(epsilon_) {}
 
-    // z=h(x) 
+    // z=h(x)
     void eval(
         X_Vector const & x,
         Z_Vector & z
@@ -162,18 +162,18 @@ public:
     ) const {
         z[0]= dx[0]+Real(2.)*dx[1]+dx[2];
         z[1]= Real(2.)*dx[0]+dx[1]+dx[2];
-        z[2]= -dx[3]; 
+        z[2]= -dx[3];
     }
 
     // xhat=h'(x)*dz
     void ps(
         X_Vector const & x,
         Z_Vector const & dz,
-        X_Vector & xhat 
+        X_Vector & xhat
     ) const {
         xhat[0]= dz[0]+Real(2.)*dz[1];
         xhat[1]= Real(2.)*dz[0]+dz[1];
-        xhat[2]= dz[0]+dz[1]; 
+        xhat[2]= dz[0]+dz[1];
         xhat[3]= -dz[2];
     }
 
@@ -182,7 +182,7 @@ public:
         X_Vector const & x,
         X_Vector const & dx,
         Z_Vector const & dz,
-        X_Vector & xhat 
+        X_Vector & xhat
     ) const {
         X::zero(xhat);
     }
@@ -206,7 +206,7 @@ int main(int argc,char* argv[]){
     // Generate an initial guess for the primal
     auto x = std::vector <Real> {0., 0., 5., -5.};
 
-    // Generate a vector for the equality multiplier 
+    // Generate a vector for the equality multiplier
     auto y = std::vector <Real> (1);
 
     // Generate a vector for the inequality multiplier
@@ -217,7 +217,7 @@ int main(int argc,char* argv[]){
 
     // Read the parameters from file
     Optizelle::json::Constrained <Real,Rm,Rm,Rm>::read(fname,state);
-    
+
     // Create a bundle of functions
     Optizelle::Constrained <Real,Rm,Rm,Rm>::Functions::t fns;
     fns.f.reset(new MyObj <Real>);

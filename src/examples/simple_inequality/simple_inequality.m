@@ -15,13 +15,13 @@ function z = sq(x)
     z=x*x;
 end
 
-% Define a simple objective where 
-% 
+% Define a simple objective where
+%
 % f(x,y)=(x+1)^2+(y+1)^2
 %
 function self = MyObj()
 
-    % Evaluation 
+    % Evaluation
     self.eval = @(x) sq(x(1)+1.)+sq(x(2)+1.);
 
     % Gradient
@@ -35,14 +35,14 @@ function self = MyObj()
         2.*dx(2)];
 end
 
-% Define simple inequalities 
+% Define simple inequalities
 %
-% h(x,y)= [ x + 2y >= 1 ] 
-%         [ 2x + y >= 1 ] 
+% h(x,y)= [ x + 2y >= 1 ]
+%         [ 2x + y >= 1 ]
 %
 function self = MyIneq()
 
-    % z=h(x) 
+    % z=h(x)
     self.eval = @(x) [
         x(1)+2.*x(2)-1. ;
         2.*x(1)+x(2)-1. ];
@@ -58,7 +58,7 @@ function self = MyIneq()
         2.*dz(1)+dz(2) ];
 
     % xhat=(h''(x)dx)*dz
-    self.pps = @(x,dx,dz) zeros(2,1); 
+    self.pps = @(x,dx,dz) zeros(2,1);
 end
 
 % Actually runs the program
@@ -68,10 +68,10 @@ function main(fname)
     global Optizelle;
     setupOptizelle();
 
-    % Generate an initial guess 
+    % Generate an initial guess
     x = [2.1;1.1];
 
-    % Allocate memory for the inequality multiplier 
+    % Allocate memory for the inequality multiplier
     z = [0.;0.];
 
     % Create an optimization state
@@ -97,7 +97,7 @@ function main(fname)
 
     % Print out the final answer
     fprintf('The optimal point is: (%e,%e)\n',state.x(1),state.x(2));
-    
+
     % Write out the final answer to file
     Optizelle.json.InequalityConstrained.write_restart( ...
         Optizelle.Rm,Optizelle.Rm,'solution.json',state);

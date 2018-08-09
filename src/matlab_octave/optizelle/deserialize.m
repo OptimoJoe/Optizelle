@@ -1,4 +1,4 @@
-% Converts a JSON formatted string to a vector 
+% Converts a JSON formatted string to a vector
 function x_out = deserialize(varargin)
     % Keep track of the serialization functions and checks
     persistent sfns;
@@ -44,7 +44,7 @@ function x_out = deserialize(varargin)
                 break;
             end
         end
-        
+
         % Check if we couldn't serialize
         if length(schecks) == 0  ||  ~schecks{i}(x)
             error('Unable to find a suitable deserialization function');

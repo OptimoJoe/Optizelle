@@ -18,7 +18,7 @@
 % X2: Vector space for the variable x2.
 % ff: Definition of the objective.  This is a struct array that contains
 %     the elements eval, grad_1, grad_2, hessvec_11, hessvec_12, hessvec_21,
-%     and hessvec_22. 
+%     and hessvec_22.
 % gg: Definition of the constraint.  This is a struct array that contains
 %     the elements eval, p_1, p_2, p_2_inv, ps_1,
 %     ps_2, ps_2_inv, pps_11, pps_21, pps_12, and
@@ -71,7 +71,7 @@ phi.p=@(x,dx)p(X1,x,dx,gg,phi,kry_tol,kry_rst,kry_iter_max);
 % phi'(x)*dy = -g'_1(x,phi(x))* inv(g'_2(x,phi(x))*) dy
 phi.ps=@(x,dy)ps(X1,x,dy,gg,phi,kry_tol,kry_rst,kry_iter_max);
 
-% (phi''(x)dx)*dy = 
+% (phi''(x)dx)*dy =
 % -(   (g''_11(x,phi(x))dx)*
 %    + (g''_12(x,phi(x))phi'(x)dx)*
 %    + phi'(x)* (  (g''_21(x,phi(x))dx)*
@@ -87,33 +87,33 @@ psi.eval = @(x)psi_eval(X1,X2,x,ff,gg,phi,kry_tol,kry_rst,kry_iter_max);
 
 % Rework the second derivative of the solution operator based on this
 
-% (phi_truncated''(x)dx)* grad_2 f(x,phi(x)) = 
+% (phi_truncated''(x)dx)* grad_2 f(x,phi(x)) =
 % -(   (g''_11(x,phi(x))dx)*
 %    + (g''_12(x,phi(x))phi'(x)dx)*
-% ) psi(x) 
+% ) psi(x)
 phi.pps_truncated=@(x,dx) ...
     pps_truncated(X1,X2,x,dx,gg,phi,psi,kry_tol,kry_rst,kry_iter_max);
 
 % Form the objective function
 
-% J(x) = f(x,phi(x)) 
+% J(x) = f(x,phi(x))
 f.eval=@(x)ff.eval({x,phi.eval(x)});
 
 % grad J(x) = grad_1 f(x,phi(x)) + phi'(x)* grad_2 f(x,phi(x))
 f.grad_old = @(x)grad_old(X1,x,ff,phi);
 
-% grad J(x) = grad_1 f(x,phi(x)) - g'_1(x,phi(x))* psi(x) 
+% grad J(x) = grad_1 f(x,phi(x)) - g'_1(x,phi(x))* psi(x)
 f.grad = @(x)grad(X1,x,ff,gg,phi,psi);
 
 % hess J(x) dx =
-%     hess_11 f(x,phi(x)) + 
+%     hess_11 f(x,phi(x)) +
 %     hess_12 f(x,phi(x)) phi'(x) +
 %     (phi''(x) dx)* grad_2 f(x,phi(x)) +
 %     phi'(x)* ( hess_12 f(x,phi(x)) + hess_22 f(x,phi(x)) phi'(x)dx)
 f.hessvec_old=@(x,dx) hessvec_old(X1,X2,x,dx,ff,phi);
 
 % hess J(x) dx =
-%     hess_11 f(x,phi(x)) + 
+%     hess_11 f(x,phi(x)) +
 %     hess_12 f(x,phi(x)) phi'(x) +
 %     (phi_truncated''(x) dx)* grad_2 f(x,phi(x)) +
 %     phi'(x)* (
@@ -121,7 +121,7 @@ f.hessvec_old=@(x,dx) hessvec_old(X1,X2,x,dx,ff,phi);
 %         hess_22 f(x,phi(x)) phi'(x)dx -
 %         (g''_21(x,phi(x))dx)* psi(x) -
 %         (g''_22(x,phi(x))phi'(x)dx)* psi(x))
-%         
+%
 % Why go through this mess as opposed to what we had above? If we cache
 % properly, we're down to 1 forward and 1 adjoint solve per Krylov iteration.
 %
@@ -145,7 +145,7 @@ function z=p(X1,x,dx,gg,phi,kry_tol,kry_rst,kry_iter_max)
 
     %x_phix <- (x,phi(x))
     x_phix = {x,phi.eval(x)};
-    
+
     %  z <- phi'(x) dx = - inv(g'_2(x,phi(x))) g'_1(x,phi(x)) dx
     z = mygmres( ...
         @(dx)gg.p_2(x_phix,dx), ...
@@ -169,7 +169,7 @@ function z=ps(X1,x,dy,gg,phi,kry_tol,kry_rst,kry_iter_max)
         gg.ps_1(x_phix, ...
             mygmres( ...
                 @(dy)gg.ps_2(x_phix,dy), ...
-                dy, ... 
+                dy, ...
                 kry_rst,kry_tol,kry_iter_max, ...
                 @(dy)gg.ps_2_inv(x_phix,dy))));
 end
@@ -189,7 +189,7 @@ function z=pps(X1,X2,x,dx,dy,gg,phi,kry_tol,kry_rst,kry_iter_max)
     % phi_p_x_dx <- phi'(x)dx
     phi_p_x_dx = phi.p(x,dx);
 
-    % (phi''(x)dx)*dy = 
+    % (phi''(x)dx)*dy =
     % -(   (g''_11(x,phi(x))dx)*
     %    + (g''_12(x,phi(x))phi'(x)dx)*
     %    + phi'(x)* (  (g''_21(x,phi(x))dx)*
@@ -218,10 +218,10 @@ function z=pps_truncated(X1,X2,x,dx,gg,phi,psi,kry_tol,kry_rst,kry_iter_max)
     % phi_p_x_dx <- phi'(x)dx
     phi_p_x_dx = phi.p(x,dx);
 
-    % (phi_truncated''(x)dx)* grad_2 f(x,phi(x)) = 
+    % (phi_truncated''(x)dx)* grad_2 f(x,phi(x)) =
     % -(   (g''_11(x,phi(x))dx)*
     %    + (g''_12(x,phi(x))phi'(x)dx)*
-    % ) psi(x) 
+    % ) psi(x)
     z = X1.scal(-1., ...
         X1.axpy(1.,gg.pps_11(x_phix,dx,psi_x), ...
                    gg.pps_12(x_phix,phi_p_x_dx,psi_x)));
@@ -246,14 +246,14 @@ function z=psi_eval(X1,X2,x,ff,gg,phi,kry_tol,kry_rst,kry_iter_max)
 
     %x_phix <- (x,phi(x))
     x_phix = {x,phi.eval(x)};
-    
+
     % z <- psi(x) = inv(g'_2(x,phi(x))*) grad_2 f(x,phi(x))
     z = mygmres( ...
         @(dy)gg.ps_2(x_phix,dy), ...
-        ff.grad_2(x_phix), ... 
+        ff.grad_2(x_phix), ...
         kry_rst,kry_tol,kry_iter_max, ...
         @(dy)gg.ps_2_inv(x_phix,dy));
-    
+
     % Now, cache everything
     xx=x;
     zz=z;
@@ -278,11 +278,11 @@ function z=grad(X1,x,ff,gg,phi,psi)
     % psi_x <- psi(x)
     psi_x = psi.eval(x);
 
-    % z <- grad J(x) = grad_1 f(x,phi(x)) - g'_1(x,phi(x))* psi(x) 
+    % z <- grad J(x) = grad_1 f(x,phi(x)) - g'_1(x,phi(x))* psi(x)
     z = X1.axpy(1., ...
         ff.grad_1(x_phix), ...
         X1.scal(-1., ...
-            gg.ps_1(x_phix,psi_x)));            
+            gg.ps_1(x_phix,psi_x)));
 end
 
 % Hessian-vector product of the objective function
@@ -294,7 +294,7 @@ function z=hessvec_old(X1,X2,x,dx,ff,phi)
     phi_p_x_dx = phi.p(x,dx);
 
     % z <- hess J(x) dx =
-    %     hess_11 f(x,phi(x)) + 
+    %     hess_11 f(x,phi(x)) +
     %     hess_12 f(x,phi(x)) phi'(x) +
     %     (phi''(x) dx)* grad_2 f(x,phi(x)) +
     %     phi'(x)* ( hess_12 f(x,phi(x)) + hess_22 f(x,phi(x)) phi'(x)dx)
@@ -314,12 +314,12 @@ function z=hessvec(X1,X2,x,dx,ff,gg,phi,psi)
 
     % phi_p_x_dx <- phi'(x)dx
     phi_p_x_dx = phi.p(x,dx);
-    
+
     % psi_x <- psi(x)
     psi_x = psi.eval(x);
 
     % z<- hess J(x) dx =
-    %     hess_11 f(x,phi(x)) + 
+    %     hess_11 f(x,phi(x)) +
     %     hess_12 f(x,phi(x)) phi'(x) +
     %     (phi_truncated''(x) dx)* grad_2 f(x,phi(x)) +
     %     phi'(x)* (
@@ -327,7 +327,7 @@ function z=hessvec(X1,X2,x,dx,ff,gg,phi,psi)
     %         hess_22 f(x,phi(x)) phi'(x)dx -
     %         (g''_21(x,phi(x))dx)* psi(x) -
     %         (g''_22(x,phi(x))phi'(x)dx)* psi(x))
-    %         
+    %
     z = X1.axpy(1.,ff.hessvec_11(x_phix,dx), ...
         X1.axpy(1.,ff.hessvec_12(x_phix,phi_p_x_dx), ...
         X1.axpy(1.,phi.pps_truncated(x,dx), ...

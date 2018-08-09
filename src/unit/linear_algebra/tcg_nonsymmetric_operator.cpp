@@ -7,10 +7,10 @@
 #include "spaces.h"
 
 int main() {
-    // Setup the problem 
+    // Setup the problem
     auto setup = Unit::tcg <Real,Rm> ();
 
-    // Problem setup 
+    // Problem setup
     setup.A = std::make_unique <Matrix>(
         Unit::Matrix <Real>::nonsymmetric(setup.m,4));
     setup.B = std::make_unique <Matrix>(
@@ -24,7 +24,7 @@ int main() {
     // Tests
     setup.check_stop = true;
 
-    // Check the solver 
+    // Check the solver
     Unit::run_and_verify <Real,Rm> (setup);
 
     // Declare success

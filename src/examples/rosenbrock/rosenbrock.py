@@ -1,6 +1,6 @@
 # In this example, we setup and minimize the Rosenbrock function.
 
-import Optizelle 
+import Optizelle
 import numpy
 import sys
 
@@ -9,7 +9,7 @@ import sys
 sq = lambda x:x*x
 
 # Define the Rosenbrock function where
-# 
+#
 # f(x,y)=(1-x)^2+100(y-x^2)^2
 #
 class Rosenbrock(Optizelle.ScalarValuedFunction):
@@ -18,7 +18,7 @@ class Rosenbrock(Optizelle.ScalarValuedFunction):
         return sq(1.-x[0])+100.*sq(x[1]-sq(x[0]))
 
     # Gradient
-    def grad(self,x,grad): 
+    def grad(self,x,grad):
         grad[0]=-400*x[0]*(x[1]-sq(x[0]))-2*(1-x[0])
         grad[1]=200*(x[1]-sq(x[0]))
 
@@ -38,7 +38,7 @@ class RosenHInv(Optizelle.Operator):
         result[1]=(one_over_det*
             (400.*x[0]*dx[0]+(1200.*x[0]*x[0]-400.*x[1]+2.)*dx[1]))
 #---Preconditioner1---
-    
+
 # Read in the name for the input file
 if len(sys.argv)!=2:
     sys.exit("python rosenbrock.py <parameters>")
@@ -51,14 +51,14 @@ x = numpy.array([-1.2,1.0])
 # Create an unconstrained state based on this vector
 state=Optizelle.Unconstrained.State.t(Optizelle.Rm,x)
 #---State1---
-    
+
 #---Parameters0---
 # Read the parameters from file
 Optizelle.json.Unconstrained.read(Optizelle.Rm,fname,state)
 #---Parameters1---
 
 #---Functions0---
-# Create the bundle of functions 
+# Create the bundle of functions
 fns=Optizelle.Unconstrained.Functions.t()
 fns.f=Rosenbrock()
 fns.PH=RosenHInv()

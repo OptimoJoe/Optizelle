@@ -17,7 +17,7 @@ end
 
 % Power function
 function z = pow(x,n)
-   z=x^n; 
+   z=x^n;
 end
 
 % Indexing for vectors
@@ -34,13 +34,13 @@ function result = ijtokp(i,j)
     end
     result = i+j*(j-1)/2;
 end
-    
-% Indexing function for dense matrices 
+
+% Indexing function for dense matrices
 function result = ijtok(i,j,m)
     result = i+(j-1)*m;
 end
 
-% Indexing function for dense tensors 
+% Indexing function for dense tensors
 function result = ijktol(i,j,k,m,n)
     result = i+(j-1)*m+(k-1)*m*n;
 end
@@ -50,7 +50,7 @@ end
 %
 function self = MyObj()
 
-    % Evaluation 
+    % Evaluation
     self.eval = @(x) ...
         (exp(x(itok(1))*x(itok(2))*x(itok(3))*x(itok(4))*x(itok(5))) ...
             - sq(pow(x(itok(1)),3)+pow(x(itok(2)),3)+1.)/2.);
@@ -143,7 +143,7 @@ function H_dx = hessvec(x,dx)
             * x(itok(3))*x(itok(4))*x(itok(5))));
     H(ijtokp(4,4)) = ( ...
         sq(x(itok(1)))*sq(x(itok(2)))*sq(x(itok(3)))*sq(x(itok(5))) ...
-        * exp(x(itok(1))*x(itok(2))*x(itok(3))*x(itok(4))*x(itok(5)))); 
+        * exp(x(itok(1))*x(itok(2))*x(itok(3))*x(itok(4))*x(itok(5))));
     H(ijtokp(4,5)) = ( ...
        sq(x(itok(1)))*sq(x(itok(2)))*sq(x(itok(3)))*x(itok(4))*x(itok(5))...
             * exp(x(itok(1))*x(itok(2))*x(itok(3))*x(itok(4))*x(itok(5)))...
@@ -155,8 +155,8 @@ function H_dx = hessvec(x,dx)
 
     % Compute the Hessian-vector product
     H_dx = zeros(5,1);
-    for i = 1:5 
-        for j = 1:5 
+    for i = 1:5
+        for j = 1:5
             H_dx(i) = H_dx(i) + H(ijtokp(i,j))*dx(j);
         end
     end
@@ -169,7 +169,7 @@ end
 %
 function self = MyEq()
 
-    % y=g(x) 
+    % y=g(x)
     self.eval = @(x) [
         (sq(x(itok(1))) + sq(x(itok(2))) + sq(x(itok(3))) ...
             + sq(x(itok(4))) + sq(x(itok(5))) - 10.);
@@ -177,13 +177,13 @@ function self = MyEq()
         (pow(x(itok(1)),3) + pow(x(itok(2)),3) + 1.)];
 
     % y=g'(x)dx
-    self.p = @(x,dx) reshape(generateJac(x),3,5)*dx; 
+    self.p = @(x,dx) reshape(generateJac(x),3,5)*dx;
 
     % xhat=g'(x)*dy
-    self.ps = @(x,dy) reshape(generateJac(x),3,5)'*dy; 
+    self.ps = @(x,dy) reshape(generateJac(x),3,5)'*dy;
 
     % xhat=(g''(x)dx)*dy
-    self.pps = @(x,dx,dy) pps(x,dx,dy); 
+    self.pps = @(x,dx,dy) pps(x,dx,dy);
 end
 % Generate a dense version of the Jacobian
 function jac = generateJac(x)
@@ -194,12 +194,12 @@ function jac = generateJac(x)
     jac(ijtok(1,3,3)) = 2.*x(itok(3));
     jac(ijtok(1,4,3)) = 2.*x(itok(4));
     jac(ijtok(1,5,3)) = 2.*x(itok(5));
-    
+
     jac(ijtok(2,2,3)) = x(itok(3));
     jac(ijtok(2,3,3)) = x(itok(2));
     jac(ijtok(2,4,3)) = -5.*x(itok(5));
     jac(ijtok(2,5,3)) = -5.*x(itok(4));
-    
+
     jac(ijtok(3,1,3)) = 3.*sq(x(itok(1)));
     jac(ijtok(3,2,3)) = 3.*sq(x(itok(2)));
 end
@@ -211,7 +211,7 @@ function z = pps(x,dx,dy)
     D(ijktol(1,3,3,3,5)) = 2.;
     D(ijktol(1,4,4,3,5)) = 2.;
     D(ijktol(1,5,5,3,5)) = 2.;
-    
+
     D(ijktol(2,2,3,3,5)) = 1.;
     D(ijktol(2,3,2,3,5)) = 1.;
     D(ijktol(2,4,5,3,5)) = -5.;
@@ -252,7 +252,7 @@ function main(fname)
     state=Optizelle.json.EqualityConstrained.read(Optizelle.Rm,Optizelle.Rm, ...
         fname,state);
 
-    % Create the bundle of functions 
+    % Create the bundle of functions
     fns=Optizelle.EqualityConstrained.Functions.t;
     fns.f=MyObj();
     fns.g=MyEq();
@@ -267,7 +267,7 @@ function main(fname)
 
     % Print out the final answer
     fprintf('The optimal point is:\n');
-    for i=1:5, 
+    for i=1:5,
         if i==1,
             fprintf('[ ');
         else

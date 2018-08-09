@@ -1,20 +1,20 @@
 # Optimize a simple optimization problem with an optimal solution
 # of (1/3,1/3)
 
-import Optizelle 
+import Optizelle
 import numpy
 import sys
 
 # Squares its input
 sq = lambda x:x*x
 
-# Define a simple objective where 
-# 
+# Define a simple objective where
+#
 # f(x,y)=(x+1)^2+(y+1)^2
 #
 class MyObj(Optizelle.ScalarValuedFunction):
 
-    # Evaluation 
+    # Evaluation
     def eval(self,x):
         return sq(x[0]+1.)+sq(x[1]+1.)
 
@@ -30,11 +30,11 @@ class MyObj(Optizelle.ScalarValuedFunction):
 
 # Define a simple equality
 #
-# g(x,y)= [ x + 2y = 1 ] 
+# g(x,y)= [ x + 2y = 1 ]
 #
 class MyEq(Optizelle.VectorValuedFunction):
 
-    # y=g(x) 
+    # y=g(x)
     def eval(self,x,y):
         y[0]=x[0]+2.*x[1]-1.
 
@@ -51,13 +51,13 @@ class MyEq(Optizelle.VectorValuedFunction):
     def pps(self,x,dx,dy,xhat):
         xhat.fill(0.)
 
-# Define simple inequalities 
+# Define simple inequalities
 #
-# h(x,y)= [ 2x + y >= 1 ] 
+# h(x,y)= [ 2x + y >= 1 ]
 #
 class MyIneq(Optizelle.VectorValuedFunction):
 
-    # z=h(x) 
+    # z=h(x)
     def eval(self,x,z):
         z[0]=2.*x[0]+x[1]-1.
 
@@ -79,13 +79,13 @@ if len(sys.argv)!=2:
     sys.exit("simple_constrained.py <parameters>")
 fname=sys.argv[1]
 
-# Generate an initial guess 
+# Generate an initial guess
 x = numpy.array([2.1,1.1])
 
-# Allocate memory for the equality multiplier 
+# Allocate memory for the equality multiplier
 y = numpy.array([0.])
 
-# Allocate memory for the inequality multiplier 
+# Allocate memory for the inequality multiplier
 z = numpy.array([0.])
 
 # Create an optimization state

@@ -1,4 +1,4 @@
-% Checks that an input is in a valid enumerated range 
+% Checks that an input is in a valid enumerated range
 function checkEnumRange(name,enum,value)
     % Grab the field names in the enumerated type
     names = fieldnames(enum);

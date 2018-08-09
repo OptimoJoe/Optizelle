@@ -1,20 +1,20 @@
 # A problem that helps us determine how to scale inequality constrained
 # optimization problems
 
-import Optizelle 
+import Optizelle
 import numpy
 import sys
 
-# Define a simple objective where 
-# 
+# Define a simple objective where
+#
 # f(x) = 0.5 || x - c ||^2
 #
 class MyObj(Optizelle.ScalarValuedFunction):
     # Grab the center of the objective
     def __init__(self, c):
-        self.c = c 
+        self.c = c
 
-    # Evaluation 
+    # Evaluation
     def eval(self,x):
         diff = x - self.c
         return 0.5*numpy.dot(diff,diff)
@@ -27,16 +27,16 @@ class MyObj(Optizelle.ScalarValuedFunction):
     def hessvec(self,x,dx,H_dx):
         numpy.copyto(H_dx,dx);
 
-# Define simple inequalities 
+# Define simple inequalities
 #
-# h(x) = x - lb 
+# h(x) = x - lb
 #
 class MyIneq(Optizelle.VectorValuedFunction):
-    # Grab the lower bound 
+    # Grab the lower bound
     def __init__(self, lb):
-        self.lb = lb 
+        self.lb = lb
 
-    # z=h(x) 
+    # z=h(x)
     def eval(self,x,z):
         numpy.copyto(z,x-lb);
 
@@ -60,10 +60,10 @@ fname=sys.argv[1]
 # Set the size
 m = 10;
 
-# Generate an initial guess 
+# Generate an initial guess
 x = numpy.array([1.+10**(-x) for x in xrange(1,m+1)])
 
-# Allocate memory for the inequality multiplier 
+# Allocate memory for the inequality multiplier
 z = numpy.array(m*[0.])
 
 # Create the center of the objective function

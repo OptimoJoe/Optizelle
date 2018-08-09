@@ -1,4 +1,4 @@
-// Optimize a simple optimization problem with an optimal 
+// Optimize a simple optimization problem with an optimal
 // solution of (1/3,1/3)
 
 #include "optizelle/optizelle.h"
@@ -14,9 +14,9 @@ using Optizelle::Natural;
 
 // Defines the vector space used for optimization.
 template <typename Real>
-struct MyVS { 
+struct MyVS {
     typedef std::vector <Real> Vector;
-    
+
     // Memory allocation and size setting
     static Vector init(Vector const & x) {
         return std::move(Vector(x.size()));
@@ -36,7 +36,7 @@ struct MyVS {
         }
     }
 
-    // x <- 0 
+    // x <- 0
     static void zero(Vector & x) {
         for(Natural i=0;i<x.size();i++){
             x[i]=0.;
@@ -62,24 +62,24 @@ struct MyVS {
     static void rand(Vector & x){
         std::mt19937 gen(1);
         std::uniform_real_distribution<Real> dis(Real(0.),Real(1.));
-        for(Natural i=0;i<x.size();i++) 
+        for(Natural i=0;i<x.size();i++)
             x[i]=Real(dis(gen));
     }
     // Jordan product, z <- x o y.
     static void prod(Vector const & x, Vector const & y, Vector & z) {
-        for(Natural i=0;i<x.size();i++) 
+        for(Natural i=0;i<x.size();i++)
             z[i]=x[i]*y[i];
     }
 
     // Identity element, x <- e such that x o e = x.
     static void id(Vector & x) {
-        for(Natural i=0;i<x.size();i++) 
+        for(Natural i=0;i<x.size();i++)
             x[i]=Real(1.);
     }
-    
+
     // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y.
     static void linv(Vector const & x,Vector const & y,Vector & z) {
-        for(Natural i=0;i<x.size();i++) 
+        for(Natural i=0;i<x.size();i++)
             z[i]=y[i]/x[i];
     }
 
@@ -92,7 +92,7 @@ struct MyVS {
     }
 
     // Line search, srch <- argmax {alpha \in Real >= 0 : alpha x + y >= 0}
-    // where y > 0. 
+    // where y > 0.
     static Real srch(Vector const & x,Vector const & y) {
         // Line search parameter
         Real alpha=std::numeric_limits <Real>::infinity();
@@ -116,17 +116,17 @@ struct MyVS {
 // Squares its input
 template <typename Real>
 Real sq(Real const & x){
-    return x*x; 
+    return x*x;
 }
 
-// Define a simple objective where 
-// 
+// Define a simple objective where
+//
 // f(x,y)=(x+1)^2+(y+1)^2
 //
 struct MyObj : public Optizelle::ScalarValuedFunction <double,MyVS> {
     typedef MyVS <double> X;
 
-    // Evaluation 
+    // Evaluation
     double eval(const X::Vector& x) const {
         return sq(x[0]+1.)+sq(x[1]+1.);
     }
@@ -146,20 +146,20 @@ struct MyObj : public Optizelle::ScalarValuedFunction <double,MyVS> {
         X::Vector const & dx,
         X::Vector & H_dx
     ) const {
-        H_dx[0]=2.*dx[0]; 
-        H_dx[1]=2.*dx[1]; 
+        H_dx[0]=2.*dx[0];
+        H_dx[1]=2.*dx[1];
     }
 };
 
 // Define a simple equality
 //
-// g(x,y)= [ x + 2y = 1 ] 
+// g(x,y)= [ x + 2y = 1 ]
 //
 struct MyEq :public Optizelle::VectorValuedFunction<double,MyVS,MyVS> {
     typedef MyVS <double> X;
     typedef MyVS <double> Y;
 
-    // y=g(x) 
+    // y=g(x)
     void eval(
         X::Vector const & x,
         Y::Vector & y
@@ -180,7 +180,7 @@ struct MyEq :public Optizelle::VectorValuedFunction<double,MyVS,MyVS> {
     void ps(
         X::Vector const & x,
         Y::Vector const & dy,
-        X::Vector & xhat 
+        X::Vector & xhat
     ) const {
         xhat[0]= dy[0];
         xhat[1]= 2.*dy[0];
@@ -191,7 +191,7 @@ struct MyEq :public Optizelle::VectorValuedFunction<double,MyVS,MyVS> {
         X::Vector const & x,
         X::Vector const & dx,
         Y::Vector const & dy,
-        X::Vector & xhat 
+        X::Vector & xhat
     ) const {
         X::zero(xhat);
     }
@@ -199,13 +199,13 @@ struct MyEq :public Optizelle::VectorValuedFunction<double,MyVS,MyVS> {
 
 // Define a simple inequality
 //
-// h(x,y)= [ 2x + y >= 1 ] 
+// h(x,y)= [ 2x + y >= 1 ]
 //
 struct MyIneq :public Optizelle::VectorValuedFunction<double,MyVS,MyVS> {
     typedef MyVS <double> X;
     typedef MyVS <double> Z;
 
-    // z=h(x) 
+    // z=h(x)
     void eval(
         X::Vector const & x,
         Z::Vector & z
@@ -226,7 +226,7 @@ struct MyIneq :public Optizelle::VectorValuedFunction<double,MyVS,MyVS> {
     void ps(
         X::Vector const & x,
         Z::Vector const & dz,
-        X::Vector & xhat 
+        X::Vector & xhat
     ) const {
         xhat[0]= 2.*dz[0];
         xhat[1]= dz[0];
@@ -237,7 +237,7 @@ struct MyIneq :public Optizelle::VectorValuedFunction<double,MyVS,MyVS> {
         X::Vector const & x,
         X::Vector const & dx,
         Z::Vector const & dz,
-        X::Vector & xhat 
+        X::Vector & xhat
     ) const {
         X::zero(xhat);
     }
@@ -265,7 +265,7 @@ namespace Optizelle {
                 std::ofstream fout(fname.str());
                 if(fout.fail()) {
                     std::stringstream msg;
-                    msg << "While writing the variable " << name 
+                    msg << "While writing the variable " << name
                         << " to file on iteration " << iter
                         << ", unable to open the file: "
                         << fname.str() << ".";
@@ -279,7 +279,7 @@ namespace Optizelle {
                 // Close out the file
                 fout.close();
 
-                // Use this filename as the json string 
+                // Use this filename as the json string
                 std::stringstream x_json;
                 x_json << "\"" << fname.str() << "\"";
                 return x_json.str();
@@ -293,12 +293,12 @@ namespace Optizelle {
 
                 // Filter out the quotes and newlines from the string
                 auto formatting = "\"\n";
-                for(auto i=0;i<2;i++) 
+                for(auto i=0;i<2;i++)
                     x_json.erase(
                         std::remove(x_json.begin(),x_json.end(),formatting[i]),
                         x_json.end());
 
-                // Open the file for reading 
+                // Open the file for reading
                 std::ifstream fin(x_json.c_str());
                 if(!fin.is_open())
                     throw Optizelle::Exception::t(
@@ -312,7 +312,7 @@ namespace Optizelle {
                 for(auto i=0;i<x.size();i++)
                     fin >> x[i];
 
-                // Return the result 
+                // Return the result
                 return std::move(x);
             }
         };
@@ -352,7 +352,7 @@ struct MyRestartManipulator : Optizelle::StateManipulator <
 };
 
 int main(int argc,char* argv[]){
-    // Read in the name for the parameters and optional restart file 
+    // Read in the name for the parameters and optional restart file
     if(!(argc==2 || argc==3)) {
         std::cerr << "simple_constrained_advanced_api <parameters>"<< std::endl;
         std::cerr << "simple_constrained_advanced_api <parameters> <restart>"
@@ -360,34 +360,34 @@ int main(int argc,char* argv[]){
         exit(EXIT_FAILURE);
     }
     auto pname = argv[1];
-    auto rname = argc==3 ? argv[2] : ""; 
+    auto rname = argc==3 ? argv[2] : "";
 
     // Generate an initial guess for the primal
     auto x = std::vector <double> {2.1, 1.1};
 
-    // Allocate memory for equality multiplier 
+    // Allocate memory for equality multiplier
     auto y = std::vector <double> (1);
 
-    // Allocate memory for the inequality multiplier 
+    // Allocate memory for the inequality multiplier
     auto z = std::vector <double> (1);
 
     // Create an optimization state
     Optizelle::Constrained <double,MyVS,MyVS,MyVS>::State::t state(x,y,z);
-    
-    // If we have a restart file, read in the parameters 
+
+    // If we have a restart file, read in the parameters
     if(argc==3)
         Optizelle::json::Constrained <double,MyVS,MyVS,MyVS>::read_restart(
             rname,x,y,z,state);
 
     // Read the parameters from file
     Optizelle::json::Constrained <double,MyVS,MyVS,MyVS>::read(pname,state);
-    
+
     // Create a bundle of functions
     Optizelle::Constrained <double,MyVS,MyVS,MyVS>::Functions::t fns;
     fns.f.reset(new MyObj);
     fns.g.reset(new MyEq);
     fns.h.reset(new MyIneq);
-    
+
     // Solve the optimization problem
     Optizelle::Constrained <double,MyVS,MyVS,MyVS>::Algorithms
         ::getMin(Optizelle::Messaging::stdout,fns,state,MyRestartManipulator());

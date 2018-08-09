@@ -16,7 +16,7 @@
 % min x + y
 % st  x + 2y >= 1 - z
 %     2x + y >= 1 - z
-%     epsilon >= w             
+%     epsilon >= w
 %     z = w
 function simple_infeasible_inequality(fname)
     % Read in the name for the input file
@@ -33,13 +33,13 @@ function z = sq(x)
     z=x*x;
 end
 
-% Define an objective where 
-% 
+% Define an objective where
+%
 % f(x,y,z,w)=x+y
 %
 function self = MyObj()
 
-    % Evaluation 
+    % Evaluation
     self.eval = @(x) x(1)+x(2);
 
     % Gradient
@@ -50,7 +50,7 @@ function self = MyObj()
         0.];
 
     % Hessian-vector product
-    self.hessvec = @(x,dx) zeros(4,1); 
+    self.hessvec = @(x,dx) zeros(4,1);
 end
 
 % Define a single equality where
@@ -59,7 +59,7 @@ end
 %
 function self = MyEq()
 
-    % y=g(x) 
+    % y=g(x)
     self.eval = @(x) [x(3)-x(4)];
 
     % y=g'(x)dx
@@ -73,18 +73,18 @@ function self = MyEq()
         -dy(1)];
 
     % xhat=(g''(x)dx)*dy
-    self.pps = @(x,dx,dy) zeros(4,1); 
+    self.pps = @(x,dx,dy) zeros(4,1);
 end
 
 % Define some inequalities where
 %
-% h(x,y,z,w) = [ x + 2y >= 1 - z  ] 
-%              [ 2x + y >= 1 - z  ] 
+% h(x,y,z,w) = [ x + 2y >= 1 - z  ]
+%              [ 2x + y >= 1 - z  ]
 %              [ epsilon >= w     ]
 %
 function self = MyIneq(epsilon)
 
-    % z=h(x) 
+    % z=h(x)
     self.eval = @(x) [ ...
         x(1)+2.*x(2)+x(3)-1.; ...
         2.*x(1)+x(2)+x(3)-1.; ...
@@ -104,7 +104,7 @@ function self = MyIneq(epsilon)
         -dz(3)];
 
     % xhat=(h''(x)dx)*dz
-    self.pps = @(x,dx,dy) zeros(4,1); 
+    self.pps = @(x,dx,dy) zeros(4,1);
 end
 
 % Actually runs the program
@@ -120,7 +120,7 @@ function main(fname)
     % Generate an initial guess for the primal
     x = [0.;0.;5.;-5.];
 
-    % Generate a vector for the equality multiplier 
+    % Generate a vector for the equality multiplier
     y = [0.];
 
     % Generate a vector for the inequality multiplier

@@ -32,7 +32,7 @@ function x_json = serialize(varargin)
         x = varargin{1};
         name = varargin{2};
         iter = varargin{3};
-        
+
         % Check the arguments
         checkString('name',name);
         checkNatural('iter',iter);
@@ -44,7 +44,7 @@ function x_json = serialize(varargin)
                 break;
             end
         end
-        
+
         % Check if we couldn't serialize
         if length(schecks) == 0  ||  ~schecks{i}(x)
             error('Unable to find a suitable serialization function');

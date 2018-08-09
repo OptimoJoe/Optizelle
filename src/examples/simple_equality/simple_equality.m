@@ -1,4 +1,4 @@
-% Optimize a simple optimization problem with an optimal solution 
+% Optimize a simple optimization problem with an optimal solution
 % of (2-sqrt(2)/2,2-sqrt(2)/2).
 function simple_equality(fname)
     % Read in the name for the input file
@@ -16,13 +16,13 @@ function z = sq(x)
     z=x*x;
 end
 
-% Define a simple objective where 
-% 
+% Define a simple objective where
+%
 % f(x,y)=x^2+y^2
 %
 function self = MyObj()
 
-    % Evaluation 
+    % Evaluation
     self.eval = @(x) sq(x(1))+sq(x(2));
 
     % Gradient
@@ -40,11 +40,11 @@ end
 %---EqualityConstraint0---
 % Define a simple equality constraint
 %
-% g(x,y)= [ (x-2)^2 + (y-2)^2 = 1 ] 
+% g(x,y)= [ (x-2)^2 + (y-2)^2 = 1 ]
 %
 function self = MyEq()
 
-    % y=g(x) 
+    % y=g(x)
     self.eval = @(x) [ ...
         sq(x(1)-2.)+sq(x(2)-2.)-1.];
 
@@ -65,7 +65,7 @@ end
 %---EqualityConstraint1---
 
 %---Preconditioner0---
-% Define a Schur preconditioner for the equality constraints 
+% Define a Schur preconditioner for the equality constraints
 function self = MyPrecon()
     self.eval=@(state,dy)dy(1)/sq(4.*(state.x(1)-2.)+4.*sq(state.x(2)-2.));
 end
@@ -79,10 +79,10 @@ function main(fname)
     setupOptizelle();
 
     %---State0---
-    % Generate an initial guess 
+    % Generate an initial guess
     x = [2.1;1.1];
 
-    % Allocate memory for the equality multiplier 
+    % Allocate memory for the equality multiplier
     y = [0.];
 
     % Create an optimization state

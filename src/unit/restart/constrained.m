@@ -9,7 +9,7 @@ XX = Optizelle.Rm;
 YY = Optizelle.Rm;
 ZZ = Optizelle.Rm;
 msg = Optizelle.Messaging.stdout;
-    
+
 % Create some arbitrary vector in R^2
 x = [1.2;2.3];
 x0 = [2.3;1.2];
@@ -29,10 +29,10 @@ state = Optizelle.Constrained.State.t(XX,YY,ZZ,x,y,z);
 
 % Read in some parameters
 fname = 'blank.json';
-%---ReadJson0--- 
+%---ReadJson0---
 state = Optizelle.json.Constrained.read(XX,YY,ZZ,fname,state);
-%---ReadJson1--- 
-   
+%---ReadJson1---
+
 % Create a bundle of functions
 %---Functions0---
 fns = Optizelle.Constrained.Functions.t;
@@ -44,7 +44,7 @@ state.f_x = 1.0;
 state = Optizelle.Constrained.Algorithms.getMin(XX,YY,ZZ,msg,fns,state);
 %---Solver1---
 
-% Do a null optimization with a state manipulator 
+% Do a null optimization with a state manipulator
 smanip = Optizelle.StateManipulator;
 %---SmanipSolver0---
 state = Optizelle.Constrained.Algorithms.getMin( ...
@@ -58,7 +58,7 @@ Optizelle.json.Constrained.write_restart(XX,YY,ZZ,fname,state);
 state = Optizelle.json.Constrained.read_restart(XX,YY,ZZ,fname,x,y,z);
 %---WriteReadRestart1---
 
-% Do a release 
+% Do a release
 %---Release0---
 xs = Optizelle.Constrained.Restart.X_Vectors;
 ys = Optizelle.Constrained.Restart.Y_Vectors;
@@ -71,7 +71,7 @@ params = Optizelle.Constrained.Restart.Params;
 %---Release1---
 
 % Check that we have the correct number of vectors
-if length(xs) ~= 14 
+if length(xs) ~= 14
     error('The list xs contains the wrong number of vectors.');
 end
 if length(ys) ~= 5
@@ -81,7 +81,7 @@ if length(zs) ~= 3
     error('The list zs contains the wrong number of vectors.');
 end
 
-% Modify some vectors 
+% Modify some vectors
 xs{1}{2}=x0;
 ys{1}{2}=y0;
 zs{1}{2}=z0;

@@ -1,12 +1,12 @@
-# Tests error handling when reading invalid parameters 
+# Tests error handling when reading invalid parameters
 
-import Optizelle 
+import Optizelle
 import numpy
 
 # Create some type shortcuts
 XX = Optizelle.Rm
 
-# Set the parameter file name 
+# Set the parameter file name
 fname = "bad_params.json"
 
 # Allocate memory for an initial guess
@@ -21,7 +21,7 @@ msg = ""
 try:
     Optizelle.json.Unconstrained.read(XX,fname,state);
 except Optizelle.Exception.t as e:
-    # Convert the error message to a string 
+    # Convert the error message to a string
     msg = e.message
 
     # Print the error message directly

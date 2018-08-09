@@ -9,7 +9,7 @@ function setupOptizelle()
 global Optizelle
 
 % Intialization is expensive.  Don't do it more than once.
-if isempty(Optizelle) 
+if isempty(Optizelle)
 
 % Add the optizelle directory to the path, which contains a number of helper
 % functions.  In theory, I could just use pwd, but I really want to know where
@@ -29,7 +29,7 @@ createEnum = @(x) cell2struct( ...
     [num2cell(1:length(x)) {@(i)x{i}}], ...
     [x,{'to_string'}],2);
 
-% Reasons we stop truncated CG 
+% Reasons we stop truncated CG
 Optizelle.TruncatedStop = createEnum( { ...
     'NotConverged', ...
     'NegativeCurvature', ...
@@ -73,7 +73,7 @@ Optizelle.Operators = createEnum( { ...
     'SR1', ...
     'InvSR1', ...
     'UserDefined' } );
-    
+
 % Different kinds of search directions
 Optizelle.LineSearchDirection = createEnum( { ...
     'SteepestDescent', ...
@@ -82,14 +82,14 @@ Optizelle.LineSearchDirection = createEnum( { ...
     'HestenesStiefel', ...
     'BFGS', ...
     'NewtonCG' } );
-   
+
 % Different sorts of line searches
 Optizelle.LineSearchKind = createEnum( { ...
     'GoldenSection', ...
     'BackTracking', ...
     'TwoPointA', ...
     'TwoPointB' } );
-    
+
 % Different points in the optimization algorithm
 Optizelle.OptimizationLocation = createEnum( { ...
     'BeginningOfOptimization', ...
@@ -119,20 +119,20 @@ Optizelle.ProblemClass = createEnum( { ...
     'EqualityConstrained', ...
     'InequalityConstrained', ...
     'Constrained' } );
-    
+
 % Different schemes for adjusting the interior point centrality
 Optizelle.CentralityStrategy = createEnum( { ...
     'Constant', ...
     'StairStep', ...
     'PredictorCorrector' } );
 
-% Different function diagnostics on the optimization functions 
+% Different function diagnostics on the optimization functions
 Optizelle.FunctionDiagnostics = createEnum( { ...
     'NoDiagnostics', ...
     'FirstOrder', ...
     'SecondOrder' } );
 
-% Different diagnostics on the vector space algebras 
+% Different diagnostics on the vector space algebras
 Optizelle.VectorSpaceDiagnostics = createEnum( { ...
     'NoDiagnostics', ...
     'Basic', ...
@@ -144,7 +144,7 @@ Optizelle.DiagnosticScheme = createEnum( { ...
     'DiagnosticsOnly', ...
     'EveryIteration' } );
 
-% Different kinds of stopping tolerances 
+% Different kinds of stopping tolerances
 Optizelle.ToleranceKind = createEnum( { ...
     'Absolute', ...
     'Relative'});
@@ -163,7 +163,7 @@ Optizelle.QuasinormalStop = createEnum( { ...
     'LocalMin', ...
     'NewtonFailed'});
 
-% Different cones used in SQL problems 
+% Different cones used in SQL problems
 Optizelle.Cone = createEnum( { ...
     'Linear', ...
     'Quadratic', ...
@@ -191,7 +191,7 @@ Optizelle.VectorValuedFunction = struct( ...
 %---VectorValuedFunction1---
 
 %---Operator0---
-% A linear operator specification, A : X->Y 
+% A linear operator specification, A : X->Y
 err_op=@(x)error(sprintf( ...
     'The %s function is not defined in an Operator.',x));
 Optizelle.Operator = struct( ...
@@ -254,13 +254,13 @@ Optizelle.json.Serialization.serialize( ...
     @(x,name,iter)strrep(mat2str(x(:)'),' ',', '), ...
     @(x)isvector(x) && isnumeric(x));
 
-% For the moment, do an empty serialization of the SQL vector space 
+% For the moment, do an empty serialization of the SQL vector space
 Optizelle.json.Serialization.serialize( ...
     'register', ...
     @(x,name,iter)savejson('',x), ...
     @(x)isfield(x,'data') && isfield(x,'types') && isfield(x,'sizes'));
 
-% Converts a JSON formatted string to a vector 
+% Converts a JSON formatted string to a vector
 Optizelle.json.Serialization.deserialize = @deserialize;
 
 % Deserializes a matlab column vector for the vector space Optizelle.Rm
@@ -269,7 +269,7 @@ Optizelle.json.Serialization.deserialize( ...
     @(x,x_json)feval(@(x)x(:),str2num(x_json)), ...
     @(x)isvector(x) && isnumeric(x));
 
-% For the moment, do an empty deserialization of the SQL vector space 
+% For the moment, do an empty deserialization of the SQL vector space
 Optizelle.json.Serialization.deserialize( ...
     'register', ...
     @(x,x_json)loadjson(x_json), ...
@@ -292,13 +292,13 @@ Optizelle.Unconstrained.Restart.Reals = {};
 Optizelle.Unconstrained.Restart.Naturals = {};
 Optizelle.Unconstrained.Restart.Params = {};
 
-% Release the state in an unconstrained optimization problem 
+% Release the state in an unconstrained optimization problem
 Optizelle.Unconstrained.Restart.release = @UnconstrainedRestartRelease;
 
-% Capture the state in an unconstrained optimization problem 
+% Capture the state in an unconstrained optimization problem
 Optizelle.Unconstrained.Restart.capture = @UnconstrainedRestartCapture;
 
-% Reads unconstrained state parameters from file 
+% Reads unconstrained state parameters from file
 Optizelle.json.Unconstrained.read = @UnconstrainedStateReadJson;
 
 % Writes a json restart file
@@ -329,15 +329,15 @@ Optizelle.EqualityConstrained.Restart.Reals = {};
 Optizelle.EqualityConstrained.Restart.Naturals = {};
 Optizelle.EqualityConstrained.Restart.Params = {};
 
-% Release the state in an equality constrained optimization problem 
+% Release the state in an equality constrained optimization problem
 Optizelle.EqualityConstrained.Restart.release = ...
     @EqualityConstrainedRestartRelease;
 
-% Capture the state in an equality constrained optimization problem 
+% Capture the state in an equality constrained optimization problem
 Optizelle.EqualityConstrained.Restart.capture = ...
     @EqualityConstrainedRestartCapture;
 
-% Reads equality constrained state parameters from file 
+% Reads equality constrained state parameters from file
 Optizelle.json.EqualityConstrained.read = @EqualityConstrainedStateReadJson;
 
 % Writes a json restart file
@@ -368,15 +368,15 @@ Optizelle.InequalityConstrained.Restart.Reals = {};
 Optizelle.InequalityConstrained.Restart.Naturals = {};
 Optizelle.InequalityConstrained.Restart.Params = {};
 
-% Release the state in an inequality constrained optimization problem 
+% Release the state in an inequality constrained optimization problem
 Optizelle.InequalityConstrained.Restart.release = ...
     @InequalityConstrainedRestartRelease;
 
-% Capture the state in an inequality constrained optimization problem 
+% Capture the state in an inequality constrained optimization problem
 Optizelle.InequalityConstrained.Restart.capture = ...
     @InequalityConstrainedRestartCapture;
 
-% Reads inequality constrained state parameters from file 
+% Reads inequality constrained state parameters from file
 Optizelle.json.InequalityConstrained.read = @InequalityConstrainedStateReadJson;
 
 % Writes a json restart file
@@ -409,13 +409,13 @@ Optizelle.Constrained.Restart.Reals = {};
 Optizelle.Constrained.Restart.Naturals = {};
 Optizelle.Constrained.Restart.Params = {};
 
-% Release the state in a constrained optimization problem 
+% Release the state in a constrained optimization problem
 Optizelle.Constrained.Restart.release = @ConstrainedRestartRelease;
 
-% Capture the state in a constrained optimization problem 
+% Capture the state in a constrained optimization problem
 Optizelle.Constrained.Restart.capture = @ConstrainedRestartCapture;
 
-% Reads constrained state parameters from file 
+% Reads constrained state parameters from file
 Optizelle.json.Constrained.read = @ConstrainedStateReadJson;
 
 % Writes a json restart file
@@ -446,7 +446,7 @@ end
 
 % Merges two structures
 function ret=mergeStruct(s1,s2)
-    % Find the field names and data 
+    % Find the field names and data
     data = [struct2cell(s1)' struct2cell(s2)'];
     fields = [fieldnames(s1)' fieldnames(s2)'];
 
@@ -474,7 +474,7 @@ function x = sql_create(types,sizes)
     if length(types) ~= length(sizes)
         error('Arguments types and sizes must be the same length');
     end
-                
+
     % Make sure we have at least one cone.
     if length(types) == 0
         error('A SQL vector requires at least one cone');
@@ -493,7 +493,7 @@ function x = sql_create(types,sizes)
     x.types = types;
     x.sizes = sizes;
 
-    % Create the data 
+    % Create the data
     for i=1:length(x.sizes)
         if  x.types(i)==Optizelle.Cone.Linear || ...
             x.types(i)==Optizelle.Cone.Quadratic
@@ -555,7 +555,7 @@ function z = sql_prod(x,y)
     % Load in Optizelle
     global Optizelle
 
-    % Create a new SQL vector 
+    % Create a new SQL vector
     z = sql_create(x.types,x.sizes);
 
     % Loop over all the blocks
@@ -572,8 +572,8 @@ function z = sql_prod(x,y)
                 x.data{blk}(1)*y.data{blk}(2:end) + ...
                     y.data{blk}(1)*x.data{blk}(2:end) ];
 
-        % z = xy 
-        else 
+        % z = xy
+        else
             z.data{blk}=x.data{blk}*y.data{blk};
         end
     end
@@ -587,7 +587,7 @@ function x = sql_id(x)
     % Loop over all the blocks
     for blk=1:length(x.sizes)
 
-        % z = [1;...;1] 
+        % z = [1;...;1]
         if x.types(blk)==Optizelle.Cone.Linear
             x.data{blk}=ones(x.sizes(blk),1);
 
@@ -597,7 +597,7 @@ function x = sql_id(x)
             x.data{blk}(1)=1;
 
         % z = I
-        else 
+        else
             x.data{blk}=eye(x.sizes(blk));
         end
     end
@@ -610,19 +610,19 @@ function z = invSchur(x,ybar)
     z = (1/x(1)) * ybar + ...
         (x(2:end)'*ybar)/(x(1)*(x(1)^2-x(2:end)'*x(2:end))) * x(2:end);
 end
-        
+
 % SQL Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y
 function z = sql_linv(x,y)
     % Load in Optizelle
     global Optizelle
 
-    % Create a new SQL vector 
+    % Create a new SQL vector
     z = sql_create(x.types,x.sizes);
 
     % Loop over all the blocks
     for blk=1:length(x.sizes)
 
-        % z = inv(Diag(x)) y 
+        % z = inv(Diag(x)) y
         if x.types(blk)==Optizelle.Cone.Linear
             z.data{blk}=y.data{blk}./x.data{blk};
 
@@ -641,13 +641,13 @@ function z = sql_linv(x,y)
                 (-y.data{blk}(1)/x.data{blk}(1)) * invSchur_x_xbar + ...
                 invSchur_x_ybar;
 
-        % z = inv(x)y 
+        % z = inv(x)y
         else
             z.data{blk}=x.data{blk}\y.data{blk};
         end
     end
 end
-        
+
 % SQL barrier function, barr <- barr(x) where x o grad barr(x) = e
 function z = sql_barr(x)
     % Load in Optizelle
@@ -662,18 +662,18 @@ function z = sql_barr(x)
         % z += sum_i log(x_i)
         if x.types(blk)==Optizelle.Cone.Linear
             z = z + sum(log(x.data{blk}));
-                
+
         % z += 0.5 * log(x0^2-<xbar,xbar>)
         elseif x.types(blk)==Optizelle.Cone.Quadratic
             z = z + 0.5 * log( ...
-                x.data{blk}(1)^2-x.data{blk}(2:end)'*x.data{blk}(2:end)); 
+                x.data{blk}(1)^2-x.data{blk}(2:end)'*x.data{blk}(2:end));
 
         % z += log(det(x)).  We compute this by noting that
         % log(det(x)) = log(det(u'u)) = log(det(u')det(u))
         %             = log(det(u)^2) = 2 log(det(u))
         else
             [u p] = chol(x.data{blk});
-            
+
             % Make sure to check if p is not positive definite.  If not, throw
             % and inf.
             if p
@@ -692,7 +692,7 @@ function alpha = sql_srch(x,y)
     global Optizelle
 
     % Line search parameter
-    alpha = inf; 
+    alpha = inf;
 
     % Loop over all the blocks
     for blk=1:length(x.sizes)
@@ -701,7 +701,7 @@ function alpha = sql_srch(x,y)
         % then we need to restrict how far we travel.
         if x.types(blk)==Optizelle.Cone.Linear
             alpha0 = rm_srch(x.data{blk},y.data{blk});
-                
+
         % We choose the smallest positive number between:
         % -y0/x0, and the roots of alpha^2 a + alpha b + c
         %
@@ -709,8 +709,8 @@ function alpha = sql_srch(x,y)
         %
         % a = x0^2 - ||xbar||^2
         % b = 2x0y0 - 2 <xbar,ybar>
-        % c = y0^2 - ||ybar||^2 
-        % 
+        % c = y0^2 - ||ybar||^2
+        %
         % Technically, if a is zero, the quadratic formula doesn't
         % apply and we use -c/b instead of the roots.  If b is zero
         % and a is zero, then there's no limit to the line search

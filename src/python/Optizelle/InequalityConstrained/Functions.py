@@ -7,11 +7,11 @@ from Optizelle.Properties import *
 from Optizelle.Functions import *
 
 class t(Optizelle.Unconstrained.Functions.t):
-    """All the functions required by an optimization algorithm""" 
+    """All the functions required by an optimization algorithm"""
     def __init__(self):
         super(t,self).__init__()
         self._h=VectorValuedFunction()
-    
+
     # Create all of the properties
     h = createVectorValuedFunctionProperty(
         "h",

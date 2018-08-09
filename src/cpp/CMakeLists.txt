@@ -1,6 +1,6 @@
 # Enable C++
 enable_language(CXX)
-        
+
 # Force C++14 on all targets
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD 14 PARENT_SCOPE)
@@ -26,5 +26,5 @@ endif()
 set(OPTIZELLE_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
 set(OPTIZELLE_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
 
-# Compile the Optizelle core 
+# Compile the Optizelle core
 add_subdirectory(optizelle)

@@ -10,7 +10,7 @@
 // std::map
 #include <map>
 
-// Optizelle::Exception::t 
+// Optizelle::Exception::t
 #include "optizelle/exception.h"
 
 // std::istream
@@ -33,20 +33,20 @@
             + strerror(errno));
 
 // Stream functions
-namespace Optizelle { namespace Stream { 
-    // A : Set -> t 
+namespace Optizelle { namespace Stream {
+    // A : Set -> t
     template <typename A>
     struct t;
 
     // Set -> A : Set -> t A
     template <typename Stream,typename A>
-    struct of_std; 
+    struct of_std;
 
     // A : Set -> (A -> unit) -> t A -> unit
     template <typename A>
     void iter(std::function <void(A const &)> const & f,t <A> & stream);
 
-    // A : Set -> (A -> unit) -> (A -> unit) -> t A -> unit 
+    // A : Set -> (A -> unit) -> (A -> unit) -> t A -> unit
     template <typename A>
     void iter_with_last(
         std::function <void(A const &)> const & f,
@@ -54,15 +54,15 @@ namespace Optizelle { namespace Stream {
         t <A> & stream
     );
 
-    // A : Set -> B : Set -> (A -> B) -> t A -> t B 
+    // A : Set -> B : Set -> (A -> B) -> t A -> t B
     template <typename A,typename B>
-    struct map; 
+    struct map;
 
-    // A : Set -> (A -> bool) -> t A -> t A  
+    // A : Set -> (A -> bool) -> t A -> t A
     template <typename A>
     struct filter;
 
-    // A : Set -> B : Set -> (A->B->B) -> t A -> B -> B  
+    // A : Set -> B : Set -> (A->B->B) -> t A -> B -> B
     template <typename A,typename B>
     B fold(
         std::function<B(A const &,B const &)> const & f,

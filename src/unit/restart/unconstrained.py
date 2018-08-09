@@ -1,7 +1,7 @@
 # This tests our ability to capture and release from the optimization state
 
 #---Import0---
-import Optizelle 
+import Optizelle
 #---Import1---
 
 import numpy
@@ -18,7 +18,7 @@ vector_type=type(serialize)
 Optizelle.json.Serialization.serialize.register(serialize,vector_type)
 Optizelle.json.Serialization.deserialize.register(deserialize,vector_type)
 #---Serialization1---
-    
+
 # Create some arbitrary vector in R^2
 x = numpy.array([1.2,2.3])
 x0 = numpy.array([2.3,1.2])
@@ -27,13 +27,13 @@ x0 = numpy.array([2.3,1.2])
 #---State0---
 state = Optizelle.Unconstrained.State.t(XX,x)
 #---State1---
-    
+
 # Read in some parameters
 fname = "blank.json"
-#---ReadJson0--- 
+#---ReadJson0---
 Optizelle.json.Unconstrained.read(XX,fname,state)
-#---ReadJson1--- 
-   
+#---ReadJson1---
+
 # Create a bundle of functions
 #---Functions0---
 fns = Optizelle.Unconstrained.Functions.t()
@@ -45,7 +45,7 @@ state.f_x = 1.0
 Optizelle.Unconstrained.Algorithms.getMin(XX,msg,fns,state)
 #---Solver1---
 
-# Do a null optimization with a state manipulator 
+# Do a null optimization with a state manipulator
 smanip = Optizelle.StateManipulator()
 #---SmanipSolver0---
 Optizelle.Unconstrained.Algorithms.getMin(XX,msg,fns,state,smanip)
@@ -58,7 +58,7 @@ Optizelle.json.Unconstrained.write_restart(XX,fname,state);
 Optizelle.json.Unconstrained.read_restart(XX,fname,x,state);
 #---WriteReadRestart1---
 
-# Do a release 
+# Do a release
 #---Release0---
 xs = Optizelle.Unconstrained.Restart.X_Vectors()
 reals = Optizelle.Unconstrained.Restart.Reals()
@@ -72,7 +72,7 @@ if len(xs) != 6:
     raise Optizelle.Exception.t(
         "List xs contains the wrong number of vectors")
 
-# Modify some vectors 
+# Modify some vectors
 xs[0]=(xs[0][0],x0)
 
 # Capture the state

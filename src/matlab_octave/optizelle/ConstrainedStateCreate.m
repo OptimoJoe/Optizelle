@@ -1,4 +1,4 @@
-% Creates a constrained state 
+% Creates a constrained state
 function self=ConstrainedStateCreate(X,Y,Z,x,y,z)
     % Check our arguments
     checkVectorSpace('X',X);

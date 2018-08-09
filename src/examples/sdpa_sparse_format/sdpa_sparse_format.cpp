@@ -151,7 +151,7 @@ void parse_sdpa(std::string const & fname,SparseSDP <Real> & prob) {
     }
 
     // Check that the number of blocks corresponds to what we parsed
-    if(nblocks != prob.blk_sizes.size()) 
+    if(nblocks != prob.blk_sizes.size())
         std::cerr << "The number of parsed block sizes differs from the "
             "specified number." << std::endl;
 
@@ -250,7 +250,7 @@ struct MatComparison{
     }
 };
 
-// Used for doing a tagged sort on digonal matrices 
+// Used for doing a tagged sort on digonal matrices
 struct DiagComparison{
     std::vector <Natural> const & is;
     DiagComparison(std::vector <Natural> const & is_) : is(is_) {}
@@ -319,15 +319,15 @@ void sort_sdp (SparseSDP <Real> & prob) {
     }
 }
 
-// Define the SDP objective where 
-// 
-// f(x)=<b,x> 
+// Define the SDP objective where
+//
+// f(x)=<b,x>
 //
 template <typename Real>
 struct SDPObj : public Optizelle::ScalarValuedFunction <Real,Optizelle::Rm> {
 private:
     SparseSDP <Real> const & prob;
-        
+
 public:
     typedef Optizelle::Rm <Real> Rm;
     typedef typename Rm::Vector X_Vector;
@@ -335,7 +335,7 @@ public:
     // Grab a reference to the underlying SDP problem
     SDPObj(SparseSDP <Real> const & prob_) : prob(prob_) {}
 
-    // Evaluation 
+    // Evaluation
     double eval(X_Vector const & x) const {
         return Rm::innr(prob.b,x);
     }
@@ -343,7 +343,7 @@ public:
     // Gradient
     void grad(
         X_Vector const & x,
-        X_Vector & grad 
+        X_Vector & grad
     ) const {
         Rm::copy(prob.b,grad);
     }
@@ -359,7 +359,7 @@ public:
 };
 
 
-// Define the SDP inequality where 
+// Define the SDP inequality where
 //
 // h(x) = A1*x1 + ... + Am*xm - A0 >= 0
 //
@@ -398,7 +398,7 @@ private:
                         if(i==0)
                             z(j+1,prob.A[i][j].is[k]) -= prob.A[i][j].data[k];
                         // Variable block
-                        else 
+                        else
                             z(j+1,prob.A[i][j].is[k])
                                 += prob.A[i][j].data[k]*x[itok(i)];
                     }
@@ -432,7 +432,7 @@ public:
     // Grab a reference to the underlying SDP problem
     SDPIneq(SparseSDP <Real> const & prob_) : prob(prob_) {}
 
-    // z=h(x) 
+    // z=h(x)
     void eval(
         X_Vector const & x,
         Z_Vector & z
@@ -453,7 +453,7 @@ public:
     void ps(
         X_Vector const & x,
         Z_Vector const & dz,
-        X_Vector & xhat 
+        X_Vector & xhat
     ) const {
         // Zero out the solution
         X::zero(xhat);
@@ -492,13 +492,13 @@ public:
         X_Vector const & x,
         X_Vector const & dx,
         Z_Vector const & dz,
-        X_Vector & xhat 
+        X_Vector & xhat
     ) const {
         X::zero(xhat);
     }
 };
 
-// Initializes an SQL vector 
+// Initializes an SQL vector
 template <typename Real>
 typename Optizelle::SQL <Real>::Vector initSQL(
     SparseSDP <Real> const & prob,
@@ -508,7 +508,7 @@ typename Optizelle::SQL <Real>::Vector initSQL(
     typedef Optizelle::SQL <Real> SQL;
 
     // Figure out the structure of the codomain of the inequality
-    // constraint h 
+    // constraint h
     std::vector <Optizelle::Natural> sizes(prob.blk_sizes.size());
     std::vector <Optizelle::Cone::t> types(prob.blk_sizes.size());
     for(Natural i=0;i<sizes.size();i++) {
@@ -519,22 +519,22 @@ typename Optizelle::SQL <Real>::Vector initSQL(
             types[i]=Optizelle::Cone::Semidefinite;
     }
 
-    // If we're in phase-1, add the extra cone for feasibility. 
+    // If we're in phase-1, add the extra cone for feasibility.
     if(phase1) {
         types.emplace_back(Optizelle::Cone::Linear);
         sizes.emplace_back(2);
     }
 
-    // Create a new element 
+    // Create a new element
     typename SQL::Vector xx(types,sizes);
 
     // Initialize the memory for the user input
     return(std::move(SQL::init(xx)));
 }
 
-// Define the phase-1 objective where 
-// 
-// f(x,y) = y2 
+// Define the phase-1 objective where
+//
+// f(x,y) = y2
 //
 template <typename Real>
 struct Phase1Obj : public Optizelle::ScalarValuedFunction <Real,Optizelle::Rm> {
@@ -542,9 +542,9 @@ struct Phase1Obj : public Optizelle::ScalarValuedFunction <Real,Optizelle::Rm> {
     typedef typename Rm::Vector X_Vector;
 
     // We basically have an empty constructor .
-    Phase1Obj() {} 
+    Phase1Obj() {}
 
-    // Evaluation 
+    // Evaluation
     double eval(X_Vector const & x) const {
         // Just return y2
         return x.back();
@@ -553,7 +553,7 @@ struct Phase1Obj : public Optizelle::ScalarValuedFunction <Real,Optizelle::Rm> {
     // Gradient
     void grad(
         X_Vector const & x,
-        X_Vector & grad 
+        X_Vector & grad
     ) const {
         // grad <- 0
         Rm::zero(grad);
@@ -587,7 +587,7 @@ struct Phase1Ineq
 public:
     typedef Optizelle::Rm <Real> Rm;
     typedef Optizelle::SQL <Real> SQL;
-    
+
     typedef typename Rm::Vector X_Vector;
     typedef Optizelle::SQL <Real> Z;
     typedef typename Z::Vector Z_Vector;
@@ -598,8 +598,8 @@ private:
 
     // Identity vector
     mutable typename Optizelle::SQL <Real>::Vector e;
-    
-    // Extent to which we push for positive definiteness 
+
+    // Extent to which we push for positive definiteness
     Real const & epsilon;
 
 public:
@@ -611,12 +611,12 @@ public:
     ) : h(prob),
         e(initSQL(prob)),
         epsilon(epsilon_)
-    { 
-        // Set the identity element 
+    {
+        // Set the identity element
         SQL::id(e);
     }
 
-    // z=hh(x,y) 
+    // z=hh(x,y)
     void eval(
         X_Vector const & x,
         Z_Vector & z
@@ -629,13 +629,13 @@ public:
 
         // z <- h(x) - y1 e
         SQL::axpy(-x[m],e,z);
-        
+
         // Get the number of cones
         Natural ncones = z.types.size();
 
         // z_2 <- (-y1 + y2 + epsilon,y1 + y2 - epsilon)
-        z(ncones,1) = -x[m] + x[m+1] + epsilon; 
-        z(ncones,2) = x[m] + x[m+1] - epsilon; 
+        z(ncones,1) = -x[m] + x[m+1] + epsilon;
+        z(ncones,2) = x[m] + x[m+1] - epsilon;
     }
 
     // z=hh'(x,y)(dx,dy)
@@ -649,10 +649,10 @@ public:
 
         // Get the size of x
         Natural m = x.size()-2;
-       
-        // z <- h'(x)dx - dy e 
+
+        // z <- h'(x)dx - dy e
         SQL::axpy(-dx[m],e,z);
-        
+
         // Get the number of cones
         Natural ncones = z.types.size();
 
@@ -665,14 +665,14 @@ public:
     void ps(
         X_Vector const & x,
         Z_Vector const & dz,
-        X_Vector & xhat 
+        X_Vector & xhat
     ) const {
         // xhat_1 <- h'(x)*dx
         h.ps(x,dz,xhat);
-        
+
         // Get the size of x
         Natural m = x.size()-2;
-        
+
         // Get the number of cones
         Natural ncones = dz.types.size();
 
@@ -687,7 +687,7 @@ public:
         X_Vector const & x,
         X_Vector const & dx,
         Z_Vector const & dz,
-        X_Vector & xhat 
+        X_Vector & xhat
     ) const {
         Rm::zero(xhat);
     }
@@ -741,7 +741,7 @@ private:
     // Current iterate
     X_Vector const & x;
 
-    // Workspace 
+    // Workspace
     mutable X_Vector x_tmp1;
     mutable X_Vector x_tmp2;
 
@@ -758,7 +758,7 @@ private:
 
     // Inverse of the condition number of H
     mutable Real invCondH;
- 
+
 public:
     SDPPreconditioner(
         ProjectX <Real,XX>* proj_,
@@ -774,7 +774,7 @@ public:
         H(),
         ei(X::init(x_)),
         invCondH(1.)
-    { 
+    {
         Rm_Vector const * const P_x=(*proj)(const_cast <X_Vector &>(x));
         H.resize(P_x->size()*P_x->size());
     }
@@ -799,7 +799,7 @@ public:
             // Form H
             for(Natural i=0;i<m;i++) {
                 // Create the cannonical vector
-                create_ei <Real> (i,*((*proj)(ei))); 
+                create_ei <Real> (i,*((*proj)(ei)));
 
                 // Grab the ith column of H
                 f_mod->hessvec_step(x,ei,x_tmp1,x_tmp2);
@@ -857,7 +857,7 @@ bool initPhase1X(
     // Create the identity element
     typename SQL::Vector e(initSQL <Real> (prob));
     SQL::id(e);
-    
+
     // Determine how infeasible we are.  Basically, we find delta such that
     // e + delta h(x) >=0.  Dividing by delta, we have
     //     (1/delta) e + h(x) >= 0
@@ -889,7 +889,7 @@ bool initPhase1X(
 
     // Set y so that we're guaranteed to be feasible
     x[m] = !feasible ? -Real(2.)/delta : Real(0.);
-    x[m+1] = Real(fabs(x[m]))*10; 
+    x[m+1] = Real(fabs(x[m]))*10;
 
     // Return whether or not we're feasible
     return feasible;
@@ -909,7 +909,7 @@ void initPhase1DX(
 template <typename Real>
 typename Optizelle::SQL <Real>::Vector initZ(
     SparseSDP <Real> const & prob,
-    bool const phase1=false 
+    bool const phase1=false
 ) {
     // Allocate memory for z
     typename Optizelle::SQL <Real>::Vector z(initSQL <Real> (prob,phase1));
@@ -948,13 +948,13 @@ int main(int argc,char* argv[]) {
             << "<phase-2 parameters>" << std::endl;
         exit(EXIT_FAILURE);
     }
-    
+
     // Grab the filenames
     std::string fname(argv[1]);
     std::string phase1_params(argv[2]);
     std::string phase2_params(argv[3]);
 
-    // Grab the settings for the phase-1 problem 
+    // Grab the settings for the phase-1 problem
     double epsilon;
 
     // Note, we're going to ignore the values of epsilon from the phase-2
@@ -982,7 +982,7 @@ int main(int argc,char* argv[]) {
     // Create an initial guess for the inequality multiplier
     SQL::Vector z_phase1(initZ <Real> (prob,true));
 
-    // Create the phase-1 state 
+    // Create the phase-1 state
     Optizelle::InequalityConstrained <Real,Optizelle::Rm,Optizelle::SQL>
         ::State::t phase1_state(x,z_phase1);
 
@@ -993,7 +993,7 @@ int main(int argc,char* argv[]) {
     // Create the bundle of phase-1 functions
     Optizelle::InequalityConstrained <Real,Optizelle::Rm,Optizelle::SQL>
         ::Functions::t phase1_fns;
-    phase1_fns.f.reset(new Phase1Obj <Real> ()); 
+    phase1_fns.f.reset(new Phase1Obj <Real> ());
     phase1_fns.h.reset(new Phase1Ineq <Real> (prob,epsilon));
     phase1_fns.PH.reset(new SDPPreconditioner <Real,Optizelle::Rm> (
         new ProjectRm <Real> (),phase1_fns.f_mod,phase1_state.x));
@@ -1003,7 +1003,7 @@ int main(int argc,char* argv[]) {
         std::cout << std::endl <<
             "Solving the phase-1 problem for an initial solution." << std::endl;
 
-        // Solve the SDP 
+        // Solve the SDP
         Optizelle::InequalityConstrained <Real,Optizelle::Rm,Optizelle::SQL>
             ::Algorithms::getMin(Optizelle::Messaging::stdout,phase1_fns,
                 phase1_state);
@@ -1025,15 +1025,15 @@ int main(int argc,char* argv[]) {
     // Copy the solution back into the variable x
     Rm::copy(phase1_state.x,x);
 
-    // Eliminate the extra entries between phase-1 and 2 
+    // Eliminate the extra entries between phase-1 and 2
     x.pop_back(); x.pop_back();
     dx.pop_back(); dx.pop_back();
     dxx.pop_back(); dxx.pop_back();
-    
+
     // Create an inequality multiplier
     SQL::Vector z(initZ <Real> (prob));
 
-    // Create the optimization state 
+    // Create the optimization state
     Optizelle::InequalityConstrained <Real,Optizelle::Rm,Optizelle::SQL>
         ::State::t state(x,z);
 
@@ -1048,11 +1048,11 @@ int main(int argc,char* argv[]) {
     fns.h.reset(new SDPIneq <Real> (prob));
     fns.PH.reset(new SDPPreconditioner <Real,Optizelle::Rm> (
         new ProjectRm <Real> (),fns.f_mod,state.x));
-    
+
     // Keep our user informed
     std::cout << std::endl << "Solving the SDP probem: " << fname << std::endl;
 
-    // Solve the SDP 
+    // Solve the SDP
     Optizelle::InequalityConstrained<Real,Optizelle::Rm,Optizelle::SQL>
         ::Algorithms::getMin(Optizelle::Messaging::stdout,fns,state);
 

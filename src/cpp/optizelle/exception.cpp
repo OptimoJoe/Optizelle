@@ -4,16 +4,16 @@
 #include <iostream>
 
 namespace Optizelle { namespace Exception {
-    // Prints out nested exceptions 
+    // Prints out nested exceptions
     void to_stderr(std::exception const & e) {
         // Print out the top layer of the exception
-        std::cerr << e.what() << std::endl; 
+        std::cerr << e.what() << std::endl;
 
         // Recursively break things down if we're nested
         try {
             std::rethrow_if_nested(e);
 
-        // If we're still a std::exception, continue unrolling 
+        // If we're still a std::exception, continue unrolling
         } catch(std::exception const & nested) {
             to_stderr(nested);
 
@@ -31,9 +31,9 @@ namespace Optizelle { namespace Exception {
         // Recursively break things down if we're nested
         try {
             std::rethrow_if_nested(e);
-            return s; 
+            return s;
 
-        // If we're still a std::exception, continue unrolling 
+        // If we're still a std::exception, continue unrolling
         } catch(std::exception const & nested) {
             return s + to_string(nested);
 

@@ -4,7 +4,7 @@ project(linear_algebra)
 set(interfaces "cpp" "")
 
 # Add all of our unit tests
-compile_add_unit(gmres_full "${interfaces}") 
+compile_add_unit(gmres_full "${interfaces}")
 compile_add_unit(gmres_left_preconditioner "${interfaces}")
 compile_add_unit(gmres_restart "${interfaces}")
 compile_add_unit(gmres_right_preconditioner "${interfaces}")

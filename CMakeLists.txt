@@ -3,13 +3,13 @@ project(Optizelle)
 
 # This is the minimum required for the install.  Basically, we need
 # CXX_STANDARD_REQUIRED and this looks to have been added at 3.1.  I think
-# 3.1.3 is what the current bug fix is, so that looks good enough. 
+# 3.1.3 is what the current bug fix is, so that looks good enough.
 cmake_minimum_required(VERSION 3.1.3 FATAL_ERROR)
 
 # Put together the complete license
 add_subdirectory(licenses)
 
-# Install the authors file 
+# Install the authors file
 install(FILES AUTHORS.txt DESTINATION share/optizelle)
 
 # Set the CPack options
@@ -87,7 +87,7 @@ elseif(UNIX)
     set(CPACK_GENERATOR "TGZ" "RPM" "DEB")
 endif()
 include(CPack)
-    
+
 # Enable ctest
 enable_testing()
 

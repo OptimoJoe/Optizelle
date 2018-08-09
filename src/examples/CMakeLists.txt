@@ -1,4 +1,4 @@
-# Check if we want to build any examples 
+# Check if we want to build any examples
 mark_as_advanced(CLEAR ENABLE_CPP_EXAMPLES)
 set(ENABLE_CPP_EXAMPLES OFF CACHE BOOL "Enable examples for C++?")
 if(ENABLE_PYTHON)

@@ -9,7 +9,7 @@
 
 // std::cout
 #include <iostream>
-    
+
 // Get into the Optizelle namespace
 using namespace Optizelle;
 
@@ -19,7 +19,7 @@ int main(int argc,char * argv[]) try {
     if(argc!=2)
         throw std::runtime_error(std::string("Usage: ") + argv[0] + " <data>");
 
-    // Set our file name for the data 
+    // Set our file name for the data
     auto const data_name = argv[1];
 
     // Create a stream out of stdin
@@ -32,7 +32,7 @@ int main(int argc,char * argv[]) try {
         {
             {R"(%-flags)",
             [&data_name](auto const & ws) {
-                // Open our data 
+                // Open our data
                 auto file = std::unique_ptr <std::ifstream> (
                     new std::ifstream(data_name));
                 CHECK_FILE(*file,data_name);
@@ -44,7 +44,7 @@ int main(int argc,char * argv[]) try {
                 Stream::iter <std::string> (
                     [&](auto const & s) {
                         std::cout
-                            << ws 
+                            << ws
                             << s
                             << R"( \)"
                             << std::endl;

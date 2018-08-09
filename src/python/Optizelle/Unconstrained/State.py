@@ -42,7 +42,7 @@ class t(object):
         AlgorithmClass,
         "Algorithm class")
     stored_history = createNatProperty(
-        "stored_history", 
+        "stored_history",
         "Number of control objects to store in a quasi-Newton method")
     iter = createNatProperty(
         "iter",
@@ -91,40 +91,40 @@ class t(object):
     algorithm_class = createEnumProperty(
         "algorithm_class",
         AlgorithmClass,
-        "Algorithm class") 
+        "Algorithm class")
     PH_type = createEnumProperty(
         "PH_type",
         Operators,
-        "Preconditioner for the Hessian") 
+        "Preconditioner for the Hessian")
     H_type = createEnumProperty(
         "H_type",
         Operators,
-        "Hessian approximation") 
+        "Hessian approximation")
     norm_gradtyp = createFloatProperty(
         "norm_gradtyp",
-        "Norm of a typical tradient") 
+        "Norm of a typical tradient")
     norm_dxtyp = createFloatProperty(
         "norm_dxtyp",
-        "Norm of a typical trial step") 
+        "Norm of a typical trial step")
     x = createVectorProperty(
         "x",
-        "Optimization variable") 
+        "Optimization variable")
     grad = createVectorProperty(
         "grad",
         ("Gradient, possibly of the objective, possibly of the  Lagrangian.  "
         "It depends on the context."))
     dx = createVectorProperty(
         "dx",
-        "Trial step") 
+        "Trial step")
     x_old = createVectorProperty(
         "x_old",
-        "Old optimization variable") 
+        "Old optimization variable")
     grad_old = createVectorProperty(
         "grad_old",
-        "Old gradient") 
+        "Old gradient")
     dx_old = createVectorProperty(
         "dx_old",
-        "Old trial step") 
+        "Old trial step")
     oldY = createVectorListProperty(
         "oldY",
         "Difference in prior gradients")
@@ -133,10 +133,10 @@ class t(object):
         "Difference in prior steps")
     f_x = createFloatProperty(
         "f_x",
-        "Current value of the objective function") 
+        "Current value of the objective function")
     f_xpdx = createFloatProperty(
         "f_xpdx",
-        "Objective function at the trial step") 
+        "Objective function at the trial step")
     msg_level = createNatProperty(
         "msg_level",
         "Messaging level")

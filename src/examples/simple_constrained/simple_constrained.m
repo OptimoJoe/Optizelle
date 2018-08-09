@@ -15,13 +15,13 @@ function z = sq(x)
     z=x*x;
 end
 
-% Define a simple objective where 
-% 
+% Define a simple objective where
+%
 % f(x,y)=(x+1)^2+(y+1)^2
 %
 function self = MyObj()
 
-    % Evaluation 
+    % Evaluation
     self.eval = @(x) sq(x(1)+1.)+sq(x(2)+1.);
 
     % Gradient
@@ -37,11 +37,11 @@ end
 
 % Define a simple equality
 %
-% g(x,y)= [ x + 2y = 1 ] 
+% g(x,y)= [ x + 2y = 1 ]
 %
 function self = MyEq()
 
-    % y=g(x) 
+    % y=g(x)
     self.eval = @(x) [x(1)+2.*x(2)-1.];
 
     % y=g'(x)dx
@@ -53,16 +53,16 @@ function self = MyEq()
         2.*dy(1)];
 
     % xhat=(g''(x)dx)*dy
-    self.pps = @(x,dx,dy) zeros(2,1); 
+    self.pps = @(x,dx,dy) zeros(2,1);
 end
 
-% Define simple inequalities 
+% Define simple inequalities
 %
-% h(x,y)= [ 2x + y >= 1 ] 
+% h(x,y)= [ 2x + y >= 1 ]
 %
 function self = MyIneq()
 
-    % z=h(x) 
+    % z=h(x)
     self.eval = @(x) [
         2.*x(1)+x(2)-1];
 
@@ -76,7 +76,7 @@ function self = MyIneq()
         dz(1)];
 
     % xhat=(h''(x)dx)*dz
-    self.pps = @(x,dx,dz) [ 0. ]; 
+    self.pps = @(x,dx,dz) [ 0. ];
 end
 
 % Actually runs the program
@@ -86,13 +86,13 @@ function main(fname)
     global Optizelle;
     setupOptizelle();
 
-    % Generate an initial guess 
+    % Generate an initial guess
     x = [2.1;1.1];
 
-    % Allocate memory for the equality multiplier 
+    % Allocate memory for the equality multiplier
     y = [0.];
 
-    % Allocate memory for the inequality multiplier 
+    % Allocate memory for the inequality multiplier
     z = [0.];
 
     % Create an optimization state

@@ -3,7 +3,7 @@ function self=EqualityConstrainedAlgorithmsGetMin(varargin)
     % Check the number of arguments
     if nargin~=5 && nargin~=6
         error(['The getMin function requires either 5 or 6 arguments, ', ...
-            sprintf('but %d given',nargin)]); 
+            sprintf('but %d given',nargin)]);
     end
 
     % Extract the arguments
@@ -26,5 +26,5 @@ function self=EqualityConstrainedAlgorithmsGetMin(varargin)
     checkEqualityConstrainedStateT('state',state);
     checkStateManipulator('smanip',smanip);
 
-    % Solve the optimization problem 
+    % Solve the optimization problem
     self=EqualityConstrainedAlgorithmsGetMin_(X,Y,msg,fns,state,smanip);

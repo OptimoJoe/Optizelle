@@ -12,7 +12,7 @@
 #include "spaces.h"
 
 int main() {
-    // Setup the problem 
+    // Setup the problem
     auto setup = Unit::tcg <Real,Rm> ();
 
     // Problem setup
@@ -22,7 +22,7 @@ int main() {
     auto norm_b = std::sqrt(X::innr(*setup.b,*setup.b));
     setup.x_offset=std::make_unique<Vector>(Unit::Vector<Real>::ones(setup.m));
     X::scal(Real(-2.),*setup.x_offset);
-    auto lb = Real(0.); 
+    auto lb = Real(0.);
     auto x = Unit::Vector<Real>::ones(setup.m);
     auto w = std::vector <Real> {0,0,0,0,1};
     setup.safeguard = std::make_unique<Optizelle::SafeguardSimplified<Real,Rm>>(
@@ -39,7 +39,7 @@ int main() {
     setup.check_iter = true;
     setup.check_sol = true;
 
-    // Check the solver 
+    // Check the solver
     Unit::run_and_verify <Real,Rm> (setup);
 
     // Declare success

@@ -1,14 +1,14 @@
-# Check if we want to build the MATLAB interface 
+# Check if we want to build the MATLAB interface
 mark_as_advanced(CLEAR ENABLE_MATLAB)
 set(ENABLE_MATLAB OFF CACHE BOOL "Enable the MATLAB build?")
 
-# Check if we want to build the Octave interface 
+# Check if we want to build the Octave interface
 mark_as_advanced(CLEAR ENABLE_OCTAVE)
 set(ENABLE_OCTAVE OFF CACHE BOOL "Enable the Octave build?")
 
 # MATLAB specific options
 if(ENABLE_MATLAB)
-    # Find the MATLAB libraries 
+    # Find the MATLAB libraries
     find_package(MATLAB REQUIRED)
 
     # Install the setup file
@@ -17,7 +17,7 @@ endif()
 
 # Octave specific options
 if(ENABLE_OCTAVE)
-    # Find the Octave libraries 
+    # Find the Octave libraries
     find_package(Octave REQUIRED)
 
     # Install the setup file

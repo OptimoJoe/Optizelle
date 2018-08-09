@@ -6,7 +6,7 @@
 </div>
 
 
-# Optizelle 
+# Optizelle
 
 **Optizelle** [op-tuh-zel] is an open source software library designed to solve general purpose nonlinear optimization problems of the form
 
@@ -40,7 +40,7 @@
 
 # Download
 
-For precompiled, 64-bit packages, please download one of the following 
+For precompiled, 64-bit packages, please download one of the following
 
 | Platform | Package | Interfaces |
 |:---|:---|:---|
@@ -54,7 +54,7 @@ Installation should be as easy as opening the package and following the instruct
 
 We provide a full set of instructions for building, installing, and using Optizelle in our manual ([letter](http://www.optimojoe.com/uploads/reports/Optizelle-1.2.0-letter.pdf),[a4](http://www.optimojoe.com/uploads/reports/Optizelle-1.2.0-a4.pdf).)
 
-# Source 
+# Source
 
 For the source, please download a [zipped archive](http://www.optimojoe.com/uploads/software/Optizelle-1.2.0-Source.tar.gz) of our code.  For power users, we provide public access to our git repository on our [Github page](https://github.com/OptimoJoe/Optizelle).  In order to clone the Optizelle repository, use the command
 

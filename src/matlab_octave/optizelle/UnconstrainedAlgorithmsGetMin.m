@@ -3,7 +3,7 @@ function self=UnconstrainedAlgorithmsGetMin(varargin)
     % Check the number of arguments
     if nargin~=4 && nargin~=5
         error(['The getMin function requires either 4 or 5 arguments, ', ...
-            sprintf('but %d given',nargin)]); 
+            sprintf('but %d given',nargin)]);
     end
 
     % Extract the arguments
@@ -24,5 +24,5 @@ function self=UnconstrainedAlgorithmsGetMin(varargin)
     checkUnconstrainedStateT('state',state);
     checkStateManipulator('smanip',smanip);
 
-    % Solve the optimization problem 
+    % Solve the optimization problem
     self=UnconstrainedAlgorithmsGetMin_(X,msg,fns,state,smanip);

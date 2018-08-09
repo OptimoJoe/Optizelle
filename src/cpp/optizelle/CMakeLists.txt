@@ -15,11 +15,11 @@ include_directories(${JSONCPP_INCLUDE_DIRS})
 set(utility_srcs "exception.cpp" "stream.cpp")
 add_library(utility OBJECT ${utility_srcs})
 
-# Compile the core of Optizelle 
+# Compile the core of Optizelle
 set(optizelle_cpp_srcs "vspaces.cpp" "optizelle.cpp" "linalg.cpp" "json.cpp")
 add_library(optizelle_cpp OBJECT ${optizelle_cpp_srcs})
-    
-# Package everything together 
+
+# Package everything together
 add_library(optizelle_static STATIC
     $<TARGET_OBJECTS:utility>
     $<TARGET_OBJECTS:optizelle_cpp>)
@@ -39,7 +39,7 @@ elseif(UNIX)
     set_target_properties(optizelle_shared PROPERTIES INSTALL_RPATH "\$ORIGIN/../share/optizelle/thirdparty/lib")
 endif()
 
-# Install the headers associated with the library.  
+# Install the headers associated with the library.
 install(FILES
     vspaces.h
     optizelle.h
@@ -51,7 +51,7 @@ install(FILES
 install(TARGETS
     optizelle_static
     optizelle_shared
-    DESTINATION lib)    
+    DESTINATION lib)
 
 # Grab required runtime
 if(MINGW)

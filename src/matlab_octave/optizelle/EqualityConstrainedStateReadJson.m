@@ -1,4 +1,4 @@
-% Reads equality constrained state parameters from file 
+% Reads equality constrained state parameters from file
 function self=EqualityConstrainedStateReadJson(X,Y,fname,state)
     % Check our arguments
     checkVectorSpace('X',X);
@@ -6,5 +6,5 @@ function self=EqualityConstrainedStateReadJson(X,Y,fname,state)
     checkString('fname',fname);
     checkEqualityConstrainedStateT('state',state);
 
-    % Read the json file 
+    % Read the json file
     self=EqualityConstrainedStateReadJson_(X,Y,fname,state);

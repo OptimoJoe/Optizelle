@@ -1,4 +1,4 @@
-//  Tests our ability to throw a native exception and catch it 
+//  Tests our ability to throw a native exception and catch it
 
 #include "optizelle/optizelle.h"
 #include "optizelle/vspaces.h"
@@ -9,7 +9,7 @@ struct Objective:public Optizelle::ScalarValuedFunction <double,Optizelle::Rm>{
 
     // Evaluation
     double eval(const X::Vector & x) const {
-        throw std::runtime_error("Objective"); 
+        throw std::runtime_error("Objective");
     }
 
     // Gradient
@@ -17,7 +17,7 @@ struct Objective:public Optizelle::ScalarValuedFunction <double,Optizelle::Rm>{
         X::Vector const & x,
         X::Vector & grad
     ) const {
-        throw std::runtime_error("Gradient"); 
+        throw std::runtime_error("Gradient");
     }
 
     // Hessian-vector product
@@ -26,7 +26,7 @@ struct Objective:public Optizelle::ScalarValuedFunction <double,Optizelle::Rm>{
         X::Vector const & dx,
         X::Vector & H_dx
     ) const {
-        throw std::runtime_error("Hessian-vector product"); 
+        throw std::runtime_error("Hessian-vector product");
     }
 };
 
@@ -36,7 +36,7 @@ int main() try {
 
     // Allocate memory for an initial guess
     auto x = std::vector <double> {1.2, 2.3};
-    
+
     // Create an optimization state
     Optizelle::Unconstrained<double,Rm>::State::t state(x);
 

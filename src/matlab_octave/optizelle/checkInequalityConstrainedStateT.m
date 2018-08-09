@@ -1,4 +1,4 @@
-% Check that we have an inequality constrained state 
+% Check that we have an inequality constrained state
 function checkInequalityConstrainedStateT(name,value)
     % Set the error message
     err = sprintf( ...
@@ -11,8 +11,8 @@ function checkInequalityConstrainedStateT(name,value)
     catch
         error(err);
     end
-   
-    % Check for the appropriate fields 
+
+    % Check for the appropriate fields
     if ~(checkFields({ ...
         'z', ...
         'dz', ...

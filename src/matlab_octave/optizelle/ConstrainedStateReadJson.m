@@ -1,4 +1,4 @@
-% Reads constrained state parameters from file 
+% Reads constrained state parameters from file
 function self=ConstrainedStateReadJson(X,Y,Z,fname,state)
     % Check our arguments
     checkVectorSpace('X',X);
@@ -7,5 +7,5 @@ function self=ConstrainedStateReadJson(X,Y,Z,fname,state)
     checkString('fname',fname);
     checkConstrainedStateT('state',state);
 
-    % Read the json file 
+    % Read the json file
     self=ConstrainedStateReadJson_(X,Y,Z,fname,state);

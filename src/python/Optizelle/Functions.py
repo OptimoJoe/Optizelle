@@ -12,11 +12,11 @@ class ScalarValuedFunction(object):
     def eval(self,x):
         """<- f(x)"""
         _err(self,"eval")
-    
+
     def grad(self,x,grad):
         """<- grad f(x)"""
         _err(self,"grad")
-    
+
     def hessvec(self,x,dx,H_dx):
         """<- hess f(x) dx"""
         _err(self,"grad")
@@ -34,15 +34,15 @@ class VectorValuedFunction(object):
     def eval(self,x,y):
         """y <- f(x)"""
         _err(self,"eval")
-    
+
     def p(self,x,dx,y):
         """y <- f'(x)dx"""
         _err(self,"p")
-    
+
     def ps(self,x,dx,z):
         """z <- f'(x)dx"""
         _err(self,"ps")
-    
+
     def pps(self,x,dx,dy,z):
         """z <- (f''(x)dx)*dy"""
         _err(self,"pps")
@@ -51,7 +51,7 @@ class VectorValuedFunction(object):
 #---Operator0---
 class Operator(object):
     """A linear operator specification, A : X->Y"""
-    
+
     def _err(self,fn):
         """Produces an error message for an undefined function"""
         raise Exception.t("%s function is not defined in an " % (fn) +

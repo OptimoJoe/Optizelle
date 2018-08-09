@@ -1,4 +1,4 @@
-% Reads inequality constrained state parameters from file 
+% Reads inequality constrained state parameters from file
 function self=InequalityConstrainedStateReadJson(X,Z,fname,state)
     % Check our arguments
     checkVectorSpace('X',X);
@@ -6,5 +6,5 @@ function self=InequalityConstrainedStateReadJson(X,Z,fname,state)
     checkString('fname',fname);
     checkInequalityConstrainedStateT('state',state);
 
-    % Read the json file 
+    % Read the json file
     self=InequalityConstrainedStateReadJson_(X,Z,fname,state);

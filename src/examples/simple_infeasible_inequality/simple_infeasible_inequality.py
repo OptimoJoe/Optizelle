@@ -11,7 +11,7 @@
 # min x + y
 # st  x + 2y >= 1 - z
 #     2x + y >= 1 - z
-#     epsilon >= w             
+#     epsilon >= w
 #     z = w
 #
 # Note, most of the time, we're much better off just adding slack variables.
@@ -19,19 +19,19 @@
 # solver for the equality constraints added from the slacks since this method
 # only adds a single equality constraint.
 
-import Optizelle 
+import Optizelle
 import numpy
 import sys
 
 # Squares its input
 sq = lambda x:x*x
 
-# Define an objective where 
-# 
+# Define an objective where
+#
 # f(x,y,z,w)=x+y
 #
 class MyObj(Optizelle.ScalarValuedFunction):
-    # Evaluation 
+    # Evaluation
     def eval(self,x):
         return x[0]+x[1];
 
@@ -52,7 +52,7 @@ class MyObj(Optizelle.ScalarValuedFunction):
 #
 class MyEq(Optizelle.VectorValuedFunction):
 
-    # y=g(x) 
+    # y=g(x)
     def eval(self,x,y):
         y[0] = x[2]-x[3]
 
@@ -73,8 +73,8 @@ class MyEq(Optizelle.VectorValuedFunction):
 
 # Define some inequalities where
 #
-# h(x,y,z,w) = [ x + 2y >= 1 - z  ] 
-#              [ 2x + y >= 1 - z  ] 
+# h(x,y,z,w) = [ x + 2y >= 1 - z  ]
+#              [ 2x + y >= 1 - z  ]
 #              [ epsilon >= w     ]
 #
 class MyIneq(Optizelle.VectorValuedFunction):
@@ -83,7 +83,7 @@ class MyIneq(Optizelle.VectorValuedFunction):
     def __init__(self,epsilon_):
         self.epsilon=epsilon_
 
-    # z=h(x) 
+    # z=h(x)
     def eval(self,x,z):
         z[0]=x[0]+2.*x[1]+x[2]-1.
         z[1]=2.*x[0]+x[1]+x[2]-1.
@@ -117,7 +117,7 @@ epsilon = 1e-8
 # Generate an initial guess for the primal
 x = numpy.array([0.,0.,5.,-5.])
 
-# Generate a vector for the equality multiplier 
+# Generate a vector for the equality multiplier
 y = numpy.array([0.])
 
 # Generate a vector for the inequality multiplier

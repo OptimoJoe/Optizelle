@@ -5,12 +5,12 @@
       "dir" : "BFGS",
       "iter_max" : 50,
       "eps_dx" : 1e-16,
-      "stored_history" : 10 
+      "stored_history" : 10
    },
    "Naturals" : {
       "iter" : 11
    },
    "X_Vectors" : {
-      "x" : [ 1.0, 1.0, 1.0 ] 
+      "x" : [ 1.0, 1.0, 1.0 ]
    }
 }

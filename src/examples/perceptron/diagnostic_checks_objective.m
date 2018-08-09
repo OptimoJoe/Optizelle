@@ -4,7 +4,7 @@
 global Optizelle;
 setupOptizelle ();
 
-% Set the sizes 
+% Set the sizes
 ninput = 3;
 nhidden = 20;
 nsamples = 5;
@@ -38,7 +38,7 @@ state.f_diag = Optizelle.FunctionDiagnostics.SecondOrder;
 state.iter_max = 2;
 
 % Generate the objective function
-fns = Optizelle.Unconstrained.Functions.t; 
+fns = Optizelle.Unconstrained.Functions.t;
 fns.f = generate_objective(generate_hyperbolic(),lens,x,y,scaling);
 
 % Even though this looks like we're solving an optimization problem,

@@ -12,6 +12,6 @@
       "iter" :  14
    },
    "Parameters" : {
-      "opt_stop" : "GradientSmall" 
+      "opt_stop" : "GradientSmall"
    }
 }

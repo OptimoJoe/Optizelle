@@ -11,7 +11,7 @@ namespace Optizelle {
             Json::Reader reader;
             std::ifstream file(fname.c_str(),std::ifstream::in);
             bool parsingSuccessful = reader.parse( file, root, true );
-            if(!parsingSuccessful) 
+            if(!parsingSuccessful)
                 throw Exception::t(__LOC__
                     + ", failed to parse the optimization parameter "
                     "file:  " + reader.getFormattedErrorMessages());
@@ -19,7 +19,7 @@ namespace Optizelle {
             // Return the root
             return root;
         }
-       
+
         // Writes a JSON spec to file
         void write_to_file(
             std::string const & fname,
@@ -39,10 +39,10 @@ namespace Optizelle {
                     + ", while writing the restart file, unable to write "
                     "the json tree");
         }
-        
-        // Safely reads from a json tree 
+
+        // Safely reads from a json tree
         namespace read {
-            // Read a natural 
+            // Read a natural
             Natural natural(
                 Json::Value const & json,
                 std::string const & name
@@ -54,7 +54,7 @@ namespace Optizelle {
                 // As long as we have an unsigned integer, grab it
                 if(json.isUInt() || json.isUInt64())
                     return Natural(Json::Value::UInt64(json.asUInt64()));
-                
+
                 // If we have an integer, grab it if it's positive
                 else if(json.isInt() || json.isInt64()) {
                     Integer val(json.asInt64());
@@ -67,8 +67,8 @@ namespace Optizelle {
                 } else
                     throw Exception::t(__LOC__ + ", " + err_msg);
             }
-            
-            // Read a string 
+
+            // Read a string
             std::string string(
                 Json::Value const & json,
                 std::string const & name
@@ -87,9 +87,9 @@ namespace Optizelle {
             }
         }
 
-        // Writes into a json tree 
+        // Writes into a json tree
         namespace write {
-            // Write a natural 
+            // Write a natural
             Json::Value natural(Natural const & val) {
                 return Json::Value::UInt64(val);
             }
@@ -97,15 +97,15 @@ namespace Optizelle {
 
         // Routines to serialize lists of elements for restarting
         namespace Serialize{
-       
-            // Naturals 
+
+            // Naturals
             void naturals(
                 typename RestartPackage <Natural>::t const & nats,
                 std::string const & vs,
                 Json::Value & root
             ) {
                 // Create some type shortcuts
-                typedef typename RestartPackage <Natural>::t Naturals; 
+                typedef typename RestartPackage <Natural>::t Naturals;
 
                 // Loop over all the naturals and serialize things
                 for(typename Naturals::const_iterator item = nats.cbegin();
@@ -115,14 +115,14 @@ namespace Optizelle {
                     root[vs][item->first]=write::natural(item->second);
             }
 
-            // Parameters 
+            // Parameters
             void parameters(
                 typename RestartPackage <std::string>::t const & params,
                 std::string const & vs,
                 Json::Value & root
             ) {
                 // Create some type shortcuts
-                typedef typename RestartPackage <std::string>::t Params; 
+                typedef typename RestartPackage <std::string>::t Params;
 
                 // Loop over all the params and serialize things
                 for(typename Params::const_iterator item = params.cbegin();
@@ -132,11 +132,11 @@ namespace Optizelle {
                     root[vs][item->first]=item->second;
             }
         }
-        
+
         // Routines to deserialize lists of elements for restarting
         namespace Deserialize{
 
-            // Naturals 
+            // Naturals
             void naturals(
                 Json::Value const & root,
                 std::string const & vs,
@@ -147,25 +147,25 @@ namespace Optizelle {
                     itr!=root[vs].end();
                     itr++
                 ){
-                    // Grab the natural 
+                    // Grab the natural
                     std::string name(itr.key().asString());
                     nats.emplace_back(name,std::move(
-                        read::natural(root[vs][name],name))); 
+                        read::natural(root[vs][name],name)));
                 }
             }
-            
-            // Parameters 
+
+            // Parameters
             void parameters(
                 Json::Value const & root,
                 std::string const & vs,
-                typename RestartPackage <std::string>::t & params 
+                typename RestartPackage <std::string>::t & params
             ) {
                 // Loop over all the names in the root
                 for(Json::ValueConstIterator itr=root[vs].begin();
                     itr!=root[vs].end();
                     itr++
                 ){
-                    // Grab the parameter 
+                    // Grab the parameter
                     std::string name(itr.key().asString());
                     params.emplace_back(name,std::move(
                         read::string(root[vs][name],name)));

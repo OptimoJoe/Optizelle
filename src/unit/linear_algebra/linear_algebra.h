@@ -5,13 +5,13 @@
 #include "unit.h"
 #include <set>
 
-// For the time being, just lump everything in the unit namespace 
+// For the time being, just lump everything in the unit namespace
 namespace Unit {
 
     // Grab the natural type from Optizelle
     typedef Optizelle::Natural Natural;
 
-    // Different kinds of matrices 
+    // Different kinds of matrices
     template <typename Real>
     struct Matrix {
         // Matrix type.  This needs to ultimately be an Optizelle operator
@@ -21,19 +21,19 @@ namespace Unit {
         private:
             // Create some type shortcuts
             typedef std::vector <Real> X_Vector;
-            
+
             // Size of the matrix
             Natural size;
         public:
             // Storage for the matrix
             std::vector <Real> data;
 
-            // Create an empty matrix filled with some arbitrary data 
+            // Create an empty matrix filled with some arbitrary data
             t(Natural const & size_)
                 : size(size_), data(size_*size_)
             {}
 
-            // Apply the matrix to the vector 
+            // Apply the matrix to the vector
             void eval(X_Vector const & x,X_Vector & y) const {
                 for(auto i=0;i<size;i++) {
                     y[i]=0;
@@ -42,7 +42,7 @@ namespace Unit {
                 }
             }
         };
-        
+
         // Create a matrix with the scheme where the (i,j)th element is
         //
         // cos(I^2)
@@ -58,7 +58,7 @@ namespace Unit {
             for(auto j=1;j<=size;j++)
                 for(auto i=1;i<=size;i++) {
                     auto I = j+(i-1)*size;
-                    A.data[I-1] = cos(std::pow(I+offset,2)); 
+                    A.data[I-1] = cos(std::pow(I+offset,2));
                 }
             return A;
         }
@@ -115,7 +115,7 @@ namespace Unit {
             A.data.assign(size*size,Real(0.));
             for(auto i=1;i<=size;i++) {
                 auto I = i+(i-1)*size;
-                if(i % 2 == 1) 
+                if(i % 2 == 1)
                     A.data[I-1] = (i+1)/Real(2.);
             }
             return A;
@@ -132,7 +132,7 @@ namespace Unit {
             A.data.assign(size*size,Real(0.));
             for(auto i=1;i<=size;i++) {
                 auto I = i+(i-1)*size;
-                if(i % 2 == 1) 
+                if(i % 2 == 1)
                     A.data[I-1] = Real(2.)/(i+1);
             }
             return A;
@@ -140,8 +140,8 @@ namespace Unit {
 
         // Fills the matrix with diagonal matrix where the (i,i)th element is
         //
-        // 1       when i \in {1,2} 
-        // 0            0 otherwise 
+        // 1       when i \in {1,2}
+        // 0            0 otherwise
         //
         // Essentially, we project out the first two elements and stay in the
         // nullspace of the rest.
@@ -150,8 +150,8 @@ namespace Unit {
             A.data.assign(size*size,Real(0.));
             for(auto i=1;i<=size;i++) {
                 auto I = i+(i-1)*size;
-                if(i<=2) 
-                    A.data[I-1] = Real(1.); 
+                if(i<=2)
+                    A.data[I-1] = Real(1.);
             }
             return A;
         }
@@ -159,7 +159,7 @@ namespace Unit {
         // Creates a mostly diagonally dominant matrix, with a single negative
         // eigenvalue.  We set the (i,j) element to
         //
-        // 2    when i=j, i>1 
+        // 2    when i=j, i>1
         // -2   when i=j, i=1
         // 1    when i-1=j
         // 1    when i=j-1
@@ -170,12 +170,12 @@ namespace Unit {
                 auto I = i-1+(i-1)*size;
                 auto up = i-2+(i-1)*size;
                 auto left = i-1+(i-2)*size;
-                if(i == 1) 
+                if(i == 1)
                     A.data[I] = Real(-2.);
                 else {
-                    A.data[I] = Real(2.); 
-                    A.data[up] = Real(1.); 
-                    A.data[left] = Real(1.); 
+                    A.data[I] = Real(2.);
+                    A.data[up] = Real(1.);
+                    A.data[left] = Real(1.);
                 }
             }
             return A;
@@ -191,7 +191,7 @@ namespace Unit {
         typedef Optizelle::Operator <Real,XX,XX> t;
 
         // Throw a NaN after a specified number of calls
-        struct Nan: public t { 
+        struct Nan: public t {
         private:
             // Track the number of times the operator is called
             mutable Natural calls;
@@ -208,8 +208,8 @@ namespace Unit {
                 calls_max(calls_max_),
                 A(A_)
             {}
-                
-            // Apply the matrix until we NaN 
+
+            // Apply the matrix until we NaN
             void eval(X_Vector const & x,X_Vector & y) const {
                 A.eval(x,y);
                 if(calls >= calls_max)
@@ -231,7 +231,7 @@ namespace Unit {
         static std::vector <Real> basic(Natural & size) {
             auto b = std::vector <double>(size);
             for(auto i=1;i<=size;i++)
-                b[i-1] = cos(i+25); 
+                b[i-1] = cos(i+25);
             return b;
         }
 
@@ -241,7 +241,7 @@ namespace Unit {
             return b;
         }
 
-        // Create a rhs where the odd elements are 1 and the even are 0 
+        // Create a rhs where the odd elements are 1 and the even are 0
         static std::vector <Real> alternate(Natural const & size) {
             auto b = std::vector <double>(size);
             for(auto i=1;i<=size;i++) {
@@ -272,13 +272,13 @@ namespace Unit {
             return b;
         }
 
-        // Create a vector of all ones 
+        // Create a vector of all ones
         static std::vector <Real> ones(Natural & size) {
             auto b = std::vector <double>(size,Real(1.));
             return b;
         }
 
-        // Create a vector where the last element is 1 and the others are 0 
+        // Create a vector where the last element is 1 and the others are 0
         static std::vector <Real> elast(Natural & size) {
             auto b = std::vector <double>(size,Real(0.));
             b[size-1]=Real(1.);
@@ -286,7 +286,7 @@ namespace Unit {
         }
     };
 
-    // A couple of different safeguards 
+    // A couple of different safeguards
     template <typename Real,template <typename> class XX>
     struct Safeguard {
         // Type shortcuts
@@ -310,7 +310,7 @@ namespace Unit {
             // Lower bound for the constraint
             Real lb;
 
-            // Weighting 
+            // Weighting
             X_Vector w;
 
             // Grab the iterate and lower bound
@@ -321,7 +321,7 @@ namespace Unit {
             ) :
                 x(X::init(x_)),
                 lb(lb_),
-                w(X::init(w_)) 
+                w(X::init(w_))
             {
                 X::copy(x_,x);
                 X::copy(w_,w);
@@ -333,14 +333,14 @@ namespace Unit {
                 X_Vector const & dx_base,
                 X_Vector const & dx_dir
             ) {
-                // base_ <- <x + dx_base,w> - lb 
+                // base_ <- <x + dx_base,w> - lb
                 auto base = X::init(x);
                 X::copy(x,base);
                 X::axpy(Real(1.),dx_base,base);
                 auto base_ = std::vector <Real> {X::innr(base,w)-lb};
 
                 // dx_dir_ <- <w,dx_dir>
-                auto dx_dir_ = std::vector <Real> {X::innr(dx_dir,w)}; 
+                auto dx_dir_ = std::vector <Real> {X::innr(dx_dir,w)};
 
                 // Find the largest alpha so that
                 // <x + dx_base,w> - lb + alpha <dx_dir,w> >= 0
@@ -349,7 +349,7 @@ namespace Unit {
         };
     };
 
-    // Calculates a error between two vectors.  The second number returned 
+    // Calculates a error between two vectors.  The second number returned
     // is the norm of the second vector, which we use to calculate the relative
     // error.
     template <typename Real,template <typename> class XX>
@@ -368,7 +368,7 @@ namespace Unit {
 
     // Calculates the norm of the residual of a linear system.  This second
     // number returned is the norm of the rhs, which we use to calculate the
-    // relative norm of the residual. 
+    // relative norm of the residual.
     template <typename Real,template <typename> class XX>
     std::tuple<Real,Real> residual(
         Optizelle::Operator <Real,XX,XX> const & A,
@@ -394,10 +394,10 @@ namespace Unit {
         typedef XX <Real> X;
         typedef typename X::Vector X_Vector;
 
-        // Size 
+        // Size
         Natural m;
 
-        // Stopping tolerance 
+        // Stopping tolerance
         Real eps;
 
         // Maximum number of iterations
@@ -433,7 +433,7 @@ namespace Unit {
         // Solution check
         bool check_sol;
 
-        // Residual check 
+        // Residual check
         bool check_res;
 
         // Setup some simple parameters
@@ -461,7 +461,7 @@ namespace Unit {
         {}
     };
 
-    // Base GMRES setup 
+    // Base GMRES setup
     template <typename Real,template <typename> class XX>
     struct gmres : public Solver <Real,XX> {
         // Type shortcuts
@@ -490,20 +490,20 @@ namespace Unit {
         {}
     };
 
-    // Base TCG setup 
+    // Base TCG setup
     template <typename Real,template <typename> class XX>
     struct tcg : public Solver <Real,XX> {
         // Type shortcuts
         typedef XX <Real> X;
         typedef typename X::Vector X_Vector;
 
-        // Trust-region radius 
-        Real delta; 
+        // Trust-region radius
+        Real delta;
 
         // Preconditioners
         std::unique_ptr <Optizelle::Operator <Real,XX,XX>> B;
 
-        // Offset 
+        // Offset
         std::unique_ptr <X_Vector> x_offset;
 
         // Safeguard
@@ -512,8 +512,8 @@ namespace Unit {
         // Maximum number of failed safeguard iterations
         Natural failed_max;
 
-        // Number of vectors we orthogonalize against 
-        Natural orthog_storage_max; 
+        // Number of vectors we orthogonalize against
+        Natural orthog_storage_max;
 
         // Number of orthogonalization iterations
         Natural orthog_iter_max;
@@ -521,10 +521,10 @@ namespace Unit {
         // Whether we do the preconditioner projector check
         bool check_B_projector;
 
-        // Whether we do the preconditioner properties check 
+        // Whether we do the preconditioner properties check
         bool check_B_properties;
 
-        // Whether we do the operator properties check 
+        // Whether we do the operator properties check
         bool check_A_properties;
 
         // Cauchy-Point check
@@ -577,7 +577,7 @@ namespace Unit {
         {}
     };
 
-    // Run and verify the problem setup 
+    // Run and verify the problem setup
     template <typename Real,template <typename> class XX>
     void run_and_verify(gmres <Real,XX> & setup) {
         // Type shortcuts
@@ -603,7 +603,7 @@ namespace Unit {
             *setup.gmanip,
             *setup.x);
 
-        // Check that the number of iterations matches 
+        // Check that the number of iterations matches
         if(setup.check_iter)
             CHECK(setup.iter == setup.iter_star);
 
@@ -628,7 +628,7 @@ namespace Unit {
         }
     }
 
-    // Run and verify the problem setup 
+    // Run and verify the problem setup
     template <typename Real,template <typename> class XX>
     void run_and_verify(tcg <Real,XX> & setup) {
         // Type shortcuts
@@ -679,7 +679,7 @@ namespace Unit {
             failed,
             alpha);
 
-        // Check that the number of iterations matches 
+        // Check that the number of iterations matches
         if(setup.check_iter)
             CHECK(setup.iter == setup.iter_star);
 
@@ -727,18 +727,18 @@ namespace Unit {
             CHECK(setup.stop_star == stop);
         }
 
-        // Check that the number of failed safeguard steps matches 
+        // Check that the number of failed safeguard steps matches
         if(setup.check_safeguard_failed) {
             CHECK(setup.safeguard_failed_star == failed);
         }
 
-        // Check that the safeguard truncated the step 
+        // Check that the safeguard truncated the step
         if(setup.check_safeguard_alpha) {
             CHECK(alpha < Real(1.));
         }
     }
 
-    // Reset the different checks 
+    // Reset the different checks
     template <typename Real,template <typename> class XX>
     void reset_checks(Solver <Real,XX> & setup) {
         setup.check_iter = false;

@@ -6,10 +6,10 @@ set(ENABLE_BUILD_JSONCPP OFF CACHE BOOL "Build jsoncpp from source?")
 if(ENABLE_BUILD_JSONCPP)
     # Determine the location of the JsonCpp archive
     set(JSONCPP_ARCHIVE_UNDEFINED "JSONCPP_ARCHIVE-UNDEFINED")
-    set(JSONCPP_ARCHIVE ${JSONCPP_ARCHIVE_UNDEFINED} CACHE FILEPATH 
+    set(JSONCPP_ARCHIVE ${JSONCPP_ARCHIVE_UNDEFINED} CACHE FILEPATH
         "JsonCpp archive with full path.")
     # Make sure that it is defined and throw an error message if it is not
-    if(JSONCPP_ARCHIVE STREQUAL JSONCPP_ARCHIVE_UNDEFINED) 
+    if(JSONCPP_ARCHIVE STREQUAL JSONCPP_ARCHIVE_UNDEFINED)
         mark_as_advanced(CLEAR JSONCPP_ARCHIVE)
         message(FATAL_ERROR
             "The JsonCpp archive with full path must be defined in the variable JSONCPP_ARCHIVE.")
@@ -19,7 +19,7 @@ if(ENABLE_BUILD_JSONCPP)
     include(ExternalProject)
     ExternalProject_Add(
         JsonCpp
-        URL ${JSONCPP_ARCHIVE} 
+        URL ${JSONCPP_ARCHIVE}
         PATCH_COMMAND ${CMAKE_COMMAND} -E copy
             "${CMAKE_CURRENT_SOURCE_DIR}/jsoncpp/CMakeLists.txt"
             CMakeLists.txt
@@ -42,9 +42,9 @@ if(ENABLE_BUILD_JSONCPP)
     set(JSONCPP_LIBRARY
         "${CMAKE_BINARY_DIR}/thirdparty/lib/${CMAKE_SHARED_LIBRARY_PREFIX}json${CMAKE_SHARED_LIBRARY_SUFFIX}"
         CACHE FILEPATH "Path to a library." FORCE)
-    set(JSONCPP_LIBRARIES ${JSONCPP_LIBRARY}) 
+    set(JSONCPP_LIBRARIES ${JSONCPP_LIBRARY})
     set(JSONCPP_INCLUDE_DIR
-        "${CMAKE_BINARY_DIR}/thirdparty/include" 
+        "${CMAKE_BINARY_DIR}/thirdparty/include"
         CACHE
         PATH "Path to a file." FORCE)
     set(JSONCPP_INCLUDE_DIRS ${JSONCPP_INCLUDE_DIR})
@@ -66,10 +66,10 @@ set(ENABLE_BUILD_BLAS_AND_LAPACK OFF CACHE BOOL
 if(ENABLE_BUILD_BLAS_AND_LAPACK)
     # Determine the location of the LAPACK archive
     set(LAPACK_ARCHIVE_UNDEFINED "LAPACK_ARCHIVE-UNDEFINED")
-    set(LAPACK_ARCHIVE ${LAPACK_ARCHIVE_UNDEFINED} CACHE FILEPATH 
+    set(LAPACK_ARCHIVE ${LAPACK_ARCHIVE_UNDEFINED} CACHE FILEPATH
         "LAPACK archive with full path.")
     # Make sure that it is defined and throw an error message if it is not
-    if(LAPACK_ARCHIVE STREQUAL LAPACK_ARCHIVE_UNDEFINED) 
+    if(LAPACK_ARCHIVE STREQUAL LAPACK_ARCHIVE_UNDEFINED)
         mark_as_advanced(CLEAR LAPACK_ARCHIVE)
         message(FATAL_ERROR
             "The LAPACK archive with full path must be defined in the variable LAPACK_ARCHIVE.")
@@ -79,7 +79,7 @@ if(ENABLE_BUILD_BLAS_AND_LAPACK)
     include(ExternalProject)
     enable_language(Fortran)
     ExternalProject_Add(
-        LAPACK 
+        LAPACK
         URL ${LAPACK_ARCHIVE}
         CMAKE_ARGS
             -DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_BINARY_DIR}/thirdparty
@@ -113,17 +113,17 @@ if(ENABLE_BUILD_BLAS_AND_LAPACK)
         COMMAND ${CMAKE_COMMAND} -E remove_directory
             ${CMAKE_BINARY_DIR}/thirdparty/bin)
 
-    # Set the location of BLAS and LAPACK 
+    # Set the location of BLAS and LAPACK
     set(BLAS_LIBRARY
         "${CMAKE_BINARY_DIR}/thirdparty/lib/${CMAKE_SHARED_LIBRARY_PREFIX}blas${CMAKE_SHARED_LIBRARY_SUFFIX}"
         CACHE FILEPATH "Path to a library." FORCE)
-    set(BLAS_LIBRARIES ${BLAS_LIBRARY}) 
+    set(BLAS_LIBRARIES ${BLAS_LIBRARY})
     mark_as_advanced(BLAS_LIBRARY)
-    
+
     set(LAPACK_LIBRARY
         "${CMAKE_BINARY_DIR}/thirdparty/lib/${CMAKE_SHARED_LIBRARY_PREFIX}lapack${CMAKE_SHARED_LIBRARY_SUFFIX}"
         CACHE FILEPATH "Path to a library." FORCE)
-    set(LAPACK_LIBRARIES ${LAPACK_LIBRARY}) 
+    set(LAPACK_LIBRARIES ${LAPACK_LIBRARY})
     mark_as_advanced(LAPACK_LIBRARY)
 else()
     find_package(BLAS REQUIRED)
@@ -144,10 +144,10 @@ if(ENABLE_MATLAB OR ENABLE_OCTAVE)
     if(ENABLE_BUILD_JSONLAB)
         # Determine the location of the jsonlab archive
         set(JSONLAB_ARCHIVE_UNDEFINED "JSONLAB_ARCHIVE-UNDEFINED")
-        set(JSONLAB_ARCHIVE ${JSONLAB_ARCHIVE_UNDEFINED} CACHE FILEPATH 
+        set(JSONLAB_ARCHIVE ${JSONLAB_ARCHIVE_UNDEFINED} CACHE FILEPATH
             "Jsonlab archive with full path.")
         # Make sure that it is defined and throw an error message if it is not
-        if(JSONLAB_ARCHIVE STREQUAL JSONLAB_ARCHIVE_UNDEFINED) 
+        if(JSONLAB_ARCHIVE STREQUAL JSONLAB_ARCHIVE_UNDEFINED)
             mark_as_advanced(CLEAR JSONLAB_ARCHIVE)
             message(FATAL_ERROR
                 "The jsonlab archive with full path must be defined in the variable JSONLAB_ARCHIVE.")
@@ -157,7 +157,7 @@ if(ENABLE_MATLAB OR ENABLE_OCTAVE)
         include(ExternalProject)
         ExternalProject_Add(
             jsonlab
-            URL ${JSONLAB_ARCHIVE} 
+            URL ${JSONLAB_ARCHIVE}
             PATCH_COMMAND ${CMAKE_COMMAND} -E copy
                 "${CMAKE_CURRENT_SOURCE_DIR}/jsonlab/CMakeLists.txt"
                 CMakeLists.txt

@@ -1,7 +1,7 @@
 # Exercise 18.2 in Numerical Optimization by Nocedal and Wright.  This has
 # an optimal solution of x = (-1.71,1.59,1.82.-0.763,-0.763).
 
-import Optizelle 
+import Optizelle
 import numpy
 import sys
 from math import exp
@@ -20,12 +20,12 @@ def ijtokp(i,j):
         i=j
         j=tmp
     return (i-1)+j*(j-1)/2
-    
-# Indexing function for dense matrices 
+
+# Indexing function for dense matrices
 def ijtok(i,j,m):
     return (i-1)+(j-1)*m
 
-# Indexing function for dense tensors 
+# Indexing function for dense tensors
 def ijktol(i,j,k,m,n):
     return (i-1)+(j-1)*m+(k-1)*m*n
 
@@ -34,7 +34,7 @@ def ijktol(i,j,k,m,n):
 #
 class MyObj(Optizelle.ScalarValuedFunction):
 
-    # Evaluation 
+    # Evaluation
     def eval(self,x):
         return (exp(x[itok(1)]*x[itok(2)]*x[itok(3)]*x[itok(4)]*x[itok(5)])
             - sq(pow(x[itok(1)],3)+pow(x[itok(2)],3)+1.)/2.)
@@ -148,8 +148,8 @@ class MyObj(Optizelle.ScalarValuedFunction):
 #
 class MyEq(Optizelle.VectorValuedFunction):
 
-    # y=g(x) 
-    def eval(self,x,y): 
+    # y=g(x)
+    def eval(self,x,y):
         y[itok(1)] = (sq(x[itok(1)]) + sq(x[itok(2)]) + sq(x[itok(3)])
             + sq(x[itok(4)]) + sq(x[itok(5)]) - 10.)
         y[itok(2)] = (x[itok(2)]*x[itok(3)] - 5.*x[itok(4)]*x[itok(5)])
@@ -162,12 +162,12 @@ class MyEq(Optizelle.VectorValuedFunction):
         jac[ijtok(1,3,3)] = 2.*x[itok(3)]
         jac[ijtok(1,4,3)] = 2.*x[itok(4)]
         jac[ijtok(1,5,3)] = 2.*x[itok(5)]
-        
+
         jac[ijtok(2,2,3)] = x[itok(3)]
         jac[ijtok(2,3,3)] = x[itok(2)]
         jac[ijtok(2,4,3)] = -5.*x[itok(5)]
         jac[ijtok(2,5,3)] = -5.*x[itok(4)]
-        
+
         jac[ijtok(3,1,3)] = 3.*sq(x[itok(1)])
         jac[ijtok(3,2,3)] = 3.*sq(x[itok(2)])
 
@@ -208,7 +208,7 @@ class MyEq(Optizelle.VectorValuedFunction):
         D[ijktol(1,3,3,3,5)] = 2.
         D[ijktol(1,4,4,3,5)] = 2.
         D[ijktol(1,5,5,3,5)] = 2.
-        
+
         D[ijktol(2,2,3,3,5)] = 1.
         D[ijktol(2,3,2,3,5)] = 1.
         D[ijktol(2,4,5,3,5)] = -5.
@@ -242,7 +242,7 @@ state=Optizelle.EqualityConstrained.State.t(Optizelle.Rm,Optizelle.Rm,x,y)
 # Read the parameters from file
 Optizelle.json.EqualityConstrained.read(Optizelle.Rm,Optizelle.Rm,fname,state)
 
-# Create the bundle of functions 
+# Create the bundle of functions
 fns=Optizelle.EqualityConstrained.Functions.t()
 fns.f=MyObj()
 fns.g=MyEq()

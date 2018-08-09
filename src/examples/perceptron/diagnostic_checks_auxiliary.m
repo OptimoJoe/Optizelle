@@ -4,7 +4,7 @@
 global Optizelle;
 setupOptizelle ();
 
-% Allocate memory for an initial guess and equality multiplier 
+% Allocate memory for an initial guess and equality multiplier
 x = randn(3,1);
 y = zeros(3,1);
 z = zeros(3,1);

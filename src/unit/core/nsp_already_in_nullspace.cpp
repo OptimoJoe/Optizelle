@@ -1,4 +1,4 @@
-// Tests what happens when we're already in the nullspace 
+// Tests what happens when we're already in the nullspace
 
 #include "optizelle/optizelle.h"
 #include "optizelle/vspaces.h"
@@ -7,18 +7,18 @@
 
 int main(int argc,char* argv[]){
 
-    // Generate an initial guess 
+    // Generate an initial guess
     auto x = std::vector <Real> { 0., 0.};
     auto y = std::vector <Real> { 0. };
 
-    // Setup the test 
+    // Setup the test
     auto setup = Unit <Real>::NSP(x,y);
     setup.g.reset(new Unit <Real>::Constraint::Linear);
     setup.dx.reset(new std::vector <Real> {0.5,-0.5});
 
     // Set the targets
     setup.P_dx_star.reset(new std::vector <Real> {0.5,-0.5});
-    
+
     // Set what tests we want
     setup.check_sol = true;
     setup.check_null = true;
@@ -27,6 +27,6 @@ int main(int argc,char* argv[]){
     // Run the test
     Unit <Real>::run_and_verify(setup);
 
-    // Declare success 
+    // Declare success
     return EXIT_SUCCESS;
 }

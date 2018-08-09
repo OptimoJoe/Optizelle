@@ -1,4 +1,4 @@
-// Optimize a simple optimization problem with an optimal 
+// Optimize a simple optimization problem with an optimal
 // solution of (1/3,1/3)
 
 #include "optizelle/optizelle.h"
@@ -11,11 +11,11 @@
 // Squares its input
 template <typename Real>
 Real sq(Real const & x){
-    return x*x; 
+    return x*x;
 }
 
-// Define a simple objective where 
-// 
+// Define a simple objective where
+//
 // f(x,y)=(x+1)^2+(y+1)^2
 //
 struct MyObj
@@ -23,7 +23,7 @@ struct MyObj
 {
     typedef Optizelle::Rm <double> X;
 
-    // Evaluation 
+    // Evaluation
     double eval(X::Vector const & x) const {
         return sq(x[0]+1.)+sq(x[1]+1.);
     }
@@ -43,14 +43,14 @@ struct MyObj
         X::Vector const & dx,
         X::Vector & H_dx
     ) const {
-        H_dx[0]=2.*dx[0]; 
-        H_dx[1]=2.*dx[1]; 
+        H_dx[0]=2.*dx[0];
+        H_dx[1]=2.*dx[1];
     }
 };
 
 // Define a simple equality
 //
-// g(x,y)= [ x + 2y = 1 ] 
+// g(x,y)= [ x + 2y = 1 ]
 //
 struct MyEq
     :public Optizelle::VectorValuedFunction<double,Optizelle::Rm,Optizelle::Rm>
@@ -58,7 +58,7 @@ struct MyEq
     typedef Optizelle::Rm <double> X;
     typedef Optizelle::Rm <double> Y;
 
-    // y=g(x) 
+    // y=g(x)
     void eval(
         X::Vector const & x,
         Y::Vector & y
@@ -79,7 +79,7 @@ struct MyEq
     void ps(
         X::Vector const & x,
         Y::Vector const & dy,
-        X::Vector & xhat 
+        X::Vector & xhat
     ) const {
         xhat[0]= dy[0];
         xhat[1]= 2.*dy[0];
@@ -98,7 +98,7 @@ struct MyEq
 
 // Define a simple inequality
 //
-// h(x,y)= [ 2x + y >= 1 ] 
+// h(x,y)= [ 2x + y >= 1 ]
 //
 struct MyIneq
     :public Optizelle::VectorValuedFunction<double,Optizelle::Rm,Optizelle::Rm>
@@ -106,7 +106,7 @@ struct MyIneq
     typedef Optizelle::Rm <double> X;
     typedef Optizelle::Rm <double> Z;
 
-    // z=h(x) 
+    // z=h(x)
     void eval(
         X::Vector const & x,
         Z::Vector & z
@@ -127,7 +127,7 @@ struct MyIneq
     void ps(
         X::Vector const & x,
         Z::Vector const & dz,
-        X::Vector & xhat 
+        X::Vector & xhat
     ) const {
         xhat[0]= 2.*dz[0];
         xhat[1]= dz[0];
@@ -158,10 +158,10 @@ int main(int argc,char* argv[]){
     // Generate an initial guess for the primal
     auto x = std::vector <double> {2.1, 1.1};
 
-    // Allocate memory for equality multiplier 
+    // Allocate memory for equality multiplier
     auto y = std::vector <double> (1);
 
-    // Allocate memory for the inequality multiplier 
+    // Allocate memory for the inequality multiplier
     auto z = std::vector <double> (1);
 
     // Create an optimization state
@@ -169,13 +169,13 @@ int main(int argc,char* argv[]){
 
     // Read the parameters from file
     Optizelle::json::Constrained <double,Rm,Rm,Rm>::read(fname,state);
-    
+
     // Create a bundle of functions
     Optizelle::Constrained <double,Rm,Rm,Rm>::Functions::t fns;
     fns.f.reset(new MyObj);
     fns.g.reset(new MyEq);
     fns.h.reset(new MyIneq);
-    
+
     // Solve the optimization problem
     Optizelle::Constrained <double,Rm,Rm,Rm>::Algorithms
         ::getMin(Optizelle::Messaging::stdout,fns,state);

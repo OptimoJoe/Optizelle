@@ -1,4 +1,4 @@
-# Compiles a mex file 
+# Compiles a mex file
 macro(add_mex name type include extension)
     add_library(${name}_${type} SHARED ${name}.cpp)
     target_include_directories(${name}_${type} PRIVATE ${include})
@@ -16,7 +16,7 @@ macro(add_mex name type include extension)
     install(FILES ${name}.m DESTINATION share/optizelle/${type}/optizelle)
 endmacro()
 
-# Compiles the MATLAB/Octave interface 
+# Compiles the MATLAB/Octave interface
 macro(compile_interface type include libs extension unit)
 
     # Compile our core functionality
@@ -26,7 +26,7 @@ macro(compile_interface type include libs extension unit)
     set_target_properties(optizelle_${type}
         PROPERTIES OUTPUT_NAME "optizelle_${type}")
     target_link_libraries(optizelle_${type} optizelle_shared ${libs})
-    install(TARGETS optizelle_${type} DESTINATION lib)    
+    install(TARGETS optizelle_${type} DESTINATION lib)
 
     # Compile individual mex files
     add_mex(UnconstrainedStateCreate ${type} ${include} ${extension})
@@ -136,7 +136,7 @@ macro(compile_interface type include libs extension unit)
     endif()
 endmacro()
 
-# Compile the MATLAB interface 
+# Compile the MATLAB interface
 if(ENABLE_MATLAB)
     # Necessary since we run through the unit test cmake scripts after this
     # directory where this variable is defined
@@ -158,7 +158,7 @@ if(ENABLE_OCTAVE)
         set(ENABLE_OCTAVE_UNIT FALSE)
     endif()
     compile_interface(
-        octave 
+        octave
         ${OCTAVE_INCLUDE_DIR}
         "${OCTAVE_LIBRARY}"
         mex

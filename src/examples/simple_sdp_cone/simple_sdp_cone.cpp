@@ -11,16 +11,16 @@ using Optizelle::Rm;
 using Optizelle::SQL;
 typedef double Real;
 
-// Define a simple objective where 
-// 
+// Define a simple objective where
+//
 // f(x,y)=-x+y
 //
 struct MyObj : public Optizelle::ScalarValuedFunction <Real,Rm> {
     typedef Rm <Real> X;
 
-    // Evaluation 
+    // Evaluation
     double eval(X::Vector const & x) const {
-        return -x[0]+x[1]; 
+        return -x[0]+x[1];
     }
 
     // Gradient
@@ -43,7 +43,7 @@ struct MyObj : public Optizelle::ScalarValuedFunction <Real,Rm> {
     }
 };
 
-// Define a simple SDP inequality 
+// Define a simple SDP inequality
 //
 // h(x,y) = [ y x ] >= 0
 //          [ x 1 ]
@@ -52,7 +52,7 @@ struct MyIneq : public Optizelle::VectorValuedFunction <Real,Rm,SQL> {
     typedef Rm <Real> X;
     typedef SQL <Real> Z;
 
-    // z=h(x) 
+    // z=h(x)
     void eval(
         X::Vector const & x,
         Z::Vector & z
@@ -79,7 +79,7 @@ struct MyIneq : public Optizelle::VectorValuedFunction <Real,Rm,SQL> {
     void ps(
         X::Vector const & x,
         Z::Vector const & dz,
-        X::Vector & xhat 
+        X::Vector & xhat
     ) const {
         xhat[0]= dz(1,1,2)+dz(1,2,1);
         xhat[1]= dz(1,1,1);
@@ -90,7 +90,7 @@ struct MyIneq : public Optizelle::VectorValuedFunction <Real,Rm,SQL> {
         X::Vector const & x,
         X::Vector const & dx,
         Z::Vector const & dz,
-        X::Vector & xhat 
+        X::Vector & xhat
     ) const {
         X::zero(xhat);
     }
@@ -116,7 +116,7 @@ int main(int argc,char* argv[]){
 
     // Create an optimization state
     Optizelle::InequalityConstrained <Real,Rm,SQL>::State::t state(x,z);
-    
+
     // Read the parameters from file
     Optizelle::json::InequalityConstrained <Real,Rm,SQL>::read(fname,state);
 
@@ -134,7 +134,7 @@ int main(int argc,char* argv[]){
         Optizelle::OptimizationStop::to_string(state.opt_stop) << std::endl;
 
     // Print out the final answer
-    std::cout << std::setprecision(16) << std::scientific 
+    std::cout << std::setprecision(16) << std::scientific
         << "The optimal point is: (" << state.x[0] << ','
         << state.x[1] << ')' << std::endl;
 

@@ -14,12 +14,12 @@ function [f g schur phi] = generate_full_space(params)
 
     % Preconditioner for the equality constraint
     schur.eval = @(state,dx)eq_schur(params,state.x,dx);
-   
-    % Finds the state solution 
+
+    % Finds the state solution
     phi = @(x)state_uncached(params,x,rhs(params,x));
 end
 
-% Evaluates the objective 
+% Evaluates the objective
 function z = my_obj(params,x)
     z = 0.5 * norm(x(params.idx.u)-params.d)^2;
 end
@@ -42,12 +42,12 @@ function z = eq_eval(params,x)
 end
 
 %---Derivative0---
-% Evaluates the derivative of the equality constraint 
+% Evaluates the derivative of the equality constraint
 function z = eq_p(params,x,dx)
     z = deriv(params,x)*dx;
 end
 
-% Evaluates the adjoint of the derivative of the equality constraint 
+% Evaluates the adjoint of the derivative of the equality constraint
 function z = eq_ps(params,x,dy)
     z = deriv(params,x)'*dy;
 end
@@ -59,22 +59,22 @@ function D = deriv(params,x)
 
     % Performance diagnostics
     global diagnostics
-    
+
     % Figure out if we match a cached element
     [cache iscached]=cache_search(cache,x);
 
-    % If we don't have a match, cache a new factorization 
-    if ~iscached 
-        % Save the current location 
+    % If we don't have a match, cache a new factorization
+    if ~iscached
+        % Save the current location
         cache{1}.x = x;
 
-        % Find the total derivative 
+        % Find the total derivative
         cache{1}.D = [ ...
             op_p(1,params,x)*x(params.idx.u)-rhs_p(1,params,x) ...
             op_p(2,params,x)*x(params.idx.u)-rhs_p(2,params,x) ...
             op(params,x)];
-        
-        % Keep track that we cached a derivative 
+
+        % Keep track that we cached a derivative
         diagnostics.first_derivative_cached = ...
             diagnostics.first_derivative_cached+1;
     end
@@ -89,7 +89,7 @@ end
 %     cached item found.
 %
 % 2.  Item found in first cached element.  Return that cached item found.
-% 
+%
 % 3.  Item found in second cached element.  Exchange first and second cached
 %     elements.  Return that cached item found.
 function [cache iscached] = cache_search(cache,x)
@@ -106,7 +106,7 @@ function [cache iscached] = cache_search(cache,x)
 
     % No items match
     if which==0
-        iscached = 0; 
+        iscached = 0;
         if ~isempty(cache)
             cache{2} = cache{1};
         end
@@ -136,9 +136,9 @@ function D2 = deriv2(params,x,dy)
     persistent cache
     global diagnostics
 
-    % Cache the total derivative when possible 
+    % Cache the total derivative when possible
     if isempty(cache) || ~isequal(x,cache.x) || ~isequal(dy,cache.dy)
-        % Save the current location 
+        % Save the current location
         cache.x = x;
         cache.dy = dy;
 
@@ -149,8 +149,8 @@ function D2 = deriv2(params,x,dy)
         cache.D2(params.idx.k(2),params.idx.u) = dy'*op_p(2,params,x);
         cache.D2(params.idx.u,params.idx.k(1)) = op_p(1,params,x)'*dy;
         cache.D2(params.idx.u,params.idx.k(2)) = op_p(2,params,x)'*dy;
-        
-        % Keep track that we cache a derivative 
+
+        % Keep track that we cache a derivative
         diagnostics.second_derivative_cached = ...
             diagnostics.second_derivative_cached+1;
     end
@@ -178,15 +178,15 @@ function z = eq_schur(params,x,dx)
     % Figure out if we match a cached element
     [cache iscached]=cache_search(cache,x);
 
-    % If we don't have a match, cache a new factorization 
-    if ~iscached 
-        % Save the current location 
+    % If we don't have a match, cache a new factorization
+    if ~iscached
+        % Save the current location
         cache{1}.x = x;
 
         % Exact Schur preconditioner
         if params.approx_schur==0
             % Factorize the total derivative of g'
-            [q cache{1}.r] = qr(deriv(params,x)',0); 
+            [q cache{1}.r] = qr(deriv(params,x)',0);
 
         % Approximate Schur preconditioner
         else
@@ -194,12 +194,12 @@ function z = eq_schur(params,x,dx)
             [cache{1}.l cache{1}.u cache{1}.p cache{1}.q cache{1}.r] = ...
                 lu(op(params,x),'vector');
         end
-        
-        % Keep track that we did a new factorization 
+
+        % Keep track that we did a new factorization
         diagnostics.factorization_cached = diagnostics.factorization_cached+1;
     end
-    
-    % Solve the linear system 
+
+    % Solve the linear system
     if params.approx_schur==0
         z = cache{1}.r\(cache{1}.r'\dx);
     else
@@ -234,7 +234,7 @@ function z = op(params,x)
     z = x(params.idx.k(1))*params.A+x(params.idx.k(2))*params.B;
 end
 
-% Grabs the derivative of the differential operator 
+% Grabs the derivative of the differential operator
 function z = op_p(which,params,x)
     if which==1
         z = params.A;
@@ -247,7 +247,7 @@ end
 function z = state_uncached(params,x,rhs)
     % Factorize the operator
     [l u p] = lu(op(params,x),'vector');
-    
-    % Solve the linear system 
+
+    % Solve the linear system
     z = u\(l\rhs(p));
 end

@@ -1,4 +1,4 @@
-% Check that we have a constrained state 
+% Check that we have a constrained state
 function checkConstrainedStateT(name,value)
     % Set the error message
     err = sprintf( ...

@@ -26,7 +26,7 @@ function z = quint(x)
 end
 
 % Define the Rosenbrock function where
-% 
+%
 % f(x,y)=(1-x)^2+100(y-x^2)^2
 %
 function self = Rosenbrock()
@@ -53,7 +53,7 @@ end
 %
 function self=Utility()
 
-    % y=g(x) 
+    % y=g(x)
     self.eval = @(x) [
         cos(x(1))*sin(x(2));
         3.*sq(x(1))*x(2)+cub(x(2));
@@ -93,7 +93,7 @@ function main(fname)
     global Optizelle;
     setupOptizelle ();
 
-    % Allocate memory for an initial guess and equality multiplier 
+    % Allocate memory for an initial guess and equality multiplier
     x = [1.2;2.3];
     z = zeros(3,1);
 

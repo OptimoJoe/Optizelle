@@ -1,4 +1,4 @@
-# Set the paths to the different pieces in Optizelle needed for the manual 
+# Set the paths to the different pieces in Optizelle needed for the manual
 set(OPTIZELLECPPPATH "${MY_SOURCE_DIR}/src/cpp/optizelle/")
 set(OPTIZELLEPYTHONPATH "${MY_SOURCE_DIR}/src/python/Optizelle/")
 set(OPTIZELLEMATLABPATH "${MY_SOURCE_DIR}/src/matlab_octave/")

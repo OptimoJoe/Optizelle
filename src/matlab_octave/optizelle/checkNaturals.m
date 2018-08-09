@@ -1,4 +1,4 @@
-% Check that we have a list of restart naturals 
+% Check that we have a list of restart naturals
 function checkNaturals(name,value)
     if ~iscell(value)
         error(sprintf('The %s argument must be a cell array.',name));

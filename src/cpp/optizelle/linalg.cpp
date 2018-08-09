@@ -274,7 +274,7 @@ namespace Optizelle {
     void rotg <float> (float a,float b,float& c,float& s) {
         srotg_fortran(&a,&b,&c,&s);
     }
-    
+
     template <>
     void rot <double> (
         Integer n,double* x,Integer incx,double* y,Integer incy,
@@ -317,7 +317,7 @@ namespace Optizelle {
     ) {
         saxpy_fortran(&n,&alpha,const_cast <float*> (x),&incx,y,&incy);
     }
-    
+
     template <>
     void scal <double> (Integer n,double alpha,double* x,Integer incx) {
         dscal_fortran(&n,&alpha,x,&incx);
@@ -360,20 +360,20 @@ namespace Optizelle {
         sgemv_fortran(&trans,&m,&n,&alpha,const_cast <float*> (A),&lda,
             const_cast <float*> (x),&incx,&beta,y,&incy);
     }
-    
+
     template <>
     void symv(char uplo,Integer n,double alpha,double const*const A,Integer lda,
         double const * const x,Integer incx,double beta,double* y,Integer incy
     ) {
         dsymv_fortran(&uplo,&n,&alpha,const_cast <double*> (A),
-            &lda,const_cast <double*> (x),&incx,&beta,y,&incy); 
+            &lda,const_cast <double*> (x),&incx,&beta,y,&incy);
     }
     template <>
     void symv(char uplo,Integer n,float alpha,float const * const A,Integer lda,
         float const * const x,Integer incx,float beta,float* y,Integer incy
     ) {
         ssymv_fortran(&uplo,&n,&alpha,const_cast <float*> (A),
-            &lda,const_cast <float*> (x),&incx,&beta,y,&incy); 
+            &lda,const_cast <float*> (x),&incx,&beta,y,&incy);
     }
 
     template <>
@@ -390,7 +390,7 @@ namespace Optizelle {
         sspmv_fortran(&uplo,&n,&alpha,const_cast <float*> (Ap),
             const_cast <float*> (x),&incx,&beta,y,&incy);
     }
-    
+
     template <>
     void trsv(
         char uplo,char trans,char diag,Integer n,double const * const A,
@@ -407,7 +407,7 @@ namespace Optizelle {
         strsv_fortran(&uplo,&trans,&diag,&n,const_cast <float*> (A),&lda,x,
             &incx);
     }
-    
+
     template <>
     void tpsv(
         char uplo,char trans,char diag,Integer n,double const * const Ap,
@@ -430,7 +430,7 @@ namespace Optizelle {
         double beta,double* C,Integer ldc
     ) {
         dgemm_fortran(&transa,&transb,&m,&n,&k,&alpha,const_cast <double*> (A),
-            &lda,const_cast <double*> (B),&ldb,&beta,C,&ldc); 
+            &lda,const_cast <double*> (B),&ldb,&beta,C,&ldc);
     }
     template <>
     void gemm(
@@ -439,7 +439,7 @@ namespace Optizelle {
         float beta,float* C,Integer ldc
     ) {
         sgemm_fortran(&transa,&transb,&m,&n,&k,&alpha,const_cast <float*> (A),
-            &lda,const_cast <float*> (B),&ldb,&beta,C,&ldc); 
+            &lda,const_cast <float*> (B),&ldb,&beta,C,&ldc);
     }
 
     template <>
@@ -449,7 +449,7 @@ namespace Optizelle {
         double beta,double* C,Integer ldc
     ) {
         dsymm_fortran(&side,&uplo,&m,&n,&alpha,const_cast <double*> (A),
-            &lda,const_cast <double*> (B),&ldb,&beta,C,&ldc); 
+            &lda,const_cast <double*> (B),&ldb,&beta,C,&ldc);
     }
     template <>
     void symm(
@@ -458,7 +458,7 @@ namespace Optizelle {
         float beta,float* C,Integer ldc
     ) {
         ssymm_fortran(&side,&uplo,&m,&n,&alpha,const_cast <float*> (A),
-            &lda,const_cast <float*> (B),&ldb,&beta,C,&ldc); 
+            &lda,const_cast <float*> (B),&ldb,&beta,C,&ldc);
     }
 
     template <>
@@ -505,7 +505,7 @@ namespace Optizelle {
         ssyevr_fortran(&jobz,&range,&uplo,&n,A,&lda,&vl,&vu,&il,&iu,&abstol,
             &m,w,z,&ldz,isuppz,work,&lwork,iwork,&liwork,&info);
     }
-    
+
     template <>
     void stemr(char jobz,char range,Integer n,double *D,double *E,double vl,
         double vu,Integer il,Integer iu,Integer& m,double* w,double* z,
@@ -524,7 +524,7 @@ namespace Optizelle {
         sstemr_fortran(&jobz,&range,&n,D,E,&vl,&vu,&il,&iu,&m,w,z,&ldz,&nzc,
             isuppz,&tryrac,work,&lwork,iwork,&liwork,&info);
     }
-    
+
     template <>
     void stevr(char jobz,char range,Integer n,double *D,double *E,double vl,
         double vu,Integer il,Integer iu,double abstol,Integer& m,double* w,
@@ -562,7 +562,7 @@ namespace Optizelle {
         sspevx_fortran(&jobz,&range,&uplo,&n,Ap,&vl,&vu,&il,&iu,&abstol,&m,w,z,
             &ldz,work,iwork,ifail,&info);
     }
-    
+
     template <>
     void tptrs(char uplo,char trans,char diag,Integer n,Integer nrhs,
         double const * const Ap,double* B,Integer ldb,Integer& info
@@ -577,7 +577,7 @@ namespace Optizelle {
         stptrs_fortran(&uplo,&trans,&diag,&n,&nrhs,const_cast <float*>(Ap),
             B,&ldb,&info);
     }
-    
+
     template <>
     void tprfs(char uplo,char trans,char diag,Integer n,Integer nrhs,
         double const * const Ap,double const * const B,Integer ldb,
@@ -598,14 +598,14 @@ namespace Optizelle {
             const_cast <float*> (B),&ldb,const_cast <float*> (X),&ldx,
             ferr,berr,work,iwork,&info);
     }
-    
+
     template <>
     void trcon(char norm,char uplo,char diag,Integer n,
         double const * const A,Integer lda,double& rcond,double* work,
         Integer* iwork,Integer& info
     ) {
         dtrcon_fortran(&norm,&uplo,&diag,&n,const_cast <double*>(A),&lda,&rcond,
-            work,iwork,&info); 
+            work,iwork,&info);
     }
     template <>
     void trcon(char norm,char uplo,char diag,Integer n,
@@ -613,16 +613,16 @@ namespace Optizelle {
         Integer* iwork,Integer& info
     ) {
         strcon_fortran(&norm,&uplo,&diag,&n,const_cast <float*>(A),&lda,&rcond,
-            work,iwork,&info); 
+            work,iwork,&info);
     }
-    
+
     template <>
     void tpcon(char norm,char uplo,char diag,Integer n,
         double const * const Ap,double& rcond,double* work,Integer* iwork,
         Integer& info
     ) {
         dtpcon_fortran(&norm,&uplo,&diag,&n,const_cast <double*>(Ap),&rcond,
-            work,iwork,&info); 
+            work,iwork,&info);
     }
     template <>
     void tpcon(char norm,char uplo,char diag,Integer n,
@@ -630,7 +630,7 @@ namespace Optizelle {
         Integer& info
     ) {
         stpcon_fortran(&norm,&uplo,&diag,&n,const_cast <float*>(Ap),&rcond,
-            work,iwork,&info); 
+            work,iwork,&info);
     }
 
     template <>
@@ -672,7 +672,7 @@ namespace Optizelle {
     ) {
         strtri_fortran(&uplo,&diag,&n,A,&lda,&info);
     }
-    
+
     template <>
     void spgst(Integer itype,char uplo,Integer n,double* Ap,
         double const * const Bp,Integer& info
@@ -778,8 +778,8 @@ namespace Optizelle {
     ) {
         stpttr_fortran(&uplo,&n,const_cast <float*> (Ap),A,&lda,&info);
     }
-    
-    // Indexing function for matrices.  This assumes that the upper left 
+
+    // Indexing function for matrices.  This assumes that the upper left
     // corner has index (1,1).  Basically, we're using the indexing scheme
     // of math and Fortran and not of C.
     Natural ijtok(Natural const & i,Natural const & j,Natural const & m){
@@ -791,11 +791,11 @@ namespace Optizelle {
     Natural ijtokp(Natural const & i,Natural const & j) {
         return i-1 + j*(j-1)/2;
     }
-    
+
     // Indexing formula for symmetric matrices in RPF format where i<=j.
     Natural ijtokrf(Natural const & i,Natural const & j,Natural const & m) {
         // Determine k where m = 2k when m is even or m = 2k+1 when m is odd
-        const Natural k = m/2; 
+        const Natural k = m/2;
 
         // Return the index
         return i<=k && j<=k ? j-1 + k+1 + (2*k+1)*(i-1) : i-1 + (j-1-k)*m;
@@ -805,9 +805,9 @@ namespace Optizelle {
     Natural itok(Natural const & i) {
         return i-Natural(1);
     }
-    
+
     namespace TruncatedStop{
-        // Converts the truncated CG stopping condition to a string 
+        // Converts the truncated CG stopping condition to a string
         std::string to_string(t const & trunc_stop){
             switch(trunc_stop){
             case NotConverged:
@@ -844,7 +844,7 @@ namespace Optizelle {
                 throw Exception::t(__LOC__ +", invalid TruncatedStop::t");
             }
         }
-        
+
         // Converts a string to a truncated CG stopping condition
         t from_string(std::string const & trunc_stop){
             if(trunc_stop=="NotConverged")
@@ -879,7 +879,7 @@ namespace Optizelle {
                 return ObjectiveIncrease;
             else
                 throw Exception::t(__LOC__
-                    + ", string can't be convert into a TruncatedStop::t"); 
+                    + ", string can't be convert into a TruncatedStop::t");
         }
 
         // Checks whether or not a string is valid
@@ -908,20 +908,20 @@ namespace Optizelle {
 
     // Returns whether or not a truncated-CG direction is salvagable based on
     // the current stopping condition.  Basically, salvagable directions are
-    // directions that exceed the trust-region, have negative curvature, 
+    // directions that exceed the trust-region, have negative curvature,
     // violated the safeguard, or have nothing wrong with them.  Non-salvagable
     // situations are where Bdx has something like a NaN or the operators we
     // used to calculate it have something bad going on.
     auto is_Bdx_salvagable(TruncatedStop::t const & stop) -> bool {
         if( stop == TruncatedStop::TrustRegionViolated ||
             stop == TruncatedStop::NegativeCurvature ||
-            stop == TruncatedStop::NotConverged 
+            stop == TruncatedStop::NotConverged
         )
             return true;
         else
             return false;
     }
-    
+
     // Returns whether or not the exit condition is related to the truncated-CG
     // direction, Bdx
     auto is_Bdx_related(TruncatedStop::t const & stop) -> bool {

@@ -2,7 +2,7 @@
 import sys
 import inspect
 import numpy
-import math 
+import math
 import copy
 import random
 import collections
@@ -77,12 +77,12 @@ class Rm(object):
     @staticmethod
     def init(x):
         """Memory allocation and size setting"""
-        return copy.deepcopy(x) 
+        return copy.deepcopy(x)
 
     @staticmethod
     def copy(x,y):
         """y <- x (Shallow.  No memory allocation.)"""
-        numpy.copyto(y,x) 
+        numpy.copyto(y,x)
 
     @staticmethod
     def scal(alpha,x):
@@ -102,7 +102,7 @@ class Rm(object):
     @staticmethod
     def innr(x,y):
         """<- <x,y>"""
-        return numpy.inner(x,y) 
+        return numpy.inner(x,y)
 
     @staticmethod
     def rand(x):
@@ -131,7 +131,7 @@ class Rm(object):
             return reduce(lambda x,y:x+math.log(y),x,0.)
         else:
             return float("nan")
-        
+
     @staticmethod
     def srch(x,y):
         """Line search, <- argmax {alpha \in Real >= 0 : alpha x + y >= 0} where y > 0"""

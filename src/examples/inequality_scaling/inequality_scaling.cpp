@@ -14,11 +14,11 @@ typedef Optizelle::Natural Natural;
 // Squares its input
 template <typename Real>
 Real sq(Real const & x){
-    return x*x; 
+    return x*x;
 }
 
-// Define a simple objective where 
-// 
+// Define a simple objective where
+//
 // f(x) = 0.5 || x - c ||^2
 //
 struct MyObj : public Optizelle::ScalarValuedFunction <double,Optizelle::Rm> {
@@ -30,7 +30,7 @@ struct MyObj : public Optizelle::ScalarValuedFunction <double,Optizelle::Rm> {
     // Grab the center during constuction
     MyObj(X::Vector const & c_) : c(c_) {}
 
-    // Evaluation 
+    // Evaluation
     double eval(X::Vector const & x) const {
         auto acc = 0.;
         for(auto i=0;i<x.size();i++)
@@ -58,9 +58,9 @@ struct MyObj : public Optizelle::ScalarValuedFunction <double,Optizelle::Rm> {
     }
 };
 
-// Define simple inequalities 
+// Define simple inequalities
 //
-// h(x) = x - lb 
+// h(x) = x - lb
 //
 struct MyIneq
     :public Optizelle::VectorValuedFunction<double,Optizelle::Rm,Optizelle::Rm>
@@ -68,13 +68,13 @@ struct MyIneq
     typedef Optizelle::Rm <double> X;
     typedef Optizelle::Rm <double> Z;
 
-    // Lower bound 
+    // Lower bound
     X::Vector const & lb;
-    
+
     // Grab the lower bound during constuction
     MyIneq(X::Vector const & lb_) : lb(lb_) {}
 
-    // z=h(x) 
+    // z=h(x)
     void eval(
         X::Vector const & x,
         Z::Vector & z
@@ -97,7 +97,7 @@ struct MyIneq
     void ps(
         X::Vector const & x,
         Z::Vector const & dz,
-        X::Vector & xhat 
+        X::Vector & xhat
     ) const {
         for(auto i=0;i<x.size();i++)
             xhat[i]=dz[i];
@@ -108,7 +108,7 @@ struct MyIneq
         X::Vector const & x,
         X::Vector const & dx,
         Z::Vector const & dz,
-        X::Vector & xhat 
+        X::Vector & xhat
     ) const {
         X::zero(xhat);
     }
@@ -130,7 +130,7 @@ int main(int argc,char* argv[]){
     for(auto i=0;i<x.size();i++)
         x[i]=1. + pow(.1,i);
 
-    // Allocate memory for the inequality multipler 
+    // Allocate memory for the inequality multipler
     auto z = std::vector <double> (10);
 
     // Create the center of the objective function
@@ -149,7 +149,7 @@ int main(int argc,char* argv[]){
     // Read the parameters from file
     Optizelle::json::InequalityConstrained <double,Optizelle::Rm,Optizelle::Rm>
         ::read(fname,state);
-    
+
     // Create a bundle of functions
     Optizelle::InequalityConstrained <double,Rm,Rm>::Functions::t fns;
     fns.f.reset(new MyObj(c));

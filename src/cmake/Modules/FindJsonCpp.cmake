@@ -1,4 +1,4 @@
-# Handle pkg-config 
+# Handle pkg-config
 find_package(PkgConfig)
 pkg_check_modules(PC_JSONCPP QUIET jsoncpp)
 set(JSONCPP_DEFINITIONS ${PC_JSONCPP_CFLAGS_OTHER})

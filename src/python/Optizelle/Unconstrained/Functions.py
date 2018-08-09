@@ -6,7 +6,7 @@ from Optizelle.Properties import *
 from Optizelle.Functions import *
 
 class t(object):
-    """All the functions required by an optimization algorithm""" 
+    """All the functions required by an optimization algorithm"""
     def __init__(self):
         self._f=ScalarValuedFunction()
         self._PH=Operator()

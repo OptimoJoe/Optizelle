@@ -1,4 +1,4 @@
-% Capture the state in a constrained optimization problem 
+% Capture the state in a constrained optimization problem
 function state=ConstrainedRestartCapture( ...
     X,Y,Z,state,xs,ys,zs,reals,nats,params)
 
@@ -14,6 +14,6 @@ function state=ConstrainedRestartCapture( ...
     checkNaturals('nats',nats);
     checkParams('params',params);
 
-    % Do the state capture 
+    % Do the state capture
     state=ConstrainedRestartCapture_( ...
         X,Y,Z,state,xs,ys,zs,reals,nats,params);

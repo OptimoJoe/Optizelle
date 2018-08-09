@@ -1,4 +1,4 @@
-% This example minimizes a simple quadratic function.  For reference, the 
+% This example minimizes a simple quadratic function.  For reference, the
 % optimal solution to this function is (1,1,1).
 function quadratic(fname)
     % Read in the name for the input file
@@ -15,8 +15,8 @@ function z = sq(x)
     z=x*x;
 end
 
-% Define the quadratic function 
-% 
+% Define the quadratic function
+%
 % f(x,y,z)=(x-1)^2+(2y-2)^2+(3z-3)^2
 %
 function self = Quad()
@@ -53,7 +53,7 @@ function main(fname)
     global Optizelle;
     setupOptizelle();
 
-    % Generate an initial guess 
+    % Generate an initial guess
     x = [-1.2;1.1;2.];
 
     % Create an unconstrained state based on this vector
@@ -62,7 +62,7 @@ function main(fname)
     % Read the parameters from file
     state=Optizelle.json.Unconstrained.read(Optizelle.Rm,fname,state);
 
-    % Create the bundle of functions 
+    % Create the bundle of functions
     fns=Optizelle.Unconstrained.Functions.t;
     fns.f=Quad();
     fns.PH=QuadHInv();

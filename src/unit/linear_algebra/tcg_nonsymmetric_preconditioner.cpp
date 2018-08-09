@@ -1,14 +1,14 @@
 // Run TCG with with a nonsymmetric preconditioner and show that we can detect
-// it.  Note, this requires us to overorthogonalize. 
+// it.  Note, this requires us to overorthogonalize.
 
 #include "linear_algebra.h"
 #include "spaces.h"
 
 int main() {
-    // Setup the problem 
+    // Setup the problem
     auto setup = Unit::tcg <Real,Rm> ();
 
-    // Problem setup 
+    // Problem setup
     setup.A = std::make_unique <Matrix>(
         Unit::Matrix <Real>::symmetric(setup.m,0));
     setup.B = std::make_unique <Matrix>(
@@ -22,7 +22,7 @@ int main() {
     // Tests
     setup.check_stop = true;
 
-    // Check the solver 
+    // Check the solver
     Unit::run_and_verify <Real,Rm> (setup);
 
     // Declare success

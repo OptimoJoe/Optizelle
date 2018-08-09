@@ -11,7 +11,7 @@
       "PH_type" : "UserDefined"
    },
    "Naturals" : {
-      "iter" : 10 
+      "iter" : 10
    },
    "X_Vectors" : {
       "x" : [ 0.3333333333333333, 0.3333333333333333 ]

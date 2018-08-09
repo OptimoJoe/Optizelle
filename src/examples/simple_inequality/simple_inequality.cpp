@@ -11,11 +11,11 @@
 // Squares its input
 template <typename Real>
 Real sq(Real const & x){
-    return x*x; 
+    return x*x;
 }
 
-// Define a simple objective where 
-// 
+// Define a simple objective where
+//
 // f(x,y)=(x+1)^2+(y+1)^2
 //
 struct MyObj
@@ -23,7 +23,7 @@ struct MyObj
 {
     typedef Optizelle::Rm <double> X;
 
-    // Evaluation 
+    // Evaluation
     double eval(const X::Vector& x) const {
         return sq(x[0]+1.)+sq(x[1]+1.);
     }
@@ -43,15 +43,15 @@ struct MyObj
         X::Vector const & dx,
         X::Vector & H_dx
     ) const {
-        H_dx[0]=2.*dx[0]; 
-        H_dx[1]=2.*dx[1]; 
+        H_dx[0]=2.*dx[0];
+        H_dx[1]=2.*dx[1];
     }
 };
 
-// Define simple inequalities 
+// Define simple inequalities
 //
-// h(x,y)= [ x + 2y >= 1 ] 
-//         [ 2x + y >= 1 ] 
+// h(x,y)= [ x + 2y >= 1 ]
+//         [ 2x + y >= 1 ]
 //
 struct MyIneq
     :public Optizelle::VectorValuedFunction<double,Optizelle::Rm,Optizelle::Rm>
@@ -59,7 +59,7 @@ struct MyIneq
     typedef Optizelle::Rm <double> X;
     typedef Optizelle::Rm <double> Y;
 
-    // y=h(x) 
+    // y=h(x)
     void eval(
         X::Vector const & x,
         Y::Vector & y
@@ -113,7 +113,7 @@ int main(int argc,char* argv[]){
     // Generate an initial guess
     auto x = std::vector <double> {2.1, 1.1};
 
-    // Allocate memory for the inequality multipler 
+    // Allocate memory for the inequality multipler
     auto z = std::vector <double>(2);
 
     // Create an optimization state
@@ -122,7 +122,7 @@ int main(int argc,char* argv[]){
     // Read the parameters from file
     Optizelle::json::InequalityConstrained <double,Optizelle::Rm,Optizelle::Rm>
         ::read(fname,state);
-    
+
     // Create a bundle of functions
     Optizelle::InequalityConstrained <double,Rm,Rm>::Functions::t fns;
     fns.f.reset(new MyObj);

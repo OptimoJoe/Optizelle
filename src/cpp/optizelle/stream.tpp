@@ -7,12 +7,12 @@
 // std::ctype
 #include <locale>
 
-namespace Optizelle { namespace Stream { 
+namespace Optizelle { namespace Stream {
     // Basic stream type
     template <typename A>
     struct t {
         // Required functions
-        virtual std::unique_ptr <A> next() = 0; 
+        virtual std::unique_ptr <A> next() = 0;
 
         // Allow for destructors
         virtual ~t() {}
@@ -24,7 +24,7 @@ namespace Optizelle { namespace Stream {
         // Internal stream
         std::unique_ptr <Stream> stream;
 
-        // Mask for setting whitespace characters 
+        // Mask for setting whitespace characters
         std::vector<std::ctype<char>::mask> mask;
 
         // Obtains memory for the stream and sets what delimiters we want for
@@ -68,7 +68,7 @@ namespace Optizelle { namespace Stream {
 
             // Check for any really bad errors
             CHECK_STREAM(*stream);
-            
+
             // Return the resulting element
             return item;
         } catch(...) {
@@ -101,15 +101,15 @@ namespace Optizelle { namespace Stream {
         if(!(item = stream.next()))
             return;
 
-        // Since we're not empty, cache the element 
+        // Since we're not empty, cache the element
         auto cache = std::move(item);
 
-        // Continue looping while we're not empty 
+        // Continue looping while we're not empty
         while((item = stream.next())) {
             // Apply the function to the cached element
             f(*cache);
 
-            // Move the next item into the cache 
+            // Move the next item into the cache
             cache = std::move(item);
         }
 
@@ -140,7 +140,7 @@ namespace Optizelle { namespace Stream {
 
         // Grab the next item
         std::unique_ptr <B> next() {
-            // If we can grab an element, apply the function to it and return 
+            // If we can grab an element, apply the function to it and return
             auto item = std::unique_ptr <A> (nullptr);
             if((item = stream -> next()))
                 return std::make_unique <B> (f(*item));
@@ -151,7 +151,7 @@ namespace Optizelle { namespace Stream {
         }
     };
 
-    // Filter elements from a stream 
+    // Filter elements from a stream
     template <typename A>
     struct filter : public t <A> {
         // Function to filter the stream
@@ -160,7 +160,7 @@ namespace Optizelle { namespace Stream {
         // Stream
         std::unique_ptr <t <A>> stream;
 
-        // Grab the filter function and the stream itself 
+        // Grab the filter function and the stream itself
         template <typename S>
         filter(
             std::function <bool(A const &)> const & f_,
