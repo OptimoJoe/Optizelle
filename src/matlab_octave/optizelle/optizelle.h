@@ -11,11 +11,11 @@ namespace Optizelle {
     }
 
     // Extend our enumerated types to convert to and from MATLAB/Octave
-    namespace OptimizationStop { 
+    namespace OptimizationStop {
         // Converts t to a Matlab enumerated type
         Matlab::mxArrayPtr toMatlab(t const & opt_stop);
 
-        // Converts a Matlab enumerated type to t 
+        // Converts a Matlab enumerated type to t
         t fromMatlab(Matlab::mxArrayPtr const & member);
     }
 
@@ -23,71 +23,71 @@ namespace Optizelle {
         // Converts t to a Matlab enumerated type
         Matlab::mxArrayPtr toMatlab(t const & trunc_stop);
 
-        // Converts a Matlab enumerated type to t 
+        // Converts a Matlab enumerated type to t
         t fromMatlab(Matlab::mxArrayPtr const & member);
     }
-    
-    namespace AlgorithmClass { 
+
+    namespace AlgorithmClass {
         // Converts t to a Matlab enumerated type
         Matlab::mxArrayPtr toMatlab(t const & algorithm_class);
 
-        // Converts a Matlab enumerated type to t 
+        // Converts a Matlab enumerated type to t
         t fromMatlab(Matlab::mxArrayPtr const & member);
     }
-    
-    namespace Operators{ 
+
+    namespace Operators{
         // Converts t to a Matlab enumerated type
         Matlab::mxArrayPtr toMatlab(t const & op);
 
-        // Converts a Matlab enumerated type to t 
+        // Converts a Matlab enumerated type to t
         t fromMatlab(Matlab::mxArrayPtr const & member);
     }
-    
-    namespace LineSearchDirection{ 
+
+    namespace LineSearchDirection{
         // Converts t to a Matlab enumerated type
         Matlab::mxArrayPtr toMatlab(t const & dir);
 
-        // Converts a Matlab enumerated type to t 
+        // Converts a Matlab enumerated type to t
         t fromMatlab(Matlab::mxArrayPtr const & member);
     }
-    
-    namespace LineSearchKind{ 
+
+    namespace LineSearchKind{
         // Converts t to a Matlab enumerated type
         Matlab::mxArrayPtr toMatlab(t const & kind);
 
-        // Converts a Matlab enumerated type to t 
+        // Converts a Matlab enumerated type to t
         t fromMatlab(Matlab::mxArrayPtr const & member);
     }
-    
-    namespace OptimizationLocation{ 
+
+    namespace OptimizationLocation{
         // Converts t to a Matlab enumerated type
         Matlab::mxArrayPtr toMatlab(t const & loc);
 
-        // Converts a Matlab enumerated type to t 
+        // Converts a Matlab enumerated type to t
         t fromMatlab(Matlab::mxArrayPtr const & member);
     }
-    
-    namespace FunctionDiagnostics{ 
-        // Converts t to a Matlab enumerated type
-        Matlab::mxArrayPtr toMatlab(t const & diag); 
 
-        // Converts a Matlab enumerated type to t 
+    namespace FunctionDiagnostics{
+        // Converts t to a Matlab enumerated type
+        Matlab::mxArrayPtr toMatlab(t const & diag);
+
+        // Converts a Matlab enumerated type to t
         t fromMatlab(Matlab::mxArrayPtr const & member);
     }
-    
-    namespace VectorSpaceDiagnostics{ 
-        // Converts t to a Matlab enumerated type
-        Matlab::mxArrayPtr toMatlab(t const & diag); 
 
-        // Converts a Matlab enumerated type to t 
+    namespace VectorSpaceDiagnostics{
+        // Converts t to a Matlab enumerated type
+        Matlab::mxArrayPtr toMatlab(t const & diag);
+
+        // Converts a Matlab enumerated type to t
         t fromMatlab(Matlab::mxArrayPtr const & member);
     }
-    
-    namespace DiagnosticScheme{ 
-        // Converts t to a Matlab enumerated type
-        Matlab::mxArrayPtr toMatlab(t const & dscheme); 
 
-        // Converts a Matlab enumerated type to t 
+    namespace DiagnosticScheme{
+        // Converts t to a Matlab enumerated type
+        Matlab::mxArrayPtr toMatlab(t const & dscheme);
+
+        // Converts a Matlab enumerated type to t
         t fromMatlab(Matlab::mxArrayPtr const & member);
     }
     namespace Matlab {
@@ -132,7 +132,7 @@ namespace Optizelle {
             mxArrayPtr(mxArrayPtr const &) = default;
             mxArrayPtr & operator = (mxArrayPtr const &) = default;
 
-            // Default the destructor 
+            // Default the destructor
             ~mxArrayPtr()=default;
 
             // Grab the internal pointer
@@ -206,7 +206,7 @@ namespace Optizelle {
             mxArrayPtr mxCreateStructMatrix(
                 mwSize const & m,
                 mwSize const & n,
-                int const & nfields, 
+                int const & nfields,
                 const char **fieldnames);
 
             // Creates a MATLAB/Octave double from a C++ double
@@ -215,29 +215,29 @@ namespace Optizelle {
             // Creates a C++ double from a MATLAB/Octave double
             double mxArrayToDouble(mxArrayPtr const & x_);
 
-            // Creates a MATLAB/Octave int from a C++ Natural 
+            // Creates a MATLAB/Octave int from a C++ Natural
             mxArrayPtr mxArrayFromNatural(Natural const x_);
 
-            // Creates a C++ Natural from a MATLAB/Octave integer 
+            // Creates a C++ Natural from a MATLAB/Octave integer
             Natural mxArrayToNatural(mxArrayPtr const & x_);
 
             // Converts an Optizelle enumerated type to a mxArray *
             mxArrayPtr enumToMxArray(
                 std::string const & type,
-                std::string const & member 
+                std::string const & member
             );
-            
+
             // Converts an Optizelle enumerated type to a Natural
             Natural enumToNatural(
                 std::string const & type,
-                std::string const & member 
+                std::string const & member
             );
 
             // Converts a MATLAB double to an Optizelle Natural
             Natural fromDouble(double value);
         }
 
-        // A messaging utility that hooks directly into MATLAB/Octave 
+        // A messaging utility that hooks directly into MATLAB/Octave
         namespace Messaging {
             Optizelle::Messaging::t matlab(mxArrayPtr const & print);
         }
@@ -259,23 +259,23 @@ namespace Optizelle {
             // Disallow constructors
             NO_DEFAULT_COPY_ASSIGNMENT(Vector)
 
-            // Grab the vector space and data 
+            // Grab the vector space and data
             Vector(mxArrayPtr const & vs_, mxArrayPtr const & data_);
 
             // Allow move constructors
             Vector(Vector &&) = default;
             Vector & operator = (Vector &&) = default;
 
-            // Memory allocation and size setting 
+            // Memory allocation and size setting
             Vector init() const;
-            
+
             // y <- x (Shallow.  No memory allocation.)  Internal is y.
             void copy(Vector const & x);
 
             // x <- alpha * x.  Internal is x.
             void scal(double const & alpha);
 
-            // x <- 0.  Internal is x. 
+            // x <- 0.  Internal is x.
             void zero();
 
             // y <- alpha * x + y.  Internal is y.
@@ -295,7 +295,7 @@ namespace Optizelle {
 
             // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y .
             // Internal is z.
-            void linv(Vector const & x, Vector const & y); 
+            void linv(Vector const & x, Vector const & y);
 
             // Barrier function, barr <- barr(x) where x o grad barr(x) = e.
             // Internal is x.
@@ -307,11 +307,11 @@ namespace Optizelle {
 
             // Symmetrization, x <- symm(x) such that L(symm(x)) is a symmetric
             // operator.  Internal is x.
-            void symm(); 
-            
-            // Converts (copies) a value into Matlab.  
+            void symm();
+
+            // Converts (copies) a value into Matlab.
             mxArrayPtr toMatlab() const;
-            
+
             // Converts (copies) a value from Matlab.  This assumes that the
             // vector space functions have already been properly assigned.
             void fromMatlab(mxArrayPtr const & ptr);
@@ -333,14 +333,14 @@ namespace Optizelle {
             State(State &&) = default;
             State & operator = (State &&) = default;
 
-            // Convert a C++ state to a Matlab state 
+            // Convert a C++ state to a Matlab state
             void toMatlab(typename ProblemClass::State::t const & state);
 
-            // Convert a Matlab state to C++ 
+            // Convert a Matlab state to C++
             void fromMatlab(typename ProblemClass::State::t & state);
         };
-        
-        // Matlab bundle of functions 
+
+        // Matlab bundle of functions
         template <typename ProblemClass>
         struct Functions {
         private:
@@ -350,7 +350,7 @@ namespace Optizelle {
             // operator.
             State <ProblemClass> & mxstate;
             typename ProblemClass::State::t const & state;
-            
+
         public:
             // Data
             mxArrayPtr data;
@@ -371,10 +371,10 @@ namespace Optizelle {
                 data(data_)
             {}
 
-            // Convert a Matlab bundle to C++ 
+            // Convert a Matlab bundle to C++
             void fromMatlab(typename ProblemClass::Functions::t & fns);
         };
-        
+
         // The state manipulator for Matlab
         template <typename ProblemClass>
         struct StateManipulator :
@@ -387,10 +387,10 @@ namespace Optizelle {
             State <ProblemClass> & mxstate;
 
             // Similarly, keep a copy of the functions lying around to pass to
-            // the StateManipulator 
+            // the StateManipulator
             Functions <ProblemClass> & mxfns;
-            
-            // Underlying state manipulator 
+
+            // Underlying state manipulator
             mxArrayPtr data;
 
         public:
@@ -421,7 +421,7 @@ namespace Optizelle {
                 // Convert the lcoation to Matlab
                 auto loc = OptimizationLocation::toMatlab(loc_);
 
-                // Call the Matlab state manipulator give it mxstate and mxfns. 
+                // Call the Matlab state manipulator give it mxstate and mxfns.
                 auto eval = capi::mxGetField(data,0,"eval");
                 mxstate.data = capi::mexCallMATLAB3(
                     eval,
@@ -437,81 +437,81 @@ namespace Optizelle {
         };
 
         // Vector space that works with Matlab objects
-        template <typename Real=double> 
-        struct MatlabVS { 
-            // Prevent constructors 
+        template <typename Real=double>
+        struct MatlabVS {
+            // Prevent constructors
             NO_CONSTRUCTORS(MatlabVS)
 
-            // Setup the vector 
-            typedef Optizelle::Matlab::Vector Vector; 
+            // Setup the vector
+            typedef Optizelle::Matlab::Vector Vector;
 
-            // Memory allocation and size setting 
-            static Vector init(Vector const & x) { 
+            // Memory allocation and size setting
+            static Vector init(Vector const & x) {
                 return x.init();
-            } 
+            }
 
-            // y <- x (Shallow.  No memory allocation.) 
-            static void copy(Vector const & x, Vector & y) { 
+            // y <- x (Shallow.  No memory allocation.)
+            static void copy(Vector const & x, Vector & y) {
                 y.copy(x);
-            } 
+            }
 
-            // x <- alpha * x 
-            static void scal(Real const & alpha, Vector & x) { 
+            // x <- alpha * x
+            static void scal(Real const & alpha, Vector & x) {
                 x.scal(alpha);
-            } 
+            }
 
-            // x <- 0 
-            static void zero(Vector & x) { 
+            // x <- 0
+            static void zero(Vector & x) {
                 x.zero();
-            } 
+            }
 
-            // y <- alpha * x + y 
+            // y <- alpha * x + y
             static void axpy(Real const & alpha, Vector const & x, Vector & y) {
                 y.axpy(alpha,x);
-            } 
+            }
 
-            // innr <- <x,y> 
-            static Real innr(Vector const & x,Vector const & y) { 
+            // innr <- <x,y>
+            static Real innr(Vector const & x,Vector const & y) {
                 return y.innr(x);
-            } 
-        
+            }
+
             // x <- random
             static void rand(Vector & x){
                 x.rand();
             }
 
-            // Jordan product, z <- x o y 
-            static void prod(Vector const & x, Vector const & y, Vector & z) { 
+            // Jordan product, z <- x o y
+            static void prod(Vector const & x, Vector const & y, Vector & z) {
                 z.prod(x,y);
-            } 
+            }
 
-            // Identity element, x <- e such that x o e = x 
-            static void id(Vector & x) { 
+            // Identity element, x <- e such that x o e = x
+            static void id(Vector & x) {
                 x.id();
-            } 
+            }
 
-            // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y 
-            static void linv(Vector const & x, Vector const & y, Vector & z) { 
+            // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y
+            static void linv(Vector const & x, Vector const & y, Vector & z) {
                 z.linv(x,y);
-            } 
+            }
 
-            // Barrier function, barr <- barr(x) where x o grad barr(x) = e 
-            static Real barr(Vector const & x) { 
+            // Barrier function, barr <- barr(x) where x o grad barr(x) = e
+            static Real barr(Vector const & x) {
                 return x.barr();
-            } 
+            }
 
             // Line search, srch <- argmax {alpha in Real >= 0 : alpha x + y >=
             // 0} where y > 0
-            static Real srch(Vector const & x,Vector const & y) {  
+            static Real srch(Vector const & x,Vector const & y) {
                 return y.srch(x);
-            } 
+            }
 
             // Symmetrization, x <- symm(x) such that L(symm(x)) is a symmetric
             // operator.
             static void symm(Vector & x) {
                 x.symm();
             }
-        }; 
+        };
 
         // A couple of type shortcuts
         typedef Optizelle::ScalarValuedFunction <double,MatlabVS>
@@ -528,7 +528,7 @@ namespace Optizelle {
             MxInequalityConstrained;
         typedef Optizelle::Constrained <double,MatlabVS,MatlabVS,MatlabVS>
             MxConstrained;
-        
+
         typedef Optizelle::json::Unconstrained <double,MatlabVS>
             MxJsonUnconstrained;
         typedef Optizelle::json::EqualityConstrained <double,MatlabVS,MatlabVS>
@@ -548,23 +548,23 @@ namespace Optizelle {
             public Optizelle::ScalarValuedFunction <double,MatlabVS>
         {
         private:
-            // Underlying function 
+            // Underlying function
             mxArrayPtr data;
 
         public:
-            // Prevent constructors 
+            // Prevent constructors
             NO_DEFAULT_COPY_ASSIGNMENT(ScalarValuedFunction)
 
-            // Grab the pointer to the function information 
+            // Grab the pointer to the function information
             ScalarValuedFunction(mxArrayPtr const & data_);
 
-            // <- f(x) 
-            double eval(Vector const & x) const; 
+            // <- f(x)
+            double eval(Vector const & x) const;
 
-            // g = grad f(x) 
-            void grad(Vector const & x,Vector & grad) const; 
+            // g = grad f(x)
+            void grad(Vector const & x,Vector & grad) const;
 
-            // H_dx = hess f(x) dx 
+            // H_dx = hess f(x) dx
             void hessvec(Vector const & x,Vector const & dx,Vector & H_dx)const;
         };
 
@@ -574,51 +574,51 @@ namespace Optizelle {
         {
         private:
             // Create some type shortcuts
-            typedef Vector X_Vector; 
-            typedef Vector Y_Vector; 
+            typedef Vector X_Vector;
+            typedef Vector Y_Vector;
 
             // Name of this function
             std::string const name;
 
-            // Underlying function 
+            // Underlying function
             mxArrayPtr data;
 
         public:
-            // Prevent constructors 
+            // Prevent constructors
             NO_DEFAULT_COPY_ASSIGNMENT(VectorValuedFunction)
 
-            // Grab the function's name and a pointer to the underlying data 
+            // Grab the function's name and a pointer to the underlying data
             VectorValuedFunction(
                 std::string const & name_,
-                mxArrayPtr const & data_ 
+                mxArrayPtr const & data_
             );
 
             // y=f(x)
             void eval(X_Vector const & x,Y_Vector & y) const;
 
-            // y=f'(x)dx 
+            // y=f'(x)dx
             void p(X_Vector const & x,X_Vector const & dx,Y_Vector & y) const;
 
             // xhat=f'(x)*dy
-            void ps(X_Vector const & x,const Y_Vector &dy,X_Vector &xhat) const; 
+            void ps(X_Vector const & x,const Y_Vector &dy,X_Vector &xhat) const;
             // xhat=(f''(x)dx)*dy
             void pps(
                 X_Vector const & x,
                 X_Vector const & dx,
                 const Y_Vector & dy,
-                X_Vector & xhat 
-            ) const; 
+                X_Vector & xhat
+            ) const;
         };
-        
-        // A linear operator specification, A : X->Y 
+
+        // A linear operator specification, A : X->Y
         template <typename ProblemClass>
         struct Operator :
             public Optizelle::Operator <double,MatlabVS,MatlabVS>
         {
         private:
             // Create some type shortcuts
-            typedef Vector X_Vector; 
-            typedef Vector Y_Vector; 
+            typedef Vector X_Vector;
+            typedef Vector Y_Vector;
 
             // Name of this function
             std::string const name;
@@ -672,91 +672,91 @@ namespace Optizelle {
                         + name + " failed");
             }
         };
-        
-        // Converts elements from C++ to Matlab 
+
+        // Converts elements from C++ to Matlab
         namespace toMatlab {
-            // Sets a real in a Matlab state 
+            // Sets a real in a Matlab state
             void Real(
                 std::string const & name,
                 double const & value,
                 mxArrayPtr & mxstate
             );
 
-            // Sets a natural in a Matlab state 
+            // Sets a natural in a Matlab state
             void Natural(
                 std::string const & name,
                 Optizelle::Natural const & value,
                 mxArrayPtr & mxstate
             );
-           
-            // Sets a parameter in a Matlab state 
+
+            // Sets a parameter in a Matlab state
             template <typename enum_t>
             void Param(
                 std::string const & name,
                 std::function<mxArrayPtr(enum_t const &)> const & toMatlab,
                 enum_t const & value,
-                mxArrayPtr & mxstate 
+                mxArrayPtr & mxstate
             ) {
                 auto item = toMatlab(value);
                 capi::mxSetField(mxstate,0,name,item);
             }
-            
-            // Sets a vector in a Matlab state 
+
+            // Sets a vector in a Matlab state
             void Vector(
                 std::string const & name,
                 Matlab::Vector const & value,
-                mxArrayPtr & mxstate 
+                mxArrayPtr & mxstate
             );
-            
-            // Sets a list of vectors in a Matlab state 
+
+            // Sets a list of vectors in a Matlab state
             void VectorList(
                 std::string const & name,
                 std::list <Matlab::Vector> const & values,
-                mxArrayPtr & mxstate 
-            );
-        
-            // Sets restart vectors in Matlab 
-            void Vectors(
-                Matlab::Vectors const & values,
-                mxArrayPtr & mxvalues 
+                mxArrayPtr & mxstate
             );
 
-            // Sets restart reals in Matlab 
+            // Sets restart vectors in Matlab
+            void Vectors(
+                Matlab::Vectors const & values,
+                mxArrayPtr & mxvalues
+            );
+
+            // Sets restart reals in Matlab
             void Reals(
                 Matlab::Reals const & values,
-                mxArrayPtr & mxvalues 
+                mxArrayPtr & mxvalues
             );
-            
-            // Sets restart naturals in Matlab 
+
+            // Sets restart naturals in Matlab
             void Naturals(
                 Matlab::Naturals const & values,
-                mxArrayPtr & mxvalues 
+                mxArrayPtr & mxvalues
             );
-            
-            // Sets restart parameters in Matlab 
+
+            // Sets restart parameters in Matlab
             void Params(
                 Matlab::Params const & values,
-                mxArrayPtr & mxvalues 
+                mxArrayPtr & mxvalues
             );
         }
 
-        // Converts elements from Matlab to C++ 
+        // Converts elements from Matlab to C++
         namespace fromMatlab {
-            // Sets a real in a C++ state 
+            // Sets a real in a C++ state
             void Real(
                 std::string const & name,
                 mxArrayPtr const & mxstate,
                 double & value
             );
-            
-            // Sets a natural in a C++ state 
+
+            // Sets a natural in a C++ state
             void Natural(
                 std::string const & name,
                 mxArrayPtr const & mxstate,
                 Optizelle::Natural & value
             );
-           
-            // Sets a param C++ state 
+
+            // Sets a param C++ state
             template <typename enum_t>
             void Param(
                 std::string const & name,
@@ -767,23 +767,23 @@ namespace Optizelle {
                 auto item = capi::mxGetField(mxstate,0,name);
                 value = fromMatlab(item);
             }
-            
-            // Sets a vector in a C++ state 
+
+            // Sets a vector in a C++ state
             void Vector(
                 std::string const & name,
                 mxArrayPtr const & mxstate,
                 Matlab::Vector & value
             );
-            
-            // Sets a list of vectors in a C++ state 
+
+            // Sets a list of vectors in a C++ state
             void VectorList(
                 std::string const & name,
                 mxArray * const obj,
                 Matlab::Vector const & vec,
                 std::list <Matlab::Vector> & values
             );
-            
-            // Sets a scalar-valued function in a C++ function bundle 
+
+            // Sets a scalar-valued function in a C++ function bundle
             template <typename ProblemClass>
             void ScalarValuedFunction(
                 std::string const & name,
@@ -793,7 +793,7 @@ namespace Optizelle {
                 value.reset(new Matlab::ScalarValuedFunction(
                     capi::mxGetField(fns.data,0,name)));
             }
-            
+
             // Sets a vector-valued function in a C++ function bundle
             template <typename ProblemClass>
             void VectorValuedFunction(
@@ -805,8 +805,8 @@ namespace Optizelle {
                     name,
                     capi::mxGetField(fns.data,0,name)));
             }
-            
-            // Sets an operator in a C++ function bundle 
+
+            // Sets an operator in a C++ function bundle
             template <typename ProblemClass>
             void Operator(
                 std::string const & name,
@@ -821,27 +821,27 @@ namespace Optizelle {
                     mxstate,
                     state));
             }
-        
-            // Sets restart vectors in C++ 
+
+            // Sets restart vectors in C++
             void Vectors(
                 Matlab::Vector const & vec,
                 mxArrayPtr const & mxvalues,
                 Matlab::Vectors & values
             );
-            
-            // Sets restart reals in C++ 
+
+            // Sets restart reals in C++
             void Reals(
                 mxArrayPtr const & mxvalues,
                 Matlab::Reals & values
             );
-            
-            // Sets restart naturals in C++ 
+
+            // Sets restart naturals in C++
             void Naturals(
                 mxArrayPtr const & mxvalues,
                 Matlab::Naturals & values
             );
-            
-            // Sets restart parameters in C++ 
+
+            // Sets restart parameters in C++
             void Params(
                 mxArray * const mxvalues,
                 Matlab::Params & values
@@ -849,23 +849,23 @@ namespace Optizelle {
         }
 
         // Routines that manipulate and support problems of the form
-        // 
+        //
         // min_{x \in X} f(x)
         //
         // where f : X -> R.
         namespace Unconstrained {
 
-            // Routines that manipulate the internal state of the optimization 
+            // Routines that manipulate the internal state of the optimization
             // algorithm
             namespace State {
                 // Returns the fields names of the state
                 std::vector <char const *> fieldNames_();
                 std::vector <char const *> fieldNames();
-                
+
                 // Create the structure for a Matlab state
                 mxArrayPtr mxCreate();
 
-                // Convert a C++ state to a Matlab state 
+                // Convert a C++ state to a Matlab state
                 void toMatlab_(
                     typename MxUnconstrained::State::t const & state,
                     mxArrayPtr & mxstate
@@ -874,8 +874,8 @@ namespace Optizelle {
                     typename MxUnconstrained::State::t const & state,
                     mxArrayPtr & mxstate
                 );
-                
-                // Convert a Matlab state to C++ 
+
+                // Convert a Matlab state to C++
                 void fromMatlab_(
                     mxArrayPtr const & mxstate,
                     typename MxUnconstrained::State::t & state
@@ -884,13 +884,13 @@ namespace Optizelle {
                     mxArrayPtr const & mxstate,
                     typename MxUnconstrained::State::t & state
                 );
-                
-                // Creates a state and inserts the elements into mxstate 
+
+                // Creates a state and inserts the elements into mxstate
                 void create(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 );
-                
+
                 // Read json parameters from file
                 void readJson(
                     int nOutput,mxArray* pOutput[],
@@ -898,15 +898,15 @@ namespace Optizelle {
                 );
             }
 
-            // All the functions required by an optimization algorithm.  
+            // All the functions required by an optimization algorithm.
             namespace Functions{
-                // Convert a Matlab bundle to C++ 
+                // Convert a Matlab bundle to C++
                 template <typename ProblemClass>
                 void fromMatlab_(
                     Matlab::Functions <ProblemClass> const & mxfns,
                     Matlab::State <ProblemClass> & mxstate,
                     typename ProblemClass::State::t const & state,
-                    typename MxUnconstrained::Functions::t & fns 
+                    typename MxUnconstrained::Functions::t & fns
                 ) {
                     fromMatlab::ScalarValuedFunction("f",mxfns,fns.f);
                     fromMatlab::Operator <ProblemClass> (
@@ -916,7 +916,7 @@ namespace Optizelle {
                     Matlab::Functions <MxUnconstrained> const & mxfns,
                     Matlab::State <MxUnconstrained> & mxstate,
                     typename MxUnconstrained::State::t const & state,
-                    typename MxUnconstrained::Functions::t & fns 
+                    typename MxUnconstrained::Functions::t & fns
                 );
             }
 
@@ -928,16 +928,16 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 );
             }
-        
+
             // Utilities for restarting the optimization
             namespace Restart {
-                // Release the data into structures controlled by the user 
+                // Release the data into structures controlled by the user
                 void release(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 );
 
-                // Capture data from structures controlled by the user.  
+                // Capture data from structures controlled by the user.
                 void capture(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
@@ -957,23 +957,23 @@ namespace Optizelle {
             }
         }
         // Routines that manipulate and support problems of the form
-        // 
+        //
         // min_{x \in X} f(x) st g(x) = 0
         //
         // where f : X -> R and g : X -> Y
         namespace EqualityConstrained {
 
-            // Routines that manipulate the internal state of the optimization 
+            // Routines that manipulate the internal state of the optimization
             // algorithm
             namespace State {
                 // Returns the fields names of the state
                 std::vector <char const *> fieldNames_();
                 std::vector <char const *> fieldNames();
-                
+
                 // Create the structure for a Matlab state
                 mxArrayPtr mxCreate();
 
-                // Convert a C++ state to a Matlab state 
+                // Convert a C++ state to a Matlab state
                 void toMatlab_(
                     typename MxEqualityConstrained::State::t const & state,
                     mxArrayPtr & mxstate
@@ -982,8 +982,8 @@ namespace Optizelle {
                     typename MxEqualityConstrained::State::t const & state,
                     mxArrayPtr & mxstate
                 );
-                
-                // Convert a Matlab state to C++ 
+
+                // Convert a Matlab state to C++
                 void fromMatlab_(
                     mxArrayPtr const & mxstate,
                     typename MxEqualityConstrained::State::t & state
@@ -992,13 +992,13 @@ namespace Optizelle {
                     mxArrayPtr const & mxstate,
                     typename MxEqualityConstrained::State::t & state
                 );
-                
-                // Creates a state and inserts the elements into mxstate 
+
+                // Creates a state and inserts the elements into mxstate
                 void create(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 );
-                
+
                 // Read json parameters from file
                 void readJson(
                     int nOutput,mxArray* pOutput[],
@@ -1006,15 +1006,15 @@ namespace Optizelle {
                 );
             }
 
-            // All the functions required by an optimization algorithm.  
+            // All the functions required by an optimization algorithm.
             namespace Functions{
-                // Convert a Matlab bundle to C++ 
+                // Convert a Matlab bundle to C++
                 template <typename ProblemClass>
                 void fromMatlab_(
                     Matlab::Functions <ProblemClass> const & mxfns,
                     Matlab::State <ProblemClass> & mxstate,
                     typename ProblemClass::State::t const & state,
-                    typename MxEqualityConstrained::Functions::t & fns 
+                    typename MxEqualityConstrained::Functions::t & fns
                 ) {
                     fromMatlab::VectorValuedFunction("g",mxfns,fns.g);
                     fromMatlab::Operator <ProblemClass> ("PSchur_left",
@@ -1026,7 +1026,7 @@ namespace Optizelle {
                     Matlab::Functions <MxEqualityConstrained> const & mxfns,
                     Matlab::State <MxEqualityConstrained> & mxstate,
                     typename MxEqualityConstrained::State::t const & state,
-                    typename MxEqualityConstrained::Functions::t & fns 
+                    typename MxEqualityConstrained::Functions::t & fns
                 );
             }
 
@@ -1038,16 +1038,16 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 );
             }
-        
+
             // Utilities for restarting the optimization
             namespace Restart {
-                // Release the data into structures controlled by the user 
+                // Release the data into structures controlled by the user
                 void release(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 );
 
-                // Capture data from structures controlled by the user.  
+                // Capture data from structures controlled by the user.
                 void capture(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
@@ -1066,25 +1066,25 @@ namespace Optizelle {
                 );
             }
         }
-        
+
         // Routines that manipulate and support problems of the form
-        // 
+        //
         // min_{x \in X} f(x) st h(x) >=_K 0
         //
         // where f : X -> R and h : X -> Z
         namespace InequalityConstrained {
 
-            // Routines that manipulate the internal state of the optimization 
+            // Routines that manipulate the internal state of the optimization
             // algorithm
             namespace State {
                 // Returns the fields names of the state
                 std::vector <char const *> fieldNames_();
                 std::vector <char const *> fieldNames();
-                
+
                 // Create the structure for a Matlab state
                 mxArrayPtr mxCreate();
 
-                // Convert a C++ state to a Matlab state 
+                // Convert a C++ state to a Matlab state
                 void toMatlab_(
                     typename MxInequalityConstrained::State::t const & state,
                     mxArrayPtr & mxstate
@@ -1093,8 +1093,8 @@ namespace Optizelle {
                     typename MxInequalityConstrained::State::t const & state,
                     mxArrayPtr & mxstate
                 );
-                
-                // Convert a Matlab state to C++ 
+
+                // Convert a Matlab state to C++
                 void fromMatlab_(
                     mxArrayPtr const & mxstate,
                     typename MxInequalityConstrained::State::t & state
@@ -1103,13 +1103,13 @@ namespace Optizelle {
                     mxArrayPtr const & mxstate,
                     typename MxInequalityConstrained::State::t & state
                 );
-                
-                // Creates a state and inserts the elements into mxstate 
+
+                // Creates a state and inserts the elements into mxstate
                 void create(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 );
-                
+
                 // Read json parameters from file
                 void readJson(
                     int nOutput,mxArray* pOutput[],
@@ -1117,15 +1117,15 @@ namespace Optizelle {
                 );
             }
 
-            // All the functions required by an optimization algorithm.  
+            // All the functions required by an optimization algorithm.
             namespace Functions{
-                // Convert a Matlab bundle to C++ 
+                // Convert a Matlab bundle to C++
                 template <typename ProblemClass>
                 void fromMatlab_(
                     Matlab::Functions <ProblemClass> const & mxfns,
                     Matlab::State <ProblemClass> & mxstate,
                     typename ProblemClass::State::t const & state,
-                    typename MxInequalityConstrained::Functions::t & fns 
+                    typename MxInequalityConstrained::Functions::t & fns
                 ) {
                     fromMatlab::VectorValuedFunction("h",mxfns,fns.h);
                 }
@@ -1133,7 +1133,7 @@ namespace Optizelle {
                     Matlab::Functions <MxInequalityConstrained> const & mxfns,
                     Matlab::State <MxInequalityConstrained> & mxstate,
                     typename MxInequalityConstrained::State::t const & state,
-                    typename MxInequalityConstrained::Functions::t & fns 
+                    typename MxInequalityConstrained::Functions::t & fns
                 );
             }
 
@@ -1145,16 +1145,16 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 );
             }
-        
+
             // Utilities for restarting the optimization
             namespace Restart {
-                // Release the data into structures controlled by the user 
+                // Release the data into structures controlled by the user
                 void release(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 );
 
-                // Capture data from structures controlled by the user.  
+                // Capture data from structures controlled by the user.
                 void capture(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
@@ -1173,42 +1173,42 @@ namespace Optizelle {
                 );
             }
         }
-        
+
         // Routines that manipulate and support problems of the form
         // problem of the form
-        // 
+        //
         // min_{x \in X} f(x) st g(x) = 0, h(x) >=_K 0
         //
         // where f : X -> R, g : X -> Y, and h : X -> Z
         namespace Constrained {
 
-            // Routines that manipulate the internal state of the optimization 
+            // Routines that manipulate the internal state of the optimization
             // algorithm
             namespace State {
                 // Returns the fields names of the state
                 std::vector <char const *> fieldNames();
-                
+
                 // Create the structure for a Matlab state
                 mxArrayPtr mxCreate();
 
-                // Convert a C++ state to a Matlab state 
+                // Convert a C++ state to a Matlab state
                 void toMatlab(
                     typename MxConstrained::State::t const & state,
                     mxArrayPtr & mxstate
                 );
-                
-                // Convert a Matlab state to C++ 
+
+                // Convert a Matlab state to C++
                 void fromMatlab(
                     mxArrayPtr const & mxstate,
                     typename MxConstrained::State::t & state
                 );
-                
-                // Creates a state and inserts the elements into mxstate 
+
+                // Creates a state and inserts the elements into mxstate
                 void create(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 );
-                
+
                 // Read json parameters from file
                 void readJson(
                     int nOutput,mxArray* pOutput[],
@@ -1216,14 +1216,14 @@ namespace Optizelle {
                 );
             }
 
-            // All the functions required by an optimization algorithm.  
+            // All the functions required by an optimization algorithm.
             namespace Functions{
-                // Convert a Matlab bundle to C++ 
+                // Convert a Matlab bundle to C++
                 void fromMatlab(
                     Matlab::Functions <MxConstrained> const & mxfns,
                     Matlab::State <MxConstrained> & mxstate,
                     typename MxConstrained::State::t const & state,
-                    typename MxConstrained::Functions::t & fns 
+                    typename MxConstrained::Functions::t & fns
                 );
             }
 
@@ -1235,16 +1235,16 @@ namespace Optizelle {
                     int nInput,mxArray* pInput[]
                 );
             }
-        
+
             // Utilities for restarting the optimization
             namespace Restart {
-                // Release the data into structures controlled by the user 
+                // Release the data into structures controlled by the user
                 void release(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
                 );
 
-                // Capture data from structures controlled by the user.  
+                // Capture data from structures controlled by the user.
                 void capture(
                     int nOutput,mxArray* pOutput[],
                     int nInput,mxArray* pInput[]
