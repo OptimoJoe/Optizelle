@@ -6,7 +6,7 @@ enable_language(CXX)
 set(source_prefix ${CMAKE_CURRENT_SOURCE_DIR}/src/lib_json/)
 
 # Save the include directory
-set(JSONCPP_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIRI}/include)
+set(JSONCPP_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # Grab all the sources for the library
 set(jsoncpp_srcs

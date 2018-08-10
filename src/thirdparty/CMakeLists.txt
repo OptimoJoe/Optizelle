@@ -102,17 +102,17 @@ if(ENABLE_BUILD_BLAS_AND_LAPACK)
     # not lib.  This is the default behavior on CMake and I'm not sure how to
     # overwrite.  As such, we just forcefully move the files, so that the rest
     # of the scripts don't get messed up.
-    add_custom_target(
-        fix_lapack_install_copy_bin
-        ALL
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-            ${CMAKE_BINARY_DIR}/thirdparty/bin
-            ${CMAKE_BINARY_DIR}/thirdparty/lib)
-    add_custom_target(
-        fix_lapack_install_remove_bin
-        ALL
-        COMMAND ${CMAKE_COMMAND} -E remove_directory
-            ${CMAKE_BINARY_DIR}/thirdparty/bin)
+    if(WIN32 AND NOT EXISTS "${CMAKE_BINARY_DIR}/thirdparty/lib/${CMAKE_SHARED_LIBRARY_PREFIX}lapack${CMAKE_SHARED_LIBRARY_SUFFIX}")
+        add_custom_target(
+            fix_lapack_install_copy_bin
+            ALL
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+                ${CMAKE_BINARY_DIR}/thirdparty/bin
+                ${CMAKE_BINARY_DIR}/thirdparty/lib
+            COMMAND ${CMAKE_COMMAND} -E remove_directory
+                ${CMAKE_BINARY_DIR}/thirdparty/bin
+            DEPENDS LAPACK)
+    endif()
 
     # Set the location of BLAS and LAPACK
     set(BLAS_LIBRARY
