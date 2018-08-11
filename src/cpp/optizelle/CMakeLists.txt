@@ -70,9 +70,11 @@ elseif(APPLE AND CPACK_DRAGNDROP)
     get_filename_component(Compiler_Path ${CMAKE_Fortran_COMPILER} PATH)
     set(Lib_Path "${Compiler_Path}/../lib/libgcc")
     file(COPY
-        ${Lib_Path}/libgfortran.3.dylib
+        ${Lib_Path}/libgfortran.5.dylib
         ${Lib_Path}/libquadmath.0.dylib
         ${Lib_Path}/libgcc_s.1.dylib
+        ${Lib_Path}/../libz.1.dylib
+        ${Lib_Path}/../libz.1.2.11.dylib
         DESTINATION
         ${CMAKE_BINARY_DIR}/thirdparty/lib)
 endif()

@@ -1,6 +1,7 @@
 # Compiles a mex file
 macro(add_mex name type include extension)
     add_library(${name}_${type} SHARED ${name}.cpp)
+    list(APPEND ${type}_mex ${name}_${type})
     target_include_directories(${name}_${type} PRIVATE ${include})
     target_link_libraries(${name}_${type} optizelle_${type})
     set_target_properties(${name}_${type} PROPERTIES OUTPUT_NAME ${name}_)
@@ -27,6 +28,9 @@ macro(compile_interface type include libs extension unit)
         PROPERTIES OUTPUT_NAME "optizelle_${type}")
     target_link_libraries(optizelle_${type} optizelle_shared ${libs})
     install(TARGETS optizelle_${type} DESTINATION lib)
+
+    # Aggregate all of the dependencies
+    list(APPEND ${type}_mex "")
 
     # Compile individual mex files
     add_mex(UnconstrainedStateCreate ${type} ${include} ${extension})
@@ -111,7 +115,7 @@ macro(compile_interface type include libs extension unit)
             COMMAND ${CMAKE_COMMAND} -E copy_directory
                 ${CMAKE_BINARY_DIR}/src/matlab_octave/optizelle
                 ${CMAKE_BINARY_DIR}/src/${type}/optizelle
-            DEPENDS ${type}_create_directory)
+            DEPENDS ${type}_create_directory ${${type}_mex})
         add_custom_target(
             ${type}_scripts_for_unit
             ALL

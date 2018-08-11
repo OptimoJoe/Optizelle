@@ -64,24 +64,27 @@ elseif(APPLE)
         macro(fix_macos_lib name lib)
             add_custom_target(fix_${name}_internal_${lib}
                 ALL
-                DEPENDS LAPACK
+                DEPENDS LAPACK optizelle_shared
                 COMMAND install_name_tool -change /opt/local/lib/libgcc/lib${lib}.dylib /Applications/${CPACK_PACKAGE_NAME}/share/optizelle/thirdparty/lib/lib${lib}.dylib ${CMAKE_BINARY_DIR}/thirdparty/lib/lib${name}.dylib
                 COMMENT "Fixing the path for lib${lib}.dylib inside of lib${name}.dylib")
         endmacro()
         macro(fix_macos_lib_alt name lib)
             add_custom_target(fix_${name}_internal_${lib}
                 ALL
-                DEPENDS LAPACK
-                COMMAND install_name_tool -change /opt/local/lib/gcc43/lib${lib}.dylib /Applications/${CPACK_PACKAGE_NAME}/share/optizelle/thirdparty/lib/lib${lib}.dylib ${CMAKE_BINARY_DIR}/thirdparty/lib/lib${name}.dylib
+                DEPENDS LAPACK optizelle_shared
+                COMMAND install_name_tool -change /opt/local/lib/lib${lib}.dylib /Applications/${CPACK_PACKAGE_NAME}/share/optizelle/thirdparty/lib/lib${lib}.dylib ${CMAKE_BINARY_DIR}/thirdparty/lib/lib${name}.dylib
                 COMMENT "Fixing the path for lib${lib}.dylib inside of lib${name}.dylib")
         endmacro()
-        fix_macos_lib(gfortran.3 quadmath.0)
-        fix_macos_lib(gfortran.3 gcc_s.1)
+        fix_macos_lib(gfortran.5 quadmath.0)
+        fix_macos_lib(gfortran.5 gcc_s.1)
+        fix_macos_lib_alt(gfortran.5 z.1)
         fix_macos_lib(quadmath.0 gcc_s.1)
-        fix_macos_lib(blas.3.6.1 gfortran.3)
-        fix_macos_lib_alt(blas.3.6.1 gcc_s.1)
-        fix_macos_lib(lapack.3.6.1 gfortran.3)
-        fix_macos_lib_alt(lapack.3.6.1 gcc_s.1)
+        fix_macos_lib(blas.3.8.0 gfortran.5)
+        fix_macos_lib(blas.3.8.0 gcc_s.1)
+        fix_macos_lib(blas.3.8.0 quadmath.0)
+        fix_macos_lib(lapack.3.8.0 gfortran.5)
+        fix_macos_lib(lapack.3.8.0 gcc_s.1)
+        fix_macos_lib(lapack.3.8.0 quadmath.0)
     endif()
 elseif(UNIX)
     set(CPACK_GENERATOR "TGZ" "RPM" "DEB")
