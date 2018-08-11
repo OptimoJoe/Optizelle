@@ -44,19 +44,19 @@ For precompiled, 64-bit packages, please download one of the following
 
 | Platform | Package | Interfaces |
 |:---|:---|:---|
-| Windows | <ul><li>[msi](http://www.optimojoe.com/uploads/software/Optizelle-1.2.0-win64.msi)</li></ul> | <ul><li>C++ ([GCC 4.9.2](https://mingw-w64.org/doku.php/download))</li><li>Python ([2.7.12](https://www.python.org/downloads/windows/))</li><li>MATLAB ([R2016B](https://www.mathworks.com/products/matlab/))</li><li>Octave ([4.0.3](http://www.tatsuromatsuoka.com/octave/Eng/Win/))</li></ul> |
-| macOS | <ul><li>[dmg](http://www.optimojoe.com/uploads/software/Optizelle-1.2.0-Darwin.dmg)</li></ul> | <ul><li>C++ ([Clang-800.0.38](https://mingw-w64.org/doku.php/download))</li><li>Python ([2.7.10](https://www.apple.com/macos/sierra/))</li><li>MATLAB ([R2016B](https://www.mathworks.com/products/matlab/))</li><li>Octave ([4.0.3](http://wiki.octave.org/Octave_for_MacOS_X))</li></ul> |
-| Linux | <ul><li>[tar.gz](http://www.optimojoe.com/uploads/software/Optizelle-1.2.0-Linux.tar.gz)</li><li>[rpm](http://www.optimojoe.com/uploads/software/Optizelle-1.2.0-Linux.rpm)</li><li>[deb](http://www.optimojoe.com/uploads/software/Optizelle-1.2.0-Linux.deb)</li></ul>| <ul><li>C++ ([GCC 4.9.3](http://packages.ubuntu.com/xenial/gcc-4.9))</li><li>Python ([2.7.11](http://packages.ubuntu.com/xenial/python-minimal))</li><li>MATLAB ([R2016B](https://www.mathworks.com/products/matlab/))</li><li>Octave ([4.0.0](http://packages.ubuntu.com/xenial/octave))</li></ul> |
+| Windows | <ul><li>[msi](http://www.optimojoe.com/uploads/software/Optizelle-1.2.1-win64.msi)</li></ul> | <ul><li>C++ ([GCC 7.3.0](https://mingw-w64.org/doku.php/download))</li><li>Python ([2.7.15](https://www.python.org/downloads/windows/))</li><li>MATLAB ([R2018A](https://www.mathworks.com/products/matlab/))</li><li>Octave ([4.4.0](https://www.gnu.org/software/octave/download.html))</li></ul> |
+| macOS | <ul><li>[dmg](http://www.optimojoe.com/uploads/software/Optizelle-1.2.1-Darwin.dmg)</li></ul> | <ul><li>C++ ([Clang-902.0.39.2](https://developer.apple.com/xcode/))</li><li>Python ([2.7.10](https://www.python.org/downloads/mac-osx/))</li><li>MATLAB ([R2018A](https://www.mathworks.com/products/matlab/))</li><li>Octave ([4.4.0](https://www.gnu.org/software/octave/download.html)</li></ul> |
+| Linux | <ul><li>[tar.gz](http://www.optimojoe.com/uploads/software/Optizelle-1.2.1-Linux.tar.gz)</li><li>[rpm](http://www.optimojoe.com/uploads/software/Optizelle-1.2.1-Linux.rpm)</li><li>[deb](http://www.optimojoe.com/uploads/software/Optizelle-1.2.1-Linux.deb)</li></ul>| <ul><li>C++ ([GCC 8.2.0](https://packages.ubuntu.com/cosmic/gcc-8))</li><li>Python ([2.7.15](https://packages.ubuntu.com/cosmic/python))</li><li>MATLAB ([R2018A](https://www.mathworks.com/products/matlab/))</li><li>Octave ([4.2.2](https://packages.ubuntu.com/cosmic/octave))</li></ul> |
 
 Installation should be as easy as opening the package and following the instructions found therein.
 
 # Documentation
 
-We provide a full set of instructions for building, installing, and using Optizelle in our manual ([letter](http://www.optimojoe.com/uploads/reports/Optizelle-1.2.0-letter.pdf),[a4](http://www.optimojoe.com/uploads/reports/Optizelle-1.2.0-a4.pdf).)
+We provide a full set of instructions for building, installing, and using Optizelle in our manual ([letter](http://www.optimojoe.com/uploads/reports/Optizelle-1.2.1-letter.pdf),[a4](http://www.optimojoe.com/uploads/reports/Optizelle-1.2.1-a4.pdf).)
 
 # Source
 
-For the source, please download a [zipped archive](http://www.optimojoe.com/uploads/software/Optizelle-1.2.0-Source.tar.gz) of our code.  For power users, we provide public access to our git repository on our [Github page](https://github.com/OptimoJoe/Optizelle).  In order to clone the Optizelle repository, use the command
+For the source, please download a [zipped archive](http://www.optimojoe.com/uploads/software/Optizelle-1.2.1-Source.tar.gz) of our code.  For power users, we provide public access to our git repository on our [Github page](https://github.com/OptimoJoe/Optizelle).  In order to clone the Optizelle repository, use the command
 
 ```
 git clone https://github.com/OptimoJoe/Optizelle.git
