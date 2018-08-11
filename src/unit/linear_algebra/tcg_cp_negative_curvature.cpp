@@ -5,10 +5,10 @@
 #include "spaces.h"
 
 int main() {
-    // Setup the problem 
+    // Setup the problem
     auto setup = Unit::tcg <Real,Rm> ();
 
-    // Problem setup 
+    // Problem setup
     setup.A = std::make_unique<Matrix>(Unit::Matrix <Real>::symm_nd(setup.m,0));
     setup.b = std::make_unique <Vector> (Unit::Vector <Real>::basic(setup.m));
     setup.x_offset = std::make_unique <Vector> (
@@ -17,8 +17,8 @@ int main() {
     // Trust-Region
     {
         // Make the TR radius large enough to not constrain ourselves until we
-        // hit the negative curvature. 
-        setup.delta = 1e5; 
+        // hit the negative curvature.
+        setup.delta = 1e5;
 
         // Target solutions
         setup.iter_star = 1;
@@ -35,7 +35,7 @@ int main() {
         setup.check_cp = true;
         setup.check_sol = true;
 
-        // Check the solver 
+        // Check the solver
         Unit::run_and_verify <Real,Rm> (setup);
     }
 
@@ -56,7 +56,7 @@ int main() {
         setup.check_cp = true;
         setup.check_sol = true;
 
-        // Check the solver 
+        // Check the solver
         Unit::run_and_verify <Real,Rm> (setup);
     }
 

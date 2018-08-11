@@ -10,13 +10,13 @@ function simple_sdp_cone(fname)
     main(fname);
 end
 
-% Define a simple objective where 
-% 
+% Define a simple objective where
+%
 % f(x,y)=-x+y
 %
 function self = MyObj()
 
-    % Evaluation 
+    % Evaluation
     self.eval = @(x) -x(1)+x(2);
 
     % Gradient
@@ -30,14 +30,14 @@ function self = MyObj()
         0];
 end
 
-% Define a simple SDP inequality 
+% Define a simple SDP inequality
 %
 % h(x,y) = [ y x ] >= 0
 %          [ x 1 ]
 %
 function self = MyIneq()
 
-    % z=h(x) 
+    % z=h(x)
     self.eval = @(x)MyIneq_eval(x);
 
     % z=h'(x)dx
@@ -54,7 +54,7 @@ function self = MyIneq()
         0];
 end
 
-% z=h(x) 
+% z=h(x)
 function z=MyIneq_eval(x)
     global Optizelle;
     z = Optizelle.SQL.create([Optizelle.Cone.Semidefinite],[2]);
@@ -92,7 +92,7 @@ function main(fname)
     % Read the parameters from file
     state=Optizelle.json.InequalityConstrained.read( ...
         Optizelle.Rm,Optizelle.SQL,fname,state);
-    
+
     % Create a bundle of functions
     fns=Optizelle.InequalityConstrained.Functions.t;
     fns.f=MyObj();

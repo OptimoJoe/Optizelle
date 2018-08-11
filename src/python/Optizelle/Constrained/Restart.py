@@ -40,7 +40,7 @@ def release(X,Y,Z,state,xs,ys,zs,reals,nats,params):
     ConstrainedRestartRelease(X,Y,Z,state,xs,ys,zs,reals,nats,params)
 
     # Return nothing.  We've modified the passed in lists.
-    return None 
+    return None
 
 def capture(X,Y,Z,state,xs,ys,zs,reals,nats,params):
     """Capture data from structures controlled by the user."""
@@ -61,4 +61,4 @@ def capture(X,Y,Z,state,xs,ys,zs,reals,nats,params):
     ConstrainedRestartCapture(X,Y,Z,state,xs,ys,zs,reals,nats,params)
 
     # Return nothing.  The state has been modified.
-    return None 
+    return None

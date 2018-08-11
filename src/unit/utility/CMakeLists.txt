@@ -5,7 +5,7 @@ set(interfaces "cpp" "python" "matlab" "octave")
 
 # If any unit test is enabled, we compile this
 is_unit("${interfaces}" enable_unit)
-if(enable_unit) 
+if(enable_unit)
 
     # Common include files
     include_directories(${OPTIZELLE_INCLUDE_DIRS})

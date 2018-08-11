@@ -17,9 +17,9 @@ using Optizelle::Natural;
 //---VectorSpace0---
 // Defines the vector space used for optimization.
 template <typename Real>
-struct MyVS { 
+struct MyVS {
     typedef std::vector <Real> Vector;
-    
+
     // Memory allocation and size setting
     static Vector init(Vector const & x) {
         return std::move(Vector(x.size()));
@@ -39,7 +39,7 @@ struct MyVS {
         }
     }
 
-    // x <- 0 
+    // x <- 0
     static void zero(Vector & x) {
         for(Natural i=0;i<x.size();i++){
             x[i]=0.;
@@ -65,24 +65,24 @@ struct MyVS {
     static void rand(Vector & x){
         std::mt19937 gen(1);
         std::uniform_real_distribution<Real> dis(Real(0.),Real(1.));
-        for(Natural i=0;i<x.size();i++) 
+        for(Natural i=0;i<x.size();i++)
             x[i]=Real(dis(gen));
     }
     // Jordan product, z <- x o y.
     static void prod(Vector const & x, Vector const & y, Vector & z) {
-        for(Natural i=0;i<x.size();i++) 
+        for(Natural i=0;i<x.size();i++)
             z[i]=x[i]*y[i];
     }
 
     // Identity element, x <- e such that x o e = x.
     static void id(Vector & x) {
-        for(Natural i=0;i<x.size();i++) 
+        for(Natural i=0;i<x.size();i++)
             x[i]=Real(1.);
     }
-    
+
     // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y.
     static void linv(Vector const & x,Vector const & y,Vector & z) {
-        for(Natural i=0;i<x.size();i++) 
+        for(Natural i=0;i<x.size();i++)
             z[i]=y[i]/x[i];
     }
 
@@ -95,7 +95,7 @@ struct MyVS {
     }
 
     // Line search, srch <- argmax {alpha \in Real >= 0 : alpha x + y >= 0}
-    // where y > 0. 
+    // where y > 0.
     static Real srch(Vector const & x,Vector const & y) {
         // Line search parameter
         Real alpha=std::numeric_limits <Real>::infinity();
@@ -120,11 +120,11 @@ struct MyVS {
 // Squares its input
 template <typename Real>
 Real sq(Real x){
-    return x*x; 
+    return x*x;
 }
 
 // Define the Rosenbrock function where
-// 
+//
 // f(x,y)=(1-x)^2+100(y-x^2)^2
 //
 struct Rosenbrock : public Optizelle::ScalarValuedFunction <double,MyVS> {
@@ -190,7 +190,7 @@ namespace Optizelle {
                 std::string const & name,
                 Natural const & iter
             ) {
-                // Create a string with the format 
+                // Create a string with the format
                 // [ x1, x2, ..., xm ].
                 std::stringstream x_json;
                 x_json.setf(std::ios::scientific);
@@ -212,7 +212,7 @@ namespace Optizelle {
 
                 // Filter out the commas and brackets from the string
                 char formatting[] = "[],";
-                for(Natural i=0;i<3;i++) 
+                for(Natural i=0;i<3;i++)
                     x_json.erase(
                         std::remove(x_json.begin(),x_json.end(),formatting[i]),
                         x_json.end());
@@ -227,7 +227,7 @@ namespace Optizelle {
                 for(auto i=0;i<x.size();i++)
                     ss >> x[i];
 
-                // Return the result 
+                // Return the result
                 return std::move(x);
             }
         };
@@ -269,7 +269,7 @@ struct MyRestartManipulator
 //---RestartManipulator1---
 
 int main(int argc,char* argv[]) {
-    // Read in the name for the parameters and optional restart file 
+    // Read in the name for the parameters and optional restart file
     if(!(argc==2 || argc==3)) {
         std::cerr << "rosenbrock_advanced_api <parameters>" << std::endl;
         std::cerr << "rosenbrock_advanced_api <parameters> <restart>"
@@ -277,16 +277,16 @@ int main(int argc,char* argv[]) {
         exit(EXIT_FAILURE);
     }
     auto pname = argv[1];
-    auto rname = argc==3 ? argv[2] : ""; 
+    auto rname = argc==3 ? argv[2] : "";
 
     // Generate an initial guess for Rosenbrock
     auto x  = std::vector <double> {-1.2, 1.};
 
     // Create an unconstrained state based on this vector
     Optizelle::Unconstrained <double,MyVS>::State::t state(x);
-   
+
     //---ReadRestart0---
-    // If we have a restart file, read in the parameters 
+    // If we have a restart file, read in the parameters
     if(argc==3)
         Optizelle::json::Unconstrained <double,MyVS>::read_restart(
             rname,x,state);
@@ -295,11 +295,11 @@ int main(int argc,char* argv[]) {
     Optizelle::json::Unconstrained <double,MyVS>::read(pname,state);
     //---ReadRestart1---
 
-    // Create the bundle of functions 
+    // Create the bundle of functions
     Optizelle::Unconstrained <double,MyVS>::Functions::t fns;
     fns.f.reset(new Rosenbrock);
     fns.PH.reset(new RosenHInv(state.x));
-    
+
     //---Solver0---
     // Solve the optimization problem
     Optizelle::Unconstrained <double,MyVS>::Algorithms

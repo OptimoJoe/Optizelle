@@ -1,4 +1,4 @@
-# Handle pkg-config 
+# Handle pkg-config
 find_package(PkgConfig)
 pkg_check_modules(PC_BLAS QUIET blas)
 set(BLAS_DEFINITIONS ${PC_BLAS_CFLAGS_OTHER})

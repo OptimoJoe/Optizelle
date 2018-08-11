@@ -3,13 +3,13 @@ project(Optizelle)
 
 # This is the minimum required for the install.  Basically, we need
 # CXX_STANDARD_REQUIRED and this looks to have been added at 3.1.  I think
-# 3.1.3 is what the current bug fix is, so that looks good enough. 
+# 3.1.3 is what the current bug fix is, so that looks good enough.
 cmake_minimum_required(VERSION 3.1.3 FATAL_ERROR)
 
 # Put together the complete license
 add_subdirectory(licenses)
 
-# Install the authors file 
+# Install the authors file
 install(FILES AUTHORS.txt DESTINATION share/optizelle)
 
 # Set the CPack options
@@ -18,7 +18,7 @@ set(CPACK_PACKAGE_VENDOR "OptimoJoe")
 set(CPACK_PACKAGE_NAME "Optizelle")
 set(CPACK_PACKAGE_VERSION_MAJOR "1")
 set(CPACK_PACKAGE_VERSION_MINOR "2")
-set(CPACK_PACKAGE_VERSION_PATCH "0")
+set(CPACK_PACKAGE_VERSION_PATCH "1")
 set(CPACK_SOURCE_IGNORE_FILES "${CMAKE_BINARY_DIR}" "${CMAKE_SOURCE_DIR}/.git")
 set(CPACK_PACKAGE_CONTACT "Joseph Young <joe@optimojoe.com>")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Optizelle [op-tuh-zel] is an open source software library designed to solve general purpose nonlinear optimization problems")
@@ -64,30 +64,33 @@ elseif(APPLE)
         macro(fix_macos_lib name lib)
             add_custom_target(fix_${name}_internal_${lib}
                 ALL
-                DEPENDS LAPACK
+                DEPENDS LAPACK optizelle_shared
                 COMMAND install_name_tool -change /opt/local/lib/libgcc/lib${lib}.dylib /Applications/${CPACK_PACKAGE_NAME}/share/optizelle/thirdparty/lib/lib${lib}.dylib ${CMAKE_BINARY_DIR}/thirdparty/lib/lib${name}.dylib
                 COMMENT "Fixing the path for lib${lib}.dylib inside of lib${name}.dylib")
         endmacro()
         macro(fix_macos_lib_alt name lib)
             add_custom_target(fix_${name}_internal_${lib}
                 ALL
-                DEPENDS LAPACK
-                COMMAND install_name_tool -change /opt/local/lib/gcc43/lib${lib}.dylib /Applications/${CPACK_PACKAGE_NAME}/share/optizelle/thirdparty/lib/lib${lib}.dylib ${CMAKE_BINARY_DIR}/thirdparty/lib/lib${name}.dylib
+                DEPENDS LAPACK optizelle_shared
+                COMMAND install_name_tool -change /opt/local/lib/lib${lib}.dylib /Applications/${CPACK_PACKAGE_NAME}/share/optizelle/thirdparty/lib/lib${lib}.dylib ${CMAKE_BINARY_DIR}/thirdparty/lib/lib${name}.dylib
                 COMMENT "Fixing the path for lib${lib}.dylib inside of lib${name}.dylib")
         endmacro()
-        fix_macos_lib(gfortran.3 quadmath.0)
-        fix_macos_lib(gfortran.3 gcc_s.1)
+        fix_macos_lib(gfortran.5 quadmath.0)
+        fix_macos_lib(gfortran.5 gcc_s.1)
+        fix_macos_lib_alt(gfortran.5 z.1)
         fix_macos_lib(quadmath.0 gcc_s.1)
-        fix_macos_lib(blas.3.6.1 gfortran.3)
-        fix_macos_lib_alt(blas.3.6.1 gcc_s.1)
-        fix_macos_lib(lapack.3.6.1 gfortran.3)
-        fix_macos_lib_alt(lapack.3.6.1 gcc_s.1)
+        fix_macos_lib(blas.3.8.0 gfortran.5)
+        fix_macos_lib(blas.3.8.0 gcc_s.1)
+        fix_macos_lib(blas.3.8.0 quadmath.0)
+        fix_macos_lib(lapack.3.8.0 gfortran.5)
+        fix_macos_lib(lapack.3.8.0 gcc_s.1)
+        fix_macos_lib(lapack.3.8.0 quadmath.0)
     endif()
 elseif(UNIX)
     set(CPACK_GENERATOR "TGZ" "RPM" "DEB")
 endif()
 include(CPack)
-    
+
 # Enable ctest
 enable_testing()
 

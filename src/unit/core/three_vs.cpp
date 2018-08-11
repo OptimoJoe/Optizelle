@@ -50,7 +50,7 @@
         throw; \
     }
 
-// Inequality algebra pieces of a vector space 
+// Inequality algebra pieces of a vector space
 #define INEQ(v) \
     static void prod(Vector const & x, Vector const & y, Vector & z){ \
         x.check_##v(); \
@@ -163,17 +163,17 @@
         v##hat.check_##v(); \
     }
 
-// Three different vector spaces, which should be incompatible 
+// Three different vector spaces, which should be incompatible
 template <typename Real>
-struct VS_X { 
+struct VS_X {
     BASE(x)
 };
 template <typename Real>
-struct VS_Y { 
+struct VS_Y {
     BASE(y)
 };
 template <typename Real>
-struct VS_Z { 
+struct VS_Z {
     BASE(z)
     INEQ(z)
 };
@@ -192,7 +192,7 @@ struct H : public Optizelle::VectorValuedFunction<Real,VS_X,VS_Z> {
     VECTOR_FN(X,x,Z,z);
 };
 
-// Define all the preconditioners 
+// Define all the preconditioners
 template <typename Real>
 struct PH : public Optizelle::Operator <Real,VS_X,VS_X> {
     OP_FN(X,x)
@@ -209,7 +209,7 @@ struct PSchurRight : public Optizelle::Operator <Real,VS_Y,VS_Y> {
 // Put together an optimization problem that uses the above vector spaces and
 // functions
 int main(int argc,char * argv[]) {
-    // Set our spaces 
+    // Set our spaces
     typedef double Real;
     typedef VS_X <Real>::Vector X_Vector;
     typedef VS_Y <Real>::Vector Y_Vector;
@@ -218,10 +218,10 @@ int main(int argc,char * argv[]) {
     // Don't actually run anything
     if(argc==1) return EXIT_SUCCESS;
 
-    // Create some initial vectors 
-    auto x = X_Vector(); 
-    auto y = Y_Vector(); 
-    auto z = Z_Vector(); 
+    // Create some initial vectors
+    auto x = X_Vector();
+    auto y = Y_Vector();
+    auto z = Z_Vector();
 
     // Unfortunately, we need to do this twice since there are some different
     // code paths for unconstrained and constrained problems.  For example, on
@@ -233,7 +233,7 @@ int main(int argc,char * argv[]) {
     {
         // Create a state
         Optizelle::Unconstrained <Real,VS_X>::State::t state(x);
-      
+
         // Read a restart file
         Optizelle::json::Unconstrained <Real,VS_X>::read_restart(
             "junk.json",x,state);
@@ -241,11 +241,11 @@ int main(int argc,char * argv[]) {
         // Read additional parameters from file
         Optizelle::json::Unconstrained <Real,VS_X>::read("junk.json",state);
 
-        // Create the bundle of functions 
+        // Create the bundle of functions
         Optizelle::Constrained <Real,VS_X,VS_Y,VS_Z>::Functions::t fns;
         fns.f.reset(new F <Real>);
         fns.PH.reset(new PH <Real>);
-        
+
         // Solve the optimization problem
         Optizelle::Unconstrained <Real,VS_X>::Algorithms
             ::getMin(Optizelle::Messaging::stdout,fns,state);
@@ -260,7 +260,7 @@ int main(int argc,char * argv[]) {
     {
         // Create a state
         Optizelle::Constrained <Real,VS_X,VS_Y,VS_Z>::State::t state(x,y,z);
-      
+
         // Read a restart file
         Optizelle::json::Constrained <Real,VS_X,VS_Y,VS_Z>::read_restart(
             "junk.json",x,y,z,state);
@@ -269,7 +269,7 @@ int main(int argc,char * argv[]) {
         Optizelle::json::Constrained <Real,VS_X,VS_Y,VS_Z>
             ::read("junk.json",state);
 
-        // Create the bundle of functions 
+        // Create the bundle of functions
         Optizelle::Constrained <Real,VS_X,VS_Y,VS_Z>::Functions::t fns;
         fns.f.reset(new F <Real>);
         fns.g.reset(new G <Real>);
@@ -277,7 +277,7 @@ int main(int argc,char * argv[]) {
         fns.PH.reset(new PH <Real>);
         fns.PSchur_left.reset(new PSchurLeft <Real>);
         fns.PSchur_right.reset(new PSchurRight <Real>);
-        
+
         // Solve the optimization problem
         Optizelle::Constrained <Real,VS_X,VS_Y,VS_Z>::Algorithms
             ::getMin(Optizelle::Messaging::stdout,fns,state);

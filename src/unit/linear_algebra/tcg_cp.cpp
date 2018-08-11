@@ -5,10 +5,10 @@
 #include "spaces.h"
 
 int main() {
-    // Setup the problem 
+    // Setup the problem
     auto setup = Unit::tcg <Real,Rm> ();
 
-    // Problem setup 
+    // Problem setup
     setup.A = std::make_unique <Matrix>(
         Unit::Matrix <Real>::symmetric(setup.m,0));
     setup.b = std::make_unique <Vector> (Unit::Vector <Real>::basic(setup.m));
@@ -23,7 +23,7 @@ int main() {
     setup.check_iter = true;
     setup.check_stop = true;
 
-    // Check the solver 
+    // Check the solver
     Unit::run_and_verify <Real,Rm> (setup);
 
     // Declare success

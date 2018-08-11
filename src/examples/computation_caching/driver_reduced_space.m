@@ -1,11 +1,11 @@
 % Demonstrates how to cache various calculations when solving an unconstrained
 % optimization problem and then verifies that this caching works correctly
 
-% Grab Optizelle 
+% Grab Optizelle
 global Optizelle;
 setupOptizelle();
 
-% Set the name of the optimization parameters 
+% Set the name of the optimization parameters
 pname = 'reduced_space.json';
 
 % Setup some diagnostics that verify that we're caching properly

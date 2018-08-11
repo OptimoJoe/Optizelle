@@ -14,7 +14,7 @@ int main() {
     // Create some arbitrary vector in R^2
     std::vector <Real> x = {1.2,2.3};
     std::vector <Real> x0 = {2.3,1.2};
-    
+
     // Create a different arbitrary vector in R^4
     std::vector <Real> z = {6.7,7.8,8.9,9.10};
     std::vector <Real> z0 = {9.10,8.9,7.8,6.7};
@@ -26,10 +26,10 @@ int main() {
 
     // Read in some parameters
     std::string fname("blank.json");
-    //---ReadJson0--- 
+    //---ReadJson0---
     Optizelle::json::InequalityConstrained <Real,XX,ZZ>::read(fname,state);
-    //---ReadJson1--- 
-   
+    //---ReadJson1---
+
     // Create a bundle of functions
     //---Functions0---
     Optizelle::InequalityConstrained <Real,XX,ZZ>::Functions::t fns;
@@ -44,7 +44,7 @@ int main() {
         msg,fns,state);
     //---Solver1---
 
-    // Do a null optimization with a state manipulator 
+    // Do a null optimization with a state manipulator
     BlankManipulator <Optizelle::InequalityConstrained<Real,XX,ZZ> > smanip;
     //---SmanipSolver0---
     Optizelle::InequalityConstrained<Real,XX,ZZ>::Algorithms::getMin(
@@ -60,7 +60,7 @@ int main() {
         fname,x,z,state);
     //---WriteReadRestart1---
 
-    // Do a release 
+    // Do a release
     //---Release0---
     Optizelle::InequalityConstrained <Real,XX,ZZ>::Restart::X_Vectors xs;
     Optizelle::InequalityConstrained <Real,XX,ZZ>::Restart::Z_Vectors zs;
@@ -83,12 +83,12 @@ int main() {
     CHECK(state.z.size()==0);
     CHECK(state.dz.size()==0);
     CHECK(state.h_x.size()==0);
-    
+
     // Check that we have the correct number of vectors
     CHECK(xs.size() == 6);
     CHECK(zs.size() == 3);
-    
-    // Modify some vectors 
+
+    // Modify some vectors
     xs.front().second = x0;
     zs.front().second = z0;
 
@@ -110,7 +110,7 @@ int main() {
     CHECK(state.h_x.size()>0);
 
     // Check the relative error between the vector created above and the one
-    // left in the state.  
+    // left in the state.
     {
     std::vector <Real> residual(XX <Real>::init(x));
     XX <Real>::copy(x0,residual);
@@ -119,7 +119,7 @@ int main() {
         /(1.+sqrt(XX <Real>::innr(x0,x0)));
     CHECK(err < 1e-15);
     }
-    
+
     {
     std::vector <Real> residual(ZZ <Real>::init(z));
     ZZ <Real>::copy(z0,residual);

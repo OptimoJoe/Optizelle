@@ -1,4 +1,4 @@
-% Check that we have a valid Euclidean-Jordan algebra 
+% Check that we have a valid Euclidean-Jordan algebra
 function checkEuclidean(name,value)
 
     % Check for the appropriate fields and make sure they're functions

@@ -6,7 +6,7 @@ enable_language(CXX)
 set(source_prefix ${CMAKE_CURRENT_SOURCE_DIR}/src/lib_json/)
 
 # Save the include directory
-set(JSONCPP_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIRI}/include)
+set(JSONCPP_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # Grab all the sources for the library
 set(jsoncpp_srcs
@@ -26,12 +26,12 @@ add_library(jsoncpp_shared SHARED $<TARGET_OBJECTS:jsoncpp_object> )
 set_target_properties(jsoncpp_shared jsoncpp_static
     PROPERTIES OUTPUT_NAME json)
 
-# Set the compiler to C++98
-set_property(TARGET jsoncpp_object PROPERTY CXX_STANDARD 98)
+# Set the compiler to C++14
+set_property(TARGET jsoncpp_object PROPERTY CXX_STANDARD 14)
 set_property(TARGET jsoncpp_object PROPERTY CXX_STANDARD_REQUIRED ON)
-set_property(TARGET jsoncpp_static PROPERTY CXX_STANDARD 98)
+set_property(TARGET jsoncpp_static PROPERTY CXX_STANDARD 14)
 set_property(TARGET jsoncpp_static PROPERTY CXX_STANDARD_REQUIRED ON)
-set_property(TARGET jsoncpp_shared PROPERTY CXX_STANDARD 98)
+set_property(TARGET jsoncpp_shared PROPERTY CXX_STANDARD 14)
 set_property(TARGET jsoncpp_shared PROPERTY CXX_STANDARD_REQUIRED ON)
 
 # Install the libraries and headers

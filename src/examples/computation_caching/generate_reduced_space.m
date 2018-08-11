@@ -9,22 +9,22 @@ function [f PH phi] = generate_reduced_space(params)
     % Preconditioner for the objective function
     PH.eval = @(state,dx)obj_hv_inv(params,state.x,dx);
 
-    % Finds the state solution 
+    % Finds the state solution
     phi = @(x)state_uncached(params,x,rhs(params,x));
 end
 
 %---ObjectiveGradient0---
-% Evaluates the objective 
+% Evaluates the objective
 function z = obj_eval(params,x)
     % Cached objective evaluation.  Really, this only saves us the first
     % objective evaluation as the subsequent evaluations are cached by
-    % Optizelle 
+    % Optizelle
     global ocache
 
     % Performance diagnostis
-    global diagnostics 
+    global diagnostics
 
-    % Grab the cached objective evaluation when possible 
+    % Grab the cached objective evaluation when possible
     if ~isempty(ocache)  && isequal(x,ocache.x)
         z = ocache.eval;
         diagnostics.used_cached_objective = diagnostics.used_cached_objective+1;
@@ -43,13 +43,13 @@ end
 
 % Evaluates the gradient
 function grad = obj_grad(params,x)
-    % Cached objective evaluation 
+    % Cached objective evaluation
     global ocache
 
     % Solve for the current solution
     u = state(params,x,rhs(params,x));
-    
-    % Cached the state solution globally for the objective 
+
+    % Cached the state solution globally for the objective
     if isempty(ocache) || ~isequal(x,ocache.x)
         ocache.x = x;
         ocache.eval = 0.5 * norm(u-params.d)^2;
@@ -71,19 +71,19 @@ function hv = obj_hv(params,x,dx)
     hv = hessian(params,x)*dx;
 end
 
-% Finds the Hessian 
+% Finds the Hessian
 function H = hessian(params,x)
-    % Keep track of where the construction occurs 
+    % Keep track of where the construction occurs
     persistent cache
 
     % Performance diagnostics
     global diagnostics
 
-    % Cache the Hessian when required 
+    % Cache the Hessian when required
     if isempty(cache) || ~isequal(x,cache.x)
-        % Save the point we're evaluating the Hessian at 
+        % Save the point we're evaluating the Hessian at
         cache.x = x;
-    
+
         % Solve for the current solution
         u = state(params,x,rhs(params,x));
 
@@ -114,8 +114,8 @@ function H = hessian(params,x)
             end
         end
         cache.H(2,1)=cache.H(1,2);
-        
-        % Keep track that we cache a Hessian 
+
+        % Keep track that we cache a Hessian
         diagnostics.hessian_cached = diagnostics.hessian_cached+1;
     end
 
@@ -127,29 +127,29 @@ end
 %---HessianInv0---
 % Evaluates the inverse of the Hessian applied to a vector
 function ihv = obj_hv_inv(params,x,dx)
-    % Keep track of where the factorization occurs 
+    % Keep track of where the factorization occurs
     persistent cache
 
     % Performance diagnostics
     global diagnostics
 
-    % Cache the Hessian factorization when required 
+    % Cache the Hessian factorization when required
     if isempty(cache) || ~isequal(x,cache.x)
-        % Save the point we're factorizing the Hessian factorization at 
+        % Save the point we're factorizing the Hessian factorization at
         cache.x = x;
-    
+
         % Grab the current Hessian
         H = hessian(params,x);
 
         % Factorize the Hessian
         [cache.l cache.u cache.p]=lu(H,'vector');
-        
+
         % Keep track that we cache a Hessian factorization
         diagnostics.hessian_factorization_cached = ...
             diagnostics.hessian_factorization_cached+1;
     end
 
-    % Apply the inverse to the direction 
+    % Apply the inverse to the direction
     ihv = cache.u\(cache.l\dx(cache.p));
 end
 %---HessianInv1---
@@ -174,7 +174,7 @@ function z = op(params,x)
     z = x(1)*params.A+x(2)*params.B;
 end
 
-% Grabs the derivative of the differential operator 
+% Grabs the derivative of the differential operator
 function z = op_p(which,params,x)
     if which==1
         z = params.A;
@@ -200,13 +200,13 @@ function z = state(params,x,rhs)
         % Factorize the operator
         [cache.l cache.u cache.p cache.q cache.r] = ...
             lu(op(params,x),'vector');
-        
-        % Keep track that we did a new factorization 
+
+        % Keep track that we did a new factorization
         diagnostics.state_factorization_cached = ...
             diagnostics.state_factorization_cached+1;
     end
-    
-    % Solve the linear system 
+
+    % Solve the linear system
     z = zeros(size(rhs));
     z(cache.q) = cache.u\(cache.l\(cache.r(:,cache.p)\rhs));
 end

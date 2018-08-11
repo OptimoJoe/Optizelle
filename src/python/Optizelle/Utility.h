@@ -18,11 +18,11 @@ namespace Optizelle {
         struct PyObjectPtr;
     }
 
-    namespace OptimizationStop { 
+    namespace OptimizationStop {
         // Converts t to a Python enumerated type
         Python::PyObjectPtr toPython(t const & opt_stop);
 
-        // Converts a Python enumerated type to t 
+        // Converts a Python enumerated type to t
         t fromPython(Python::PyObjectPtr const & member);
     }
 
@@ -30,71 +30,71 @@ namespace Optizelle {
         // Converts t to a Python enumerated type
         Python::PyObjectPtr toPython(t const & trunc_stop);
 
-        // Converts a Python enumerated type to t 
+        // Converts a Python enumerated type to t
         t fromPython(Python::PyObjectPtr const & member);
     }
-    
-    namespace AlgorithmClass { 
+
+    namespace AlgorithmClass {
         // Converts t to a Python enumerated type
         Python::PyObjectPtr toPython(t const & algorithm_class);
 
-        // Converts a Python enumerated type to t 
+        // Converts a Python enumerated type to t
         t fromPython(Python::PyObjectPtr const & member);
     }
-    
-    namespace Operators{ 
+
+    namespace Operators{
         // Converts t to a Python enumerated type
         Python::PyObjectPtr toPython(t const & op);
 
-        // Converts a Python enumerated type to t 
+        // Converts a Python enumerated type to t
         t fromPython(Python::PyObjectPtr const & member);
     }
-    
-    namespace LineSearchDirection{ 
+
+    namespace LineSearchDirection{
         // Converts t to a Python enumerated type
         Python::PyObjectPtr toPython(t const & dir);
 
-        // Converts a Python enumerated type to t 
+        // Converts a Python enumerated type to t
         t fromPython(Python::PyObjectPtr const & member);
     }
-    
-    namespace LineSearchKind{ 
+
+    namespace LineSearchKind{
         // Converts t to a Python enumerated type
         Python::PyObjectPtr toPython(t const & kind);
 
-        // Converts a Python enumerated type to t 
+        // Converts a Python enumerated type to t
         t fromPython(Python::PyObjectPtr const & member);
     }
-    
-    namespace OptimizationLocation{ 
+
+    namespace OptimizationLocation{
         // Converts t to a Python enumerated type
         Python::PyObjectPtr toPython(t const & loc);
 
-        // Converts a Python enumerated type to t 
+        // Converts a Python enumerated type to t
         t fromPython(Python::PyObjectPtr const & member);
     }
-    
-    namespace FunctionDiagnostics{ 
-        // Converts t to a Python enumerated type
-        Python::PyObjectPtr toPython(t const & diag); 
 
-        // Converts a Python enumerated type to t 
+    namespace FunctionDiagnostics{
+        // Converts t to a Python enumerated type
+        Python::PyObjectPtr toPython(t const & diag);
+
+        // Converts a Python enumerated type to t
         t fromPython(Python::PyObjectPtr const & member);
     }
-    
-    namespace VectorSpaceDiagnostics{ 
-        // Converts t to a Python enumerated type
-        Python::PyObjectPtr toPython(t const & diag); 
 
-        // Converts a Python enumerated type to t 
+    namespace VectorSpaceDiagnostics{
+        // Converts t to a Python enumerated type
+        Python::PyObjectPtr toPython(t const & diag);
+
+        // Converts a Python enumerated type to t
         t fromPython(Python::PyObjectPtr const & member);
     }
-    
-    namespace DiagnosticScheme{ 
-        // Converts t to a Python enumerated type
-        Python::PyObjectPtr toPython(t const & dscheme); 
 
-        // Converts a Python enumerated type to t 
+    namespace DiagnosticScheme{
+        // Converts t to a Python enumerated type
+        Python::PyObjectPtr toPython(t const & dscheme);
+
+        // Converts a Python enumerated type to t
         t fromPython(Python::PyObjectPtr const & member);
     }
 
@@ -106,7 +106,7 @@ namespace Optizelle {
             };
         }
 
-        // Manage the memory and reference counts for raw PyObject pointers 
+        // Manage the memory and reference counts for raw PyObject pointers
         struct PyObjectPtr {
         protected:
             // Internal storage of the pointer
@@ -116,17 +116,17 @@ namespace Optizelle {
             // Determine whether we're accepting a borrowed reference or a new
             // reference
             enum Mode : std::size_t {
-                Borrowed,       // Borrowed reference 
-                New             // New reference 
+                Borrowed,       // Borrowed reference
+                New             // New reference
             };
 
-            // Grab the pointer 
+            // Grab the pointer
             PyObjectPtr(
                 PyObject * const ptr_,
                 PyObjectPtr::Mode const & mode = PyObjectPtr::New
             );
 
-            // Copy semantics 
+            // Copy semantics
             PyObjectPtr(PyObjectPtr const & p);
             PyObjectPtr & operator = (PyObjectPtr& p);
 
@@ -137,7 +137,7 @@ namespace Optizelle {
             // On a get, we simply return the pointer.
             PyObject * get() const;
 
-            // On destruction, decrement the reference count 
+            // On destruction, decrement the reference count
             ~PyObjectPtr();
         };
 
@@ -203,24 +203,24 @@ namespace Optizelle {
             PyObjectPtr PyList_GetItem(
                 PyObjectPtr const & list,
                 Py_ssize_t const & index);
-        
+
             // Calls the Optizelle exception with a string
             void PyErr_SetString_Optizelle(std::string const & msg);
 
             // Deep copy of a Python object and return the result
             PyObjectPtr deepcopy(PyObjectPtr const & in);
-        
+
             // Converts an Optizelle enumerated type to a PyObject
             PyObjectPtr enumToPyObject(
                 std::string const & type,
-                std::string const & member 
+                std::string const & member
             );
-            
+
             // Converts an Optizelle enumerated type to a Natural based on
             // the scheme in the Python enumerated type
             Natural enumToNatural(
                 std::string const & type,
-                std::string const & member 
+                std::string const & member
             );
         }
 
@@ -229,7 +229,7 @@ namespace Optizelle {
             Optizelle::Messaging::t python(PyObjectPtr const & print);
         }
 
-        // This class merges the vector space with a vector into a singular 
+        // This class merges the vector space with a vector into a singular
         // object.  We require this structure since Optizelle requires the
         // vector space to be static.  Since the user is passing us a vector
         // space dynamically, we merge the vector space functions with the
@@ -242,26 +242,26 @@ namespace Optizelle {
             // Vector data
             PyObjectPtr data;
 
-            // Prevent constructors 
+            // Prevent constructors
             NO_DEFAULT_COPY_ASSIGNMENT(Vector)
 
-            // Create a vector with the appropriate vector space 
+            // Create a vector with the appropriate vector space
             Vector(PyObjectPtr const & vs_,PyObjectPtr const & vec_);
 
             // Move semantics
             Vector(Vector && vec) = default;
             Vector & operator = (Vector && vec) = default;
 
-            // Memory allocation and size setting 
+            // Memory allocation and size setting
             Vector init() const;
-            
+
             // y <- x (Shallow.  No memory allocation.)  Internal is y.
             void copy(Vector const & x);
 
             // x <- alpha * x.  Internal is x.
             void scal(double const & alpha);
 
-            // x <- 0.  Internal is x. 
+            // x <- 0.  Internal is x.
             void zero();
 
             // y <- alpha * x + y.  Internal is y.
@@ -281,7 +281,7 @@ namespace Optizelle {
 
             // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y .
             // Internal is z.
-            void linv(Vector const & x, Vector const & y); 
+            void linv(Vector const & x, Vector const & y);
 
             // Barrier function, barr <- barr(x) where x o grad barr(x) = e.
             // Internal is x.
@@ -293,17 +293,17 @@ namespace Optizelle {
 
             // Symmetrization, x <- symm(x) such that L(symm(x)) is a symmetric
             // operator.  Internal is x.
-            void symm(); 
-            
+            void symm();
+
             // Converts (copies) a value into Python.  This assumes memory
             // has been allocated both in the vector as well as Python.
             void toPython(PyObjectPtr const & data) const;
-            
+
             // Converts (copies) a value from Python.  This assumes memory
             // has been allocated both in the vector as well as Python.
             void fromPython(PyObjectPtr const & data);
         };
-        
+
         // Python state
         template <typename ProblemClass>
         struct State {
@@ -320,24 +320,24 @@ namespace Optizelle {
             // On construction, we just grab the pointer to the state object
             State(
                 PyObjectPtr const & data_
-            ) : data(data_) {} 
+            ) : data(data_) {}
 
-            // Convert a C++ state to a Python state 
+            // Convert a C++ state to a Python state
             void toPython(typename ProblemClass::State::t const & state);
 
-            // Convert a Python state to C++ 
+            // Convert a Python state to C++
             void fromPython(typename ProblemClass::State::t & state);
         };
-        
-        // Python bundle of functions 
+
+        // Python bundle of functions
         template <typename ProblemClass>
         struct Functions {
         private:
             // Keep some states lying around so that we can communicate this
             // to our operator.
-            State <ProblemClass> & pystate; 
+            State <ProblemClass> & pystate;
             typename ProblemClass::State::t const & state;
-            
+
         public:
             // Data
             PyObjectPtr data;
@@ -360,7 +360,7 @@ namespace Optizelle {
                 data(data_)
             {}
 
-            // Convert a Python bundle to C++ 
+            // Convert a Python bundle to C++
             void fromPython(typename ProblemClass::Functions::t & fns);
         };
 
@@ -386,7 +386,7 @@ namespace Optizelle {
             NO_DEFAULT_COPY_ASSIGNMENT(StateManipulator)
 
             // Add move semantics
-            StateManipulator(StateManipulator && smanip) : 
+            StateManipulator(StateManipulator && smanip) :
                 pystate(smanip.pystate),
                 pyfns(smanip.pyfns),
                 data(std::move(smanip.data))
@@ -415,8 +415,8 @@ namespace Optizelle {
 
                 // Convert the lcoation to Python
                 auto loc = OptimizationLocation::toPython(loc_);
-            
-                // Call the Python state manipulator 
+
+                // Call the Python state manipulator
                 auto eval = capi::PyObject_GetAttrString(data,"eval");
                 capi::PyObject_CallObject3(
                     eval,
@@ -426,87 +426,87 @@ namespace Optizelle {
                     __LOC__
                         + ", evaluation of the StateManipulator object failed");
 
-                // Convert the Python state to the C++ state 
+                // Convert the Python state to the C++ state
                 pystate.fromPython(state);
             }
         };
 
         // Vector space that works with Python objects
-        template <typename Real=double> 
-        struct PythonVS { 
-            // Prevent constructors 
+        template <typename Real=double>
+        struct PythonVS {
+            // Prevent constructors
             NO_CONSTRUCTORS(PythonVS)
 
-            // Setup the vector 
-            typedef Optizelle::Python::Vector Vector; 
+            // Setup the vector
+            typedef Optizelle::Python::Vector Vector;
 
-            // Memory allocation and size setting 
-            static Vector init(Vector const & x) { 
+            // Memory allocation and size setting
+            static Vector init(Vector const & x) {
                 return x.init();
-            } 
+            }
 
-            // y <- x (Shallow.  No memory allocation.) 
-            static void copy(Vector const & x, Vector & y) { 
+            // y <- x (Shallow.  No memory allocation.)
+            static void copy(Vector const & x, Vector & y) {
                 y.copy(x);
-            } 
+            }
 
-            // x <- alpha * x 
-            static void scal(Real const & alpha, Vector & x) { 
+            // x <- alpha * x
+            static void scal(Real const & alpha, Vector & x) {
                 x.scal(alpha);
-            } 
+            }
 
-            // x <- 0 
-            static void zero(Vector & x) { 
+            // x <- 0
+            static void zero(Vector & x) {
                 x.zero();
-            } 
+            }
 
-            // y <- alpha * x + y 
+            // y <- alpha * x + y
             static void axpy(Real const & alpha, Vector const & x, Vector & y) {
                 y.axpy(alpha,x);
-            } 
+            }
 
-            // innr <- <x,y> 
-            static Real innr(Vector const & x,Vector const & y) { 
+            // innr <- <x,y>
+            static Real innr(Vector const & x,Vector const & y) {
                 return y.innr(x);
-            } 
-        
+            }
+
             // x <- random
             static void rand(Vector & x){
                 x.rand();
             }
 
-            // Jordan product, z <- x o y 
-            static void prod(Vector const & x, Vector const & y, Vector & z) { 
+            // Jordan product, z <- x o y
+            static void prod(Vector const & x, Vector const & y, Vector & z) {
                 z.prod(x,y);
-            } 
+            }
 
-            // Identity element, x <- e such that x o e = x 
-            static void id(Vector & x) { 
+            // Identity element, x <- e such that x o e = x
+            static void id(Vector & x) {
                 x.id();
-            } 
+            }
 
-            // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y 
-            static void linv(Vector const & x, Vector const & y, Vector & z) { 
+            // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y
+            static void linv(Vector const & x, Vector const & y, Vector & z) {
                 z.linv(x,y);
-            } 
+            }
 
-            // Barrier function, barr <- barr(x) where x o grad barr(x) = e 
-            static Real barr(Vector const & x) { 
+            // Barrier function, barr <- barr(x) where x o grad barr(x) = e
+            static Real barr(Vector const & x) {
                 return x.barr();
-            } 
+            }
 
             // Line search, srch <- argmax {alpha in Real >= 0 : alpha x + y >=
-            // 0} where y > 0. 
-            static Real srch(Vector const & x,Vector const & y) {  
+            // 0} where y > 0.
+            static Real srch(Vector const & x,Vector const & y) {
                 return y.srch(x);
-            } 
+            }
 
             // Symmetrization, x <- symm(x) such that L(symm(x)) is a symmetric
             // operator.
             static void symm(Vector & x) {
                 x.symm();
             }
-        }; 
+        };
 
         // A couple of type shortcuts
         typedef Optizelle::ScalarValuedFunction <double,PythonVS>
@@ -523,7 +523,7 @@ namespace Optizelle {
             PyInequalityConstrained;
         typedef Optizelle::Constrained <double,PythonVS,PythonVS,PythonVS>
             PyConstrained;
-        
+
         typedef Optizelle::json::Unconstrained <double,PythonVS>
             PyJsonUnconstrained;
         typedef Optizelle::json::EqualityConstrained <double,PythonVS,PythonVS>
@@ -544,25 +544,25 @@ namespace Optizelle {
         {
         private:
             // Create some type shortcuts
-            typedef Python::Vector Vector; 
+            typedef Python::Vector Vector;
 
             // Data
             PyObjectPtr data;
 
         public:
-            // Prevent constructors 
+            // Prevent constructors
             NO_DEFAULT_COPY_ASSIGNMENT(ScalarValuedFunction)
 
-            // Create a function 
+            // Create a function
             ScalarValuedFunction(PyObjectPtr const & data_);
 
-            // <- f(x) 
-            double eval(Vector const & x) const; 
+            // <- f(x)
+            double eval(Vector const & x) const;
 
-            // g = grad f(x) 
-            void grad(Vector const & x,Vector & g) const; 
+            // g = grad f(x)
+            void grad(Vector const & x,Vector & g) const;
 
-            // H_dx = hess f(x) dx 
+            // H_dx = hess f(x) dx
             void hessvec(Vector const & x,Vector const & dx,Vector & H_dx)const;
         };
 
@@ -572,8 +572,8 @@ namespace Optizelle {
         {
         private:
             // Create some type shortcuts
-            typedef Python::Vector X_Vector; 
-            typedef Python::Vector Y_Vector; 
+            typedef Python::Vector X_Vector;
+            typedef Python::Vector Y_Vector;
 
             // Name of this function
             std::string const name;
@@ -582,10 +582,10 @@ namespace Optizelle {
             PyObjectPtr data;
 
         public:
-            // Prevent constructors 
+            // Prevent constructors
             NO_DEFAULT_COPY_ASSIGNMENT(VectorValuedFunction)
 
-            // Create a function 
+            // Create a function
             VectorValuedFunction(
                 std::string const & name_,
                 PyObjectPtr const & data_);
@@ -593,31 +593,31 @@ namespace Optizelle {
             // y=f(x)
             void eval(X_Vector const & x,Y_Vector & y) const;
 
-            // y=f'(x)dx 
+            // y=f'(x)dx
             void p(X_Vector const & x,X_Vector const & dx,Y_Vector & y) const;
 
             // xhat=f'(x)*dy
             void ps(X_Vector const & x,const Y_Vector & dy,X_Vector & xhat)
-                const; 
-             
+                const;
+
             // xhat=(f''(x)dx)*dy
             void pps(
                 X_Vector const & x,
                 X_Vector const & dx,
                 const Y_Vector & dy,
-                X_Vector & xhat 
-            ) const; 
+                X_Vector & xhat
+            ) const;
         };
-        
-        // A linear operator specification, A : X->Y 
+
+        // A linear operator specification, A : X->Y
         template <typename ProblemClass>
         struct Operator :
             public Optizelle::Operator <double,PythonVS,PythonVS>
         {
         private:
             // Create some type shortcuts
-            typedef Python::Vector X_Vector; 
-            typedef Python::Vector Y_Vector; 
+            typedef Python::Vector X_Vector;
+            typedef Python::Vector Y_Vector;
 
             // Name of this function
             std::string const name;
@@ -642,7 +642,7 @@ namespace Optizelle {
             // Prevent constructors
             NO_DEFAULT_COPY_ASSIGNMENT(Operator)
 
-            // Create an operator 
+            // Create an operator
             Operator(
                 std::string const & name_,
                 PyObjectPtr const & data_,
@@ -673,90 +673,90 @@ namespace Optizelle {
             }
         };
 
-        // Converts elements from C++ to Python 
+        // Converts elements from C++ to Python
         namespace toPython {
-            // Sets a real in a Python state 
+            // Sets a real in a Python state
             void Real(
                 std::string const & name,
                 double const & value,
-                PyObjectPtr & state 
+                PyObjectPtr & state
             );
 
-            // Sets a natural in a Python state 
+            // Sets a natural in a Python state
             void Natural(
                 std::string const & name,
                 Optizelle::Natural const & value,
-                PyObjectPtr & state 
+                PyObjectPtr & state
             );
-           
-            // Sets a parameter in a Python state 
+
+            // Sets a parameter in a Python state
             template <typename enum_t>
             void Param(
                 std::string const & name,
                 std::function<PyObjectPtr(enum_t const &)> const & toPython,
                 enum_t const & value,
-                PyObjectPtr & state 
+                PyObjectPtr & state
             ) {
                 auto item = toPython(value);
                 capi::PyObject_SetAttrString(state,name.c_str(),item);
             }
-            
-            // Sets a vector in a Python state 
+
+            // Sets a vector in a Python state
             void Vector(
                 std::string const & name,
                 Python::Vector const & value,
                 PyObjectPtr & state
             );
-            
-            // Sets a list of vectors in a Python state 
+
+            // Sets a list of vectors in a Python state
             void VectorList(
                 std::string const & name,
                 std::list <Python::Vector> const & values,
-                PyObjectPtr & state 
-            );
-        
-            // Sets restart vectors in Python 
-            void Vectors(
-                Python::Vectors const & values,
-                PyObjectPtr & pyvalues 
+                PyObjectPtr & state
             );
 
-            // Sets restart reals in Python 
+            // Sets restart vectors in Python
+            void Vectors(
+                Python::Vectors const & values,
+                PyObjectPtr & pyvalues
+            );
+
+            // Sets restart reals in Python
             void Reals(
                 Python::Reals const & values,
-                PyObjectPtr & pyvalues 
+                PyObjectPtr & pyvalues
             );
-            
-            // Sets restart naturals in Python 
+
+            // Sets restart naturals in Python
             void Naturals(
                 Python::Naturals const & values,
-                PyObjectPtr & pyvalues 
+                PyObjectPtr & pyvalues
             );
-            
-            // Sets restart parameters in Python 
+
+            // Sets restart parameters in Python
             void Params(
                 Python::Params const & values,
-                PyObjectPtr & pyvalues 
+                PyObjectPtr & pyvalues
             );
         }
 
-        // Converts elements from Python to C++ 
+        // Converts elements from Python to C++
         namespace fromPython {
-            // Sets a real in a C++ state 
+            // Sets a real in a C++ state
             void Real(
                 std::string const & name,
                 PyObjectPtr const & pystate,
                 double & value
             );
-            
-            // Sets a natural in a C++ state 
+
+            // Sets a natural in a C++ state
             void Natural(
                 std::string const & name,
                 PyObjectPtr const & pystate,
                 Optizelle::Natural & value
             );
-           
-            // Sets a param C++ state 
+
+            // Sets a param C++ state
             template <typename enum_t>
             void Param(
                 std::string const & name,
@@ -767,37 +767,37 @@ namespace Optizelle {
                 auto item = capi::PyObject_GetAttrString(pystate,name.c_str());
                 value = fromPython(item);
             }
-            
-            // Sets a vector in a C++ state 
+
+            // Sets a vector in a C++ state
             void Vector(
                 std::string const & name,
                 PyObjectPtr const & pystate,
                 Python::Vector & value
             );
-            
-            // Sets a list of vectors in a C++ state 
+
+            // Sets a list of vectors in a C++ state
             void VectorList(
                 std::string const & name,
                 PyObjectPtr const & pystate,
                 Python::Vector const & vec,
                 std::list <Python::Vector> & values
             );
-            
-            // Sets a scalar-valued function in a C++ function bundle 
+
+            // Sets a scalar-valued function in a C++ function bundle
             void ScalarValuedFunction(
                 std::string const & name,
                 PyObjectPtr const & pyfns,
                 std::unique_ptr <PyScalarValuedFunction> & value
             );
-            
-            // Sets a vector-valued function in a C++ function bundle 
+
+            // Sets a vector-valued function in a C++ function bundle
             void VectorValuedFunction(
                 std::string const & name,
                 PyObjectPtr const & pyfns,
                 std::unique_ptr <PyVectorValuedFunction> & value
             );
-            
-            // Sets an operator in a C++ function bundle 
+
+            // Sets an operator in a C++ function bundle
             template <typename ProblemClass>
             void Operator(
                 std::string const & name,
@@ -813,27 +813,27 @@ namespace Optizelle {
                         pystate,
                         state));
             }
-        
-            // Sets restart vectors in C++ 
+
+            // Sets restart vectors in C++
             void Vectors(
                 Python::Vector const & vec,
                 PyObjectPtr const & pyvalues,
                 Python::Vectors & values
             );
-            
-            // Sets restart reals in C++ 
+
+            // Sets restart reals in C++
             void Reals(
                 PyObjectPtr const & pyvalues,
                 Python::Reals & values
             );
-            
-            // Sets restart naturals in C++ 
+
+            // Sets restart naturals in C++
             void Naturals(
                 PyObjectPtr const & pyvalues,
                 Python::Naturals & values
             );
-            
-            // Sets restart parameters in C++ 
+
+            // Sets restart parameters in C++
             void Params(
                 PyObjectPtr const & pyvalues,
                 Python::Params & values
@@ -841,51 +841,51 @@ namespace Optizelle {
         }
 
         // Routines that manipulate and support problems of the form
-        // 
+        //
         // min_{x \in X} f(x)
         //
         // where f : X -> R.
         namespace Unconstrained {
 
-            // Routines that manipulate the internal state of the optimization 
+            // Routines that manipulate the internal state of the optimization
             // algorithm
             namespace State {
-                // Convert a C++ state to a Python state 
+                // Convert a C++ state to a Python state
                 void toPython_(
                     typename PyUnconstrained::State::t const & state,
                     PyObjectPtr & pystate);
                 void toPython(
                     typename PyUnconstrained::State::t const & state,
                     Python::State <PyUnconstrained> & pystate);
-                
-                // Convert a Python state to C++ 
+
+                // Convert a Python state to C++
                 void fromPython_(
                     PyObjectPtr const & pystate,
                     typename PyUnconstrained::State::t & state);
                 void fromPython(
                     Python::State <PyUnconstrained> const & pystate,
                     typename PyUnconstrained::State::t & state);
-                
-                // Creates a state and inserts the elements into pystate 
+
+                // Creates a state and inserts the elements into pystate
                 PyObject * create(
                     PyObject * self,
                     PyObject * args);
-                
+
                 // Read json parameters from file
                 PyObject * readJson(
                     PyObject * self,
                     PyObject * args);
             }
 
-            // All the functions required by an optimization algorithm.  
+            // All the functions required by an optimization algorithm.
             namespace Functions{
-                // Convert a Python bundle to C++ 
+                // Convert a Python bundle to C++
                 template <typename ProblemClass>
                 void fromPython_(
                     Python::Functions <ProblemClass> const & pyfns,
                     Python::State <ProblemClass> & pystate,
                     typename ProblemClass::State::t const & state,
-                    typename PyUnconstrained::Functions::t & fns 
+                    typename PyUnconstrained::Functions::t & fns
                 ) {
                     fromPython::ScalarValuedFunction("f",pyfns.data,fns.f);
                     fromPython::Operator <ProblemClass> (
@@ -895,7 +895,7 @@ namespace Optizelle {
                     Python::Functions <PyUnconstrained> const & pyfns,
                     Python::State <PyUnconstrained> & pystate,
                     typename PyUnconstrained::State::t const & state,
-                    typename PyUnconstrained::Functions::t & fns 
+                    typename PyUnconstrained::Functions::t & fns
                 );
             }
 
@@ -907,16 +907,16 @@ namespace Optizelle {
                     PyObject * args
                 );
             }
-        
+
             // Utilities for restarting the optimization
             namespace Restart {
-                // Release the data into structures controlled by the user 
+                // Release the data into structures controlled by the user
                 PyObject * release(
                     PyObject * self,
                     PyObject * args
                 );
 
-                // Capture data from structures controlled by the user.  
+                // Capture data from structures controlled by the user.
                 PyObject * capture(
                     PyObject * self,
                     PyObject * args
@@ -937,50 +937,50 @@ namespace Optizelle {
         }
 
         // Routines that manipulate and support problems of the form
-        // 
+        //
         // min_{x \in X} f(x) st g(x) = 0
         //
         // where f : X -> R and g : X -> Y
         namespace EqualityConstrained {
-            // Routines that manipulate the internal state of the optimization 
+            // Routines that manipulate the internal state of the optimization
             // algorithm
             namespace State {
-                // Convert a C++ state to a Python state 
+                // Convert a C++ state to a Python state
                 void toPython_(
                     typename PyEqualityConstrained::State::t const & state,
                     PyObjectPtr & pystate);
                 void toPython(
                     typename PyEqualityConstrained::State::t const & state,
                     Python::State <PyEqualityConstrained> & pystate);
-                
-                // Convert a Python state to C++ 
+
+                // Convert a Python state to C++
                 void fromPython_(
                     PyObjectPtr const & pystate,
                     typename PyEqualityConstrained::State::t & state);
                 void fromPython(
                     PyObjectPtr const & pystate,
                     typename PyEqualityConstrained::State::t & state);
-                
-                // Creates a state and inserts the elements into pystate 
+
+                // Creates a state and inserts the elements into pystate
                 PyObject * create(
                     PyObject * self,
                     PyObject * args);
-                
+
                 // Read json parameters from file
                 PyObject * readJson(
                     PyObject * self,
                     PyObject * args);
             }
 
-            // All the functions required by an optimization algorithm.  
+            // All the functions required by an optimization algorithm.
             namespace Functions{
-                // Convert a Python bundle to C++ 
+                // Convert a Python bundle to C++
                 template <typename ProblemClass>
                 void fromPython_(
                     Python::Functions <ProblemClass> const & pyfns,
                     Python::State <ProblemClass> & pystate,
                     typename ProblemClass::State::t const & state,
-                    typename PyEqualityConstrained::Functions::t & fns 
+                    typename PyEqualityConstrained::Functions::t & fns
                 ) {
                     fromPython::VectorValuedFunction("g",pyfns.data,fns.g);
                     fromPython::Operator <ProblemClass> ("PSchur_left",
@@ -992,7 +992,7 @@ namespace Optizelle {
                     Python::Functions <PyEqualityConstrained> const & pyfns,
                     Python::State <PyEqualityConstrained> & pystate,
                     typename PyEqualityConstrained::State::t const & state,
-                    typename PyEqualityConstrained::Functions::t & fns 
+                    typename PyEqualityConstrained::Functions::t & fns
                 );
             }
 
@@ -1004,16 +1004,16 @@ namespace Optizelle {
                     PyObject * args
                 );
             }
-        
+
             // Utilities for restarting the optimization
             namespace Restart {
-                // Release the data into structures controlled by the user 
+                // Release the data into structures controlled by the user
                 PyObject * release(
                     PyObject * self,
                     PyObject * args
                 );
 
-                // Capture data from structures controlled by the user.  
+                // Capture data from structures controlled by the user.
                 PyObject * capture(
                     PyObject * self,
                     PyObject * args
@@ -1032,52 +1032,52 @@ namespace Optizelle {
                 );
             }
         }
-        
+
         // Routines that manipulate and support problems of the form
-        // 
+        //
         // min_{x \in X} f(x) st h(x) >=_K 0
         //
         // where f : X -> R and h : X -> Z
         namespace InequalityConstrained {
-            // Routines that manipulate the internal state of the optimization 
+            // Routines that manipulate the internal state of the optimization
             // algorithm
             namespace State {
-                // Convert a C++ state to a Python state 
+                // Convert a C++ state to a Python state
                 void toPython_(
                     typename PyInequalityConstrained::State::t const & state,
                     PyObjectPtr & pystate);
                 void toPython(
                     typename PyInequalityConstrained::State::t const & state,
                     Python::State <PyInequalityConstrained> & pystate);
-                
-                // Convert a Python state to C++ 
+
+                // Convert a Python state to C++
                 void fromPython_(
                     PyObjectPtr const & pystate,
                     typename PyInequalityConstrained::State::t & state);
                 void fromPython(
                     PyObjectPtr const & pystate,
                     typename PyInequalityConstrained::State::t & state);
-                
-                // Creates a state and inserts the elements into pystate 
+
+                // Creates a state and inserts the elements into pystate
                 PyObject * create(
                     PyObject * self,
                     PyObject * args);
-                
+
                 // Read json parameters from file
                 PyObject * readJson(
                     PyObject * self,
                     PyObject * args);
             }
 
-            // All the functions required by an optimization algorithm.  
+            // All the functions required by an optimization algorithm.
             namespace Functions{
-                // Convert a Python bundle to C++ 
+                // Convert a Python bundle to C++
                 template <typename ProblemClass>
                 void fromPython_(
                     Python::Functions <ProblemClass> const & pyfns,
                     Python::State <ProblemClass> & pystate,
                     typename ProblemClass::State::t const & state,
-                    typename PyInequalityConstrained::Functions::t & fns 
+                    typename PyInequalityConstrained::Functions::t & fns
                 ) {
                     fromPython::VectorValuedFunction("h",pyfns.data,fns.h);
                 }
@@ -1085,7 +1085,7 @@ namespace Optizelle {
                     Python::Functions <PyInequalityConstrained> const & pyfns,
                     Python::State <PyInequalityConstrained> & pystate,
                     typename PyInequalityConstrained::State::t const & state,
-                    typename PyInequalityConstrained::Functions::t & fns 
+                    typename PyInequalityConstrained::Functions::t & fns
                 );
             }
 
@@ -1097,16 +1097,16 @@ namespace Optizelle {
                     PyObject * args
                 );
             }
-        
+
             // Utilities for restarting the optimization
             namespace Restart {
-                // Release the data into structures controlled by the user 
+                // Release the data into structures controlled by the user
                 PyObject * release(
                     PyObject * self,
                     PyObject * args
                 );
 
-                // Capture data from structures controlled by the user.  
+                // Capture data from structures controlled by the user.
                 PyObject * capture(
                     PyObject * self,
                     PyObject * args
@@ -1125,46 +1125,46 @@ namespace Optizelle {
                 );
             }
         }
-        
+
         // Routines that manipulate and support problems of the form
         // problem of the form
-        // 
+        //
         // min_{x \in X} f(x) st g(x) = 0, h(x) >=_K 0
         //
         // where f : X -> R, g : X -> Y, and h : X -> Z
         namespace Constrained {
-            // Routines that manipulate the internal state of the optimization 
+            // Routines that manipulate the internal state of the optimization
             // algorithm
             namespace State {
-                // Convert a C++ state to a Python state 
+                // Convert a C++ state to a Python state
                 void toPython(
                     typename PyConstrained::State::t const & state,
                     Python::State <PyConstrained> & pystate);
-                
-                // Convert a Python state to C++ 
+
+                // Convert a Python state to C++
                 void fromPython(
                     PyObjectPtr const & pystate,
                     typename PyConstrained::State::t & state);
-                
-                // Creates a state and inserts the elements into pystate 
+
+                // Creates a state and inserts the elements into pystate
                 PyObject * create(
                     PyObject * self,
                     PyObject * args);
-                
+
                 // Read json parameters from file
                 PyObject * readJson(
                     PyObject * self,
                     PyObject * args);
             }
 
-            // All the functions required by an optimization algorithm.  
+            // All the functions required by an optimization algorithm.
             namespace Functions{
-                // Convert a Python bundle to C++ 
+                // Convert a Python bundle to C++
                 void fromPython(
                     Python::Functions <PyConstrained> const & pyfns,
                     Python::State <PyConstrained> & pystate,
                     typename PyConstrained::State::t const & state,
-                    typename PyConstrained::Functions::t & fns 
+                    typename PyConstrained::Functions::t & fns
                 );
             }
 
@@ -1176,16 +1176,16 @@ namespace Optizelle {
                     PyObject * args
                 );
             }
-        
+
             // Utilities for restarting the optimization
             namespace Restart {
-                // Release the data into structures controlled by the user 
+                // Release the data into structures controlled by the user
                 PyObject * release(
                     PyObject * self,
                     PyObject * args
                 );
 
-                // Capture data from structures controlled by the user.  
+                // Capture data from structures controlled by the user.
                 PyObject * capture(
                     PyObject * self,
                     PyObject * args

@@ -9,7 +9,7 @@
 // Grab the squaring function
 using Optizelle::sq;
 
-// JustA lump everything in the unit structure 
+// JustA lump everything in the unit structure
 template <typename Real>
 struct Unit {
     // Set some type shortcuts
@@ -51,11 +51,11 @@ struct Unit {
                 X::zero(H_dx);
             }
         };
-        
-        // Simple quadratic objective function 
+
+        // Simple quadratic objective function
         struct Quadratic : public Optizelle::ScalarValuedFunction <Real,XX> {
             Real eval(X_Vector const & x) const {
-                return Real(0.5)*X::innr(x,x); 
+                return Real(0.5)*X::innr(x,x);
             }
             void grad(
                 X_Vector const & x,
@@ -77,15 +77,15 @@ struct Unit {
     struct Constraint {
         // Define a linear constraint
         //
-        // g(x,y)= [ x + y = 1 ] 
+        // g(x,y)= [ x + y = 1 ]
         //
         struct Linear : public Optizelle::VectorValuedFunction<Real,XX,YY> {
-            // y=g(x) 
+            // y=g(x)
             void eval(
                 X_Vector const & x,
                 Y_Vector & y
             ) const {
-                y[0] = x[0] + x[1] - Real(1.); 
+                y[0] = x[0] + x[1] - Real(1.);
             }
 
             // y=g'(x)dx
@@ -112,15 +112,15 @@ struct Unit {
                 X_Vector const & x,
                 X_Vector const & dx,
                 Y_Vector const & dy,
-                X_Vector & x_hat 
+                X_Vector & x_hat
             ) const {
                 X::zero(x_hat);
             }
         };
-        
+
         // Define a quadratic constraint
         //
-        // g(x,y)= [ a x^2 + b y^2 = 1 ] 
+        // g(x,y)= [ a x^2 + b y^2 = 1 ]
         //
         struct Quadratic : public Optizelle::VectorValuedFunction<Real,XX,YY> {
             // Determines the width of the ellipse
@@ -132,12 +132,12 @@ struct Unit {
             // Grabs the size of the quadratic
             Quadratic(Real const & a_, Real const & b_) : a(a_), b(b_) {}
 
-            // y=g(x) 
+            // y=g(x)
             void eval(
                 X_Vector const & x,
                 Y_Vector & y
             ) const {
-                y[0] = a * sq(x[0]) + b * sq(x[1]) - Real(1.); 
+                y[0] = a * sq(x[0]) + b * sq(x[1]) - Real(1.);
             }
 
             // y=g'(x)dx
@@ -164,44 +164,44 @@ struct Unit {
                 X_Vector const & x,
                 X_Vector const & dx,
                 Y_Vector const & dy,
-                X_Vector & x_hat 
+                X_Vector & x_hat
             ) const {
                 x_hat[0]=Real(2.)*a*dx[0]*dy[0];
                 x_hat[1]=Real(2.)*b*dx[1]*dy[0];
             }
         };
-        
-        // Define a constraint where we intersect two circles 
+
+        // Define a constraint where we intersect two circles
         //
-        // g(x,y)= [ (x-a)^2 + (y-b)^2 = 1 ] 
-        //         [ (x-c)^2 + (y-d)^2 = 1 ] 
+        // g(x,y)= [ (x-a)^2 + (y-b)^2 = 1 ]
+        //         [ (x-c)^2 + (y-d)^2 = 1 ]
         //
         struct CircleIntersection :
             public Optizelle::VectorValuedFunction<Real,XX,YY>
         {
-            // Location of the first circle 
+            // Location of the first circle
             Real a;
             Real b;
 
-            // Location of the second circle 
+            // Location of the second circle
             Real c;
             Real d;
 
             // Grabs the size of the quadratic
             CircleIntersection(
-                Real const & a_, 
+                Real const & a_,
                 Real const & b_,
                 Real const & c_,
                 Real const & d_
             ) : a(a_), b(b_), c(c_), d(d_) {}
 
-            // y=g(x) 
+            // y=g(x)
             void eval(
                 X_Vector const & x,
                 Y_Vector & y
             ) const {
-                y[0] = sq(x[0]-a) + sq(x[1]-b) - Real(1.); 
-                y[1] = sq(x[0]-c) + sq(x[1]-d) - Real(1.); 
+                y[0] = sq(x[0]-a) + sq(x[1]-b) - Real(1.);
+                y[1] = sq(x[0]-c) + sq(x[1]-d) - Real(1.);
             }
 
             // y=g'(x)dx
@@ -229,24 +229,24 @@ struct Unit {
                 X_Vector const & x,
                 X_Vector const & dx,
                 Y_Vector const & dy,
-                X_Vector & x_hat 
+                X_Vector & x_hat
             ) const {
                 x_hat[0] = Real(2.)*dx[0]*dy[0] + Real(2.)*dx[0]*dy[1];
                 x_hat[1] = Real(2.)*dx[1]*dy[0] + Real(2.)*dx[1]*dy[1];
             }
         };
-        
-        // Define a trigonometric constraint 
+
+        // Define a trigonometric constraint
         //
         // g(x) = cos(x)
         //
         struct Cos : public Optizelle::VectorValuedFunction<Real,XX,YY> {
-            // y=g(x) 
+            // y=g(x)
             void eval(
                 X_Vector const & x,
                 Y_Vector & y
             ) const {
-                y[0] = std::cos(x[0]); 
+                y[0] = std::cos(x[0]);
             }
 
             // y=g'(x)dx
@@ -272,18 +272,18 @@ struct Unit {
                 X_Vector const & x,
                 X_Vector const & dx,
                 Y_Vector const & dy,
-                X_Vector & x_hat 
+                X_Vector & x_hat
             ) const {
                 x_hat[0] = -std::cos(x[0])*dx[0]*dy[0];
             }
         };
-        
-        // Define a polynomial constraint 
+
+        // Define a polynomial constraint
         //
-        // g(x) = (x-1)*(x-2)*(x-3)*(x-4) 
+        // g(x) = (x-1)*(x-2)*(x-3)*(x-4)
         //
         struct Poly : public Optizelle::VectorValuedFunction<Real,XX,YY> {
-            // y=g(x) 
+            // y=g(x)
             void eval(
                 X_Vector const & x,
                 Y_Vector & y
@@ -299,7 +299,7 @@ struct Unit {
                 Y_Vector & y
             ) const {
                 y[0] = (Real(2.)*(Real(2.)*x[0]-Real(5.))*
-                           (sq(x[0])-Real(5.)*x[0]+Real(5.)))*dx[0]; 
+                           (sq(x[0])-Real(5.)*x[0]+Real(5.)))*dx[0];
             }
 
             // x_hat=g'(x)*dy
@@ -309,7 +309,7 @@ struct Unit {
                 X_Vector & x_hat
             ) const {
                 x_hat[0] = (Real(2.)*(Real(2.)*x[0]-Real(5.))*
-                               (sq(x[0])-Real(5.)*x[0]+Real(5.)))*dy[0]; 
+                               (sq(x[0])-Real(5.)*x[0]+Real(5.)))*dy[0];
             }
 
             // x_hat=(g''(x)dx)*dy
@@ -317,22 +317,22 @@ struct Unit {
                 X_Vector const & x,
                 X_Vector const & dx,
                 Y_Vector const & dy,
-                X_Vector & x_hat 
+                X_Vector & x_hat
             ) const {
                 x_hat[0] = Real(2.)*(Real(6.)*sq(x[0])-Real(30.)*x[0]+Real(35.))
-                    *dy[0]*dx[0]; 
+                    *dy[0]*dx[0];
             }
         };
-        
+
         // Define a box constraint, which we use for inequality constraints
         //
-        // h(x) = [ x - lb ] 
+        // h(x) = [ x - lb ]
         //      = [ ub - x ]
         //
         struct Box: public Optizelle::VectorValuedFunction<Real,XX,ZZ> {
             // Lower bound
             X_Vector lb;
-            
+
             // Upper bound
             X_Vector ub;
 
@@ -349,7 +349,7 @@ struct Unit {
                 X::copy(ub_,ub);
             }
 
-            // z=h(x) 
+            // z=h(x)
             void eval(
                 X_Vector const & x,
                 Z_Vector & z
@@ -387,7 +387,7 @@ struct Unit {
                 X_Vector const & x,
                 X_Vector const & dx,
                 Z_Vector const & dz,
-                X_Vector & x_hat 
+                X_Vector & x_hat
             ) const {
                 X::zero(x_hat);
             }
@@ -399,11 +399,11 @@ struct Unit {
         // Tolerance for all our tests
         Real eps;
 
-        // Points where we run the test 
+        // Points where we run the test
         X_Vector x;
         Y_Vector y;
 
-        // Equality constraint 
+        // Equality constraint
         std::unique_ptr <Optizelle::VectorValuedFunction <Real,XX,YY>> g;
 
         // Trust-region radius
@@ -412,12 +412,12 @@ struct Unit {
         // Do diagonstic checks instead
         bool do_diagnostics;
 
-        // Check that we computed augmented system solve iterations 
-        bool check_augsys; 
+        // Check that we computed augmented system solve iterations
+        bool check_augsys;
 
         // Check that we exited the augmented system solve early
         bool check_augsys_exit;
-        
+
         // Setup some simple parameters
         Augsys(X_Vector const & x_,Y_Vector const & y_) :
             eps(std::pow(
@@ -432,15 +432,15 @@ struct Unit {
             check_augsys(false),
             check_augsys_exit(false)
         {
-            X::copy(x_,x); 
+            X::copy(x_,x);
             Y::copy(y_,y);
         }
     };
 
-    // Simple quasinormal subproblem setup 
+    // Simple quasinormal subproblem setup
     struct QN : public Augsys {
 
-        // Points where we run the test 
+        // Points where we run the test
         Z_Vector z;
 
         // Inequality constraint
@@ -450,7 +450,7 @@ struct Unit {
         std::unique_ptr <X_Vector> dx_ncp_star;
         std::unique_ptr <X_Vector> dx_n_star;
 
-        // Desired stopping condition 
+        // Desired stopping condition
         Optizelle::QuasinormalStop::t qn_stop_star;
 
         // Hard coded zeta for reference
@@ -462,7 +462,7 @@ struct Unit {
         // Check the stopping condition
         bool check_stop;
 
-        // Check that the trust-region is active 
+        // Check that the trust-region is active
         bool check_tr;
 
         // Check the quasinormal step
@@ -477,7 +477,7 @@ struct Unit {
         // Check that we cut back the step from the safeguard
         bool check_safe;
 
-        // Copy of the Cauchy point for some more complicated tests 
+        // Copy of the Cauchy point for some more complicated tests
         X_Vector cp;
 
         // Setup some simple parameters
@@ -502,7 +502,7 @@ struct Unit {
         }
     };
 
-    // Calculates a error between two vectors.  The second number returned 
+    // Calculates a error between two vectors.  The second number returned
     // is the norm of the second vector, which we use to calculate the relative
     // error.
     static std::tuple <Real,Real> error(
@@ -573,11 +573,11 @@ struct Unit {
         Optizelle::EqualityConstrained<Real,XX,YY>::Algorithms::quasinormalStep(
             fns,state);
 
-        // Check the stopping condition 
+        // Check the stopping condition
         if(setup.check_stop)
             CHECK(state.qn_stop == setup.qn_stop_star);
-        
-        // Check that we hit the trust-region modified by zeta 
+
+        // Check that we hit the trust-region modified by zeta
         if(setup.check_tr) {
             auto norm_dxn = std::sqrt(X::innr(state.dx_n,state.dx_n));
             CHECK(std::abs(norm_dxn-state.delta*state.zeta) <= setup.eps);
@@ -600,7 +600,7 @@ struct Unit {
             CHECK(norm_r <= setup.eps);
         }
 
-        // Check that our step takes us to feasibility 
+        // Check that our step takes us to feasibility
         if(setup.check_feas) {
             auto x_p_dxn = X::init(state.x);
             X::copy(state.x,x_p_dxn);
@@ -611,7 +611,7 @@ struct Unit {
             CHECK(norm_gx <= setup.eps);
         }
 
-        // Check that the safeguard truncated the step 
+        // Check that the safeguard truncated the step
         if(setup.check_safe) {
             CHECK(state.alpha_x_qn < Real(1.));
         } else {
@@ -649,7 +649,7 @@ struct Unit {
             }
         }
 
-        // Check that we computed augmented system solves 
+        // Check that we computed augmented system solves
         if(setup.check_augsys) {
             CHECK(state.augsys_qn_iter > 0);
 
@@ -664,10 +664,10 @@ struct Unit {
         setup.h = std::move(fns.h);
 
         // Copy the Cauchy point
-        X::copy(state.dx_ncp,setup.cp); 
+        X::copy(state.dx_ncp,setup.cp);
     }
 
-    // Simple nullspace projection setup 
+    // Simple nullspace projection setup
     struct NSP : public Augsys {
         // Direction to project
         std::unique_ptr <X_Vector> dx;
@@ -747,7 +747,7 @@ struct Unit {
                 augsys_null_err_target = state.augsys_pg_err_target;
             }
 
-            // Check that the projected point is correct 
+            // Check that the projected point is correct
             if(setup.check_sol) {
                 auto norm_r = Real(0.);
                 auto norm_dx = Real(0.);
@@ -755,7 +755,7 @@ struct Unit {
                 CHECK(norm_r <= setup.eps);
             }
 
-            // Check that our step takes us into the nullspace 
+            // Check that our step takes us into the nullspace
             if(setup.check_null) {
                 auto gp_x_Pdx = Y::init(setup.y);
                 fns.g->p(setup.x,P_dx,gp_x_Pdx);
@@ -763,7 +763,7 @@ struct Unit {
                 CHECK(norm_gpxPdx <= setup.eps);
             }
 
-            // Check that we computed augmented system solves 
+            // Check that we computed augmented system solves
             if(setup.check_augsys) {
                 CHECK(augsys_null_iter > 0);
 
@@ -771,7 +771,7 @@ struct Unit {
             } else {
                 CHECK(augsys_null_iter == 0);
             }
-            
+
             // Check that we exited the augmented system solve early
             if(setup.check_augsys_exit) {
                 CHECK(augsys_null_err_target == Real(1.));

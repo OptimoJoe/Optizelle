@@ -32,7 +32,7 @@ def release(X,state,xs,reals,nats,params):
     UnconstrainedRestartRelease(X,state,xs,reals,nats,params)
 
     # Return nothing.  We've modified the passed in lists.
-    return None 
+    return None
 
 def capture(X,state,xs,reals,nats,params):
     """Capture data from structures controlled by the user."""
@@ -49,4 +49,4 @@ def capture(X,state,xs,reals,nats,params):
     UnconstrainedRestartCapture(X,state,xs,reals,nats,params)
 
     # Return nothing.  The state has been modified.
-    return None 
+    return None

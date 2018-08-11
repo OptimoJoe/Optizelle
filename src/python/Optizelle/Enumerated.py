@@ -7,7 +7,7 @@ class EnumeratedType(object):
         """Converts the enumerated type into a string"""
         return filter(lambda (name,value):value==i,
             cls.__dict__.items())[0][0]
-        
+
 class TruncatedStop(EnumeratedType):
     """Reasons we stop truncated CG"""
     NotConverged, \
@@ -56,7 +56,7 @@ class Operators(EnumeratedType):
     InvSR1, \
     UserDefined \
     = range(8)
-    
+
 class LineSearchDirection(EnumeratedType):
     """Different kinds of search directions"""
     SteepestDescent, \
@@ -66,7 +66,7 @@ class LineSearchDirection(EnumeratedType):
     BFGS, \
     NewtonCG \
     = range(6)
-   
+
 class LineSearchKind(EnumeratedType):
     """Different sorts of line searches"""
     GoldenSection, \
@@ -74,7 +74,7 @@ class LineSearchKind(EnumeratedType):
     TwoPointA, \
     TwoPointB \
     = range(4)
-    
+
 class OptimizationLocation(EnumeratedType):
     """Different points in the optimization algorithm"""
     BeginningOfOptimization, \
@@ -106,16 +106,16 @@ class ProblemClass(EnumeratedType):
     InequalityConstrained, \
     Constrained \
     = range(4)
-    
+
 class FunctionDiagnostics(EnumeratedType):
-    """Different function diagnostics on the optimization functions""" 
+    """Different function diagnostics on the optimization functions"""
     NoDiagnostics, \
     FirstOrder, \
     SecondOrder \
     = range(3)
 
 class VectorSpaceDiagnostics(EnumeratedType):
-    """Different diagnostics on the vector space algebra""" 
+    """Different diagnostics on the vector space algebra"""
     NoDiagnostics, \
     Basic, \
     EuclideanJordan\

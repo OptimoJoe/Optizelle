@@ -3,9 +3,9 @@ project(restart)
 # Set what interfaces we're using
 set(interfaces "cpp" "python" "matlab" "octave")
 
-# Copy in files for our unit tests 
+# Copy in files for our unit tests
 is_unit("${interfaces}" enable_unit)
-if(enable_unit) 
+if(enable_unit)
     add_custom_target(
         blank
         ALL
@@ -14,7 +14,7 @@ if(enable_unit)
             ${CMAKE_BINARY_DIR}/src/unit/restart/)
 endif()
 
-# Compile and add our unit tests 
+# Compile and add our unit tests
 compile_add_unit(unconstrained "${interfaces}")
 compile_add_unit(equality_constrained "${interfaces}")
 compile_add_unit(inequality_constrained "${interfaces}")

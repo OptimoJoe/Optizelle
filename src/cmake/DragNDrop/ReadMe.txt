@@ -7,7 +7,7 @@ Installation instructions for Optizelle
 
         /Applications/${CPACK_PACKAGE_NAME}/share/optizelle/com.optimojoe.optizelle.plist
 
-    to either 
+    to either
 
         ~/Library/LaunchAgents/
 

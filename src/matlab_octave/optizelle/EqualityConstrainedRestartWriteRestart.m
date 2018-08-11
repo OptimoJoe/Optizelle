@@ -1,4 +1,4 @@
-% Writes a json restart file 
+% Writes a json restart file
 function EqualityConstrainedRestartWriteRestart(X,Y,fname,state)
     % Check our arguments
     checkVectorSpace('X',X);
@@ -6,5 +6,5 @@ function EqualityConstrainedRestartWriteRestart(X,Y,fname,state)
     checkString('fname',fname);
     checkEqualityConstrainedStateT('state',state);
 
-    % Write the restart file 
+    % Write the restart file
     EqualityConstrainedRestartWriteRestart_(X,Y,fname,state);

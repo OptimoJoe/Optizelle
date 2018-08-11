@@ -1,7 +1,7 @@
-% Check that we have an unconstrained function bundle 
+% Check that we have an unconstrained function bundle
 function checkUnconstrainedFunctionsT(name,value)
 
-    % Check for the appropriate fields 
+    % Check for the appropriate fields
     if ~(checkFields({ ...
         'f', ...
         'PH'}, ...

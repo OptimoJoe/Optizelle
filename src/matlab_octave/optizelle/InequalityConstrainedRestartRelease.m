@@ -1,4 +1,4 @@
-% Release the state in an inequality optimization problem 
+% Release the state in an inequality optimization problem
 function [xs,zs,reals,nats,params]=InequalityConstrainedRestartRelease( ...
     X,Z,state)
 
@@ -7,6 +7,6 @@ function [xs,zs,reals,nats,params]=InequalityConstrainedRestartRelease( ...
     checkVectorSpace('Z',Z);
     checkInequalityConstrainedStateT('state',state);
 
-    % Do the state release 
+    % Do the state release
     [xs,zs,reals,nats,params]=InequalityConstrainedRestartRelease_( ...
         X,Z,state);

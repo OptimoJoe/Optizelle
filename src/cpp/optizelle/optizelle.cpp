@@ -24,8 +24,8 @@ namespace Optizelle{
                 throw Exception::t(__LOC__+", invalid AlgorithmClass::t");
             }
         }
-        
-        // Converts a string to an algorithm class 
+
+        // Converts a string to an algorithm class
         t from_string(std::string const & algorithm_class){
             if(algorithm_class=="TrustRegion")
                 return TrustRegion;
@@ -35,7 +35,7 @@ namespace Optizelle{
                 return UserDefined;
             else
                 throw Exception::t(__LOC__
-                    + ", string can't be convert into an AlgorithmClass::t"); 
+                    + ", string can't be convert into an AlgorithmClass::t");
         }
 
         // Checks whether or not a string is valid
@@ -52,7 +52,7 @@ namespace Optizelle{
 
     // Reasons why we stop the algorithm
     namespace OptimizationStop{
-        // Converts the stopping condition to a string 
+        // Converts the stopping condition to a string
         std::string to_string(t const & opt_stop) {
             switch(opt_stop){
             case NotConverged:
@@ -71,7 +71,7 @@ namespace Optizelle{
                 return "UserDefined";
             default:
                 throw Exception::t(__LOC__
-                    + ", invalid OptimizationStop::t"); 
+                    + ", invalid OptimizationStop::t");
             }
         }
 
@@ -86,14 +86,14 @@ namespace Optizelle{
             else if(opt_stop=="MaxItersExceeded")
                 return MaxItersExceeded;
             else if(opt_stop=="InteriorPointInstability")
-                return InteriorPointInstability; 
+                return InteriorPointInstability;
             else if(opt_stop=="GlobalizationFailure")
                 return GlobalizationFailure;
             else if(opt_stop=="UserDefined")
                 return UserDefined;
             else
                 throw Exception::t(__LOC__
-                    + ", string can't be converted into an OptimizationStop::t"); 
+                    + ", string can't be converted into an OptimizationStop::t");
         }
 
         // Checks whether or not a string is valid
@@ -114,7 +114,7 @@ namespace Optizelle{
 
     // Various operators for both Hessian approximations and preconditioners
     namespace Operators{
-        // Converts the operator type to a string 
+        // Converts the operator type to a string
         std::string to_string(t const & op) {
             switch(op){
             case Identity:
@@ -134,31 +134,31 @@ namespace Optizelle{
             case UserDefined:
                 return "UserDefined";
             default:
-                throw Exception::t(__LOC__ + ", invalid Operators::t"); 
+                throw Exception::t(__LOC__ + ", invalid Operators::t");
             }
         }
-        
-        // Converts a string to a operator 
+
+        // Converts a string to a operator
         t from_string(std::string const & op) {
             if(op=="Identity")
-                return Identity; 
+                return Identity;
             else if(op=="Zero")
-                return Zero; 
+                return Zero;
             else if(op=="ScaledIdentity")
-                return ScaledIdentity; 
+                return ScaledIdentity;
             else if(op=="BFGS")
-                return BFGS; 
+                return BFGS;
             else if(op=="InvBFGS")
-                return InvBFGS; 
+                return InvBFGS;
             else if(op=="SR1")
-                return SR1; 
+                return SR1;
             else if(op=="InvSR1")
-                return InvSR1; 
+                return InvSR1;
             else if(op=="UserDefined")
-                return UserDefined; 
+                return UserDefined;
             else
                 throw Exception::t(__LOC__
-                    + ", string can't be convert into an Operators::t"); 
+                    + ", string can't be convert into an Operators::t");
         }
 
         // Checks whether or not a string is valid
@@ -170,7 +170,7 @@ namespace Optizelle{
                 name=="InvBFGS" ||
                 name=="SR1" ||
                 name=="InvSR1" ||
-                name=="UserDefined" 
+                name=="UserDefined"
             )
                 return true;
             else
@@ -178,10 +178,10 @@ namespace Optizelle{
         }
     }
 
-    // Different kinds of search directions 
+    // Different kinds of search directions
     namespace LineSearchDirection{
 
-        // Converts the line-search direction to a string 
+        // Converts the line-search direction to a string
         std::string to_string(t const & dir){
             switch(dir){
             case SteepestDescent:
@@ -198,27 +198,27 @@ namespace Optizelle{
                 return "NewtonCG";
             default:
                 throw Exception::t(__LOC__
-                    + ", invalid LineSearchDirection::t"); 
+                    + ", invalid LineSearchDirection::t");
             }
         }
-        
-        // Converts a string to a line-search direction 
+
+        // Converts a string to a line-search direction
         t from_string(std::string const & dir) {
             if(dir=="SteepestDescent")
-                return SteepestDescent; 
+                return SteepestDescent;
             else if(dir=="FletcherReeves")
-                return FletcherReeves; 
+                return FletcherReeves;
             else if(dir=="PolakRibiere")
-                return PolakRibiere; 
+                return PolakRibiere;
             else if(dir=="HestenesStiefel")
-                return HestenesStiefel; 
+                return HestenesStiefel;
             else if(dir=="BFGS")
-                return BFGS; 
+                return BFGS;
             else if(dir=="NewtonCG")
-                return NewtonCG; 
+                return NewtonCG;
             else
                 throw Exception::t(__LOC__
-                    +", string can't be convert into a LineSearchDirection::t"); 
+                    +", string can't be convert into a LineSearchDirection::t");
         }
 
         // Checks whether or not a string is valid
@@ -234,12 +234,12 @@ namespace Optizelle{
             else
                 return false;
         }
-    } 
+    }
 
     // Different sorts of line searches
     namespace LineSearchKind{
 
-        // Converts the line-search kind to a string 
+        // Converts the line-search kind to a string
         std::string to_string(t const & kind) {
             switch(kind){
             case GoldenSection:
@@ -252,23 +252,23 @@ namespace Optizelle{
                 return "TwoPointB";
             default:
                 throw Exception::t(__LOC__
-                    + ", invalid LineSearchKind::t"); 
+                    + ", invalid LineSearchKind::t");
             }
         }
-        
-        // Converts a string to a line-search kind 
+
+        // Converts a string to a line-search kind
         t from_string(std::string const & kind) {
             if(kind=="GoldenSection")
-                return GoldenSection; 
+                return GoldenSection;
             else if(kind=="BackTracking")
-                return BackTracking; 
+                return BackTracking;
             else if(kind=="TwoPointA")
-                return TwoPointA; 
+                return TwoPointA;
             else if(kind=="TwoPointB")
-                return TwoPointB; 
+                return TwoPointB;
             else
                 throw Exception::t(__LOC__
-                    + ", string can't be convert into a LineSearchKind::t"); 
+                    + ", string can't be convert into a LineSearchKind::t");
         }
 
         // Checks whether or not a string is valid
@@ -276,7 +276,7 @@ namespace Optizelle{
             if( name=="GoldenSection" ||
                 name=="BackTracking" ||
                 name=="TwoPointA" ||
-                name=="TwoPointB" 
+                name=="TwoPointB"
             )
                 return true;
             else
@@ -294,15 +294,15 @@ namespace Optizelle{
             case TwoPointB:
                 return false;
             default:
-                throw Exception::t(__LOC__+", invalid LineSearchKind::t"); 
+                throw Exception::t(__LOC__+", invalid LineSearchKind::t");
             }
         }
     }
-        
+
     // Different points in the optimization algorithm
     namespace OptimizationLocation {
 
-        // Converts the optimization location to a string 
+        // Converts the optimization location to a string
         std::string to_string(t const & loc) {
             switch(loc){
             case BeginningOfOptimization:
@@ -345,11 +345,11 @@ namespace Optizelle{
                 return "EndOfOptimization";
             default:
                 throw Exception::t(__LOC__
-                    + ", invalid OptimizationLocation::t"); 
+                    + ", invalid OptimizationLocation::t");
             }
         }
-        
-        // Converts a string to a line-search kind 
+
+        // Converts a string to a line-search kind
         t from_string(std::string const & loc) {
             if(loc=="BeginningOfOptimization")
                 return BeginningOfOptimization;
@@ -362,15 +362,15 @@ namespace Optizelle{
             else if(loc=="BeginningOfOptimizationLoop")
                 return BeginningOfOptimizationLoop;
             else if(loc=="BeforeSaveOld")
-                return BeforeSaveOld; 
+                return BeforeSaveOld;
             else if(loc=="BeforeStep")
-                return BeforeStep; 
+                return BeforeStep;
             else if(loc=="BeforeGetStep")
-                return BeforeGetStep; 
+                return BeforeGetStep;
             else if(loc=="GetStep")
-                return GetStep; 
+                return GetStep;
             else if(loc=="AfterStepBeforeGradient")
-                return AfterStepBeforeGradient; 
+                return AfterStepBeforeGradient;
             else if(loc=="AfterGradient")
                 return AfterGradient;
             else if(loc=="BeforeQuasi")
@@ -378,7 +378,7 @@ namespace Optizelle{
             else if(loc=="AfterQuasi")
                 return AfterQuasi;
             else if(loc=="EndOfOptimizationIteration")
-                return EndOfOptimizationIteration; 
+                return EndOfOptimizationIteration;
             else if(loc=="BeforeLineSearch")
                 return BeforeLineSearch;
             else if(loc=="AfterRejectedTrustRegion")
@@ -392,7 +392,7 @@ namespace Optizelle{
             else
                 throw Exception::t(__LOC__
                     + ", string can't be convert into an "
-                    "OptimizationLocation::t"); 
+                    "OptimizationLocation::t");
         }
 
         // Checks whether or not a string is valid
@@ -402,10 +402,10 @@ namespace Optizelle{
                 name=="AfterInitialFuncAndGrad" ||
                 name=="BeforeOptimizationLoop" ||
                 name=="BeginningOfOptimizationLoop" ||
-                name=="BeforeSaveOld" || 
-                name=="BeforeStep" || 
-                name=="BeforeGetStep" || 
-                name=="GetStep" || 
+                name=="BeforeSaveOld" ||
+                name=="BeforeStep" ||
+                name=="BeforeGetStep" ||
+                name=="GetStep" ||
                 name=="AfterStepBeforeGradient" ||
                 name=="AfterGradient" ||
                 name=="BeforeQuasi" ||
@@ -422,10 +422,10 @@ namespace Optizelle{
                 return false;
         }
     }
-    
+
     // Different problem classes
     namespace ProblemClass{
-        
+
         // Converts the problem class to a string
         std::string to_string(t const & problem_class){
             switch(problem_class){
@@ -438,11 +438,11 @@ namespace Optizelle{
             case Constrained:
                 return "Constrained";
             default:
-                throw Exception::t(__LOC__+", invalid ProblemClass::t"); 
+                throw Exception::t(__LOC__+", invalid ProblemClass::t");
             }
         }
 
-        // Converts a string to a problem class 
+        // Converts a string to a problem class
         t from_string(std::string const &problem_class){
             if(problem_class=="Unconstrained")
                 return Unconstrained;
@@ -454,7 +454,7 @@ namespace Optizelle{
                 return Constrained;
             else
                 throw Exception::t(__LOC__
-                    + ", string can't be convert into a ProblemClass::t"); 
+                    + ", string can't be convert into a ProblemClass::t");
         }
 
         // Checks whether or not a string is valid
@@ -462,36 +462,36 @@ namespace Optizelle{
             if( name=="Unconstrained" ||
                 name=="EqualityConstrained" ||
                 name=="InequalityConstrained" ||
-                name=="Constrained" 
+                name=="Constrained"
             )
                 return true;
             else
                 return false;
         }
     }
-    
-    // Different diagnostic tests on the optimization functions 
+
+    // Different diagnostic tests on the optimization functions
     namespace FunctionDiagnostics{
 
         // Converts the diagnostic checks to a string
         std::string to_string(t const & diag) {
             switch(diag){
-            case NoDiagnostics: 
+            case NoDiagnostics:
                 return "NoDiagnostics";
-            case FirstOrder: 
+            case FirstOrder:
                 return "FirstOrder";
-            case SecondOrder: 
+            case SecondOrder:
                 return "SecondOrder";
             default:
                 throw Exception::t(__LOC__
-                    + ", invalid FunctionDiagnostics::t"); 
+                    + ", invalid FunctionDiagnostics::t");
             }
         }
-        
-        // Converts a string to the diagnostic checks 
+
+        // Converts a string to the diagnostic checks
         t from_string(std::string const & diag) {
             if(diag=="NoDiagnostics")
-                return NoDiagnostics; 
+                return NoDiagnostics;
             else if(diag=="FirstOrder")
                 return FirstOrder;
             else if(diag=="SecondOrder")
@@ -499,57 +499,57 @@ namespace Optizelle{
             else
                 throw Exception::t(__LOC__
                     + ", string can't be convert into a "
-                    "FunctionDiagnostics::t"); 
+                    "FunctionDiagnostics::t");
         }
 
         // Checks whether or not a string is valid
         bool is_valid(std::string const & name) {
             if( name=="NoDiagnostics" ||
                 name=="FirstOrder" ||
-                name=="SecondOrder" 
+                name=="SecondOrder"
             )
                 return true;
             else
                 return false;
         }
     }
-    
-    // Different diagnostic tests on the optimization functions 
+
+    // Different diagnostic tests on the optimization functions
     namespace DiagnosticScheme {
 
         // Converts the diagnostic scheme to a string
         std::string to_string(t const & dscheme) {
             switch(dscheme){
-            case Never: 
+            case Never:
                 return "Never";
-            case DiagnosticsOnly: 
+            case DiagnosticsOnly:
                 return "DiagnosticsOnly";
-            case EveryIteration: 
+            case EveryIteration:
                 return "EveryIteration";
             default:
                 throw Exception::t(__LOC__
-                    + ", invalid DiagnosticScheme::t"); 
+                    + ", invalid DiagnosticScheme::t");
             }
         }
-        
-        // Converts a string to the diagnostic scheme 
+
+        // Converts a string to the diagnostic scheme
         t from_string(std::string const & dscheme) {
             if(dscheme=="Never")
-                return Never; 
+                return Never;
             else if(dscheme=="DiagnosticsOnly")
                 return DiagnosticsOnly;
             else if(dscheme=="EveryIteration")
                 return EveryIteration;
             else
                 throw Exception::t(__LOC__
-                    + ", string can't be convert into a DiagnosticScheme::t"); 
+                    + ", string can't be convert into a DiagnosticScheme::t");
         }
 
         // Checks whether or not a string is valid
         bool is_valid(std::string const & name) {
             if( name=="Never" ||
                 name=="DiagnosticsOnly" ||
-                name=="EveryIteration" 
+                name=="EveryIteration"
             )
                 return true;
             else
@@ -557,28 +557,28 @@ namespace Optizelle{
         }
     }
 
-    // Different diagnostics on the algebra 
+    // Different diagnostics on the algebra
     namespace VectorSpaceDiagnostics{
 
         // Converts the diagnostic checks to a string
         std::string to_string(t const & diag) {
             switch(diag){
-            case NoDiagnostics: 
+            case NoDiagnostics:
                 return "NoDiagnostics";
-            case Basic: 
+            case Basic:
                 return "Basic";
-            case EuclideanJordan: 
+            case EuclideanJordan:
                 return "EuclideanJordan";
             default:
                 throw Exception::t(__LOC__
-                    + ", invalid VectorSpaceDiagnostics::t"); 
+                    + ", invalid VectorSpaceDiagnostics::t");
             }
         }
-        
-        // Converts a string to the diagnostic checks 
+
+        // Converts a string to the diagnostic checks
         t from_string(std::string const & diag) {
             if(diag=="NoDiagnostics")
-                return NoDiagnostics; 
+                return NoDiagnostics;
             else if(diag=="Basic")
                 return Basic;
             else if(diag=="EuclideanJordan")
@@ -586,14 +586,14 @@ namespace Optizelle{
             else
                 throw Exception::t(__LOC__
                     + ", string can't be convert into a "
-                    "VectorSpaceDiagnostics ::t"); 
+                    "VectorSpaceDiagnostics ::t");
         }
 
         // Checks whether or not a string is valid
         bool is_valid(std::string const & name) {
             if( name=="NoDiagnostics" ||
                 name=="Basic" ||
-                name=="EuclideanJordan" 
+                name=="EuclideanJordan"
             )
                 return true;
             else
@@ -601,30 +601,30 @@ namespace Optizelle{
         }
     }
 
-    // Different kinds of stopping tolerances 
+    // Different kinds of stopping tolerances
     namespace ToleranceKind{
 
         // Converts the kind of stopping tolerance to a string
         std::string to_string(t const & eps_rel) {
             switch(eps_rel){
-            case Relative: 
+            case Relative:
                 return "Relative";
-            case Absolute: 
+            case Absolute:
                 return "Absolute";
             default:
-                throw Exception::t(__LOC__+", invalid ToleranceKind::t"); 
+                throw Exception::t(__LOC__+", invalid ToleranceKind::t");
             }
         }
-        
+
         // Converts a string to the kind of stopping tolerance
         t from_string(std::string const & eps_rel) {
             if(eps_rel=="Relative")
-                return Relative; 
+                return Relative;
             else if(eps_rel=="Absolute")
                 return Absolute;
             else
                 throw Exception::t(__LOC__
-                    + ", string can't be convert into a ToleranceKind::t"); 
+                    + ", string can't be convert into a ToleranceKind::t");
         }
 
         // Checks whether or not a string is valid
@@ -637,45 +637,45 @@ namespace Optizelle{
                 return false;
         }
     }
-    
+
     // Reasons why the quasinormal problem exited
     namespace QuasinormalStop{
 
-        // Converts the quasinormal stopping condition to a string 
+        // Converts the quasinormal stopping condition to a string
         std::string to_string(t const & qn_stop) {
             switch(qn_stop){
-            case Newton: 
+            case Newton:
                 return "Newton";
-            case CauchyTrustRegion: 
+            case CauchyTrustRegion:
                 return "CauchyTrustRegion";
-            case CauchySafeguard: 
+            case CauchySafeguard:
                 return "CauchySafeguard";
-            case DoglegTrustRegion: 
+            case DoglegTrustRegion:
                 return "DoglegTrustRegion";
-            case DoglegSafeguard: 
+            case DoglegSafeguard:
                 return "DoglegSafeguard";
-            case NewtonTrustRegion: 
+            case NewtonTrustRegion:
                 return "NewtonTrustRegion";
-            case NewtonSafeguard: 
+            case NewtonSafeguard:
                 return "NewtonSafeguard";
-            case Feasible: 
+            case Feasible:
                 return "Feasible";
-            case CauchySolved: 
+            case CauchySolved:
                 return "CauchySolved";
-            case LocalMin: 
+            case LocalMin:
                 return "LocalMin";
-            case NewtonFailed: 
+            case NewtonFailed:
                 return "NewtonFailed";
             default:
                 throw Exception::t(__LOC__
                     + ", invalid QuasiNormalStop::t");
             }
         }
-        
+
         // Converts a string to a quasinormal stopping condition
         t from_string(std::string const & qn_stop) {
             if(qn_stop=="Newton")
-                return Newton; 
+                return Newton;
             else if(qn_stop=="CauchyTrustRegion")
                 return CauchyTrustRegion;
             else if(qn_stop=="CauchySafeguard")
@@ -698,7 +698,7 @@ namespace Optizelle{
                 return NewtonFailed;
             else
                 throw Exception::t(__LOC__
-                    + ", string can't be convert into a QuasiNormalStop::t"); 
+                    + ", string can't be convert into a QuasiNormalStop::t");
         }
 
         // Checks whether or not a string is valid
@@ -732,7 +732,7 @@ namespace Optizelle{
     std::ostream& Utility::formatString(std::ostream & out) {
         return out << std::setw(12) << std::left;
     }
-    
+
     // Converts anything to a string.
     std::string Utility::atos(double const & x){
         std::stringstream ss;
@@ -751,7 +751,7 @@ namespace Optizelle{
     }
     std::string Utility::atos(TruncatedStop::t const & x){
         std::stringstream ss;
-        // Converts the truncated CG stopping condition to a shorter string 
+        // Converts the truncated CG stopping condition to a shorter string
         switch(x){
         case TruncatedStop::NotConverged:
             return atos("NotConv");
@@ -789,7 +789,7 @@ namespace Optizelle{
     }
     std::string Utility::atos(QuasinormalStop::t const & x){
         std::stringstream ss;
-        // Converts the quasinormal stopping condition to a shorter string 
+        // Converts the quasinormal stopping condition to a shorter string
         switch(x){
         case QuasinormalStop::Newton:
             return atos("Newton");

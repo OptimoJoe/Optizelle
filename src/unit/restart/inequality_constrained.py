@@ -1,6 +1,6 @@
 # This tests our ability to capture and release from the optimization state
 
-import Optizelle 
+import Optizelle
 import numpy
 import math
 
@@ -8,7 +8,7 @@ import math
 XX = Optizelle.Rm
 ZZ = Optizelle.Rm
 msg = Optizelle.Messaging.stdout
-    
+
 # Create some arbitrary vector in R^2
 x = numpy.array([1.2,2.3])
 x0 = numpy.array([2.3,1.2])
@@ -24,10 +24,10 @@ state = Optizelle.InequalityConstrained.State.t(XX,ZZ,x,z)
 
 # Read in some parameters
 fname = "blank.json"
-#---ReadJson0--- 
+#---ReadJson0---
 Optizelle.json.InequalityConstrained.read(XX,ZZ,fname,state)
-#---ReadJson1--- 
-   
+#---ReadJson1---
+
 # Create a bundle of functions
 #---Functions0---
 fns = Optizelle.InequalityConstrained.Functions.t()
@@ -39,7 +39,7 @@ state.f_x = 1.0
 Optizelle.InequalityConstrained.Algorithms.getMin(XX,ZZ,msg,fns,state)
 #---Solver1---
 
-# Do a null optimization with a state manipulator 
+# Do a null optimization with a state manipulator
 smanip = Optizelle.StateManipulator()
 #---SmanipSolver0---
 Optizelle.InequalityConstrained.Algorithms.getMin(XX,ZZ,msg,fns,state,smanip)
@@ -52,7 +52,7 @@ Optizelle.json.InequalityConstrained.write_restart(XX,ZZ,fname,state);
 Optizelle.json.InequalityConstrained.read_restart(XX,ZZ,fname,x,z,state);
 #---WriteReadRestart1---
 
-# Do a release 
+# Do a release
 #---Release0---
 xs = Optizelle.InequalityConstrained.Restart.X_Vectors()
 zs = Optizelle.InequalityConstrained.Restart.Z_Vectors()
@@ -71,7 +71,7 @@ if len(zs) != 3:
     raise Optizelle.Exception.t(
         "List zs contains the wrong number of vectors")
 
-# Modify some vectors 
+# Modify some vectors
 xs[0]=(xs[0][0],x0)
 zs[0]=(zs[0][0],z0)
 

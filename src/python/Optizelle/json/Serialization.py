@@ -15,7 +15,7 @@ class Extendable(object):
         self.fn = fn
 
     def register(self,fn,vector_type):
-        """Extends the current function with fn.  This function will only be 
+        """Extends the current function with fn.  This function will only be
         called if the first argument matches vector_type."""
 
         # Check our arguments
@@ -29,15 +29,15 @@ class Extendable(object):
         try:
             return self.fns[type(args[0])](*args)
         except:
-            return self.fn(*args) 
+            return self.fn(*args)
 
 @ Extendable
 def serialize(x,name,iter):
     """Converts a vector to a JSON formatted string"""
-    
+
     raise Optizelle.Exception.t(
         "The serialize function for the vector %s not defined." % str(x))
-    
+
 @ Extendable
 def deserialize(x,x_json):
     """Converts a JSON formatted string to a vector"""
@@ -46,7 +46,7 @@ def deserialize(x,x_json):
         "The deserialize function for the vector %s not defined." % str(x))
 
 def serialize_Rm(x,name,iter):
-    """Serializes a numpy array for the vector space Optizelle.Rm""" 
+    """Serializes a numpy array for the vector space Optizelle.Rm"""
 
     # Create the json representation
     x_json="[ "
@@ -58,7 +58,7 @@ def serialize_Rm(x,name,iter):
     return x_json
 
 def deserialize_Rm(x,x_json):
-    """Deserializes a numpy array for the vector space Optizelle.Rm""" 
+    """Deserializes a numpy array for the vector space Optizelle.Rm"""
 
     # Eliminate all whitespace
     x_json="".join(x_json.split())
@@ -70,7 +70,7 @@ def deserialize_Rm(x,x_json):
     # Eliminate the initial and final delimiters
     x_json=x_json[1:-1]
 
-    # Create a list of the numbers involved 
+    # Create a list of the numbers involved
     x_json=x_json.split(",")
 
     # Convert the strings to numbers
@@ -79,6 +79,6 @@ def deserialize_Rm(x,x_json):
     # Create an Optizelle.Rm vector
     return numpy.array(x_json)
 
-# Register the serialization routines for numpy arrays 
+# Register the serialization routines for numpy arrays
 serialize.register(serialize_Rm,numpy.ndarray)
 deserialize.register(deserialize_Rm,numpy.ndarray)

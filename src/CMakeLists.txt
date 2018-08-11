@@ -1,14 +1,14 @@
 # Add a module directory in case we need to find some packages
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
     "${CMAKE_SOURCE_DIR}/src/cmake/Modules/")
-    
-# Add some useful macros for examples and unit testing 
+
+# Add some useful macros for examples and unit testing
 include(Optizelle)
 
 # Grab our third party library dependencies
 add_subdirectory(thirdparty)
 
-# Compile our C++ pieces 
+# Compile our C++ pieces
 add_subdirectory(cpp)
 
 # Compile our Python pieces
@@ -20,7 +20,7 @@ add_subdirectory(matlab_octave)
 # Compile our unit tests
 add_subdirectory(unit)
 
-# Compile our examples 
+# Compile our examples
 add_subdirectory(examples)
 
 # See if we're going to build the documentation for the package

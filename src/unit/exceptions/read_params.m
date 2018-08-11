@@ -1,4 +1,4 @@
-% Tests error handling when reading invalid parameters 
+% Tests error handling when reading invalid parameters
 function read_params()
     % Grab the Optizelle library
     global Optizelle;
@@ -7,7 +7,7 @@ function read_params()
     % Create some type shortcuts
     XX = Optizelle.Rm;
 
-    % Set the parameter file name 
+    % Set the parameter file name
     fname = 'bad_params.json';
 
     % Allocate memory for an initial guess
@@ -16,7 +16,7 @@ function read_params()
     % Create an optimization state
     state=Optizelle.Unconstrained.State.t(Optizelle.Rm,x);
 
-    % Try to catch the rror 
+    % Try to catch the rror
     msg = '';
     %---Exception0---
     try

@@ -8,7 +8,7 @@ import Optizelle.InequalityConstrained.Functions
 class t(
     Optizelle.EqualityConstrained.Functions.t,
     Optizelle.InequalityConstrained.Functions.t):
-    """All the functions required by an optimization algorithm""" 
+    """All the functions required by an optimization algorithm"""
     def __init__(self):
         super(t,self).__init__()
 

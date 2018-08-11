@@ -1,4 +1,4 @@
-% Tests our ability to throw a native exception and catch it 
+% Tests our ability to throw a native exception and catch it
 function objective()
     % Grab the Optizelle library
     global Optizelle;
@@ -14,7 +14,7 @@ function objective()
     fns=Optizelle.Unconstrained.Functions.t;
     fns.f=Objective();
 
-    % Try to catch the rror 
+    % Try to catch the rror
     msg = '';
     try
         state = Optizelle.Unconstrained.Algorithms.getMin( ...

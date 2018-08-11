@@ -12,12 +12,12 @@ function result = tanh_eval(x)
     result = tanh(x);
 end
 
-% Derivative 
-function result = tanh_p(x) 
+% Derivative
+function result = tanh_p(x)
     result = sech(x).^2;
 end
 
 % Second derivative
-function result = tanh_p2(x) 
+function result = tanh_p2(x)
     result = -2.0*sech(x).^2.*tanh(x);
 end

@@ -10,29 +10,29 @@ using Optizelle::Natural;
 // Squares its input
 template <typename Real>
 Real sq(Real x){
-    return x*x; 
+    return x*x;
 }
 
 // Cubes its input
 template <typename Real>
 Real cub(Real x){
-    return x*x*x; 
+    return x*x*x;
 }
 
 // Quads its input
 template <typename Real>
 Real quad(Real x){
-    return x*x*x*x; 
+    return x*x*x*x;
 }
 
 // Quints its input
 template <typename Real>
 Real quint(Real x){
-    return x*x*x*x*x; 
+    return x*x*x*x*x;
 }
 
 // Define the Rosenbrock function where
-// 
+//
 // f(x,y)=(1-x)^2+100(y-x^2)^2
 //
 struct Rosenbrock :
@@ -77,7 +77,7 @@ struct Utility  : public Optizelle::VectorValuedFunction
     typedef Optizelle::Rm <double> X;
     typedef Optizelle::Rm <double> Y;
 
-    // y=g(x) 
+    // y=g(x)
     void eval(
         X::Vector const & x,
         Y::Vector & y
@@ -105,7 +105,7 @@ struct Utility  : public Optizelle::VectorValuedFunction
     void ps(
         X::Vector const & x,
         Y::Vector const & dy,
-        X::Vector & xhat 
+        X::Vector & xhat
     ) const {
         xhat[0]= -sin(x[0])*sin(x[1])*dy[0]
               +6.*x[0]*x[1]*dy[1]
@@ -120,7 +120,7 @@ struct Utility  : public Optizelle::VectorValuedFunction
         X::Vector const & x,
         X::Vector const & dx,
         Y::Vector const & dy,
-        X::Vector & xhat 
+        X::Vector & xhat
     ) const {
         xhat[0] = (-cos(x[0])*dx[0]*sin(x[1])-sin(x[0])*cos(x[1])*dx[1])*dy[0]
                +(6.*dx[0]*x[1] + 6.*x[0]*dx[1])*dy[1]
@@ -136,10 +136,10 @@ int main() {
     // Create a type shortcut
     using Optizelle::Rm;
 
-    // Allocate memory for an initial guess and equality multiplier 
+    // Allocate memory for an initial guess and equality multiplier
     auto x = std::vector <double> {1.2, 2.3};
     auto y = std::vector <double> (3);
-    
+
     // Create an optimization state
     Optizelle::EqualityConstrained <double,Rm,Rm>::State::t state(x,y);
 
@@ -150,7 +150,7 @@ int main() {
     state.g_diag = Optizelle::FunctionDiagnostics::SecondOrder;
     state.y_diag = Optizelle::VectorSpaceDiagnostics::EuclideanJordan;
     state.L_diag = Optizelle::FunctionDiagnostics::SecondOrder;
-    
+
     // Create a bundle of functions
     Optizelle::EqualityConstrained <double,Rm,Rm>::Functions::t fns;
     fns.f.reset(new Rosenbrock);

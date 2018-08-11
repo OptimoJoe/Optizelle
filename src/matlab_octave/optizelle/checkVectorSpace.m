@@ -1,4 +1,4 @@
-% Check that we have a valid vector space 
+% Check that we have a valid vector space
 function checkVectorSpace(name,value)
 
     % Check for the appropriate fields and make sure they're functions

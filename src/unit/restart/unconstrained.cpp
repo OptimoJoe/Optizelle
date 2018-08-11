@@ -35,7 +35,7 @@ int main() {
 
     // Create a messaging object
     auto msg = Optizelle::Messaging::stdout;
-    
+
     // Create some arbitrary vector in R^2
     std::vector <Real> x = {1.2,2.3};
     std::vector <Real> x0 = {2.3,1.2};
@@ -47,10 +47,10 @@ int main() {
 
     // Read in some parameters
     std::string fname("blank.json");
-    //---ReadJson0--- 
+    //---ReadJson0---
     Optizelle::json::Unconstrained <Real,XX>::read(fname,state);
-    //---ReadJson1--- 
-   
+    //---ReadJson1---
+
     // Create a bundle of functions
     //---Functions0---
     Optizelle::Unconstrained <Real,XX>::Functions::t fns;
@@ -64,7 +64,7 @@ int main() {
         msg,fns,state);
     //---Solver1---
 
-    // Do a null optimization with a state manipulator 
+    // Do a null optimization with a state manipulator
     BlankManipulator <Optizelle::Unconstrained<Real,XX> > smanip;
     //---SmanipSolver0---
     Optizelle::Unconstrained<Real,XX>::Algorithms::getMin(
@@ -80,7 +80,7 @@ int main() {
         fname,x,state);
     //---WriteReadRestart1---
 
-    // Do a release 
+    // Do a release
     //---Release0---
     Optizelle::Unconstrained <Real,XX>::Restart::X_Vectors xs;
     Optizelle::Unconstrained <Real,XX>::Restart::Reals reals;
@@ -103,7 +103,7 @@ int main() {
     // Check that we have the correct number of vectors
     CHECK(xs.size() == 6);
 
-    // Modify some vectors 
+    // Modify some vectors
     xs.front().second = x0;
 
     // Capture the state

@@ -10,22 +10,22 @@
 % hess f(x) dx : ninput x nsamples
 %
 function f=generate_interpolant(phi,lens,xx,scaling)
-    % Generate the scaling operators 
+    % Generate the scaling operators
     scaling_x = generate_scaling_operator( ...
         scaling.x.from.min,scaling.x.from.max, ...
         scaling.x.to.min,scaling.x.to.max);
-    
+
     scaling_y_inv = generate_scaling_operator( ...
         scaling.y.to.min,scaling.y.to.max, ...
         scaling.y.from.min,scaling.y.from.max);
 
-    % Grab our parameters 
+    % Grab our parameters
     alpha = lens.alpha.get(xx);
     beta = lens.beta.get(xx);
     A = lens.A.get(xx);
     b = lens.b.get(xx);
 
-    % Expand terms 
+    % Expand terms
     bb = @(x)repmat(b,1,size(x,2));
     aalpha = @(x)repmat(alpha,1,size(x,2));
     bbeta = @(x)repmat(beta,1,size(x,2));

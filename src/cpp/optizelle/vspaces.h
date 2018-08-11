@@ -15,7 +15,7 @@ namespace Optizelle {
     // Vector space for the nonnegative orthant.  For basic vectors
     // in R^m, use this.
     template <typename Real>
-    struct Rm { 
+    struct Rm {
         // Disallow constructors
         NO_CONSTRUCTORS(Rm)
 
@@ -26,7 +26,7 @@ namespace Optizelle {
         static Vector init(Vector const & x) {
             return std::move(Vector(x.size()));
         }
-        
+
         // y <- x (Shallow.  No memory allocation.)
         static void copy(Vector const & x, Vector & y) {
             Optizelle::copy <Real> (x.size(),&(x.front()),1,&(y.front()),1);
@@ -52,7 +52,7 @@ namespace Optizelle {
             #ifdef _OPENMP
             #pragma omp parallel for schedule(static)
             #endif
-            for(Natural i=0;i<x.size();i++) 
+            for(Natural i=0;i<x.size();i++)
                 x[i]=Real(0.);
         }
 
@@ -61,10 +61,10 @@ namespace Optizelle {
             std::random_device rd;
             std::mt19937 gen(rd());
             std::normal_distribution<Real> dis(Real(0.),Real(1.));
-            
+
             // This is not parallel since it doesn't appear that our generator
             // works properly when parallel.
-            for(Natural i=0;i<x.size();i++) 
+            for(Natural i=0;i<x.size();i++)
                 x[i]=Real(dis(gen));
         }
 
@@ -73,7 +73,7 @@ namespace Optizelle {
             #ifdef _OPENMP
             #pragma omp parallel for schedule(static)
             #endif
-            for(Natural i=0;i<x.size();i++) 
+            for(Natural i=0;i<x.size();i++)
                 z[i]=x[i]*y[i];
         }
 
@@ -82,16 +82,16 @@ namespace Optizelle {
             #ifdef _OPENMP
             #pragma omp parallel for schedule(static)
             #endif
-            for(Natural i=0;i<x.size();i++) 
+            for(Natural i=0;i<x.size();i++)
                 x[i]=Real(1.);
         }
-        
+
         // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y.
         static void linv(Vector const & x,Vector const & y,Vector & z) {
             #ifdef _OPENMP
             #pragma omp parallel for schedule(static)
             #endif
-            for(Natural i=0;i<x.size();i++) 
+            for(Natural i=0;i<x.size();i++)
                 z[i]=y[i]/x[i];
         }
 
@@ -107,7 +107,7 @@ namespace Optizelle {
         }
 
         // Line search, srch <- argmax {alpha \in Real >= 0 : alpha x + y >= 0}
-        // where y > 0. 
+        // where y > 0.
         static Real srch(Vector const & x,Vector const & y) {
             // Line search parameter
             Real alpha=std::numeric_limits <Real>::infinity();
@@ -157,26 +157,33 @@ namespace Optizelle {
                 Natural const & iter
             ) {
                 // Create a jsoncpp object to copy into
-                Json::Value x_json;  
+                Json::Value x_json;
 
                 // Copy the information
                 for(Natural i=0;i<x.size();i++)
                     x_json[Json::ArrayIndex(i)]=x[i];
 
                 // Return a string of the result
-                Json::StyledWriter writer;
-                return writer.write(x_json);
+                auto writer = Json::StreamWriterBuilder();
+                return Json::writeString(writer,x_json);
             }
             static typename Rm <Real>::Vector deserialize (
                 typename Rm <Real>::Vector const & x_,
                 std::string const & x_json_
             ) {
                 // Create a json tree from the input string
-                Json::Value x_json;
-                Json::Reader reader;
-                reader.parse(x_json_,x_json,true);
+                auto builder = Json::CharReaderBuilder();
+                auto reader = std::unique_ptr<Json::CharReader> (
+                    builder.newCharReader());
+                auto x_json = Json::Value();
+                auto err = std::string();
+                reader->parse(
+                    x_json_.c_str(),
+                    x_json_.c_str()+x_json_.size(),
+                    &x_json,
+                    &err);
 
-                // Create a vector from the json tree 
+                // Create a vector from the json tree
                 std::vector <Real> x(x_json.size());
                 for(Natural i=0;i<x.size();i++)
                     x[i]=Real(x_json[Json::ArrayIndex(i)].asDouble());
@@ -184,25 +191,25 @@ namespace Optizelle {
             }
         };
     }
-    
+
     // Different cones used in SQL problems
     namespace Cone {
         enum t {
             //---Cone0---
             Linear,             // Nonnegative orthant
             Quadratic,          // Second order cone
-            Semidefinite        // Cone of positive semidefinite matrices 
+            Semidefinite        // Cone of positive semidefinite matrices
             //---Cone1---
         };
 
         // Converts the cone to a string
         std::string to_string(t const & cone);
-        
-        // Converts a string to a cone 
+
+        // Converts a string to a cone
         t from_string(std::string const & cone);
 
         // Checks whether or not a string is valid
-        bool is_valid(std::string const & name); 
+        bool is_valid(std::string const & name);
     }
 
     // A vector spaces consisting of a finite product of semidefinite,
@@ -228,7 +235,7 @@ namespace Optizelle {
 
             // Type of cones stored in the data.
             std::vector <Cone::t> types;
-            
+
             // Size of the cones stored in the data.
             std::vector <Natural> sizes;
 
@@ -236,16 +243,16 @@ namespace Optizelle {
             // matrix.
             mutable std::vector <Real> inverse;
 
-            // Offsets of the cached matrix inverses 
+            // Offsets of the cached matrix inverses
             std::vector <Natural> inverse_offsets;
 
-            // Point where we last took the matrix inverse 
+            // Point where we last took the matrix inverse
             mutable std::vector <Real> inverse_base;
 
-            // Offsets for the bases stored for the matrix inverses 
+            // Offsets for the bases stored for the matrix inverses
             std::vector <Natural> inverse_base_offsets;
 
-            // Eliminate constructors 
+            // Eliminate constructors
             NO_DEFAULT_COPY_ASSIGNMENT(Vector)
 
             //---SQLVector2---
@@ -315,9 +322,9 @@ namespace Optizelle {
                 inverse.resize(inverse_offsets.back());
                 inverse_base.resize(inverse_base_offsets.back());
             }
-            
-            // Move semantics 
-            Vector (Vector && x) = default; 
+
+            // Move semantics
+            Vector (Vector && x) = default;
             Vector & operator = (Vector && x) = default;
 
             // Simple indexing.
@@ -395,14 +402,14 @@ namespace Optizelle {
         static void get_inverse(
             Vector const & X,
             Natural const & blk,
-            std::vector <Real> & Xinv 
+            std::vector <Real> & Xinv
         ) {
             // Get the size of the block
             const Natural m=X.sizes[itok(blk)];
 
             // Next, check if we've already calculated the matrix inverse.
 
-            // Copy out the the base of the last inverse 
+            // Copy out the the base of the last inverse
             std::vector <Real> tmp(m*m);
             Optizelle::copy <Real>
                 (m*m,&(X.inverse_base[X.inverse_base_offsets[itok(blk)]]),
@@ -432,7 +439,7 @@ namespace Optizelle {
                 Optizelle::copy<Real> (m*m,&(X.data[X.offsets[itok(blk)]]),1,
                     &(X.inverse_base[X.inverse_base_offsets[itok(blk)]]),1);
 
-                // Find the matrix inverse of X_k 
+                // Find the matrix inverse of X_k
 
                 // Find the matrix inverse.  This assumes the input is
                 // symmetric positive definite.
@@ -443,7 +450,7 @@ namespace Optizelle {
                     &(X.inverse[X.inverse_offsets[itok(blk)]]),m,info);
                 Optizelle::potri <Real> ('U',m,
                     &(X.inverse[X.inverse_offsets[itok(blk)]]),m,info);
-               
+
                 // Copy the upper triangular portion to the lower.
                 for(Natural i=1;i<=m;i++)
                     Optizelle::copy <Real> (m-i,
@@ -460,12 +467,12 @@ namespace Optizelle {
                 (m*m,&(X.inverse[X.inverse_offsets[itok(blk)]]),1,
                 &(Xinv.front()),1);
         }
-        
+
         // Memory allocation and size setting
         static Vector init(Vector const & x) {
             return std::move(Vector(x.types,x.sizes));
         }
-        
+
         // y <- x (Shallow.  No memory allocation.)
         static void copy(Vector const & x, Vector & y) {
             Optizelle::copy <Real> (x.data.size(),&(x.data.front()),1,
@@ -489,12 +496,12 @@ namespace Optizelle {
                 &(y.data.front()),1);
         }
 
-        // x <- 0 
+        // x <- 0
         static void zero(Vector & x) {
             #ifdef _OPENMP
             #pragma omp parallel for schedule(static)
             #endif
-            for(Natural i=0;i<x.data.size();i++) 
+            for(Natural i=0;i<x.data.size();i++)
                 x.data[i]=Real(0.);
         }
 
@@ -506,7 +513,7 @@ namespace Optizelle {
 
             // This is not parallel since it doesn't appear that our generator
             // works properly when parallel.
-            for(Natural i=0;i<x.data.size();i++) 
+            for(Natural i=0;i<x.data.size();i++)
                 x.data[i]=Real(dis(gen));
         }
 
@@ -522,7 +529,7 @@ namespace Optizelle {
                being used by its routines.  Since I don't really want to
                recode these routines, we're stuck making sure that BLAS
                controls the parallelism, which means doing parallel
-               computation on each cone one after another. 
+               computation on each cone one after another.
             */
             // Loop over all the blocks.
             for(Natural blk=1;blk<=x.numBlocks();blk++) {
@@ -555,7 +562,7 @@ namespace Optizelle {
                     // zbar = ybar
                     Optizelle::copy <Real> (
                         mbar,&(y.bar(blk)),1,&(z.bar(blk)),1);
-                        
+
                     // zbar = x0 ybar
                     Optizelle::scal <Real> (mbar,x.naught(blk),&(z.bar(blk)),1);
 
@@ -565,7 +572,7 @@ namespace Optizelle {
                     break;
                 }
 
-                // z = xy 
+                // z = xy
                 case Cone::Semidefinite:
                     Optizelle::symm <Real> ('L','U',m,m,Real(1.),
                         &(x.front(blk)),m,&(y.front(blk)),m,Real(0.),
@@ -592,7 +599,7 @@ namespace Optizelle {
                     #ifdef _OPENMP
                     #pragma omp parallel for schedule(static)
                     #endif
-                    for(Natural i=1;i<=m;i++) 
+                    for(Natural i=1;i<=m;i++)
                         x(blk,i)=Real(1.);
                     break;
                 // x = (1,0,...,0)
@@ -611,14 +618,14 @@ namespace Optizelle {
                     #ifdef _OPENMP
                     #pragma omp parallel for schedule(static)
                     #endif
-                    for(Natural j=1;j<=m;j++) 
-                        for(Natural i=1;i<=m;i++) 
+                    for(Natural j=1;j<=m;j++)
+                        for(Natural i=1;i<=m;i++)
                             x(blk,i,j)=Real(0.);
 
                     #ifdef _OPENMP
                     #pragma omp parallel for schedule(static)
                     #endif
-                    for(Natural i=1;i<=m;i++) 
+                    for(Natural i=1;i<=m;i++)
                         x(blk,i,i)=Real(1.);
                     break;
                 }
@@ -642,7 +649,7 @@ namespace Optizelle {
             // y <- 1/x0 y + <xbar,y> / (x0 ( x0^2 - <xbar,xbar> )) xbar
             Optizelle::axpy <Real> (m,innr_xbar_y/denom,&(x[1]),1,&(y[0]),1);
         }
-        
+
         // Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y
         static void linv(Vector const & x,Vector const & y,Vector & z) {
             // We have this vector in case we have a SDP block
@@ -662,7 +669,7 @@ namespace Optizelle {
                     #ifdef _OPENMP
                     #pragma omp parallel for schedule(static)
                     #endif
-                    for(Natural i=1;i<=m;i++) 
+                    for(Natural i=1;i<=m;i++)
                         z(blk,i)=y(blk,i)/x(blk,i);
                     break;
 
@@ -671,7 +678,7 @@ namespace Optizelle {
                     // Get the size of the bar piece
                     Natural mbar=m-1;
 
-                    // invSchur_ybar <- invSchur(x)(y_bar) 
+                    // invSchur_ybar <- invSchur(x)(y_bar)
                     std::vector <Real> invSchur_ybar(mbar);
                     Optizelle::copy <Real>(mbar,&(y.bar(blk)),1,
                         &(invSchur_ybar.front()),1);
@@ -687,11 +694,11 @@ namespace Optizelle {
                     Real b = -Optizelle::dot <Real> (mbar,
                             &(x.bar(blk)),1,&(invSchur_ybar.front()),1)
                         / x.naught(blk);
-                    
+
                     // z0 <- 1 / (x0 - (1/x0) <x_bar,x_bar>) y0
-                    //       - (1/x0) <x_bar,invSchur(x)(y_bar)> 
+                    //       - (1/x0) <x_bar,invSchur(x)(y_bar)>
                     z(blk,1) = a + b;
-                    
+
                     // z_bar <- invSchur(x)(x_bar)
                     Optizelle::copy <Real> (
                         mbar,&(x.bar(blk)),1,&(z.bar(blk)),1);
@@ -777,7 +784,7 @@ namespace Optizelle {
                     #endif
                     for(Natural i=1;i<=m;i++)
                         log_det += log(U[Optizelle::ijtok(i,i,m)]);
-                    
+
                     // Complete the barrier computation by taking the log
                     z+= Real(2.) * log_det;
                     break;
@@ -793,8 +800,8 @@ namespace Optizelle {
         static Real srch(Vector const & x,Vector const & y) {
             // Line search parameter
             Real alpha=std::numeric_limits <Real>::infinity();
-                   
-            // Variables required for the linesearch on SDP blocks 
+
+            // Variables required for the linesearch on SDP blocks
             Integer info(0);
             std::vector <Real> Xrf;
             std::vector <Real> Yrf;
@@ -806,7 +813,7 @@ namespace Optizelle {
                 // Get the size of the block
                 Natural m=x.blkSize(blk);
 
-                // Depending on the block, do a different line search 
+                // Depending on the block, do a different line search
                 switch(x.blkType(blk)) {
 
                 // Pointwise, alpha_i = -y_i / x_i.  If this number is positive,
@@ -851,8 +858,8 @@ namespace Optizelle {
                 //
                 // a = x0^2 - ||xbar||^2
                 // b = 2x0y0 - 2 <xbar,ybar>
-                // c = y0^2 - ||ybar||^2 
-                // 
+                // c = y0^2 - ||ybar||^2
+                //
                 // Technically, if a is zero, the quadratic formula doesn't
                 // apply and we use -c/b instead of the roots.  If b is zero
                 // and a is zero, then there's no limit to the line search
@@ -886,14 +893,14 @@ namespace Optizelle {
                     alpha = x.naught(blk) < Real(0.) && alpha0<alpha ?
                         alpha0 : alpha;
 
-                    // Next, if we have two roots, determine the restriction 
-                    if(roots.size()==2) { 
+                    // Next, if we have two roots, determine the restriction
+                    if(roots.size()==2) {
                         auto alpha1 = roots[0];
                         auto alpha2 = roots[1];
                         alpha = alpha1>=Real(0.)&&alpha1<alpha ? alpha1 : alpha;
                         alpha = alpha2>=Real(0.)&&alpha2<alpha ? alpha2 : alpha;
 
-                    // If we have a single root 
+                    // If we have a single root
                     } else if(roots.size()==1) {
                         auto alpha1 = roots[0];
                         alpha = alpha1>=Real(0.)&&alpha1<alpha ? alpha1 : alpha;
@@ -944,7 +951,7 @@ namespace Optizelle {
                     // solver converges to the wrong eigenvalue.  Now, if
                     // alpha0 is negative, ostensibly we can take as big
                     // as step as we want.  However, if we converged to
-                    // the wrong eigenvalue, this may not be true.  Hence, 
+                    // the wrong eigenvalue, this may not be true.  Hence,
                     // if alpha0 is negative, we do the line-search with
                     // alpha0 = 2.  If this value doesn't move, we assume
                     // that our eigenvalue estimate was fine and this
@@ -975,10 +982,10 @@ namespace Optizelle {
 
                         // Check if the Choleski failed
                         if(info!=0) {
-                            alpha0 /= Real(2.); 
+                            alpha0 /= Real(2.);
                             completely_feasible_dir=false;
                         }
-                    
+
                     // If alpha0 ever becomes 0, then something wrong has
                     // gone on and we really ought to exit.
                     } while(info!=0 && alpha0>Real(0.));
@@ -996,7 +1003,7 @@ namespace Optizelle {
         }
         // Symmetrization, x <- symm(x) such that L(symm(x)) is a symmetric
         // operator.
-        static void symm(Vector & x) { 
+        static void symm(Vector & x) {
             // Allocate vectors to help with the SDP blocks
             std::vector <Real> I;
             std::vector <Real> Xk;
@@ -1007,7 +1014,7 @@ namespace Optizelle {
                 // Get the size of the block
                 Natural m=x.blkSize(blk);
 
-                // Depending on the block, do a different symmetrization 
+                // Depending on the block, do a different symmetrization
                 switch(x.blkType(blk)) {
 
                 // Linear and quadratic cones don't have this issue
@@ -1022,14 +1029,14 @@ namespace Optizelle {
                     #ifdef _OPENMP
                     #pragma omp parallel for schedule(static)
                     #endif
-                    for(Natural i=1;i<=m;i++) 
-                        for(Natural j=1;j<=m;j++) 
+                    for(Natural i=1;i<=m;i++)
+                        for(Natural j=1;j<=m;j++)
                             I[ijtok(i,j,m)]=Real(0.);
 
                     #ifdef _OPENMP
                     #pragma omp parallel for schedule(static)
                     #endif
-                    for(Natural i=1;i<=m;i++) 
+                    for(Natural i=1;i<=m;i++)
                         I[ijtok(i,i,m)]=Real(1.);
 
                     // Create a copy of X
@@ -1063,7 +1070,7 @@ namespace Optizelle {
                 Natural const & iter
             ) {
                 // Create a jsoncpp object to copy into
-                Json::Value x_json;  
+                Json::Value x_json;
 
                 // Copy the information
                 for(Natural i=0;i<x.data.size();i++)
@@ -1095,21 +1102,28 @@ namespace Optizelle {
                 for(Natural i=0;i<x.inverse_base_offsets.size();i++)
                     x_json["inverse_base_offsets"][Json::ArrayIndex(i)]
                         =Json::Value::UInt64(x.inverse_base_offsets[i]);
-                
+
                 // Return a string of the result
-                Json::StyledWriter writer;
-                return writer.write(x_json);
+                auto writer = Json::StreamWriterBuilder();
+                return Json::writeString(writer,x_json);
             }
             static typename SQL <Real>::Vector deserialize (
                 typename SQL <Real>::Vector const & x_,
                 std::string const & x_json_
             ) {
                 // Create a json tree from the input string
-                Json::Value x_json;
-                Json::Reader reader;
-                reader.parse(x_json_,x_json,true);
+                auto builder = Json::CharReaderBuilder();
+                auto reader = std::unique_ptr<Json::CharReader> (
+                    builder.newCharReader());
+                auto x_json = Json::Value();
+                auto err = std::string();
+                reader->parse(
+                    x_json_.c_str(),
+                    x_json_.c_str()+x_json_.size(),
+                    &x_json,
+                    &err);
 
-                // Grab the types of the cones 
+                // Grab the types of the cones
                 std::vector <Cone::t> types;
                 types.resize(x_json["types"].size());
                 for(Natural i=0;i<types.size();i++)
@@ -1138,15 +1152,15 @@ namespace Optizelle {
                 for(Natural i=0;i<x.inverse.size();i++)
                     x.inverse[i]=Real(x_json["inverse"]
                         [Json::ArrayIndex(i)].asDouble());
-                
+
                 for(Natural i=0;i<x.inverse_offsets.size();i++)
                     x.inverse_offsets[i]=x_json["inverse_offsets"]
                         [Json::ArrayIndex(i)].asUInt64();
-                
+
                 for(Natural i=0;i<x.inverse_base.size();i++)
                     x.inverse_base[i]=Real(x_json["inverse_base"]
                         [Json::ArrayIndex(i)].asDouble());
-                
+
                 for(Natural i=0;i<x.inverse_base_offsets.size();i++)
                     x.inverse_base_offsets[i]=x_json["inverse_base_offsets"]
                         [Json::ArrayIndex(i)].asUInt64();

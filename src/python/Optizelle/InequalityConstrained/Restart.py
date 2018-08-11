@@ -36,7 +36,7 @@ def release(X,Z,state,xs,zs,reals,nats,params):
     InequalityConstrainedRestartRelease(X,Z,state,xs,zs,reals,nats,params)
 
     # Return nothing.  We've modified the passed in lists.
-    return None 
+    return None
 
 def capture(X,Z,state,xs,zs,reals,nats,params):
     """Capture data from structures controlled by the user."""
@@ -55,4 +55,4 @@ def capture(X,Z,state,xs,zs,reals,nats,params):
     InequalityConstrainedRestartCapture(X,Z,state,xs,zs,reals,nats,params)
 
     # Return nothing.  The state has been modified.
-    return None 
+    return None

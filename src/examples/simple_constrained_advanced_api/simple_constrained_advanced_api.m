@@ -45,7 +45,7 @@ function self = MyVS()
 
     % <- random
     self.rand = @(x)tostruct(randn(size(x.data)));
-    
+
     % Jordan product, z <- x o y.
     self.prod = @(x,y)tostruct(x.data .* y.data);
 
@@ -54,14 +54,14 @@ function self = MyVS()
 
     % Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y.
     self.linv = @(x,y)tostruct(y.data ./ x.data);
-    
+
     % Barrier function, barr <- barr(x) where x o grad barr(x) = e.
     self.barr = @(x)sum(log(x.data));
-    
+
     % Line search, srch <- argmax {alpha \in Real >= 0 : alpha x + y >= 0}
-    % where y > 0. 
+    % where y > 0.
     self.srch = @(x,y) feval(@(z)min([min(z(find(z>0)));inf]),-y.data ./x.data);
-    
+
     % Symmetrization, x <- symm(x) such that L(symm(x)) is a symmetric
     % operator.
     self.symm = @(x)x;
@@ -72,13 +72,13 @@ function z = sq(x)
     z=x*x;
 end
 
-% Define a simple objective where 
-% 
+% Define a simple objective where
+%
 % f(x,y)=(x+1)^2+(y+1)^2
 %
 function self = MyObj()
 
-    % Evaluation 
+    % Evaluation
     self.eval = @(x) feval(@(x)sq(x(1)+1.)+sq(x(2)+1.),x.data);
 
     % Gradient
@@ -94,11 +94,11 @@ end
 
 % Define a simple equality
 %
-% g(x,y)= [ x + 2y = 1 ] 
+% g(x,y)= [ x + 2y = 1 ]
 %
 function self = MyEq()
 
-    % y=g(x) 
+    % y=g(x)
     self.eval = @(x) tostruct(feval(@(x)[x(1)+2.*x(2)-1.],x.data));
 
     % y=g'(x)dx
@@ -110,16 +110,16 @@ function self = MyEq()
         2.*dy(1)],x.data,dy.data));
 
     % xhat=(g''(x)dx)*dy
-    self.pps = @(x,dx,dy) tostruct(zeros(2,1)); 
+    self.pps = @(x,dx,dy) tostruct(zeros(2,1));
 end
 
-% Define simple inequalities 
+% Define simple inequalities
 %
-% h(x,y)= [ 2x + y >= 1 ] 
+% h(x,y)= [ 2x + y >= 1 ]
 %
 function self = MyIneq()
 
-    % z=h(x) 
+    % z=h(x)
     self.eval = @(x) tostruct(feval(@(x)[
         2.*x(1)+x(2)-1],x.data));
 
@@ -133,7 +133,7 @@ function self = MyIneq()
         dz(1)],x.data,dz.data));
 
     % hat=(h''(x)dx)*dz
-    self.pps = @(x,dx,dz) tostruct([ 0. ]); 
+    self.pps = @(x,dx,dz) tostruct([ 0. ]);
 end
 
 %---Serialization0---
@@ -145,7 +145,7 @@ function x_json=serialize_MyVS(x,name,iter)
     % Actually write the vector there
     dlmwrite(fname,x.data);
 
-    % Use this filename as the json string 
+    % Use this filename as the json string
     x_json = sprintf('\"%s\"',fname);
 end
 
@@ -185,7 +185,7 @@ function state=MyRestartManipulator_(fns,state,loc)
     if(loc == Optizelle.OptimizationLocation.EndOfOptimizationIteration)
         % Create a reasonable file name
         ss = sprintf('simple_constrained_advanced_api_%04d.json',state.iter);
-            
+
         % Write the restart file
         Optizelle.json.Constrained.write_restart( ...
            MyVS(),MyVS(),MyVS(),ss,state);
@@ -202,19 +202,19 @@ function main(pname,rname)
     % Register the serialization routines
     MySerialization();
 
-    % Generate an initial guess 
+    % Generate an initial guess
     x = tostruct([2.1;1.1]);
 
-    % Allocate memory for the equality multiplier 
+    % Allocate memory for the equality multiplier
     y = tostruct([0.]);
 
-    % Allocate memory for the inequality multiplier 
+    % Allocate memory for the inequality multiplier
     z = tostruct([0.]);
 
     % Create an optimization state
     state = Optizelle.Constrained.State.t(MyVS(),MyVS(),MyVS(),x,y,z);
-    
-    % If we have a restart file, read in the parameters 
+
+    % If we have a restart file, read in the parameters
     if(nargin==2)
         state = Optizelle.json.Constrained.read_restart( ...
             MyVS(),MyVS(),MyVS(),rname,x,y,z);

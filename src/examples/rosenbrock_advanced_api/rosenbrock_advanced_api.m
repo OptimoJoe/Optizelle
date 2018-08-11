@@ -48,7 +48,7 @@ function self = MyVS()
 
     % <- random
     self.rand = @(x)tostruct(randn(size(x.data)));
-    
+
     % Jordan product, z <- x o y.
     self.prod = @(x,y)tostruct(x.data .* y.data);
 
@@ -57,14 +57,14 @@ function self = MyVS()
 
     % Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y.
     self.linv = @(x,y)tostruct(y.data ./ x.data);
-    
+
     % Barrier function, barr <- barr(x) where x o grad barr(x) = e.
     self.barr = @(x)sum(log(x.data));
-    
+
     % Line search, srch <- argmax {alpha \in Real >= 0 : alpha x + y >= 0}
-    % where y > 0. 
+    % where y > 0.
     self.srch = @(x,y) feval(@(z)min([min(z(find(z>0)));inf]),-y.data ./x.data);
-    
+
     % Symmetrization, x <- symm(x) such that L(symm(x)) is a symmetric
     % operator.
     self.symm = @(x)x;
@@ -77,11 +77,11 @@ function z = sq(x)
 end
 
 % Define the Rosenbrock function where
-% 
+%
 % f(x,y)=(1-x)^2+100(y-x^2)^2
 %
 function self = Rosenbrock()
-    
+
     % Evaluation of the Rosenbrock function
     self.eval = @(x) feval(@(x)sq(1.-x(1))+100.*sq(x(2)-sq(x(1))),x.data);
 
@@ -127,7 +127,7 @@ function MySerialization()
         @(x)isstruct(x) && isfield(x,'data') && isvector(x.data));
     Optizelle.json.Serialization.deserialize( ...
         'register', ...
-        @(x,x_json)tostruct(str2num(x_json)'), ...
+        @(x,x_json)tostruct(str2num(x_json)), ...
         @(x)isstruct(x) && isfield(x,'data') && isvector(x.data));
 end
 %---Serialization1---
@@ -145,7 +145,7 @@ function state=MyRestartManipulator_(fns,state,loc)
     if(loc == Optizelle.OptimizationLocation.EndOfOptimizationIteration)
         % Create a reasonable file name
         ss = sprintf('rosenbrock_advanced_api_%04d.json',state.iter);
-            
+
         % Write the restart file
         Optizelle.json.Unconstrained.write_restart(MyVS(),ss,state);
     end
@@ -167,18 +167,18 @@ function main(pname,rname)
 
     % Create an unconstrained state based on this vector
     state=Optizelle.Unconstrained.State.t(MyVS(),x);
-    
+
     %---ReadRestart0---
-    % If we have a restart file, read in the parameters 
+    % If we have a restart file, read in the parameters
     if(nargin==2)
         state = Optizelle.json.Unconstrained.read_restart(MyVS(),rname,x);
     end
-    
+
     % Read additional parameters from file
     state=Optizelle.json.Unconstrained.read(MyVS(),pname,state);
     %---ReadRestart1---
 
-    % Create the bundle of functions 
+    % Create the bundle of functions
     fns=Optizelle.Unconstrained.Functions.t;
     fns.f=Rosenbrock();
     fns.PH=RosenHInv();
@@ -188,14 +188,14 @@ function main(pname,rname)
     state=Optizelle.Unconstrained.Algorithms.getMin( ...
         MyVS(),@MyMessaging,fns,state,MyRestartManipulator());
     %---Solver1---
-    
+
     % Print out the reason for convergence
     fprintf('The algorithm converged due to: %s\n', ...
         Optizelle.OptimizationStop.to_string(state.opt_stop));
 
     % Print out the final answer
     fprintf('The optimal point is: (%e,%e)\n',state.x.data(1),state.x.data(2));
-    
+
     %---WriteRestart0---
     % Write out the final answer to file
     Optizelle.json.Unconstrained.write_restart(MyVS(),'solution.json',state);

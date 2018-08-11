@@ -1,4 +1,4 @@
-% Check that we have a list of restart reals 
+% Check that we have a list of restart reals
 function checkReals(name,value)
     if ~iscell(value)
         error(sprintf('The %s argument must be a cell array.',name));

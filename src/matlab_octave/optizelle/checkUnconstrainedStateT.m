@@ -1,7 +1,7 @@
-% Check that we have an unconstrained state 
+% Check that we have an unconstrained state
 function checkUnconstrainedStateT(name,value)
 
-    % Check for the appropriate fields 
+    % Check for the appropriate fields
     if ~(checkFields({ ...
         'eps_grad', ...
         'eps_dx', ...

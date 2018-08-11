@@ -15,11 +15,11 @@ include_directories(${JSONCPP_INCLUDE_DIRS})
 set(utility_srcs "exception.cpp" "stream.cpp")
 add_library(utility OBJECT ${utility_srcs})
 
-# Compile the core of Optizelle 
+# Compile the core of Optizelle
 set(optizelle_cpp_srcs "vspaces.cpp" "optizelle.cpp" "linalg.cpp" "json.cpp")
 add_library(optizelle_cpp OBJECT ${optizelle_cpp_srcs})
-    
-# Package everything together 
+
+# Package everything together
 add_library(optizelle_static STATIC
     $<TARGET_OBJECTS:utility>
     $<TARGET_OBJECTS:optizelle_cpp>)
@@ -39,7 +39,7 @@ elseif(UNIX)
     set_target_properties(optizelle_shared PROPERTIES INSTALL_RPATH "\$ORIGIN/../share/optizelle/thirdparty/lib")
 endif()
 
-# Install the headers associated with the library.  
+# Install the headers associated with the library.
 install(FILES
     vspaces.h
     optizelle.h
@@ -51,7 +51,7 @@ install(FILES
 install(TARGETS
     optizelle_static
     optizelle_shared
-    DESTINATION lib)    
+    DESTINATION lib)
 
 # Grab required runtime
 if(MINGW)
@@ -60,7 +60,7 @@ if(MINGW)
         ${Mingw_Path}/libwinpthread-1.dll
         ${Mingw_Path}/libgcc_s_seh-1.dll
         ${Mingw_Path}/libstdc++-6.dll
-        ${Mingw_Path}/libgfortran-3.dll
+        ${Mingw_Path}/libgfortran-4.dll
         ${Mingw_Path}/libquadmath-0.dll
         ${Mingw_Path}/libgomp-1.dll)
     file(
@@ -70,9 +70,11 @@ elseif(APPLE AND CPACK_DRAGNDROP)
     get_filename_component(Compiler_Path ${CMAKE_Fortran_COMPILER} PATH)
     set(Lib_Path "${Compiler_Path}/../lib/libgcc")
     file(COPY
-        ${Lib_Path}/libgfortran.3.dylib
+        ${Lib_Path}/libgfortran.5.dylib
         ${Lib_Path}/libquadmath.0.dylib
         ${Lib_Path}/libgcc_s.1.dylib
+        ${Lib_Path}/../libz.1.dylib
+        ${Lib_Path}/../libz.1.2.11.dylib
         DESTINATION
         ${CMAKE_BINARY_DIR}/thirdparty/lib)
 endif()

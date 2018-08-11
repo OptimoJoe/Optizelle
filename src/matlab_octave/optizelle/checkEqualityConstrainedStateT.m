@@ -1,4 +1,4 @@
-% Check that we have an equality constrained state 
+% Check that we have an equality constrained state
 function checkEqualityConstrainedStateT(name,value)
     % Set the error message
     err = sprintf( ...
@@ -12,7 +12,7 @@ function checkEqualityConstrainedStateT(name,value)
         error(err);
     end
 
-    % Check for the appropriate fields 
+    % Check for the appropriate fields
     if ~(checkFields({ ...
         'y', ...
         'dy', ...

@@ -10,33 +10,33 @@ function inequality_scaling(fname)
     main(fname);
 end
 
-% Define a simple objective where 
-% 
+% Define a simple objective where
+%
 % f(x) = 0.5 || x - c ||^2
 %
 function self = MyObj(c)
 
-    % Evaluation 
+    % Evaluation
     self.eval = @(x) 0.5*norm(x-c,2)^2;
 
     % Gradient
-    self.grad = @(x) x-c; 
+    self.grad = @(x) x-c;
 
     % Hessian-vector product
     self.hessvec = @(x,dx) dx;
 end
 
-% Define simple inequalities 
+% Define simple inequalities
 %
-% h(x) = x - lb 
+% h(x) = x - lb
 %
 function self = MyIneq(lb)
 
-    % z=h(x) 
-    self.eval = @(x) x-lb; 
+    % z=h(x)
+    self.eval = @(x) x-lb;
 
     % z=h'(x)dx
-    self.p = @(x,dx) dx; 
+    self.p = @(x,dx) dx;
 
     % xhat=h'(x)*dz
     self.ps = @(x,dz) dz;
@@ -55,11 +55,11 @@ function main(fname)
     % Set the size
     m = 10;
 
-    % Generate an initial guess 
+    % Generate an initial guess
     x = ones(m,1)+10.^(-(1:m))';
 
-    % Allocate memory for the inequality multiplier 
-    z = zeros(m,1); 
+    % Allocate memory for the inequality multiplier
+    z = zeros(m,1);
 
     % Create the center of the objective function
     c = -ones(m,1);
@@ -94,7 +94,7 @@ function main(fname)
         fprintf('%1.16e\n',state.x(i));
     end
     fprintf(']\n');
-    
+
     % Write out the final answer to file
     Optizelle.json.InequalityConstrained.write_restart( ...
         Optizelle.Rm,Optizelle.Rm,'solution.json',state);

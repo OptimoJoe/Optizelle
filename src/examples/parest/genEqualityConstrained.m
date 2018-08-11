@@ -16,7 +16,7 @@
 % X2: Vector space for the variable x2.
 % ff: Definition of the objective.  This is a struct array that contains
 %     the elements eval, grad_1, grad_2, hessvec_11, hessvec_12, hessvec_21,
-%     and hessvec_22. 
+%     and hessvec_22.
 % gg: Definition of the constraint.  This is a struct array that contains
 %     the elements eval, p_1, p_2, p_2_inv, ps_1,
 %     ps_2, ps_2_inv, pps_11, pps_21, pps_12, and
@@ -50,7 +50,7 @@ f.hessvec=@(x,dx){ ...
     ff.hessvec_11(x,dx{1})+ff.hessvec_12(x,dx{2}), ...
     ff.hessvec_21(x,dx{1})+ff.hessvec_22(x,dx{2})};
 
-% g is the composite constraint built from gg. 
+% g is the composite constraint built from gg.
 g.eval=@(x)gg.eval(x);
 g.p=@(x,dx)gg.p_1(x,dx{1}) + gg.p_2(x,dx{2});
 g.ps=@(x,dy){gg.ps_1(x,dy),gg.ps_2(x,dy)};

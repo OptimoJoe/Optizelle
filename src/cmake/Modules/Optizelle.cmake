@@ -19,7 +19,7 @@ macro(add_example name interfaces supporting)
             DESTINATION share/optizelle/examples/${name})
     endif()
 
-    # Installs the compiled example and source 
+    # Installs the compiled example and source
     foreach(interface ${interfaces})
         if(${interface} STREQUAL "cpp" AND ENABLE_CPP_EXAMPLES)
             install(FILES "${name}.cpp" DESTINATION "${basedir}/${name}")
@@ -37,9 +37,9 @@ macro(add_example name interfaces supporting)
     endforeach()
 endmacro()
 
-# Compiles an example or unit test 
+# Compiles an example or unit test
 macro(compile_example_unit name interfaces)
-    # Compile the particular problem interface 
+    # Compile the particular problem interface
     foreach(interface ${interfaces})
         if(${interface} STREQUAL "cpp")
 
@@ -59,7 +59,7 @@ macro(compile_example_unit name interfaces)
                     set_target_properties(${name} PROPERTIES INSTALL_RPATH "\$ORIGIN/../../../../lib;\$ORIGIN/../../thirdparty/lib")
                 endif()
             endif()
-                
+
         elseif(${interface} STREQUAL "python")
             # Nothing to do
 
@@ -170,7 +170,7 @@ macro(add_unit name interfaces units validated)
                 if(test_executed)
                     fix_unit_path("Execution_of_${interface}_${name}_${uname}")
                 endif()
-                
+
                 # Diff the result of the optimization against the known solution
                 if(${validated} AND test_executed)
                     add_test("Solution_to_${interface}_${name}_${uname}"
@@ -258,13 +258,13 @@ macro(compile_add_unit name interfaces)
 endmacro()
 
 # Returns true when there's some kind of unit test active.  We need this to
-# figure out when we need to handle a common file. 
+# figure out when we need to handle a common file.
 macro(is_unit interfaces return)
     # Initially, we set return to false because we don't know if we're doing
     # any unit tests
     set(${return} FALSE)
 
-    # Loop over the interfaces to figure out if we have any unit tests 
+    # Loop over the interfaces to figure out if we have any unit tests
     foreach(interface ${interfaces})
         if(${interface} STREQUAL "cpp" AND ENABLE_CPP_UNIT)
             set(${return} TRUE)
@@ -282,13 +282,13 @@ macro(is_unit interfaces return)
 endmacro()
 
 # Returns true when there's some kind of example active.  We need this to
-# figure out when we need to handle a common file. 
+# figure out when we need to handle a common file.
 macro(is_example interfaces return)
     # Initially, we set return to false because we don't know if we're doing
     # any unit tests
     set(${return} FALSE)
 
-    # Loop over the interfaces to figure out if we have any unit tests 
+    # Loop over the interfaces to figure out if we have any unit tests
     foreach(interface ${interfaces})
         if(${interface} STREQUAL "cpp" AND ENABLE_CPP_EXAMPLES)
             set(${return} TRUE)
@@ -316,7 +316,7 @@ function(preprocess file data)
     add_custom_command(
         OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${file}"
         COMMAND "${file}.pp"
-            "${data}" 
+            "${data}"
             "<${CMAKE_CURRENT_SOURCE_DIR}/${file}"
             ">${CMAKE_CURRENT_BINARY_DIR}/${file}"
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
@@ -325,7 +325,7 @@ function(preprocess file data)
             "${CMAKE_CURRENT_SOURCE_DIR}/pp/${file}.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/${file}"
             "${data}")
-    add_custom_target("${file}.pp.run" 
+    add_custom_target("${file}.pp.run"
         DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/${file}")
 endfunction()
 

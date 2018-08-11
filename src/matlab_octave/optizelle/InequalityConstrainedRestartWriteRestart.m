@@ -1,4 +1,4 @@
-% Writes a json restart file 
+% Writes a json restart file
 function InequalityConstrainedRestartWriteRestart(X,Z,fname,state)
     % Check our arguments
     checkVectorSpace('X',X);
@@ -6,5 +6,5 @@ function InequalityConstrainedRestartWriteRestart(X,Z,fname,state)
     checkString('fname',fname);
     checkInequalityConstrainedStateT('state',state);
 
-    % Write the restart file 
+    % Write the restart file
     InequalityConstrainedRestartWriteRestart_(X,Z,fname,state);

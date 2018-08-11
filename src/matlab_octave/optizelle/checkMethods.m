@@ -1,4 +1,4 @@
-% Check that we have several methods in a structure 
+% Check that we have several methods in a structure
 function result = checkMethods(names,value)
     result = 1;
     for i=1:length(names)

@@ -2,11 +2,11 @@
 % constrained optimization problem and then verifies that this caching works
 % correctly
 
-% Grab Optizelle 
+% Grab Optizelle
 global Optizelle;
 setupOptizelle();
 
-% Set the name of the optimization parameters 
+% Set the name of the optimization parameters
 pname = 'full_space.json';
 
 % Setup some diagnostics that verify that we're caching properly
@@ -25,7 +25,7 @@ fns=Optizelle.EqualityConstrained.Functions.t;
 % Create an optimization state
 x = zeros(params.nx+2,1);
     x(params.idx.k) = [ 1.; 1.];
-    x(params.idx.u) = phi(x(params.idx.k)); 
+    x(params.idx.u) = phi(x(params.idx.k));
 y = zeros(params.nx,1);
 state = Optizelle.EqualityConstrained.State.t( ...
     Optizelle.Rm,Optizelle.Rm,x,y);
@@ -38,8 +38,8 @@ state = Optizelle.json.EqualityConstrained.read( ...
 state = Optizelle.EqualityConstrained.Algorithms.getMin( ...
     Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging.stdout,fns,state);
 
-% Extract the state solution 
-u = state.x(params.idx.u); 
+% Extract the state solution
+u = state.x(params.idx.u);
 
 % Plot the final result
 if 0
@@ -54,7 +54,7 @@ end
 if diagnostics.factorization_cached ~= state.glob_iter_total+1
     error('Missed a cached factorization');
 end
-if diagnostics.first_derivative_cached ~= state.glob_iter_total+1 
+if diagnostics.first_derivative_cached ~= state.glob_iter_total+1
     error('Missed a cached first derivative');
 end
 if diagnostics.second_derivative_cached ~= state.iter-1

@@ -2,7 +2,7 @@
 # some of the more advanced API features such as custom vector spaces,
 # messaging objects, and restarts.
 
-import Optizelle 
+import Optizelle
 import sys
 import copy
 import array
@@ -48,7 +48,7 @@ class MyVS(object):
     def rand(x):
         """x <- random"""
         for i in xrange(0,len(x)):
-            x[i]=random.uniform(0.,1.) 
+            x[i]=random.uniform(0.,1.)
 
     @staticmethod
     def prod(x,y,z):
@@ -72,7 +72,7 @@ class MyVS(object):
     def barr(x):
         """Barrier function, <- barr(x) where x o grad barr(x) = e"""
         return reduce(lambda x,y:x+math.log(y),x,0.)
-        
+
     @staticmethod
     def srch(x,y):
         """Line search, <- argmax {alpha \in Real >= 0 : alpha x + y >= 0} where y > 0"""
@@ -94,7 +94,7 @@ class MyVS(object):
 sq = lambda x:x*x
 
 # Define the Rosenbrock function where
-# 
+#
 # f(x,y)=(1-x)^2+100(y-x^2)^2
 #
 class Rosenbrock(Optizelle.ScalarValuedFunction):
@@ -103,7 +103,7 @@ class Rosenbrock(Optizelle.ScalarValuedFunction):
         return sq(1.-x[0])+100.*sq(x[1]-sq(x[0]))
 
     # Gradient
-    def grad(self,x,grad): 
+    def grad(self,x,grad):
         grad[0]=-400*x[0]*(x[1]-sq(x[0]))-2*(1-x[0])
         grad[1]=200*(x[1]-sq(x[0]))
 
@@ -130,7 +130,7 @@ def mymessaging(msg):
 
 #---Serialization0---
 def serialize_MyVS(x,name,iter):
-    """Serializes an array for the vector space MyVS""" 
+    """Serializes an array for the vector space MyVS"""
 
     # Create the json representation
     x_json="[ "
@@ -142,7 +142,7 @@ def serialize_MyVS(x,name,iter):
     return x_json
 
 def deserialize_MyVS(x,x_json):
-    """Deserializes an array for the vector space MyVS""" 
+    """Deserializes an array for the vector space MyVS"""
 
     # Eliminate all whitespace
     x_json="".join(x_json.split())
@@ -154,7 +154,7 @@ def deserialize_MyVS(x,x_json):
     # Eliminate the initial and final delimiters
     x_json=x_json[1:-1]
 
-    # Create a list of the numbers involved 
+    # Create a list of the numbers involved
     x_json=x_json.split(",")
 
     # Convert the strings to numbers
@@ -163,7 +163,7 @@ def deserialize_MyVS(x,x_json):
     # Create a MyVS vector
     return array.array('d',x_json)
 
-# Register the serialization routines for arrays 
+# Register the serialization routines for arrays
 def MySerialization():
     Optizelle.json.Serialization.serialize.register(
         serialize_MyVS,array.array)
@@ -180,14 +180,14 @@ class MyRestartManipulator(Optizelle.StateManipulator):
         if loc == Optizelle.OptimizationLocation.EndOfOptimizationIteration:
             # Create a reasonable file name
             ss = "rosenbrock_advanced_api_%04d.json" % (state.iter)
-                
+
             # Write the restart file
             Optizelle.json.Unconstrained.write_restart(MyVS,ss,state)
 #---RestartManipulator1---
 
 # Register the serialization routines
 MySerialization()
-    
+
 # Read in the name for the input file
 if not(len(sys.argv)==2 or len(sys.argv)==3):
     sys.exit("python rosenbrock_advanced_api.py <parameters>\n" +
@@ -202,7 +202,7 @@ x = array.array('d',[-1.2,1.0])
 state=Optizelle.Unconstrained.State.t(MyVS,x)
 
 #---ReadRestart0---
-# If we have a restart file, read in the parameters 
+# If we have a restart file, read in the parameters
 if len(sys.argv)==3:
     Optizelle.json.Unconstrained.read_restart(MyVS,rname,x,state)
 
@@ -210,7 +210,7 @@ if len(sys.argv)==3:
 Optizelle.json.Unconstrained.read(MyVS,pname,state)
 #---ReadRestart1---
 
-# Create the bundle of functions 
+# Create the bundle of functions
 fns=Optizelle.Unconstrained.Functions.t()
 fns.f=Rosenbrock()
 fns.PH=RosenHInv()

@@ -1,10 +1,10 @@
-// Run TCG with a small trust-region radius and an offset that violates it 
+// Run TCG with a small trust-region radius and an offset that violates it
 
 #include "linear_algebra.h"
 #include "spaces.h"
 
 int main() {
-    // Setup the problem 
+    // Setup the problem
     auto setup = Unit::tcg <Real,Rm> ();
 
     // Problem setup
@@ -27,7 +27,7 @@ int main() {
     setup.check_iter = true;
     setup.check_sol = true;
 
-    // Check the solver 
+    // Check the solver
     Unit::run_and_verify <Real,Rm> (setup);
 
     // Declare success

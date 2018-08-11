@@ -1,12 +1,12 @@
 // Run TCG with a small trust-region radius and an offset.  This verifies that
 // the algorithm will not violate the trust-region radius even with an offset
-// and that the combination of the two vectors touches the radius. 
+// and that the combination of the two vectors touches the radius.
 
 #include "linear_algebra.h"
 #include "spaces.h"
 
 int main() {
-    // Setup the problem 
+    // Setup the problem
     auto setup = Unit::tcg <Real,Rm> ();
 
     // On the first iteration, CG will move in the steepest descent direction.
@@ -34,7 +34,7 @@ int main() {
     setup.check_iter = true;
     setup.check_sol = true;
 
-    // Check the solver 
+    // Check the solver
     Unit::run_and_verify <Real,Rm> (setup);
 
     // Declare success

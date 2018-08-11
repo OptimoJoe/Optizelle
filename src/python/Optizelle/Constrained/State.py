@@ -20,7 +20,7 @@ class t(
         checkVectorSpace("X",X)
         checkVectorSpace("Y",Y)
         checkEuclidean("Z",Z)
-        
+
         # Allocate memory for our vectors
         Optizelle.Unconstrained.State.allocateVectors(self,X,x)
         Optizelle.EqualityConstrained.State.allocateVectors(self,X,Y,x,y)

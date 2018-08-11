@@ -11,7 +11,7 @@ C/C++ files, VHDL-files, Verilog-files, TLC-files, or other Source Code files
 supplied with the Programs ("User Files").  Licensee may distribute or
 sublicense without restriction, User Files provided that a principal purpose of
 the distribution or sublicense is not to replace or replicate a Program or any
-part of a Program.  
+part of a Program.
 
 Optizelle does not include or distribute any Mathworks code or object files.
 Optizelle only distributes its own MATLAB code and MEX files and hence may

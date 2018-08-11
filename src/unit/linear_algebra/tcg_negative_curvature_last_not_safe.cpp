@@ -17,7 +17,7 @@
 //
 // Hence, the sequence <x + x_offset,w> is
 //
-// -1/2, -2/3, -3/4, -4/5, -13000 
+// -1/2, -2/3, -3/4, -4/5, -13000
 //
 // As such, we require that <x + x_offset,w> >= -31/40, which means that we
 // violate the safeguard on the last two steps.  This forces us to retreat
@@ -27,19 +27,19 @@
 #include "spaces.h"
 
 int main() {
-    // Setup the problem 
+    // Setup the problem
     auto setup = Unit::tcg <Real,Rm> ();
 
-    // Problem setup 
+    // Problem setup
     setup.A = std::make_unique <Matrix>(
         Unit::Matrix <Real>::mostly_dd_indef(setup.m));
     setup.b = std::make_unique <Vector> (Unit::Vector <Real>::elast(setup.m));
-    auto lb = Real(-31./40.); 
+    auto lb = Real(-31./40.);
     auto x = Unit::Vector<Real>::zero(setup.m);
     auto w = std::vector <Real> {0,0,0,0,-1};
     setup.safeguard = std::make_unique<Optizelle::SafeguardSimplified<Real,Rm>>(
         Unit::Safeguard <Real,Rm>::lower(x,lb,w));
-    setup.delta = 1e5; 
+    setup.delta = 1e5;
 
     // Target solutions
     setup.iter_star = 5;
@@ -53,7 +53,7 @@ int main() {
     setup.check_safeguard_failed = true;
     setup.check_safeguard_alpha = true;
 
-    // Check the solver 
+    // Check the solver
     Unit::run_and_verify <Real,Rm> (setup);
 
     // Declare success

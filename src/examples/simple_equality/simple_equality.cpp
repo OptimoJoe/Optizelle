@@ -1,4 +1,4 @@
-// Optimize a simple optimization problem with an optimal solution 
+// Optimize a simple optimization problem with an optimal solution
 // of (2-sqrt(2)/2,2-sqrt(2)/2).
 
 #include "optizelle/optizelle.h"
@@ -12,11 +12,11 @@
 // Squares its input
 template <typename Real>
 Real sq(Real const & x){
-    return x*x; 
+    return x*x;
 }
 
-// Define a simple objective where 
-// 
+// Define a simple objective where
+//
 // f(x,y)=x^2+y^2
 //
 struct MyObj
@@ -24,7 +24,7 @@ struct MyObj
 {
     typedef Optizelle::Rm <double> X;
 
-    // Evaluation 
+    // Evaluation
     double eval(X::Vector const & x) const {
         return sq(x[0])+sq(x[1]);
     }
@@ -44,8 +44,8 @@ struct MyObj
         X::Vector const & dx,
         X::Vector & H_dx
     ) const {
-        H_dx[0]=2.*dx[0]; 
-        H_dx[1]=2.*dx[1]; 
+        H_dx[0]=2.*dx[0];
+        H_dx[1]=2.*dx[1];
     }
 };
 //---Objective1---
@@ -53,7 +53,7 @@ struct MyObj
 //---EqualityConstraint0---
 // Define a simple equality constraint
 //
-// g(x,y)= [ (x-2)^2 + (y-2)^2 = 1 ] 
+// g(x,y)= [ (x-2)^2 + (y-2)^2 = 1 ]
 //
 struct MyEq
     :public Optizelle::VectorValuedFunction<double,Optizelle::Rm,Optizelle::Rm>
@@ -61,7 +61,7 @@ struct MyEq
     typedef Optizelle::Rm <double> X;
     typedef Optizelle::Rm <double> Y;
 
-    // y=g(x) 
+    // y=g(x)
     void eval(
         X::Vector const & x,
         Y::Vector & y
@@ -82,7 +82,7 @@ struct MyEq
     void ps(
         X::Vector const & x,
         Y::Vector const & dy,
-        X::Vector & xhat 
+        X::Vector & xhat
     ) const {
         xhat[0] = 2.*(x[0]-2.)*dy[0];
         xhat[1] = 2.*(x[1]-2.)*dy[0];
@@ -93,7 +93,7 @@ struct MyEq
         X::Vector const & x,
         X::Vector const & dx,
         Y::Vector const & dy,
-        X::Vector & xhat 
+        X::Vector & xhat
     ) const {
         xhat[0] = 2.*dx[0]*dy[0];
         xhat[1] = 2.*dx[1]*dy[0];
@@ -102,7 +102,7 @@ struct MyEq
 //---EqualityConstraint1---
 
 //---Preconditioner0---
-// Define a Schur preconditioner for the equality constraints 
+// Define a Schur preconditioner for the equality constraints
 struct MyPrecon:
     public Optizelle::Operator <double,Optizelle::Rm,Optizelle::Rm>
 {
@@ -133,10 +133,10 @@ int main(int argc,char* argv[]){
     using Optizelle::Rm;
 
     //---State0---
-    // Generate an initial guess 
+    // Generate an initial guess
     auto x = std::vector <double> {2.1, 1.1};
 
-    // Allocate memory for the equality multiplier 
+    // Allocate memory for the equality multiplier
     auto y = std::vector <double> (1);
 
     // Create an optimization state
@@ -148,7 +148,7 @@ int main(int argc,char* argv[]){
     Optizelle::json::EqualityConstrained <double,Optizelle::Rm,Optizelle::Rm>
         ::read(fname,state);
     //---Parameters1---
-   
+
     //---Functions0---
     // Create a bundle of functions
     Optizelle::EqualityConstrained <double,Rm,Rm>::Functions::t fns;

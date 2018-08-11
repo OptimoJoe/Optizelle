@@ -15,10 +15,10 @@
 #include "spaces.h"
 
 int main() {
-    // Setup the problem 
+    // Setup the problem
     auto setup = Unit::tcg <Real,Rm> ();
 
-    // Problem setup 
+    // Problem setup
     setup.A = std::make_unique<Matrix>(Unit::Matrix <Real>::symm_nd(setup.m,0));
     setup.b = std::make_unique <Vector> (Unit::Vector <Real>::basic(setup.m));
     setup.x_offset = std::make_unique <Vector> (
@@ -28,7 +28,7 @@ int main() {
     auto w = std::vector <Real> {0,0,0,1,0};
     setup.safeguard = std::make_unique<Optizelle::SafeguardSimplified<Real,Rm>>(
         Unit::Safeguard <Real,Rm>::lower(x,lb,w));
-    setup.delta = 1e5; 
+    setup.delta = 1e5;
 
     // Target solutions
     setup.iter_star = 1;
@@ -43,7 +43,7 @@ int main() {
     setup.check_cp = true;
     setup.check_safeguard_alpha = true;
 
-    // Check the solver 
+    // Check the solver
     Unit::run_and_verify <Real,Rm> (setup);
 
     // Declare success

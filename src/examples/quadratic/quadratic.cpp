@@ -1,4 +1,4 @@
-// This example minimizes a simple quadratic function.  For reference, the 
+// This example minimizes a simple quadratic function.  For reference, the
 // optimal solution to this function is (1,1,1).
 
 #include <vector>
@@ -11,11 +11,11 @@
 // Squares its input
 template <typename Real>
 Real sq(Real const & x){
-    return x*x; 
+    return x*x;
 }
 
-// Define the quadratic function 
-// 
+// Define the quadratic function
+//
 // f(x,y,z)=(x-1)^2+(2y-2)^2+(3z-3)^2
 //
 struct Quad : public Optizelle::ScalarValuedFunction <double,Optizelle::Rm> {
@@ -43,8 +43,8 @@ struct Quad : public Optizelle::ScalarValuedFunction <double,Optizelle::Rm> {
         X::Vector & H_dx
     ) const {
     	H_dx[0]= 2*dx[0];
-        H_dx[1]= 8*dx[1]; 
-        H_dx[2]= 18*dx[2]; 
+        H_dx[1]= 8*dx[1];
+        H_dx[2]= 18*dx[2];
     }
 };
 
@@ -72,7 +72,7 @@ int main(int argc,char* argv[]){
     }
     auto fname = argv[1];
 
-    // Generate an initial guess 
+    // Generate an initial guess
     auto x = std::vector <double> {-1.2, 1.1, 2.};
 
     // Create an unconstrained state based on this vector
@@ -81,10 +81,10 @@ int main(int argc,char* argv[]){
     // Read the parameters from file
     Optizelle::json::Unconstrained <double,Optizelle::Rm>::read(fname,state);
 
-    // Create the bundle of functions 
+    // Create the bundle of functions
     Optizelle::Unconstrained <double,Optizelle::Rm>::Functions::t fns;
     fns.f.reset(new Quad);
-    fns.PH.reset(new QuadHInv(state.x)); 
+    fns.PH.reset(new QuadHInv(state.x));
 
     // Solve the optimization problem
     Optizelle::Unconstrained <double,Optizelle::Rm>::Algorithms

@@ -20,23 +20,23 @@ function sql_restart(fname)
     main(fname);
 end
 
-% Define a simple objective where 
-% 
+% Define a simple objective where
+%
 % f(x,y,z)=x+y+z
 %
 function self = MyObj()
 
-    % Evaluation 
+    % Evaluation
     self.eval = @(x) sum(x);
 
     % Gradient
-    self.grad = @(x) ones(size(x)); 
+    self.grad = @(x) ones(size(x));
 
     % Hessian-vector product
-    self.hessvec = @(x,dx) zeros(size(x)); 
+    self.hessvec = @(x,dx) zeros(size(x));
 end
 
-% Define a simple SQL inequality 
+% Define a simple SQL inequality
 %
 % h(x,y,z) = [ x y ] >=S 0
 %            [ y z ]
@@ -45,7 +45,7 @@ end
 %
 function self = MyIneq()
 
-    % z=h(x) 
+    % z=h(x)
     self.eval = @(x)MyIneq_eval(x);
 
     % z=h'(x)dx
@@ -55,10 +55,10 @@ function self = MyIneq()
     self.ps = @(x,dz)MyIneq_ps(x,dz);
 
     % xhat=(h''(x)dx)*dz
-    self.pps = @(x,dx,dz) zeros(size(x)); 
+    self.pps = @(x,dx,dz) zeros(size(x));
 end
 
-% z=h(x) 
+% z=h(x)
 function z=MyIneq_eval(x)
     global Optizelle;
     z = Optizelle.SQL.create( ...
@@ -91,7 +91,7 @@ end
 % x_hat=h'(x)*dz
 function x_hat=MyIneq_ps(x,dz)
     % Remember, the input to this function may not be symmetric, so
-    % compute accordingly 
+    % compute accordingly
     x_hat = ...
         [dz.data{1}(1,1); ...
          dz.data{1}(1,2) + dz.data{1}(2,1); ...
@@ -129,7 +129,7 @@ function main(fname)
     % Read the parameters from file
     state=Optizelle.json.InequalityConstrained.read( ...
         Optizelle.Rm,Optizelle.SQL,fname,state);
-    
+
     % Create a bundle of functions
     fns=Optizelle.InequalityConstrained.Functions.t;
     fns.f=MyObj();
@@ -138,8 +138,8 @@ function main(fname)
     % Solve the optimization problem
     state=Optizelle.InequalityConstrained.Algorithms.getMin( ...
         Optizelle.Rm,Optizelle.SQL,Optizelle.Messaging.stdout,fns,state);
-    
-    % Write an intermediate restart file 
+
+    % Write an intermediate restart file
     Optizelle.json.InequalityConstrained.write_restart( ...
         Optizelle.Rm,Optizelle.SQL,'restart.json',state);
 

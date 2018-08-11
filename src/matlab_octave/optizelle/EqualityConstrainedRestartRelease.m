@@ -1,4 +1,4 @@
-% Release the state in an equality constrained optimization problem 
+% Release the state in an equality constrained optimization problem
 function [xs,ys,reals,nats,params]=EqualityConstrainedRestartRelease( ...
     X,Y,state)
 
@@ -7,5 +7,5 @@ function [xs,ys,reals,nats,params]=EqualityConstrainedRestartRelease( ...
     checkVectorSpace('Y',Y);
     checkEqualityConstrainedStateT('state',state);
 
-    % Do the state release 
+    % Do the state release
     [xs,ys,reals,nats,params]=EqualityConstrainedRestartRelease_(X,Y,state);

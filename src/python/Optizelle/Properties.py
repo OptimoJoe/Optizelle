@@ -1,37 +1,37 @@
 # Functions that create and check the elements contained in the state and
-# bundle of functions 
+# bundle of functions
 
 import inspect
 from Functions import *
 import pdb
 
-__doc__ = "Optizelle support functions" 
+__doc__ = "Optizelle support functions"
 
 def checkFloat(name,value):
     """Checks that an input is a floating-point number"""
-    if not isinstance(value,float): 
+    if not isinstance(value,float):
         raise TypeError("%s member must be a floating point" % name)
 
 def checkNatural(name,value):
     """Checks that an input is a natural number"""
-    if not isinstance(value,(int,long)) or value < 0: 
+    if not isinstance(value,(int,long)) or value < 0:
         raise TypeError("%s member must be a natural number" % name)
 
 def checkEnum(name,value):
     """Checks that an input is an enumerated type """
-    if not isinstance(value,(int,long)) or value < 0: 
+    if not isinstance(value,(int,long)) or value < 0:
         raise TypeError("%s member must be an enumerated type (natural.)"
             % name)
 
 def checkEnumRange(name,enum,value):
-    """Checks that an input is in a valid enumerated range""" 
-    if not value in enum.__dict__.itervalues(): 
+    """Checks that an input is in a valid enumerated range"""
+    if not value in enum.__dict__.itervalues():
         raise TypeError("%s member is outside the valid enumated range"
             % name)
 
 def checkVectorList(name,value):
     """Checks that an input is a list"""
-    if not isinstance(value,list): 
+    if not isinstance(value,list):
         raise TypeError("%s member must be a list of vectors" % name)
 
 def checkFunction(name,value):
@@ -72,19 +72,19 @@ def checkVectorSpace(vsname,value):
     fns=["init","copy","scal","zero","axpy","innr","rand"]
 
     # Now, check each of these
-    map(lambda name:checkStaticMethod(vsname,name,value),fns) 
+    map(lambda name:checkStaticMethod(vsname,name,value),fns)
 
 def checkEuclidean(vsname,value):
     """Check that we have a valid Euclidean-Jordan algebra"""
 
     # Check that we have a valid vector space
     checkVectorSpace(vsname,value)
-    
+
     # Define all the new functions we care about
     fns=["prod","id","linv","barr","srch","symm"]
 
     # Now, check each of these
-    map(lambda name:checkStaticMethod(vsname,name,value),fns) 
+    map(lambda name:checkStaticMethod(vsname,name,value),fns)
 
 def checkMessaging(name,value):
     """Check that we have a messaging object"""
@@ -93,11 +93,11 @@ def checkMessaging(name,value):
 
 def checkString(name,value):
     """Check that we have a string object"""
-    if not isinstance(value,str): 
+    if not isinstance(value,str):
         raise TypeError("%s argument must be a string" % (name))
 
 def checkStateManipulator(name,value):
-    """Check that we have a state manipulator""" 
+    """Check that we have a state manipulator"""
     if not issubclass(type(value),StateManipulator):
         raise TypeError("%s argument must be a StateManipulator object"
             % (name))
@@ -144,7 +144,7 @@ def checkParams(name,value):
 def createFloatProperty(name,desc):
     """Create a floating-point property"""
     def getter(self):
-        return self.__dict__["_%s" % name] 
+        return self.__dict__["_%s" % name]
 
     def setter(self, value):
         checkFloat(name,value)
@@ -158,7 +158,7 @@ def createFloatProperty(name,desc):
 def createNatProperty(name,desc):
     """Create a natural number property"""
     def getter(self):
-        return self.__dict__["_%s" % name] 
+        return self.__dict__["_%s" % name]
 
     def setter(self, value):
         checkNatural(name,value)
@@ -172,7 +172,7 @@ def createNatProperty(name,desc):
 def createEnumProperty(name,enum,desc):
     """Create an enumerated type property"""
     def getter(self):
-        return self.__dict__["_%s" % name] 
+        return self.__dict__["_%s" % name]
 
     def setter(self, value):
         checkEnum(name,value)
@@ -187,7 +187,7 @@ def createEnumProperty(name,enum,desc):
 def createFunctionProperty(name,desc):
     """Create a function property"""
     def getter(self):
-        return self.__dict__["_%s" % name] 
+        return self.__dict__["_%s" % name]
 
     def setter(self, value):
         checkFunction(name,value)
@@ -201,7 +201,7 @@ def createFunctionProperty(name,desc):
 def createVectorProperty(name,desc):
     """Create a vector property"""
     def getter(self):
-        return self.__dict__["_%s" % name] 
+        return self.__dict__["_%s" % name]
 
     def setter(self, value):
         self.__dict__["_%s" % name] = value
@@ -214,7 +214,7 @@ def createVectorProperty(name,desc):
 def createVectorListProperty(name,desc):
     """Create a list of vectors property"""
     def getter(self):
-        return self.__dict__["_%s" % name] 
+        return self.__dict__["_%s" % name]
 
     def setter(self, value):
         checkVectorList(name,value)
@@ -229,7 +229,7 @@ def createVectorListProperty(name,desc):
 def createScalarValuedFunctionProperty(name,desc):
     """Create a scalar-valued function property"""
     def getter(self):
-        return self.__dict__["_%s" % name] 
+        return self.__dict__["_%s" % name]
 
     def setter(self, value):
         checkScalarValuedFunction(name,value)
@@ -243,7 +243,7 @@ def createScalarValuedFunctionProperty(name,desc):
 def createVectorValuedFunctionProperty(name,desc):
     """Create a vector-valued function property"""
     def getter(self):
-        return self.__dict__["_%s" % name] 
+        return self.__dict__["_%s" % name]
 
     def setter(self, value):
         checkVectorValuedFunction(name,value)
@@ -257,7 +257,7 @@ def createVectorValuedFunctionProperty(name,desc):
 def createOperatorProperty(name,desc):
     """Create an operator property"""
     def getter(self):
-        return self.__dict__["_%s" % name] 
+        return self.__dict__["_%s" % name]
 
     def setter(self, value):
         checkOperator(name,value)

@@ -16,7 +16,7 @@ struct BlankManipulator : Optizelle::StateManipulator <ProblemClass> {
         typename ProblemClass::Functions::t const & fns,
         typename ProblemClass::State::t & state,
         Optizelle::OptimizationLocation::t const & loc
-    ) const { } 
+    ) const { }
 };
 
 // Create some empty functions
@@ -25,13 +25,13 @@ struct F : public Optizelle::ScalarValuedFunction <Real,XX> {
     typedef XX <Real> X;
     typedef typename X::Vector Vector;
 
-    // <- f(x) 
+    // <- f(x)
     Real eval(Vector const & x) const { throw; }
 
-    // grad = grad f(x) 
+    // grad = grad f(x)
     void grad(Vector const & x,Vector & grad) const {}
 
-    // H_dx = hess f(x) dx 
+    // H_dx = hess f(x) dx
     void hessvec(Vector const & x,Vector const & dx,Vector & H_dx) const {}
 };
 
@@ -45,7 +45,7 @@ struct G : public Optizelle::VectorValuedFunction <Real,XX,YY> {
     // y=f(x)
     void eval(X_Vector const & x,Y_Vector & y) const {}
 
-     // y=f'(x)dx 
+     // y=f'(x)dx
      void p(
          X_Vector const & x,
          X_Vector const & dx,
@@ -65,7 +65,7 @@ struct G : public Optizelle::VectorValuedFunction <Real,XX,YY> {
          X_Vector const & dx,
          Y_Vector const & dy,
          X_Vector & z
-     ) const {} 
+     ) const {}
 };
 
 struct H : public Optizelle::VectorValuedFunction <Real,XX,ZZ> {
@@ -98,5 +98,5 @@ struct H : public Optizelle::VectorValuedFunction <Real,XX,ZZ> {
          X_Vector const & dx,
          Z_Vector const & dz,
          X_Vector & z
-     ) const {} 
+     ) const {}
 };

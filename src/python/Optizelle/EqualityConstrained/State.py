@@ -32,7 +32,7 @@ class t(Optizelle.Unconstrained.State.t):
         # Check our arguments
         checkVectorSpace("X",X)
         checkVectorSpace("Y",Y)
-        
+
         # Allocate memory for our vectors
         Optizelle.Unconstrained.State.allocateVectors(self,X,x)
         allocateVectors(self,X,Y,x,y)
@@ -228,7 +228,7 @@ class t(Optizelle.Unconstrained.State.t):
         ("A typical norm for g'(x)*g(x).  Generally, we just take "
         "the value at the first iteration."))
     gpxdxn_p_gx = createVectorProperty(
-        "gpxdxn_p_gx", 
+        "gpxdxn_p_gx",
         ("Linear Taylor series at x in the direction dx_n.  This is used both "
         "in the predicted reduction as well as the residual predicted "
         "reduction."))

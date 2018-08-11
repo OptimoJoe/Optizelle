@@ -22,7 +22,7 @@ class t(Optizelle.Unconstrained.State.t):
         # Check our arguments
         checkVectorSpace("X",X)
         checkEuclidean("Z",Z)
-        
+
         # Allocate memory for our vectors
         Optizelle.Unconstrained.State.allocateVectors(self,X,x)
         allocateVectors(self,X,Z,x,z)

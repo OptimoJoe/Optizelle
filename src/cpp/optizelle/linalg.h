@@ -51,7 +51,7 @@ namespace Optizelle {
     int sgn(Real const & val) {
         return (Real(0) < val) - (val < Real(0));
     }
-    
+
     template <typename Real>
     void xerbla(std::string srname,Integer info) {
         std::cout << " ** On entry to " << srname << " parameter number "
@@ -122,7 +122,7 @@ namespace Optizelle {
     template <>
     void copy <float> (Integer n,float const * const x,Integer incx,float* y,
         Integer incy);
-    
+
     template <typename Real>
     void axpy(Integer n,Real alpha,Real const * const x,Integer incx,
         Real* y,Integer incy);
@@ -134,7 +134,7 @@ namespace Optizelle {
     void axpy <float> (
         Integer n,float alpha,float const * const x,Integer incx,float* y,
         Integer incy);
-    
+
     template <typename Real>
     void scal(Integer n,const Real alpha,Real* x,Integer incx) {
         if(n<=0) return;
@@ -148,7 +148,7 @@ namespace Optizelle {
     void scal <double> (Integer n,double alpha,double* x,Integer incx);
     template <>
     void scal <float> (Integer n,float alpha,float* x,Integer incx);
-    
+
     template <typename Real>
     Real dot(Integer n,Real const * const x,Integer incx,Real const * const y,
         Integer incy);
@@ -160,7 +160,7 @@ namespace Optizelle {
     float dot <float> (
         Integer n,float const * const x,Integer incx,float const * const y,
         Integer incy);
-    
+
 
     template <typename Real>
     void gemv(char trans,Integer m,Integer n,Real alpha,Real const * const A,
@@ -174,7 +174,7 @@ namespace Optizelle {
     void gemv(char trans,Integer m,Integer n,float alpha,float const * const A,
         Integer lda,float const * const x,Integer incx,float beta,float* y,
         Integer incy);
-    
+
     template <typename Real>
     void symv(char uplo,Integer n,Real alpha,Real const * const A,Integer lda,
         Real const * const x,Integer incx,Real beta,Real* y,Integer incy);
@@ -194,10 +194,10 @@ namespace Optizelle {
     template <>
     void spmv(char uplo,Integer n,float alpha,float const * const Ap,
         float const * const x,Integer incx,float beta,float* y,Integer incy);
-    
+
     template <typename Real>
     void trsv(char uplo,char trans,char diag,Integer n,Real const * const A,
-        Integer lda,Real* x,Integer incx); 
+        Integer lda,Real* x,Integer incx);
     template <>
     void trsv(
         char uplo,char trans,char diag,Integer n,double const * const A,
@@ -206,7 +206,7 @@ namespace Optizelle {
     void trsv(
         char uplo,char trans,char diag,Integer n,float const * const A,
         Integer lda,float* x,Integer incx);
-    
+
     // NOTE: this routine is not fully general.  It only implements what we
     // need.
     template <typename Real>
@@ -303,7 +303,7 @@ namespace Optizelle {
         char transa,char transb,Integer m,Integer n,Integer k,float alpha,
         float const * const A,Integer lda,float const * const B,Integer ldb,
         float beta,float* C,Integer ldc);
-    
+
     template <typename Real>
     void symm(char side,char uplo,Integer m,Integer n,Real alpha,
         Real const * const A,Integer lda,Real const * const B,Integer ldb,
@@ -319,7 +319,7 @@ namespace Optizelle {
         float const * const A,Integer lda,float const * const B,Integer ldb,
         float beta,float* C,Integer ldc);
 
-    
+
     template <typename Real>
     void syr2k(char uplo,char trans,Integer n,Integer k,Real alpha,
         Real const * const A,Integer lda,Real const * const B,Integer ldb,
@@ -336,7 +336,7 @@ namespace Optizelle {
     template <typename Real>
     Real lamch(char cmach);
     template <>
-    double lamch(char cmach); 
+    double lamch(char cmach);
     template <>
     float lamch(char cmach);
 
@@ -355,7 +355,7 @@ namespace Optizelle {
         float vl,float vu,Integer il,Integer iu,float abstol,Integer& m,
         float* w,float* z,Integer ldz,Integer* isuppz,float* work,
         Integer lwork,Integer* iwork,Integer liwork,Integer& info);
-    
+
     template <typename Real>
     void stemr(char jobz,char range,Integer n,Real *D,Real *E,Real vl,Real vu,
         Integer il,Integer iu,Integer& m,Real* w,Real* z,Integer ldz,
@@ -371,7 +371,7 @@ namespace Optizelle {
         float vu,Integer il,Integer iu,Integer& m,float* w,float* z,
         Integer ldz,Integer nzc,Integer* isuppz,Integer& tryrac,float* work,
         Integer lwork,Integer* iwork,Integer liwork,Integer& info);
-    
+
     template <typename Real>
     void stevr(char jobz,char range,Integer n,Real *D,Real *E,Real vl,Real vu,
         Integer il,Integer iu,Real abstol, Integer& m,Real* w,Real* z,
@@ -462,14 +462,14 @@ namespace Optizelle {
     void potrf(char uplo,Integer n,double* A,Integer lda,Integer& info);
     template <>
     void potrf(char uplo,Integer n,float* A,Integer lda,Integer& info);
-    
+
     template <typename Real>
     void potri(char uplo,Integer n,Real* A,Integer lda,Integer& info);
     template <>
     void potri(char uplo,Integer n,double* A,Integer lda,Integer& info);
     template <>
     void potri(char uplo,Integer n,float* A,Integer lda,Integer& info);
-    
+
     template <typename Real>
     void pftrf(char transr,char uplo,Integer n,Real* Arf,Integer& info);
     template <>
@@ -569,12 +569,12 @@ namespace Optizelle {
     Natural ijtok(Natural const & i,Natural const & j,Natural const & m);
 
     // Indexing for packed storage where i<=j
-    Natural ijtokp(Natural const & i,Natural const & j); 
+    Natural ijtokp(Natural const & i,Natural const & j);
 
     // Indexing formula for symmetric matrices in RPF format where i<=j.
     Natural ijtokrf(Natural const & i,Natural const & j,Natural const & m);
 
-    // Indexing for vectors 
+    // Indexing for vectors
     Natural itok(Natural const & i);
 
     //---Operator0---
@@ -592,11 +592,11 @@ namespace Optizelle {
         // y = A(x)
         virtual void eval(X_Vector const & x,Y_Vector &y) const = 0;
 
-        // Allow a derived class to deallocate memory 
+        // Allow a derived class to deallocate memory
         virtual ~Operator() {}
     };
     //---Operator1---
-    
+
     // A safeguard search used primarily for inequality constraints
     template <typename Real,template <typename> class XX>
     using SafeguardSimplified = std::function <
@@ -606,7 +606,7 @@ namespace Optizelle {
         )>;
 
     /* Given a Schur decomposition of A, A=V D V', solve the Sylvester equation
-    
+
        A X + X A = B
 
     */
@@ -624,7 +624,7 @@ namespace Optizelle {
         std::vector <Real> VtBV(m*m);
         // tmp <- B V
         symm <Real> ('L','U',m,m,Real(1.),&(B[0]),m,&(V[0]),m,Real(0.),
-            &(tmp[0]),m); 
+            &(tmp[0]),m);
         // VtBV <- V' B V
         gemm <Real> ('T','N',m,m,m,Real(1.),&(V[0]),m,&(tmp[0]),m,Real(0.),
             &(VtBV[0]),m);
@@ -635,7 +635,7 @@ namespace Optizelle {
         #pragma omp parallel for schedule(static)
         #endif
         for(Natural j=1;j<=m;j++) {
-            for(Natural i=1;i<=j;i++) 
+            for(Natural i=1;i<=j;i++)
                 X[ijtok(i,j,m)]=VtBV[ijtok(i,j,m)]/(D[i-1]+D[j-1]);
         }
 
@@ -720,7 +720,7 @@ namespace Optizelle {
             // Store the norm of the Arnoldi vector w in the off diagonal part
             // of T.
             beta.emplace_back(std::sqrt(dot <Real> (m,&(w[0]),1,&(w[0]),1)));
-   
+
             // Figure out the workspaces for the eigenvalues and eigenvectors
             Natural k=alpha.size();  // Size of the eigenvalue subproblem
             D.resize(alpha.size());
@@ -775,11 +775,11 @@ namespace Optizelle {
         std::vector <Integer> iwork(5*eig_size);
         Integer info=0;
 
-        // If the size of the matrix is equal to or smaller than the maximum 
+        // If the size of the matrix is equal to or smaller than the maximum
         // number of inner iterations, just use LAPACK to find the smallest
         // eigenvalue
         if(m<=iter_innr_max) {
-            // Copy in the operator for the eigenvalue problem 
+            // Copy in the operator for the eigenvalue problem
             copy <Real> (m*(m+1)/2,&(Ap[0]),1,&(Aeig[0]),1);
 
             // Solve the eigenvalue problem for the smallest eigenvalue
@@ -796,8 +796,8 @@ namespace Optizelle {
         // also the element below the diagonal in H (if we stored it
         // explicitely).
         Real norm_v;
-        
-        // Initialize the first Krylov vector 
+
+        // Initialize the first Krylov vector
         std::mt19937 gen(1);
         std::uniform_real_distribution<> dis(0, 1);
         for(Natural i=1;i<=m;i++)
@@ -825,7 +825,7 @@ namespace Optizelle {
         Integer lwork_qr=iter_innr_max;
         std::vector <Real> work_qr(lwork_qr);
 
-        // Allocate memory for use in the QR-shifts 
+        // Allocate memory for use in the QR-shifts
         std::vector <Real> QR_tmp(iter_innr_max*iter_innr_max);
 
         // Allocate memory for the vector of all ones.  This makes it easier
@@ -840,7 +840,7 @@ namespace Optizelle {
         for(Natural iter_outr=1;iter_outr<=iter_outr_max;iter_outr++) {
             // If we restart, we already have a second Krylov vector.
             // Otherwise, we compute the second Krylov vector.
-            Natural gs_start= iter_outr==1 ? 1 : 2; 
+            Natural gs_start= iter_outr==1 ? 1 : 2;
 
             // Do the Arnoldi iteration
             for(Natural k=gs_start;k<=iter_innr_max;k++) {
@@ -861,7 +861,7 @@ namespace Optizelle {
                 scal <Real> (m,Real(1.)/norm_v,&(V[ijtok(1,k+1,m)]),1);
             }
 
-            // Find the Ritz values of H 
+            // Find the Ritz values of H
             copy <Real> (iter_innr_max*(iter_innr_max+1)/2,&(Hp[0]),1,
                 &(Aeig[0]),1);
             spevx <Real> ('N','A','U',iter_innr_max,&(Aeig[0]),Real(0.),
@@ -911,7 +911,7 @@ namespace Optizelle {
 
                 // Convert back to Hp
                 trttp <Real> ('U',iter_innr_max,&(H[0]),iter_innr_max,&(Hp[0]),
-                    info); 
+                    info);
 
                 // QR_tmp <- Q Q_all
                 gemm <Real> ('N','N',iter_innr_max,iter_innr_max,iter_innr_max,
@@ -922,7 +922,7 @@ namespace Optizelle {
                 copy <Real> (iter_innr_max*iter_innr_max,&(QR_tmp[0]),1,
                     &(Q_all[0]),1);
             }
-            
+
             // Find the starting Krylov vectors
 
             // v1 <- V Q_all(*,1)
@@ -936,7 +936,7 @@ namespace Optizelle {
             // v2 <- V Q_all(*,2) H(2,1)
             scal <Real> (m,Hp[ijtokp(2,1)],&(v2[0]),1);
 
-            // v2 <- V Q_all(*,2) H(2,1) 
+            // v2 <- V Q_all(*,2) H(2,1)
             //           + norm_v Q_all(iter_innr_max,1) V(*,iter_innr_max+1)
             axpy <Real> (m,norm_v*Q_all[ijtok(iter_innr_max,1,iter_innr_max)],
                 &(V[ijtok(1,iter_innr_max+1,m)]),1,&(v2[0]),1);
@@ -1008,7 +1008,7 @@ namespace Optizelle {
         // fractorization of Brf.
         spgst(1,'U',m,&(Ap[0]),&(Bp[0]),info);
 
-        // Now, find the smallest eigenvalue of Ap = inv(U') A inv(U) 
+        // Now, find the smallest eigenvalue of Ap = inv(U') A inv(U)
         return syiram <Real> (m,&(Ap[0]),iter_innr_max,iter_outr_max,tol);
     }
 
@@ -1019,7 +1019,7 @@ namespace Optizelle {
     // Here, we assume that a, b, and c are not all zero.
     //
     // (input) a, b, c : Coefficients of the quadratic
-    // (output) Roots, if they exist 
+    // (output) Roots, if they exist
     template <typename Real>
     std::vector <Real> quad_equation(
         Real const & a,
@@ -1033,7 +1033,7 @@ namespace Optizelle {
         // check if the leading coefficient is zero.  If it is not the case,
         // we assume that we have a quadratic and we use the most stable
         // equation that we can for the root.
-        if( a != Real(0.) ) { 
+        if( a != Real(0.) ) {
             auto r1 = b < Real(0.) ?
                 (-b + std::sqrt(b*b-Real(4.)*a*c)) / (Real(2.)*a) :
                 (Real(2.)*c) / (-b - std::sqrt(b*b-Real(4.)*a*c));
@@ -1053,11 +1053,11 @@ namespace Optizelle {
         // roots if c is zero.  There's not really a good way to denote all
         // of these cases, so we just assume that c is not zero and return
         // zero roots.
-        } else 
+        } else
             return std::vector <Real> ();
     }
 
-    // Reasons we stop truncated CG 
+    // Reasons we stop truncated CG
     namespace TruncatedStop{
         enum t{
             //---TruncatedStop0---
@@ -1074,7 +1074,7 @@ namespace Optizelle {
                                        // composite-step SQP method can trigger
                                        // this.
             NonSymmetricPreconditioner,// Detected a nonsymmetric preconditioner
-            NonSymmetricOperator,      // Detected a nonsymmetric operator 
+            NonSymmetricOperator,      // Detected a nonsymmetric operator
             LossOfOrthogonality,       // Loss of orthogonality between the
                                        // Krylov vectors detected
             OffsetViolatesTrustRegion, // Offset is chosen such that
@@ -1088,9 +1088,9 @@ namespace Optizelle {
             //---TruncatedStop1---
         };
 
-        // Converts the Krylov stopping condition to a string 
+        // Converts the Krylov stopping condition to a string
         std::string to_string(t const & trunc_stop);
-        
+
         // Converts a string to a Krylov stopping condition
         t from_string(std::string const & trunc_stop);
 
@@ -1134,7 +1134,7 @@ namespace Optizelle {
                 xs.emplace_back(X::init(x));
                 norm_xs.emplace_back(Real(0.));
             }
-            
+
             // Copy the element into place and normalize the vector
             X::copy(x,xs.back());
             X::scal(1/normalization,xs.back());
@@ -1142,7 +1142,7 @@ namespace Optizelle {
         };
     };
 
-    // A orthogonalizes a vector x to a list of other xs.  
+    // A orthogonalizes a vector x to a list of other xs.
     template <
         typename Real,
         template <typename> class XX
@@ -1187,7 +1187,7 @@ namespace Optizelle {
                 // Rotate the first row to the back
                 rotate(x);
 
-                // Rotate the elements of each row 
+                // Rotate the elements of each row
                 for(auto & xi : x)
                     rotate(xi);
 
@@ -1202,7 +1202,7 @@ namespace Optizelle {
                     x.emplace_back(typename std::remove_reference<decltype(x)>
                         ::type::value_type());
 
-                // Allocate a new colum to each row 
+                // Allocate a new colum to each row
                 for(auto & xj : x)
                     xj.emplace_back(Real(0.));
             }
@@ -1220,11 +1220,11 @@ namespace Optizelle {
             if(maxsize <= 0) return;
 
             // If we've hit the max number of columns, rotate items
-            if(x.size()==maxsize) 
+            if(x.size()==maxsize)
                 rotate(x);
 
             // Otherwise, allocate more memory
-            else 
+            else
                 x.emplace_back(Real(0.));
         };
     }
@@ -1238,7 +1238,7 @@ namespace Optizelle {
         return std::sqrt(sum);
     };
 
-    // Frobenius-norm of a matrix 
+    // Frobenius-norm of a matrix
     template <typename Real,typename X>
     auto norm_F(X const & x) -> Real{
         auto sum = Real(0.);
@@ -1248,7 +1248,7 @@ namespace Optizelle {
         return std::sqrt(sum);
     }
 
-    // Frobenius-norm of the antisymmetric part of a matrix 
+    // Frobenius-norm of the antisymmetric part of a matrix
     template <typename Real,typename X>
     auto norm_anti_F(X const & x) -> Real{
         auto sum = Real(0.);
@@ -1260,7 +1260,7 @@ namespace Optizelle {
 
     // Returns whether or not a truncated-CG direction is salvagable based on
     // the current stopping condition.  Basically, salvagable directions are
-    // directions that exceed the trust-region, have negative curvature, 
+    // directions that exceed the trust-region, have negative curvature,
     // violated the safeguard, or have nothing wrong with them.  Non-salvagable
     // situations are where Bdx has something like a NaN or the operators we
     // used to calculate it have something bad going on.
@@ -1273,7 +1273,7 @@ namespace Optizelle {
     // Computes the truncated projected conjugate gradient algorithm in order
     // to solve Ax=b where we restrict x to be in the range of B and that
     // || x + x_offset || <= delta.  The parameters are as follows.
-    // 
+    //
     // (input) A : Operator in the system A B x = b
     // (input) b : Right hand side in the system A B x = b
     // (input) B : Projection in the system A B x = b
@@ -1284,13 +1284,13 @@ namespace Optizelle {
     //     this number is 1, then we do the conjugate gradient algorithm.
     // (input) delta : Trust region radius.  If this number is infinity, we
     //     do not scale the final step if we detect negative curvature.
-    // (input) x_offset : Offset for checking the TR radius 
+    // (input) x_offset : Offset for checking the TR radius
     // (input) safeguard_failed_max : Maximum number of failed safeguard steps
     //     before exiting
     // (input) safeguard : Our safeguard function
-    // (input) check_B_projector: Check preconditioner that is a projector 
-    // (input) check_B_properties: Check other properties of the preconditioner 
-    // (input) check_A_properties: Check properties of the operator 
+    // (input) check_B_projector: Check preconditioner that is a projector
+    // (input) check_B_properties: Check other properties of the preconditioner
+    // (input) check_A_properties: Check properties of the operator
     // (output) x : Final solution x
     // (output) x_cp : The Cauchy-Point, which is defined as the solution x
     //     after a single iteration
@@ -1360,9 +1360,9 @@ namespace Optizelle {
 
         // Constant normalization, when we don't need one
         auto const one = Real(1.);
-        
-        // Residual for the sytem 
-        auto r = X::init(x); 
+
+        // Residual for the sytem
+        auto r = X::init(x);
         auto norm_r = Real(0.);
         auto rs = std::deque <X_Vector> ();
         auto norm_rs = std::deque <Real> ();
@@ -1372,13 +1372,13 @@ namespace Optizelle {
         // norm_Br returned from function
         auto Brs = std::deque <X_Vector> ();
         auto norm_Brs = std::deque <Real> ();
-       
+
         // Preconditioned directions
         auto Bdx = X::init(x);
         auto norm_Bdx = Real(0.);
         auto Bdxs = std::deque <X_Vector> ();
         auto norm_Bdxs = std::deque <Real> ();
-        
+
         // Operator applied to the preconditioned directions
         auto ABdx = X::init(x);
         auto norm_ABdx = Real(0.);
@@ -1400,24 +1400,24 @@ namespace Optizelle {
             norm_Brs);
         auto archive_Bdx = archive <Real,XX> (
             orthog_storage_max,
-            Anorm_Bdx, 
+            Anorm_Bdx,
             Bdx,
             Bdxs,
             norm_Bdxs);
         auto archive_ABdx = archive <Real,XX> (
             orthog_storage_max,
-            Anorm_Bdx, 
+            Anorm_Bdx,
             ABdx,
             ABdxs,
             norm_ABdxs);
-                
+
         // Allocate memory for a vector where
         //
         // X_i = <B ri, ri> / || Bri ||^2 - 1
         //
         // From this vector, we check the following
         //
-        // 1. || X ||_2 > epsilon 
+        // 1. || X ||_2 > epsilon
         //
         //    B is not a projector, which we need for the composite step SQP
         //    method.  Note, when B is a projector we have || Bri ||^2 =
@@ -1431,9 +1431,9 @@ namespace Optizelle {
             // Allocate additional memory when required
             allocate_B_projector();
 
-            // Exit if we're not doing the check 
+            // Exit if we're not doing the check
             if(!check_B_projector) return;
-            
+
             // Update the elements
             auto const & Bri = Brs.back();
             auto const norm_Bri = norm_Brs.back();
@@ -1464,7 +1464,7 @@ namespace Optizelle {
         //    i!=j.  As such, the matrix should be zero.  Nevertheless, since
         //    we're using a variant of Gram-Schmidt, we accumulate error here
         //    overtime.  We can mitigate this somewhat by increasing
-        //    orthog_iter_max. 
+        //    orthog_iter_max.
         //
         // For reference, we store X in row-major format.
         auto B_properties = std::deque <std::deque <Real>> ();
@@ -1475,7 +1475,7 @@ namespace Optizelle {
             // Allocate additional memory when required
             allocate_B_properties();
 
-            // Exit if we're not doing the check 
+            // Exit if we're not doing the check
             if(!check_B_properties) return;
 
             // Update the elements
@@ -1508,15 +1508,15 @@ namespace Optizelle {
         //    A is not symmetric.  In truth, this should always be true, but
         //    users give strange things.  Basically, <ABdxi,ABdxj> =
         //    <Bdxi,A*Bdxj> = <Bdxi,ABdxj> when A is symmetric.  Hence, the
-        //    norm of the anti-symmetric part should be zero. 
+        //    norm of the anti-symmetric part should be zero.
         //
         // 2. || X ||_F > epsilon
         //
-        //    Preconditioned directions are not A-orthogonal.  In theory, 
+        //    Preconditioned directions are not A-orthogonal.  In theory,
         //    <A B dxi, B dxj> = 0 for i!=j.  As such, the matrix should be
         //    zero.  Nevertheless, since we're using a variant of Gram-Schmidt,
         //    we accumulate error here overtime.  We can mitigate this somewhat
-        //    by increasing orthog_iter_max. 
+        //    by increasing orthog_iter_max.
         //
         // For reference, we store X in row-major format.
         auto A_properties = std::deque <std::deque <Real>> ();
@@ -1527,9 +1527,9 @@ namespace Optizelle {
             // Allocate additional memory when required
             allocate_A_properties();
 
-            // Exit if we're not doing the check 
+            // Exit if we're not doing the check
             if(!check_A_properties) return;
-            
+
             // Update the elements
             auto i = Bdxs.size()-1;
             A_properties[i][i] = Real(0.);
@@ -1547,7 +1547,7 @@ namespace Optizelle {
         auto is_Bdxs_Aorthogonal = [&]() {
             return norm_F <Real> (A_properties) <= eps_diag;
         };
-        
+
         // Allocate memory for the shifted iterate, x + x_offset.  Generally,
         // we care if this quantity violates the safeguard or the trust-region,
         // not whether x does directly
@@ -1580,19 +1580,19 @@ namespace Optizelle {
         B.eval(r,Br);
         norm_r = std::sqrt(X::innr(r,r));
         norm_Br0 = std::sqrt(X::innr(Br,Br));
-        norm_Br = norm_Br0; 
+        norm_Br = norm_Br0;
 
         // Check for NaNs in the preconditioner.  If there's a problem here, we
-        // have a difficult time recovering later, so just quit. 
+        // have a difficult time recovering later, so just quit.
         if(norm_Br!=norm_Br) {
             stop = TruncatedStop::NanPreconditioner;
             return;
         }
 
-        // Find the projected search direction 
+        // Find the projected search direction
         X::copy(Br,Bdx);
         X::scal(Real(-1.),Bdx);
-       
+
         // Allocate memory for the shifted trial step
         //
         // || (x + x_offset) + alpha Bdx ||
@@ -1600,9 +1600,9 @@ namespace Optizelle {
         // and its norm
         auto shifted_trial = X::init(x);
         auto norm_shifted_trial = std::numeric_limits <Real>::quiet_NaN();
-        
+
         // Track the number of iterations in a row where we violated the
-        // safeguard 
+        // safeguard
         safeguard_failed = 0;
 
         // Given an iterate feasible with respect to the safeguard, save copies
@@ -1616,11 +1616,11 @@ namespace Optizelle {
         //    and whereever the algorithm currently is
         auto x_safe = X::init(x);                    // Last safe iterate
         auto r_safe = X::init(x);                    // Last safe residual
-        auto shifted_iterate_safe = X::init(x); // For finding a new safe step 
+        auto shifted_iterate_safe = X::init(x); // For finding a new safe step
         auto Bdx_safe = X::init(x);    // For new iterate, x = x + alpha Bdx
         auto ABdx_safe = X::init(x);   // For new residual, r = r + alpha ABdx
 
-        // Archives a set of safe iterate information 
+        // Archives a set of safe iterate information
         auto archive_iterate = [&]() {
             // Save the iterate information
             X::copy(x,x_safe);
@@ -1677,15 +1677,15 @@ namespace Optizelle {
         //
         // 2. Breakdown in the algorithm, by finding a solution early in the
         //    iterations, but one that numerically can't exceed our stopping
-        //    tolerance. 
-        // 
+        //    tolerance.
+        //
         // Anyway, this reduction is really what we care about
         // for optimization since as long as the CG objective goes down, we
         // know we'll get a positive predicted reduction or a descent
         // direction.
         auto x_p_ao2Bdx = X::init(x);
         auto obj_red = [&](auto const & alpha, bool const & cp=false) {
-            // In general, we want this term 
+            // In general, we want this term
             if(!cp)
                 X::copy(x,x_p_ao2Bdx);
 
@@ -1725,7 +1725,7 @@ namespace Optizelle {
             A.eval(Bdx,ABdx);
 
             // Orthogonalize this direction to the previous directions
-            Aorthogonalize <Real,XX> (Bdxs,ABdxs,orthog_iter_max,Bdx,ABdx); 
+            Aorthogonalize <Real,XX> (Bdxs,ABdxs,orthog_iter_max,Bdx,ABdx);
 
             // Check if this direction is a descent direction.  If it is not,
             // flip it so that it is.  In truth, this really shouldn't ever
@@ -1754,7 +1754,7 @@ namespace Optizelle {
             // We only compute the following when we have not detected some
             // kind of exiting condition
             if(stop == TruncatedStop::NotConverged) {
-                // Figure out the normalization for the directions 
+                // Figure out the normalization for the directions
                 // orthogonalization.
                 Anorm_Bdx = std::sqrt(Anorm_Bdx_2);
 
@@ -1763,7 +1763,7 @@ namespace Optizelle {
                 archive_ABdx();
                 archive_r();
                 archive_Br();
-                
+
                 // Update our numerical error checks
                 update_B_projector();
                 update_B_properties();
@@ -1844,7 +1844,7 @@ namespace Optizelle {
                     // direction, Bdx, until we hit the boundary
                     if(delta < std::numeric_limits <Real>::infinity()) {
                         // Find sigma so that
-                        // 
+                        //
                         // || (x+x_offset) + sigma Bdx || = delta.
                         //
                         // This can be found by finding the positive root of the
@@ -1858,7 +1858,7 @@ namespace Optizelle {
                         //     + sigma (2 <Bdx,x+x_offset>)
                         //     + (|| x+x_offset||^2-delta^2).
 
-                        // Solve the quadratic equation for the positive root 
+                        // Solve the quadratic equation for the positive root
                         auto aa = X::innr(Bdx,Bdx);
                         auto bb = Real(2.)*X::innr(Bdx,shifted_iterate);
                         auto cc = norm_shifted_iterate*norm_shifted_iterate
@@ -1895,7 +1895,7 @@ namespace Optizelle {
                     // see how far we can go in the current direction.  If this
                     // amount truncates us more than sigma, then we reduce the
                     // size of sigma.
-                    } else if(safeguard_failed==0) { 
+                    } else if(safeguard_failed==0) {
                         auto sigma_Bdx = X::init(x);
                         X::copy(Bdx,sigma_Bdx);
                         X::scal(sigma,sigma_Bdx);
@@ -1918,11 +1918,11 @@ namespace Optizelle {
                     // decreases the CG objective.
                     step_if_obj_red(alpha_safeguard*sigma);
 
-                    // If we're on the first iteration, save the Cauchy-Point 
+                    // If we're on the first iteration, save the Cauchy-Point
                     if(iter==1) X::copy(x,x_cp);
                 }
 
-                // We've hit an exit criteria, so exit from the routine 
+                // We've hit an exit criteria, so exit from the routine
                 break;
             }
 
@@ -1931,7 +1931,7 @@ namespace Optizelle {
             step_if_obj_red(alpha);
 
             // Determine if this new iterate is feasible with respect to our
-            // safeguard.  We calculate this from x_offset, which we checked to 
+            // safeguard.  We calculate this from x_offset, which we checked to
             // be a safe starting place.  In any case, if the new iterate is
             // safe, save it for potential use later
             alpha_safeguard = std::min(safeguard(x_offset,x),Real(1.0));
@@ -1951,16 +1951,16 @@ namespace Optizelle {
 
             // Find the projected steepest descent direction
             X::copy(Br,Bdx);
-            X::scal(Real(-1.),Bdx);	
+            X::scal(Real(-1.),Bdx);
 
-            // If we have a NaN in the preconditioner, exit 
+            // If we have a NaN in the preconditioner, exit
             if(norm_Br!=norm_Br)
                 stop = TruncatedStop::NanPreconditioner;
 
             // If we have too many failed safeguard steps, exit
             else if(safeguard_failed >= safeguard_failed_max)
                 stop = TruncatedStop::TooManyFailedSafeguard;
-        
+
             // If the norm of the residual is small relative to the starting
             // residual, exit
             else if(norm_Br <= eps*norm_Br0)
@@ -2094,7 +2094,7 @@ namespace Optizelle {
 
         // Store the best objective function up until this point
         Real f_x = std::numeric_limits <Real>::infinity();
-        
+
         // List all of the points to check for feasibility and optimality
         std::list <std::vector <Real> > zs;
         std::vector <Real> z(2);
@@ -2102,46 +2102,46 @@ namespace Optizelle {
         // Unconstrained minimum
         std::vector <Real> minus_a(2); minus_a[0]=-a[0]; minus_a[1]=-a[1];
         solve2x2 <Natural,Real> (A,minus_a,z);
-        zs.emplace_back(z);  
+        zs.emplace_back(z);
 
         // z1 to the lower bound
         z[0] = lb[0];
         z[1] = -(a[1]+Real(2.)*A[0]*A[1]*z[0])/(Real(2.)*A[2]);
         zs.emplace_back(z);
-       
+
         // z2 to the lower bound
         z[1] = lb[1];
-        z[0] = -(a[0]+Real(2.)*A[0]*A[1]*z[1])/(2*A[0]); 
+        z[0] = -(a[0]+Real(2.)*A[0]*A[1]*z[1])/(2*A[0]);
         zs.emplace_back(z);
-        
-        // z1 to the upper bound 
+
+        // z1 to the upper bound
         z[0] = ub[0];
         z[1] = -(a[1]+Real(2.)*A[0]*A[1]*z[0])/(2*A[2]);
         zs.emplace_back(z);
-        
+
         // z2 to the upper bound
         z[1] = ub[1];
-        z[0] = -(a[0]+Real(2.)*A[0]*A[1]*z[1])/(2*A[0]); 
+        z[0] = -(a[0]+Real(2.)*A[0]*A[1]*z[1])/(2*A[0]);
         zs.emplace_back(z);
-       
+
         // Lower left corner
         z[0] = lb[0];
-        z[1] = lb[1]; 
+        z[1] = lb[1];
         zs.emplace_back(z);
-        
+
         // Lower right corner
         z[0] = ub[0];
-        z[1] = lb[1]; 
+        z[1] = lb[1];
         zs.emplace_back(z);
 
         // Upper right corner
         z[0] = ub[0];
-        z[1] = ub[1]; 
+        z[1] = ub[1];
         zs.emplace_back(z);
 
         // Upper left corner
         z[0] = lb[0];
-        z[1] = ub[1]; 
+        z[1] = ub[1];
         zs.emplace_back(z);
 
         // Find the feasible point with the lowest objective value
@@ -2160,7 +2160,7 @@ namespace Optizelle {
         }
     }
 
-    // Orthogonalizes a vector x to a list of other xs.  
+    // Orthogonalizes a vector x to a list of other xs.
     template <
         typename Real,
         template <typename> class XX
@@ -2204,8 +2204,8 @@ namespace Optizelle {
         // Create some type shortcuts
         typedef XX <Real> X;
         typedef typename X::Vector X_Vector;
-        
-        // Allocate memory for the solution of the triangular solve 
+
+        // Allocate memory for the solution of the triangular solve
         std::vector <Real> y(m);
 
         // Create one temporary element required to solve for the iterate
@@ -2301,7 +2301,7 @@ namespace Optizelle {
     struct GMRESManipulator {
         // Disallow constructors
         NO_COPY_ASSIGNMENT(GMRESManipulator)
-       
+
         // Give an empty default constructor
         GMRESManipulator() {}
 
@@ -2311,13 +2311,13 @@ namespace Optizelle {
             typename XX <Real>::Vector const & x,
             typename XX <Real>::Vector const & b,
             Real & eps
-        ) const = 0; 
+        ) const = 0;
 
         // Allow the derived class to deallocate memory
         virtual ~GMRESManipulator() {}
     };
-    
-    // An empty manipulator that does nothing 
+
+    // An empty manipulator that does nothing
     template <
         typename Real,
         template <typename> class XX
@@ -2325,7 +2325,7 @@ namespace Optizelle {
     struct EmptyGMRESManipulator : public GMRESManipulator <Real,XX> {
         // Disallow constructors
         NO_COPY_ASSIGNMENT(EmptyGMRESManipulator)
-       
+
         // Give an empty default constructor
         EmptyGMRESManipulator() {}
 
@@ -2335,18 +2335,18 @@ namespace Optizelle {
             typename XX <Real>::Vector const & x,
             typename XX <Real>::Vector const & b,
             Real & eps
-        ) const { } 
+        ) const { }
     };
 
     // Computes the GMRES algorithm in order to solve A(x)=b.
     // (input) A : Operator that computes A(x)
     // (input) b : Right hand side
-    // (input) eps : Relative stopping tolerance.  We check the relative 
+    // (input) eps : Relative stopping tolerance.  We check the relative
     //    difference between the current and original preconditioned
     //    norm of the residual.
     // (input) iter_max : Maximum number of iterations
     // (input) rst_freq : Restarts GMRES every rst_freq iterations.  If we don't
-    //    want restarting, set this to zero. 
+    //    want restarting, set this to zero.
     // (input) B_left : Operator that computes the left preconditioner
     // (input) B_right : Operator that computes the right preconditioner
     // (input/output) x : Initial guess of the solution.  Returns the final
@@ -2381,16 +2381,16 @@ namespace Optizelle {
 
         // Allocate memory for the residual
         X_Vector r(X::init(x));
-        
-        // Allocate memory for the iterate update 
+
+        // Allocate memory for the iterate update
         X_Vector dx(X::init(x));
-        
-        // Allocate memory for x + dx 
+
+        // Allocate memory for x + dx
         X_Vector x_p_dx(X::init(x));
-        
+
         // Allocate memory for the true residual
         X_Vector rtrue(X::init(x));
-        
+
         // Allocate memory for the norm of the true, preconditioned, and
         // original true norm of the residual
         Real norm_rtrue;
@@ -2437,9 +2437,9 @@ namespace Optizelle {
         resetGMRES<Real,XX> (rtrue,B_left,rst_freq,v,vs,r,norm_r,
             Qt_e1,Qts);
 
-        // If for some bizarre reason, we're already optimal, don't do any work 
+        // If for some bizarre reason, we're already optimal, don't do any work
         gmanip.eval(0,x,b,eps);
-        if(norm_rtrue <= eps) iter_max=0;	
+        if(norm_rtrue <= eps) iter_max=0;
 
         // Iterate until the maximum iteration
         Natural iter;
@@ -2478,7 +2478,7 @@ namespace Optizelle {
                     Qt=Qts.begin();
                 Qt!=Qts.end();
                 Qt++
-            ) { 
+            ) {
                 rot <Real> (1,&(R[(j-1)+(i-1)*i/2]),1,&(R[j+(i-1)*i/2]),1,
                     Qt->first,Qt->second);
                 j++;
@@ -2489,7 +2489,7 @@ namespace Optizelle {
             rotg <Real> (R[(i-1)+i*(i-1)/2],norm_w,
                 Qts.back().first,Qts.back().second);
 
-            // Apply this new Givens rotation to the last element of R and 
+            // Apply this new Givens rotation to the last element of R and
             // norm(w).  This fixes our system R.
             rot <Real> (1,&(R[(i-1)+i*(i-1)/2]),1,
                 &(norm_w),1,Qts.back().first,Qts.back().second);
@@ -2499,10 +2499,10 @@ namespace Optizelle {
             rot <Real> (1,&(Qt_e1[i-1]),1,&(Qt_e1[i]),
                 1,Qts.back().first,Qts.back().second);
             norm_r = fabs(Qt_e1[i]);
-                
+
             // Do the follow steps twice just in case we detect a NaN
             bool nan_detected = false;
-            for(Natural ii = 0;ii <= 1;ii++) { 
+            for(Natural ii = 0;ii <= 1;ii++) {
                 // Solve for the new iterate update
                 solveInKrylov <Real,XX> (i,&(R[0]),&(Qt_e1[0]),vs,B_right,x,dx);
 
@@ -2538,7 +2538,7 @@ namespace Optizelle {
 
             // Determine if we should exit since the norm of the true residual
             // is small
-            if(norm_rtrue <= eps) break;	
+            if(norm_rtrue <= eps) break;
 
             // If we've hit the restart frequency, reset the Krylov spaces and
             // factorizations
@@ -2550,7 +2550,7 @@ namespace Optizelle {
                 // Reset the GMRES algorithm
                 resetGMRES<Real,XX> (rtrue,B_left,rst_freq,v,vs,r,norm_r,
                     Qt_e1,Qts);
-       
+
                 // Make sure to correctly indicate that we're now working on
                 // iteration 0 of the next round of GMRES.  If we exit
                 // immediately thereafter, we use this check to make sure we
@@ -2564,7 +2564,7 @@ namespace Optizelle {
 
         // As long as we didn't just solve for our new iterate, go ahead and
         // solve for it now.
-        if(i > 0){ 
+        if(i > 0){
             solveInKrylov <Real,XX> (i,&(R[0]),&(Qt_e1[0]),vs,B_right,x,dx);
             X::axpy(Real(1.),dx,x);
         }
@@ -2572,7 +2572,7 @@ namespace Optizelle {
         // Return the norm and the residual
         return std::pair <Real,Natural> (norm_rtrue,iter);
     }
-    
+
     // Determines the relative error between two vectors where the second vector
     // may or may not have been initialized.  This is typically used for
     // determining the relative error between a vector and some cached value.
@@ -2593,18 +2593,18 @@ namespace Optizelle {
 
         // Otherwise, figure out the relative error
         else {
-            // Figure out the residual between x_cached and x 
+            // Figure out the residual between x_cached and x
             X::copy(x_cached.second,x_tmp1);
             X::axpy(Real(-1.),x,x_tmp1);
 
-            // Figure out the relative error between x and x_cached 
+            // Figure out the relative error between x and x_cached
             Real rel_err = std::sqrt(X::innr(x_tmp1,x_tmp1)) /
                 (std::numeric_limits <Real>::epsilon()+std::sqrt(X::innr(x,x)));
 
-            // Return the relative error 
+            // Return the relative error
             return rel_err;
         }
-    } 
+    }
 //---Optizelle2---
 }
 //---Optizelle3---

@@ -14,10 +14,10 @@ serialize=@(x)'';
 deserialize=@(x,y)[];
 check=@(x)0;
 %---Serialization0---
-Optizelle.json.Serialization.serialize('register',serialize,check); 
+Optizelle.json.Serialization.serialize('register',serialize,check);
 Optizelle.json.Serialization.deserialize('register',deserialize,check);
 %---Serialization1---
-    
+
 % Create some arbitrary vector in R^2
 x = [1.2;2.3];
 x0 = [2.3;1.2];
@@ -29,10 +29,10 @@ state = Optizelle.Unconstrained.State.t(XX,x);
 
 % Read in some parameters
 fname = 'blank.json';
-%---ReadJson0--- 
+%---ReadJson0---
 state = Optizelle.json.Unconstrained.read(XX,fname,state);
-%---ReadJson1--- 
-   
+%---ReadJson1---
+
 % Create a bundle of functions
 %---Functions0---
 fns = Optizelle.Unconstrained.Functions.t;
@@ -44,13 +44,13 @@ state.f_x = 1.0;
 state = Optizelle.Unconstrained.Algorithms.getMin(XX,msg,fns,state);
 %---Solver1---
 
-% Do a null optimization with a state manipulator 
+% Do a null optimization with a state manipulator
 smanip = Optizelle.StateManipulator;
 %---SmanipSolver0---
 state = Optizelle.Unconstrained.Algorithms.getMin( ...
     XX,msg,fns,state,smanip);
 %---SmanipSolver1---
-    
+
 % Read and write the state to file
 fname = 'restart.json';
 %---WriteReadRestart0---
@@ -58,7 +58,7 @@ Optizelle.json.Unconstrained.write_restart(XX,fname,state);
 state = Optizelle.json.Unconstrained.read_restart(XX,fname,x);
 %---WriteReadRestart1---
 
-% Do a release 
+% Do a release
 %---Release0---
 xs = Optizelle.Unconstrained.Restart.X_Vectors;
 reals = Optizelle.Unconstrained.Restart.Reals;
@@ -73,7 +73,7 @@ if length(xs) ~= 6
     error('The list xs contains the wrong number of vectors.');
 end
 
-% Modify some vectors 
+% Modify some vectors
 xs{1}{2}=x0;
 
 % Capture the state

@@ -1,4 +1,4 @@
-// Solve the problem 
+// Solve the problem
 //
 // min x + y + z
 // st  [ x y; y z] >= 0 <==> xz >= y^2
@@ -17,18 +17,18 @@
 #include "optizelle/vspaces.h"
 #include "optizelle/json.h"
 
-// Define a simple objective where 
-//  
+// Define a simple objective where
+//
 // f(x,y,z)=x+y+z
 //
 struct MyObj : public Optizelle::ScalarValuedFunction <double,Optizelle::Rm> {
     typedef double Real;
     typedef Optizelle::Rm <Real> X;
-    
-    // Evaluation 
+
+    // Evaluation
     double eval(X::Vector const & x) const {
         auto sum = Real(0.);
-        for(auto const & ele: x) 
+        for(auto const & ele: x)
             sum += ele;
         return sum;
     }
@@ -36,7 +36,7 @@ struct MyObj : public Optizelle::ScalarValuedFunction <double,Optizelle::Rm> {
     // Gradient
     void grad(
         X::Vector const & x,
-        X::Vector & grad 
+        X::Vector & grad
     ) const {
         for(auto & ele : grad)
             ele = Real(1.);
@@ -52,22 +52,22 @@ struct MyObj : public Optizelle::ScalarValuedFunction <double,Optizelle::Rm> {
     }
 };
 
-// Define a simple SQL inequality 
+// Define a simple SQL inequality
 //
 // h(x,y,z) = [ x y ] >=S 0
 //            [ y z ]
 //            y >=Q z
 //            z >=L 1
 //
-struct MyIneq 
+struct MyIneq
     : public Optizelle::VectorValuedFunction
-        <double,Optizelle::Rm,Optizelle::SQL> 
+        <double,Optizelle::Rm,Optizelle::SQL>
 {
     typedef Optizelle::Rm <double> X;
     typedef Optizelle::SQL <double> Z;
     typedef double Real;
 
-    // z=h(x) 
+    // z=h(x)
     void eval(
         X::Vector const & x,
         Z::Vector & z
@@ -104,12 +104,12 @@ struct MyIneq
     void ps(
         X::Vector const & x,
         Y::Vector const & dz,
-        X::Vector & x_hat 
+        X::Vector & x_hat
     ) const {
         X::zero(x_hat);
 
         // Remember, the input to this function may not be symmetric, so
-        // compute accordingly 
+        // compute accordingly
         x_hat[0] += dz(1,1,1);
         x_hat[1] += dz(1,1,2)+dz(1,2,1);
         x_hat[2] += dz(1,2,2);
@@ -125,7 +125,7 @@ struct MyIneq
         X::Vector const & x,
         X::Vector const & dx,
         Y::Vector const & dz,
-        X::Vector & x_hat 
+        X::Vector & x_hat
     ) const {
         X::zero(x_hat);
     }
@@ -147,7 +147,7 @@ int main(int argc,char* argv[]){
 
     // Generate an initial guess for the primal
     auto x = std::vector <double> { 5.5, 3.3, 2.2};
-    
+
     // Generate an initial guess for the dual
     auto z = Z_Vector(
         {Optizelle::Cone::Semidefinite,
@@ -158,7 +158,7 @@ int main(int argc,char* argv[]){
     // Create an optimization state
     Optizelle::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>
         ::State::t state(x,z);
-    
+
     // Read the parameters from file
     Optizelle::json::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>
         ::read(fname,state);
@@ -172,8 +172,8 @@ int main(int argc,char* argv[]){
     // Solve the optimization problem
     Optizelle::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>
         ::Algorithms::getMin(Optizelle::Messaging::stdout,fns,state);
-    
-    // Write an intermediate restart file 
+
+    // Write an intermediate restart file
     Optizelle::json::InequalityConstrained <double,Optizelle::Rm,Optizelle::SQL>
         ::write_restart("restart.json",state);
 
@@ -195,7 +195,7 @@ int main(int argc,char* argv[]){
         Optizelle::OptimizationStop::to_string(state.opt_stop) << std::endl;
 
     // Print out the final answer
-    std::cout << std::setprecision(16) << std::scientific 
+    std::cout << std::setprecision(16) << std::scientific
         << "The optimal point is: (" << state.x[0] << ','
         << state.x[1] << ',' << state.x[2] << ')' << std::endl;
 

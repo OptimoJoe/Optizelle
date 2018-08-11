@@ -11,14 +11,14 @@
 
 int main(int argc,char* argv[]){
 
-    // Generate an initial guess 
+    // Generate an initial guess
     auto x = std::vector <Real> { 0.9, 0.75 };
     auto y = std::vector <Real> { 0., 0. };
-  
+
     // Run an unrestricted test to get the Cauchy point
     auto cp = X::init(x);
     {
-        // Setup the test 
+        // Setup the test
         auto setup = Unit <Real>::QN(x,y);
         setup.g.reset(
             new Unit <Real>::Constraint::CircleIntersection(1.,0.,1.,1.));
@@ -36,7 +36,7 @@ int main(int argc,char* argv[]){
     // Now, cut off the Cauchy point
     {
 
-        // Setup the test 
+        // Setup the test
         auto setup = Unit <Real>::QN(x,y);
         setup.g.reset(
             new Unit <Real>::Constraint::CircleIntersection(1.,0.,1.,1.));
@@ -46,7 +46,7 @@ int main(int argc,char* argv[]){
 
         // Set the targets
         setup.qn_stop_star = Optizelle::QuasinormalStop::NewtonTrustRegion;
-        
+
         // Set what tests we want
         setup.check_stop = true;
         setup.check_tr = true;
@@ -62,6 +62,6 @@ int main(int argc,char* argv[]){
         CHECK(norm_r > 0.1);
     }
 
-    // Declare success 
+    // Declare success
     return EXIT_SUCCESS;
 }

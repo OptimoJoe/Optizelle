@@ -14,13 +14,13 @@ function z = sq(x)
     z=x*x;
 end
 
-% Define a simple objective where 
-% 
+% Define a simple objective where
+%
 % f(x,y)=(x-3)^2+(y-2)^2
 %
 function self = MyObj()
 
-    % Evaluation 
+    % Evaluation
     self.eval = @(x) sq(x(1)-3.)+sq(x(2)-2.);
 
     % Gradient
@@ -34,14 +34,14 @@ function self = MyObj()
         2.*dx(2)];
 end
 
-% Define a simple SOCP inequality 
+% Define a simple SOCP inequality
 %
-% h(x,y) = [ y >= |x| ] 
+% h(x,y) = [ y >= |x| ]
 % h(x,y) =  (y,x) >=_Q 0
 %
 function self = MyIneq()
 
-    % y=h(x) 
+    % y=h(x)
     self.eval = @(x)MyIneq_eval(x);
 
     % z=h'(x)dx
@@ -58,7 +58,7 @@ function self = MyIneq()
         0];
 end
 
-% z=h(x) 
+% z=h(x)
 function z=MyIneq_eval(x)
     global Optizelle;
     z = Optizelle.SQL.create([Optizelle.Cone.Quadratic],[2]);
@@ -96,7 +96,7 @@ function main(fname)
     % Read the parameters from file
     state=Optizelle.json.InequalityConstrained.read( ...
         Optizelle.Rm,Optizelle.SQL,fname,state);
-    
+
     % Create a bundle of functions
     fns=Optizelle.InequalityConstrained.Functions.t;
     fns.f=MyObj();

@@ -1,4 +1,4 @@
-% Check that we have a constrained function bundle 
+% Check that we have a constrained function bundle
 function checkConstrainedFunctionsT(name,value)
     % Set the error message
     err = sprintf( ...

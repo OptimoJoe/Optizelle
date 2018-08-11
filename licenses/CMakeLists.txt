@@ -7,7 +7,7 @@ function(cat in out)
     file(APPEND ${out} "${contents}")
 endfunction()
 
-# Includes a license into the overall license 
+# Includes a license into the overall license
 set(out "${CMAKE_CURRENT_BINARY_DIR}/LICENSE.txt")
 file(REMOVE ${out})
 function(add_license package interface text)

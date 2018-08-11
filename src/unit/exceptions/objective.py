@@ -1,6 +1,6 @@
-# Tests our ability to throw a native exception and catch it 
+# Tests our ability to throw a native exception and catch it
 
-import Optizelle 
+import Optizelle
 import numpy
 
 # Define a function that just throws an exception
@@ -10,7 +10,7 @@ class Objective(Optizelle.ScalarValuedFunction):
         raise RuntimeError("Evaluation")
 
     # Gradient
-    def grad(self,x,grad): 
+    def grad(self,x,grad):
         raise RuntimeError("Gradient")
 
     # Hessian-vector product
@@ -33,4 +33,4 @@ try:
         Optizelle.Rm,Optizelle.Messaging.stdout,fns,state)
 except RuntimeError as e:
     if e.message!="Gradient":
-        raise 
+        raise

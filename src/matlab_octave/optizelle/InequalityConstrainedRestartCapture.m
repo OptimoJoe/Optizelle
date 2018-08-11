@@ -1,4 +1,4 @@
-% Capture the state in an inequality constrained optimization problem 
+% Capture the state in an inequality constrained optimization problem
 function state=InequalityConstrainedRestartCapture( ...
     X,Z,state,xs,zs,reals,nats,params)
 
@@ -12,6 +12,6 @@ function state=InequalityConstrainedRestartCapture( ...
     checkNaturals('nats',nats);
     checkParams('params',params);
 
-    % Do the state capture 
+    % Do the state capture
     state=InequalityConstrainedRestartCapture_( ...
         X,Z,state,xs,zs,reals,nats,params);

@@ -24,7 +24,7 @@
 
 % Creates a slightly nicer looking manual.  Make sure this comes after geometry
 % or else all of the styles will be messed up.
-\usepackage[Bjornstrup]{fncychap} 
+\usepackage[Bjornstrup]{fncychap}
 
 % Type sets directory trees
 \usepackage{dirtree}
@@ -95,7 +95,7 @@
 \newcommand{\licenselabelalt}[2]{\index{Licenses!#2}\href{#1}{#2}}
 \newcommand{\licenseref}[2]{\hyperref[lic:#2]{#1}}
 
-% Used for labeling and referring to computer text 
+% Used for labeling and referring to computer text
 \newcommand{\textctalt}[1]{\texttt{\detokenize{#1}}}
 \newcommand{\textctlabel}[1]{\phantomsection\label{itm:#1}\textct{#1}}
 \newcommand{\textctref}[1]{\hyperref[itm:#1]{\textct{#1}}}
@@ -122,7 +122,7 @@
 % Specifies a variety of problem classes following the hierarchy of
 % optimization problems.  Basically, an unconstrained parameter is a parameter
 % for all classes.  An equality constrained parameter applies to fully
-% constrained, etc.  
+% constrained, etc.
 \newcommand{\classUnconstrained}{Unconstrained, Equality Constrained, Inequality Constrained, Constrained}
 \newcommand{\classEquality}{Equality Constrained, Constrained}
 \newcommand{\classNotEquality}{Unconstrained, Inequality Constrained}
@@ -170,7 +170,7 @@
     \item[Operations]  #3
     \item[]}
 
-% Example items 
+% Example items
 \newcommand{\exampleitem}[2]{
     \item[Language] #1
     \item[Code] #2
@@ -191,13 +191,13 @@
     \item[Description] #5
     \item[]}
 
-% Type items 
+% Type items
 \newcommand{\typeitem}[2]{
     \item[Type] \index{Parameter Types!\textct{#1}}{\textctlabel{#1}}
     \item[Description] #2
     \item[]}
 
-% Enumerated items 
+% Enumerated items
 \newcommand{\enumitem}[1]{
     \item[Type] \index{Enumerated Types!\textct{#1}}{\textctlabel{#1}}
     \item[Values]\begin{minipage}[t]{\textwidth}\vspace{\dimexpr-\medskipamount-2ex}
@@ -301,7 +301,7 @@
         {#3}
         {#4}}
 
-% Formulation items 
+% Formulation items
 \newcommand{\formitem}[4]{
     \item[Unconstrained] #1
     \item[Equality] #2
@@ -321,7 +321,7 @@
 
 % Output items
 \newcommand{\outputitemraw}[5]{
-    \item[Name] #1  
+    \item[Name] #1
     \item[\mbox{State Param}] #2
     \item[\mbox{Problem Class}] #3
     \item[\mbox{Min \textctref{msg_level}}] #4
@@ -368,7 +368,7 @@
         {#3}
         {#4}}
 
-% Custom vector-space items 
+% Custom vector-space items
 \newcommand{\customvsitem}[8]{
     \item[Name] \index{Vector Space Operations!\textct{#1}}{\textctlabel{#1}}
     \item[Definition]
@@ -384,14 +384,14 @@
     \item[Description] #8
     \item[]}
 
-% Custom vector-space wrapper items 
+% Custom vector-space wrapper items
 \newcommand{\vswrapperitem}[3]{
     \item[Language] #1
     \item[Interface] #2
     \item[Description] #3
     \item []}
 
-% Restart type items 
+% Restart type items
 \newcommand{\simpletypeitem}[2]{
     \item[Language] #1
     \item[Type] \textct{#2}
@@ -464,7 +464,7 @@
 % Documentation on the different algorithms
 \newcommand{\algorithmitem}[2]{
     \item[Algorithm] \index{Algorithmic discussion!#1}{#1}
-    \item[Description] #2 
+    \item[Description] #2
     \item[]}
 
 % How to cache different computations
@@ -484,7 +484,7 @@
 
 % Change the figure numbering to be chap.sec.num
 \renewcommand{\thefigure}{\arabic{chapter}.\arabic{section}.\arabic{figure}}
-        
+
 % Create some new environments for displaying code and output
 
 % Use the following for all languages
@@ -523,7 +523,7 @@
     rangesuffix=---,
 }
 
-% JSON 
+% JSON
 \colorlet{punct}{red!60!black}
 \definecolor{background}{HTML}{EEEEEE}
 \definecolor{delim}{RGB}{20,105,176}
@@ -690,7 +690,7 @@
 \begin{center}
     \usebox{\boxOptimizationTypes}
 \end{center}
-\noindent It features 
+\noindent It features
 \begin{itemize}
     \item {\bf State of the art algorithms}
         \begin{itemize}
@@ -738,7 +738,7 @@
 \noindent In short, Optizelle is free to use in both open and closed sourced codes.  If you do so, we ask that you provide a citation or link to \url{http://www.optimojoe.com}.
 
 \section{Support}
-        
+
         News, updates, and download information for Optizelle can be found at
 \begin{center}
     \mbox{\url{http://www.optimojoe.com/products/optizelle}}
@@ -784,7 +784,7 @@ In order to optimize this function, we use the following code and parameters, wh
 \section{History}
 
         Optizelle originated in 2010 as a code called PEOpt (Parameter Estimation Using Optimization) written by Joseph Young at Sandia National Laboratories.  There, it was used as the computational driver for a variety of both internal and external customers.  Due to the scale of the problems involved and the nuances of high-performance computing environments, PEOpt was designed specifically to integrate with large, existing code bases as quickly and unobtrusively as possible.  Later, Sandia approved the open source release of PEOpt on two separate occasions in 2012 and 2013 under the 2-Clause BSD License.  It was from this released code that Joseph continued work on Optizelle through a new company called OptimoJoe.
-        
+
 \chapter{Installation}\label{ch:Install}
 
         In the following chapter, we discuss how to download, build, and incorporate Optizelle into a new project.
@@ -862,17 +862,17 @@ in a variety of precompiled packages.  Here, we also provide direct access to ou
 \begin{center}\begin{tabular}{lll|cccccc}
     Package & Version & License & C++ & Python & MATLAB & Octave & Docs & Windows\\\hline
     \licenselabelalt{http://www.optimojoe.com/products/optizelle/}{Optizelle} & @CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@.@CPACK_PACKAGE_VERSION_PATCH@ & \licenseref{BSD}{optizelle} & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$\\
-    \licenselabelalt{https://github.com/open-source-parsers/jsoncpp}{JsonCpp} & 0.10.6 & \licenseref{Public}{jsoncpp} & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ &  & $\checkmark$\\
-    \licenselabelalt{http://netlib.org/lapack/}{BLAS/LAPACK} & 3.5.0 & \licenseref{BSD}{blaslapack} & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ &  & $\checkmark$\\
-    \licenselabelalt{https://cmake.org/}{CMake} & 3.1 & \licenseref{BSD}{cmake} & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ &  $\checkmark$ & $\checkmark$\\
+    \licenselabelalt{https://github.com/open-source-parsers/jsoncpp}{JsonCpp} & 1.8.4 & \licenseref{Public}{jsoncpp} & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ &  & $\checkmark$\\
+    \licenselabelalt{http://netlib.org/lapack/}{BLAS/LAPACK} & 3.8.0 & \licenseref{BSD}{blaslapack} & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ &  & $\checkmark$\\
+    \licenselabelalt{https://cmake.org/}{CMake} & 3.9.6 & \licenseref{BSD}{cmake} & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ &  $\checkmark$ & $\checkmark$\\
     \licenselabelalt{http://wixtoolset.org/}{WiX} & 3.10 & \licenseref{MS-RL}{wix} & & & & & & $\checkmark$\\
-    \licenselabelalt{https://gcc.gnu.org/}{GCC} & 4.9 & \licenseref{GPL}{gcc} & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ &  & $\checkmark$\\
-    \licenselabelalt{https://www.tug.org/texlive/}{TeX Live} & 2014 & \licenseref{Various}{texlive} & & & & & $\checkmark$ &\\
-    \licenselabelalt{https://www.python.org/}{Python} & 2.7 & \licenseref{Python}{python} & & $\checkmark$ & & & &\\
-    \licenselabelalt{http://www.numpy.org/}{NumPy} & 1.10 & \licenseref{BSD}{numpy} & & $\checkmark$ & & & &\\
-    \licenselabelalt{https://www.mathworks.com/products/matlab/}{MATLAB} & R2016a & \licenseref{Custom}{matlab} & & & $\checkmark$ & & &\\
-    \licenselabelalt{https://github.com/fangq/jsonlab}{JSONlab} & 1.0-RC1 & \licenseref{BSD}{jsonlab} & & & $\checkmark$ & $\checkmark$ & &\\
-    \licenselabelalt{https://www.gnu.org/software/octave/}{Octave} & 4.0 & \licenseref{GPL}{octave} & & & & $\checkmark$ & &\\
+    \licenselabelalt{https://gcc.gnu.org/}{GCC} & 7.3.0 & \licenseref{GPL}{gcc} & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ &  & $\checkmark$\\
+    \licenselabelalt{https://www.tug.org/texlive/}{TeX Live} & 2017 & \licenseref{Various}{texlive} & & & & & $\checkmark$ &\\
+    \licenselabelalt{https://www.python.org/}{Python} & 2.7.15 & \licenseref{Python}{python} & & $\checkmark$ & & & &\\
+    \licenselabelalt{http://www.numpy.org/}{NumPy} & 1.14.5 & \licenseref{BSD}{numpy} & & $\checkmark$ & & & &\\
+    \licenselabelalt{https://www.mathworks.com/products/matlab/}{MATLAB} & R2018a & \licenseref{Custom}{matlab} & & & $\checkmark$ & & &\\
+    \licenselabelalt{https://github.com/fangq/jsonlab}{JSONlab} & 1.8 & \licenseref{BSD}{jsonlab} & & & $\checkmark$ & $\checkmark$ & &\\
+    \licenselabelalt{https://www.gnu.org/software/octave/}{Octave} & 4.4.0 & \licenseref{GPL}{octave} & & & & $\checkmark$ & &\\
 \end{tabular}\end{center}
 
 \noindent Note, we generally depend on GCC for both its C++ and Fortran compiler, but an alternative compiler such as Clang works as well.  Since we do not modify GCC, the GCC Runtime Library Exception applies.  In addition, Optizelle remains compatible with most high-performance varieties of BLAS and LAPACK.
@@ -904,12 +904,12 @@ cmake \
 ..
 \end{lstlisting}\end{center}
 where the actual paths, libraries, and archives depend on the individual system.  Generally, we put this command inside a shell script or batch file in order to make it easier to edit.  As far as the available options, we list them in the next section.
-    
+
     After building Optizelle, installation is as simple as executing
 \begin{center}
         \textct{make install}
 \end{center}
-from the CMake build directory using GNU Make, MSYS, or Cygwin.  If using a different Make utility, call it on the \textct{install} target.  For a complete list of installed files, see 
+from the CMake build directory using GNU Make, MSYS, or Cygwin.  If using a different Make utility, call it on the \textct{install} target.  For a complete list of installed files, see
 \begin{center}
     \textct{install_manifest.txt}
 \end{center}
@@ -921,7 +921,7 @@ located in the CMake build directory.\\
         \item Add \textct{/some/path/share/optizelle/octave} to the \textct{OCTAVE_PATH}
         \item Add \textct{/some/path/share/optizelle/python} to the \textct{PYTHONPATH}
     \end{enumerate}
-where \textct{/some/path} denotes the path found in the \textctref{CMAKE_INSTALL_PREFIX} configuration variable described below.  How we set environment variables depends on the platform 
+where \textct{/some/path} denotes the path found in the \textctref{CMAKE_INSTALL_PREFIX} configuration variable described below.  How we set environment variables depends on the platform
 \begin{lrbox}{\boxEnvironmentWindows}
     \begin{minipage}{5in}\begin{enumerate}
         \item Open File Explorer
@@ -1034,9 +1034,9 @@ will remove the installation.  Also, don't forget to remove each of the environm
         {BOOL}
         {\textct{OFF}}
         {None}
-        {\textctref{CMAKE_CXX_FLAGS}, 
+        {\textctref{CMAKE_CXX_FLAGS},
             \textctref{CMAKE_BUILD_TYPE},
-            \textctref{ENABLE_OPENMP}, 
+            \textctref{ENABLE_OPENMP},
             \textctref{ENABLE_BUILD_BLAS_AND_LAPACK},
             \textctref{ENABLE_BUILD_JSONCPP},
             \textctref{BLAS_LIBRARY},
@@ -1091,7 +1091,7 @@ will remove the installation.  Also, don't forget to remove each of the environm
         {\textctref{LAPACK_ARCHIVE}}
         {No}
         {Builds BLAS and LAPACK from source in case an optimized version is not
-        available.}  
+        available.}
 
     \cmakeitem
         {LAPACK_ARCHIVE}
@@ -1110,7 +1110,7 @@ will remove the installation.  Also, don't forget to remove each of the environm
         {\textctref{ENABLE_CPP}}
         {\textctref{JSONCPP_ARCHIVE}}
         {No}
-        {Builds JsonCpp from source.} 
+        {Builds JsonCpp from source.}
 
     \cmakeitem
         {JSONCPP_ARCHIVE}
@@ -1161,8 +1161,8 @@ will remove the installation.  Also, don't forget to remove each of the environm
         {\textctref{ENABLE_CPP}}
         {None}
         {Yes}
-        {A path that indicates where the jsoncpp headers have been 
-        installed.  The actual headers must be found in 
+        {A path that indicates where the jsoncpp headers have been
+        installed.  The actual headers must be found in
         \textctalt{$JSONCPP_INCLUDE_DIR/json/}}.
 
     \cmakeitem
@@ -1191,7 +1191,7 @@ will remove the installation.  Also, don't forget to remove each of the environm
         {\textctref{ENABLE_CPP}}
         {None}
         {No}
-        {Enables the build of unit tests that help validate the 
+        {Enables the build of unit tests that help validate the
         Optizelle code.  Execute these unit tests by running
         \textct{ctest} in the CMake build directory.}
 
@@ -1215,7 +1215,7 @@ will remove the installation.  Also, don't forget to remove each of the environm
         {\textctref{ENABLE_PYTHON}}
         {None}
         {Yes}
-        {A path that indicates where the Python 2.7 headers have been 
+        {A path that indicates where the Python 2.7 headers have been
         installed.  We do not prefix these headers, so we look directly
         in the directory provided here.}
 
@@ -1244,7 +1244,7 @@ will remove the installation.  Also, don't forget to remove each of the environm
         {\textctref{ENABLE_PYTHON}}
         {None}
         {No}
-        {Enables the build and installation of simple examples that 
+        {Enables the build and installation of simple examples that
         demonstrate the use of the Python wrappers for Optizelle.}
 
     \cmakeitem
@@ -1254,7 +1254,7 @@ will remove the installation.  Also, don't forget to remove each of the environm
         {\textctref{ENABLE_PYTHON}}
         {None}
         {No}
-        {Enables the build of unit tests that help validate the 
+        {Enables the build of unit tests that help validate the
         Python wrappers for the Optizelle code.  Execute these unit
         tests by running \textct{ctest} in the CMake build directory.}
 
@@ -1309,7 +1309,7 @@ will remove the installation.  Also, don't forget to remove each of the environm
         with mx, then add the \textct{mx} library and separate it from
         \textct{mex} with a semicolon.  Generally, these libraries are
         generally found nested within the \textct{bin} directory in the primary
-        MATLAB folder.} 
+        MATLAB folder.}
 
     \cmakeitem
         {MATLAB_EXECUTABLE}
@@ -1327,7 +1327,7 @@ will remove the installation.  Also, don't forget to remove each of the environm
         {\textctref{ENABLE_MATLAB}}
         {None}
         {No}
-        {Enables the build and installation of simple examples that 
+        {Enables the build and installation of simple examples that
         demonstrate the use of the MATLAB wrappers for Optizelle.}
 
     \cmakeitem
@@ -1337,7 +1337,7 @@ will remove the installation.  Also, don't forget to remove each of the environm
         {\textctref{ENABLE_MATLAB}}
         {None}
         {No}
-        {Enables the build of unit tests that help validate the 
+        {Enables the build of unit tests that help validate the
         MATLAB wrappers for the Optizelle code.  Execute these unit
         tests by running \textct{ctest} in the CMake build directory.}
 
@@ -1396,7 +1396,7 @@ will remove the installation.  Also, don't forget to remove each of the environm
         {\textctref{ENABLE_OCTAVE}}
         {None}
         {No}
-        {Enables the build and installation of simple examples that 
+        {Enables the build and installation of simple examples that
         demonstrate the use of the Octave wrappers for Optizelle.}
 
     \cmakeitem
@@ -1417,7 +1417,7 @@ will remove the installation.  Also, don't forget to remove each of the environm
         {\textctref{ENABLE_MATLAB} or \textctref{ENABLE_OCTAVE}}
         {\textctref{JSONLAB_ARCHIVE}}
         {No}
-        {Builds jsonlab from source.} 
+        {Builds jsonlab from source.}
 
     \cmakeitem
         {JSONLAB_ARCHIVE}
@@ -1436,7 +1436,7 @@ will remove the installation.  Also, don't forget to remove each of the environm
         {\textctref{ENABLE_MATLAB} or \textctref{ENABLE_OCTAVE}}
         {None}
         {Yes}
-        {A path that indicates where the jsonlab library has been 
+        {A path that indicates where the jsonlab library has been
         installed.  This is automatically set when \textctref{ENABLE_BUILD_JSONLAB} is enabled.}
 \end{boldlist}
 
@@ -1461,11 +1461,11 @@ will remove the installation.  Also, don't forget to remove each of the environm
 
 \chapter{Basic API}\label{ch:Basic}
 
-        We organize Optizelle's algorithms into four different categories: 
+        We organize Optizelle's algorithms into four different categories:
 \begin{center}
     \usebox{\boxOptimizationTypes}
 \end{center}
-\noindent Since these formulations necessitate different algorithms, we segregate the overall structure of Optizelle and the algorithms themselves into these categories.  
+\noindent Since these formulations necessitate different algorithms, we segregate the overall structure of Optizelle and the algorithms themselves into these categories.
         In order to optimize these formulations, we follow the general procedure:
 \begin{enumerate}
     \item \hyperref[sec:import]{\secimport}
@@ -1480,7 +1480,7 @@ will remove the installation.  Also, don't forget to remove each of the environm
     \item \hyperref[sec:extract]{\secextract}
     \item \hyperref[sec:compilerun]{\seccompilerun}
 \end{enumerate}
-We discuss how to implement each of the above steps below. 
+We discuss how to implement each of the above steps below.
 
 \section{\secimport}\label{sec:import}
 
@@ -1492,7 +1492,7 @@ We discuss how to implement each of the above steps below.
         {Import0-Import1}
         {0}
         {cpp}
-    
+
     \restartitem
         {Python}
         {Python}
@@ -1523,7 +1523,7 @@ We discuss how to implement each of the above steps below.
 \end{align*}
 Here, the spaces $X$, $Y$, and $Z$ denote {\it vector spaces}, more specifically, Hilbert spaces.  For most problems, these vector spaces just denote $\re^m$, but we also allow these vector spaces to be spaces of functions such as $L^2(\Omega)$ or matrices such as $\re^{m\times n}$ as long as they contain the necessary operations that we describe in the section \hyperref[sec:customvector]{\seccustomvector}.
 
-        A vector space consists of two separate pieces: the actual vector and the operations required to compute on this vector.  In Optizelle, we maintain this separation.  For $\re^m$, we provide a reasonable implementation of the vector space with the following: 
+        A vector space consists of two separate pieces: the actual vector and the operations required to compute on this vector.  In Optizelle, we maintain this separation.  For $\re^m$, we provide a reasonable implementation of the vector space with the following:
 \phantomsection\label{itm:Rm}
 \phantomsection\label{itm:Optizelle::Rm}
 \phantomsection\label{itm:Optizelle.Rm}
@@ -1541,7 +1541,7 @@ Here, the spaces $X$, $Y$, and $Z$ denote {\it vector spaces}, more specifically
         {\textct{[]} (column vector)}
         {\textct{Optizelle.Rm}}
 \end{boldlist}
-\noindent To be precise, each of these vector spaces uses the inner product $\langle x,y\rangle=x^Ty$ and defines inequalities pointwise, $x\succeq y \Longleftrightarrow x_i \geq y_i$ for all $1\leq i\leq m$.  Note, we don't require users to use these vector operations in their code.  Simply, if we're happy using the above vectors, we can use these operations exclusively in Optizelle and forget their details. 
+\noindent To be precise, each of these vector spaces uses the inner product $\langle x,y\rangle=x^Ty$ and defines inequalities pointwise, $x\succeq y \Longleftrightarrow x_i \geq y_i$ for all $1\leq i\leq m$.  Note, we don't require users to use these vector operations in their code.  Simply, if we're happy using the above vectors, we can use these operations exclusively in Optizelle and forget their details.
 
 \section{\secobjective}\label{sec:objective}
 
@@ -1568,7 +1568,7 @@ Then, we have that
             \frac{\partial f}{\partial x_{m1}}(x) & \dots & \frac{\partial f}{\partial x_{mm}}(x)
         \end{bmatrix}\delta x.
 \end{align*}
-        
+
         In code, we specify this function as:
 \phantomsection\label{itm:ScalarValuedFunction}
 \begin{boldlist}
@@ -1592,7 +1592,7 @@ Then, we have that
 \end{boldlist}
 \noindent Note, we require that the Hessian-vector product always be present.  If one is not available, we simply return zero.
 
-        As an example, in our \exampleref{\secrosenbrock}{sec:rosenbrock} example, we minimize the function $f:\re^2\rightarrow \re$ where 
+        As an example, in our \exampleref{\secrosenbrock}{sec:rosenbrock} example, we minimize the function $f:\re^2\rightarrow \re$ where
 $$
         f(x)=(1-x_1)^2+100(x_2-x_1^2)^2.
 $$
@@ -1603,7 +1603,7 @@ $$
             200(x_2-x_1^2)
         \end{bmatrix}
 $$
-and Hessian-vector product of 
+and Hessian-vector product of
 $$
         \nabla^2 f(x)\delta x=
         \begin{bmatrix}
@@ -1626,18 +1626,18 @@ Using Optizelle's internal vector spaces, we implement these functions as:
         {\lstinputlisting[style=Matlab,linerange=Objective0-Objective1]{@ROSENBROCKPATH@/rosenbrock.m}}
 \end{boldlist}
 
-        In our \exampleref{\secequality}{sec:equality} example, we have an objective $f:\re^2\rightarrow \re$ where 
+        In our \exampleref{\secequality}{sec:equality} example, we have an objective $f:\re^2\rightarrow \re$ where
 $$
         f(x)=x_1^2+x_2^2
 $$
 This function has a gradient of
 $$
         \nabla f(x)=\begin{bmatrix}
-            2x_1\\ 
+            2x_1\\
             2x_2
         \end{bmatrix}
 $$
-and Hessian-vector product of 
+and Hessian-vector product of
 $$
         \nabla^2 f(x)\delta x=
         \begin{bmatrix}
@@ -1667,7 +1667,7 @@ We implement this function with the code:
 \end{center}
 \noindent the vector-valued functions $g:X\rightarrow Y$ and $h:X\rightarrow Z$ denote the \textit{equality} and \textit{inequality constraints}, respectfully.  Here, we allow the equality constraints to be nonlinear, but require that the inequality constraints be affine.  Recall, an affine function is one where $h(\alpha x+(1-\alpha)x)=\alpha h(x)+(1-\alpha)h(y)$ for all $\alpha\in\re$ or equivalently where $h^{\prime\prime}(x)=0$.  We require affine inequality constraints in order to simplify the line search that maintains the nonnegativity of the inequality constraints.
 
-        In case we have a nonlinear inequality constraint, we must reformulate the problem in order to make it affine.  The easiest method for doing so is through the reformulations 
+        In case we have a nonlinear inequality constraint, we must reformulate the problem in order to make it affine.  The easiest method for doing so is through the reformulations
 $$\left.\begin{array}{rcl}
         \min\limits_{x\in X} && f(x)\\
         \st && h(x)\succeq 0
@@ -1736,7 +1736,7 @@ This means that we have
 \noindent Note, we require that the second derivative always be present.  If one is not available, we simply return zero.
 
 
-        For example, in our \exampleref{\secequality}{sec:equality} example, we define a simple equality constraint as 
+        For example, in our \exampleref{\secequality}{sec:equality} example, we define a simple equality constraint as
 $$
     g(x)=\begin{bmatrix}
         (x_1-2)^2 + (x_2-2)^2 - 1
@@ -1783,14 +1783,14 @@ and $P_l:Y\rightarrow Y$ along with $P_r:Y\rightarrow Y$ such that
 $$
         P_l(g^\prime(x)g^\prime(x)^*)P_r\approx I.
 $$
-        
+
         Before we discuss these operators in detail, let us emphasize two points.  First, as we describe below, we require only the action of this preconditioner on a vector.  This enables Optizelle to continue to be matrix-free.  Second, even though we use matrix-free abstractions, most of the time, we're better off just using matrices.  At this point in time, both dense and sparse linear algebra libraries are extremely fast.  Unless we have a large PDE constrained optimization problem, just form a matrix of the operator, factor it, and move on.
-        
+
         In the objective function, we use a preconditioner for the Hessian in several different places.  Foremost, we use it to precondition linear systems related to second-order algorithms such as Newton's method.  In addition, we use it within first-order algorithms such as nonlinear-CG and steepest descent.  Certainly, $\nabla^2 f(x)^{-1}$ represents the best such preconditioner, but the Hessian may become singular during the course of optimization, so we must take care in how we generate this preconditioner.  As such, even though $\nabla^2 f(x)$ is self-adjoint, the LU factorization provides a simple, effective manner to factorize the Hessian.  In other words, we find operators $L$ and $U$ such that
 $$
         LU=\nabla^2 f(x).
 $$
-Then, our preconditioner $P_H:X\rightarrow X$ approximates 
+Then, our preconditioner $P_H:X\rightarrow X$ approximates
 $$
         P_H\delta x \approx U^{-1}L^{-1} \delta x.
 $$
@@ -1813,10 +1813,10 @@ $$\begin{bmatrix}
 \end{bmatrix}.$$
 As it happens, if $g^\prime(x)$ is full-rank, the preconditioner
 $$\begin{bmatrix}
-        I & 0\\ 
-        0 & (g^\prime(x)g^\prime(x)^*)^{-1} 
+        I & 0\\
+        0 & (g^\prime(x)g^\prime(x)^*)^{-1}
 \end{bmatrix}$$
-allows a Krylov method to solve the above system in three iterations.  As such, Optizelle focuses on preconditioning the operator 
+allows a Krylov method to solve the above system in three iterations.  As such, Optizelle focuses on preconditioning the operator
 $$
         g^\prime(x)g^\prime(x)^*.
 $$
@@ -1950,14 +1950,14 @@ We implement this in our \exampleref{\secequality}{sec:equality} example with th
         {State0-State1}
         {1}
         {cpp}
-    
+
     \restartitem
         {Python}
         {Python}
         {State0-State1}
         {0}
         {py}
-    
+
     \restartitem
         {MATLAB/Octave}
         {Matlab}
@@ -2008,7 +2008,7 @@ In our \exampleref{\secequality}{sec:equality} example, we have:
         {ReadJson0-ReadJson1}
         {1}
         {cpp}
-    
+
     \restartitem
         {Python}
         {Python}
@@ -2039,7 +2039,7 @@ Here, most of the parameters required are identical to those required in the sec
         {MATLAB/Octave}
         {\lstinputlisting[style=Matlab,linerange=Parameters0-Parameters1,widthgobble=1*4]{@ROSENBROCKPATH@/rosenbrock.m}}
 \end{boldlist}
-This becomes the following in our \exampleref{\secequality}{sec:equality} example: 
+This becomes the following in our \exampleref{\secequality}{sec:equality} example:
 \begin{boldlist}
     \shortexampleitem
         {C++}
@@ -2064,14 +2064,14 @@ This becomes the following in our \exampleref{\secequality}{sec:equality} exampl
         {Functions0-Functions1}
         {1}
         {cpp}
-    
+
     \restartitem
         {Python}
         {Python}
         {Functions0-Functions1}
         {0}
         {py}
-    
+
     \restartitem
         {MATLAB/Octave}
         {Matlab}
@@ -2167,14 +2167,14 @@ This becomes the following in our \exampleref{\secequality}{sec:equality} exampl
         {Solver0-Solver1}
         {1}
         {cpp}
-    
+
     \restartitem
         {Python}
         {Python}
         {Solver0-Solver1}
         {0}
         {py}
-    
+
     \restartitem
         {MATLAB/Octave}
         {Matlab}
@@ -2183,7 +2183,7 @@ This becomes the following in our \exampleref{\secequality}{sec:equality} exampl
         {m}
 \end{boldlist}
 \noindent As was the case in the section \hyperref[sec:state]{\secstate}, \textct{XX}, \textct{YY}, and \text{ZZ} correspond to the vector spaces $X$, $Y$, and $Z$ described in the section \hyperref[sec:importvs]{\secimportvs}.  Likely, they are just \textctref{Optizelle::Rm} or \textctref{Optizelle.Rm}.  Next, we call the function with a \textctref{Messaging} object, \textct{msg}.  In the simple case, we can simply use \textctref{Optizelle::Messaging::stdout} in C++, \textctref{Optizelle.Messaging.stdout} in Python, and \textctref{Optizelle.Messaging.stdout} in MATLAB/Octave.  For more complicated cases, see the section \hyperref[sec:messaging]{\secmessaging}.  Finally, we pass in the state and bundle of functions that we discussed in the sections \hyperref[sec:state]{\secstate} and \hyperref[sec:fns]{\secfns}, respectively.
-        
+
         In our \exampleref{\secrosenbrock}{sec:rosenbrock} example, we call Optizelle's solver with the code:
 \begin{boldlist}
     \shortexampleitem
@@ -2198,7 +2198,7 @@ This becomes the following in our \exampleref{\secequality}{sec:equality} exampl
         {MATLAB/Octave}
         {\lstinputlisting[style=Matlab,linerange=Solver0-Solver1,widthgobble=1*4]{@ROSENBROCKPATH@/rosenbrock.m}}
 \end{boldlist}
-\noindent With the \exampleref{\secequality}{sec:equality} example, this becomes: 
+\noindent With the \exampleref{\secequality}{sec:equality} example, this becomes:
 \begin{boldlist}
     \shortexampleitem
         {C++}
@@ -2217,7 +2217,7 @@ This becomes the following in our \exampleref{\secequality}{sec:equality} exampl
 
         After the optimization routine concludes, the solution resides inside of the optimization state in a variable called \textctref{x} and the reason we stopped the optimization resides in a variable called \textctref{opt_stop}.  At this point, we can examine our solution and run any post optimization diagnostics we require.
 
-        In our \exampleref{\secrosenbrock}{sec:rosenbrock} example, we print out the final solution with the code: 
+        In our \exampleref{\secrosenbrock}{sec:rosenbrock} example, we print out the final solution with the code:
 \begin{boldlist}
     \shortexampleitem
         {C++}
@@ -2231,7 +2231,7 @@ This becomes the following in our \exampleref{\secequality}{sec:equality} exampl
         {MATLAB/Octave}
         {\lstinputlisting[style=Matlab,linerange=Extract0-Extract1,widthgobble=1*4]{@ROSENBROCKPATH@/rosenbrock.m}}
 \end{boldlist}
-\noindent In our \exampleref{\secequality}{sec:equality} example, this becomes: 
+\noindent In our \exampleref{\secequality}{sec:equality} example, this becomes:
 \begin{boldlist}
     \shortexampleitem
         {C++}
@@ -2245,7 +2245,7 @@ This becomes the following in our \exampleref{\secequality}{sec:equality} exampl
         {MATLAB/Octave}
         {\lstinputlisting[style=Matlab,linerange=Extract0-Extract1,widthgobble=1*4]{@SIMPLEEQUALITYPATH@/simple_equality.m}}
 \end{boldlist}
-        
+
 \section{\seccompilerun}\label{sec:compilerun}
 
         As a final step, we need to either compile or run the program.  Each language has its own nuances that we describe below.
@@ -2290,7 +2290,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         We require no compilation.
 
 \chapter{\chparams}\label{ch:params}
-        
+
         The parameters that guide the optimization solver have a dramatic effect its performance.  To that end, we find each of these parameters within the optimization state that we initially discussed in the section \hyperref[sec:state]{\secstate}.  These parameters are based on the canonical formulations
 \begin{center}
     \usebox{\boxOptimizationTypes}
@@ -2314,13 +2314,13 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
             \item \textct{AlgorithmClass::UserDefined}
         \end{itemize}
         In Python, we use integers, which we wrap inside of a class.  For example, the class \textct{AlgorithmClass} contains three integer values that we access with:
-        \begin{itemize} 
+        \begin{itemize}
             \item \textct{AlgorithmClass.TrustRegion}
             \item \textct{AlgorithmClass.LineSearch}
             \item \textct{AlgorithmClass.UserDefined}
         \end{itemize}
         In MATLAB/Octave, we use floating point numbers, which we wrap inside of a structured array.  For example, the structure array \textct{AlgorithmClass} contains three floating point values that we designate as:
-        \begin{itemize} 
+        \begin{itemize}
             \item \textct{AlgorithmClass.TrustRegion}
             \item \textct{AlgorithmClass.LineSearch}
             \item \textct{AlgorithmClass.UserDefined}
@@ -2337,19 +2337,19 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
 
     \typeitem
         {X_Vector}
-        {User defined vector within the vector space $X$, the domain of our objective function, $f:X\rightarrow\re$.} 
+        {User defined vector within the vector space $X$, the domain of our objective function, $f:X\rightarrow\re$.}
 
     \typeitem
         {Y_Vector}
-        {User defined vector within the vector space $Y$, the codomain of our equality constraint, $g:X\rightarrow Y$ with $g(x)=0$.} 
+        {User defined vector within the vector space $Y$, the codomain of our equality constraint, $g:X\rightarrow Y$ with $g(x)=0$.}
 
     \typeitem
         {Z_Vector}
-        {User defined vector within the vector space $Z$, the codomain of our inequality constraint, $h:X\rightarrow Z$ with $h(x)\succeq 0$.} 
+        {User defined vector within the vector space $Z$, the codomain of our inequality constraint, $h:X\rightarrow Z$ with $h(x)\succeq 0$.}
 
     \typeitem
         {List}
-        {List of a specified kind of vectors.  In C++, this denotes a \textct{std::list}.  In Python, this becomes a \textct{list}.  Finally, in MATLAB/Octave, we use a cell array.} 
+        {List of a specified kind of vectors.  In C++, this denotes a \textct{std::list}.  In Python, this becomes a \textct{list}.  Finally, in MATLAB/Octave, we use a cell array.}
 
     \typeitem
         {Function}
@@ -2363,39 +2363,39 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
     \enumitem {AlgorithmClass}
 
     \enumitem {OptimizationStop}
-    
+
     \enumitem {Operators}
-    
+
     \enumitem {LineSearchDirection}
-    
+
     \enumitem {LineSearchKind}
 
     \enumitemlong {OptimizationLocation}
-    
+
     \enumitem {ProblemClass}
-    
+
     \enumitem {DiagnosticScheme}
-    
+
     \enumitem {FunctionDiagnostics}
-    
+
     \enumitem {VectorSpaceDiagnostics}
-    
+
     \enumitem {ToleranceKind}
-    
+
     \enumitem {QuasinormalStop}
-    
+
     \enumitemlinalg {TruncatedStop}
-    
+
     \enumitemvspace {Cone}
 \end{boldlist}
-        
+
         Based on these types, we catalog the precise meaning of our parameters below.  As a note, the field \textbf{JSON Param} denotes whether or not we allow the parameter to be set in the JSON file described in the section \hyperref[sec:params]{\secparams}.  Generally, these settable parameters correspond to parameters that tune the behavior the algorithms.  The other parameters correspond to internal quantities that assist in diagnostics or advanced heuristics.
 \begin{boldlist}
     \paramitemu
         {eps_grad}
         {Real}
         {Yes}
-        {Tolerance for the gradient stopping criteria reported in \textctref{opt_stop}.  We satisfy this stopping criteria when 
+        {Tolerance for the gradient stopping criteria reported in \textctref{opt_stop}.  We satisfy this stopping criteria when
         \begin{boldlist}
             \formitem
                 {$\|\uncGradLag{\textctref{x})}\| \leq \textctref{eps_grad} \cdot \textctref{norm_gradtyp}$,}
@@ -2404,7 +2404,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
                 {$\|\conGradLag{\textctref{x}}{\textctref{y}}{\textctref{z}}\| \leq \textctref{eps_grad} \cdot \textctref{norm_gradtyp}$.}
         \end{boldlist}
         At each iteration, we output the norm on the left of the inequality under the label \textctrefalt{||grad||}.}
-    
+
     \paramitemu
         {eps_dx}
         {Real}
@@ -2414,7 +2414,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
             \|\textctref{dx}\| < \textctref{eps_dx}\cdot\textctref{norm_dxtyp}.
         $$
         At each iteration, we output the norm on the left of the inequality under the label \textctrefalt{||dx||}.}
-    
+
     \paramitemu
         {stored_history}
         {Natural}
@@ -2435,19 +2435,19 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         $$
                 \textctref{iter}\geq \textctref{iter_max}
         $$}
-    
+
     \paramitemu
         {glob_iter}
         {Natural}
         {No}
-        {Current globalization iteration.  Here, globalization means the current iteration of the trust-region or line-search method and involves operations such as checking the actual versus predicted reduction or the sufficient decrease condition.} 
-    
+        {Current globalization iteration.  Here, globalization means the current iteration of the trust-region or line-search method and involves operations such as checking the actual versus predicted reduction or the sufficient decrease condition.}
+
     \paramitemu
         {glob_iter_max}
         {Natural}
         {Yes}
-        {Maximum number of globalization iterations that we take before we exit the optimization.  In other words, we only allow this many failed trust-region or line-search iterations before we exit the algorithm.} 
-    
+        {Maximum number of globalization iterations that we take before we exit the optimization.  In other words, we only allow this many failed trust-region or line-search iterations before we exit the algorithm.}
+
     \paramitemu
         {glob_iter_total}
         {Natural}
@@ -2469,73 +2469,73 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
                 \item For problems with inequality constraints, we require that estimated interior point parameter be small.  We control this with the parameter \textctref{eps_mu}.
             \end{enumerate}
         \end{enumerate}}
-    
+
     \paramitemu
         {trunc_iter}
         {Natural}
         {No}
-        {Current number of iterations taken by truncated CG when solving the optimality conditions.  We output \textctref{trunc_iter} at each iteration under the label \textctrefalt{trunc_iter}.} 
-    
+        {Current number of iterations taken by truncated CG when solving the optimality conditions.  We output \textctref{trunc_iter} at each iteration under the label \textctrefalt{trunc_iter}.}
+
     \paramitemu
         {trunc_iter_max}
         {Natural}
         {Yes}
-        {Maximum number of iterations taken by truncated CG when solving the optimality conditions.} 
-    
+        {Maximum number of iterations taken by truncated CG when solving the optimality conditions.}
+
     \paramitemu
         {trunc_iter_total}
         {Natural}
         {No}
         {Total number of iterations ever taken by the truncated CG when solving the optimality conditions.  This gives information about the total amount computational effort taken by Optizelle as we evaluate one Hessian-vector product each iteration.  We output \textctref{trunc_iter_total} at each iteration under the label \textctrefalt{trc_itr_tot}.}
-    
+
     \paramitemu
         {trunc_orthog_storage_max}
         {Natural}
         {Yes}
-        {Number of vectors stored and used in the orthogonalization of truncated CG.  In theory, we only need $1$ for unconstrained and inequality constrained problems, but this leads to numerical instabilities.  In practice, if memory is available, it may be worthwhile to over orthogonalize.} 
-    
+        {Number of vectors stored and used in the orthogonalization of truncated CG.  In theory, we only need $1$ for unconstrained and inequality constrained problems, but this leads to numerical instabilities.  In practice, if memory is available, it may be worthwhile to over orthogonalize.}
+
     \paramitemu
         {trunc_orthog_iter_max}
         {Natural}
         {Yes}
-        {Maximum number of orthogonalization iterations that we use in truncated-CG.  In theory, $1$ should be enough, which means that we orgthogonalize against all the stored previous directions once.  In practice, we'll eventually lose orthogonality, so using $2$ may help at the cost of additional computation.} 
-    
+        {Maximum number of orthogonalization iterations that we use in truncated-CG.  In theory, $1$ should be enough, which means that we orgthogonalize against all the stored previous directions once.  In practice, we'll eventually lose orthogonality, so using $2$ may help at the cost of additional computation.}
+
     \paramitemu
         {trunc_stop}
         {TruncatedStop}
         {No}
         {Reason why truncated CG exited when solving the optimality system.  We output \textctref{trunc_stop} at each iteration under the label \textctrefalt{trunc_stop}.}
-    
+
     \paramitemu
         {trunc_err}
         {Real}
         {No}
         {Relative error in the solution returned by the truncated CG when solving the optimality system.  We output \textctref{trunc_err} at each iteration under the label \textctrefalt{trunc_err}.}
-    
+
     \paramitemu
         {eps_trunc}
         {Real}
         {Yes}
         {Relative stopping criteria for truncated CG.  In truncated CG, when solving the system $Ax=b$ with preconditioner $B$, we use the stopping criteria  $\|B(Ax_k-b)\|\leq \textctref{eps_trunc}\|B(Ax_0-b)\|$.}
-    
+
     \paramitemu
         {algorithm_class}
         {AlgorithmClass}
         {Yes}
         {Class of algorithm used in optimization.}
-    
+
     \paramitemu
         {PH_type}
         {Operators}
         {Yes}
         {Preconditioner used when solving the optimality conditions.  Note, in order to accommodate the null space projection, we currently ignore this quantity if problems with equality constraints.}
-    
+
     \paramitemu
         {H_type}
         {Operators}
         {Yes}
-        {Hessian approximation for the objective function.} 
-    
+        {Hessian approximation for the objective function.}
+
     \paramitemu
         {norm_gradtyp}
         {Real}
@@ -2543,55 +2543,55 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {Norm of a typical gradient defined as
         \begin{boldlist}
             \formitem
-                {$\|\uncGradLag{\textctref{x}_0}\|$,} 
+                {$\|\uncGradLag{\textctref{x}_0}\|$,}
                 {$\|\eqGradLag{\textctref{x}_0}{\textctref{y}_0}\|$,}
                 {$\|\ineqGradLag{\textctref{x}_0}{\textctref{z}_0}\|$,}
                 {$\|\conGradLag{\textctref{x}_0}{\textctref{y}_0}{\textctref{z}_0}\|$,}
         \end{boldlist}
         where $\textctref{x}_0$, $\textctref{y}_0$, and $\textctref{z}_0$ denote our variables at the first iteration.  Sometimes, we use \textctref{norm_gradtyp} with the stopping criteria described in \textctref{eps_grad}.  Specifically, we only refer to this quantity when \textctref{eps_kind} is set to \hyperref[itm:ToleranceKind]{Relative}.  When \textctref{eps_kind} is set to \hyperref[itm:ToleranceKind]{Absolute}, we ignore this value and instead use $1.0$.}
-    
+
     \paramitemu
         {norm_dxtyp}
         {Real}
         {No}
         {Norm of a typical optimization step.  Similar to \textctref{norm_gradtyp}, we set this to be the gradient found at the initial guess and use it in the stopping criteria described in \textctref{eps_dx}.  Since an optimization algorithm may have numerical issues on the first optimization iteration, we do not use the first optimization step generated.  By using the norm of the gradient, we approximate the norm of a step taken by the steepest descent algorithm.  As a note, we only refer to this quantity when \textctref{eps_kind} is set to \hyperref[itm:ToleranceKind]{Relative}.  When \textctref{eps_kind} is set to \hyperref[itm:ToleranceKind]{Absolute}, we ignore this value and instead use $1.0$.}
-    
+
     \paramitemu
         {x}
         {X_Vector}
         {No}
         {Optimization variable.}
-    
+
     \paramitemu
         {grad}
         {X_Vector}
         {No}
         {Gradient of the objective, $\nabla f(\textctref{x})$. }
-    
+
     \paramitemu
         {dx}
         {X_Vector}
         {No}
         {Step taken during the optimization iteration.  Every iteration we set \textctref{x}=\textctref{x}+\textctref{dx}.  In addition, we output the norm of this vector at each iteration under the label \textctrefalt{||dx||}.}
-    
+
     \paramitemu
         {x_old}
         {X_Vector}
         {No}
         {Optimization variable from the last iteration.}
-    
+
     \paramitemu
         {grad_old}
         {X_Vector}
         {No}
         {Gradient of the objective from the last iteration.}
-    
+
     \paramitemu
         {dx_old}
         {X_Vector}
         {No}
         {Optimization step from the last iteration.}
-    
+
     \paramiteml
         {oldY}
         {X_Vector}
@@ -2601,7 +2601,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
             [\nabla f(\textctref{x}_{\textctref{iter}})-\nabla f(\textctref{x}_{\textctref{iter}-1}),\dots,\nabla f(\textctref{x}_{\textctref{iter}-\textctref{stored_history}})-\nabla f(\textctref{x}_{\textctref{iter}-\textctref{stored_history}-1})].
         $$
         We use this list in our quasi-Newton methods.}
-    
+
     \paramiteml
         {oldS}
         {X_Vector}
@@ -2611,25 +2611,25 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
             [x_{\textctref{iter}}-x_{\textctref{iter}-1},\dots,x_{\textctref{iter}-\textctref{stored_history}}-x_{\textctref{iter}-\textctref{stored_history}-1}].
         $$
         We use this list in our quasi-Newton methods.}
-    
+
     \paramitemu
         {f_x}
         {Real}
         {No}
         {Current value of the objective function, $f(\textctref{x})$.  We output \textctref{f_x} at each iteration under the label \textctrefalt{f(x)}.}
-    
+
     \paramitemu
         {f_xpdx}
         {Real}
         {No}
         {Value of the objective function at the trial step, $f(\textctref{x}+\textctref{dx})$.}
-    
+
     \paramitemu
         {msg_level}
         {Natural}
         {Yes}
         {Messaging level.  To turn messages off, use $0$.  For normal messaging, set to $1$.  For more detailed information, set to $2$.  For linear solver information, set to $3$.  To see precise information about what information we display, refer to the chapter entitled \hyperref[ch:output]{\choutput}.}
-    
+
     \paramitemu
         {safeguard_failed_max}
         {Natural}
@@ -2646,20 +2646,20 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {safeguard_failed_total}
         {Natural}
         {No}
-        {Total number of failed safe-guard steps.} 
-    
+        {Total number of failed safe-guard steps.}
+
     \paramitemu
         {alpha_x}
         {Real}
         {No}
         {How much we truncate \textctref{dx} in an interior point method in order to maintain strict feasibility.  When $1.0$, we do not truncate and take a full step.  We output \textctref{alpha_x} at each iteration under the label \textctrefalt{alpha_x}.}
-    
+
     \paramitemu
         {alpha_x_qn}
         {Real}
         {No}
         {How much we truncate \textctref{dx_n} in an interior point method in order to maintain strict feasibility.  When $1.0$, we do not truncate and take a full step.}  We output \textctref{alpha_x_qn} at each iteration under the label \textctrefalt{alpha_x_qn}.
-    
+
     \paramitemu
         {eps_kind}
         {ToleranceKind}
@@ -2746,7 +2746,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {alpha}
         {Real}
         {No}
-        {Actual line-search step length.  After our line-search process completes, we modify our step $\textctref{dx}\leftarrow \textctref{alpha} \cdot \textctref{dx}$.  As a note, we output \textctref{alpha} at each iteration under the label \textctrefalt{alpha}.} 
+        {Actual line-search step length.  After our line-search process completes, we modify our step $\textctref{dx}\leftarrow \textctref{alpha} \cdot \textctref{dx}$.  As a note, we output \textctref{alpha} at each iteration under the label \textctrefalt{alpha}.}
 
     \paramitemu
         {c1}
@@ -2772,7 +2772,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {ls_iter_max}
         {Natural}
         {Yes}
-        {Maximum number of iterations used in the line search before checking the sufficient decrease condition.  We use this to tune the amount of work done by the line search.} 
+        {Maximum number of iterations used in the line search before checking the sufficient decrease condition.  We use this to tune the amount of work done by the line search.}
 
     \paramitemu
         {ls_iter_total}
@@ -2796,7 +2796,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {kind}
         {LineSearchKind}
         {Yes}
-        {Kind of line-search used in the line-search algorithm.} 
+        {Kind of line-search used in the line-search algorithm.}
 
     \paramitemu
         {f_diag}
@@ -2832,7 +2832,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {dy}
         {Y_Vector}
         {No}
-        {Step in the equality multiplier.  Every iteration we set \textctref{y}=\textctref{y}+\textctref{dy}.} 
+        {Step in the equality multiplier.  Every iteration we set \textctref{y}=\textctref{y}+\textctref{dy}.}
 
     \paramiteme
         {zeta}
@@ -2862,7 +2862,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {rho_old}
         {Real}
         {No}
-        {Penalty parameter from the last iteration.} 
+        {Penalty parameter from the last iteration.}
 
     \paramiteme
         {rho_bar}
@@ -2956,7 +2956,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {augsys_rst_freq}
         {Natural}
         {Yes}
-        {How often we restart the augmented system solve.  We restart GMRES every specified number of iterations in order to save memory.  When 0, we do not restart.} 
+        {How often we restart the augmented system solve.  We restart GMRES every specified number of iterations in order to save memory.  When 0, we do not restart.}
 
     \paramiteme
         {augsys_qn_iter}
@@ -3130,7 +3130,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {norm_gxtyp}
         {Real}
         {No}
-        {Norm of a typical equality constraint, which we define to be the norm of the equality constraint at the first iteration.  Sometimes, we use \textctref{norm_gxtyp} with the stopping criteria described in \textctref{eps_constr}. Specifically, we only refer to this quantity when \textctref{eps_kind} is set to \hyperref[itm:ToleranceKind]{Relative}.  When \textctref{eps_kind} is set to \hyperref[itm:ToleranceKind]{Absolute}, we ignore this value and instead use $1.0$.} 
+        {Norm of a typical equality constraint, which we define to be the norm of the equality constraint at the first iteration.  Sometimes, we use \textctref{norm_gxtyp} with the stopping criteria described in \textctref{eps_constr}. Specifically, we only refer to this quantity when \textctref{eps_kind} is set to \hyperref[itm:ToleranceKind]{Relative}.  When \textctref{eps_kind} is set to \hyperref[itm:ToleranceKind]{Absolute}, we ignore this value and instead use $1.0$.}
 
     \paramiteme
         {norm_gpsgxtyp}
@@ -3197,7 +3197,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {X_Vector}
         {No}
         {Quantity grad $f(\textctref{x}) + g^\prime(\textctref{x})*\textctref{y} + \hyperref[itm:H_type]{H} \textctref{dx_n}$ projected into the null-space of the constraints.  We require this in the tangential subproblem and the predicted reduction.}
-    
+
     \paramiteme
         {H_dxtuncorrected}
         {X_Vector}
@@ -3232,7 +3232,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {dz}
         {Z_Vector}
         {No}
-        {Step in the inequality multiplier.  Every iteration we set \textctref{z}=\textctref{z}+\textctref{dz}.} 
+        {Step in the inequality multiplier.  Every iteration we set \textctref{z}=\textctref{z}+\textctref{dz}.}
 
     \paramitemi
         {h_x}
@@ -3271,19 +3271,19 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
             \item $|\textctref{mu} - \textctref{mu_typ} \cdot \textctref{eps_mu}| \leq \textctref{mu_typ} \cdot \textctref{eps_mu}$
             \item $|\textctref{mu} - \textctref{mu_est}| \leq \textctref{mu}$
         \end{enumerate}}
-    
+
     \paramitemi
         {sigma}
         {Real}
         {Yes}
         {Rate that we decrease the interior point parameter.}
-    
+
     \paramitemi
         {gamma}
         {Real}
         {Yes}
         {How close we move to the boundary during a single step.  A step of $1.0$ allows a step to touch the boundary of the inequality constraint in a single step, which is disallowed by the interior point algorithm.}
-    
+
     \paramitemi
         {alpha_z}
         {Real}
@@ -3315,7 +3315,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
 ./rosenbrock tr_newton.json | cut -c1-12,13-24,37-48
 \end{verbatim}
 \end{center}
-        
+
         As far as the information in the columns themselves, we detail their meaning below.  In terms of convergence, we require the values \textctrefalt{||grad||}, \textctrefalt{||g(x)||}, and \textctrefalt{mu_est} be small relative to their starting value and control the relative decrease required with the parameters \textctref{eps_grad}, \textctref{eps_constr}, and \textctref{eps_mu}, respectively.  In addition, if the value \textctrefalt{||dx||} becomes too small relative to its starting value, we terminate the optimization.  We control the amount of relative decrease allowed in \textctrefalt{||dx||} with the parameter \textctref{eps_dx}.
 \begin{boldlist}
     \outputitemu
@@ -3329,7 +3329,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {\textctref{f_x}}
         {1}
         {Value of the objective function at the start of the specified iteration.}
-    
+
     \outputitemraw
         {\index{Outputs!\textct{"|"|grad"|"|}}{\textctlabelalt{||grad||}}}
         {None}
@@ -3343,7 +3343,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {\classUnconstrained}
         {1}
         {Norm of the step taken during the last iteration.  We calculate this value by taking the norm of the value found in \textctref{dx} and use this within our stopping condition controlled by \textctref{eps_dx}.  As a safeguard, we exit the optimization if this value becomes too small relative to the starting value.}
-    
+
     \outputitemraw
         {\index{Outputs!\textct{"|"|g(x)"|"|}}{\textctlabelalt{||g(x)||}}}
         {None}
@@ -3380,18 +3380,18 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {\textctref{trunc_stop}}
         {2}
         {Why truncated CG terminated.  Although we shorten the strings, we describe each possible outcome in the enumerated type \textctref{TruncatedStop}.}
-        
+
     \outputitemu
         {ared}
         {\textctref{ared}}
         {2}
-        {Actual reduction in the merit function between the current iterate and the iterate after taking the trial step.} 
+        {Actual reduction in the merit function between the current iterate and the iterate after taking the trial step.}
 
     \outputitemu
         {pred}
         {\textctref{pred}}
         {2}
-        {Predicted reduction in the merit function between the current iterate and the iterate after taking the trial step.} 
+        {Predicted reduction in the merit function between the current iterate and the iterate after taking the trial step.}
 
     \outputitemu
         {ared/pred}
@@ -3403,7 +3403,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {delta}
         {\textctref{delta}}
         {2}
-        {Trust-region radius.} 
+        {Trust-region radius.}
 
     \outputitemu
         {ls_iter}
@@ -3415,7 +3415,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {alpha}
         {\textctref{alpha}}
         {2}
-        {Actual line-search step length.} 
+        {Actual line-search step length.}
 
     \outputitemu
         {alpha0}
@@ -3439,7 +3439,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {mu}
         {\textctref{mu}}
         {2}
-        {Interior point parameter.} 
+        {Interior point parameter.}
 
     \outputitemi
         {alpha_x}
@@ -3469,7 +3469,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {glb_itr_tot}
         {\textctref{glob_iter_total}}
         {3}
-        {Total number of globalization iterations taken across all iterations.} 
+        {Total number of globalization iterations taken across all iterations.}
 
     \outputitemu
         {trc_itr_tot}
@@ -3645,7 +3645,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {aug_itr_tot}
         {\textctref{augsys_iter_total}}
         {3}
-        {Total number of iterations taken by all augmented system solves.  We use this to help determine the overall expense of the augmented system solver and its precondition.} 
+        {Total number of iterations taken by all augmented system solves.  We use this to help determine the overall expense of the augmented system solver and its precondition.}
 \end{boldlist}
 
 \chapter{\chadvanced}\label{ch:advanced}
@@ -3654,7 +3654,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
 
 \section{\secmessaging}\label{sec:messaging}
 
-        By default, we output messages from Optizelle to \textct{stdout}.  However, in some environments, we require different behavior.  For example, 
+        By default, we output messages from Optizelle to \textct{stdout}.  However, in some environments, we require different behavior.  For example,
 \begin{itemize}
     \item When we use Optizelle in a program with a GUI, we may not to display the output to a separate window.
     \item When using MPI in a distributed, parallel environment we likely want to restrict our output to only the rank 0 processor.
@@ -3705,8 +3705,8 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
 \section{\secerrors}\label{sec:errors}
 
         In general, Optizelle handles algorithmic errors gracefully and will exit the optimization with the current best solution.  However, errors in the problem setup or functions provided by the user cause Optizelle to exit its routines immediately.
-        
-        The mechanism for handling errors depends on the type and interface.  For errors that originate with Optizelle, we use the following scheme 
+
+        The mechanism for handling errors depends on the type and interface.  For errors that originate with Optizelle, we use the following scheme
 \begin{boldlist}
     \apiitem
         {C++}
@@ -3765,7 +3765,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {init(x)}
         {$\textit{init}\leftarrow \xi(W)$ where $x\in W$}
         {Initializes memory for a new vector.  Here, the function $\xi:\{X,Y,Z\}\rightarrow X\cup Y\cup Z$ denotes a choice function that selects an arbitrary element from the appropriate set.  Essentially, this states that we want a valid element in the vector space, but we don't care what the element is.}
-    
+
     \customvsitem
         {copy}
         {copy(x,y)}
@@ -3775,7 +3775,7 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {copy(x)}
         {$\textit{copy}\leftarrow x$}
         {In C++ and Python, a shallow copy of the vector $x$ into the vector $y$.  In MATLAB/Octave, return the vector $x$}.
-    
+
     \customvsitem
         {scal}
         {scal(alpha,x)}
@@ -3784,8 +3784,8 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {$x\leftarrow \alpha x$}
         {scal(alpha,x)}
         {$\textit{scal}\leftarrow \alpha x$}
-        {In C++ and Python, overwrite $x$ with $\alpha x$.  In MATLAB/Octave, return $\alpha x$.} 
-    
+        {In C++ and Python, overwrite $x$ with $\alpha x$.  In MATLAB/Octave, return $\alpha x$.}
+
     \customvsitem
         {axpy}
         {axpy(alpha,x,y)}
@@ -3794,8 +3794,8 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {$y\leftarrow \alpha x + y$}
         {axpy(alpha,x,y)}
         {$\textit{axpy}\leftarrow \alpha x + y$}
-        {In C++ and Python, overwrite $y$ with $\alpha x+y$.  In MATLAB/Octave, return $\alpha x+y$.} 
-    
+        {In C++ and Python, overwrite $y$ with $\alpha x+y$.  In MATLAB/Octave, return $\alpha x+y$.}
+
     \customvsitem
         {innr}
         {innr(x,y)}
@@ -3805,25 +3805,25 @@ where we assume \textctref{CMAKE_INSTALL_PREFIX}=\textct{/usr}.
         {innr(x,y)}
         {$innr\leftarrow \langle x,y\rangle$}
         {Return the inner product between $x$ and $y$.}
-    
+
     \customvsitem
         {zero}
         {zero(x)}
-        {$x\leftarrow 0$} 
+        {$x\leftarrow 0$}
         {zero(x)}
-        {$x\leftarrow 0$} 
+        {$x\leftarrow 0$}
         {zero(x)}
-        {$\textit{zero}\leftarrow 0$} 
+        {$\textit{zero}\leftarrow 0$}
         {In C++ and Python, overwrite $x$ with $0$.  In MATLAB/Octave, return $0$.  Note, this is not necessarily the same as \textct{scal(0.,x)} since, in practice, $x$ may contain NaNs and Infs.  As such, we consider \textctref{zero} to be a safe operation that returns $0.$ whereas \textctref{scal} may be an unsafe operation.}
-    
+
     \customvsitem
         {rand}
         {rand(x)}
-        {$x\leftarrow \psi(W)$ where $x\in W$} 
+        {$x\leftarrow \psi(W)$ where $x\in W$}
         {rand(x)}
-        {$x\leftarrow \psi(W)$ where $x\in W$} 
+        {$x\leftarrow \psi(W)$ where $x\in W$}
         {rand(x)}
-        {$\textit{rand}\leftarrow \psi(W)$ where $x\in W$} 
+        {$\textit{rand}\leftarrow \psi(W)$ where $x\in W$}
         {In C++ and Python, overwrite $x$ with a random vector.  In MATLAB/Octave, return a random vector.  Here, the function $\psi:\{X,Y,Z\}\rightarrow X\cup Y\cup Z$ denotes a stochastic choice function that randomly selects an element from the appropriate set.  Essentially, this states that we want a valid, random element in the vector space.  Primarily, we use these vectors for our diagnostic tests controlled by the parameters \textctref{f_diag}, \textctref{g_diag}, and \textctref{h_diag}.}
 \end{boldlist}
 \noindent In addition, the vector space associated with the codomain of the inequality constraints, $Z$, requires the following operations:
@@ -3853,7 +3853,7 @@ $$
         X\circ Y = \frac{XY + YX}{2},
 $$
 but the inverse operation \textctref{linv} below becomes far less efficient.}
- 
+
     \customvsitem
         {id}
         {id(x)}
@@ -3880,7 +3880,7 @@ $$
 \end{bmatrix}.
 $$
 For semidefinite constraints, we can either define that $L(X)=X$ or that $L(X)=\frac{X\cdot + \cdot X}{2}$.  Generally, it is preferable to use the first definition since $L(X)^{-1}=X^{-1}$.  In the second case, we require the solution of the Sylvester equations.}
-    
+
     \customvsitem
         {barr}
         {barr(x)}
@@ -3889,7 +3889,7 @@ For semidefinite constraints, we can either define that $L(X)=X$ or that $L(X)=\
         {$\textit{barr}\leftarrow \phi(x)$ where $x\circ\nabla \phi(x)=e$}
         {barr(x)}
         {$\textit{barr}\leftarrow \phi(x)$ where $x\circ\nabla \phi(x)=e$}
-        {Return the result of the barrier function applied to a vector.  Here, the function $\phi:Z\rightarrow \re$ denotes the barrier function, which we require to satisfy 
+        {Return the result of the barrier function applied to a vector.  Here, the function $\phi:Z\rightarrow \re$ denotes the barrier function, which we require to satisfy
 $$
     x\circ \nabla \phi(x) = e.
 $$
@@ -3906,7 +3906,7 @@ $$
     \phi(X)=\log(\textnormal{det}(X))
 $$
 where $\textnormal{det}(X)$ denotes the determinant of $X$.}
-    
+
     \customvsitem
         {srch}
         {srch(x,y)}
@@ -3920,7 +3920,7 @@ $$
     \arg\max\{\alpha\in\re : \alpha x + y \succeq 0, \alpha\geq 0\}
 $$
 where we assume $y\succ 0$.  Hence, $\alpha$ denotes the maximum distance we can move in the direction $x$ from $y$ so that $\alpha x + y$ remains feasible.  Note, sometimes this number is infinite.  If this is the case, we must return \textct{Inf}.}
-    
+
     \customvsitem
         {symm}
         {symm(x)}
@@ -3946,18 +3946,18 @@ where we require $P$ to be nonsingular.}
         {C++}
         {Templated struct with static members and a single typedef called \textct{Vector}}
         {A vector space in C++ must be declared as a templated struct with static members.  As far as the template parameter, we template on our real scalar type and require that each of the functions that accept or return a scalar use this type.  This template parameter allows us to insure that each of the vector spaces uses the same real type, which is important for consistency.  Next, each of the above functions must be included and declared static.  This allows us to access the functions without instantiating the struct.  We also require a single typedef called \textct{Vector}.  This defines the vector type used by each of the vector-space functions.  In addition to the typedef, we require that this vector type implement move semantics, which includes both the move constructor as well as move semantics for the assignment operator.  Note, items in the standard library all properly implement move semantics.  As such, as long as we use \textct{std::vector}, \textct{std::unique_ptr}, or \textct{std::shared_ptr}, we satisfy this requirement.}
-    
+
     \vswrapperitem
         {Python}
-        {Class with static methods} 
+        {Class with static methods}
         {A vector space in Python must be declared as a class consisting entirely of static methods.  In other words, we require a class that implements all of the above vector-space functions where we decorate each function definition with the decorator \textct{@staticmethod}.}
 
     \vswrapperitem
         {MATLAB/Octave}
-        {Structure array} 
-        {A vector space in MATLAB/Octave must be declared as a structure array with all of the above methods present.} 
+        {Structure array}
+        {A vector space in MATLAB/Octave must be declared as a structure array with all of the above methods present.}
 \end{boldlist}
-        
+
         As an example, we define and use a custom vector space for $\re^m$ in our \exampleref{\secrosenbrockadvancedapi}{sec:rosenbrockadvancedapi} example:
 \begin{boldlist}
     \exampleitem
@@ -3973,7 +3973,7 @@ where we require $P$ to be nonsingular.}
         {\lstinputlisting[style=Matlab,linerange=VectorSpace0-VectorSpace1]{@ROSENBROCKADVANCEDAPIPATH@/rosenbrock_advanced_api.m}}
 \end{boldlist}
 
-\section{\seccone}        
+\section{\seccone}
 \phantomsection\label{itm:SQL}
 \phantomsection\label{itm:Optizelle::SQL}
 
@@ -3999,11 +3999,11 @@ Here, \textct{Cone::t} corresponds to the enumerated type \textctref{Cone} and \
 \begin{flushleft}
     \lstinputlisting[style=Matlab,linerange={SQLVector0-SQLVector1}]{@SQLRESTARTPATH@/sql_restart.m}
 \end{flushleft}
-where \textct{types} is a vector containing elements from the enumerated type \textctref{Cone} and \textct{sizes} is a vector denoting the size of the cones.  For example, in order to define a \textct{SQL} vector with a semidefinite, quadratic, and linear cone with sizes 2, 2, and 1, we use the syntax 
+where \textct{types} is a vector containing elements from the enumerated type \textctref{Cone} and \textct{sizes} is a vector denoting the size of the cones.  For example, in order to define a \textct{SQL} vector with a semidefinite, quadratic, and linear cone with sizes 2, 2, and 1, we use the syntax
 \begin{flushleft}
     \lstinputlisting[style=Matlab,linerange={SQLSpec0-SQLSpec1}]{@SQLRESTARTPATH@/sql_restart.m}
 \end{flushleft}
-Otherwise, we define the meaning of each of these cones to be the same as the C++ case above. 
+Otherwise, we define the meaning of each of these cones to be the same as the C++ case above.
 
         In order to access the elements of a C++ SQL vector, \textct{x}, we use the following indexing functions
 \begin{center}\begin{tabular}{llll}
@@ -4031,7 +4031,7 @@ Number of blocks & \textct{x.numblocks()}
     \exampleitem
         {C++}
         {\lstinputlisting[style=C++]{@SIMPLEQUADRATICCONEPATH@/simple_quadratic_cone.cpp}}
-    
+
     \exampleitem
         {MATLAB/Octave}
         {\lstinputlisting[style=Matlab]{@SIMPLEQUADRATICCONEPATH@/simple_quadratic_cone.m}}
@@ -4042,7 +4042,7 @@ Number of blocks & \textct{x.numblocks()}
     \exampleitem
         {C++}
         {\lstinputlisting[style=C++]{@SIMPLESDPCONEPATH@/simple_sdp_cone.cpp}}
-    
+
     \exampleitem
         {MATLAB/Octave}
         {\lstinputlisting[style=Matlab]{@SIMPLESDPCONEPATH@/simple_sdp_cone.m}}
@@ -4063,7 +4063,7 @@ Number of blocks & \textct{x.numblocks()}
 
         In order to manipulate the state, we use an object called the \textctref{StateManipulator}.  During the optimization computation, we repeatedly call this object with the \hyperref[sec:fns]{bundle of functions}, \hyperref[sec:state]{optimization state}, and the \hyperref[itm:OptimizationLocation]{location}.  At this point, we may do any computation and modify the state as desired.  In C++ and Python, we implicitly return these changes to the state.  In MATLAB/Octave, we must return the state explicitly.
 
-        In code, we specify the \textctref{StateManipulator} as: 
+        In code, we specify the \textctref{StateManipulator} as:
 \phantomsection\label{itm:StateManipulator}
 \begin{boldlist}
     \apiitem
@@ -4092,14 +4092,14 @@ Number of blocks & \textct{x.numblocks()}
         {SmanipSolver0-SmanipSolver1}
         {1}
         {cpp}
-    
+
     \restartitem
         {Python}
         {Python}
         {SmanipSolver0-SmanipSolver1}
         {0}
         {py}
-    
+
     \restartitem
         {MATLAB/Octave}
         {Matlab}
@@ -4108,7 +4108,7 @@ Number of blocks & \textct{x.numblocks()}
         {m}
 \end{boldlist}
 
-        As an example, we use the \textctref{StateManipulator} to add restarts to our \exampleref{\secrosenbrockadvancedapi}{sec:rosenbrockadvancedapi} example.  We discuss restarts in the section entitled \hyperref[sec:restart]{\secrestart}. 
+        As an example, we use the \textctref{StateManipulator} to add restarts to our \exampleref{\secrosenbrockadvancedapi}{sec:rosenbrockadvancedapi} example.  We discuss restarts in the section entitled \hyperref[sec:restart]{\secrestart}.
 \phantomsection\label{itm:StateManipulatorExample}
 \begin{boldlist}
     \exampleitem
@@ -4137,7 +4137,7 @@ Number of blocks & \textct{x.numblocks()}
         {MATLAB/Octave}
         {\lstinputlisting[style=Matlab,linerange=Solver0-Solver1,widthgobble=1*4]{@ROSENBROCKADVANCEDAPIPATH@/rosenbrock_advanced_api.m}}
 \end{boldlist}
-        
+
 \section{\secrestart}\label{sec:restart}
 
         Restarts are a mechanism to read, write, and archive the progress and solution of an optimization algorithm.  In other words, restarts allow us to save the state of an optimization algorithm before it finishes computing.  We do this for several reasons:
@@ -4164,14 +4164,14 @@ Number of blocks & \textct{x.numblocks()}
         {WriteReadRestart0-WriteReadRestart1}
         {1}
         {cpp}
-    
+
     \restartitem
         {Python}
         {Python}
         {WriteReadRestart0-WriteReadRestart1}
         {0}
         {py}
-    
+
     \restartitem
         {MATLAB/Octave}
         {Matlab}
@@ -4195,7 +4195,7 @@ Number of blocks & \textct{x.numblocks()}
         {MATLAB/Octave}
         {\lstinputlisting[style=Matlab,linerange=ReadRestart0-ReadRestart1]{@ROSENBROCKADVANCEDAPIPATH@/rosenbrock_advanced_api.m}}
 \end{boldlist}
-\noindent As a note, we call the \hyperref[sec:params]{JSON reader} after we read the restart file.  If we do this in the reverse order, the restart read process overwrites all of our parameters. 
+\noindent As a note, we call the \hyperref[sec:params]{JSON reader} after we read the restart file.  If we do this in the reverse order, the restart read process overwrites all of our parameters.
 
         For \textctref{Rm} and \textctref{SQL}, the above process works seamlessly.  In fact, C++, Python, and MATLAB/Octave all use the same format for \textct{Rm}, which means we can write a restart file in one language and then read the same restart file in a different language.  However, for \hyperref[sec:customvector]{customized vector spaces}, we must provide Optizelle information on how to translate a vector to a JSON formatted file using the following commands:
 \phantomsection\label{itm:serialize}
@@ -4207,7 +4207,7 @@ Number of blocks & \textct{x.numblocks()}
         {Serialization0-Serialization1}
         {0}
         {cpp}
-    
+
     \restartitemalt
         {Python}
         {Python}
@@ -4222,7 +4222,7 @@ Number of blocks & \textct{x.numblocks()}
         {0}
         {m}
 \end{boldlist}
-\noindent In each command, the \textctref{serialize} and \textctref{deserialize} functions work in a similar manner.  The \textctref{serialize} function accepts a vector, the vector's name, and the current iteration. Then, \textctref{serialize} returns a valid JSON structure corresponding to this vector.  For \textctref{Rm}, we use simple JSON vector notation such as \textct{[1.2, 2.3, 3.4]}, but this can be significantly more complicated.  In fact, for large-scale optimization problems, we suggest storing the vector in a separate binary file and returning a JSON structure that denotes the name of the file.  In order to make process of defining these file names easier, we provide access to the variable name and iteration number as the second and third arguments, respectively.  Next, the \textctref{deserialize} function accepts two arguments and returns a vector.  The first argument denotes a vector in the same vector space as the vector we need translated.  The second argument denotes a JSON formatted string of the vector we need to translate.  Generally, we use the first argument to initialize memory for the vector we eventually return.  Then, we use the JSON formatted string to fill in the appropriate information.  In C++, we accomplish this process through template specialization.  In Python, we call the \textct{serialize} and \textctref{deserialize} functions in the \hyperref[sec:import]{\textct{Optizelle.json.Serialization}} module with the \textct{"registration"} string.  Then, we provide our custom \textctref{serialize} and \textctref{deserialize} routines along with the type of the vector that we want to serialize in the variable \textct{vector_type}.  We obtain this information with the \textct{type} command and require it in order to disambiguate multiple serialization routines.  In MATLAB/Octave, we call the \textctref{serialize} and \textctref{deserialize} functions in the \hyperref[sec:import]{\textct{Optizelle.json.Serialization}} structure with the \textct{'registration'} string.  Then, similar to Python, we provide our custom \textctref{serialize} and \textctref{deserialize} routines along with a function \textct{check}.  The function \textct{check} accepts a single argument and returns \textct{1} when called with the kind of vector we want to serialize and \textct{0} otherwise.  We require the \textct{check} function to disambiguate the different serialization functions, so we try to make it as specific as possible. 
+\noindent In each command, the \textctref{serialize} and \textctref{deserialize} functions work in a similar manner.  The \textctref{serialize} function accepts a vector, the vector's name, and the current iteration. Then, \textctref{serialize} returns a valid JSON structure corresponding to this vector.  For \textctref{Rm}, we use simple JSON vector notation such as \textct{[1.2, 2.3, 3.4]}, but this can be significantly more complicated.  In fact, for large-scale optimization problems, we suggest storing the vector in a separate binary file and returning a JSON structure that denotes the name of the file.  In order to make process of defining these file names easier, we provide access to the variable name and iteration number as the second and third arguments, respectively.  Next, the \textctref{deserialize} function accepts two arguments and returns a vector.  The first argument denotes a vector in the same vector space as the vector we need translated.  The second argument denotes a JSON formatted string of the vector we need to translate.  Generally, we use the first argument to initialize memory for the vector we eventually return.  Then, we use the JSON formatted string to fill in the appropriate information.  In C++, we accomplish this process through template specialization.  In Python, we call the \textct{serialize} and \textctref{deserialize} functions in the \hyperref[sec:import]{\textct{Optizelle.json.Serialization}} module with the \textct{"registration"} string.  Then, we provide our custom \textctref{serialize} and \textctref{deserialize} routines along with the type of the vector that we want to serialize in the variable \textct{vector_type}.  We obtain this information with the \textct{type} command and require it in order to disambiguate multiple serialization routines.  In MATLAB/Octave, we call the \textctref{serialize} and \textctref{deserialize} functions in the \hyperref[sec:import]{\textct{Optizelle.json.Serialization}} structure with the \textct{'registration'} string.  Then, similar to Python, we provide our custom \textctref{serialize} and \textctref{deserialize} routines along with a function \textct{check}.  The function \textct{check} accepts a single argument and returns \textct{1} when called with the kind of vector we want to serialize and \textct{0} otherwise.  We require the \textct{check} function to disambiguate the different serialization functions, so we try to make it as specific as possible.
 
         As an example, we return to our \exampleref{\secrosenbrockadvancedapi}{sec:rosenbrockadvancedapi} example.  There, we define custom serialization routines with the code:
 \begin{boldlist}
@@ -4238,7 +4238,7 @@ Number of blocks & \textct{x.numblocks()}
         {MATLAB/Octave}
         {\lstinputlisting[style=Matlab,linerange=Serialization0-Serialization1]{@ROSENBROCKADVANCEDAPIPATH@/rosenbrock_advanced_api.m}}
 \end{boldlist}
-        
+
         As another example, we refer to our \exampleref{\secsimpleconstrainedadvancedapi}{sec:simpleconstrainedadvancedapi} example.  This differs from the previous example since we write our vectors to a separate file.  In order to accomplish this, we define custom serialization routines with the code:
 \begin{boldlist}
     \exampleitem
@@ -4255,7 +4255,7 @@ Number of blocks & \textct{x.numblocks()}
 \end{boldlist}
 
         In some situations, we want to avoid using JSON all together.  Generally, this occurs when integrating Optizelle into an existing application with rigid I/O requirements.  In this case, we provide an alternative mechanism to generate restarts.
-        
+
         At its core, restarts consist of two mechanisms: release and capture.  Release transforms the state into a collection of lists that contain all of the optimization information.  Capture reverses this process.  Generally, we do a release, write these lists containing the state information to file, and then capture the state.  The idea behind this process is that we don't expect ourselves to remember all of the optimization variables.  Certainly, this collection of variables changes whenever we update the code or add new algorithms.  However, if we know how to write a list of variables to file, we can simply iterate over the list and take the appropriate action.
 
        More specifically, the capture and release functions operate on lists of tuples.  As far as the type used for the lists, we have:
@@ -4263,25 +4263,25 @@ Number of blocks & \textct{x.numblocks()}
     \simpletypeitem
         {C++}
         {std::list}
-    
+
     \simpletypeitem
         {Python}
         {list}
-    
+
     \simpletypeitem
         {MATLAB/Octave}
         {cell}
 \end{boldlist}
-\noindent For the type used by the tuples, we have 
+\noindent For the type used by the tuples, we have
 \begin{boldlist}
     \simpletypeitem
         {C++}
         {std::pair}
-    
+
     \simpletypeitem
         {Python}
         {tuple}
-    
+
     \simpletypeitem
         {MATLAB/Octave}
         {cell}
@@ -4291,11 +4291,11 @@ Number of blocks & \textct{x.numblocks()}
     \rtypeitem
         {Reals}
         {List of \textctref{Real} numbers and labels.}
-    
+
     \rtypeitem
         {Naturals}
         {List of \textctref{Natural} numbers and labels.}
-    
+
     \rtypeitem
         {Params}
         {List of strings and labels.  These strings correspond to the various \textctref{Enumerated} types that have been converted to strings using the \textct{to_string} function, which we also describe in the \textctref{Enumerated} type documentation.}
@@ -4320,14 +4320,14 @@ Number of blocks & \textct{x.numblocks()}
         {Release0-Release1,Capture0-Capture1}
         {1}
         {cpp}
-    
+
     \restartitemlong
         {Python}
         {Python}
         {Release0-Release1,Capture0-Capture1}
         {0}
         {py}
-    
+
     \restartitemlong
         {MATLAB/Octave}
         {Matlab}
@@ -4341,7 +4341,7 @@ Number of blocks & \textct{x.numblocks()}
 
     Internally, Optizelle caches many operations in order to reduce unnecessary computation.  This includes computations such as the objective or gradient evaluations.  Nevertheless, there are operations that should be cached that Optizelle does not control due to its matrix-free nature.  These operations must be cached by the user's code.  In the following section, we detail what these operations are and how they should be cached.
 
-    The following table summarizes the different pieces of the code that can be cached, the number of items that should be stored, and the priority of caching this particular element. 
+    The following table summarizes the different pieces of the code that can be cached, the number of items that should be stored, and the priority of caching this particular element.
 \begin{boldlist}
     \cacheitem
         {Objective evaluation during the first gradient solve}
@@ -4355,7 +4355,7 @@ Number of blocks & \textct{x.numblocks()}
             \nabla J(x) = g^\prime(x)^*\nabla f(g(x)).
         $$
         When the evaluation of $g(x)$ is expensive, such as solving a PDE or computing an inverse, we can use this calculation for both the gradient and the objective function by simultaneously computing both $f(g(x))$ and $\nabla f(g(x))$.
-        
+
         Despite this utility, we do not typically prioritize this optimization.  We only benefit from saving this computation on the first iteration since Optizelle automatically caches the appropriate objective evaluations from the globalization, be that from line-search or trust-region algorithms, for the rest of the algorithm.  Therefore, subsequent gradient evaluations don't need to cache information about the objective since it's already been cached.  Nevertheless, when we repeatedly run the first iteration of an optimization problem in order to check the problem setup, this caching can save in the overall computation.}
 
     \cacheitem
@@ -4378,12 +4378,12 @@ Number of blocks & \textct{x.numblocks()}
     \cacheitem
         {Hessian}
         {Hessian}
-        {hessian} 
+        {hessian}
         {\classUnconstrained}
         {Low}
         {1}
         {Although Optizelle implements matrix-free algorithms, we can still use a precomputed Hessian when one is available.  Since calculating a Hessian can be expensive, we should only calculate it once per iteration and use it both in computing in the Hessian-vector product as well as the Hessian preconditioner.
-        
+
         Overall, we do not prioritize computing the Hessian explicitly as it tends to require a lot of memory.  In addition, we rely on Newton's method in order to obtain quadratic convergence, but this fast convergence only occurs when close to the optimal solution.  When far away from the optimal solution, we waste computational effort when fully computing second-order information.  Generally, truncated-CG does a good job at determining how many Hessian-vector products are required and this does not require a fully computed Hessian.}
 
     \cacheitem
@@ -4394,7 +4394,7 @@ Number of blocks & \textct{x.numblocks()}
         {Low}
         {1}
         {For problems without equality constraints, Optizelle allows the user to define a preconditioner for the Hessian.  Recall, the null space projection inherent to the composite-step SQP method precludes a Hessian preconditioner from being used on problems with equality constraints.  For more details see the section \hyperref[sec:preconditioners]{\secpreconditioners}.  In any case, barring some kind of problem specific preconditioner, we can always compute and then factorize the Hessian to be used as a preconditioner.  If we do this, we should also \cachesoftref{hessian}{cache the Hessian computation} itself.
-        
+
         Overall, we do not prioritize caching this information.  Similar to the discussion of \cachesoftref{hessian}{caching the Hessian}, far from the optimal solution, Newton's method does not guarantee quadratic convergence.  Therefore, we waste computational effort when computing the Hessian and factorizing it every iteration in order to force a pure Newton step.}
 
     \cacheitem
@@ -4405,7 +4405,7 @@ Number of blocks & \textct{x.numblocks()}
         {High}
         {2}
         {Although Optizelle only requires the action of the derivative of the equality constraints on a vector, $g^\prime(x)\partial x$, we benefit greatly from computing the total derivative $g^\prime(x)$ and caching the result.  First, depending on the inner product, when $g^\prime(x)$ or $g^\prime(x)^*$ is explicitly available, we can quickly compute its adjoint.  For example, when using the inner product $\langle x,y\rangle=x^Ty$, we simply have to transpose the matrix.  Second, each augmented system solve requires the repeated application of $g^\prime(x)\partial x$ and $g^\prime(x)^*\partial y$.  Combined with the first point, we can compute these operations by simply multiplying the cached result by a vector.  Third, when solving a problem with more than tens of variables, we require a preconditioner for the augmented system, which can be accomplished by finding a preconditioner for the operator $g^\prime(x) g^\prime(x)^*$.  When these derivatives are explicitly available, we can easily form and factorize this matrix.  As we discuss \cachesoftref{invschur}{below}, we should also cache this factorization.
-       
+
         Note, unlike most of the other caching, we require two cached elements for an efficient code.  During globalization, we compute a new equality multiplier, which requires an augmented system solve at the trial point.  If we accept the point, we can reuse the new cached derivative.  However, if we reject the point, we will continue to require the current cached derivative.
 
         As a final note, it's often easier to cache and store $g^\prime(x)^*$ as opposed to $g^\prime(x)$.  For example, given the inner product $\langle x,y\rangle = x^Ty$ and a function of the form
@@ -4457,7 +4457,7 @@ Number of blocks & \textct{x.numblocks()}
             \sum\limits_{i=1}^m y_i \nabla^2 g_i(x)
         $$
         to accelerate the computation.
-        
+
         Most of the time, we do not prioritize caching this operator.  This operator has the same size as the Hessian, which tends to require a lot of memory.  Further, when far from the optimal solution, we may only require the action of this operator on a vector a few times each iteration.  Therefore, computing the entire operator can be wasteful.}
 
 \end{boldlist}
@@ -4480,11 +4480,11 @@ This includes code written in MATLAB/Octave demonstrating the caching called \te
 
 \subparagraph{Discretization}\mbox{}\\
 
-        In order to discretize the diffusion operator, $\nabla\cdot\nabla$, we use the second-order accurate finite-difference operator 
+        In order to discretize the diffusion operator, $\nabla\cdot\nabla$, we use the second-order accurate finite-difference operator
 $$
         A = \frac{1}{\partial x^2} \begin{bmatrix}
-            -2 & -1\\ 
-            -1 & 2 & -1\\ 
+            -2 & -1\\
+            -1 & 2 & -1\\
             & \ddots & \ddots & \ddots\\
             & & -1 & 2 & -1\\
             & & & -1 & 2
@@ -4493,7 +4493,7 @@ $$
 In order to accommodate the Dirichlet boundary conditions, we also define a vector that we use to modify the right hand side with information about the boundary conditions,
 $$
         \hat{A} = \frac{1}{\partial x^2} \begin{bmatrix}
-            -a\\ 
+            -a\\
             0\\
             \vdots\\
             0\\
@@ -4512,7 +4512,7 @@ $$
 As before, we accommodate the Dirichlet boundary condition with a vector to modify the right hand side with information about the boundary conditions,
 \begin{align*}
         \hat{B} = \frac{1}{\partial x} \begin{bmatrix}
-            -a\\ 
+            -a\\
             0\\
             \vdots\\
             0
@@ -4528,7 +4528,7 @@ For brevity, we specify that
     C(k) =& k_1 A + k_2 B\\
     g(k) =& f-k_1\hat{A}-k_2\hat{B},
 \end{align*}
-which allows us to reformulate the discretized parameter estimation problem as  
+which allows us to reformulate the discretized parameter estimation problem as
 $$\begin{array}{rcl}
         \min\limits_{k\in\re^2,u\in\re^m}  && \frac{1}{2} \| u - d \|^2 \\
         \st && C(k)u = g(k).
@@ -4537,11 +4537,11 @@ We call the above formulation the \textit{full-space formulation}.  Alternativel
 $$\begin{array}{rcl}
         \min\limits_{k\in\re^2}  && \frac{1}{2} \| C(k)^{-1}g(k) - d \|^2
 \end{array}$$
-which we call the \textit{reduced-space formulation}. 
+which we call the \textit{reduced-space formulation}.
 
 \subparagraph{Caching the reduced-space (unconstrained) formulation}\mbox{}\\
 
-        In the reduced-space formulation, let us set 
+        In the reduced-space formulation, let us set
 $$
     J(k) = \frac{1}{2} \| C(k)^{-1}g(k) - d \|^2.
 $$
@@ -4581,23 +4581,23 @@ $$
             \end{bmatrix}.
 $$
 
-        At this point, we can implement the necessary optimization functions and cache effectively.  We begin with \cacheref{Objective evaluation}{objective}{caching the initial objective function solve} in the code 
+        At this point, we can implement the necessary optimization functions and cache effectively.  We begin with \cacheref{Objective evaluation}{objective}{caching the initial objective function solve} in the code
 
 \cachecode{reduced}{ObjectiveGradient}
 
 \noindent In the function \textct{obj_grad}, we compute the objective during the gradient solve and store it in the global variable \textct{ocache}.  Then, the function \textct{obj_eval} uses this cached value when possible.  Note, it's possible to accomplish the same effect without global variables by using an intermediate function with persistent variables, but this method works well enough.
 
-        Next, we \cacheref{Nested computations and state solves}{state}{cache the state solves} with the code 
+        Next, we \cacheref{Nested computations and state solves}{state}{cache the state solves} with the code
 
 \cachecode{reduced}{StateSolve}
 
 \noindent We greatly improve the code's performance with this routine because it insures that we only factorize the linear system associated with the discretized convection-diffusion equations once per iteration.  It accomplishes this by storing the cached results in the persistent variable \textct{cache}.
 
-        As far as the second-order information, we see how to \cacheref{Hessian}{hessian}{compute and cache the Hessian-vector product} with the code 
+        As far as the second-order information, we see how to \cacheref{Hessian}{hessian}{compute and cache the Hessian-vector product} with the code
 
 \cachecode{reduced}{Hessian}
 
-\noindent Notice that we compute and cache the dense Hessian in the routine \textct{hessian}, which makes the Hessian-vector product a simple multiplication.  As before, we accomplish this caching with the persistent variable \textct{cache}.  Also note, this code relies on the cached state solves we describe above for fast performance. 
+\noindent Notice that we compute and cache the dense Hessian in the routine \textct{hessian}, which makes the Hessian-vector product a simple multiplication.  As before, we accomplish this caching with the persistent variable \textct{cache}.  Also note, this code relies on the cached state solves we describe above for fast performance.
 
         Finally, we \cacheref{Hessian factorization}{invhessian}{implement and cache a Hessian preconditioner} using the inverse of the Hessian computed with the code
 
@@ -4651,7 +4651,7 @@ $$
 
 \cachecode{full}{Schur}
 
-\noindent Like the code that cached the total derivative of $G$, we cache two elements in the persistent variable \textct{cache}.  However, here, we store the factorization of the system $G^\prime(k,u)G^\prime(k,u)^*$.  Note, caching the total derivative above helps accelerate this code as well.  As a side note, we actually define two different preconditioners in this code.  The true Schur preconditioner factorizes the system $G^\prime(k,u)G^\prime(k,u)^*$, which typically yields a dense factorization due to the derivatives with respect to $k$.  Alternatively, we can define an approximate Schur preconditioner from the factorization of $G^\prime_u(k,u)G_u^\prime(k,u)^*$.  Although we can no longer solve the augmented system in exactly three iterations, this preconditioner allows us to factorize $G^\prime_u(k,u)$ directly, which yields a sparse decomposition. 
+\noindent Like the code that cached the total derivative of $G$, we cache two elements in the persistent variable \textct{cache}.  However, here, we store the factorization of the system $G^\prime(k,u)G^\prime(k,u)^*$.  Note, caching the total derivative above helps accelerate this code as well.  As a side note, we actually define two different preconditioners in this code.  The true Schur preconditioner factorizes the system $G^\prime(k,u)G^\prime(k,u)^*$, which typically yields a dense factorization due to the derivatives with respect to $k$.  Alternatively, we can define an approximate Schur preconditioner from the factorization of $G^\prime_u(k,u)G_u^\prime(k,u)^*$.  Although we can no longer solve the augmented system in exactly three iterations, this preconditioner allows us to factorize $G^\prime_u(k,u)$ directly, which yields a sparse decomposition.
 
         Finally, we \cacheref{Second derivative of equality constraints}{gderiv2}{cache the adjoint of the second derivative applied to the equality multiplier} with the code
 
@@ -4798,7 +4798,7 @@ which uses the same formulation as our example \exampleref{\secconstrained}{sec:
     \end{itemize}}
 
     \algorithmitem{Golden-section search}
-        {We implement a straightforward golden-section search.  For historical significance, we refer to Kiefer's paper, but a much more complete description can be found in Bazaraa, Sherali, and Shetty's book. 
+        {We implement a straightforward golden-section search.  For historical significance, we refer to Kiefer's paper, but a much more complete description can be found in Bazaraa, Sherali, and Shetty's book.
     \begin{itemize}
         \item \bibentry{kiefer1953fibonacci_golden_section_search}.
         \item \bibentry{bazaraa2006nonlinear_programming}.
@@ -4865,27 +4865,27 @@ which uses the same formulation as our example \exampleref{\secconstrained}{sec:
     \algorithmitem
         {Interior-point method}
         {Our interior point method is based on a new derivation of the primal-dual interior point equations based on pseudo-Euclidean-Jordan algebras.  We say {\it pseudo} because we do not require commutativity in the Jordan product.  Specifically, our derivation begins from the optimality conditions
-    \begin{align*} 
+    \begin{align*}
         \nabla f(x) - h^\prime(x)^*z =& 0,\\
         h(x)\succeq & 0,\\
         z \succeq & 0,\\
         h(x) \circ z = & 0
-    \end{align*} 
+    \end{align*}
     in the case of inequality constrained problems and
-    \begin{align*} 
+    \begin{align*}
         \nabla f(x) + g^\prime(x)^*y - h^\prime(x)^*z =& 0,\\
         g(x) = & 0,\\
         h(x)\succeq & 0,\\
         z \succeq & 0,\\
         h(x) \circ z = & 0
-    \end{align*} 
+    \end{align*}
     in the case of constrained problems.  Here, $\circ$ denotes the Jordan product that we refer to as \textctref{prod}.  Since we use a composite-step SQP method for constrained problems, we ignore the feasibility condition, $g(x)=0$, in the constrained problem.  Simply, we handle feasibility with respect to this constraint with the quasi-normal step.  This allows us to reduce both sets of optimality conditions to
-    \begin{align*} 
+    \begin{align*}
         \textnormal{grad}(x,y) - h^\prime(x)^*z =& 0,\\
         h(x)\succeq & 0,\\
         z \succeq & 0,\\
         h(x) \circ z = & 0
-    \end{align*} 
+    \end{align*}
     where
     $$
         \textnormal{grad}(x,y) = \left\{
@@ -4895,14 +4895,14 @@ which uses the same formulation as our example \exampleref{\secconstrained}{sec:
             \end{array}\right.
     $$
     Then, using a standard interior-point formulation, we perturb the optimality conditions into
-    \begin{align*} 
+    \begin{align*}
         \textnormal{grad}(x,y) - h^\prime(x)^*z =& 0\\
         h(x)\succ & 0\\
         z \succ & 0\\
         h(x) \circ z = & \mu e.
-    \end{align*} 
+    \end{align*}
     where $e$ denotes the identity element in the pseudo-Euclidean-Jordan algebra, which we refer to as \textctref{id}.  Next, we apply Newton's method to the nonlinear system of equations
-    \begin{align*} 
+    \begin{align*}
         \textnormal{grad}(x,y) - h^\prime(x)^*z =& 0,\\
         h(x) \circ z = & \mu e,
     \end{align*}
@@ -4959,7 +4959,7 @@ Note, the last inequality only occurs in constrained problems.  When we enforce 
             \item $\|\textnormal{gradstep}(x,y,z)\| < \textctref{eps_grad}\cdot \textctref{norm_gradtyp}$
 
             \item $\log(\textctref{norm_gradtyp}) - \log(\|\textnormal{gradstop}(x,y,z)\|) < \log(\textctref{mu_typ}) - \log(\textctref{mu_est})$
-            
+
             \item $\|\textnormal{gradstop}(x,y,z)\| < \textctref{eps_grad}\cdot \textctref{norm_gradtyp}$
         \end{enumerate}
         where
@@ -5003,7 +5003,7 @@ $$
 $$
 and the determinant of an upper triangular matrix can be calculated quickly.
 
-        As our final step, since we don't require our Jordan product to be commutative, we forcibly symmetrize both $\delta x$ and $\delta z$ using the \textctref{symm} operator in our vector space. 
+        As our final step, since we don't require our Jordan product to be commutative, we forcibly symmetrize both $\delta x$ and $\delta z$ using the \textctref{symm} operator in our vector space.
 
         As far as the initial inequality multiplier, we set
 $$
@@ -5017,7 +5017,7 @@ This guarantees that
 In other words, our initial inequality multiplier puts us on the central path specified by the parameter \textctref{mu}.
 
         Historically, we are not the first to use Euclidean-Jordan algebras in an interior point algorithm.  Alizadeh and Schmieta describe their use for semidefinite programming and Alizadeh and Goldfarb describe their use in second-order cone programming.  Nevertheless, we drop the commutativity requirement in our algorithm.  Part of the reason we drop the commutativity requirement is that in the SDP case we essentially generate the same optimality conditions as equation (4.10) in Helmberg, Rendl, Vanderbei, and Wolkowicz's SDP paper.  In fact, our symmetrization in the SQL vector space is identical to equation (4.30) in the same paper, which later became known as the HKM search direction.  Beyond the HKM symmetrization, we allow any similar symmetrization operator, which Zhang describes in his paper.
-    \begin{itemize} 
+    \begin{itemize}
         \item \bibentry{alizadeh2000sdp_euclidean_jordan}.
         \item \bibentry{alizadeh2003socp}.
         \item \bibentry{helmberg1996interior_point_sdp}.
@@ -5046,17 +5046,17 @@ In other words, our initial inequality multiplier puts us on the central path sp
 
 \section{JsonCpp}\licenselabel{JsonCpp}{jsoncpp}
 \begin{flushleft}
-    \verbatiminput{@LICENSEPATH@/jsoncpp.txt} 
+    \verbatiminput{@LICENSEPATH@/jsoncpp.txt}
 \end{flushleft}
 
 \section{BLAS/LAPACK}\licenselabel{BLAS/LAPACK}{blaslapack}
 \begin{flushleft}
-    \verbatiminput{@LICENSEPATH@/blas_lapack.txt} 
+    \verbatiminput{@LICENSEPATH@/blas_lapack.txt}
 \end{flushleft}
 
 \section{CMake}\licenselabel{CMake}{cmake}
 \begin{flushleft}
-    \verbatiminput{@LICENSEPATH@/cmake.txt} 
+    \verbatiminput{@LICENSEPATH@/cmake.txt}
 \end{flushleft}
 
 \section{WiX}\licenselabel{WiX}{wix}
@@ -5067,7 +5067,7 @@ In other words, our initial inequality multiplier puts us on the central path sp
 \section{GCC}\licenselabel{GCC}{gcc}
 \begin{flushleft}
     \verbatiminput{@LICENSEPATH@/gcc.txt}
-    \verbatiminput{@LICENSEPATH@/gcc_runtime.txt} 
+    \verbatiminput{@LICENSEPATH@/gcc_runtime.txt}
 \end{flushleft}
 
 \section{TeX Live}\licenselabel{TeX Live}{texlive}

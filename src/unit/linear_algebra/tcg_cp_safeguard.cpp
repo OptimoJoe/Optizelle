@@ -5,20 +5,20 @@
 // -0.019599432156455165
 // -0.064580698647975734
 // -0.050186768631698325
-// 0.010348645016420882 
+// 0.010348645016420882
 //
 // which can be found by running the problem.  In addition, though, we add a
 // safeguard to cut off the second to last element, which should mean that the
-// Cauchy point is cut off. 
+// Cauchy point is cut off.
 
 #include "linear_algebra.h"
 #include "spaces.h"
 
 int main() {
-    // Setup the problem 
+    // Setup the problem
     auto setup = Unit::tcg <Real,Rm> ();
 
-    // Problem setup 
+    // Problem setup
     setup.A = std::make_unique <Matrix>(
         Unit::Matrix <Real>::symmetric(setup.m,0));
     setup.b = std::make_unique <Vector> (Unit::Vector <Real>::basic(setup.m));
@@ -39,7 +39,7 @@ int main() {
     setup.check_stop = true;
     setup.check_safeguard_alpha = true;
 
-    // Check the solver 
+    // Check the solver
     Unit::run_and_verify <Real,Rm> (setup);
 
     // Declare success

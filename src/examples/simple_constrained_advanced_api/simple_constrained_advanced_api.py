@@ -1,7 +1,7 @@
 # Optimize a simple optimization problem with an optimal solution
 # of (1/3,1/3)
 
-import Optizelle 
+import Optizelle
 import sys
 import copy
 import array
@@ -46,7 +46,7 @@ class MyVS(object):
     def rand(x):
         """x <- random"""
         for i in xrange(0,len(x)):
-            x[i]=random.uniform(0.,1.) 
+            x[i]=random.uniform(0.,1.)
 
     @staticmethod
     def prod(x,y,z):
@@ -70,7 +70,7 @@ class MyVS(object):
     def barr(x):
         """Barrier function, <- barr(x) where x o grad barr(x) = e"""
         return reduce(lambda x,y:x+math.log(y),x,0.)
-        
+
     @staticmethod
     def srch(x,y):
         """Line search, <- argmax {alpha \in Real >= 0 : alpha x + y >= 0} where y > 0"""
@@ -90,13 +90,13 @@ class MyVS(object):
 # Squares its input
 sq = lambda x:x*x
 
-# Define a simple objective where 
-# 
+# Define a simple objective where
+#
 # f(x,y)=(x+1)^2+(y+1)^2
 #
 class MyObj(Optizelle.ScalarValuedFunction):
 
-    # Evaluation 
+    # Evaluation
     def eval(self,x):
         return sq(x[0]+1.)+sq(x[1]+1.)
 
@@ -112,11 +112,11 @@ class MyObj(Optizelle.ScalarValuedFunction):
 
 # Define a simple equality
 #
-# g(x,y)= [ x + 2y = 1 ] 
+# g(x,y)= [ x + 2y = 1 ]
 #
 class MyEq(Optizelle.VectorValuedFunction):
 
-    # y=g(x) 
+    # y=g(x)
     def eval(self,x,y):
         y[0]=x[0]+2.*x[1]-1.
 
@@ -133,13 +133,13 @@ class MyEq(Optizelle.VectorValuedFunction):
     def pps(self,x,dx,dy,xhat):
         MyVS.zero(xhat)
 
-# Define simple inequalities 
+# Define simple inequalities
 #
-# h(x,y)= [ 2x + y >= 1 ] 
+# h(x,y)= [ 2x + y >= 1 ]
 #
 class MyIneq(Optizelle.VectorValuedFunction):
 
-    # z=h(x) 
+    # z=h(x)
     def eval(self,x,z):
         z[0]=2.*x[0]+x[1]-1.
 
@@ -158,7 +158,7 @@ class MyIneq(Optizelle.VectorValuedFunction):
 
 #---Serialization0---
 def serialize_MyVS(x,name,iter):
-    """Serializes an array for the vector space MyVS""" 
+    """Serializes an array for the vector space MyVS"""
 
     # Create the filename where we put our vector
     fname = "./restart/%s.%04d.txt" % (name,iter)
@@ -166,17 +166,17 @@ def serialize_MyVS(x,name,iter):
     # Actually write the vector there
     fout = open(fname,"w");
     for i in xrange(0,len(x)):
-        fout.write("%1.16e\n" % x[i]) 
+        fout.write("%1.16e\n" % x[i])
 
     # Close out the file
     fout.close()
 
-    # Use this filename as the json string 
+    # Use this filename as the json string
     x_json = "\"%s\"" % fname
     return x_json
 
 def deserialize_MyVS(x_,x_json):
-    """Deserializes an array for the vector space MyVS""" 
+    """Deserializes an array for the vector space MyVS"""
 
     # Eliminate all whitespace
     x_json="".join(x_json.split())
@@ -189,7 +189,7 @@ def deserialize_MyVS(x_,x_json):
 
     # Allocate a new vector to return
     x = copy.deepcopy(x_)
-    
+
     # Read in each of the elements
     for i in xrange(0,len(x)):
         x[i] = float(fin.readline())
@@ -197,10 +197,10 @@ def deserialize_MyVS(x_,x_json):
     # Close out the file
     fin.close()
 
-    # Return the result 
-    return x 
+    # Return the result
+    return x
 
-# Register the serialization routines for arrays 
+# Register the serialization routines for arrays
 def MySerialization():
     Optizelle.json.Serialization.serialize.register(
         serialize_MyVS,array.array)
@@ -216,9 +216,9 @@ class MyRestartManipulator(Optizelle.StateManipulator):
         if loc == Optizelle.OptimizationLocation.EndOfOptimizationIteration:
             # Create a reasonable file name
             ss = "simple_constrained_advanced_api_%04d.json" % (state.iter)
-                
+
             # Write the restart file
-            Optizelle.json.Constrained.write_restart( 
+            Optizelle.json.Constrained.write_restart(
                MyVS,MyVS,MyVS,ss,state)
 
 # Register the serialization routines
@@ -231,19 +231,19 @@ if not(len(sys.argv)==2 or len(sys.argv)==3):
 pname = sys.argv[1]
 rname = sys.argv[2] if len(sys.argv)==3 else ""
 
-# Generate an initial guess 
+# Generate an initial guess
 x = array.array('d',[2.1,1.1])
 
-# Allocate memory for the equality multiplier 
+# Allocate memory for the equality multiplier
 y = array.array('d',[0.])
 
-# Allocate memory for the inequality multiplier 
+# Allocate memory for the inequality multiplier
 z = array.array('d',[0.])
 
 # Create an optimization state
 state=Optizelle.Constrained.State.t(MyVS,MyVS,MyVS,x,y,z)
 
-# If we have a restart file, read in the parameters 
+# If we have a restart file, read in the parameters
 if len(sys.argv)==3:
     Optizelle.json.Constrained.read_restart(MyVS,MyVS,MyVS,rname,x,y,z,state)
 

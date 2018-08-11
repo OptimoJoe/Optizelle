@@ -16,11 +16,11 @@ function z = sq(x)
 end
 
 % Define the Rosenbrock function where
-% 
+%
 % f(x,y)=(1-x)^2+100(y-x^2)^2
 %
 function self = Rosenbrock()
-    
+
     % Evaluation of the Rosenbrock function
     self.eval = @(x) sq(1.-x(1))+100.*sq(x(2)-sq(x(1)));
 
@@ -72,7 +72,7 @@ function main(fname)
     %---Parameters1---
 
     %---Functions0---
-    % Create the bundle of functions 
+    % Create the bundle of functions
     fns=Optizelle.Unconstrained.Functions.t;
     fns.f=Rosenbrock();
     fns.PH=RosenHInv();

@@ -1,4 +1,4 @@
-% Capture the state in an equality constrained optimization problem 
+% Capture the state in an equality constrained optimization problem
 function state=EqualityConstrainedRestartCapture( ...
     X,Y,state,xs,ys,reals,nats,params)
 
@@ -12,6 +12,6 @@ function state=EqualityConstrainedRestartCapture( ...
     checkNaturals('nats',nats);
     checkParams('params',params);
 
-    % Do the state capture 
+    % Do the state capture
     state=EqualityConstrainedRestartCapture_( ...
         X,Y,state,xs,ys,reals,nats,params);

@@ -18,7 +18,7 @@ int main(int argc,char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    // Parse the JSON files 
+    // Parse the JSON files
     Json::Value baseline=Optizelle::json::parse(argv[1]);
     Json::Value test = Optizelle::json::parse(argv[2]);
 
@@ -54,7 +54,7 @@ int main(int argc,char* argv[]) {
                     std::stringstream sin;
                     sin << tol;
                     std::cout << "Mismatch in " << category.name()
-                        << std::scientific << std::setprecision(4) 
+                        << std::scientific << std::setprecision(4)
                         << '.' << variable.name()
                         << ": | " << x << " - " << y << " | > "
                         << sin.str() << " | " << x << " |." << std::endl;
@@ -72,20 +72,22 @@ int main(int argc,char* argv[]) {
                     return EXIT_FAILURE;
                 }
             } else if(category.key().asString()=="X_Vectors") {
-                Json::StyledWriter writer;
+                auto writer = Json::StreamWriterBuilder();
 
                 Rm::Vector x(
                     Optizelle::json::Serialization <double,Optizelle::Rm>
                         ::deserialize(
                             std::vector <double>(),
-                            writer.write(baseline[category.name()]
-                                                 [variable.name()])));
+                            Json::writeString(
+                                writer,
+                                baseline[category.name()][variable.name()])));
                 Rm::Vector y(
                     Optizelle::json::Serialization <double,Optizelle::Rm>
                         ::deserialize(
                             std::vector <double>(),
-                            writer.write(test[category.name()]
-                                             [variable.name()])));
+                            Json::writeString(
+                                writer,
+                                baseline[category.name()][variable.name()])));
                 // Check that the vectors are the same size.  Mostly, this
                 // comes up when copying old setups for new tests.
                 if(x.size()!=y.size()) {
@@ -103,11 +105,11 @@ int main(int argc,char* argv[]) {
                 if(Rm::innr(diff,diff) > tol * tol * Rm::innr(x,x)) {
                     std::cout << "Mismatch in " << category.name()
                         << '.' << variable.name()
-                        << ": || base - test || > " 
-                        << tol << " || base ||" << std::endl; 
+                        << ": || base - test || > "
+                        << tol << " || base ||" << std::endl;
                     return EXIT_FAILURE;
                 }
-            } 
+            }
         }
     }
 

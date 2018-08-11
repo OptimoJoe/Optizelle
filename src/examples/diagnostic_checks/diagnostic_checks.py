@@ -1,7 +1,7 @@
 # This example demonstrates how to run a series of diagnostic tests
 # on functions and then immediately exit.
 
-import Optizelle 
+import Optizelle
 import numpy
 import math
 from math import cos
@@ -30,7 +30,7 @@ def log(x):
         return math.log(x)
 
 # Define the Rosenbrock function where
-# 
+#
 # f(x,y)=(1-x)^2+100(y-x^2)^2
 #
 class Rosenbrock(Optizelle.ScalarValuedFunction):
@@ -39,7 +39,7 @@ class Rosenbrock(Optizelle.ScalarValuedFunction):
         return sq(1.-x[0])+100.*sq(x[1]-sq(x[0]))
 
     # Gradient
-    def grad(self,x,grad): 
+    def grad(self,x,grad):
         grad[0]=-400*x[0]*(x[1]-sq(x[0]))-2*(1-x[0])
         grad[1]=200*(x[1]-sq(x[0]))
 
@@ -55,7 +55,7 @@ class Rosenbrock(Optizelle.ScalarValuedFunction):
 #       [ log(x1) + 3 x2 ^5 ]
 #
 class Utility(Optizelle.VectorValuedFunction):
-    # y=g(x) 
+    # y=g(x)
     def eval(self,x,y):
         y[0]=cos(x[0])*sin(x[1])
         y[1]=3.*sq(x[0])*x[1]+cub(x[1])
@@ -88,7 +88,7 @@ class Utility(Optizelle.VectorValuedFunction):
                +(6.*x[0]*dx[0]+6.*x[1]*dx[1])*dy[1]
                +(60.*cub(x[1])*dx[1])*dy[2])
 
-# Allocate memory for an initial guess and equality multiplier 
+# Allocate memory for an initial guess and equality multiplier
 x = numpy.array([1.2,2.3])
 y = numpy.zeros(3)
 

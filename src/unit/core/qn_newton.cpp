@@ -10,11 +10,11 @@
 
 int main(int argc,char* argv[]){
 
-    // Generate an initial guess 
+    // Generate an initial guess
     auto x = std::vector <Real> { 0., 0. };
     auto y = std::vector <Real> { 0., 0. };
 
-    // Setup the test 
+    // Setup the test
     auto setup = Unit <Real>::QN(x,y);
     setup.g.reset(new Unit <Real>::Constraint::CircleIntersection(1.,0.,1.,1.));
 
@@ -23,7 +23,7 @@ int main(int argc,char* argv[]){
     setup.dx_n_star.reset(new std::vector <Real> {0.0,0.5});
     setup.dx_ncp_star.reset(new std::vector <Real> {0.2,0.2});
     X::axpy(Real(-1.),x,*setup.dx_n_star);
-    
+
     // Set what tests we want
     setup.check_stop = true;
     setup.check_dx_n = true;
@@ -33,6 +33,6 @@ int main(int argc,char* argv[]){
     // Run the test
     Unit <Real>::run_and_verify(setup);
 
-    // Declare success 
+    // Declare success
     return EXIT_SUCCESS;
 }

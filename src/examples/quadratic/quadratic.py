@@ -1,15 +1,15 @@
-# This example minimizes a simple quadratic function.  For reference, the 
+# This example minimizes a simple quadratic function.  For reference, the
 # optimal solution to this function is (1,1,1).
 
-import Optizelle 
+import Optizelle
 import numpy
 import sys
 
 # Squares its input
 sq = lambda x:x*x
 
-# Define the quadratic function 
-# 
+# Define the quadratic function
+#
 # f(x,y,z)=(x-1)^2+(2y-2)^2+(3z-3)^2
 #
 class Quad(Optizelle.ScalarValuedFunction):
@@ -27,8 +27,8 @@ class Quad(Optizelle.ScalarValuedFunction):
     # Hessian-vector product
     def hessvec(self,x,dx,H_dx):
     	H_dx[0]= 2*dx[0]
-        H_dx[1]= 8*dx[1] 
-        H_dx[2]= 18*dx[2] 
+        H_dx[1]= 8*dx[1]
+        H_dx[2]= 18*dx[2]
 
 # Define an almost perfect preconditioner for the Hessian
 class QuadHInv(Optizelle.Operator):
@@ -42,7 +42,7 @@ if len(sys.argv)!=2:
     sys.exit("python quadratic.py <parameters>")
 fname = sys.argv[1]
 
-# Generate an initial guess 
+# Generate an initial guess
 x = numpy.array([-1.2,1.1,2.])
 
 # Create an unconstrained state based on this vector
@@ -51,7 +51,7 @@ state=Optizelle.Unconstrained.State.t(Optizelle.Rm,x)
 # Read the parameters from file
 Optizelle.json.Unconstrained.read(Optizelle.Rm,fname,state)
 
-# Create the bundle of functions 
+# Create the bundle of functions
 fns=Optizelle.Unconstrained.Functions.t()
 fns.f=Quad()
 fns.PH=QuadHInv()

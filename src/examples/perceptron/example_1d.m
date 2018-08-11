@@ -1,4 +1,4 @@
-% Interpolate on a simple 1-D problem 
+% Interpolate on a simple 1-D problem
 
 % Grab the Optizelle library
 global Optizelle;
@@ -10,7 +10,7 @@ fname = 'example_1d.json';
 % Set whether we're plotting or not
 do_plot = 0;
 
-% Set the size of the problem 
+% Set the size of the problem
 ninput = 1;
 nhidden = 3;
 nsamples = 20;
@@ -21,7 +21,7 @@ nsamples = 20;
 % Generate some random data
 x = rand(ninput,nsamples);
 true_fn = @(x)cos(2*x);
-y = true_fn(x); 
+y = true_fn(x);
 
 % Generate scalings based on this data
 scaling = generate_scaling(x,y);
@@ -39,7 +39,7 @@ state=Optizelle.json.Unconstrained.read(Optizelle.Rm,fname,state);
 fns=Optizelle.Unconstrained.Functions.t;
 fns.f = generate_objective(generate_hyperbolic(),lens,x,y,scaling);
 
-% Interpolate our data 
+% Interpolate our data
 state=Optizelle.Unconstrained.Algorithms.getMin( ...
     Optizelle.Rm,Optizelle.Messaging.stdout,fns,state);
 

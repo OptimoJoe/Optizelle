@@ -7,10 +7,10 @@ function params = generate_params()
     % Set the problem size
     params.nx = 1000;
 
-    % Set our exact solution 
+    % Set our exact solution
     f = 4;
     m = 10;
-    params.u = @(x)cos(2*pi*f*x)+m*x; 
+    params.u = @(x)cos(2*pi*f*x)+m*x;
     params.x_star = [ 1.23 ; 4.56];
 
     % Find our forcing function, x1 u'' + x2 u'

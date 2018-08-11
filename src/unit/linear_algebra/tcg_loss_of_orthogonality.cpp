@@ -7,10 +7,10 @@
 #include "spaces.h"
 
 int main() {
-    // Setup the problem 
+    // Setup the problem
     auto setup = Unit::tcg <Real,Rm> ();
 
-    // Problem setup 
+    // Problem setup
     setup.m=500;
     setup.A = std::make_unique <Matrix>(
         Unit::Matrix <Real>::symmetric(setup.m,0));
@@ -24,10 +24,10 @@ int main() {
     // Tests
     setup.check_stop = true;
 
-    // Check the solver 
+    // Check the solver
     Unit::run_and_verify <Real,Rm> (setup);
-    
-    // Change the problem setup to regain orthogonality 
+
+    // Change the problem setup to regain orthogonality
     setup.orthog_iter_max=2;
 
     // Target solutions
@@ -37,7 +37,7 @@ int main() {
     setup.check_res = true;
     setup.check_stop = true;
 
-    // Check the solver 
+    // Check the solver
     Unit::run_and_verify <Real,Rm> (setup);
 
     // Declare success

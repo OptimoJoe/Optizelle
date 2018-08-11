@@ -17,8 +17,8 @@ namespace Optizelle {
                 throw;
             }
         }
-        
-        // Converts a string to a cone 
+
+        // Converts a string to a cone
         t from_string(std::string const & cone){
             if(cone=="Linear")
                 return Linear;

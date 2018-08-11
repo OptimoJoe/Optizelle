@@ -14,7 +14,7 @@ target_link_libraries(optizelle_python
 set_target_properties(optizelle_python PROPERTIES OUTPUT_NAME Utility)
 set_target_properties(optizelle_python PROPERTIES PREFIX "")
 if(APPLE)
-    set_target_properties(optizelle_python PROPERTIES SUFFIX ".so") 
+    set_target_properties(optizelle_python PROPERTIES SUFFIX ".so")
 elseif(WIN32)
     set_target_properties(optizelle_python PROPERTIES SUFFIX ".pyd")
 endif()
@@ -47,5 +47,5 @@ install(
         Enumerated.py
     DESTINATION share/optizelle/python/Optizelle)
 install(
-    TARGETS optizelle_python 
+    TARGETS optizelle_python
     DESTINATION share/optizelle/python/Optizelle)

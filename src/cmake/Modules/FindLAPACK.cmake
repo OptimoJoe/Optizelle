@@ -1,4 +1,4 @@
-# Handle pkg-config 
+# Handle pkg-config
 find_package(PkgConfig)
 pkg_check_modules(PC_LAPACK QUIET lapack)
 set(LAPACK_DEFINITIONS ${PC_LAPACK_CFLAGS_OTHER})

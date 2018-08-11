@@ -27,7 +27,7 @@ namespace Optizelle { namespace Stream {
                 auto divider = std::find_if(s_.begin(),s_.end(),
                     std::not1(std::ptr_fun<int,int>(isspace) ));
                 auto ws = std::string(s_.begin(),divider);
-                auto s = std::string(divider,s_.end()); 
+                auto s = std::string(divider,s_.end());
 
                 // Loop over all of the elements
                 for(auto const & macro: macros) {
@@ -48,7 +48,7 @@ namespace Optizelle { namespace Stream {
                     }
                 }
 
-                // If we've not matched anything, call the default element 
+                // If we've not matched anything, call the default element
                 macros.at("default")(s_);
             },
             stream);

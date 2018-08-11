@@ -36,7 +36,7 @@ def release(X,Y,state,xs,ys,reals,nats,params):
     EqualityConstrainedRestartRelease(X,Y,state,xs,ys,reals,nats,params)
 
     # Return nothing.  We've modified the passed in lists.
-    return None 
+    return None
 
 def capture(X,Y,state,xs,ys,reals,nats,params):
     """Capture data from structures controlled by the user."""
@@ -55,4 +55,4 @@ def capture(X,Y,state,xs,ys,reals,nats,params):
     EqualityConstrainedRestartCapture(X,Y,state,xs,ys,reals,nats,params)
 
     # Return nothing.  The state has been modified.
-    return None 
+    return None

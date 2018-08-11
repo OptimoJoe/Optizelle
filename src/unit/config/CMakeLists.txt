@@ -8,7 +8,7 @@ set(config_dir "config_unit")
 # Read in the configuration flags
 file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/flags.txt" flags)
 
-# Create a place for the build 
+# Create a place for the build
 add_test(
     NAME prepare_configuration_check
     COMMAND ${CMAKE_COMMAND}
@@ -17,9 +17,9 @@ add_test(
         "${config_dir}"
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
 
-# Configure a build with all the flags that we read in above 
+# Configure a build with all the flags that we read in above
 add_test(
-    NAME configuration_check 
+    NAME configuration_check
     COMMAND ${CMAKE_COMMAND}
         ${flags}
         "${CMAKE_SOURCE_DIR}"

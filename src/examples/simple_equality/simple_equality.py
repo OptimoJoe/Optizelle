@@ -1,7 +1,7 @@
-# Optimize a simple optimization problem with an optimal solution 
+# Optimize a simple optimization problem with an optimal solution
 # of (2-sqrt(2)/2,2-sqrt(2)/2).
 
-import Optizelle 
+import Optizelle
 import numpy
 import sys
 
@@ -9,13 +9,13 @@ import sys
 # Squares its input
 sq = lambda x:x*x
 
-# Define a simple objective where 
-# 
+# Define a simple objective where
+#
 # f(x,y)=x^2+y^2
 #
 class MyObj(Optizelle.ScalarValuedFunction):
 
-    # Evaluation 
+    # Evaluation
     def eval(self,x):
         return sq(x[0])+sq(x[1])
 
@@ -27,17 +27,17 @@ class MyObj(Optizelle.ScalarValuedFunction):
     # Hessian-vector product
     def hessvec(self,x,dx,H_dx):
         H_dx[0]=2.*dx[0]
-        H_dx[1]=2.*dx[1] 
+        H_dx[1]=2.*dx[1]
 #---Objective1---
 
 #---EqualityConstraint0---
 # Define a simple equality constraint
 #
-# g(x,y)= [ (x-2)^2 + (y-2)^2 = 1 ] 
+# g(x,y)= [ (x-2)^2 + (y-2)^2 = 1 ]
 #
 class MyEq(Optizelle.VectorValuedFunction):
 
-    # y=g(x) 
+    # y=g(x)
     def eval(self,x,y):
         y[0] = sq(x[0]-2.)+sq(x[1]-2.)-1.
 
@@ -57,9 +57,9 @@ class MyEq(Optizelle.VectorValuedFunction):
 #---EqualityConstraint1---
 
 #---Preconditioner0---
-# Define a Schur preconditioner for the equality constraints 
+# Define a Schur preconditioner for the equality constraints
 class MyPrecon(Optizelle.Operator):
-    def eval(self,state,dy,result): 
+    def eval(self,state,dy,result):
         result[0]=dy[0]/sq(4.*(x[0]-2.)+4.*sq(x[1]-2.))
 #---Preconditioner1---
 
@@ -69,10 +69,10 @@ if len(sys.argv)!=2:
 fname=sys.argv[1]
 
 #---State0---
-# Generate an initial guess 
+# Generate an initial guess
 x = numpy.array([2.1,1.1])
 
-# Allocate memory for the equality multiplier 
+# Allocate memory for the equality multiplier
 y = numpy.array([0.])
 
 # Create an optimization state

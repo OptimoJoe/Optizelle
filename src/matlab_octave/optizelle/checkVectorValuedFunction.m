@@ -1,4 +1,4 @@
-% Check that we have a vector-valued function 
+% Check that we have a vector-valued function
 function checkVectorValuedFunction(name,value)
 
     % Check for the appropriate fields and make sure they're functions

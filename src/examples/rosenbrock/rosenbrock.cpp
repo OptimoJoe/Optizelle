@@ -12,11 +12,11 @@
 // Squares its input
 template <typename Real>
 Real sq(Real x){
-    return x*x; 
+    return x*x;
 }
 
 // Define the Rosenbrock function where
-// 
+//
 // f(x,y)=(1-x)^2+100(y-x^2)^2
 //
 struct Rosenbrock
@@ -93,7 +93,7 @@ int main(int argc,char* argv[]){
     //---Parameters1---
 
     //---Functions0---
-    // Create the bundle of functions 
+    // Create the bundle of functions
     Optizelle::Unconstrained <double,Optizelle::Rm>::Functions::t fns;
     fns.f.reset(new Rosenbrock);
     fns.PH.reset(new RosenHInv(state.x));

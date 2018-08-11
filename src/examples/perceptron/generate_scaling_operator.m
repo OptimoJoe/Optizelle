@@ -22,7 +22,7 @@ function result = scaling_eval(from_min,from_max,to_min,to_max,x)
     end
 end
 
-% Derivative 
+% Derivative
 function result = scaling_p(from_min,from_max,to_min,to_max,dx)
     % Figure out the amount of data and dimensions
     [ndim ndata] = size(dx);

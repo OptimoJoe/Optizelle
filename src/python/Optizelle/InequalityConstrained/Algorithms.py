@@ -2,7 +2,7 @@ __all__ = [
     "getMin"
 ]
 
-__doc__ = "Different algorithms used for optimization" 
+__doc__ = "Different algorithms used for optimization"
 
 import Optizelle.InequalityConstrained.State
 import Optizelle.InequalityConstrained.Functions
@@ -12,7 +12,7 @@ from Optizelle.Functions import *
 
 def getMin(X, Z, msg, fns, state, smanip=None):
     """Solves an inequality constrained optimization problem
-    Basic solve: getMin(X,Z,msg,fns,state) 
+    Basic solve: getMin(X,Z,msg,fns,state)
     Solve with a state manipulator: getMin(X,Z,msg,fns,state,smanip)
     """
     if smanip is None:

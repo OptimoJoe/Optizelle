@@ -1,11 +1,11 @@
 // Run GMRES with both preconditioners set to something random.  We want to
-// verify that we'll eventually find a solution. 
+// verify that we'll eventually find a solution.
 
 #include "linear_algebra.h"
 #include "spaces.h"
 
 int main() {
-    // Setup the problem 
+    // Setup the problem
     auto setup = Unit::gmres <Real,Rm> ();
 
     setup.A = std::make_unique <Matrix>(
@@ -28,7 +28,7 @@ int main() {
     setup.check_iter=true;
     setup.check_res=true;
 
-    // Check the solver 
+    // Check the solver
     Unit::run_and_verify <Real,Rm> (setup);
 
     // Declare success

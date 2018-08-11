@@ -52,16 +52,16 @@ function main(fname)
 
     % gg is the expanded constraint where we split up the variable into two
     % pieces x{1} and x{2}.
-    gg.eval=@(x) g_eval(A,b,x); 
-    gg.p_1=@(x,dx1) gp_x1(A,x,dx1); 
+    gg.eval=@(x) g_eval(A,b,x);
+    gg.p_1=@(x,dx1) gp_x1(A,x,dx1);
     gg.p_2=@(x,dx2) gp_x2(A,x,dx2); % Need inverse
-    gg.p_2_inv=@(x,dx2) gp_x2_inv(A,x,dx2); 
-    gg.ps_1=@(x,dy) gps_x1(A,x,dy); 
+    gg.p_2_inv=@(x,dx2) gp_x2_inv(A,x,dx2);
+    gg.ps_1=@(x,dy) gps_x1(A,x,dy);
     gg.ps_2=@(x,dy) gps_x2(A,x,dy); % Need inverse
-    gg.ps_2_inv=@(x,dy) gps_x2_inv(A,x,dy); 
+    gg.ps_2_inv=@(x,dy) gps_x2_inv(A,x,dy);
     gg.pps_11=@(x,dx,dy) zeros(m,1);
-    gg.pps_21=@(x,dx,dy) gps_x2(A,{dx,zeros(n,1)},dy); 
-    gg.pps_12=@(x,dx,dy) gps_x1(A,{zeros(m,1),dx},dy); 
+    gg.pps_21=@(x,dx,dy) gps_x2(A,{dx,zeros(n,1)},dy);
+    gg.pps_12=@(x,dx,dy) gps_x1(A,{zeros(m,1),dx},dy);
     gg.pps_22=@(x,dx,dy) zeros(n,1);
 
     % Create the equality constrained problem
@@ -84,7 +84,7 @@ function main(fname)
     fns.f=f;
     fns.g=g;
 
-    % Solve the full-space problem 
+    % Solve the full-space problem
     fprintf('\n------------Solving the full-space problem------------\n');
     state = Optizelle.EqualityConstrained.Algorithms.getMin( ...
         RmxRm,Optizelle.Rm,Optizelle.Messaging.stdout,fns,state);
@@ -101,8 +101,8 @@ function main(fname)
 
     % Set a starting guess
     x=randn(m,1);
-    
-    % Create an unconstrained state 
+
+    % Create an unconstrained state
     state=Optizelle.Unconstrained.State.t(Optizelle.Rm,x);
 
     % Read the parameters from file
@@ -126,7 +126,7 @@ function z = g_eval(A,b,x)
     % Get the sizes
     m = size(x{1},1);
     n = size(x{2},1);
-    
+
     % First, form sum A_i x1_i
     B = zeros(n);
     for i=1:m
@@ -141,7 +141,7 @@ function z = gp_x1(A,x,dx1)
     % Get the sizes
     m = size(x{1},1);
     n = size(x{2},1);
-    
+
     % First, form sum A_i dx1_i
     B = zeros(n);
     for i=1:m
@@ -156,7 +156,7 @@ function z = gp_x2(A,x,dx2)
     % Get the sizes
     m = size(x{1},1);
     n = size(x{2},1);
-    
+
     % First, form sum A_i x1_i
     B = zeros(n);
     for i=1:m
@@ -171,7 +171,7 @@ function z = gp_x2_inv(A,x,dx2)
     % Get the sizes
     m = size(x{1},1);
     n = size(x{2},1);
-    
+
     % First, form sum A_i x1_i
     B = zeros(n);
     for i=1:m
@@ -198,7 +198,7 @@ function z = gps_x2(A,x,dy)
     % Get the sizes
     m = size(x{1},1);
     n = size(x{2},1);
-    
+
     % First, form sum A_i x1_i
     B = zeros(n);
     for i=1:m
@@ -213,7 +213,7 @@ function z = gps_x2_inv(A,x,dy)
     % Get the sizes
     m = size(x{1},1);
     n = size(x{2},1);
-    
+
     % First, form sum A_i x1_i
     B = zeros(n);
     for i=1:m
@@ -239,14 +239,14 @@ function z = phi_eval(A,b,x)
         z=zz;
         return;
     end
-    
+
     % First, form sum A_i x1_i
     B = zeros(n);
     for i=1:m
         B = B + x(i)*A{i};
     end
 
-    % Now, solve (sum A_i x_i) z = b 
+    % Now, solve (sum A_i x_i) z = b
     z=B\b;
 
     % Cache the result

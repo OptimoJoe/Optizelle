@@ -7,7 +7,7 @@
 #include "restart.h"
 
 int main() {
-    
+
     // Create a messaging object
     auto msg = Optizelle::Messaging::stdout;
 
@@ -26,10 +26,10 @@ int main() {
 
     // Read in some parameters
     std::string fname("blank.json");
-    //---ReadJson0--- 
+    //---ReadJson0---
     Optizelle::json::EqualityConstrained <Real,XX,YY>::read(fname,state);
-    //---ReadJson1--- 
-   
+    //---ReadJson1---
+
     // Create a bundle of functions
     //---Functions0---
     Optizelle::EqualityConstrained <Real,XX,YY>::Functions::t fns;
@@ -44,7 +44,7 @@ int main() {
         msg,fns,state);
     //---Solver1---
 
-    // Do a null optimization with a state manipulator 
+    // Do a null optimization with a state manipulator
     BlankManipulator <Optizelle::EqualityConstrained<Real,XX,YY> > smanip;
     //---SmanipSolver0---
     Optizelle::EqualityConstrained<Real,XX,YY>::Algorithms::getMin(
@@ -60,7 +60,7 @@ int main() {
         fname,x,y,state);
     //---WriteReadRestart1---
 
-    // Do a release 
+    // Do a release
     //---Release0---
     Optizelle::EqualityConstrained <Real,XX,YY>::Restart::X_Vectors xs;
     Optizelle::EqualityConstrained <Real,XX,YY>::Restart::Y_Vectors ys;
@@ -96,8 +96,8 @@ int main() {
     // Check that we have the correct number of vectors
     CHECK(xs.size() == 14);
     CHECK(ys.size() == 5);
-    
-    // Modify some vectors 
+
+    // Modify some vectors
     xs.front().second = x0;
     ys.front().second = y0;
 
