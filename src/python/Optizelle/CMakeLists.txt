@@ -8,8 +8,16 @@ set(optizelle_python_srcs "Utility.cpp")
 include_directories(${PYTHON_INCLUDE_DIRS})
 include_directories(${OPTIZELLE_PYTHON_INCLUDE_DIRS})
 add_library(optizelle_python SHARED ${optizelle_python_srcs})
-target_link_libraries(optizelle_python
-    optizelle_shared)
+
+if(APPLE)
+    target_link_libraries(optizelle_python
+        optizelle_shared)
+else()
+    target_link_libraries(optizelle_python
+        optizelle_shared
+        ${PYTHON_LIBRARIES})
+endif()
+
 set_target_properties(optizelle_python PROPERTIES OUTPUT_NAME Utility)
 set_target_properties(optizelle_python PROPERTIES PREFIX "")
 if(APPLE)
