@@ -11,7 +11,7 @@ set(JSONCPP_INCLUDE_DIRS ${JSONCPP_INCLUDE_DIR} )
 
 # Find the library
 find_library(JSONCPP_LIBRARY
-    NAMES json libjson
+    NAMES json libjson jsoncpp
     HINTS ${PC_JSONCPP_LIBDIR} ${PC_JSONCPP_LIBRARY_DIRS} )
 set(JSONCPP_LIBRARIES ${JSONCPP_LIBRARY} )
 
