@@ -51,7 +51,9 @@ install(FILES
 install(TARGETS
     optizelle_static
     optizelle_shared
-    DESTINATION lib)
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib)
 
 # Grab required runtime
 if(MINGW)
