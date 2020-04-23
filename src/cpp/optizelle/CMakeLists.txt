@@ -62,7 +62,6 @@ if(MINGW)
         ${Mingw_Path}/libwinpthread-1.dll
         ${Mingw_Path}/libgcc_s_seh-1.dll
         ${Mingw_Path}/libstdc++-6.dll
-        ${Mingw_Path}/libgfortran-4.dll
         ${Mingw_Path}/libquadmath-0.dll
         ${Mingw_Path}/libgomp-1.dll)
     file(

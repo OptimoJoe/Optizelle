@@ -9,3 +9,4 @@ Contributers
 * Miguel Aguiló
 * David Menéndez Hurtado
 * Jonas Waage
+* Julien Schueller

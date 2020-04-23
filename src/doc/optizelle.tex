@@ -862,17 +862,17 @@ in a variety of precompiled packages.  Here, we also provide direct access to ou
 \begin{center}\begin{tabular}{lll|cccccc}
     Package & Version & License & C++ & Python & MATLAB & Octave & Docs & Windows\\\hline
     \licenselabelalt{http://www.optimojoe.com/products/optizelle/}{Optizelle} & @CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@.@CPACK_PACKAGE_VERSION_PATCH@ & \licenseref{BSD}{optizelle} & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$\\
-    \licenselabelalt{https://github.com/open-source-parsers/jsoncpp}{JsonCpp} & 1.8.4 & \licenseref{Public}{jsoncpp} & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ &  & $\checkmark$\\
-    \licenselabelalt{http://netlib.org/lapack/}{BLAS/LAPACK} & 3.8.0 & \licenseref{BSD}{blaslapack} & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ &  & $\checkmark$\\
-    \licenselabelalt{https://cmake.org/}{CMake} & 3.9.6 & \licenseref{BSD}{cmake} & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ &  $\checkmark$ & $\checkmark$\\
-    \licenselabelalt{http://wixtoolset.org/}{WiX} & 3.10 & \licenseref{MS-RL}{wix} & & & & & & $\checkmark$\\
-    \licenselabelalt{https://gcc.gnu.org/}{GCC} & 7.3.0 & \licenseref{GPL}{gcc} & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ &  & $\checkmark$\\
-    \licenselabelalt{https://www.tug.org/texlive/}{TeX Live} & 2017 & \licenseref{Various}{texlive} & & & & & $\checkmark$ &\\
-    \licenselabelalt{https://www.python.org/}{Python} & 2.7.15 & \licenseref{Python}{python} & & $\checkmark$ & & & &\\
-    \licenselabelalt{http://www.numpy.org/}{NumPy} & 1.14.5 & \licenseref{BSD}{numpy} & & $\checkmark$ & & & &\\
-    \licenselabelalt{https://www.mathworks.com/products/matlab/}{MATLAB} & R2018a & \licenseref{Custom}{matlab} & & & $\checkmark$ & & &\\
-    \licenselabelalt{https://github.com/fangq/jsonlab}{JSONlab} & 1.8 & \licenseref{BSD}{jsonlab} & & & $\checkmark$ & $\checkmark$ & &\\
-    \licenselabelalt{https://www.gnu.org/software/octave/}{Octave} & 4.4.0 & \licenseref{GPL}{octave} & & & & $\checkmark$ & &\\
+    \licenselabelalt{https://github.com/open-source-parsers/jsoncpp}{JsonCpp} & 1.9.2 & \licenseref{Public}{jsoncpp} & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ &  & $\checkmark$\\
+    \licenselabelalt{http://netlib.org/lapack/}{BLAS/LAPACK} & 3.9.0 & \licenseref{BSD}{blaslapack} & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ &  & $\checkmark$\\
+    \licenselabelalt{https://cmake.org/}{CMake} & 3.17.1 & \licenseref{BSD}{cmake} & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ &  $\checkmark$ & $\checkmark$\\
+    \licenselabelalt{http://wixtoolset.org/}{WiX} & 3.11.2 & \licenseref{MS-RL}{wix} & & & & & & $\checkmark$\\
+    \licenselabelalt{https://gcc.gnu.org/}{GCC} & 9.3.0 & \licenseref{GPL}{gcc} & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ &  & $\checkmark$\\
+    \licenselabelalt{https://www.tug.org/texlive/}{TeX Live} & 2019 & \licenseref{Various}{texlive} & & & & & $\checkmark$ &\\
+    \licenselabelalt{https://www.python.org/}{Python} & 2.7.18 & \licenseref{Python}{python} & & $\checkmark$ & & & &\\
+    \licenselabelalt{https://numpy.org/}{NumPy} & 1.18.3 & \licenseref{BSD}{numpy} & & $\checkmark$ & & & &\\
+    \licenselabelalt{https://www.mathworks.com/products/matlab/}{MATLAB} & R2020a & \licenseref{Custom}{matlab} & & & $\checkmark$ & & &\\
+    \licenselabelalt{https://github.com/fangq/jsonlab}{JSONLab} & 1.9.8 & \licenseref{BSD}{jsonlab} & & & $\checkmark$ & $\checkmark$ & &\\
+    \licenselabelalt{https://www.gnu.org/software/octave/}{Octave} & 5.2.0 & \licenseref{GPL}{octave} & & & & $\checkmark$ & &\\
 \end{tabular}\end{center}
 
 \noindent Note, we generally depend on GCC for both its C++ and Fortran compiler, but an alternative compiler such as Clang works as well.  Since we do not modify GCC, the GCC Runtime Library Exception applies.  In addition, Optizelle remains compatible with most high-performance varieties of BLAS and LAPACK.
@@ -1458,6 +1458,18 @@ will remove the installation.  Also, don't forget to remove each of the environm
         {During compilation, \textct{undefined reference to `__imp_Py_InitModule4'}}
         {Tells Python to use Windows 64-bit specific code}
 \end{boldlist}
+
+\noindent In addition, the following flags may need to be added to the \textct{CMAKE_Fortran_FLAGS} variable when the compilation also builds BLAS/LAPACK
+
+\begin{boldlist}
+    \configitem
+        {-Wl,--allow-multiple-definition}
+        {Windows}
+        {C++}
+        {During compilation, \textct{multiple definition of `_gfortran_st_write_done'}}
+        {Fixes a bug that occurs when BLAS/LAPACK is compiled with MinGW}
+\end{boldlist}
+
 
 \chapter{Basic API}\label{ch:Basic}
 
@@ -5090,7 +5102,7 @@ In other words, our initial inequality multiplier puts us on the central path sp
     \verbatiminput{@LICENSEPATH@/matlab.txt}
 \end{flushleft}
 
-\section{JSONlab}\licenselabel{JSONlab}{jsonlab}
+\section{JSONLab}\licenselabel{JSONLab}{jsonlab}
 \begin{flushleft}
     \verbatiminput{@LICENSEPATH@/jsonlab.txt}
 \end{flushleft}
