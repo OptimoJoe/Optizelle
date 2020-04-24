@@ -6,10 +6,11 @@ import math
 import copy
 import random
 import collections
+import functools
 
 # Import the Optizelle pieces, which actually depend on this module
-from Enumerated import *
-from Functions import *
+from Optizelle.Enumerated import *
+from Optizelle.Functions import *
 
 import Optizelle.Unconstrained.State
 import Optizelle.Unconstrained.Functions
@@ -107,7 +108,7 @@ class Rm(object):
     @staticmethod
     def rand(x):
         """x <- random"""
-        numpy.copyto(x,map(lambda x:random.normalvariate(0.,1.),x))
+        numpy.copyto(x,numpy.vectorize(lambda x:random.normalvariate(0.,1.))(x))
 
     @staticmethod
     def prod(x,y,z):
@@ -128,7 +129,7 @@ class Rm(object):
     def barr(x):
         """Barrier function, <- barr(x) where x o grad barr(x) = e"""
         if (x>0).all():
-            return reduce(lambda x,y:x+math.log(y),x,0.)
+            return functools.reduce(lambda x,y:x+math.log(y),x,0.)
         else:
             return float("nan")
 
@@ -136,7 +137,7 @@ class Rm(object):
     def srch(x,y):
         """Line search, <- argmax {alpha \in Real >= 0 : alpha x + y >= 0} where y > 0"""
         alpha = float("inf")
-        for i in xrange(0,len(x)):
+        for i in range(0,len(x)):
             if x[i] < 0:
                 alpha0 = -y[i]/x[i]
                 if alpha0 < alpha:

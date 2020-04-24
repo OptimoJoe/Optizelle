@@ -26,7 +26,7 @@ class Quad(Optizelle.ScalarValuedFunction):
 
     # Hessian-vector product
     def hessvec(self,x,dx,H_dx):
-    	H_dx[0]= 2*dx[0]
+        H_dx[0]= 2*dx[0]
         H_dx[1]= 8*dx[1]
         H_dx[2]= 18*dx[2]
 
@@ -61,11 +61,11 @@ Optizelle.Unconstrained.Algorithms.getMin(
     Optizelle.Rm,Optizelle.Messaging.stdout,fns,state)
 
 # Print out the reason for convergence
-print "The algorithm converged due to: %s" % (
-    Optizelle.OptimizationStop.to_string(state.opt_stop))
+print("The algorithm converged due to: %s" % (
+    Optizelle.OptimizationStop.to_string(state.opt_stop)))
 
 # Print out the final answer
-print "The optimal point is: (%e,%e,%e)" % (state.x[0],state.x[1],state.x[2])
+print("The optimal point is: (%e,%e,%e)" % (state.x[0],state.x[1],state.x[2]))
 
 # Write out the final answer to file
 Optizelle.json.Unconstrained.write_restart(Optizelle.Rm,"solution.json",state)

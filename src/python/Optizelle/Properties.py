@@ -2,7 +2,7 @@
 # bundle of functions
 
 import inspect
-from Functions import *
+from Optizelle.Functions import *
 import pdb
 
 __doc__ = "Optizelle support functions"
@@ -14,18 +14,18 @@ def checkFloat(name,value):
 
 def checkNatural(name,value):
     """Checks that an input is a natural number"""
-    if not isinstance(value,(int,long)) or value < 0:
+    if not isinstance(value,int) or value < 0:
         raise TypeError("%s member must be a natural number" % name)
 
 def checkEnum(name,value):
     """Checks that an input is an enumerated type """
-    if not isinstance(value,(int,long)) or value < 0:
+    if not isinstance(value,int) or value < 0:
         raise TypeError("%s member must be an enumerated type (natural.)"
             % name)
 
 def checkEnumRange(name,enum,value):
     """Checks that an input is in a valid enumerated range"""
-    if not value in enum.__dict__.itervalues():
+    if not value in enum.__dict__.values():
         raise TypeError("%s member is outside the valid enumated range"
             % name)
 
@@ -111,34 +111,34 @@ def checkVectors(name,value):
     """Check that we have a list of restart vectors"""
     if not issubclass(type(value),list):
         raise TypeError("%s argument must be a list" % (name))
-    map(lambda (i,x):checkString("%s[%d][0]" % (name,i),x[0]),
+    map(lambda i_x:checkString("%s[%d][0]" % (name,i_x[0]),i_x[1][0]),
         enumerate(value))
 
 def checkReals(name,value):
     """Check that we have a list of restart reals"""
     if not issubclass(type(value),list):
         raise TypeError("%s argument must be a list" % (name))
-    map(lambda (i,x):checkString("%s[%d][0]" % (name,i),x[0]),
+    map(lambda i_x:checkString("%s[%d][0]" % (name,i_x[0]),i_x[1][0]),
         enumerate(value))
-    map(lambda (i,x):checkFloat("%s[%d][1]" % (name,i),x[1]),
+    map(lambda i_x:checkString("%s[%d][1]" % (name,i_x[0]),i_x[1][1]),
         enumerate(value))
 
 def checkNaturals(name,value):
     """Check that we have a list of restart naturals"""
     if not issubclass(type(value),list):
         raise TypeError("%s argument must be a list" % (name))
-    map(lambda (i,x):checkString("%s[%d][0]" % (name,i),x[0]),
+    map(lambda i_x:checkString("%s[%d][0]" % (name,i_x[0]),i_x[1][0]),
         enumerate(value))
-    map(lambda (i,x):checkNatural("%s[%d][1]" % (name,i),x[1]),
+    map(lambda i_x:checkString("%s[%d][1]" % (name,i_x[0]),i_x[1][1]),
         enumerate(value))
 
 def checkParams(name,value):
     """Check that we have a list of restart parameters"""
     if not issubclass(type(value),list):
         raise TypeError("%s argument must be a list" % (name))
-    map(lambda (i,x):checkString("%s[%d][0]" % (name,i),x[0]),
+    map(lambda i_x:checkString("%s[%d][0]" % (name,i_x[0]),i_x[1][0]),
         enumerate(value))
-    map(lambda (i,x):checkString("%s[%d][1]" % (name,i),x[1]),
+    map(lambda i_x:checkString("%s[%d][1]" % (name,i_x[0]),i_x[1][1]),
         enumerate(value))
 
 def createFloatProperty(name,desc):

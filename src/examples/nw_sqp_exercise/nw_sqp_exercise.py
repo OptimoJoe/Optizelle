@@ -19,7 +19,7 @@ def ijtokp(i,j):
         tmp=i
         i=j
         j=tmp
-    return (i-1)+j*(j-1)/2
+    return (i-1)+j*(j-1)//2
 
 # Indexing function for dense matrices
 def ijtok(i,j,m):
@@ -137,8 +137,8 @@ class MyObj(Optizelle.ScalarValuedFunction):
 
         # Compute the Hessian-vector product
         H_dx.fill(0.)
-        for i in xrange(1,6):
-            for j in xrange(1,6):
+        for i in range(1,6):
+            for j in range(1,6):
                 H_dx[i-1] += H[ijtokp(i,j)]*dx[j-1]
 
 #
@@ -181,8 +181,8 @@ class MyEq(Optizelle.VectorValuedFunction):
 
         # Compute the Jacobian-vector product
         y.fill(0.)
-        for i in xrange(1,4):
-            for j in xrange(1,6):
+        for i in range(1,4):
+            for j in range(1,6):
                 y[itok(i)] += jac[ijtok(i,j,3)]*dx[itok(j)]
 
     # xhat=g'(x)*dy
@@ -195,8 +195,8 @@ class MyEq(Optizelle.VectorValuedFunction):
 
         # Compute the Jacobian transpose-vector product
         xhat.fill(0.)
-        for i in xrange(1,4):
-            for j in xrange(1,6):
+        for i in range(1,4):
+            for j in range(1,6):
                 xhat[itok(j)] += jac[ijtok(i,j,3)]*dy[itok(i)]
 
     # xhat=(g''(x)dx)*dy
@@ -219,9 +219,9 @@ class MyEq(Optizelle.VectorValuedFunction):
 
         # Compute the action of this operator on our directions
         xhat.fill(0.)
-        for i in xrange(1,4):
-            for j in xrange(1,6):
-                for k in xrange(1,6):
+        for i in range(1,4):
+            for j in range(1,6):
+                for k in range(1,6):
                     xhat[itok(k)]+= D[ijktol(i,j,k,3,5)]*dx[itok(j)]*dy[itok(i)]
 
 
@@ -252,21 +252,21 @@ Optizelle.EqualityConstrained.Algorithms.getMin(
     Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging.stdout,fns,state)
 
 # Print out the reason for convergence
-print "The algorithm converged due to: %s" % (
-    Optizelle.OptimizationStop.to_string(state.opt_stop))
+print("The algorithm converged due to: %s" % (
+    Optizelle.OptimizationStop.to_string(state.opt_stop)))
 
 # Print out the final answer
-print "The optimal point is:"
-for i in xrange(1,6):
+print("The optimal point is:")
+for i in range(1,6):
     if i==1:
         sys.stdout.write("[ ")
     else:
         sys.stdout.write("  ")
     sys.stdout.write("%13e" % state.x[itok(i)])
     if i==5:
-        print " ]"
+        print(" ]")
     else:
-        print " ;"
+        print(" ;")
 
 # Write out the final answer to file
 Optizelle.json.EqualityConstrained.write_restart(

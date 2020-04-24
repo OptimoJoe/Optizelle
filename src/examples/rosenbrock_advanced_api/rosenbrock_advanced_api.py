@@ -7,6 +7,7 @@ import sys
 import copy
 import array
 import math
+import functools
 
 #---VectorSpace0---
 # Defines the vector space used for optimization.
@@ -24,48 +25,48 @@ class MyVS(object):
     @staticmethod
     def scal(alpha,x):
         """x <- alpha * x"""
-        for i in xrange(0,len(x)):
+        for i in range(0,len(x)):
             x[i]=alpha*x[i]
 
     @staticmethod
     def zero(x):
         """x <- 0"""
-        for i in xrange(0,len(x)):
+        for i in range(0,len(x)):
             x[i]=0.
 
     @staticmethod
     def axpy(alpha,x,y):
         """y <- alpha * x + y"""
-        for i in xrange(0,len(x)):
+        for i in range(0,len(x)):
             y[i]=alpha*x[i]+y[i]
 
     @staticmethod
     def innr(x,y):
         """<- <x,y>"""
-        return reduce(lambda z,xy:xy[0]*xy[1]+z,zip(x,y),0.)
+        return functools.reduce(lambda z,xy:xy[0]*xy[1]+z,zip(x,y),0.)
 
     @staticmethod
     def rand(x):
         """x <- random"""
-        for i in xrange(0,len(x)):
+        for i in range(0,len(x)):
             x[i]=random.uniform(0.,1.)
 
     @staticmethod
     def prod(x,y,z):
         """Jordan product, z <- x o y"""
-        for i in xrange(0,len(x)):
+        for i in range(0,len(x)):
             z[i]=x[i]*y[i]
 
     @staticmethod
     def id(x):
         """Identity element, x <- e such that x o e = x"""
-        for i in xrange(0,len(x)):
+        for i in range(0,len(x)):
             x[i]=1.
 
     @staticmethod
     def linv(x,y,z):
         """Jordan product inverse, z <- inv(L(x)) y where L(x) y = x o y"""
-        for i in xrange(0,len(x)):
+        for i in range(0,len(x)):
             z[i]=y[i]/x[i]
 
     @staticmethod
@@ -77,7 +78,7 @@ class MyVS(object):
     def srch(x,y):
         """Line search, <- argmax {alpha \in Real >= 0 : alpha x + y >= 0} where y > 0"""
         alpha = float("inf")
-        for i in xrange(0,len(x)):
+        for i in range(0,len(x)):
             if x[i] < 0:
                 alpha0 = -y[i]/x[i]
                 if alpha0 < alpha:
@@ -109,7 +110,7 @@ class Rosenbrock(Optizelle.ScalarValuedFunction):
 
     # Hessian-vector product
     def hessvec(self,x,dx,H_dx):
-    	H_dx[0] = (1200*sq(x[0])-400*x[1]+2)*dx[0]-400*x[0]*dx[1]
+        H_dx[0] = (1200*sq(x[0])-400*x[1]+2)*dx[0]-400*x[0]*dx[1]
         H_dx[1] = -400*x[0]*dx[0] + 200*dx[1]
 
 # Define a perfect preconditioner for the Hessian
@@ -134,7 +135,7 @@ def serialize_MyVS(x,name,iter):
 
     # Create the json representation
     x_json="[ "
-    for i in xrange(0,len(x)):
+    for i in range(0,len(x)):
         x_json  += str(x[i]) + ", "
     x_json=x_json[0:-2]
     x_json +=" ]"

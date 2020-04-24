@@ -5,8 +5,8 @@ class EnumeratedType(object):
     @classmethod
     def to_string(cls,i):
         """Converts the enumerated type into a string"""
-        return filter(lambda (name,value):value==i,
-            cls.__dict__.items())[0][0]
+        return list(filter(lambda name_value:name_value[1]==i,
+            cls.__dict__.items()))[0][0]
 
 class TruncatedStop(EnumeratedType):
     """Reasons we stop truncated CG"""

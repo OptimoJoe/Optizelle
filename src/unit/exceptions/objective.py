@@ -32,5 +32,5 @@ try:
     Optizelle.Unconstrained.Algorithms.getMin(
         Optizelle.Rm,Optizelle.Messaging.stdout,fns,state)
 except RuntimeError as e:
-    if e.message!="Gradient":
+    if str(e)!="Gradient":
         raise

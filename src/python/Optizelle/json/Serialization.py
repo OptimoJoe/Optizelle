@@ -50,7 +50,7 @@ def serialize_Rm(x,name,iter):
 
     # Create the json representation
     x_json="[ "
-    for i in xrange(x.size):
+    for i in range(x.size):
         x_json  += str(x[i]) + ", "
     x_json=x_json[0:-2]
     x_json +=" ]"
@@ -74,7 +74,7 @@ def deserialize_Rm(x,x_json):
     x_json=x_json.split(",")
 
     # Convert the strings to numbers
-    x_json=map(lambda x:float(x),x_json)
+    x_json=numpy.vectorize(lambda x:float(x))(x_json)
 
     # Create an Optizelle.Rm vector
     return numpy.array(x_json)
