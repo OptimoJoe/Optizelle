@@ -51,7 +51,7 @@ install(FILES
 install(TARGETS
     optizelle_static
     optizelle_shared
-    RUNTIME DESTINATION bin
+    RUNTIME DESTINATION lib
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib)
 
