@@ -8,6 +8,27 @@ import random
 import collections
 import functools
 
+# Find the require libraries for Windows.  This change was prompted by how
+# shared libaries are linked in Python 3.8
+import ctypes
+import ctypes.util
+if sys.platform == 'win32':
+    try:
+        libs = [
+            'libstdc++-6.dll',
+            'libgcc_s_seh-1.dll',
+            'libgomp-1.dll',
+            'libquadmath-0.dll',
+            'libwinpthread-1.dll',
+            'libblas.dll',
+            'liblapack.dll',
+            'libjsoncpp.dll',
+            'liboptizelle.dll']
+        for lib in libs:
+            ctypes.cdll.LoadLibrary(ctypes.util.find_library(lib))
+    except TypeError:
+        raise OSError()
+
 # Import the Optizelle pieces, which actually depend on this module
 from Optizelle.Enumerated import *
 from Optizelle.Functions import *

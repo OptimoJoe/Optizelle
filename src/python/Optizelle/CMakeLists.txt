@@ -7,15 +7,12 @@ set(OPTIZELLE_PYTHON_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
 set(optizelle_python_srcs "Utility.cpp")
 include_directories(${PYTHON_INCLUDE_DIRS})
 include_directories(${OPTIZELLE_PYTHON_INCLUDE_DIRS})
-add_library(optizelle_python SHARED ${optizelle_python_srcs})
+add_library(optizelle_python MODULE ${optizelle_python_srcs})
 
-if(APPLE)
-    target_link_libraries(optizelle_python
-        optizelle_shared)
+if(WIN32)
+    target_link_libraries(optizelle_python optizelle_shared ${PYTHON_LIBRARIES})
 else()
-    target_link_libraries(optizelle_python
-        optizelle_shared
-        ${PYTHON_LIBRARIES})
+    target_link_libraries(optizelle_python optizelle_shared)
 endif()
 
 set_target_properties(optizelle_python PROPERTIES OUTPUT_NAME Utility)
