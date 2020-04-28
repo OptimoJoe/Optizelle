@@ -868,7 +868,7 @@ in a variety of precompiled packages.  Here, we also provide direct access to ou
     \licenselabelalt{http://wixtoolset.org/}{WiX} & 3.11.2 & \licenseref{MS-RL}{wix} & & & & & & $\checkmark$\\
     \licenselabelalt{https://gcc.gnu.org/}{GCC} & 9.3.0 & \licenseref{GPL}{gcc} & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ &  & $\checkmark$\\
     \licenselabelalt{https://www.tug.org/texlive/}{TeX Live} & 2019 & \licenseref{Various}{texlive} & & & & & $\checkmark$ &\\
-    \licenselabelalt{https://www.python.org/}{Python} & 2.7.18 & \licenseref{Python}{python} & & $\checkmark$ & & & &\\
+    \licenselabelalt{https://www.python.org/}{Python} & 3.8.2 & \licenseref{Python}{python} & & $\checkmark$ & & & &\\
     \licenselabelalt{https://numpy.org/}{NumPy} & 1.18.3 & \licenseref{BSD}{numpy} & & $\checkmark$ & & & &\\
     \licenselabelalt{https://www.mathworks.com/products/matlab/}{MATLAB} & R2020a & \licenseref{Custom}{matlab} & & & $\checkmark$ & & &\\
     \licenselabelalt{https://github.com/fangq/jsonlab}{JSONLab} & 1.9.8 & \licenseref{BSD}{jsonlab} & & & $\checkmark$ & $\checkmark$ & &\\
@@ -1215,7 +1215,7 @@ will remove the installation.  Also, don't forget to remove each of the environm
         {\textctref{ENABLE_PYTHON}}
         {None}
         {Yes}
-        {A path that indicates where the Python 2.7 headers have been
+        {A path that indicates where the Python headers have been
         installed.  We do not prefix these headers, so we look directly
         in the directory provided here.}
 
@@ -1226,7 +1226,7 @@ will remove the installation.  Also, don't forget to remove each of the environm
         {\textctref{ENABLE_PYTHON}}
         {None}
         {Yes}
-        {Complete path and library for Python 2.7. }
+        {Complete path and library for Python. }
 
     \cmakeitem
         {PYTHON_EXECUTABLE}
@@ -1235,7 +1235,7 @@ will remove the installation.  Also, don't forget to remove each of the environm
         {\textctref{ENABLE_PYTHON}}
         {None}
         {Yes}
-        {Complete path and executable for Python 2.7. }
+        {Complete path and executable for Python. }
 
     \cmakeitem
         {ENABLE_PYTHON_EXAMPLES}
