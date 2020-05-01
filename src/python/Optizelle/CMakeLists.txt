@@ -9,7 +9,7 @@ include_directories(${PYTHON_INCLUDE_DIRS})
 include_directories(${OPTIZELLE_PYTHON_INCLUDE_DIRS})
 add_library(optizelle_python MODULE ${optizelle_python_srcs})
 target_link_libraries(optizelle_python optizelle_shared)
-    
+
 if(WIN32)
   target_link_libraries(optizelle_python optizelle_shared ${PYTHON_LIBRARIES})
 elseif(APPLE)
@@ -24,9 +24,9 @@ elseif(WIN32)
     set_target_properties(optizelle_python PROPERTIES SUFFIX ".pyd")
 endif()
 if(APPLE)
-    set_target_properties(optizelle_python PROPERTIES INSTALL_RPATH "@loader_path/../../../../lib;@loader_path/../../thirdparty/lib")
+    set_target_properties(optizelle_python PROPERTIES INSTALL_RPATH "@loader_path/../../../;@loader_path/../../../../share/optizelle/thirdparty/lib")
 elseif(UNIX)
-    set_target_properties(optizelle_python PROPERTIES INSTALL_RPATH "\$ORIGIN/../../../../lib;\$ORIGIN/../../thirdparty/lib")
+    set_target_properties(optizelle_python PROPERTIES INSTALL_RPATH "\$ORIGIN/../../../;\$ORIGIN/../../../../share/optizelle/thirdparty/lib")
 endif()
 
 # Copy in the rest of the Python files for the unit tests.  Otherwise, we
