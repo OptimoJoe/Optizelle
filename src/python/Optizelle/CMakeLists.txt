@@ -41,7 +41,7 @@ if(ENABLE_PYTHON_UNIT)
 endif()
 
 if (WIN32)
-  set (PYTHON_SITE_PACKAGES Lib/site-packages)
+  set (PYTHON_SITE_PACKAGES lib/site-packages)
 else ()
   set (PYTHON_SITE_PACKAGES lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages)
 endif ()
