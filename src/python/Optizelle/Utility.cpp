@@ -4174,23 +4174,13 @@ PyMethodDef methods[] = {
 };
 
 PyMODINIT_FUNC PyInit_Utility() {
-    PyObject * m;
-
-    #if 0
-    // Initilize the module
-    m = Py_InitModule3(
-        "Utility",
-        methods,
-        "Internal utility functions for Optizelle");
-
-    if (m == nullptr)
-      return;
-  #endif
+    Py_Initialize();
     static struct PyModuleDef moduledef = {
         PyModuleDef_HEAD_INIT,
         "Utility",
         "Internal utility functions for Optizelle",
         -1,
         methods};
-    m = PyModule_Create(&moduledef);
+    auto m = PyModule_Create(&moduledef);
+    return m;
 }
