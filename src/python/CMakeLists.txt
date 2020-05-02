@@ -8,8 +8,7 @@ if(ENABLE_PYTHON)
 
     # Make sure we can find the Python libraries and then add the
     # directory with the sources.
-    #set(Python_ADDITIONAL_VERSIONS 2.7)
-    find_package(PythonLibs REQUIRED)
     find_package(PythonInterp REQUIRED)
+    find_package(PythonLibs ${PYTHON_VERSION_STRING} EXACT REQUIRED)
     add_subdirectory(Optizelle)
 endif()

@@ -10,7 +10,7 @@
 		<string>
             launchctl setenv MATLABPATH $MATLABPATH:/Applications/${CPACK_PACKAGE_NAME}/share/optizelle/matlab
             launchctl setenv OCTAVE_PATH $OCTAVE_PATH:/Applications/${CPACK_PACKAGE_NAME}/share/optizelle/octave
-            launchctl setenv PYTHONPATH $PYTHONPATH:/Applications/${CPACK_PACKAGE_NAME}/share/optizelle/python
+            launchctl setenv PYTHONPATH $PYTHONPATH:/Applications/${CPACK_PACKAGE_NAME}/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages
 		</string>
   </array>
   <key>RunAtLoad</key>

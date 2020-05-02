@@ -12,6 +12,19 @@ add_subdirectory(licenses)
 # Install the authors file
 install(FILES AUTHORS.txt DESTINATION share/optizelle)
 
+# Enable ctest
+enable_testing()
+
+# Add the source directories for all of the ports
+add_subdirectory(src)
+
+# Install any thirdparty libraries that we built
+if(EXISTS ${CMAKE_BINARY_DIR}/thirdparty)
+    install(
+        DIRECTORY ${CMAKE_BINARY_DIR}/thirdparty
+        DESTINATION share/optizelle)
+endif()
+
 # Set the CPack options
 set(CPACK_GENERATOR "TGZ")
 set(CPACK_PACKAGE_VENDOR "OptimoJoe")
@@ -42,6 +55,10 @@ elseif(APPLE)
     # Make sure to enable this when building a package
     set(CPACK_DRAGNDROP OFF CACHE BOOL "Building a DragNDrop package?")
     if(CPACK_DRAGNDROP)
+        # We need to know the Python version to correctly configure the ReadMe
+        # and plist file
+        find_package(PythonInterp REQUIRED)
+
         # Setup the readme file
         set(README_NAME "src/cmake/DragNDrop/ReadMe.txt")
         configure_file(
@@ -90,16 +107,3 @@ elseif(UNIX)
     set(CPACK_GENERATOR "TGZ" "RPM" "DEB")
 endif()
 include(CPack)
-
-# Enable ctest
-enable_testing()
-
-# Add the source directories for all of the ports
-add_subdirectory(src)
-
-# Install any thirdparty libraries that we built
-if(EXISTS ${CMAKE_BINARY_DIR}/thirdparty)
-    install(
-        DIRECTORY ${CMAKE_BINARY_DIR}/thirdparty
-        DESTINATION share/optizelle)
-endif()
