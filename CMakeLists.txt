@@ -12,19 +12,6 @@ add_subdirectory(licenses)
 # Install the authors file
 install(FILES AUTHORS.txt DESTINATION share/optizelle)
 
-# Enable ctest
-enable_testing()
-
-# Add the source directories for all of the ports
-add_subdirectory(src)
-
-# Install any thirdparty libraries that we built
-if(EXISTS ${CMAKE_BINARY_DIR}/thirdparty)
-    install(
-        DIRECTORY ${CMAKE_BINARY_DIR}/thirdparty
-        DESTINATION share/optizelle)
-endif()
-
 # Set the CPack options
 set(CPACK_GENERATOR "TGZ")
 set(CPACK_PACKAGE_VENDOR "OptimoJoe")
@@ -107,3 +94,16 @@ elseif(UNIX)
     set(CPACK_GENERATOR "TGZ" "RPM" "DEB")
 endif()
 include(CPack)
+
+# Enable ctest
+enable_testing()
+
+# Add the source directories for all of the ports
+add_subdirectory(src)
+
+# Install any thirdparty libraries that we built
+if(EXISTS ${CMAKE_BINARY_DIR}/thirdparty)
+    install(
+        DIRECTORY ${CMAKE_BINARY_DIR}/thirdparty
+        DESTINATION share/optizelle)
+endif()
