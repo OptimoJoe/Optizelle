@@ -974,7 +974,7 @@ namespace Optizelle {
                     Python::capi::PyObject_GetAttrString(module,"serialize");
 
                 // Make a Python object of the name and iteration
-                auto name = Python::capi::PyString_FromString(name_.c_str());
+                auto name = Python::capi::PyUnicode_FromString(name_.c_str());
                 auto iter = Python::capi::PyInt_FromNatural(iter_);
 
                 // Call the serialize routine on the vector
@@ -987,7 +987,7 @@ namespace Optizelle {
                         + ", evaluation of the serialize function failed");
 
                 // Convert the serialized vector to a string and return it
-                return Python::capi::PyString_AsString(x_json);
+                return Python::capi::PyUnicode_AsUTF8(x_json);
             }
 
             static Python::Vector deserialize (
@@ -1003,7 +1003,7 @@ namespace Optizelle {
                     module,"deserialize");
 
                 // Convert the inputed string into Python
-                auto x_json= Python::capi::PyString_FromString(x_json_.c_str());
+                auto x_json= Python::capi::PyUnicode_FromString(x_json_.c_str());
 
                 // Call the deserialize routine on the reference vector and the
                 // json vector
@@ -1081,11 +1081,11 @@ namespace Optizelle {
                     return ret;
             }
 
-            PyObjectPtr PyString_FromString(const char *v) {
+            PyObjectPtr PyUnicode_FromString(const char *v) {
                 if(!v)
                     throw Python::Exception::t(__LOC__
                         + ", can't convert a nullstring into a Python string");
-                auto ret = ::PyString_FromString(v);
+                auto ret = ::PyUnicode_FromString(v);
                 if(!ret)
                     throw Python::Exception::t(__LOC__
                         + ", unable to convert the string " + v
@@ -1093,8 +1093,8 @@ namespace Optizelle {
                 else
                     return ret;
             }
-            std::string PyString_AsString(PyObjectPtr const & string) {
-                auto ret = ::PyString_AsString(string.get());
+            std::string PyUnicode_AsUTF8(PyObjectPtr const & string) {
+                auto ret = ::PyUnicode_AsUTF8(string.get());
                 if(!ret)
                     throw Python::Exception::t(__LOC__
                         + ", unable to convert a Python object into a string");
@@ -1103,10 +1103,10 @@ namespace Optizelle {
             }
 
             Natural PyInt_AsNatural(PyObjectPtr const & io) {
-                return PyInt_AsSsize_t(io.get());
+                return PyLong_AsSsize_t(io.get());
             }
             PyObjectPtr PyInt_FromNatural(Natural const & ival) {
-                return PyInt_FromSize_t(ival);
+                return PyLong_FromSize_t(ival);
             }
 
             PyObjectPtr PyFloat_FromDouble(double v) {
@@ -1346,7 +1346,7 @@ namespace Optizelle {
             Optizelle::Messaging::t python(PyObjectPtr const & print) {
                 return [print](std::string const & msg_) {
                     // Call the print function
-                    auto msg = capi::PyString_FromString(msg_.c_str());
+                    auto msg = capi::PyUnicode_FromString(msg_.c_str());
                     auto ret = capi::PyObject_CallObject1(
                         print,
                         msg,
@@ -1849,7 +1849,7 @@ namespace Optizelle {
                     capi::PyList_Append(
                         pyvalues,
                         capi::PyTuple_Pack_2(
-                            capi::PyString_FromString(value.first.c_str()),
+                            capi::PyUnicode_FromString(value.first.c_str()),
                             pyvalue.data));
                 }
             }
@@ -1866,7 +1866,7 @@ namespace Optizelle {
                     capi::PyList_Append(
                         pyvalues,
                         capi::PyTuple_Pack_2(
-                            capi::PyString_FromString(value.first.c_str()),
+                            capi::PyUnicode_FromString(value.first.c_str()),
                             capi::PyFloat_FromDouble(value.second)));
                 }
             }
@@ -1883,7 +1883,7 @@ namespace Optizelle {
                     capi::PyList_Append(
                         pyvalues,
                         capi::PyTuple_Pack_2(
-                            capi::PyString_FromString(value.first.c_str()),
+                            capi::PyUnicode_FromString(value.first.c_str()),
                             capi::PyInt_FromNatural(value.second)));
                 }
             }
@@ -1900,8 +1900,8 @@ namespace Optizelle {
                     capi::PyList_Append(
                         pyvalues,
                         capi::PyTuple_Pack_2(
-                            capi::PyString_FromString(value.first.c_str()),
-                            capi::PyString_FromString(value.second.c_str())));
+                            capi::PyUnicode_FromString(value.first.c_str()),
+                            capi::PyUnicode_FromString(value.second.c_str())));
                 }
             }
         }
@@ -2015,7 +2015,7 @@ namespace Optizelle {
 
                     // Create the elements in values
                     values.emplace_back(
-                        capi::PyString_AsString(name),
+                        capi::PyUnicode_AsUTF8(name),
                         vec.init());
 
                     // Copy the Python value into the C++ value
@@ -2044,7 +2044,7 @@ namespace Optizelle {
 
                     // Create the elements in values
                     values.emplace_back(
-                        capi::PyString_AsString(name),
+                        capi::PyUnicode_AsUTF8(name),
                         capi::PyFloat_AsDouble(val));
                 }
             }
@@ -2070,7 +2070,7 @@ namespace Optizelle {
 
                     // Create the elements in values
                     values.emplace_back(
-                        capi::PyString_AsString(name),
+                        capi::PyUnicode_AsUTF8(name),
                         capi::PyInt_AsNatural(val));
                 }
             }
@@ -2096,8 +2096,8 @@ namespace Optizelle {
 
                     // Create the elements in values
                     values.emplace_back(
-                        capi::PyString_AsString(name),
-                        capi::PyString_AsString(val));
+                        capi::PyUnicode_AsUTF8(name),
+                        capi::PyUnicode_AsUTF8(val));
                 }
             }
         }
@@ -2416,7 +2416,7 @@ namespace Optizelle {
                     PY_VAR_3(X,fname,pystate);
 
                     // Grab the file name
-                    auto fname = capi::PyString_AsString(fname_);
+                    auto fname = capi::PyUnicode_AsUTF8(fname_);
 
                     // Create a Python state
                     auto pystate = Python::State <PyUnconstrained> (pystate_);
@@ -2611,7 +2611,7 @@ namespace Optizelle {
                     PY_VAR_3(X,fname,pystate);
 
                     // Grab the file name
-                    auto fname = capi::PyString_AsString(fname_);
+                    auto fname = capi::PyUnicode_AsUTF8(fname_);
 
                     // Create a Python state
                     auto pystate = Python::State <PyUnconstrained> (pystate_);
@@ -2644,7 +2644,7 @@ namespace Optizelle {
                     PY_VAR_4(X,fname,x,pystate);
 
                     // Grab the file name
-                    auto fname = capi::PyString_AsString(fname_);
+                    auto fname = capi::PyUnicode_AsUTF8(fname_);
 
                     // Create a Python state
                     auto pystate = Python::State <PyUnconstrained> (pystate_);
@@ -2978,7 +2978,7 @@ namespace Optizelle {
                     PY_VAR_4(X,Y,fname,pystate);
 
                     // Grab the file name
-                    auto fname = capi::PyString_AsString(fname_);
+                    auto fname = capi::PyUnicode_AsUTF8(fname_);
 
                     // Create a Python state
                     auto pystate = Python::State <PyEqualityConstrained> (
@@ -3192,7 +3192,7 @@ namespace Optizelle {
                     PY_VAR_4(X,Y,fname,pystate);
 
                     // Grab the file name
-                    auto fname = capi::PyString_AsString(fname_);
+                    auto fname = capi::PyUnicode_AsUTF8(fname_);
 
                     // Create a Python state
                     auto pystate = Python::State <PyEqualityConstrained> (
@@ -3228,7 +3228,7 @@ namespace Optizelle {
                     PY_VAR_6(X,Y,fname,x,y,pystate);
 
                     // Grab the file name
-                    auto fname = capi::PyString_AsString(fname_);
+                    auto fname = capi::PyUnicode_AsUTF8(fname_);
 
                     // Create a Python state
                     auto pystate = Python::State <PyEqualityConstrained> (
@@ -3370,7 +3370,7 @@ namespace Optizelle {
                     PY_VAR_4(X,Z,fname,pystate);
 
                     // Grab the file name
-                    auto fname = capi::PyString_AsString(fname_);
+                    auto fname = capi::PyUnicode_AsUTF8(fname_);
 
                     // Create a Python state
                     auto pystate = Python::State <PyInequalityConstrained> (
@@ -3584,7 +3584,7 @@ namespace Optizelle {
                     PY_VAR_4(X,Z,fname,pystate);
 
                     // Grab the file name
-                    auto fname = capi::PyString_AsString(fname_);
+                    auto fname = capi::PyUnicode_AsUTF8(fname_);
 
                     // Create a Python state
                     auto pystate = Python::State <PyInequalityConstrained> (
@@ -3620,7 +3620,7 @@ namespace Optizelle {
                     PY_VAR_6(X,Z,fname,x,z,pystate);
 
                     // Grab the file name
-                    auto fname = capi::PyString_AsString(fname_);
+                    auto fname = capi::PyUnicode_AsUTF8(fname_);
 
                     // Create a Python state
                     auto pystate = Python::State <PyInequalityConstrained> (
@@ -3715,7 +3715,7 @@ namespace Optizelle {
                     PY_VAR_5(X,Y,Z,fname,pystate);
 
                     // Grab the file name
-                    auto fname = capi::PyString_AsString(fname_);
+                    auto fname = capi::PyUnicode_AsUTF8(fname_);
 
                     // Create a Python state
                     auto pystate = Python::State <PyConstrained> (pystate_);
@@ -3940,7 +3940,7 @@ namespace Optizelle {
                     PY_VAR_5(X,Y,Z,fname,pystate);
 
                     // Grab the file name
-                    auto fname = capi::PyString_AsString(fname_);
+                    auto fname = capi::PyUnicode_AsUTF8(fname_);
 
                     // Create a Python state
                     auto pystate = Python::State <PyConstrained> (pystate_);
@@ -3977,7 +3977,7 @@ namespace Optizelle {
                     PY_VAR_8(X,Y,Z,fname,x,y,z,pystate);
 
                     // Grab the file name
-                    auto fname = capi::PyString_AsString(fname_);
+                    auto fname = capi::PyUnicode_AsUTF8(fname_);
 
                     // Create a Python state
                     auto pystate = Python::State <PyConstrained> (pystate_);
@@ -4173,15 +4173,14 @@ PyMethodDef methods[] = {
     {nullptr}  // Sentinel
 };
 
-PyMODINIT_FUNC initUtility() {
-    PyObject * m;
-
-    // Initilize the module
-    m = Py_InitModule3(
+PyMODINIT_FUNC PyInit_Utility() {
+    Py_Initialize();
+    static struct PyModuleDef moduledef = {
+        PyModuleDef_HEAD_INIT,
         "Utility",
-        methods,
-        "Internal utility functions for Optizelle");
-
-    if (m == nullptr)
-      return;
+        "Internal utility functions for Optizelle",
+        -1,
+        methods};
+    auto m = PyModule_Create(&moduledef);
+    return m;
 }

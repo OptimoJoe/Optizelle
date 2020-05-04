@@ -8,4 +8,4 @@ install(
         InequalityConstrained.py
         Constrained.py
         Serialization.py
-    DESTINATION share/optizelle/python/Optizelle/json)
+    DESTINATION ${PYTHON_SITE_PACKAGES}/Optizelle/json)

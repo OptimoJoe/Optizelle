@@ -23,7 +23,7 @@ Installation instructions for Optizelle
 3.  (Optional) Set the environment variables for use of Optizelle over an ssh
     session.  For bash, add
 
-        export PYTHONPATH=$PYTHONPATH:/Applications/${CPACK_PACKAGE_NAME}/share/optizelle/python
+        export PYTHONPATH=$PYTHONPATH:/Applications/${CPACK_PACKAGE_NAME}/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages
         export MATLABPATH=$MATLABPATH:/Applications/${CPACK_PACKAGE_NAME}/share/optizelle/matlab
         export OCTAVE_PATH=$OCTAVE_PATH:/Applications/${CPACK_PACKAGE_NAME}/share/optizelle/octave
 

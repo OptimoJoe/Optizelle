@@ -45,7 +45,7 @@ class Rosenbrock(Optizelle.ScalarValuedFunction):
 
     # Hessian-vector product
     def hessvec(self,x,dx,H_dx):
-    	H_dx[0] = (1200*sq(x[0])-400*x[1]+2)*dx[0]-400*x[0]*dx[1]
+        H_dx[0] = (1200*sq(x[0])-400*x[1]+2)*dx[0]-400*x[0]*dx[1]
         H_dx[1] = -400*x[0]*dx[0] + 200*dx[1]
 
 # Define some utility function where

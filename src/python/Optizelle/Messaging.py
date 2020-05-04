@@ -11,4 +11,4 @@ def t(msg):
 
 def stdout(msg):
     """Write a string to stdout"""
-    print msg
+    print(msg)

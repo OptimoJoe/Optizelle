@@ -81,11 +81,11 @@ Optizelle.InequalityConstrained.Algorithms.getMin(
     Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging.stdout,fns,state)
 
 # Print out the reason for convergence
-print "The algorithm converged due to: %s" % (
-    Optizelle.OptimizationStop.to_string(state.opt_stop))
+print("The algorithm converged due to: %s" % (
+    Optizelle.OptimizationStop.to_string(state.opt_stop)))
 
 # Print out the final answer
-print "The optimal point is: (%e,%e)" % (state.x[0],state.x[1])
+print("The optimal point is: (%e,%e)" % (state.x[0],state.x[1]))
 
 # Write out the final answer to file
 Optizelle.json.InequalityConstrained.write_restart(

@@ -61,7 +61,7 @@ fname=sys.argv[1]
 m = 10;
 
 # Generate an initial guess
-x = numpy.array([1.+10**(-x) for x in xrange(1,m+1)])
+x = numpy.array([1.+10**(-x) for x in range(1,m+1)])
 
 # Allocate memory for the inequality multiplier
 z = numpy.array(m*[0.])
@@ -89,14 +89,14 @@ Optizelle.InequalityConstrained.Algorithms.getMin(
     Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging.stdout,fns,state)
 
 # Print out the reason for convergence
-print "The algorithm converged due to: %s" % (
-    Optizelle.OptimizationStop.to_string(state.opt_stop))
+print("The algorithm converged due to: %s" % (
+    Optizelle.OptimizationStop.to_string(state.opt_stop)))
 
 # Print out the final answer
-print "The optimal point is: ["
-for i in xrange(m):
-    print "%1.16e" % state.x[i]
-print "]"
+print("The optimal point is: [")
+for i in range(m):
+    print("%1.16e" % state.x[i])
+print("]")
 
 # Write out the final answer to file
 Optizelle.json.InequalityConstrained.write_restart(

@@ -146,8 +146,8 @@ namespace Optizelle {
         namespace capi {
             PyObjectPtr PyImport_ImportModule(const char *name);
 
-            PyObjectPtr PyString_FromString(const char *v);
-            std::string PyString_AsString(PyObjectPtr const & string);
+            PyObjectPtr PyUnicode_FromString(const char *v);
+            std::string PyUnicode_AsUTF8(PyObjectPtr const & string);
 
             PyObjectPtr PyInt_FromNatural(Natural const & ival);
             Natural PyInt_AsNatural(PyObjectPtr const & io);

@@ -22,10 +22,10 @@ try:
     Optizelle.json.Unconstrained.read(XX,fname,state);
 except Optizelle.Exception.t as e:
     # Convert the error message to a string
-    msg = e.message
+    msg = str(e)
 
     # Print the error message directly
-    print e
+    print(e)
 #---Exception1---
 
 # If we don't throw an exception above, throw an error

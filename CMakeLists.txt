@@ -17,8 +17,8 @@ set(CPACK_GENERATOR "TGZ")
 set(CPACK_PACKAGE_VENDOR "OptimoJoe")
 set(CPACK_PACKAGE_NAME "Optizelle")
 set(CPACK_PACKAGE_VERSION_MAJOR "1")
-set(CPACK_PACKAGE_VERSION_MINOR "2")
-set(CPACK_PACKAGE_VERSION_PATCH "2")
+set(CPACK_PACKAGE_VERSION_MINOR "3")
+set(CPACK_PACKAGE_VERSION_PATCH "0")
 set(CPACK_SOURCE_IGNORE_FILES "${CMAKE_BINARY_DIR}" "${CMAKE_SOURCE_DIR}/.git")
 set(CPACK_PACKAGE_CONTACT "Joseph Young <joe@optimojoe.com>")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Optizelle [op-tuh-zel] is an open source software library designed to solve general purpose nonlinear optimization problems")
@@ -42,6 +42,10 @@ elseif(APPLE)
     # Make sure to enable this when building a package
     set(CPACK_DRAGNDROP OFF CACHE BOOL "Building a DragNDrop package?")
     if(CPACK_DRAGNDROP)
+        # We need to know the Python version to correctly configure the ReadMe
+        # and plist file
+        find_package(PythonInterp REQUIRED)
+
         # Setup the readme file
         set(README_NAME "src/cmake/DragNDrop/ReadMe.txt")
         configure_file(

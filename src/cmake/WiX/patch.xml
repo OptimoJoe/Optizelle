@@ -9,10 +9,10 @@
             System="yes" />
     </CPackWiXFragment>
 
-    <CPackWiXFragment Id="CM_CP_share.optizelle.python.Optizelle.Utility.pyd">
+    <CPackWiXFragment Id="CM_CP_lib.site_packages.Optizelle.Utility.pyd">
         <Environment Id="PYTHONPATH"
             Name="PYTHONPATH"
-            Value="[INSTALL_ROOT]share\optizelle\python"
+            Value="[INSTALL_ROOT]lib\site-packages"
             Permanent="no"
             Part="last"
             Action="set"

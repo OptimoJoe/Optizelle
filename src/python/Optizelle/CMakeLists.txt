@@ -7,15 +7,13 @@ set(OPTIZELLE_PYTHON_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
 set(optizelle_python_srcs "Utility.cpp")
 include_directories(${PYTHON_INCLUDE_DIRS})
 include_directories(${OPTIZELLE_PYTHON_INCLUDE_DIRS})
-add_library(optizelle_python SHARED ${optizelle_python_srcs})
+add_library(optizelle_python MODULE ${optizelle_python_srcs})
+target_link_libraries(optizelle_python optizelle_shared)
 
-if(APPLE)
-    target_link_libraries(optizelle_python
-        optizelle_shared)
-else()
-    target_link_libraries(optizelle_python
-        optizelle_shared
-        ${PYTHON_LIBRARIES})
+if(WIN32)
+  target_link_libraries(optizelle_python optizelle_shared ${PYTHON_LIBRARIES})
+elseif(APPLE)
+  set_target_properties(optizelle_python PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
 endif()
 
 set_target_properties(optizelle_python PROPERTIES OUTPUT_NAME Utility)
@@ -26,12 +24,9 @@ elseif(WIN32)
     set_target_properties(optizelle_python PROPERTIES SUFFIX ".pyd")
 endif()
 if(APPLE)
-    set_target_properties(optizelle_python PROPERTIES INSTALL_RPATH "@loader_path/../../../../lib;@loader_path/../../thirdparty/lib")
+    set_target_properties(optizelle_python PROPERTIES INSTALL_RPATH "@loader_path/../../../;@loader_path/../../../../share/optizelle/thirdparty/lib")
 elseif(UNIX)
-    set_target_properties(optizelle_python PROPERTIES INSTALL_RPATH "\$ORIGIN/../../../../lib;\$ORIGIN/../../thirdparty/lib")
-endif()
-if(APPLE)
-	set_target_properties(optizelle_python PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
+    set_target_properties(optizelle_python PROPERTIES INSTALL_RPATH "\$ORIGIN/../../../;\$ORIGIN/../../../../share/optizelle/thirdparty/lib")
 endif()
 
 # Copy in the rest of the Python files for the unit tests.  Otherwise, we
@@ -45,6 +40,12 @@ if(ENABLE_PYTHON_UNIT)
             ${CMAKE_BINARY_DIR}/src/python/Optizelle)
 endif()
 
+if (WIN32)
+  set (PYTHON_SITE_PACKAGES lib/site-packages)
+else ()
+  set (PYTHON_SITE_PACKAGES lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages)
+endif ()
+
 # Compile the different problem classes and utility functions
 add_subdirectory(Unconstrained)
 add_subdirectory(InequalityConstrained)
@@ -55,7 +56,7 @@ add_subdirectory(json)
 install(
     FILES __init__.py Exception.py Messaging.py Properties.py Functions.py
         Enumerated.py
-    DESTINATION share/optizelle/python/Optizelle)
+    DESTINATION ${PYTHON_SITE_PACKAGES}/Optizelle)
 install(
     TARGETS optizelle_python
-    DESTINATION share/optizelle/python/Optizelle)
+    DESTINATION ${PYTHON_SITE_PACKAGES}/Optizelle)
